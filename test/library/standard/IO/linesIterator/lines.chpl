@@ -12,49 +12,66 @@ proc createDataFile() {
     }
 }
 
-proc dataFileSum(region, snl, tls, type t = string): int {
+proc dataFileSum(region, stripNewline, type retType, targetLocs): int {
     var sum = 0;
     var r = openReader(fileName, region=region);
-    forall line in r.lines(stripNewline=snl, targetLocales=tls, t=t) with (+ reduce sum) {
-        sum += line:int;
+
+    if targetLocs.type == nothing {
+        forall line in r.lines(stripNewline, retType) with (+ reduce sum) {
+            sum += line:int;
+        }
+    } else {
+        forall line in r.lines(stripNewline, retType, targetLocs) with (+ reduce sum) {
+            sum += line:int;
+        }
     }
+
     return sum;
 }
 
 createDataFile();
 
 // whole file
-assert(dataFileSum(0.., true, Locales) == nsum);
-assert(dataFileSum(0.., true, [Locales.first,]) == nsum);
-assert(dataFileSum(0.., true, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., true, string, Locales) == nsum);
+assert(dataFileSum(0.., true, string, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., true, string, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., true, string, none) == nsum);
 
-assert(dataFileSum(0.., false, Locales) == nsum);
-assert(dataFileSum(0.., false, [Locales.first,]) == nsum);
-assert(dataFileSum(0.., false, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., false, string, Locales) == nsum);
+assert(dataFileSum(0.., false, string, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., false, string, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., false, string, none) == nsum);
 
-assert(dataFileSum(0.., true, Locales, bytes) == nsum);
-assert(dataFileSum(0.., true, [Locales.first,], bytes) == nsum);
-assert(dataFileSum(0.., true, [Locales.last,], bytes) == nsum);
+assert(dataFileSum(0.., true, bytes, Locales) == nsum);
+assert(dataFileSum(0.., true, bytes, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., true, bytes, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., true, bytes, none) == nsum);
 
-assert(dataFileSum(0.., false, Locales, bytes) == nsum);
-assert(dataFileSum(0.., false, [Locales.first,], bytes) == nsum);
-assert(dataFileSum(0.., false, [Locales.last,], bytes) == nsum);
+assert(dataFileSum(0.., false, bytes, Locales) == nsum);
+assert(dataFileSum(0.., false, bytes, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., false, bytes, [Locales.last,]) == nsum);
+assert(dataFileSum(0.., false, bytes, none) == nsum);
+
 
 // skipping first 9 lines
-assert(dataFileSum(18.., true, Locales) == nsum - 45);
-assert(dataFileSum(18.., true, [Locales.first,]) == nsum - 45);
-assert(dataFileSum(18.., true, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., true, string, Locales) == nsum - 45);
+assert(dataFileSum(18.., true, string, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., true, string, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., true, string, none) == nsum - 45);
 
-assert(dataFileSum(18.., false, Locales) == nsum - 45);
-assert(dataFileSum(18.., false, [Locales.first,]) == nsum - 45);
-assert(dataFileSum(18.., false, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., false, string, Locales) == nsum - 45);
+assert(dataFileSum(18.., false, string, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., false, string, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., false, string, none) == nsum - 45);
 
-assert(dataFileSum(18.., true, Locales, bytes) == nsum - 45);
-assert(dataFileSum(18.., true, [Locales.first,], bytes) == nsum - 45);
-assert(dataFileSum(18.., true, [Locales.last,], bytes) == nsum - 45);
+assert(dataFileSum(18.., true, bytes, Locales) == nsum - 45);
+assert(dataFileSum(18.., true, bytes, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., true, bytes, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., true, bytes, none) == nsum - 45);
 
-assert(dataFileSum(18.., false, Locales, bytes) == nsum - 45);
-assert(dataFileSum(18.., false, [Locales.first,], bytes) == nsum - 45);
-assert(dataFileSum(18.., false, [Locales.last,], bytes) == nsum - 45);
+assert(dataFileSum(18.., false, bytes, Locales) == nsum - 45);
+assert(dataFileSum(18.., false, bytes, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., false, bytes, [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., false, bytes, none) == nsum - 45);
 
 remove(fileName);

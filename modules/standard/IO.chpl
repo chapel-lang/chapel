@@ -7061,8 +7061,8 @@ iter fileReader.lines(
 */
 iter fileReader.lines(
   stripNewline = false,
-  targetLocales: [] locale,
-  type t = string
+  type t = string,
+  targetLocales: [] locale
 ): t
   where t == string || t == bytes
 {
@@ -7150,8 +7150,8 @@ iter fileReader.lines(
 iter fileReader.lines(
   param tag: iterKind,
   stripNewline = false,
-  targetLocales: [?tld] locale = [this._home,],
-  type t = string
+  type t = string,
+  targetLocales: [?tld] locale
 ): t
   where tag == iterKind.standalone && (t == string || t == bytes)
 {
