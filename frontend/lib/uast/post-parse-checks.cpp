@@ -161,7 +161,7 @@ struct Visitor {
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
-  void checkIterInit(const Function* node);
+  void checkIterNames(const Function* node);
 
   /*
   TODO
@@ -1751,7 +1751,7 @@ void Visitor::visit(const Function* node) {
   checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
-  checkIterInit(node);
+  checkIterNames(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1948,7 +1948,7 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
   }
 }
 
-void Visitor::checkIterInit(const Function* node) {
+void Visitor::checkIterNames(const Function* node) {
   if (node->kind() == Function::ITER) {
     if (node->name() == USTR("init")) {
       error(node,
