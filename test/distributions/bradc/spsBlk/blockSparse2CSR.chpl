@@ -15,7 +15,7 @@ config const n = 8;
 // domain for the sparse one.
 //
 const Elems = {0..#n, 0..#n} dmapped new blockDist({0..#n, 0..#n},
-    sparseLayoutType=unmanaged CS);
+    sparseLayoutType=cs);
 
 //
 // The sparse subdomain.  In the current code framework, the parent

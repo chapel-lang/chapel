@@ -44,12 +44,9 @@ record _ColumnComparator {
 const _columnComparator: _ColumnComparator;
 
 
-@deprecated("'CS' is deprecated, please use 'cs' instead")
+@deprecated("layout class 'CS' is deprecated, please use record 'cs' instead")
 type CS = cs;
 
-//
-// Necessary since `t == CS` does not support classes with param fields
-//
 @chpldoc.nodoc
 proc isCSType(type t:cs(?)) param do return true;
 
@@ -131,7 +128,7 @@ class CSImpl: BaseDist {
 } // CS
 
 record chpl_layoutHelper {
-  var _value;
+  forwarding var _value;
 
   proc newSparseDom(param rank: int, type idxType, dom: domain) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
