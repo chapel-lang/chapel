@@ -1,0 +1,2 @@
+# doing cuda interop on a cray-cs hangs the whole program
+CHPL_TARGET_PLATFORM=cray-cs

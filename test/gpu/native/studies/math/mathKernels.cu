@@ -21,7 +21,7 @@
 #endif
 
 #ifndef mk_SIZE
-#define mk_SIZE 10'000'000
+#define mk_SIZE 100'000'000
 #endif
 
 #define mk_FUNC_NAME_inner2(a, b) a ## b
