@@ -1,4 +1,6 @@
--scomparator=str      # errors-keyPart.str.good
--scomparator=tIntReal # errors-keyPart.tIntReal.good
--scomparator=tStrStr  # errors-keyPart.tStrStr.good
--scomparator=tUintInt # errors-keyPart.tUintInt.good
+-scomparator=str         # errors-keyPart.str.good
+-scomparator=tIntReal    # errors-keyPart.tIntReal.good
+-scomparator=tStrStr     # errors-keyPart.tStrStr.good
+-scomparator=tStrStrDep  # errors-keyPart.tStrStrDep.good
+-scomparator=tUintInt    # errors-keyPart.tUintInt.good
+-scomparator=tUintIntDep # errors-keyPart.tUintIntDep.good

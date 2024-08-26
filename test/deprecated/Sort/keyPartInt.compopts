@@ -1,0 +1,4 @@
+                         # keyPartInt.good
+-suseKeyPartStatus=false # keyPartInt.good
+-suseKeyPartStatus       # keyPartInt-resolved.good
+-suseKeyPartStatus=true  # keyPartInt-resolved.good
