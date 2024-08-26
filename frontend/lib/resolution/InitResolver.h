@@ -64,6 +64,7 @@ class InitResolver {
   std::vector<ID> thisCompleteIds_;
   bool isDescendingIntoAssignment_ = false;
   const types::Type* currentRecvType_ = initialRecvType_;
+  const types::BasicClassType* superType_ = nullptr;
 
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
