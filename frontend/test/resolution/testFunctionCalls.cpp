@@ -132,11 +132,87 @@ static void test3b() {
   helpTest3(theFunction);
 }
 
+// Test calling dependently typed type constructor, for type with param field
+static void test4() {
+  Context ctx;
+  auto context = &ctx;
+
+  // With param field type declared
+  {
+    printf("part 1\n");
+    context->advanceToNextRevision(true);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        param fooStrides : int;
+      }
+      proc bar(param strides = 1, other: Foo(strides)) {
+        return other.fooStrides;
+      }
+      var x = bar(1, new Foo(1));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isIntType());
+
+    context->collectGarbage();
+  }
+
+  // Param field of generic type
+  {
+    printf("part 2\n");
+    context->advanceToNextRevision(true);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        param fooStrides;
+      }
+      proc bar(param strides = 1, other: Foo(strides)) {
+        return other.fooStrides;
+      }
+      var x = bar(1, new Foo(1));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isIntType());
+
+    context->collectGarbage();
+  }
+
+  // With param formal type declared
+  {
+    printf("part 3\n");
+    context->advanceToNextRevision(true);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        param fooStrides : int;
+      }
+      proc bar(param strides : int, other: Foo(strides)) {
+        return other.fooStrides;
+      }
+      var x = bar(1, new Foo(1));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isIntType());
+
+    context->collectGarbage();
+  }
+}
+
 int main() {
   test1();
   test2();
   test3a();
   test3b();
+  test4();
 
   return 0;
 }

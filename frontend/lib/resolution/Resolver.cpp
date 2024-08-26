@@ -3723,8 +3723,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   // EXCEPT, type construction can work with unknown or generic types
   // EXCEPT, tuple type construction also works with unknown/generic types
 
-  if (!ci.calledType().isType() &&
-      !call->isTuple()) {
+  if (!call->isTuple()) {
     int actualIdx = 0;
     for (const auto& actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?
@@ -3749,6 +3748,8 @@ void Resolver::handleCallExpr(const uast::Call* call) {
                  qt.isRef() == false) {
         // don't skip because it could be initialized with 'out' intent,
         // but not for non-out formals because they can't be split-initialized.
+      } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+        // don't skip for type queries in type constructors
       } else {
         if (qt.isParam() && qt.param() == nullptr) {
           skip = UNKNOWN_PARAM;
@@ -3769,6 +3770,18 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           }
         }
       }
+
+      // Don't skip for type constructors, except due to unknown params.
+      if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+        skip = NONE;
+      }
+
+      // Do not skip primitive calls that accept a generic type, since they
+      // may be valid.
+      if (skip == GENERIC_TYPE && call->toPrimCall()) {
+        skip = NONE;
+      }
+
       if (skip) {
         break;
       }
@@ -3778,12 +3791,6 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   // Don't try to resolve calls to '=' until later
   if (ci.isOpCall() && ci.name() == USTR("=")) {
     skip = OTHER_REASON;
-  }
-
-  if (skip == GENERIC_TYPE && call->toPrimCall()) {
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    skip = NONE;
   }
 
   if (!skip) {
