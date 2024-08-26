@@ -4367,8 +4367,7 @@ struct Converter {
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
   if (assertOnGpuAttr) {
-    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                    new SymExpr(gTrue)));
+    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
     return true;
   }
   return false;
@@ -4384,16 +4383,11 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   static int counter = 0;
 
   if (blockSizeAttr) {
-    if (blockSizeAttr->numActuals() != 1) {
-      USR_FATAL(blockSizeAttr->id(),
-                "'@gpu.blockSize' attribute must have exactly one argument: "
-                "the block size");
+    auto newCall = new CallExpr("chpl__gpuBlockSizeAttr", new_IntSymbol(counter++));
+    for (auto actual : blockSizeAttr->actuals()) {
+      newCall->insertAtTail(converter.convertAST(actual));
     }
-
-    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
-                                    blockSize,
-                                    new_IntSymbol(counter++)));
+    body->insertAtTail(newCall);
     return true;
   }
   return false;
