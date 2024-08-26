@@ -157,7 +157,9 @@ strings. It accepts two arguments:
 
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
- * The *section* must be of type :type:`keyPartStatus`. It indicates when the end of ``elt`` has been reached and in that event how it should be sorted relative to other array elements.
+ * The *section* must be of type :type:`keyPartStatus`. It indicates when the
+ end of ``elt`` has been reached and in that event how it should be sorted
+ relative to other array elements.
 
  * The *part* can be any signed or unsigned integral type and can contain any
    value. The *part* will be ignored unless the *section* returned is
@@ -3449,7 +3451,8 @@ record DefaultComparator: keyPartComparator {
     :arg elt: the `int` or `uint` of any size to sort
     :arg i: the part number requested
 
-    :returns: ``(keyPartStatus.pre, x)`` if ``i==0``, or ``(keyPartStatus.returned, x)`` otherwise
+    :returns: ``(keyPartStatus.returned, x)`` if ``i==0``, or
+              ``(keyPartStatus.pre, x)`` otherwise
    */
   inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type)
     where useKeyPartStatus {
