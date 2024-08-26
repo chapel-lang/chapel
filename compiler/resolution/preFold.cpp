@@ -273,7 +273,7 @@ static void setRecordCopyableFlags(AggregateType* at) {
       // special case since while implicit reads of sync/single are not yet removed
       // with their removal, the init= that throws a warning will be gone
       FnSymbol* initEq = NULL;
-      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+      if(!ts->hasFlag(FLAG_SYNC)) {
         // Try resolving a test init= to set the flags
         const char* err = NULL;
         initEq = findCopyInitFn(at, err);

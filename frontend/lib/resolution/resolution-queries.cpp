@@ -5144,10 +5144,10 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     const AttributeGroup* attrs = nullptr;
     if (ast) attrs = ast->attributeGroup();
     if (checkCopyable && attrs &&
-        (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
-      // Syncs and singles are copyable
+        (attrs->hasPragma(PRAGMA_SYNC))) {
+      // Syncs are copyable
       // This is a special case to preserve deprecated behavior before
-      // sync/single implicit reads are removed. 12/8/23
+      // sync implicit reads are removed. 12/8/23
       result = CopyableAssignableInfo::fromConst();
     } else {
       // In general, try to resolve the type's 'init='/'=', and examine it to

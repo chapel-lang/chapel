@@ -1404,7 +1404,6 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("bytes")     ||
       name == USTR("string")    ||
       name == USTR("sync")      ||
-      name == USTR("single")    ||
       name == USTR("owned")     ||
       name == USTR("shared")    ||
       name == USTR("borrowed")  ||

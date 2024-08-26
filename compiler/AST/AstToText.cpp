@@ -1570,7 +1570,7 @@ void AstToText::appendExpr(const char* name)
   //
   // NOAKES 2015/02/05
   //
-  // The compiler maps sync -> _syncvar, single -> _singlevar, etc.
+  // The compiler maps sync -> _syncvar
   //
   // Undo this mapping.
   // There are a few uses of these names in internal modules and those
@@ -1578,9 +1578,6 @@ void AstToText::appendExpr(const char* name)
 
   if      (strncmp(name, "_syncvar",          8) == 0)
     appendSpecialExpr(name, "_syncvar", "sync");
-
-  else if (strncmp(name, "_singlevar",        8) == 0)
-    appendSpecialExpr(name, "_singlevar",  "single");
 
   else if (strncmp(name, "_domain",           8) == 0)
     appendSpecialExpr(name, "_domain",  "domain");
@@ -1668,8 +1665,8 @@ std::string AstToText::removeOuterParens(const char* parenExpr) const
 //
 // Before normalize, the AST for the signatures of methods like
 //
-//    _singlevar.writeEF(val: base_type)
-//    _singlevar.writeEF(val: sv.base_type)
+//    _syncvar.writeEF(val: base_type)
+//    _syncvar.writeEF(val: sv.base_type)
 //
 // is roughly
 //

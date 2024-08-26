@@ -569,7 +569,6 @@ struct Converter {
       { USTR("owned"), "_owned" },
       { USTR("shared"), "_shared" },
       { USTR("sync"), "_syncvar" },
-      { USTR("single"), "_singlevar" },
       { USTR("domain"), "_domain" },
       { USTR("align"), "chpl_align" },
       { USTR("by"), "chpl_by" },
@@ -773,12 +772,6 @@ struct Converter {
         return remap;
       }
     } else {
-      if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-      }
-
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -2266,11 +2259,6 @@ struct Converter {
 
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-        ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == USTR("sync")) {
@@ -4531,7 +4519,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
-    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types

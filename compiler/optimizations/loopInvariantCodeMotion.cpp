@@ -1134,11 +1134,9 @@ static bool containsSynchronizationVar(BaseAST* ast) {
       Type* valType = symType->getValType();
 
       if (isSyncType(symType)    ||
-          isSingleType(symType)  ||
           isAtomicType(symType)  ||
 
           isSyncType(valType)    ||
-          isSingleType(valType)  ||
           isAtomicType(valType)) {
 
         return true;
