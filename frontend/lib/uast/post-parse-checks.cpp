@@ -1951,6 +1951,7 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
 void Visitor::checkIterNames(const Function* node) {
   if (node->kind() == Function::ITER) {
     auto name = node->name();
+
     if (name == USTR("init")) {
       error(node,
             "iterators can't be initializers, please rename this iterator");
@@ -1960,6 +1961,12 @@ void Visitor::checkIterNames(const Function* node) {
     } else if (name == USTR("postinit")) {
       error(node,
             "iterators can't be the postinit method, please rename this iterator");
+    } else if (name == USTR("enterContext")) {
+      error(node,
+            "iterators can't be the enterContext method, please rename this iterator");
+    } else if (name == USTR("exitContext")) {
+      error(node,
+            "iterators can't be the exitContext method, please rename this iterator");
     }
   }
   return;
