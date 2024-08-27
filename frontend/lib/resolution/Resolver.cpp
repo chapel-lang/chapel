@@ -920,6 +920,7 @@ static bool isCallToClassManager(const FnCall* call) {
   if (!ident) return false;
   auto name = ident->name();
   return name == USTR("owned") || name == USTR("shared") ||
+         name == USTR("_owned") || name == USTR("_shared") ||
          name == USTR("unmanaged") || name == USTR("borrowed");
 }
 
@@ -2132,8 +2133,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // will not resolve because the receiver formal is 'nonnil borrowed').
   const Type* initReceiverType = qtNewExpr.type();
   if (auto clsType = qtNewExpr.type()->toClassType()) {
-    auto oldDecor = clsType->decorator();
-    auto newDecor = oldDecor.addNonNil();
+    auto newDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     initReceiverType = clsType->withDecorator(context, newDecor);
     CHPL_ASSERT(initReceiverType);
   }
