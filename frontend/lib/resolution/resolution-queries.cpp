@@ -91,10 +91,6 @@ scopeResolveModuleStmt(Context* context, ID id) {
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
-  // TODO: can we save space better here by having
-  // the ResolutionResultByPostorderID have a different offset
-  // (so it can contain only ids within the requested stmt) or
-  // maybe we can make it sparse with a hashtable or something?
   ResolutionResultByPostorderID result;
 
   ID moduleId = parsing::idToParentId(context, id);
