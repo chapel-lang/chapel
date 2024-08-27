@@ -2005,7 +2005,7 @@ Module::Kind idToModuleKind(Context* context, ID id) {
 }
 
 bool isSpecialMethodName(UniqueString name) {
-  if (name == USTR("init") || name == USTR("deinit") ||
+  if (name == USTR("init") || name == USTR("deinit") || name == USTR("init=") ||
       name == USTR("postinit") || name == USTR("enterContext") ||
       name == USTR("exitContext") || name == USTR("serialize") ||
       name == USTR("deserialize") || name == USTR("hash")) {
