@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -x -e
-export CHPLEXP_MAX_LOCALES=64
+export CHPLEXP_MAX_LOCALES=32
 "$CHPL_HOME/util/test/chplExperiment" \
    --paint-with ./isx.plot.paint.py \
    --skip-if-config-error  \

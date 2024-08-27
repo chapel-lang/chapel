@@ -9,24 +9,26 @@ capLocales "$CHPLEXP_MAX_LOCALES"
 # -----------------------------------------------------------------------------
 # Download and setup
 # -----------------------------------------------------------------------------
-if [ ! -d "hpcc" ]; then
-  mkdir hpcc
-  pushd hpcc 
-  wget https://hpcchallenge.org/projectsfiles/hpcc/download/hpcc-1.5.0.tar.gz
-  tar -xzf hpcc-1.5.0.tar.gz
-  pushd hpcc-1.5.0
-  pushd hpl
-  cp ./setup/Make.CrayX1 Make.unix
-  popd
-  popd
-  popd
-fi
+rm -fr ./hpcc
+
+mkdir hpcc
+pushd hpcc 
+wget https://hpcchallenge.org/projectsfiles/hpcc/download/hpcc-1.5.0.tar.gz
+tar -xzf hpcc-1.5.0.tar.gz
+pushd hpcc-1.5.0
+pushd hpl
+cp ../../../Make.CrayXE Make.unix
+popd
+#sed -i.bak "s/\s*TotalMem =.*/TotalMem = 153391689*2;/g" ./hpcc-1.5.0/RandomAccess/MPIRandomAccessLCG.c
+#sed -i.bak "s/\s*NumUpdates_Default =.*;/NumUpdates_Default = 100000000;/g" ./hpcc-1.5.0/RandomAccess/MPIRandomAccessLCG.c
+#sed -i.bak "s/\s*tparams.ProcNumUpdates =.*/tparams.ProcNumUpdates = NumUpdates_Default \/ tparams.NumProcs;/g" ./hpcc-1.5.0/RandomAccess/MPIRandomAccessLCG.c
+popd
+popd
 
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
 pushd hpcc/hpcc-1.5.0
-rm -f ./hpcc
 make arch=unix
 
 # -----------------------------------------------------------------------------

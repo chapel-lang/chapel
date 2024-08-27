@@ -29,7 +29,6 @@ pushd bin
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 export SHMEM_SYMMETRIC_SIZE=1GB
-#PROBLEM_SIZE=$((2**34))
 PROBLEM_SIZE=67108864
 for x in "${locales[@]}"; do
   rm -f ./out.txt

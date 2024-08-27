@@ -3,19 +3,30 @@
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
+CHPLEXP_USE_ON="${CHPLEXP_USE_ON:false}"
+CHPLEXP_USE_ATOMICS="${CHPLEXP_USE_ATOMICS:false}"
+
 locales=( 2 4 8 16 32 64 128 256 512 1024)
 capLocales "$CHPLEXP_MAX_LOCALES"
 
 # -----------------------------------------------------------------------------
 # Build Chapel code
 # -----------------------------------------------------------------------------
-chpl --fast ra.chpl -suseOn=false -sn=33:indexType -sN_U=1000000000:indexType -sverify=false
+if [[ "$CHPLEXP_USE_ATOMICS" == "true" ]]; then
+  chpl --fast ra-atomics.chpl
+  exe_name="./ra-atomics"
+else
+  chpl --fast ra.chpl -suseOn=$CHPLEXP_USE_ON
+  exe_name="./ra"
+fi
 
 # -----------------------------------------------------------------------------
 # Run Chapel trials
 # -----------------------------------------------------------------------------
+ra_lg_size=32
+ra_updates=2097152
 for x in "${locales[@]}"; do
-  runAndLog ./ra -nl $x --n=16 --N_U=4096
+  runAndLog $exe_name -nl $x --n=$ra_lg_size --N_U=$ra_updates
 done
 
 # -----------------------------------------------------------------------------

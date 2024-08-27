@@ -10,5 +10,6 @@ print(tbl.md("%0.2f"))
 
 tbl.plot(
     title="STREAM Performance (GB/s)",
-    xlabel="Locales",
-    ylabel="GB/s")
+    xlabel="Nodes",
+    ylabel="GB/s",
+    save=False).add_arrow('right', 'up', 'green', 'better').save('logs/stream.png')
