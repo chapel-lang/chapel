@@ -527,7 +527,7 @@ module Channel {
   addresses.
   */
   @chpldoc.nodoc
-  record Comparator {
+  record Comparator: relativeComparator {
     proc compare(case1, case2) {
       return (case1.getAddr() - case2.getAddr()) : int;
     }
