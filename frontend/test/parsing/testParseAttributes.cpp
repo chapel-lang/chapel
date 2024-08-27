@@ -1116,6 +1116,53 @@ static void test22(Parser* parser) {
   assert(guard.realizeErrors()==1);
 }
 
+// check interfaces
+static void test23(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    /*I am the docstring for the interface*/
+    @unstable("I am unstable")
+    interface foo {
+      /*I am the docstring for the method*/
+      @deprecated("I am deprecated")
+      proc Self.bar();
+    }
+  )"""";
+  auto parseResult = parseStringAndReportErrors(parser, "test23.chpl",
+                                                program.c_str());
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+
+  auto comment = mod->stmt(0)->toComment();
+  assert(comment);
+  assert(comment->str() == "/*I am the docstring for the interface*/");
+
+  auto intf = mod->stmt(1)->toInterface();
+  assert(intf);
+
+  auto intfAttr = intf->attributeGroup();
+  assert(intfAttr);
+  assert(intfAttr->isUnstable());
+  assert(intf->numFormals() == 0);
+  assert(intf->numStmts() == 2);
+
+  auto methodComment = intf->stmt(0)->toComment();
+  assert(methodComment);
+  assert(methodComment->str() == "/*I am the docstring for the method*/");
+
+  auto intfMethod = intf->stmt(1)->toFunction();
+  assert(intfMethod);
+  assert(intfMethod->name() == "bar");
+  auto intfMethodAttr = intfMethod->attributeGroup();
+  assert(intfMethodAttr);
+  assert(intfMethodAttr->isDeprecated());
+
+
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -1149,6 +1196,7 @@ int main() {
   test20(p);
   test21(p);
   test22(p);
+  test23(p);
 
   return 0;
 }
