@@ -38,6 +38,7 @@ Parsing module files:
   $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/packages/CopyAggregation.chpl
+  $CHPL_HOME/modules/standard/AutoGpu.chpl
   subdir/bar.chpl
   subdir/baz.chpl
   subdir1/bak.chpl
