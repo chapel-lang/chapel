@@ -1955,6 +1955,9 @@ void Visitor::checkIterNames(const Function* node) {
     if (name == USTR("init")) {
       error(node,
             "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be deinitializers, please rename this iterator");
     } else if (name == USTR("init=")) {
       error(node,
             "iterators can't be copy initializers, please rename this iterator");
