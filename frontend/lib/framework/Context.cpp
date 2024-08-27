@@ -1256,7 +1256,7 @@ void Context::queryTimingReport(std::ostream& os) {
   os << "query timings\n";
 
   auto w1 = 40;
-  auto w2 = 14;
+  auto w2 = 15;
 
   os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
      << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
