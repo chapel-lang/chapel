@@ -1,1 +1,1 @@
-error-multiple-interfaces.chpl:16: error: The comparator R2 requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method  for element type int(64)
+error-multiple-interfaces.chpl:16: error: The comparator R2 requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method for element type int(64)

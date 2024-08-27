@@ -499,7 +499,7 @@ proc chpl_check_comparator(comparator,
 
     // TODO: this error should talk about interfaces
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
+    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method for element type " + eltType:string );
   }
 
   return true;
