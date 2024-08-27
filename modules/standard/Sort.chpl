@@ -332,6 +332,8 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a == b: returns 0
 */
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
+  // TODO: this should also check interfaces for deprecation because it gets
+  // used in things like Search, Heap, treap, SortedSet, SortedMap, etc.
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
