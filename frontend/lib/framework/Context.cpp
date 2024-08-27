@@ -1280,6 +1280,26 @@ void Context::queryTimingReport(std::ostream& os) {
     }
 }
 
+void Context::finishQueryStopwatch(querydetail::QueryMapBase* base,
+                                   size_t depth,
+                                   const std::string& args,
+                                   querydetail::QueryTimingDuration elapsed) {
+  if (enableQueryTiming) {
+    base->timings.query.update(elapsed);
+  }
+  if (enableQueryTimingTrace) {
+    auto asMicros =
+      std::chrono::duration_cast<std::chrono::microseconds>(elapsed);
+    auto nMicroseconds = asMicros.count();
+    auto os = queryTimingTraceOutput.get();
+    CHPL_ASSERT(os != nullptr);
+    *os << depth << ' '
+        << base->queryName << ' '
+        << nMicroseconds << ' '
+        << args << '\n';
+  }
+}
+
 // TODO should these be ifdef'd away if !QUERY_TIMING_ENABLED? Or just warn?
 void Context::beginQueryTimingTrace(const std::string& outname) {
   queryTimingTraceOutput = std::make_unique<std::ofstream>(outname);
@@ -1294,8 +1314,8 @@ void Context::endQueryTimingTrace() {
 namespace querydetail {
 
 
-void queryArgsPrintSep() {
-  printf(", ");
+void queryArgsPrintSep(std::ostream& s) {
+  s << ", ";
 }
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,

@@ -387,11 +387,13 @@ void Scope::collectNames(std::set<UniqueString>& namesDefined,
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "Scope ";
-  ss << tagToString(tag());
-  ss << " kind=";
+  ss << tagToString(tag()) << " ";
   id().stringify(ss, stringKind);
-  ss << " numDeclared=";
-  ss << std::to_string(numDeclared());
+
+  if (stringKind != StringifyKind::DEBUG_SUMMARY) {
+    ss << " numDeclared=";
+    ss << std::to_string(numDeclared());
+  }
 }
 
 bool VisibilitySymbols::mightHaveName(UniqueString name) const {
