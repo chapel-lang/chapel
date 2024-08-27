@@ -10,3 +10,9 @@ $CHPL_HOME/modules/standard/Sort.chpl:nnnn: warning: Defining a comparator with 
   useRelativeCompator.chpl:55: called as sorted(x: [domain(1,int(64),one)] int(64), comparator: myCmp8)
 note: generic instantiations are underlined in the above callstack
 useRelativeCompator.chpl:56: note: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp9: relativeComparator').
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true

@@ -167,6 +167,7 @@ inline proc csvPrintArr(arr: [] (string, int, int),
 // Comparator to sort our array representation of the map
 // by the number of occurences of each warning
 record occurenceComparator {}
+occurenceComparator implements relativeComparator
 proc occurenceComparator.compare(a: (string, int, int), b: (string, int, int)){
   return b[1] - a[1];  // Reverse sort
 }

@@ -134,7 +134,7 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
-record RankResultsComparator {
+record RankResultsComparator: relativeComparator {
   var query: string;
   var packageScores;
   proc compare(a, b) {
