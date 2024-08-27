@@ -138,11 +138,6 @@ class CanPassResult {
                                       const types::QualifiedType& actualType,
                                       const types::QualifiedType& formalType);
 
-  static CanPassResult
-  canInstantiateOwnedSharedHelper(Context* context,
-                                  const types::ClassType* actualCt,
-                                  const types::CompositeType* formalCt);
-
  public:
   CanPassResult() { }
   ~CanPassResult() = default;

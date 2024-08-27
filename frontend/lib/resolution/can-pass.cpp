@@ -812,34 +812,40 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   return false;
 }
 
+static bool tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
+                                                         const Type*& mightBeManagerRecord,
+                                                         const Type*& mightBeClass) {
+  if (!mightBeManagerRecord || !mightBeClass) return false;
 
-CanPassResult
-CanPassResult::canInstantiateOwnedSharedHelper(Context* context,
-                                               const types::ClassType* actualCt,
-                                               const types::CompositeType* formalCt) {
-  if (formalCt->isRecordType() && actualCt->decorator().isManaged()) {
-    if (parsing::idIsInBundledModule(context, formalCt->id())) {
-      if (auto attrGrp = parsing::idToAttributeGroup(context, formalCt->id())) {
-        if (attrGrp->hasPragma(uast::pragmatags::PragmaTag::PRAGMA_MANAGED_POINTER)) {
-          if (auto manager = actualCt->manager()) {
-            // check for instantiating _owned or _shared records
-            if ((formalCt->name() == UniqueString::get(context, "_owned") &&
-                manager->isAnyOwnedType()) ||
-                (formalCt->name() == UniqueString::get(context, "_shared") &&
-                manager->isAnySharedType())) {
-                  // TODO: what ConversionKind should we return here?
-                  return CanPassResult(/* no fail reason, passes */ {},
-                          /* instantiates */ true,
-                          /* promotes */ false,
-                          /* converts */ ConversionKind::OTHER);
-            }
-          }
-        }
-      }
-    }
+  auto mr = mightBeManagerRecord->toRecordType();
+  auto ct = mightBeClass->toClassType();
+
+  if (!mr || !ct || !ct->manager() || !ct->decorator().isManaged()) return false;
+
+  if (!parsing::idIsInBundledModule(context, mr->id())) return false;
+
+  auto ag = parsing::idToAttributeGroup(context, mr->id());
+  if (!ag || !ag->hasPragma(uast::pragmatags::PragmaTag::PRAGMA_MANAGED_POINTER)) {
+    return false;
   }
-  // more checking to be done by canInstantiate
-  return CanPassResult::fail(FAIL_CANNOT_INSTANTIATE);
+
+  // Override the class type to the manager record type
+  mightBeClass = ct->managerRecordType(context); // mightBeClass used to be `owned` of type ClassType,
+                                                 // now it's `_owned` of type RecordType
+  return true;
+}
+
+static optional<std::pair<const RecordType*, const RecordType*>>
+shouldConvertClassTypeIntoManagerRecord(Context* context,
+                                        const Type* actualT,
+                                        const Type* formalT) {
+  if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT) ||
+      tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
+    CHPL_ASSERT(formalT->isRecordType() && actualT->isRecordType());
+    return std::make_pair(actualT->toRecordType(), formalT->toRecordType());
+  }
+
+  return empty;
 }
 
 CanPassResult CanPassResult::canInstantiate(Context* context,
@@ -882,13 +888,6 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         // generic actuals are allowed.
         got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
         return got;
-      }
-    } else if (auto formalCt = formalT->toCompositeType()) {
-      auto canPassOwnedShared = canInstantiateOwnedSharedHelper(context,
-                                                                actualCt,
-                                                                formalCt);
-      if (canPassOwnedShared.passes()) {
-        return canPassOwnedShared;
       }
     }
   } else if (auto actualCt = actualT->toCompositeType()) {
@@ -933,12 +932,22 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
 }
 
 CanPassResult CanPassResult::canPass(Context* context,
-                                     const QualifiedType& actualQT,
-                                     const QualifiedType& formalQT) {
+                                     const QualifiedType& actualQTIn,
+                                     const QualifiedType& formalQTIn) {
+  auto actualQT = actualQTIn;
+  auto formalQT = formalQTIn;
 
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
   CHPL_ASSERT(actualT && formalT);
+  if (auto managerRecordPair =
+           shouldConvertClassTypeIntoManagerRecord(context, actualT, formalT)) {
+    actualT = managerRecordPair->first;
+    formalT = managerRecordPair->second;
+    actualQT = QualifiedType(actualQT.kind(), actualT, actualQT.param());
+    formalQT = QualifiedType(formalQT.kind(), formalT, formalQT.param());
+  }
+
 
   // if the formal type is unknown, allow passing
   // this can come up with e.g.
