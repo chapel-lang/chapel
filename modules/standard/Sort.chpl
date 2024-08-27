@@ -413,6 +413,8 @@ proc chpl_check_comparator_keyPart(comparator,
         compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     }
   }
+
+  return true;
 }
 
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
@@ -493,9 +495,10 @@ proc chpl_check_comparator(comparator,
     // that the keyPart method is implemented correctly to satisfy the interface
     if comparatorImplementsKeyPart(comparator) then
       chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, false);
+  } else if chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, doDeprecationCheck) {
+    // the check and error are in chpl_check_comparator_keyPart
   }
   else {
-    chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, doDeprecationCheck);
 
     // TODO: this error should talk about interfaces
     // If we make it this far, the passed comparator was defined incorrectly
