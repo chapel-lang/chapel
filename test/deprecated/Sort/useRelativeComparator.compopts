@@ -1,0 +1,4 @@
+                    # useRelativeComparator.good
+-sresolveDeps=false # useRelativeComparator.good
+-sresolveDeps       # useRelativeComparator-resolved.good
+-sresolveDeps=true  # useRelativeComparator-resolved.good

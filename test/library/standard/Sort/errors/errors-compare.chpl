@@ -23,6 +23,7 @@ proc main() {
 
 // Returns str
 record str { }
+str implements relativeComparator;
 
 proc str.compare(a, b) {
   return 'foobar';
@@ -31,6 +32,7 @@ proc str.compare(a, b) {
 
 // Returns bool
 record boolean { }
+boolean implements relativeComparator;
 
 proc boolean.compare(a, b) {
   return true;
@@ -39,12 +41,19 @@ proc boolean.compare(a, b) {
 
 // Return record 'foobar'
 record rec { }
+rec implements relativeComparator;
 record foobar { };
 
 proc rec.compare(a, b) {
   return new foobar();
 }
 
+// implements keyPartComparator but only defines compare
+record noKeyPart { }
+noKeyPart implements keyPartComparator;
+
+proc noKeyPart.compare(a, b) do
+  return 0;
 
 /* TODO -- unhandled errors
 

@@ -1,0 +1,12 @@
+useRelativeCompator.chpl:44: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp1: relativeComparator').
+useRelativeCompator.chpl:45: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp2: relativeComparator').
+useRelativeCompator.chpl:46: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp3: relativeComparator').
+useRelativeCompator.chpl:49: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp4: relativeComparator').
+useRelativeCompator.chpl:50: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp5: relativeComparator').
+useRelativeCompator.chpl:51: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp6: relativeComparator').
+useRelativeCompator.chpl:54: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp7: relativeComparator').
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: In iterator 'sorted':
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp8: relativeComparator').
+  useRelativeCompator.chpl:55: called as sorted(x: [domain(1,int(64),one)] int(64), comparator: myCmp8)
+note: generic instantiations are underlined in the above callstack
+useRelativeCompator.chpl:56: note: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record myCmp9: relativeComparator').
