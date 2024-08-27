@@ -1022,15 +1022,7 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
     if (untyped->name() == "size") {
       auto ast = parsing::idToAst(context, enumType->id())->toEnum();
       CHPL_ASSERT(ast);
-
-      // There doesn't seem to be a way to get the number of elements in an
-      // enum type directly, so we have to count them ourselves.
-      int numElts = 0;
-      for (auto elt : ast->enumElements()) {
-        (void) elt;
-        numElts++;
-      }
-
+      int numElts = ast->numElements();
       result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
                              IntParam::get(context, numElts));
       return true;
