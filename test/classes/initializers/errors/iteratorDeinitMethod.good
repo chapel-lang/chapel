@@ -1,1 +1,1 @@
-iteratorDeinitMethod.chpl:2: error: iterators can't be the deinit method, please rename this iterator
+iteratorDeinitMethod.chpl:2: error: iterators can't be the 'deinit' method, please rename this iterator

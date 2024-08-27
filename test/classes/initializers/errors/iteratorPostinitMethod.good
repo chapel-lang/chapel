@@ -1,1 +1,1 @@
-iteratorPostinitMethod.chpl:2: error: iterators can't be the postinit method, please rename this iterator
+iteratorPostinitMethod.chpl:2: error: iterators can't be the 'postinit' method, please rename this iterator

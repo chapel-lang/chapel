@@ -1,1 +1,1 @@
-iteratorExitContextMethodCalled.chpl:4: error: iterators can't be the exitContext method, please rename this iterator
+iteratorExitContextMethodCalled.chpl:4: error: iterators can't be the 'exitContext' method, please rename this iterator

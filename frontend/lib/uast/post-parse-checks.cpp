@@ -1957,7 +1957,7 @@ void Visitor::checkIterNames(const Function* node) {
             "iterators can't be initializers, please rename this iterator");
     } else if (chpl::parsing::isSpecialMethodName(name)) {
       error(node,
-            "iterators can't be the %s method, please rename this iterator",
+            "iterators can't be the '%s' method, please rename this iterator",
             name.c_str());
     }
   }
