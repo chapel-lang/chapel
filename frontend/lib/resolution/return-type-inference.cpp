@@ -868,7 +868,7 @@ static bool helpComputeOrderToEnumReturnType(Context* context,
     // Use max value of int64 to represent the fact that the ordinal
     // is invalid (we will run out of enum elements to investigate before
     // we reach this value).
-    int64_t whichValue = std::numeric_limits<int64_t>::max();
+    uint64_t whichValue = std::numeric_limits<uint64_t>::max();
     if (auto intParam = inputParam->toIntParam()) {
       if (intParam->value() >= 0) {
         whichValue = intParam->value();
