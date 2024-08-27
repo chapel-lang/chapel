@@ -237,11 +237,11 @@ class AbsKeyCmpClass {
 
 
 /* Compare Sort by absolute value */
-record AbsCompCmp {
+record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
-class AbsCompCmpClass {
+class AbsCompCmpClass: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmpClass'; }
 }
