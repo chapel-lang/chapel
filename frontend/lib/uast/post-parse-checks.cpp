@@ -1973,6 +1973,9 @@ void Visitor::checkIterNames(const Function* node) {
     } else if (name == USTR("deserialize")) {
       error(node,
             "iterators can't be the deserialize method, please rename this iterator");
+    } else if (name == USTR("hash")) {
+      error(node,
+            "iterators can't be the hash method, please rename this iterator");
     }
   }
   return;
