@@ -51,6 +51,8 @@ using namespace types;
 
 static bool isReservedIdentifier(UniqueString name);
 static const Scope* nextHigherScope(Context* context, const Scope* scope);
+static const ModulePublicSymbols*
+publicSymbolsForModuleIfNotRunning(Context* context, const Scope* modScope);
 
 // Mimics helper in Resolver but without corresponding target constraints.
 static void maybeEmitWarningsForId(Context* context, ID idMention,
@@ -1255,7 +1257,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (checkDecls && checkUseImport && isModule(scope->tag()) &&
       skipPrivateVisibilities && allowCached) {
     //printf("Looking up public symbols for module %s\n", scope->id().str().c_str());
-    modPublicSyms = publicSymbolsForModule(context, scope);
+    modPublicSyms = publicSymbolsForModuleIfNotRunning(context, scope);
     //printf("done\n");
   }
 
@@ -3576,7 +3578,7 @@ static void collectAllPublicContents(Context* context, const Scope* scope,
                       /* resolving */ r,
                       name, config,
                       lookupCheckedScopes, lookupResult,
-                      /* allowCached */ false);
+                      /* allowCached */ true);
 
     // add the lookup results
     auto end = lookupResult.end();
@@ -3631,6 +3633,16 @@ publicSymbolsForModule(Context* context, const Scope* modScope) {
   const owned<ModulePublicSymbols>& r =
     publicSymbolsForModuleQuery(context, modScope);
   return r.get();
+}
+
+static const ModulePublicSymbols*
+publicSymbolsForModuleIfNotRunning(Context* context, const Scope* modScope) {
+  if (context->isQueryRunning(publicSymbolsForModuleQuery,
+                              std::make_tuple(modScope))) {
+    return nullptr;
+  }
+
+  return publicSymbolsForModule(context, modScope);
 }
 
 
