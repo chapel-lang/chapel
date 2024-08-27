@@ -107,13 +107,13 @@ static void testBorrowIds() {
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* field */ false, /* method */ false, /* parenful */ false);
     assert(ids.numIds() == 1);
-    auto foundIds = ids.borrow(0, FlagSet::empty());
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == x);
-    assert(b.numIds() == 1);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, 0, FlagSet::empty());
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == x);
+    assert(foundIds.numIds() == 1);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == x);
       count++;
     }
@@ -126,8 +126,15 @@ static void testBorrowIds() {
                          /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
-    auto foundIds = ids.borrow(f, e);
-    assert(!foundIds);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(foundIds.isEmpty());
+    int count = 0;
+    for (auto id : foundIds) {
+      assert(false && id.str().c_str()); // really just avoiding unused var
+      count++;
+    }
+    assert(count == 0);
   }
   {
     // check one id with filtering
@@ -135,8 +142,9 @@ static void testBorrowIds() {
                          /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(not_method);
-    auto foundIds = ids.borrow(f, e);
-    assert(!foundIds);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(foundIds.isEmpty());
   }
 
   {
@@ -148,13 +156,13 @@ static void testBorrowIds() {
     assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
-    auto foundIds = ids.borrow(f, e);
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == y);
-    assert(b.numIds() == 1);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == y);
+    assert(foundIds.numIds() == 1);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == y);
       count++;
     }
@@ -169,13 +177,13 @@ static void testBorrowIds() {
                  /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     auto e = FlagSet::empty();
-    auto foundIds = ids.borrow(f, e);
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == y);
-    assert(b.numIds() == 1);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == y);
+    assert(foundIds.numIds() == 1);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == y);
       count++;
     }
@@ -190,13 +198,13 @@ static void testBorrowIds() {
                  /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::empty();
-    auto foundIds = ids.borrow(f, e);
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == y);
-    assert(b.numIds() == 2);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == y);
+    assert(foundIds.numIds() == 2);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == x || id == y);
       count++;
     }
@@ -211,13 +219,13 @@ static void testBorrowIds() {
                  /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
-    auto foundIds = ids.borrow(f, e);
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == x);
-    assert(b.numIds() == 1);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == x);
+    assert(foundIds.numIds() == 1);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == x);
       count++;
     }
@@ -232,13 +240,13 @@ static void testBorrowIds() {
                  /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
-    auto foundIds = ids.borrow(f, e);
-    assert(foundIds);
-    auto b = *foundIds;
-    assert(b.firstId() == x);
-    assert(b.numIds() == 1);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(!foundIds.isEmpty());
+    assert(foundIds.firstId() == x);
+    assert(foundIds.numIds() == 1);
     int count = 0;
-    for (auto id : b) {
+    for (auto id : foundIds) {
       assert(id == x);
       count++;
     }
@@ -253,8 +261,9 @@ static void testBorrowIds() {
                  /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub);
-    auto foundIds = ids.borrow(f, e);
-    assert(!foundIds);
+    MatchingIdsWithName foundIds;
+    foundIds.appendMatchingFromOwned(ids, f, e);
+    assert(foundIds.isEmpty());
   }
 }
 

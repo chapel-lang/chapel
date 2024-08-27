@@ -35,7 +35,7 @@
 namespace chpl {
 namespace resolution {
 
-class BorrowedIdsWithName;
+class MatchingIdsWithName;
 
 /** Helper type to store an ID and visibility constraints. */
 class IdAndFlags {
@@ -140,7 +140,7 @@ class IdAndFlags {
  private:
   // friends
   friend class OwnedIdsWithName;
-  friend class BorrowedIdsWithName;
+  friend class MatchingIdsWithName;
 
   // all fields
   ID id_;
@@ -179,6 +179,25 @@ class IdAndFlags {
     }
     flags_ = flags;
   }
+
+  static IdAndFlags createForToplevelModule(ID id) {
+    auto vis = uast::Decl::Visibility::PUBLIC;
+    bool isField = false;
+    bool isMethod = false;
+    bool isParenfulFunction = false;
+    return IdAndFlags(std::move(id),
+                      vis, isField, isMethod, isParenfulFunction);
+  }
+
+  static IdAndFlags createForBuiltin() {
+    auto vis = uast::Decl::Visibility::PUBLIC;
+    bool isField = false;
+    bool isMethod = false;
+    bool isParenfulFunction = false;
+    return IdAndFlags(ID(),
+                      vis, isField, isMethod, isParenfulFunction);
+  }
+
 
   bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
@@ -223,15 +242,19 @@ class IdAndFlags {
            excludeFlagSet.noneMatch(haveFlags);
   }
 
+  bool matchesFilter(Flags filterFlags, const FlagSet& excludeFlagSet) {
+    return matchFilter(flags_, filterFlags, excludeFlagSet);
+  }
+
   static std::string flagsToString(Flags flags);
 };
 
 /**
   Collects IDs with a particular name. These can be referred to
-  by a BorrowedIdsWithName in a way that avoids copies.
+  by a MatchingIdsWithName in a way that avoids copies.
  */
 class OwnedIdsWithName {
- friend class BorrowedIdsWithName;
+ friend class MatchingIdsWithName;
 
  private:
   // If there is just one ID with this name, it is stored here,
@@ -324,8 +347,8 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  optional<BorrowedIdsWithName>
-  borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
+  //MatchingIdsWithName
+  //borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -336,7 +359,7 @@ class OwnedIdsWithName {
 /**
   Contains IDs with a particular name that matched some filter.
  */
-class BorrowedIdsWithName { // TODO: rename to MatchingIdsWithName
+class MatchingIdsWithName {
  // To allow us to use the internals of OwnedIdsWithName
  friend class OwnedIdsWithName;
 
@@ -353,48 +376,45 @@ class BorrowedIdsWithName { // TODO: rename to MatchingIdsWithName
     return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlagSet);
   }
 
-  void appendIdsFromOwned(const OwnedIdsWithName& ownedIds,
-                          IdAndFlags::Flags filterFlags,
-                          const IdAndFlags::FlagSet& excludeFlagSet);
-
-  /** Construct a BorrowedIdsWithName referring to the same IDs
+  /** Construct a MatchingIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.  */
-  BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
+  MatchingIdsWithName(const OwnedIdsWithName& ownedIds,
                       IdAndFlags::Flags filterFlags,
                       const IdAndFlags::FlagSet& excludeFlagSet) {
-    appendIdsFromOwned(ownedIds, filterFlags, excludeFlagSet);
+    appendMatchingFromOwned(ownedIds, filterFlags, excludeFlagSet);
   }
 
-  /** Construct a BorrowedIdsWithName referring to one ID. Requires
+  /** Construct a MatchingIdsWithName referring to one ID. Requires
       that the ID will not be filtered out according to the passed
       settings arePrivateIdsIgnored and onlyMethodsFields.
     */
-  BorrowedIdsWithName(IdAndFlags idv,
+  MatchingIdsWithName(IdAndFlags idv,
                       IdAndFlags::Flags filterFlags,
                       const IdAndFlags::FlagSet& excludeFlagSet) {
     idvs_.push_back(std::move(idv));
     CHPL_ASSERT(isIdVisible(idvs_.back(), filterFlags, excludeFlagSet));
   }
+
  public:
   /**
     Iterator that skips invisible entries from the list of borrowed IDs.
    */
-  class BorrowedIdsWithNameIter {
+  class MatchingIdsWithNameIter {
     // To allow use of isIdVisible
-    friend class BorrowedIdsWithName;
+    friend class MatchingIdsWithName;
    private:
     /** The ID this iterator is pointing too. */
     const IdAndFlags* currentIdv;
 
-    BorrowedIdsWithNameIter(const IdAndFlags* currentIdv)
+    MatchingIdsWithNameIter(const IdAndFlags* currentIdv)
       : currentIdv(currentIdv) {
     }
 
    public:
-    bool operator!=(const BorrowedIdsWithNameIter& other) const {
+    bool operator!=(const MatchingIdsWithNameIter& other) const {
       return currentIdv != other.currentIdv;
     }
-    BorrowedIdsWithNameIter& operator++() {
+    MatchingIdsWithNameIter& operator++() {
       currentIdv++;
       return *this;
     }
@@ -409,41 +429,75 @@ class BorrowedIdsWithName { // TODO: rename to MatchingIdsWithName
     using iterator_category = std::forward_iterator_tag;
   };
 
-  static optional<BorrowedIdsWithName>
+  static MatchingIdsWithName
+  createWithSingleIdAndFlags(IdAndFlags idv,
+                             IdAndFlags::Flags filterFlags,
+                             const IdAndFlags::FlagSet& excludeFlagSet) {
+    if (isIdVisible(idv, filterFlags, excludeFlagSet)) {
+      return MatchingIdsWithName(std::move(idv),
+                                 filterFlags, std::move(excludeFlagSet));
+    }
+    return MatchingIdsWithName();
+  }
+
+  static MatchingIdsWithName
+  createWithBuiltinId() {
+    IdAndFlags::Flags filterFlags = 0;
+    IdAndFlags::FlagSet excludeFlagSet;
+    return createWithSingleIdAndFlags(IdAndFlags::createForBuiltin(),
+                                      filterFlags, excludeFlagSet);
+  }
+
+  static MatchingIdsWithName
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isField, bool isMethod, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,
                      const IdAndFlags::FlagSet& excludeFlagSet) {
 
-    auto idAndVis = IdAndFlags(id, vis, isField, isMethod, isParenfulFunction);
-    if (isIdVisible(idAndVis, filterFlags, excludeFlagSet)) {
-      return BorrowedIdsWithName(std::move(idAndVis),
-                                 filterFlags, std::move(excludeFlagSet));
+    auto idv = IdAndFlags(std::move(id),
+                          vis, isField, isMethod, isParenfulFunction);
+    return createWithSingleIdAndFlags(std::move(idv),
+                                      filterFlags, excludeFlagSet);
+  }
+
+  /** Construct a empty MatchingIdsWithName containing no IDs. */
+  MatchingIdsWithName() { }
+
+  /** Append an IdAndFlags if it matches filterFlags / excludeFlagSet.
+      Returns 'true' if it matched and was appended. */
+  bool appendIfMatching(IdAndFlags idv, IdAndFlags::Flags filterFlags,
+                        const IdAndFlags::FlagSet& excludeFlagSet) {
+    if (isIdVisible(idv, filterFlags, excludeFlagSet)) {
+      idvs_.push_back(std::move(idv));
+      return true;
     }
-    return chpl::empty;
+
+    return false;
   }
 
-  static BorrowedIdsWithName
-  createWithToplevelModuleId(ID id) {
-    auto vis = uast::Decl::Visibility::PUBLIC;
-    bool isField = false;
-    bool isMethod = false;
-    bool isParenfulFunction = false;
-    IdAndFlags::Flags filterFlags = 0;
-    IdAndFlags::FlagSet excludeFlagSet;
-    auto maybeIds = createWithSingleId(std::move(id), vis,
-                                       isField, isMethod, isParenfulFunction,
-                                       filterFlags, std::move(excludeFlagSet));
-    CHPL_ASSERT((bool) maybeIds);
-    return *maybeIds;
+  /** Append each IdAndFlags in ownedIds that matches
+      filterFlags / excludeFlag set. Returns 'true' if any
+      matched and were appended. */
+  bool appendMatchingFromOwned(const OwnedIdsWithName& ownedIds,
+                               IdAndFlags::Flags filterFlags,
+                               const IdAndFlags::FlagSet& excludeFlagSet);
+
+  /** Append an IdAndFlags. */
+  void append(IdAndFlags idv) {
+    idvs_.push_back(std::move(idv));
   }
 
-  static BorrowedIdsWithName
-  createWithBuiltinId() {
-    // Implementation only happens to coincide; there is no philosophical
-    // relation between a top-level module ID and a builtin ID.
-    return createWithToplevelModuleId(ID());
-  }
+  /** Remove any duplicates IDs present here. */
+  void removeDuplicateIds(); 
+
+  /** Truncate to a particular number of IDs. Must be < numIds(). */
+  void truncate(int sz);
+
+  /** Remove all IDs. */ 
+  void clear();
+
+  /** Returns 'true' if this MatchingIdsWithName has no IDs */
+  bool isEmpty() const { return idvs_.empty(); }
 
   /** Return the number of IDs stored here */
   int numIds() const {
@@ -460,24 +514,42 @@ class BorrowedIdsWithName { // TODO: rename to MatchingIdsWithName
     return idvs_.front();
   }
 
+  /** Return the i'th ID in the list */
+  const ID& id(int i) const {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i].id();
+  }
+
+  /** Return the i'th IdAndFlags in the list */
+  const IdAndFlags& idAndFlags(int i) const {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i];
+  }
+
   /** Returns 'true' if the list contains only IDs that represent
       methods or fields. */
   bool containsOnlyMethodsOrFields() const;
 
-  BorrowedIdsWithNameIter begin() const {
+  MatchingIdsWithNameIter begin() const {
+    if (idvs_.empty()) {
+      return MatchingIdsWithNameIter(nullptr);
+    }
     const IdAndFlags* ptr = &idvs_.front();
-    return BorrowedIdsWithNameIter(ptr);
+    return MatchingIdsWithNameIter(ptr);
   }
 
-  BorrowedIdsWithNameIter end() const {
+  MatchingIdsWithNameIter end() const {
+    if (idvs_.empty()) {
+      return MatchingIdsWithNameIter(nullptr);
+    }
     const IdAndFlags* ptr = &idvs_.back();
-    return BorrowedIdsWithNameIter(ptr + 1);
+    return MatchingIdsWithNameIter(ptr + 1);
   }
 
-  bool operator==(const BorrowedIdsWithName& other) const {
+  bool operator==(const MatchingIdsWithName& other) const {
     return idvs_ == other.idvs_;
   }
-  bool operator!=(const BorrowedIdsWithName& other) const {
+  bool operator!=(const MatchingIdsWithName& other) const {
     return !(*this == other);
   }
 
@@ -511,7 +583,7 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 
 bool lookupInDeclMap(const DeclMap& declared,
                      UniqueString name,
-                     std::vector<BorrowedIdsWithName>& result,
+                     MatchingIdsWithName& result,
                      IdAndFlags::Flags filterFlags,
                      const IdAndFlags::FlagSet& excludeFlags);
 
@@ -633,7 +705,7 @@ class Scope {
       append the relevant BorrowedIdsToName the the vector.
       Returns true if something was appended. */
   bool lookupInScope(UniqueString name,
-                     std::vector<BorrowedIdsWithName>& result,
+                     MatchingIdsWithName& result,
                      IdAndFlags::Flags filterFlags,
                      const IdAndFlags::FlagSet& excludeFlagSet) const {
     return lookupInDeclMap(declared_, name, result,
@@ -1279,7 +1351,7 @@ class ModulePublicSymbols {
   const DeclMap& syms() const { return syms_; }
 
   bool lookupInModule(UniqueString name,
-                      std::vector<BorrowedIdsWithName>& result,
+                      MatchingIdsWithName& result,
                       IdAndFlags::Flags filterFlags,
                       const IdAndFlags::FlagSet& excludeFlags) const {
     return lookupInDeclMap(syms_, name, result, filterFlags, excludeFlags);
@@ -1359,9 +1431,9 @@ template<> struct hash<chpl::resolution::IdAndFlags::FlagSet>
   }
 };
 
-template<> struct hash<chpl::resolution::BorrowedIdsWithName>
+template<> struct hash<chpl::resolution::MatchingIdsWithName>
 {
-  size_t operator()(const chpl::resolution::BorrowedIdsWithName& key) const {
+  size_t operator()(const chpl::resolution::MatchingIdsWithName& key) const {
     return key.hash();
   }
 };

@@ -3124,21 +3124,19 @@ isCandidateApplicableInitialQuery(Context* context,
 static const std::pair<CandidatesAndForwardingInfo,
                        std::vector<ApplicabilityResult>>&
 filterCandidatesInitialGatherRejected(Context* context,
-                                      std::vector<BorrowedIdsWithName> lst,
+                                      MatchingIdsWithName lst,
                                       CallInfo call, bool gatherRejected) {
   QUERY_BEGIN(filterCandidatesInitialGatherRejected, context, lst, call, gatherRejected);
 
   CandidatesAndForwardingInfo matching;
   std::vector<ApplicabilityResult> rejected;
 
-  for (const BorrowedIdsWithName& ids : lst) {
-    for (const ID& id : ids) {
-      auto s = isCandidateApplicableInitialQuery(context, id, call);
-      if (s.success()) {
-        matching.addCandidate(s.candidate());
-      } else if (gatherRejected) {
-        rejected.push_back(s);
-      }
+  for (const ID& id : lst) {
+    auto s = isCandidateApplicableInitialQuery(context, id, call);
+    if (s.success()) {
+      matching.addCandidate(s.candidate());
+    } else if (gatherRejected) {
+      rejected.push_back(s);
     }
   }
 
@@ -3148,7 +3146,7 @@ filterCandidatesInitialGatherRejected(Context* context,
 
 const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
+                        MatchingIdsWithName lst,
                         CallInfo call) {
   auto& result = filterCandidatesInitialGatherRejected(context, std::move(lst),
                                                        call, /* gatherRejected */ false);
@@ -3916,7 +3914,7 @@ considerCompilerGeneratedCandidates(Context* context,
   candidates.addCandidate(instantiated.candidate());
 }
 
-static std::vector<BorrowedIdsWithName>
+static MatchingIdsWithName
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,

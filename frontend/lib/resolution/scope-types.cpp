@@ -156,21 +156,22 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-optional<BorrowedIdsWithName>
+/*
+MatchingIdsWithName
 OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
                          const IdAndFlags::FlagSet& excludeFlagSet) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
-    return chpl::empty;
+    return MatchingIdsWithName();
   }
 
-  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
-    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
+  if (MatchingIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
+    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
-    return chpl::empty;
+    return MatchingIdsWithName();
   }
 
   // Are all of the filter flags present in flagsAnd?
@@ -180,25 +181,33 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
       excludeFlagSet.noneMatch(flagsOr_)) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
-    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
+    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
   }
 
   // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
+    if (!MatchingIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
       continue;
 
-    // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
+    // Found a visible ID! Return a MatchingIds referring to the whole thing
+    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
   }
 
-  // No ID was visible, so we can't borrow.
-  return chpl::empty;
+  // No ID was visible, so return empty.
+  return MatchingIdsWithName();
 }
+*/
 
-void BorrowedIdsWithName::appendIdsFromOwned(const OwnedIdsWithName& ownedIds,
-                                             IdAndFlags::Flags filterFlags,
-                                             const IdAndFlags::FlagSet& excludeFlagSet){
+bool MatchingIdsWithName::appendMatchingFromOwned(
+                                    const OwnedIdsWithName& ownedIds,
+                                    IdAndFlags::Flags filterFlags,
+                                    const IdAndFlags::FlagSet& excludeFlagSet) {
+  // Are all of the filter flags present in flagsOr?
+  // If not, it is not possible for this to match.
+  if ((ownedIds.flagsOr_ & filterFlags) != filterFlags) {
+    return false;
+  }
+
   const IdAndFlags* beginIds = nullptr;
   const IdAndFlags* endIds = nullptr;
   if (ownedIds.moreIdvs_ == nullptr) {
@@ -211,14 +220,51 @@ void BorrowedIdsWithName::appendIdsFromOwned(const OwnedIdsWithName& ownedIds,
     endIds = last + 1;
   }
 
+  bool anyAppended = false;
   for (auto cur = beginIds; cur != endIds; ++cur) {
     if (isIdVisible(*cur, filterFlags, excludeFlagSet)) {
       idvs_.push_back(*cur);
+      anyAppended = true;
     }
+  }
+
+  return anyAppended;
+}
+
+void MatchingIdsWithName::removeDuplicateIds() {
+  std::unordered_set<IdAndFlags> s;
+
+  // remove duplicate IDs in the idvs_ vector
+  size_t end = idvs_.size();
+  size_t cur = 0; // the position to fill in
+  for (size_t i = 0; i < end; i++) {
+    auto pair = s.insert(idvs_[i]);
+    if (pair.second == true) {
+      // It was inserted, so it was unique.
+      // Include it in the result
+      // by storing it into the element 'cur'
+      if (i != cur) {
+        idvs_[cur] = idvs_[i];
+      }
+      cur++;
+    }
+  }
+
+  if (cur != end) {
+    idvs_.truncate(cur);
   }
 }
 
-bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
+void MatchingIdsWithName::truncate(int sz) {
+  CHPL_ASSERT(0 <= sz && sz <= (int) idvs_.size());
+  idvs_.truncate(sz);
+}
+
+void MatchingIdsWithName::clear() {
+  idvs_.clear();
+}
+
+bool MatchingIdsWithName::containsOnlyMethodsOrFields() const {
   for (const auto& idv : idvs_) {
     if (!idv.isMethodOrField()) {
       return false;
@@ -228,7 +274,7 @@ bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
   return true;
 }
 
-void BorrowedIdsWithName::stringify(std::ostream& ss,
+void MatchingIdsWithName::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   for (const auto& elt : *this) {
     elt.stringify(ss, stringKind);
@@ -237,18 +283,13 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
 
 bool lookupInDeclMap(const DeclMap& declared,
                      UniqueString name,
-                     std::vector<BorrowedIdsWithName>& result,
+                     MatchingIdsWithName& result,
                      IdAndFlags::Flags filterFlags,
                      const IdAndFlags::FlagSet& excludeFlags) {
   auto search = declared.find(name);
   if (search != declared.end()) {
-    // There might not be any IDs that are visible to us, so borrow returns
-    // an optional list.
-    auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
-    if (borrowedIds) {
-      result.push_back(std::move(*borrowedIds));
-      return true;
-    }
+    return result.appendMatchingFromOwned(search->second,
+                                          filterFlags, excludeFlags);
   }
   return false;
 }
@@ -475,7 +516,7 @@ void ModulePublicSymbols::stringify(std::ostream& ss,
 }
 
 IMPLEMENT_DUMP(OwnedIdsWithName);
-IMPLEMENT_DUMP(BorrowedIdsWithName);
+IMPLEMENT_DUMP(MatchingIdsWithName);
 IMPLEMENT_DUMP(Scope);
 IMPLEMENT_DUMP(VisibilitySymbols);
 IMPLEMENT_DUMP(ResolvedVisibilityScope);

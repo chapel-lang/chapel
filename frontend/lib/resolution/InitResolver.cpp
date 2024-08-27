@@ -817,11 +817,10 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   return false;
 }
 
-ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
-  if (vec.size() != 2) return ID();
-  if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
-  auto one = vec[0].firstId();
-  auto two = vec[1].firstId();
+ID InitResolver::solveNameConflictByIgnoringField(const MatchingIdsWithName& vec) {
+  if (vec.numIds() != 2) return ID();
+  auto one = vec.id(0);
+  auto two = vec.id(1);
   CHPL_ASSERT(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
@@ -833,11 +832,11 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   auto parenlessInfo = Resolver::ParenlessOverloadInfo();
   auto scope = initResolver_.methodReceiverScopes();
-  auto vec = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
+  auto ids = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
 
   // Handle and exit early if there were no ambiguities.
-  if (vec.size() == 1 && vec[0].numIds() == 1) {
-    auto& id = vec[0].firstId();
+  if (ids.numIds() == 1) {
+    auto& id = ids.firstId();
     if (parsing::idIsField(ctx_, id)) {
       auto state = fieldStateFromId(id);
       auto qt = state->qt;
@@ -849,7 +848,8 @@ bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   }
 
   // If there are two names and one is a field, get the other name.
-  auto id = solveNameConflictByIgnoringField(vec);
+  // TODO: is this still needed?
+  auto id = solveNameConflictByIgnoringField(ids);
   if (!id.isEmpty()) {
     CHPL_ASSERT(!parsing::idIsField(ctx_, id));
     const bool localGenericToUnknown = true;
