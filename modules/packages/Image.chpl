@@ -553,7 +553,7 @@ module Image {
       const width = cols;
       const height = rows;
       const nBytes = width * height * mode;
-      var data = allocate(uint(8), nBytes);
+      var data = allocate(uint(8), nBytes.safeCast(c_size_t));
       forall idx in 0..<(rows*cols) {
         const (i,j) = dom.orderToIndex(idx);
         const offset = idx * mode;
