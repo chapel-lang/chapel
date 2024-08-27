@@ -57,12 +57,16 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
 }
 
 static bool
-areOverloadsPresentInDefiningScope(Context* context, const Type* type,
+areOverloadsPresentInDefiningScope(Context* context,
+                                   const Type* type,
+                                   QualifiedType::Kind kind,
                                    UniqueString name) {
   const Scope* scopeForReceiverType = nullptr;
 
   if (auto compType = type->getCompositeType()) {
     scopeForReceiverType = scopeForId(context, compType->id());
+  } else if (auto enumType = type->toEnumType()) {
+    scopeForReceiverType = scopeForId(context, enumType->id());
   }
 
   // there is no defining scope
@@ -78,7 +82,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
-  auto haveQt = QualifiedType(QualifiedType::INIT_RECEIVER, type);
+  auto haveQt = QualifiedType(kind, type);
 
   // loop through IDs and see if any are methods or operators (method or
   // standalone) on the same type
@@ -130,7 +134,7 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   if (isNameOfCompilerGeneratedMethod(name) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
-    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+    if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
   }
@@ -159,6 +163,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   } else if (type->isCPtrType()) {
     if (name == "eltType") {
+      return true;
+    }
+  } else if (type->isEnumType()) {
+    if (name == "size") {
       return true;
     }
   }
@@ -235,7 +243,7 @@ static void buildInitArgs(Context* context,
         // TODO: It would be nice to be able to generate a nice error message
         //   for the user if they try and pass arguments for the parent in
         //   this case.
-        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, USTR("init"))) {
+        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, QualifiedType::INIT_RECEIVER, USTR("init"))) {
           const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
           auto& rf = fieldsForTypeDecl(context, parent, defaultsPolicy);
           buildInitArgs(context, parent, rf, ufsFormals, formalTypes);
@@ -835,6 +843,47 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   return result;
 }
 
+static const TypedFnSignature*
+generateEnumMethod(Context* context,
+                   const EnumType* et,
+                   UniqueString name) {
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR("size") &&
+      !areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
+    // TODO: we should really have a way to just set the return type here
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    std::vector<QualifiedType> formalTypes;
+
+    formals.push_back(
+        UntypedFnSignature::FormalDetail(USTR("this"),
+          UntypedFnSignature::DK_NO_DEFAULT,
+          nullptr));
+    formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+    auto ufs = UntypedFnSignature::get(context,
+        /*id*/ et->id(),
+        /*name*/ name,
+        /*isMethod*/ true,
+        /*isTypeConstructor*/ false,
+        /*isCompilerGenerated*/ true,
+        /*throws*/ false,
+        /*idTag*/ parsing::idToTag(context, et->id()),
+        /*kind*/ uast::Function::Kind::PROC,
+        /*formals*/ std::move(formals),
+        /*whereClause*/ nullptr);
+
+    // now build the other pieces of the typed signature
+    result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+        TypedFnSignature::WHERE_NONE,
+        /* needsInstantiation */ false,
+        /* instantiatedFrom */ nullptr,
+        /* parentFn */ nullptr,
+        /* formalsInstantiated */ Bitmap());
+  }
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
@@ -846,7 +895,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isCPtrType());
+    CHPL_ASSERT(compType || type->isCPtrType() || type->isEnumType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -874,6 +923,8 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       }
     } else if (type->isCPtrType()) {
       result = generateCPtrMethod(context, receiverType, name);
+    } else if (auto enumType = type->toEnumType()) {
+      result = generateEnumMethod(context, enumType, name);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
@@ -990,6 +1041,122 @@ getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
   }
   return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
 }
+
+static const TypedFnSignature* const&
+getOrderToEnumFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getOrderToEnumFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "i"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      AnyIntegralType::get(context)));
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "et"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__orderToEnum"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return QUERY_END(ret);
+}
+
+static const TypedFnSignature* const&
+getEnumToOrderFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getEnumToOrderFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "e"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__enumToOrder"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto formalsInstantiated = Bitmap();
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ paramVersion,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return QUERY_END(ret);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedFunction(Context* context,
+                             const CallInfo& ci) {
+  if (ci.name() == "chpl__orderToEnum") {
+    if (ci.numActuals() == 2) {
+      auto& firstQt = ci.actual(0).type();
+      auto& secondQt = ci.actual(1).type();
+
+      auto secondType = secondQt.type();
+      if (secondType && secondType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getOrderToEnumFunction(context, paramVersion, secondType->toEnumType());
+      }
+    }
+  } else if (ci.name() == "chpl__enumToOrder") {
+    if (ci.numActuals() == 1) {
+      auto& firstQt = ci.actual(0).type();
+
+      auto firstType = firstQt.type();
+      if (firstType && firstType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getEnumToOrderFunction(context, paramVersion, firstType->toEnumType());
+      }
+    }
+  }
+  return nullptr;
+}
+
 
 static const TypedFnSignature* const&
 getCompilerGeneratedBinaryOpQuery(Context* context,

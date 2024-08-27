@@ -4502,13 +4502,20 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     auto low = lowParam ? lowParam->toIntParam() : nullptr;
     auto hi = hiParam ? hiParam->toIntParam() : nullptr;
 
+    int hiVal = hi->value();
+    if (rng->opKind() == Range::OPEN_HIGH) {
+      // TODO: overflow issue here; if hiVal is INT_MIN, subtracting would
+      // overflow.
+      hiVal--;
+    }
+
     if (low == nullptr || hi == nullptr) {
       context->error(forLoop, "param loops may only iterate over range literals with integer bounds");
       return false;
     }
 
     std::vector<ResolutionResultByPostorderID> loopResults;
-    for (int64_t i = low->value(); i <= hi->value(); i++) {
+    for (int64_t i = low->value(); i <= hiVal; i++) {
       ResolutionResultByPostorderID bodyResults;
       auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 
