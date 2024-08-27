@@ -3433,6 +3433,7 @@ private inline proc reverseKeyPartStatus(status) do
 
 // TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
+// TODO: @unstable("keyPartComparator is not yet stable")
 interface keyPartComparator {
   /*
   proc Self.keyPart(elt, i: int): (keyPartStatus, integral);
@@ -3453,6 +3454,7 @@ config param useKeyPartStatus = false;
 
 // TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
+// TODO: @unstable("relativeComparator is not yet stable")
 interface relativeComparator {
   /*
   // return type must be signed integral
@@ -3468,7 +3470,7 @@ private proc comparatorImplementsRelative(cmp) param do
 //       reserve the identifier.
 //       See https://github.com/chapel-lang/chapel/issues/25554.
 // TODO: this should be unstable, but can't apply attributes to interfaces
-// @unstable("This is a placeholder for a future feature")
+// @unstable("sortComparator is not yet stable")
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/
