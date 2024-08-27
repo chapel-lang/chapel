@@ -1144,7 +1144,6 @@ getCompilerGeneratedFunction(Context* context,
       }
     }
   } else if (ci.name() == "chpl__enumToOrder") {
-    debuggerBreakHere();
     if (ci.numActuals() == 1) {
       auto& firstQt = ci.actual(0).type();
 
