@@ -22,8 +22,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/BasicClassType.h"
 #include "chpl/types/ClassType.h"
+#include "chpl/types/ClassTypeDecorator.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/NamedDecl.h"
@@ -184,20 +186,42 @@ const RecordType* CompositeType::getLocaleIDType(Context* context) {
                          SubstitutionsMap());
 }
 
-const RecordType* CompositeType::getOwnedRecordType(Context* context) {
-  auto name = UniqueString::get(context, "_owned");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "OwnedObject", "_owned");
+static const RecordType* tryCreateManagerRecord(Context* context,
+                                                const char* moduleName,
+                                                const char* recordName,
+                                                const BasicClassType* bct) {
+  const RecordType* instantiatedFrom = nullptr;
+  SubstitutionsMap subs;
+  if (bct != nullptr) {
+    instantiatedFrom = tryCreateManagerRecord(context, moduleName, recordName, nullptr);
+
+    auto fields = fieldsForTypeDecl(context, instantiatedFrom, DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) != "chpl_t") continue;
+      auto ct = ClassType::get(context, bct, /* manager */ nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
+
+      subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
+      break;
+    }
+    if (fields.numFields() == 0) {
+      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context, instantiatedFrom->id()));
+      return nullptr;
+    }
+  }
+
+  auto name = UniqueString::get(context, recordName);
+  auto id = parsing::getSymbolFromTopLevelModule(context, moduleName, recordName);
   return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
+                         instantiatedFrom,
+                         std::move(subs));
 }
 
-const RecordType* CompositeType::getSharedRecordType(Context* context) {
-  auto name = UniqueString::get(context, "_shared");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "SharedObject", "_shared");
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
+const RecordType* CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, "OwnedObject", "_owned", bct);
+}
+
+const RecordType* CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, "SharedObject", "_shared", bct);
 }
 
 bool CompositeType::isMissingBundledType(Context* context, ID id) {

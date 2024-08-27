@@ -226,10 +226,10 @@ class CompositeType : public Type {
   static const RecordType* getLocaleIDType(Context* context);
 
   /** Get the record _owned implementing owned */
-  static const RecordType* getOwnedRecordType(Context* context);
+  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
 
   /** Get the record _shared implementing shared */
-  static const RecordType* getSharedRecordType(Context* context);
+  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
 
   /** When compiling without a standard library (for testing purposes),
       the compiler code needs to work around the fact that there
