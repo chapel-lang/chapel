@@ -198,11 +198,19 @@ static void test5() {
   setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
+    class C { var y : int; }
+
     proc foo(arg: _owned) {
     }
 
-    // compiler-generate 'borrow' method
-    class C { var y : int; }
+    proc bar(arg: owned) {
+    }
+
+    proc baz(type arg: _owned(C)) {
+    }
+
+    proc buz(type arg: owned C) {
+    }
 
     var obj = new C(5);
     var x = obj.borrow();
@@ -215,6 +223,9 @@ static void test5() {
 
     var obj4 = new C(42);
     foo(obj4);
+    bar(obj4);
+    baz(obj4.type);
+    buz(obj4.type);
 
     )""";
 
@@ -224,7 +235,7 @@ static void test5() {
   auto init = var->initExpression();
   assert(init);
   auto qt = results.byAst(init).type();
-  auto c = m->stmt(2)->toClass();
+  auto c = m->stmt(0)->toClass();
   assert(c);
   auto it = initialTypeForTypeDecl(context, c->id());
   auto bct = it->getCompositeType()->toBasicClassType();
@@ -232,11 +243,10 @@ static void test5() {
 
   auto borrowedNonNil = ClassType::get(context, bct, nullptr,
                                        ClassTypeDecorator(
-                                         ClassTypeDecorator::BORROWED_NONNIL));
+                                        ClassTypeDecorator::BORROWED_NONNIL));
 
   assert(qt.type() == borrowedNonNil);
-
-  assert(guard.numErrors() == 0);
+  assert(guard.realizeErrors() == 0);
 }
 
 // test that we can map _shared to shared
@@ -249,11 +259,18 @@ static void test6() {
   setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program = R"""(
+    class C { var y : int; }
     proc foo(arg: _shared) {
     }
 
-    // compiler-generate 'borrow' method
-    class C { var y : int; }
+    proc bar(arg: shared) {
+    }
+
+    proc baz(type arg: _shared(C)) {
+    }
+
+    proc buz(type arg: shared C) {
+    }
 
     var obj = new shared C(5);
     var x = obj.borrow();
@@ -265,6 +282,9 @@ static void test6() {
 
     var obj4 = new shared C(42);
     foo(obj4);
+    bar(obj4);
+    baz(obj4.type);
+    buz(obj4.type);
 
     )""";
 
@@ -274,7 +294,7 @@ static void test6() {
   auto init = var->initExpression();
   assert(init);
   auto qt = results.byAst(init).type();
-  auto c = m->stmt(2)->toClass();
+  auto c = m->stmt(0)->toClass();
   assert(c);
   auto it = initialTypeForTypeDecl(context, c->id());
   auto bct = it->getCompositeType()->toBasicClassType();
@@ -282,7 +302,7 @@ static void test6() {
 
   auto borrowedNonNil = ClassType::get(context, bct, nullptr,
                                        ClassTypeDecorator(
-                                         ClassTypeDecorator::BORROWED_NONNIL));
+                                        ClassTypeDecorator::BORROWED_NONNIL));
   assert(qt.type() == borrowedNonNil);
 
   assert(guard.numErrors() == 0);
