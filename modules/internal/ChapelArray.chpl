@@ -35,6 +35,7 @@ module ChapelArray {
   use ChapelPrivatization;
   use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   use ChapelArrayViewElision;
+  use ChapelNumLocales;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are

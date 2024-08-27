@@ -35,6 +35,7 @@ module ChapelLocale {
   import HaltWrappers;
   use CTypes;
   use ChapelBase;
+  use ChapelNumLocales;
 
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),

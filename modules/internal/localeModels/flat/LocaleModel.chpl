@@ -35,6 +35,7 @@ module LocaleModel {
   use ChapelBase;
   use ChapelIOSerialize;
   use ChapelLocale;
+  use ChapelNumLocales;
   use IO;
 
   //
