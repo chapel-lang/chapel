@@ -1949,7 +1949,7 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
 }
 
 void Visitor::checkIterNames(const Function* node) {
-  if (node->kind() == Function::ITER) {
+  if (node->kind() == Function::ITER && node->isMethod()) {
     auto name = node->name();
 
     if (name == USTR("init")) {
