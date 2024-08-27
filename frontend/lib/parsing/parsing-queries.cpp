@@ -2004,6 +2004,16 @@ Module::Kind idToModuleKind(Context* context, ID id) {
   return getModuleKindQuery(context, modID);
 }
 
+bool isSpecialMethodName(UniqueString name) {
+  if (name == USTR("init") || name == USTR("deinit") ||
+      name == USTR("postinit") || name == USTR("enterContext") ||
+      name == USTR("exitContext") || name == USTR("serialize") ||
+      name == USTR("deserialize") || name == USTR("hash")) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 } // end namespace parsing
 } // end namespace chpl

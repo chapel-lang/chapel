@@ -1955,27 +1955,10 @@ void Visitor::checkIterNames(const Function* node) {
     if (name == USTR("init")) {
       error(node,
             "iterators can't be initializers, please rename this iterator");
-    } else if (name == USTR("deinit")) {
+    } else if (chpl::parsing::isSpecialMethodName(name)) {
       error(node,
-            "iterators can't be the deinit method, please rename this iterator");
-    } else if (name == USTR("postinit")) {
-      error(node,
-            "iterators can't be the postinit method, please rename this iterator");
-    } else if (name == USTR("enterContext")) {
-      error(node,
-            "iterators can't be the enterContext method, please rename this iterator");
-    } else if (name == USTR("exitContext")) {
-      error(node,
-            "iterators can't be the exitContext method, please rename this iterator");
-    } else if (name == USTR("serialize")) {
-      error(node,
-            "iterators can't be the serialize method, please rename this iterator");
-    } else if (name == USTR("deserialize")) {
-      error(node,
-            "iterators can't be the deserialize method, please rename this iterator");
-    } else if (name == USTR("hash")) {
-      error(node,
-            "iterators can't be the hash method, please rename this iterator");
+            "iterators can't be the %s method, please rename this iterator",
+            name.c_str());
     }
   }
   return;
