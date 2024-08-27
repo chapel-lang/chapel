@@ -3402,6 +3402,13 @@ private proc comparatorImplementsKeyPart(cmp) param do
 @chpldoc.nodoc
 config param useKeyPartStatus = false;
 
+// TODO: this represents the mutually exclusive OR of keyComparator,
+//       keyPartComparator, and relativeComparator
+//       This cannot be represented in Chapel today, but we still want to
+//       reserve the identifier.
+//       See https://github.com/chapel-lang/chapel/issues/25554.
+interface sortComparator { }
+
 /* Default comparator used in sort functions.*/
 record DefaultComparator: keyPartComparator {
 
