@@ -32,8 +32,8 @@ export SHMEM_SYMMETRIC_SIZE=1GB
 PROBLEM_SIZE=67108864
 for x in "${locales[@]}"; do
   rm -f ./out.txt
-  NUM_TASKS=$(($x*128))
-  runAndLog srun --nodes $x --exclusive --ntasks=$NUM_TASKS --ntasks-per-node=128 ./isx.weak_iso $PROBLEM_SIZE out.txt
+  NUM_TASKS=$(($x*$CHPLEXP_THREADS_PER_NODE))
+  runAndLog srun --nodes $x --exclusive --ntasks=$NUM_TASKS --ntasks-per-node=$CHPLEXP_THREADS_PER_NODE ./isx.weak_iso $PROBLEM_SIZE out.txt
   cat out.txt
 done
 

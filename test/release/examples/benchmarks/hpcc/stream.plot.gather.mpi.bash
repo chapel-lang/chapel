@@ -9,43 +9,6 @@ locales=( 2 4 8 16 32 64 128 256 512 1024)
 capLocales "$CHPLEXP_MAX_LOCALES"
 
 # -----------------------------------------------------------------------------
-# Download and setup
-# -----------------------------------------------------------------------------
-#if [ ! -d "hpcc" ]; then
-#  mkdir hpcc
-#  pushd hpcc 
-#  wget https://hpcchallenge.org/projectsfiles/hpcc/download/hpcc-1.5.0.tar.gz
-#  tar -xzf hpcc-1.5.0.tar.gz
-#  pushd hpcc-1.5.0
-#  pushd hpl
-#  cp ../../../Make.CrayXE Make.unix
-#  popd
-#  echo "#include <omp.h>" >> FFT/hpccfft.h
-#  popd
-#  #size=$(echo "$CHPLEXP_SIZE_GB_PER_NODE*1024*1024*1024/8" | bc -l)
-#  #sed -i.bak "s/array_elements = HPCC_LocalVectorSize.*/array_elements = $size;/g" ./hpcc-1.5.0/STREAM/stream.c
-#  sed -i.bak "s/params->RunStarStream = 0;/params->RunStarStream = 1;/g" ./hpcc-1.5.0/src/io.c
-#  popd
-#fi
-#
-## -----------------------------------------------------------------------------
-## Build
-## -----------------------------------------------------------------------------
-#pushd hpcc/hpcc-1.5.0
-#rm -f ./hpcc
-#make arch=unix USE_THREADS=true COMPILER=gnu STREAM_COMPILER=gnu
-#
-## -----------------------------------------------------------------------------
-## Run Chapel trials
-## -----------------------------------------------------------------------------
-#for x in "${locales[@]}"; do
-#  rm -f ./hpccoutf.txt
-#  NUM_THREADS=256
-#  srun --exclusive -N $x --tasks-per-node=1 --cpus-per-task=$NUM_THREADS ./hpcc
-#  runAndLog cat hpccoutf.txt
-#done
-
-# -----------------------------------------------------------------------------
 # Download
 # -----------------------------------------------------------------------------
 if [ ! -d "mpi" ]; then
@@ -67,7 +30,7 @@ cc -O3 -ffreestanding -openmp -mcmodel=medium -DSTREAM_ARRAY_SIZE=$size -DNTIMES
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
-  runAndLog srun --exclusive --nodes $x --tasks-per-node=1 --cpus-per-task=256 ./stream_mpi 
+  runAndLog srun --exclusive --nodes $x --tasks-per-node=1 --cpus-per-task=$CHPLEXP_THREADS_PER_NODE ./stream_mpi 
 done
 
 # -----------------------------------------------------------------------------

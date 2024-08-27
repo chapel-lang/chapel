@@ -88,6 +88,7 @@ experiment_name=()
 experiment_feats=()
 experiment_skipIfErrsCmd=()
 experiment_shouldBuildChpl=()
+experiment_shouldSkipIfColocalesUnsupported=()
 experiment_prebuildCmd=()
 experiment_vars=()
 experiment_cmd=()
@@ -106,6 +107,7 @@ while (( "$#" > 0 )); do
   skipIfErrsCmd=""
   prebuildCmd=""
   shouldBuildChpl="y"
+  shouldSkipIfColocalesUnsupported="n"
   while [[ "$1" == --* ]]; do
     if [[ "$1" == "--skip-if-errs" ]]; then
       shift
@@ -114,6 +116,9 @@ while (( "$#" > 0 )); do
     elif [[ "$1" == "--no-build-chpl" ]]; then
       shift
       shouldBuildChpl="n"
+    elif [[ "$1" == "--skip-if-colocales-unsupported" ]]; then
+      shift
+      shouldSkipIfColocalesUnsupported="y"
     elif [[ "$1" == "--prebuild" ]]; then
       shift
       prebuildCmd="$1"
@@ -137,6 +142,7 @@ while (( "$#" > 0 )); do
   experiment_skipIfErrsCmd[${#experiment_skipIfErrsCmd[@]}]="$skipIfErrsCmd"
   experiment_shouldBuildChpl[${#experiment_shouldBuildChpl[@]}]="$shouldBuildChpl"
   experiment_prebuildCmd[${#experiment_prebuildCmd[@]}]="$prebuildCmd"
+  experiment_shouldSkipIfColocalesUnsupported[${#experiment_shouldSkipIfColocalesUnsupported[@]}]="$shouldSkipIfColocalesUnsupported"
   experiment_cmd[${#experiment_cmd[@]}]="$cmd"
   experiment_vars[${#experiment_vars[@]}]="$vars"
 done
@@ -223,6 +229,7 @@ for i in "${!experiment_name[@]}"; do
   feats="${experiment_feats[i]}"
   skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
   shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  shouldSkipIfColocalesUnsupported="${experiment_shouldSkipIfColocalesUnsupported[i]}"
   prebuildCmd="${experiment_prebuildCmd[i]}"
   vars="${experiment_vars[i]}"
   cmd="${experiment_cmd[i]}"
@@ -274,6 +281,8 @@ for i in "${!experiment_name[@]}"; do
   feats="${experiment_feats[i]}"
   skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
   shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  shouldSkipIfColocalesUnsupported="${experiment_shouldSkipIfColocalesUnsupported[i]}"
+
   prebuildCmd="${experiment_prebuildCmd[i]}"
   vars="${experiment_vars[i]}"
   cmd="${experiment_cmd[i]}"
@@ -293,6 +302,16 @@ for i in "${!experiment_name[@]}"; do
       echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       echo "* * * *  SKIPPING EXPERIMENT DUE TO --skip-if-errs COMMAND ERRORING * * * * * *"
       echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "> popd"; popd
+      continue
+    fi
+  fi
+ 
+  if [[ "$shouldSkipIfColocalesUnsupported" == 'y' ]]; then
+    if [[ $CHPL_COMM == 'ugni' ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * *  SKIPPING EXPERIMENT DUE TO --skip-if-colocales-unsupported COMMAND ERRORING  * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       echo "> popd"; popd
       continue
     fi

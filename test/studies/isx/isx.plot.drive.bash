@@ -11,6 +11,8 @@ export CHPLEXP_MAX_LOCALES=32
    chpl_1lpn       comm      --var CHPLEXP_NUM_SUBLOCALES=1                    \
                                              ./isx.plot.gather.bash            \
                                                                                \
-   chpl_2lpn       comm      --var CHPLEXP_NUM_SUBLOCALES=2                    \
+   chpl_2lpn       comm      --skip-if-colocales-unsupported                   \
+                             --var CHPLEXP_NUM_SUBLOCALES=2                    \
                                              ./isx.plot.gather.bash            \
+                                                                               \
    shmem           shmem     --no-build-chpl ./isx.plot.gather.shmem.bash
