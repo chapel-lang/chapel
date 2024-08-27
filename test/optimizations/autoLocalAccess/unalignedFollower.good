@@ -1,13 +1,17 @@
 
-Start analyzing forall (unalignedFollower.chpl:8)
-| Found loop domain (unalignedFollower.chpl:6)
-| Will attempt static and dynamic optimizations (unalignedFollower.chpl:8)
+Start analyzing forall (unalignedFollower.chpl:10)
+| Found loop domain (unalignedFollower.chpl:8)
+| Will attempt static and dynamic optimizations (unalignedFollower.chpl:10)
 |
-|  Start analyzing call (unalignedFollower.chpl:9)
-|   Can't determine the domain of access base (unalignedFollower.chpl:3)
-|  This call is a dynamic optimization candidate (unalignedFollower.chpl:9)
+|  Start analyzing call (unalignedFollower.chpl:11)
+|   Can't determine the domain of access base (unalignedFollower.chpl:5)
+|  This call is a dynamic optimization candidate (unalignedFollower.chpl:11)
 |
-End analyzing forall (unalignedFollower.chpl:8)
+End analyzing forall (unalignedFollower.chpl:10)
 
-Local access attempt reverted. All static checks failed or code is unreachable.(unalignedFollower.chpl:9)
+Static check successful. Using localAccess with dynamic check (unalignedFollower.chpl:11)
+Static check successful. Using localAccess with dynamic check (unalignedFollower.chpl:11)
 5 5 5 5 5
+
+Numbers collected by prediff:
+	localAccess was called 0 times
