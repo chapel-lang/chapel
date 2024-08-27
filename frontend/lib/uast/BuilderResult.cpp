@@ -120,6 +120,11 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
     computeIdMaps(ast.get(), nullptr, newIdToAst, newIdToParent);
   }
 
+  if (!addin.generatedFrom_.isEmpty()) {
+    // Assumption: single top-level expression that is a module
+    newIdToParent[keep.topLevelExpression(0)->id()] = addin.generatedFrom_;
+  }
+
   // now update the ID and Locations maps in keep
   changed |= defaultUpdate(keep.idToAst_, newIdToAst);
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);

@@ -1384,7 +1384,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
            cur != nullptr;
            cur = nextHigherScope(context, cur)) {
 
-        if (asttags::isModule(cur->tag()) && !goPastModules) {
+        // Allow searching past compiler-generated modules, to pretend like
+        // they are children of the module from which they originated.
+        if (asttags::isModule(cur->tag()) && !goPastModules &&
+            !cur->id().isFabricatedId()) {
           reachedModule = true;
           break;
         }
