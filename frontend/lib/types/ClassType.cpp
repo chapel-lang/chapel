@@ -119,9 +119,9 @@ const RecordType* ClassType::managerRecordType(Context* context) const {
   // for owned and shared, manager is the builtin AnyClassType
   if (auto myManager = manager()) {
     if (myManager->isAnyOwnedType()) {
-      return CompositeType::getOwnedRecordType(context);
+      return CompositeType::getOwnedRecordType(context, basicClassType()); // for `owned C`, produce `_owned(C)`
     } else if (myManager->isAnySharedType()) {
-      return CompositeType::getSharedRecordType(context);
+      return CompositeType::getSharedRecordType(context, basicClassType());
     } else if (auto mgr = myManager->toRecordType()) {
       return mgr;
     }
