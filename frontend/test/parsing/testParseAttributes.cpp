@@ -1146,8 +1146,13 @@ static void test23(Parser* parser) {
   auto intfAttr = intf->attributeGroup();
   assert(intfAttr);
   assert(intfAttr->isUnstable());
-  assert(intf->numFormals() == 0);
+  assert(!intf->isFormalListExplicit());
+  assert(intf->numFormals() == 1);
   assert(intf->numStmts() == 2);
+
+  auto formal = intf->formal(0)->toFormal();
+  assert(formal);
+  assert(formal->name() == "Self");
 
   auto methodComment = intf->stmt(0)->toComment();
   assert(methodComment);
