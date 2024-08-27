@@ -3464,7 +3464,7 @@ private proc comparatorImplementsRelative(cmp) param do
 //       This cannot be represented in Chapel today, but we still want to
 //       reserve the identifier.
 //       See https://github.com/chapel-lang/chapel/issues/25554.
-// TODO: this should be unstable, but can'y apply attributes to interfaces
+// TODO: this should be unstable, but can't apply attributes to interfaces
 // @unstable("This is a placeholder for a future feature")
 interface sortComparator { }
 
