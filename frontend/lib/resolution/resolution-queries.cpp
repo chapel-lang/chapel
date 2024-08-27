@@ -65,7 +65,7 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     return std::make_pair(std::get<0>(args), "resolving this module statement");
   );
 
-  CHPL_ASSERT(id.postOrderId() >= 0);
+  CHPL_ASSERT(!id.isSymbolDefiningScope());
 
   ResolutionResultByPostorderID result;
 
@@ -89,7 +89,7 @@ static const ResolutionResultByPostorderID&
 scopeResolveModuleStmt(Context* context, ID id) {
   QUERY_BEGIN(scopeResolveModuleStmt, context, id);
 
-  CHPL_ASSERT(id.postOrderId() >= 0);
+  CHPL_ASSERT(!id.isSymbolDefiningScope());
 
   // TODO: can we save space better here by having
   // the ResolutionResultByPostorderID have a different offset
@@ -250,8 +250,7 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
 
   QualifiedType result;
 
-  int postOrderId = id.postOrderId();
-  if (postOrderId >= 0) {
+  if (!id.isSymbolDefiningScope()) {
     // 'typeForModuleLevelSymbol' can be called with an 'id' corresponding to a
     // variable declared as part of a MultiDecl or TupleDecl. Using that 'id'
     // with 'resolveModuleStmt' will return a bogus result because that 'id'

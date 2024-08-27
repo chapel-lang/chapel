@@ -1261,9 +1261,8 @@ AstTag idToTag(Context* context, ID id) {
 }
 
 bool idIsModule(Context* context, ID id) {
-  if (id.postOrderId() >= 0) {
-    // it can't possibly be a module if it's got a positive post-order ID
-    // since all modules have post-order ID -1
+  if (!id.isSymbolDefiningScope()) {
+    // it can't possibly be a module if it doesn't define a scope
     return false;
   }
   AstTag tag = idToTag(context, id);
@@ -1304,7 +1303,7 @@ bool idIsFunction(Context* context, ID id) {
   // Functions always have their own ID symbol scope,
   // and if it's not a function, we can return false
   // without doing further work.
-  if (id.postOrderId() != -1) {
+  if (!id.isSymbolDefiningScope()) {
     return false;
   }
 
