@@ -3503,7 +3503,6 @@ record DefaultComparator: keyPartComparator {
    */
   inline
   proc compare(x, y: x.type) {
-    writeln("foooo");
     if x < y { return -1; }
     else if y < x { return 1; }
     else return 0;
