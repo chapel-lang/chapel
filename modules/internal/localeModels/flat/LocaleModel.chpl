@@ -32,6 +32,9 @@ module LocaleModel {
   public use LocaleModelHelpFlat;
   public use LocaleModelHelpMem;
 
+  use ChapelBase;
+  use ChapelIOSerialize;
+  use ChapelLocale;
   use IO;
 
   //
