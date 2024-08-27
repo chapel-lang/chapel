@@ -41,7 +41,8 @@ module ChapelAutoLocalAccess {
 
     // support forall i in a.domain.localSubdomain() do .... a[i] ....
     if loopDomain._value.type.isDefaultRectangular() {
-      return accessBase.domain.supportsAutoLocalAccess();
+      return accessBase.domain.supportsAutoLocalAccess() &&
+             accessBase.rank == loopDomain.rank;
     }
 
     return false;
