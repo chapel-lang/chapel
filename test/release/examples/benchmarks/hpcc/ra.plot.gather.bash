@@ -26,7 +26,7 @@ fi
 ra_lg_size=32
 ra_updates=2097152
 for x in "${locales[@]}"; do
-  runAndLog $exe_name -nl $x --n=$ra_lg_size --N_U=$ra_updates
+  launchAndLog $x $exe_name --n=$ra_lg_size --N_U=$ra_updates
 done
 
 # -----------------------------------------------------------------------------

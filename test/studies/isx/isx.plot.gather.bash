@@ -15,7 +15,7 @@ chpl --fast isx-hand-optimized.chpl -smode=scaling.weakISO
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
-  runAndLog ./isx-hand-optimized -nl ${x}x${CHPLEXP_NUM_SUBLOCALES} --n=67108864
+  launchAndLog "${x}x${CHPLEXP_NUM_SUBLOCALES}" ./isx-hand-optimized --n=67108864
 done
 
 # -----------------------------------------------------------------------------

@@ -283,6 +283,17 @@ for i in "${!experiment_name[@]}"; do
   shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
   shouldSkipIfColocalesUnsupported="${experiment_shouldSkipIfColocalesUnsupported[i]}"
 
+  if [[ "$CHPLEXP_CHPL_SETUP_FAILED" == "1" ]]; then
+    if [[ "$CHPL_EXP_SKIP_IF_CONFIG_ERROR"=="y" ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO CONFIG FAILURE * * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      continue
+    else
+      exit 1
+    fi
+  fi
+
   prebuildCmd="${experiment_prebuildCmd[i]}"
   vars="${experiment_vars[i]}"
   cmd="${experiment_cmd[i]}"

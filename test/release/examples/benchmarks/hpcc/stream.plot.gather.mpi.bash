@@ -24,13 +24,13 @@ fi
 pushd mpi
 rm -f ./stream_mpi
 size=$(echo "scale=0; $CHPLEXP_SIZE_GB_PER_NODE*1024*1024*1024/8" | bc -l)
-cc -O3 -ffreestanding -openmp -mcmodel=medium -DSTREAM_ARRAY_SIZE=$size -DNTIMES=20 -DVERBOSE stream_mpi.c -o stream_mpi
+${CHPLEXP_MPICC} -O3 -ffreestanding -openmp -mcmodel=medium -DSTREAM_ARRAY_SIZE=$size -DNTIMES=20 -DVERBOSE stream_mpi.c -o stream_mpi
 
 # -----------------------------------------------------------------------------
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
-  runAndLog srun --exclusive --nodes $x --tasks-per-node=1 --cpus-per-task=$CHPLEXP_THREADS_PER_NODE ./stream_mpi 
+  launchAndLog "${x}" $(pwd)/stream_mpi
 done
 
 # -----------------------------------------------------------------------------

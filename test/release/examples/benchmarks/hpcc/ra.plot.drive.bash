@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#--paint-with ./stream.plot.paint.py
-
 export CHPLEXP_MAX_LOCALES=64
 set -x -e
 "$CHPL_HOME/util/test/chplExperiment" \

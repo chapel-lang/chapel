@@ -32,9 +32,29 @@ function runAndSubLog () {
   exec $@ 2>&1 | tee -a $runLog.$sublog
 }
 
-function runAndLog_launch () {
-  local constraintsSanitized=$(echo "$CHPL_LAUNCHER_CONSTRAINT" | sed -n 's/,/&/g')
-  runAndLog srun --nodes $1 --constraint="$CHPL_LAUNCHER_CONSTRAINT"  "${@:2}"
+function launchAndLog () {
+  local cmd=${2}
+  local args=${@:3}
+
+  # Strip out colocales if there's only one
+  nl="$1"
+  if [[ $nl = *x1 ]]; then
+    nl=$(echo "$nl" | sed -e "s/x1$//")
+  fi
+
+  echo "UNEVAL LAUNCHCMD=$CHPLEXP_LAUNCH_COMMAND"
+  local launchCmd=$(eval "echo $CHPLEXP_LAUNCH_COMMAND")
+  echo "LAUNCH COMMAND IS: $launchCmd"
+
+  if [[ ! -z "$CHPLEXP_PRELAUNCH_COMMAND" ]]; then
+    eval "$CHPLEXP_PRELAUNCH_COMMAND"
+  fi
+
+  runAndLog "$launchCmd"
+
+  if [[ ! -z "$CHPLEXP_POSTLAUNCH_COMMAND" ]]; then
+    eval "$CHPLEXP_POSTLAUNCH_COMMAND"
+  fi
 }
 
 function extractFromPerfKeys () {

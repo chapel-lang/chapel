@@ -102,7 +102,8 @@ class AbstractJob(object):
         :arg reservation_args: reservation arguments parsed from cli
         """
         self.test_command = test_command
-        self.num_locales = reservation_args.numLocales
+        (self.num_locales, self.num_colocales, self_num_locales_str) = \
+          AbstractJob._parse_num_locales(reservation_args.numLocales)
         self.walltime = reservation_args.walltime
         self.hostlist = reservation_args.hostlist
         self.queue = reservation_args.queue
@@ -631,6 +632,16 @@ class AbstractJob(object):
 
 
     @classmethod
+    def _parse_num_locales(cls, num_locales_str):
+      if 'x' in num_locales_str:
+        (num_locales, num_colocales) = map(int, num_locales_str.split('x'))
+      else:
+        num_locales = int(num_locales_str)
+        num_colocales = None
+      return (num_locales, num_colocales, num_locales_str)
+
+
+    @classmethod
     def _get_test_command(cls, args, unparsed_args):
         """Returns test command by folding numLocales args into unparsed command line
         args.
@@ -646,9 +657,9 @@ class AbstractJob(object):
         """
         logging.debug('Rebuilding test command from parsed args: {0} and '
                       'unparsed args: {1}'.format(args, unparsed_args))
-        if args.numLocales >= 0:
+        if args.numLocales:
             unparsed_args.append('-nl')
-            unparsed_args.append(str(args.numLocales))
+            unparsed_args.append(args.numLocales)
         logging.debug('Rebuild test command: {0}'.format(unparsed_args))
         return unparsed_args
 
@@ -671,7 +682,7 @@ class AbstractJob(object):
                             default=('CHPL_LAUNCHCMD_INFO' in os.environ),
                             help=('Informational output. Setting CHPL_LAUNCHCMD_INFO '
                                   'in environment also enables.'))
-        parser.add_argument('-nl', '--numLocales', type=int, default=-1,
+        parser.add_argument('-nl', '--numLocales', default=None,
                             help='Number locales.')
         parser.add_argument('--n', help='Placeholder')
         parser.add_argument('--walltime', type=cls._cli_walltime,

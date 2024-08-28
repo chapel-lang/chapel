@@ -29,14 +29,14 @@ popd
 # Build
 # -----------------------------------------------------------------------------
 pushd hpcc/hpcc-1.5.0
-make arch=unix
+make arch=unix COMPILER=$CHPLEXP_COMPILER
 
 # -----------------------------------------------------------------------------
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
   rm -f ./hpccoutf.txt
-  runAndLog_launch $x ./hpcc
+  launchAndLog $x ./hpcc
   runAndLog cat hpccoutf.txt
 done
 

@@ -31,6 +31,7 @@ _chplSetupEnv_shortHost=$(hostname -s)
 _chplSetupEnv_featureSet=""
 _chplSetupEnv_dryRun=""
 _chplSetupEnv_noBaseCfg=""
+export CHPLEXP_CHPL_SETUP_FAILED=0
 
 # TODO: make this less hacky, use getopts
 for _chplSetupEnv_VAR in "$@"; do
@@ -122,7 +123,8 @@ for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); 
 
   if [[ -z "$_chplSetupEnv_foundFeature" ]]; then
     >&2 echo "chplSetup was unable to find any files for feature: $_chplSetupEnv_feature"
-    exit 1
+    export CHPLEXP_CHPL_SETUP_FAILED=1
+    return
   fi
 done
 

@@ -12,7 +12,6 @@ capLocales "$CHPLEXP_MAX_LOCALES"
 # -----------------------------------------------------------------------------
 # Build Chapel code
 # -----------------------------------------------------------------------------
-#chpl --fast stream-ep.chpl
 chpl --fast stream.chpl
 
 # -----------------------------------------------------------------------------
@@ -20,23 +19,15 @@ chpl --fast stream.chpl
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
   size=$(echo "($CHPLEXP_SIZE_GB_PER_NODE*1024*1024*1024/8/$CHPLEXP_NUM_SUBLOCALES)/1" | bc)
-  runAndLog ./stream -nl ${x}x${CHPLEXP_NUM_SUBLOCALES} --m $size
+  launchAndLog "${x}x${CHPLEXP_NUM_SUBLOCALES}" ./stream --m $size
 done
 
 # -----------------------------------------------------------------------------
 # Collect data; store in results.dat
 # -----------------------------------------------------------------------------
-#data=$(cat $runLog | sed -r -n 's/\s*max =\s*//p')
 data=$(cat $runLog | sed -r -n 's/\s*Performance \(GB\/s\) =\s*//p')
-# data is reported in GB/s per node convert to total GB/s
-i=0; for x in ${data[@]}; do
-  nl=${locales[i]}
-#  scaled_data[i++]=$(echo "scale=2; $x*$nl*$CHPLEXP_NUM_SUBLOCALES" | bc -l)
-  scaled_data[i++]=$x
-done
-
 set +x
 echo -e "\t$experimentName" > $datFile
 paste \
   <(printf "%s\n" "${locales[@]}") \
-  <(printf "%s\n" "${scaled_data[@]}") >> "$datFile"
+  <(printf "%s\n" "${data[@]}") >> "$datFile"
