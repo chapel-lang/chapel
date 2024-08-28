@@ -3886,7 +3886,7 @@ Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
                                           bool ambiguous) {
   if (!refersToId.isEmpty()) {
     // Found a single enum element, the type can be a param.
-    auto newParam = EnumParam::get(context, refersToId);
+    auto newParam = Param::getEnumParam(context, refersToId);
     return QualifiedType(QualifiedType::PARAM, enumType, newParam);
   } else if (ambiguous) {
     // multiple candidates. but the expression most likely has a type given by

@@ -77,6 +77,7 @@ class Param {
       return 0;
     }
   };
+  using EnumValue = std::pair<ID, std::string>;
 
  private:
   ParamTag tag_;
@@ -114,8 +115,8 @@ class Param {
   static std::string valueToString(NoneValue v) {
     return "none";
   }
-  static std::string valueToString(ID id) {
-    return id.str();
+  static std::string valueToString(EnumValue v) {
+    return v.second;
   }
   static std::string valueToString(bool v) {
     return v ? "true" : "false";
@@ -211,6 +212,8 @@ class Param {
   #undef PARAM_NODE
   #undef PARAM_TO
 
+  static const EnumParam* getEnumParam(Context* context, ID id);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
@@ -278,6 +281,19 @@ template<> struct stringify<chpl::types::Param::NoneValue> {
   }
 };
 
+template<> struct stringify<chpl::types::Param::EnumValue> {
+  void operator()(std::ostream& streamOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::types::Param::EnumValue& stringMe) const {
+    if (stringKind == chpl::StringifyKind::CHPL_SYNTAX) {
+      streamOut << stringMe.second;
+    } else {
+      streamOut << stringMe.second;
+      streamOut << " (" << stringMe.first.str() << ")";
+    }
+  }
+};
+
 template<> struct serialize<types::Param::ComplexDouble> {
   void operator()(Serializer& ser, types::Param::ComplexDouble val) const {
     ser.write(val.re);
@@ -302,6 +318,21 @@ template<> struct serialize<types::Param::NoneValue> {
 template<> struct deserialize<types::Param::NoneValue> {
   types::Param::NoneValue operator()(Deserializer& des) {
     return types::Param::NoneValue();
+  }
+};
+
+template<> struct serialize<types::Param::EnumValue> {
+  void operator()(Serializer& ser, types::Param::EnumValue val) const {
+    ser.write(val.first);
+    ser.write(val.second);
+  }
+};
+
+template<> struct deserialize<types::Param::EnumValue> {
+  types::Param::EnumValue operator()(Deserializer& des) {
+    auto id = des.read<ID>();
+    auto str = des.read<std::string>();
+    return std::make_pair(id, str);
   }
 };
 

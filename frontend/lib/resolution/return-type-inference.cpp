@@ -884,7 +884,7 @@ static bool helpComputeOrderToEnumReturnType(Context* context,
     uint64_t counter = 0;
     for (auto elem : ast->enumElements()) {
       if (counter == whichValue) {
-        param = EnumParam::get(context, elem->id());
+        param = Param::getEnumParam(context, elem->id());
         break;
       }
       counter++;
@@ -920,7 +920,7 @@ static bool helpComputeEnumToOrderReturnType(Context* context,
       parsing::idToAst(context, et->id())->toEnum();
     int counter = 0;
     for (auto elem : ast->enumElements()) {
-      if (elem->id() == inputParam->value()) {
+      if (elem->id() == inputParam->value().first) {
         param = IntParam::get(context, counter);
         break;
       }

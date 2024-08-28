@@ -121,7 +121,7 @@ static void test4() {
   assert(bestFn->formalType(0).isParam());
   assert(bestFn->formalName(0) == UniqueString::get(context, "this"));
   assert(bestFn->formalType(0).param()->isEnumParam());
-  assert(bestFn->formalType(0).param()->toEnumParam()->value() == greenEnum->id());
+  assert(bestFn->formalType(0).param()->toEnumParam()->value().first == greenEnum->id());
   const ResolvedFunction* rfn = scopeResolveFunction(context, isBlueFn->id());
   const auto tsi = typedSignatureInitial(context, rfn->signature()->untyped());
   assert(tsi->formalType(0).isParam());
