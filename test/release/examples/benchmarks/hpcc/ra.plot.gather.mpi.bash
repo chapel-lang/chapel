@@ -29,6 +29,7 @@ popd
 # Build
 # -----------------------------------------------------------------------------
 pushd hpcc/hpcc-1.5.0
+CHPLEXP_COMPILER="${CHPLEXP_COMPILER:-cray}"
 make arch=unix COMPILER=$CHPLEXP_COMPILER
 
 # -----------------------------------------------------------------------------

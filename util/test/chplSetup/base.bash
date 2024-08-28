@@ -9,3 +9,4 @@ done
 export CHPL_HOME="$old_chpl_home"
 
 export CHPL_COMM=none  # use 'comm' feature if you wish to override this
+export CHPLEXP_LAUNCH_COMMAND='$cmd -nl $nl $args'

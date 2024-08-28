@@ -17,7 +17,7 @@ chpl --fast -M ../aggregation ig.chpl
 # -----------------------------------------------------------------------------
 PROBLEM_SIZE=1000000
 for x in "${locales[@]}"; do
-  runAndLog ./ig -nl ${x}x${CHPLEXP_NUM_SUBLOCALES}
+  launchAndLog "${x}x${CHPLEXP_NUM_SUBLOCALES}" ./ig
 done
 
 # -----------------------------------------------------------------------------

@@ -438,6 +438,7 @@ if [[ -n "$CHPL_EXP_PAINT_WITH" ]]; then
     echo "* * * * * * * * * SKIPPING PAINTING BECAUSE NO EXPERIMENTS RAN  * * * * * * * *"
     echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
   else
+    source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "paintExperiment"
     eval "$CHPL_EXP_PAINT_WITH"
   fi
 fi

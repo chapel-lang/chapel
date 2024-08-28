@@ -8,8 +8,12 @@ tbls = load_tables()
 tbl = tbls.join().with_first_col('mpi')
 print(tbl.md("%0.2f"))
 
-tbl.plot(
+plt = tbl.plot(
     title="STREAM Performance (GB/s)",
     xlabel="Nodes",
     ylabel="GB/s",
-    save=False).add_arrow('right', 'up', 'green', 'better').save('logs/stream.png')
+    save=False)
+
+plt.add_arrow('right', 'up', 'green', 'better')
+plt.set_ylim(top=16000)
+plt.save('logs/stream.png')

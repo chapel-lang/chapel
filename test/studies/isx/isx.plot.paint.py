@@ -5,7 +5,9 @@ sys.path.append(os.path.join(os.environ['CHPL_HOME'], 'util', 'test'))
 from chpl_plot import *
 
 tbls = load_tables()
-tbl = tbls.join().with_first_col('shmem')
+tbl = tbls.join()
+if 'shmem' in tbls:
+  tbl = tbl.with_first_col('shmem')
 print(tbl.md("%0.2f"))
 
 tbl.plot(

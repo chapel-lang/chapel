@@ -36,8 +36,15 @@ function launchAndLog () {
   local cmd=${2}
   local args=${@:3}
 
-  # Strip out colocales if there's only one
   nl="$1"
+
+  # Extract number of nodes
+  nl_nodes="$1"
+  if [[ $nl == *x* ]]; then
+    nl_nodes=$(echo "$nl" | sed -e "s/x.*$//")
+  fi
+
+  # Strip out colocales if there's only one
   if [[ $nl = *x1 ]]; then
     nl=$(echo "$nl" | sed -e "s/x1$//")
   fi

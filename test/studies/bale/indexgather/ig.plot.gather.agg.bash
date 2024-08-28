@@ -17,7 +17,7 @@ chpl --fast ig.chpl -sN=10000000 -suseBlockArr=true
 # Run Chapel trials
 # -----------------------------------------------------------------------------
 for x in "${locales[@]}"; do
-  runAndLog ./ig -nl ${x}x${CHPLEXP_NUM_SUBLOCALES}
+  launchAndLog "${x}x${CHPLEXP_NUM_SUBLOCALES}" ./ig
 done
 popd
 

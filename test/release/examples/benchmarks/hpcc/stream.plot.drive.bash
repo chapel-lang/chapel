@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 set -x -e
-export CHPLEXP_MAX_LOCALES=256
-export CHPLEXP_SIZE_GB_PER_NODE=32
+export CHPLEXP_MAX_LOCALES=64
+export CHPLEXP_SIZE_GB_PER_NODE=64
 "$CHPL_HOME/util/test/chplExperiment"  \
   --paint-with ./stream.plot.paint.py \
   \

@@ -32,7 +32,7 @@ export SHMEM_SYMMETRIC_SIZE=256M
 CORES_PER_NODE=$CHPLEXP_THREADS_PER_NODE
 pushd bale/src/bale_classic/build_cray/bin
 for x in "${locales[@]}"; do
-  runAndLog srun --nodes=$x --exclusive --ntasks=$(($x*$CORES_PER_NODE)) --ntasks-per-node=$CORES_PER_NODE ./ig -c $CORES_PER_NODE -n 10000000 -M 11
+  launchAndLog "${x}" ./ig -n 10000000 -M 11
 done
 popd
 
