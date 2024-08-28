@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test gasnet (segment everything) against multilocale tests
+# Test gasnet (segment everything) against multilocale tests on ARM Darwin
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash
