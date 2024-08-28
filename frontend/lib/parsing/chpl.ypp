@@ -551,6 +551,7 @@
 %type <exprList> import_ls
 %type <exprList> renames_ls use_renames_ls opt_only_ls
 
+%type <typeDeclParts> interface_start
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
 %type <exprList>  ifc_formal_ls
@@ -715,7 +716,6 @@ stmt_base:
 | require_stmt              { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
 | implements_stmt           { $$ = context->finishStmt($1); }
-| interface_stmt            { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
     std::vector<ParserComment>* comments;
@@ -924,6 +924,7 @@ tryable_stmt:
 decl_base:
   module_decl_stmt
 | class_level_stmt
+| interface_stmt
 ;
 
 collect_attributes:
@@ -1898,14 +1899,25 @@ ifvar:
   }
 ;
 
-interface_stmt:
-  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+interface_start:
+  TINTERFACE ident_def
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, $4, @6, $6);
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, @2, $2, asttags::Interface);
   }
-| TINTERFACE ident_def                       block_stmt
+;
+
+interface_stmt:
+  interface_start TLP ifc_formal_ls TRP block_stmt
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, nullptr, @3, $3);
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, $3, @5, $5);
+    context->exitScope(asttags::Interface, parts.name);
+  }
+| interface_start                       block_stmt
+  {
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, nullptr, @2, $2);
+    context->exitScope(asttags::Interface, parts.name);
   }
 ;
 
