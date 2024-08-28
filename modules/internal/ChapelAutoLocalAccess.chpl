@@ -76,7 +76,7 @@ module ChapelAutoLocalAccess {
 
   proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
                               myIterand: domain, param hasOffsets=false) {
-    if chpl__ala_staticCheck(accessBase, loopDomain, hasOffsets) {
+    if chpl__ala_staticCheck(accessBase, loopDomain, myIterand, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
          accessBase.domain == loopDomain                    &&
