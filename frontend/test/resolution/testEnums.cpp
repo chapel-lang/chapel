@@ -671,6 +671,46 @@ static void test19() {
   assert(vars.at("res").type()->isEnumType());
 }
 
+static void test20() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        param s = c:string;
+
+        param x = colors.red:string;
+        param y = colors.green:string;
+        param z = colors.blue:string;
+
+        record R {
+          param p : colors;
+        }
+
+        var r = new R(colors.green);
+      )""", {"s", "x", "y", "z", "r"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isStringType());
+    assert(qt.param()->toStringParam()->value() == text);
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+
+  std::ostringstream oss;
+  vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
+  assert(oss.str() == "R(green)");
+}
+
 int main() {
   test1();
   test2();
@@ -691,5 +731,7 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
+
   return 0;
 }

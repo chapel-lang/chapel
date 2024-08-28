@@ -3590,6 +3590,17 @@ static bool resolveFnCallSpecial(Context* context,
     if (isParamTypeCast) {
         auto srcEnumType = src.type()->toEnumType();
         auto dstEnumType = dst.type()->toEnumType();
+
+        if (srcEnumType && dst.type()->isStringType()) {
+          std::ostringstream oss;
+          src.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+          auto ustr = UniqueString::get(context, oss.str());
+          exprTypeOut = QualifiedType(QualifiedType::PARAM,
+                                      RecordType::getStringType(context),
+                                      StringParam::get(context, ustr));
+          return true;
+        }
+
         if (srcEnumType && srcEnumType->isAbstract()) {
           exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
           return true;
