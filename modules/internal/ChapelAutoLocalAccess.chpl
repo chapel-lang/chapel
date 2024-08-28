@@ -54,26 +54,6 @@ module ChapelAutoLocalAccess {
                                  hasOffsets);
   }
 
-  proc chpl__ala_staticCheck(accessBase, loopDomain, myIterand,
-                             param hasOffsets=false) param {
-    return false;
-  }
-
-  // these type overloads are for degenerate cases where the optimization can
-  // break a meaningful error message without these
-  proc chpl__ala_staticCheck(type accessBase, type loopDomain,
-                             param hasOffsets=false) param {
-    return false;
-  }
-  proc chpl__ala_staticCheck(accessBase, type loopDomain,
-                             param hasOffsets=false) param {
-    return false;
-  }
-  proc chpl__ala_staticCheck(type accessBase, loopDomain,
-                             param hasOffsets=false) param {
-    return false;
-  }
-
   proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
                               myIterand: domain, param hasOffsets=false) {
     if chpl__ala_staticCheck(accessBase, loopDomain, myIterand, hasOffsets) {
@@ -101,30 +81,6 @@ module ChapelAutoLocalAccess {
       }
     }
 
-    return false;
-  }
-
-  /*inline proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: [],*/
-                                     /*param hasOffsets=false) {*/
-    /*return chpl__ala_dynamicCheck(accessBase, loopDomain.domain, hasOffsets);*/
-  /*}*/
-
-  // these type overloads are for degenerate cases where the optimization can
-  // break a meaningful error message without these
-  proc chpl__ala_dynamicCheck(accessBase, loopDomain, myIterand,
-                              param hasOffsets=false) {
-    return false;
-  }
-  proc chpl__ala_dynamicCheck(type accessBase, type loopDomain,
-                              param hasOffsets=false) {
-    return false;
-  }
-  proc chpl__ala_dynamicCheck(accessBase, type loopDomain,
-                              param hasOffsets=false) {
-    return false;
-  }
-  proc chpl__ala_dynamicCheck(type accessBase, loopDomain,
-                              param hasOffsets=false) {
     return false;
   }
 
@@ -156,4 +112,24 @@ module ChapelAutoLocalAccess {
     }
 
   }
+
+  // these type overloads are for degenerate cases where the optimization can
+  // break a meaningful error message without these
+  proc chpl__ala_staticCheck(type a, type l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a, type l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a,      l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a,      l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a, type l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a, type l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a,      l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a,      l,      m, param h=false) param do return false;
+  proc chpl__ala_dynamicCheck(type a, type l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a, type l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a,      l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a,      l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a, type l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a, type l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a,      l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a,      l,      m, param h=false) do return false;
+
 }
