@@ -1,0 +1,1 @@
+iteratorSerializeMethodCalled.chpl:4: error: iterators can't be the 'serialize' method, please rename this iterator

@@ -1,0 +1,1 @@
+iteratorDeinitMethodCalled.chpl:2: error: iterators can't be deinitializers, please rename this iterator

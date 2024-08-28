@@ -161,6 +161,7 @@ struct Visitor {
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
+  void checkIterNames(const Function* node);
 
   /*
   TODO
@@ -1750,6 +1751,7 @@ void Visitor::visit(const Function* node) {
   checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
+  checkIterNames(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1944,6 +1946,28 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
   if (!success) {
     error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
   }
+}
+
+void Visitor::checkIterNames(const Function* node) {
+  if (node->kind() == Function::ITER && node->isMethod()) {
+    auto name = node->name();
+
+    if (name == USTR("init")) {
+      error(node,
+            "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be deinitializers, please rename this iterator");
+    } else if (name == USTR("init=")) {
+      error(node,
+            "iterators can't be copy initializers, please rename this iterator");
+    } else if (chpl::parsing::isSpecialMethodName(name)) {
+      error(node,
+            "iterators can't be the '%s' method, please rename this iterator",
+            name.c_str());
+    }
+  }
+  return;
 }
 
 void Visitor::visit(const Module* node){
