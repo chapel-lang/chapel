@@ -9,7 +9,7 @@ proc test(param alignment) {
   var pool = new bumpPtrMemPool(10_000, alignment=alignment);
   for 1..10 {
     var p = newWithAllocator(pool, unmanaged C);
-    assert(c_ptrTo(p):int % alignment == 0);
+    assert(c_ptrTo(p):c_intptr % alignment:c_intptr == 0);
   }
 }
 
@@ -18,7 +18,7 @@ proc testParallel(param alignment) {
   var pool = new bumpPtrMemPool(100_000, alignment=alignment, parSafe=true);
   coforall 1..30 {
     var p = newWithAllocator(pool, unmanaged C);
-    assert(c_ptrTo(p):int % alignment == 0);
+    assert(c_ptrTo(p):c_intptr % alignment:c_intptr == 0);
   }
 }
 
