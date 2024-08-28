@@ -1540,15 +1540,14 @@ static void test44() {
   assert(pt.type()->isEnumType());
   assert(pt.param()->isEnumParam());
   auto param = pt.param()->toEnumParam();
-  // TODO: properly stringify enum params
-  assert(param->value().str() == "M.coords@0");
+  assert(param->value().second == "x");
 
 
   auto parent = xt->basicClassType()->parentClassType();
   auto pf = parent->substitutions();
   assert(pf.size() == 1);
   assert(pf.begin()->second.type()->isEnumType());
-  assert(pf.begin()->second.param()->toEnumParam()->value().str() == "M.Other.color@0");
+  assert(pf.begin()->second.param()->toEnumParam()->value().second == "red");
 }
 
 int main() {
