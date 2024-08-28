@@ -3439,20 +3439,61 @@ private inline proc reverseKeyPartStatus(status: keyPartStatus): keyPartStatus d
 private inline proc reverseKeyPartStatus(status) do
   return -status;
 
-// TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
-// TODO: @unstable("keyPartComparator is not yet stable")
+/*
+  The keyPartComparator interface defines how a comparator should sort parts of
+  a key, by defining :proc:`~keyPartComparator.Self.keyPart`. This is used for
+  certain sort algorithms. If :proc:`~keyPartComparator.Self.keyPart` is not
+  appropriate, the sort implementation may use
+  :proc:`~keyPartComparator.Self.compare` instead.
+*/
+@unstable("keyPartComparator is not yet stable")
 interface keyPartComparator {
-  /*
-  proc Self.keyPart(elt, i: int): (keyPartStatus, integral);
 
-  // return type must be signed integral
-  proc Self.compare(x, y: x.type) {
+  /*
+    A ``keyPart(elt, i)`` method returns *parts* of key value at a time. This
+    interface supports radix sorting for variable length data types, such as
+    strings. It accepts two arguments:
+
+    * ``elt`` is the element being sorted
+    * ``i`` is the part number of the key requested, starting from 0
+
+    A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
+
+    * The *section* must be of type :type:`keyPartStatus`. It indicates when the
+      end of ``elt`` has been reached and in that event how it should be sorted
+      relative to other array elements.
+
+    * The *part* can be any signed or unsigned integral type and can contain any
+      value. The *part* will be ignored unless the *section* returned is
+      :enumconstant:`keyPartStatus.returned`.
+
+    :arg elt: the element being sorted
+    :arg i: the part number requested
+    :returns: ``(section, part)`` where ``section`` is a :type:`keyPartStatus`
+              and ``part`` is an integral type.
+  */
+  pragma "docs only"
+  proc Self.keyPart(elt, i: int): (keyPartStatus, integral); // due to current limitations this signature is only for chpldoc
+
+  /*
+    Defines a comparison between two elements of the same type. This method is
+    not required to be implemented by comparator's that implement the
+    :interface:`keyPartComparator` interface.
+
+    :arg x: the first element to compare
+    :arg y: the second element to compare
+    :returns: -1 if ``x`` should be sorted before ``y``,
+               1 if ``x`` should be sorted after ``y``,
+               and 0 if ``x`` and ``y`` are equal
+    :rtype: a signed integral
+  */
+  pragma "docs only"
+  proc Self.compare(x, y: x.type) { // due to current limitations this signature is only for chpldoc
     if x < y      then return -1;
     else if y < x then return 1;
     else          return 0;
   }
-  */
 }
 private proc comparatorImplementsKeyPart(cmp) param do
   return __primitive("implements interface", cmp, keyPartComparator) != 2;
@@ -3460,14 +3501,24 @@ private proc comparatorImplementsKeyPart(cmp) param do
 @chpldoc.nodoc
 config param useKeyPartStatus = false;
 
-// TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
-// TODO: @unstable("relativeComparator is not yet stable")
+/*
+  The relativeComparator interface defines a comparison between two elements
+*/
+@unstable("relativeComparator is not yet stable")
 interface relativeComparator {
   /*
-  // return type must be signed integral
-  proc Self.compare(x, y: x.type);
+    Defines a comparison between two elements of the same type.
+
+    :arg x: the first element to compare
+    :arg y: the second element to compare
+    :returns: -1 if ``x`` should be sorted before ``y``,
+               1 if ``x`` should be sorted after ``y``,
+               and 0 if ``x`` and ``y`` are equal
+    :rtype: a signed integral
   */
+  pragma "docs only"
+  proc Self.compare(x, y: x.type); // due to current limitations this signature is only for chpldoc
 }
 private proc comparatorImplementsRelative(cmp) param do
   return __primitive("implements interface", cmp, relativeComparator) != 2;
@@ -3477,8 +3528,8 @@ private proc comparatorImplementsRelative(cmp) param do
 //       This cannot be represented in Chapel today, but we still want to
 //       reserve the identifier.
 //       See https://github.com/chapel-lang/chapel/issues/25554.
-// TODO: this should be unstable, but can't apply attributes to interfaces
-// @unstable("sortComparator is not yet stable")
+@chpldoc.nodoc // keep this nodoc since its not implemented yet
+@unstable("sortComparator is not yet stable")
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/
