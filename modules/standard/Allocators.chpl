@@ -40,15 +40,18 @@
      deleteWithAllocator(alloc, x);
 
   Custom allocators can be defined as classes or records that implement the
-  ``allocator`` interface. The interface has two methods: ``allocate`` and
-  ``deallocate``. The ``allocate`` method accepts an integer ``n`` and returns
-  a :type:`~CTypes.c_ptr` to the allocated memory. The ``deallocate``
-  method accepts a :type:`~CTypes.c_ptr` to the allocated memory. Allocators are
-  free to implement their own memory management strategies.
+  :interface:`allocator` interface. The interface has two methods:
+  :proc:`~allocator.Self.allocate` and :proc:`~allocator.Self.deallocate`. The
+  :proc:`~allocator.Self.allocate` method accepts an integer ``n`` and returns
+  a :type:`~CTypes.c_ptr` to the allocated memory. The
+  :proc:`~allocator.Self.deallocate` method accepts a :type:`~CTypes.c_ptr` to
+  the allocated memory. Allocators are free to implement their own memory
+  management strategies.
 
   Limitations:
-    * The ``newWithAllocator`` and ``deleteWithAllocator`` procedures are meant
-      to be stand-ins pending a more elegant syntax to use custom allocators.
+    * The `:proc:`newWithAllocator` and :proc:`deleteWithAllocator` procedures
+      are meant to be stand-ins pending a more elegant syntax to use custom
+      allocators.
     * This module currently only supports allocating Chapel classes. In the
       future we hope to support other heap objects like arrays.
     * Allocating managed (:type:`~OwnedObject.owned`/:type:`~SharedObject.shared`)
@@ -71,12 +74,13 @@ module Allocators {
     return alignedPtr:c_ptr(void);
   }
 
-  // TODO: interfaces are not supported by chpldoc yet: https://github.com/chapel-lang/chapel/issues/17383
   /*
     All allocators must implement this interface. The interface has two
-    methods: ``allocate`` and ``deallocate``. The ``allocate`` method accepts
-    an integer size and returns a pointer to the allocated memory. The
-    ``deallocate`` method accepts a pointer to the allocated memory.
+    methods: :proc:`~allocator.Self.allocate` and
+    :proc:`~allocator.Self.deallocate`. The :proc:`~allocator.Self.allocate`
+    method accepts an integer size and returns a pointer to the allocated
+    memory. Them :proc:`~allocator.Self.deallocate` method accepts a pointer
+    to the allocated memory.
 
     Allocators may either be classes or records.
   */
@@ -109,8 +113,9 @@ module Allocators {
   }
 
   /*
-    Allocate a new unmanaged class with type ``T`` by invoking the ``allocate``
-    method of the given ``alloc``. This is a drop-in replacement for ``new``.
+    Allocate a new unmanaged class with type ``T`` by invoking the
+    :proc:`~allocator.Self.allocate` method of the given ``alloc``. This is a
+    drop-in replacement for ``new``.
 
     Example:
 
@@ -161,8 +166,9 @@ module Allocators {
   }
 
   /*
-    Delete the ``objects`` by invoking the ``deallocate`` method of the given
-    ``allocator``. This is a drop-in replacement for ``delete``.
+    Delete the ``objects`` by invoking the :proc:`~allocator.Self.deallocate`
+    method of the given :interface:`allocator`. This is a drop-in replacement
+    for ``delete``.
   */
   pragma "docs only"
   inline proc deleteWithAllocator(alloc: allocator, objects...) {
