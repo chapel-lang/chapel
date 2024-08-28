@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+tgt_platform=$($CHPL_HOME/env/printchplenv --value --only CHPL_TARGET_PLATFORM)
+
+# if linux32, use the linux32 good file
+if [ "$tgt_platform" == "linux32" ]; then
+  echo " # customAllocator.32.good"
+else
+  echo " # customAllocator.good"
+fi
