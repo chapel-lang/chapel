@@ -7,6 +7,6 @@ source $CWD/common.bash
 source $CWD/common-darwin.bash
 source $CWD/common-localnode-paratest.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin-m1"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin-arm"
 
 $CWD/nightly -cron $(get_nightly_paratest_args)
