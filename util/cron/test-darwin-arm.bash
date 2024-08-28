@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test full suite for default configuration on M1 darwin
+# Test full suite for default configuration on ARM darwin
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
