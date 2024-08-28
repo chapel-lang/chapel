@@ -1441,22 +1441,8 @@ buildTypeConstructor(Context* context, const CompositeType* t,
                      std::vector<const Variable*>& fieldAsts) {
   auto parentMod = parsing::idToParentModule(context, id);
   auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + name.str();
-  auto builder = Builder::createForGeneratedCode(context, modName.c_str(), parentMod.symbolPath());
+  auto builder = Builder::createForGeneratedCode(context, modName.c_str(), parentMod, parentMod.symbolPath());
   auto dummyLoc = parsing::locateId(context, id);
-
-  // Add a top-level 'use' of the module containing the type being constructed.
-  // This exists to support fields that reference other types in that module.
-  {
-    auto useName = parentMod.symbolName(context);
-    auto ident = Identifier::build(builder.get(), dummyLoc, useName);
-    auto vis = VisibilityClause::build(builder.get(), dummyLoc, std::move(ident));
-
-    AstList alist;
-    alist.push_back(std::move(vis));
-    auto useStmt = Use::build(builder.get(), dummyLoc,
-                              Decl::DEFAULT_VISIBILITY, std::move(alist));
-    builder->addToplevelExpression(std::move(useStmt));
-  }
 
   // Build formals of type constructor
   AstList formalAst;

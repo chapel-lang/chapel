@@ -1492,6 +1492,64 @@ static void test43() {
   assert(pf.begin()->second.type()->isIntType());
 }
 
+static void test44() {
+  printf("test44\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // Test that symbols referred to in type constructors are visible, including:
+  // - types declared as a sibling to the type being constructed
+  // - types visible through a 'private use'
+  std::string program = R"""(
+  module M {
+    module Other {
+      enum color {red, green, blue}
+
+      class Parent {
+        param col : color;
+      }
+    }
+
+    private use Other;
+
+    enum coords {x, y};
+
+    class Child : Parent {
+      type T;
+      param p : coords;
+    }
+
+    // Type constructor should be able to see 'coords' and 'foobar'
+    var x : unmanaged Child(color.red, int, coords.x)?;
+    }
+    )""";
+
+  auto p = parseTypeAndFieldsOfX(context, program.c_str());
+
+  auto xt = p.first->toClassType();
+  assert(xt->decorator().isUnmanaged());
+  assert(xt->decorator().isNilable());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldType(0).type()->isIntType());
+
+  auto pt = fields->fieldType(1);
+  assert(pt.type()->isEnumType());
+  assert(pt.param()->isEnumParam());
+  auto param = pt.param()->toEnumParam();
+  // TODO: properly stringify enum params
+  assert(param->value().str() == "M.coords@0");
+
+
+  auto parent = xt->basicClassType()->parentClassType();
+  auto pf = parent->substitutions();
+  assert(pf.size() == 1);
+  assert(pf.begin()->second.type()->isEnumType());
+  assert(pf.begin()->second.param()->toEnumParam()->value().str() == "M.Other.color@0");
+}
 
 int main() {
   test1();
@@ -1544,6 +1602,7 @@ int main() {
   testRecursiveTypeConstructorGeneric();
   testRecursiveTypeConstructorMutual();
   test43();
+  test44();
 
   return 0;
 }
