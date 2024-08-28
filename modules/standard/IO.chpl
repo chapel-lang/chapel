@@ -6974,6 +6974,7 @@ proc fileWriter.styleElement(element:int):int {
   fileReader lock will be held while iterating over the lines.
 
   This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
 
   **Example:**
 
@@ -7023,6 +7024,7 @@ iter fileReader.lines(
   multiple locales - the fileReader lock will be held while iterating over the lines.
 
   This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
 
   **Example:**
 
