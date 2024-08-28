@@ -49,7 +49,7 @@
   management strategies.
 
   Limitations:
-    * The `:proc:`newWithAllocator` and :proc:`deleteWithAllocator` procedures
+    * The :proc:`newWithAllocator` and :proc:`deleteWithAllocator` procedures
       are meant to be stand-ins pending a more elegant syntax to use custom
       allocators.
     * This module currently only supports allocating Chapel classes. In the
@@ -79,7 +79,7 @@ module Allocators {
     methods: :proc:`~allocator.Self.allocate` and
     :proc:`~allocator.Self.deallocate`. The :proc:`~allocator.Self.allocate`
     method accepts an integer size and returns a pointer to the allocated
-    memory. Them :proc:`~allocator.Self.deallocate` method accepts a pointer
+    memory. The :proc:`~allocator.Self.deallocate` method accepts a pointer
     to the allocated memory.
 
     Allocators may either be classes or records.
