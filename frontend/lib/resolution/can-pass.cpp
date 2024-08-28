@@ -932,10 +932,10 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
 }
 
 CanPassResult CanPassResult::canPass(Context* context,
-                                     const QualifiedType& actualQTIn,
-                                     const QualifiedType& formalQTIn) {
-  auto actualQT = actualQTIn;
-  auto formalQT = formalQTIn;
+                                     const QualifiedType& actualQtIn,
+                                     const QualifiedType& formalQtIn) {
+  auto actualQT = actualQtIn;
+  auto formalQT = formalQtIn;
 
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
