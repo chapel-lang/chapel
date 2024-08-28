@@ -38,7 +38,7 @@ CLASS_END(BoolParam)
 
 CLASS_BEGIN(EnumParam)
   PLAIN_GETTER(EnumParam, value, "Get the value of this enum Param",
-               const chpl::uast::AstNode*, return parsing::idToAst(context, node->value()))
+               const chpl::uast::AstNode*, return parsing::idToAst(context, node->value().first))
 CLASS_END(EnumParam)
 
 CLASS_BEGIN(IntParam)
