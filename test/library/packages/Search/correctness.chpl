@@ -2,7 +2,7 @@
  *  Check correctness of search functions
  */
 
-use Search;
+use Search; use Sort only relativeComparator;
 
 proc main() {
 
