@@ -377,6 +377,8 @@ proc chpl_check_comparator_keyPart(comparator,
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     // no need to check the interface,'chpl_keyPartInternal' is internal
+
+    return true;
   }
   else if canResolveMethod(comparator, "keyPart", data, 0) {
     if comparatorImplementsKeyPart(comparator) {
@@ -414,9 +416,9 @@ proc chpl_check_comparator_keyPart(comparator,
       if !(isInt(expectIntUint) || isUint(expectIntUint)) then
         compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     }
+    return true;
   }
-
-  return true;
+  return false;
 }
 
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
@@ -496,7 +498,11 @@ proc chpl_check_comparator(comparator,
     // if the user has implemented the keyPart interface, we also have to check
     // that the keyPart method is implemented correctly to satisfy the interface
     if comparatorImplementsKeyPart(comparator) then
-      chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, false);
+      if !chpl_check_comparator_keyPart(comparator,
+                                        eltType,
+                                        errorDepth+1,
+                                        doDeprecationCheck=false) then
+        compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " implements the keyPartComparator interface, but the keyPart method is not implemented");
   } else if chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, doDeprecationCheck) {
     // the check and error are in chpl_check_comparator_keyPart
   }
