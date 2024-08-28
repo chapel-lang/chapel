@@ -16,7 +16,7 @@ record myCmp7{proc compare(x,y) do return if x<y then -1 else if y<x then 1 else
 record myCmp8{proc compare(x,y) do return if x<y then -1 else if y<x then 1 else 0;}
 record myCmp9{proc compare(x,y) do return if x<y then -1 else if y<x then 1 else 0;}
 
-record myCmpResolveDeps: keyPartComparator {
+record myCmpResolveDeps: relativeComparator {
   proc compare(x,y) do return if x<y then -1 else if y<x then 1 else 0;
 }
 
