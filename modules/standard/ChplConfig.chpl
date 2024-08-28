@@ -159,6 +159,11 @@ module ChplConfig {
   param CHPL_HWLOC:string;
   CHPL_HWLOC = __primitive("get compiler variable", "CHPL_HWLOC");
 
+  /* See :ref:`readme-chplenv.CHPL_HWLOC_PCI` for more information. */
+  @unstable("'ChplConfig.CHPL_HWLOC_PCI' is unstable and may be replaced with a different way to access this information in the future")
+  param CHPL_HWLOC_PCI:string;
+  CHPL_HWLOC_PCI = __primitive("get compiler variable", "CHPL_HWLOC_PCI");
+
   @chpldoc.nodoc
   @unstable("'ChplConfig.CHPL_JEMALLOC' is unstable and may be replaced with a different way to access this information in the future")
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
