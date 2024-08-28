@@ -1,0 +1,4 @@
+Locality of DRs can't be determined statically.
+
+Context 1: https://github.com/chapel-lang/chapel/pull/25754#issuecomment-2316297947
+Context 2: https://github.com/chapel-lang/chapel/issues/25351
