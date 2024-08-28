@@ -48,11 +48,6 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  proc chpl__ala_staticCheck(accessBase: [], loopDomain: [],
-                             param hasOffsets=false) param {
-    return chpl__ala_staticCheck(accessBase, loopDomain.domain, hasOffsets);
-  }
-
   proc chpl__ala_staticCheck(accessBase, loopDomain,
                              param hasOffsets=false) param {
     return false;
