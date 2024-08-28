@@ -392,11 +392,12 @@ proc pbc() {
 proc sortAtomsInCell() {
   use Sort;
 
-  record cmp: relativeComparator {
+  record cmp {
     proc compare(a, b) {
       return a.gid - b.gid;
     }
   }
+  cmp implements relativeComparator;
 
   const c = new cmp();
 
