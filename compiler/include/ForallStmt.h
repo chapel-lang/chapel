@@ -127,6 +127,7 @@ class ForallOptimizationInfo {
 
     ForallOptimizationInfo();
 
+    Expr* getIterand(int idx);
     Expr* getLoopDomainExpr();
 };
 

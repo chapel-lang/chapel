@@ -1179,16 +1179,19 @@ void ALACandidate::addOffset(Expr* e) {
     offsetExprs_.push_back(zero);
   }
 }
-
 Expr* ForallOptimizationInfo::getLoopDomainExpr() {
   // loop domain is the 0th iterand
-  if (auto &s = iterSym[0]) {
+  return this->getIterand(0);
+}
+
+Expr* ForallOptimizationInfo::getIterand(int idx) {
+  if (auto &s = iterSym[idx]) {
     return new SymExpr(s);
   }
-  else if (auto &e = dotDomIterExpr[0]) {
+  else if (auto &e = dotDomIterExpr[idx]) {
     return e->copy();
   }
-  else if (auto &s = iterCallTmp[0]) {
+  else if (auto &s = iterCallTmp[idx]) {
     return new SymExpr(s);
   }
   else {
@@ -1208,6 +1211,7 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
                                           CallExpr *&allChecks) {
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
+  int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
@@ -1223,6 +1227,13 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
     check->insertAtTail(baseSym);
 
     if (Expr* e = optInfo.getLoopDomainExpr()) {
+      check->insertAtTail(e);
+    }
+    else {
+      INT_FATAL("optInfo didn't have enough information");
+    }
+
+    if (Expr* e = optInfo.getIterand(iterandIdx)) {
       check->insertAtTail(e);
     }
     else {
@@ -1269,6 +1280,7 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
 
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
+  int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
@@ -1289,6 +1301,13 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
     checkCall->insertAtTail(baseSym);
 
     if (Expr* e = optInfo.getLoopDomainExpr()) {
+      checkCall->insertAtTail(e);
+    }
+    else {
+      INT_FATAL("optInfo didn't have enough information");
+    }
+
+    if (Expr* e = optInfo.getIterand(iterandIdx)) {
       checkCall->insertAtTail(e);
     }
     else {

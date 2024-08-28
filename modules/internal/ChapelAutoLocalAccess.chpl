@@ -25,7 +25,7 @@ module ChapelAutoLocalAccess {
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
   proc chpl__ala_staticCheck(accessBase: [], loopDomain: domain,
-                             param hasOffsets=false) param {
+                             myIterand: domain, param hasOffsets=false) param {
     if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
       return false;
     }
@@ -48,7 +48,13 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  proc chpl__ala_staticCheck(accessBase, loopDomain,
+  proc chpl__ala_staticCheck(accessBase: [], loopDomain: [],
+                             myIterand: domain, param hasOffsets=false) param {
+    return chpl__ala_staticCheck(accessBase, loopDomain.domain, myIterand,
+                                 hasOffsets);
+  }
+
+  proc chpl__ala_staticCheck(accessBase, loopDomain, myIterand,
                              param hasOffsets=false) param {
     return false;
   }
@@ -69,7 +75,7 @@ module ChapelAutoLocalAccess {
   }
 
   proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
-                              param hasOffsets=false) {
+                              myIterand: domain, param hasOffsets=false) {
     if chpl__ala_staticCheck(accessBase, loopDomain, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
@@ -86,9 +92,9 @@ module ChapelAutoLocalAccess {
       //
       // Be also aware that `subset` call below can be expensive if we are not
       // calling on default rectangular
-      if loopDomain._value.type.isDefaultRectangular() {
-        if loopDomain.locale == here {
-          if accessBase.localSubdomain().contains(loopDomain) {
+      if myIterand._value.type.isDefaultRectangular() {
+        if myIterand.locale == here {
+          if accessBase.localSubdomain().contains(myIterand) {
             return true;
           }
         }
@@ -105,7 +111,7 @@ module ChapelAutoLocalAccess {
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
-  proc chpl__ala_dynamicCheck(accessBase, loopDomain,
+  proc chpl__ala_dynamicCheck(accessBase, loopDomain, myIterand,
                               param hasOffsets=false) {
     return false;
   }
