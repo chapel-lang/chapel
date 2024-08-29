@@ -58,18 +58,14 @@ sed_command="sed -i.bak -e "
 $sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
-#To mimic home-brew CI. Run home-brew chpl install inside a container.
-# check if docker desktop is installed, if not fail the test.
-source ${CHPL_HOME}/util/cron/docker.bash
-start_docker
-# This mimics homebrew-ci
+# To mimic home-brew CI. Run homebrew chpl install inside a container.
 # This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
 cd ${CHPL_HOME}/util/packaging/homebrew
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
 
-#This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
+# This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew-linux"
