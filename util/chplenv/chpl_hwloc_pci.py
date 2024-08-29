@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+# Implements the CHPL_HWLOC_PCI variable, which controls whether or not the
+# bundled hwloc is compiled with PCI discovery enabled. PCI discovery is
+# necessary for partitioning PCI devices such as NICs and GPUs among
+# co-locales and is therefore enabled when CHPL_COMM != none, or when
+# CHPL_LOCALE_MODEL == gpu and CHPL_GPU != cpu. Otherwise it's disabled
+# because it introduces an unnecessary dependency on the pciaccess library,
+# and PCI discovery has the potential to slow down startup time.
+
 import sys
 
 import chpl_hwloc, chpl_comm, chpl_locale_model, chpl_gpu
