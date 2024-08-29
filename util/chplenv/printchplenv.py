@@ -130,7 +130,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('  CHPL_GMP_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
-    ChapelEnv('  CHPL_HWLOC_PCI', RUNTIME | INTERNAL | DEFAULT, 'pci'),
+    ChapelEnv('  CHPL_HWLOC_PCI', RUNTIME | INTERNAL, 'pci'),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
