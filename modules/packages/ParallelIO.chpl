@@ -130,7 +130,7 @@ module ParallelIO {
     const fMeta = try! open(filePath, ioMode.r),
           fileBounds = 0..<(try! fMeta.size);
 
-    if tld.size == 0 || (tld.size == 1 && tld[0] == here) {
+    if tld.size == 0 || (tld.size == 1 && targetLocales.first == here) {
       const byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
       coforall tid in 0..<nTasks {
         const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
@@ -242,7 +242,7 @@ module ParallelIO {
     const fMeta = try! open(filePath, ioMode.r),
           fileBounds = 0..<(try! fMeta.size);
 
-    if tld.size == 0 || (tld.size == 1 && tld[0] == here) {
+    if tld.size == 0 || (tld.size == 1 && targetLocales.first == here) {
       const byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
       coforall tid in 0..<nTasks {
         var des: deserializerType;
