@@ -579,6 +579,9 @@ all:
   06/17/24:
     - text: Revert to default GASNET_SND_THREAD=0 (#25307)
       config: 16-node-apollo-hdr
+  08/12/24:
+    - text: Changed nightly testing machine used for 16-node-xc
+      config: 16-node-xc
 
 # End all
 
@@ -2091,6 +2094,16 @@ thread-ring:
     - Prevent serialization from qthread sync vars (#9737)
   08/30/18:
     - Reduce hugepage waste from call stacks (#10254)
+  08/12/24:
+    - Update bundled qthreads to 1.20 (#25210)
+  08/28/24:
+    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
+
+twopt-buildtrees:
+  08/12/24:
+    - Update bundled qthreads to 1.20 (#25210)
+  08/28/24:
+    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
 
 time_array_vs_ddata:
   05/31/14:
