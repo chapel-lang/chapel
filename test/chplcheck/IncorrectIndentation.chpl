@@ -362,6 +362,10 @@ module IncorrectIndentation {
 
 if 1 < 2 {
   writeln("hi");
+  if 2 < 3 {
+    writeln("hi");
+    writeln("??");
+  }
 }
   // since else statements aren't reported correctly only the misaligned child statements should warn
   if 1 < 2 {
@@ -373,5 +377,10 @@ if 1 < 2 {
  } else {
       writeln("hi");
     writeln("??");
+  }
+  if 1 < 2 {
+  if 3 < 4 {
+
+  }
   }
 }
