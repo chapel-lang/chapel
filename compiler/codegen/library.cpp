@@ -272,12 +272,8 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, "%s", requires_.c_str());
   }
 
-  //
-  // Append the Chapel library as the last linker argument. We do this as a
-  // stopgap to make the GNU linker happy.
-  //
   removeTrailingNewlines(libraries);
-  fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
+  fprintf(makefile.fptr, " %s\n\n", libraries.c_str());
 }
 
 // Helper to convert command lines flags from make syntax to CMake syntax
