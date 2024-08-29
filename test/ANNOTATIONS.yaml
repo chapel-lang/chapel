@@ -552,6 +552,9 @@ all:
   06/01/23:
     - text: Remove calls to codegenInvariantStart (#22439)
       config: chapcs
+  07/31/23:
+    - text: Changed nightly testing machine used for 16-node-xc
+      config: 16-node-xc
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
@@ -579,9 +582,6 @@ all:
   06/17/24:
     - text: Revert to default GASNET_SND_THREAD=0 (#25307)
       config: 16-node-apollo-hdr
-  08/12/24:
-    - text: Changed nightly testing machine used for 16-node-xc
-      config: 16-node-xc
 
 # End all
 
