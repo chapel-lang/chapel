@@ -2164,7 +2164,7 @@ static void cleanupPrimitives() {
       callExpr->remove();
     } else if (callExpr->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       if (!usingGpuLocaleModel()) {
-        USR_FATAL_CONT(callExpr, "@assertOnGpu encountered in non-GPU "
+        USR_WARN(callExpr, "@assertOnGpu encountered in non-GPU "
                                  "compilation");
         USR_PRINT(callExpr, "this attribute has a runtime component, and will "
                             "always halt execution in a non-GPU context.");
