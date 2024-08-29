@@ -107,14 +107,6 @@ COPY --chown=user ./common/fixpaths.py /home/user/fixpaths.py
 USER root
 RUN python3 fixpaths.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 USER user
-
-
-# hot fixes for rpm, can be removed in 2.1
-USER root
-RUN short_version=$(python3 package_name.py --short-version $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH) && \
-    sed -i 's|#!/usr/bin/env python|#!/usr/bin/env python3|' /usr/share/chapel/${short_version}/util/config/compileline.py && \
-    unset short_version
-USER user
 """
 
 substitutions[
