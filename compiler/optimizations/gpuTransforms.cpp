@@ -2162,17 +2162,6 @@ static void cleanupPrimitives() {
     } else if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
                callExpr->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
       callExpr->remove();
-    } else if (callExpr->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-      if (!usingGpuLocaleModel()) {
-        USR_WARN(callExpr, "@assertOnGpu encountered in non-GPU "
-                                 "compilation");
-        USR_PRINT(callExpr, "this attribute has a runtime component, and will "
-                            "always halt execution in a non-GPU context.");
-        USR_PRINT(callExpr, "consider using '@gpu.assertEligible' to ensure "
-                            "that the code can be executed on the GPU without "
-                            "runtime checks.");
-        USR_STOP();
-      }
     } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
       auto parentBlock = toBlockStmt(callExpr->parentExpr);
       INT_ASSERT(parentBlock);

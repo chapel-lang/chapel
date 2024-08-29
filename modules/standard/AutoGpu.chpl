@@ -33,8 +33,18 @@ module AutoGpu {
       __primitive("assert gpu eligible");
   }
 
+  config param silenceAssertOnGpuWarning = false;
+
   inline proc chpl__assertOnGpuAttr() {
-      __primitive("chpl_assert_on_gpu", true);
+    if CHPL_LOCALE_MODEL != "gpu" && !silenceAssertOnGpuWarning {
+      compilerWarning("@assertOnGpu encountered in non-GPU compilation");
+      compilerWarning("this attribute has a runtime component, and will ",
+                      "always halt execution in a non-GPU context.");
+      compilerWarning("consider using '@gpu.assertEligible' to ensure ",
+                      "that the code can be executed on the GPU without ",
+                      "runtime checks.");
+    }
+    __primitive("chpl_assert_on_gpu", true);
   }
 
   inline proc chpl__gpuBlockSizeAttr(param counter: int, arg: integral) {
