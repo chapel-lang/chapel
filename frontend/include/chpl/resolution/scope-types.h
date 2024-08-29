@@ -61,6 +61,11 @@ class IdAndFlags {
     METHOD = 64,
     /** Something other than a method declaration */
     NOT_METHOD = 128,
+    /** A module declaration */
+    MODULE = 256,
+    /** Something other than a module declaration */
+    NOT_MODULE = 512,
+
     // note: if adding something here, also update flagsToString
   };
   /// \endcond
@@ -148,7 +153,8 @@ class IdAndFlags {
 
  public:
   IdAndFlags(ID id, uast::Decl::Visibility vis,
-             bool isField, bool isMethod, bool isParenfulFunction)
+             bool isField, bool isMethod, bool isParenfulFunction,
+             bool isModule )
     : id_(std::move(id)) {
     // setup the flags
     Flags flags = 0;
@@ -177,6 +183,11 @@ class IdAndFlags {
     } else {
       flags |= NOT_PARENFUL_FUNCTION;
     }
+    if (isModule) {
+      flags |= MODULE;
+    } else {
+      flags |= NOT_MODULE;
+    }
     flags_ = flags;
   }
 
@@ -185,8 +196,10 @@ class IdAndFlags {
     bool isField = false;
     bool isMethod = false;
     bool isParenfulFunction = false;
+    bool isModule = true;
     return IdAndFlags(std::move(id),
-                      vis, isField, isMethod, isParenfulFunction);
+                      vis, isField, isMethod, isParenfulFunction,
+                      isModule);
   }
 
   static IdAndFlags createForBuiltin() {
@@ -194,8 +207,10 @@ class IdAndFlags {
     bool isField = false;
     bool isMethod = false;
     bool isParenfulFunction = false;
+    bool isModule = false;
     return IdAndFlags(ID(),
-                      vis, isField, isMethod, isParenfulFunction);
+                      vis, isField, isMethod, isParenfulFunction,
+                      isModule);
   }
 
 
@@ -230,6 +245,9 @@ class IdAndFlags {
   }
   bool isParenfulFunction() const {
     return (flags_ & PARENFUL_FUNCTION) != 0;
+  }
+  bool isModule() const {
+    return (flags_ & MODULE) != 0;
   }
 
   // return true if haveFlags matches filterFlags, and does not match
@@ -272,8 +290,10 @@ class OwnedIdsWithName {
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id, uast::Decl::Visibility vis,
-                   bool isField, bool isMethod, bool isParenfulFunction)
-    : idv_(IdAndFlags(std::move(id), vis, isField, isMethod, isParenfulFunction)),
+                   bool isField, bool isMethod, bool isParenfulFunction,
+                   bool isModule)
+    : idv_(IdAndFlags(std::move(id), vis, isField, isMethod, isParenfulFunction,
+                      isModule)),
       flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
       moreIdvs_(nullptr)
   { }
@@ -304,9 +324,11 @@ class OwnedIdsWithName {
 
   /** Append an ID to an OwnedIdsWithName. */
   void appendId(ID id, uast::Decl::Visibility vis,
-                bool isField, bool isMethod, bool isParenfulFunction) {
+                bool isField, bool isMethod, bool isParenfulFunction,
+                bool isModule) {
     appendIdAndFlags(IdAndFlags(std::move(id), vis,
-                                isField, isMethod, isParenfulFunction));
+                                isField, isMethod, isParenfulFunction,
+                                isModule));
   }
 
   int numIds() const {
@@ -451,11 +473,13 @@ class MatchingIdsWithName {
   static MatchingIdsWithName
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isField, bool isMethod, bool isParenfulFunction,
+                     bool isModule,
                      IdAndFlags::Flags filterFlags,
                      const IdAndFlags::FlagSet& excludeFlagSet) {
 
     auto idv = IdAndFlags(std::move(id),
-                          vis, isField, isMethod, isParenfulFunction);
+                          vis, isField, isMethod, isParenfulFunction,
+                          isModule);
     return createWithSingleIdAndFlags(std::move(idv),
                                       filterFlags, excludeFlagSet);
   }

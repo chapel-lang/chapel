@@ -106,22 +106,20 @@ static void gather(DeclMap& declared,
                    const AstNode* d,
                    Decl::Visibility visibility,
                    bool atFieldLevel) {
+  auto idv = IdAndFlags(d->id(), visibility,
+                        isField(d, atFieldLevel),
+                        isMethod(d, atFieldLevel),
+                        isParenfulFunction(d),
+                        d->isModule());
+
   auto search = declared.find(name);
   if (search == declared.end()) {
     // add a new entry containing just the one ID
-    declared.emplace_hint(search,
-                          name,
-                          OwnedIdsWithName(d->id(), visibility,
-                                           isField(d, atFieldLevel),
-                                           isMethod(d, atFieldLevel),
-                                           isParenfulFunction(d)));
+    declared.emplace_hint(search, name, OwnedIdsWithName(std::move(idv)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendId(d->id(), visibility,
-                 isField(d, atFieldLevel),
-                 isMethod(d, atFieldLevel),
-                 isParenfulFunction(d));
+    val.appendIdAndFlags(std::move(idv));
   }
 }
 
@@ -663,8 +661,10 @@ idAndFlagsForScopeSymbol(Context* context, const Scope* scope) {
   bool isField = false; // target must be module/enum, not field
   bool isMethod = false; // target must be module/enum, not method
   bool isParenfulFunction = false;
+  bool isModule = asttags::isModule(scope->tag());
   auto idv = IdAndFlags(scope->id(),
-                        visibility, isField, isMethod, isParenfulFunction);
+                        visibility, isField, isMethod, isParenfulFunction,
+                        isModule);
   return idv;
 }
 
@@ -890,8 +890,10 @@ bool LookupHelper::doLookupEnclosingModuleName(const Scope* scope,
   bool isField = false;
   bool isMethod = false;
   bool isParenfulFn = false;
+  bool isModule = true;
 
-  auto idv = IdAndFlags(scope->id(), vis, isField, isMethod, isParenfulFn);
+  auto idv = IdAndFlags(scope->id(), vis, isField, isMethod, isParenfulFn,
+                        isModule);
   result.append(std::move(idv));
 
   if (traceCurPath && traceResult) {
@@ -1039,6 +1041,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
       bool isField = false; // not possible in an extern block
       bool isMethod = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
+      bool isModule = false; // not possible in an extern block
 
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
@@ -1047,7 +1050,8 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
                             Decl::PUBLIC,
                             isField,
                             isMethod,
-                            isParenfulFunction);
+                            isParenfulFunction,
+                            isModule);
 
       result.append(std::move(idv));
 

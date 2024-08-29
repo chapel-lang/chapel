@@ -42,6 +42,8 @@ std::string IdAndFlags::flagsToString(Flags flags) {
   if ((flags & METHOD) != 0)     ret += "method ";
   if ((flags & NOT_METHOD) != 0) ret += "!method ";
 
+  if ((flags & MODULE) != 0)     ret += "module ";
+  if ((flags & NOT_MODULE) != 0) ret += "!module ";
   return ret;
 }
 
@@ -334,12 +336,7 @@ void Scope::addBuiltin(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name,
-                    OwnedIdsWithName(ID(),
-                                     uast::Decl::PUBLIC,
-                                     /*isField*/ false,
-                                     /*isMethod*/ false,
-                                     /*isParenfulFunction*/ false));
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltin()));
 }
 
 const Scope* Scope::moduleScope() const {
