@@ -58,6 +58,15 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
 
+    # 'else if' statements do not have proper locations
+    #
+    # https://github.com/chapel-lang/chapel/issues/25256
+    elif isinstance(node, Conditional):
+        parent = node.parent()
+        grandparent = parent.parent() if parent else None
+        if grandparent and isinstance(grandparent, Conditional):
+            return True
+
     return False
 
 
