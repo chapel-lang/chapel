@@ -414,7 +414,7 @@ class GpuAssertionReporter {
     if (assertion->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
       reason = "is marked with @gpu.assertEligible";
     } else {
-      CHPL_ASSERT(assertion->isPrimitive(PRIM_ASSERT_ON_GPU));
+      INT_ASSERT(assertion->isPrimitive(PRIM_ASSERT_ON_GPU));
       reason = "contains assertOnGpu()";
       auto isAttributeSym = toSymExpr(assertion->get(1));
       INT_ASSERT(isAttributeSym);
@@ -623,6 +623,16 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
+static CallExpr* toCallToGpuEligibilityPrimitive(Expr* expr) {
+  CallExpr *call = toCallExpr(expr);
+  if (call &&
+      (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+       call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
+    return call;
+  }
+  return nullptr;
+}
+
 CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
@@ -635,10 +645,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   // assign to the loop iteration variable if we're iterating
   // over values rather than indices)
   for_alist(expr, cfl->body) {
-    CallExpr *call = toCallExpr(expr);
-    if (call &&
-        (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-         call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
+    if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
       return call;
     }
 
@@ -647,10 +654,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     BlockStmt *blk = toBlockStmt(expr);
     if (blk && blk->isGpuPrimitivesBlock()) {
       for_alist(expr, blk->body) {
-        CallExpr *call = toCallExpr(expr);
-        if (call &&
-            (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-             call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
+        if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
           return call;
         }
       }
@@ -2160,9 +2164,13 @@ static void cleanupPrimitives() {
       callExpr->remove();
     } else if (callExpr->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       if (!usingGpuLocaleModel()) {
-        USR_FATAL_CONT(callExpr, "@assertOnGpu encountered in non-GPU compilation");
-        USR_PRINT(callExpr, "this attribute has a runtime component, and will always halt execution in a non-GPU context.");
-        USR_PRINT(callExpr, "consider using '@gpu.assertEligible' to ensure that the code can be executed on the GPU without runtime checks.");
+        USR_FATAL_CONT(callExpr, "@assertOnGpu encountered in non-GPU "
+                                 "compilation");
+        USR_PRINT(callExpr, "this attribute has a runtime component, and will "
+                            "always halt execution in a non-GPU context.");
+        USR_PRINT(callExpr, "consider using '@gpu.assertEligible' to ensure "
+                            "that the code can be executed on the GPU without "
+                            "runtime checks.");
         USR_STOP();
       }
     } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {

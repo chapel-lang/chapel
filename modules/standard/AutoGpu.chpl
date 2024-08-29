@@ -20,6 +20,11 @@
 pragma "module included by default"
 @unstable("The module name 'AutoGpu' is unstable.")
 module AutoGpu {
+  // This module supports GPU-specific attributes like @gpu.assertEligible
+  // @assertOnGpu. These attributes are translated into calls to procedures
+  // in this module as part of the loop body, which insert various GPU
+  // primitives. The primitives are used to configure the GPU execution.
+
   use ChplConfig;
   use Errors;
 

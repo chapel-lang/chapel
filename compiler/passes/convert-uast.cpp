@@ -126,7 +126,8 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
-  // The @gpu.assertEligible attribute, if one is provided by the user.
+  // The @gpu.assertEligible attribute, which asserts GPU eligibility,
+  // if one is provided by the user.
   const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
