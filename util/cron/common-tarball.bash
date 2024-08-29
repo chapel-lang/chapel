@@ -5,6 +5,7 @@ source $CWD/common.bash
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
+# Load functions for getting version information from the source tree
 source ${CHPL_HOME}/util/build_configs/functions.bash
 
 major=$(get_src_major_version ${CHPL_HOME})
