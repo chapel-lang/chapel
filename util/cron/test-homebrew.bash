@@ -18,6 +18,8 @@ source $CWD/common-tarball.bash
 export CHPL_GEN_RELEASE_NO_CLONE=true
 
 export CHPL_LLVM=none
+# $CWD/common.bash sets this to none, but Homebrew builds with native
+export CHPL_TARGET_CPU=native
 
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -26,7 +28,7 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-gen_release $short_version
+# gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
