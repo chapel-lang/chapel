@@ -6,8 +6,6 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# Create a tarball from current repo.
-# The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
 
 # common-tarball sets CHPL_HOME
@@ -28,7 +26,9 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# gen_release $short_version
+# Create a tarball from current repo.
+# The tarball is left in root of repo in tar/ directory.
+gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
