@@ -321,6 +321,7 @@ async def test_list_references_standard(client: LanguageClient):
         assert references is not None
         assert len(references) > 10
 
+
 @pytest.mark.asyncio
 async def test_go_to_def_inherit(client: LanguageClient):
     """
@@ -334,7 +335,7 @@ async def test_go_to_def_inherit(client: LanguageClient):
 
             class CC { }
             class C: CC, II { }
-    
+
             module M {
               class CC {}
             }
@@ -359,6 +360,7 @@ async def test_go_to_def_inherit(client: LanguageClient):
         await check_goto_decl_def(client, doc, pos((5, 13)), pos((1, 10)))
         await check_goto_decl_def(client, doc, pos((10, 10)), pos((7, 7)))
         await check_goto_decl_def(client, doc, pos((10, 12)), pos((8, 8)))
+
 
 @pytest.mark.asyncio
 async def test_go_to_enum(client: LanguageClient):
