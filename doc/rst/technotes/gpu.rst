@@ -144,9 +144,6 @@ The following are further requirements for GPU support:
 
   * ROCm version between 4.x and 5.4 or between ROCm 6.0 and 6.2 must be installed.
 
-    * You can check the current status of ROCm version support `here
-      <https://github.com/chapel-lang/chapel/issues/23480>`_.
-
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM.
