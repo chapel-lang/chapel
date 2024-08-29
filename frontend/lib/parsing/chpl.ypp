@@ -2290,6 +2290,7 @@ enum_item:
       auto decl = EnumElement::build(BUILDER, LOC(@$),
                                      context->buildAttributeGroup(@$),
                                      $1);
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
@@ -2298,6 +2299,7 @@ enum_item:
                                      context->buildAttributeGroup(@$),
                                      $1,
                                      toOwned($3));
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
