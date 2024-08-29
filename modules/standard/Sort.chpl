@@ -458,14 +458,23 @@ proc chpl_check_comparator(comparator,
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
-      compilerError(errorDepth=errorDepth, "The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth,
+        "The key method in ",
+        comparator.type:string,
+        " must return an object that supports the '<' function when used with ",
+        eltType:string,
+        " elements");
 
     // Check that there isn't also a compare or keyPart
     if canResolveMethod(comparator, "compare", data, data) {
-      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
+      compilerError(errorDepth=errorDepth,
+        comparator.type:string,
+        " contains both a key method and a compare method");
     }
     if canResolveMethod(comparator, "keyPart", data, 0) {
-      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
+      compilerError(errorDepth=errorDepth,
+        comparator.type:string,
+        " contains both a key method and a keyPart method");
     }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
@@ -3478,7 +3487,7 @@ interface keyPartComparator {
 
   /*
     Defines a comparison between two elements of the same type. This method is
-    not required to be implemented by comparator's that implement the
+    not required to be implemented by comparators that implement the
     :interface:`keyPartComparator` interface.
 
     :arg x: the first element to compare
