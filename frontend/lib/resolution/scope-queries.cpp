@@ -2045,19 +2045,25 @@ const bool& isNameBuiltinGenericType(Context* context, UniqueString name) {
   return QUERY_END(result);
 }
 
-// if it's the first time encountering a particular module (and if it is
-// indeed a module, and not an enum or other type of declaration), add
+// if it's the first time encountering a particular module, add
 // it to the ResolvedVisibilityScope as a module named in a use/import
-static void addNamedIdIfModule(Context* context,
-                               ResolvedVisibilityScope* r,
-                               std::set<ID>& namedModulesSet,
-                               const ID& moduleId) {
-  if (parsing::idIsModule(context, moduleId)) {
-    auto p = namedModulesSet.insert(moduleId);
-    if (p.second) {
-      // insertion took place, so also add it to the vector
-      r->addModuleNamedInUseOrImport(moduleId);
-    }
+static void noteNamedModule(Context* context,
+                            ResolvedVisibilityScope* r,
+                            std::set<ID>& namedModulesSet,
+                            const ID& moduleId) {
+  auto p = namedModulesSet.insert(moduleId);
+  if (p.second) {
+    // insertion took place, so also add it to the vector
+    r->addModuleNamedInUseOrImport(moduleId);
+  }
+}
+
+static void noteNamedModuleByScope(Context* context,
+                                   ResolvedVisibilityScope* r,
+                                   std::set<ID>& namedModulesSet,
+                                   const Scope* scope) {
+  if (scope && asttags::isModule(scope->tag())) {
+    noteNamedModule(context, r, namedModulesSet, scope->id());
   }
 }
 
@@ -2089,8 +2095,11 @@ static void checkNameInScopeViz(Context* context,
 
   // gather any modules named in the use/import clause
   if (got && namedModulesSet != nullptr) {
-    for (const auto& id : result) {
-      addNamedIdIfModule(context, resolving, *namedModulesSet, id);
+    auto end = result.end();
+    for (auto cur = result.begin(); cur != end; ++cur) {
+      if (cur.curIdAndFlags().isModule()) {
+        noteNamedModule(context, resolving, *namedModulesSet, *cur);
+      }
     }
   }
 
@@ -2371,16 +2380,26 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // should not encounter ambiguous matches
   CHPL_ASSERT(vec.numIds() <= 1);
 
-  ID foundId = vec.firstId();
-  AstTag tag = parsing::idToTag(context, foundId);
+  const IdAndFlags& found = vec.firstIdAndFlags();
+  bool tagOk = false;
 
-  if (isModule(tag) || isInclude(tag) ||
-      (useOrImport == VIS_USE && isEnum(tag))) {
-    auto ret = scopeForModule(context, foundId);
+  if (found.isModule()) {
+    tagOk = true;
+  } else {
+    AstTag tag = parsing::idToTag(context, found.id());
+    if (isModule(tag) || isInclude(tag) ||
+        (useOrImport == VIS_USE && isEnum(tag))) {
+      tagOk = true;
+    }
+  }
+
+  if (tagOk) {
+    auto ret = scopeForModule(context, found.id());
     maybeEmitWarningsForId(context, idForErrs, ret->id());
     return ret;
   }
 
+  // otherwise, it's not a module (or enum, for use)
   CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
               nameInScope.c_str());
   return nullptr;
@@ -2434,7 +2453,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, scope, ident->name(), resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ true);
-      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
+      noteNamedModuleByScope(context, resolving, namedModulesSet, s);
       return s;
     }
   } else if (auto dot = expr->toDot()) {
@@ -2466,7 +2485,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, innerScope, nameInScope, resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ false, previousPartName);
-      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
+      noteNamedModuleByScope(context, resolving, namedModulesSet, s);
       return s;
     }
   } else {
@@ -2566,7 +2585,7 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::ONLY_CONTENTS;
 
           // note that this module is named in 'use'
-          addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
+          noteNamedModuleByScope(context, r, namedModulesSet, foundScope);
 
           // check that symbols named with 'only' actually exist
           checkLimitationsInScope(context, clause, foundScope, r, VIS_USE,
@@ -2650,7 +2669,7 @@ doResolveImportStmt(Context* context, const Import* imp,
       bool isModPrivate = parsing::idIsPrivateDecl(context, foundScope->id());
 
       // note that this module is named in 'import'
-      addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
+      noteNamedModuleByScope(context, r, namedModulesSet, foundScope);
 
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
@@ -3042,10 +3061,12 @@ GatherMentionedModules::lookupAndGather(const Scope* scope,
                              name, config);
 
   bool foundModule = false;
-  for (const auto& id : v) {
-    // Performance: could add a Flag for Module to avoid this idIsModule query.
-    if (parsing::idIsModule(context, id)) {
-      foundModule = true;
+  {
+    auto end = v.end();
+    for (auto cur = v.begin(); cur != end; ++cur) {
+      if (cur.curIdAndFlags().isModule()) {
+        foundModule = true;
+      }
     }
   }
 
@@ -3064,11 +3085,15 @@ GatherMentionedModules::lookupAndGather(const Scope* scope,
   // if we aren't in a method, use a faster strategy to find the module
   if (!inMethod) {
     const Scope* resultScope = nullptr;
-    for (const auto& id : v) {
-      if (resultScope == nullptr && parsing::idIsModule(context, id)) {
-        resultScope = scopeForModule(context, id);
+    auto end = v.end();
+    for (auto cur = v.begin(); cur != end; ++cur) {
+      if (cur.curIdAndFlags().isModule()) {
+        const ID& id = *cur;
+        if (resultScope == nullptr) {
+          resultScope = scopeForModule(context, id);
+        }
+        gatherModuleId(id);
       }
-      gatherModuleId(id);
     }
     return resultScope;
   }
