@@ -20,6 +20,7 @@
 #include "test-common.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/post-parse-checks.h"
 
 using namespace chpl;
@@ -89,7 +90,15 @@ std::unique_ptr<chpl::Context> buildStdContext() {
   Context::Configuration config;
   config.chplHome = chpl_home;
   Context* context = new Context(config);
-  chpl::parsing::setupModuleSearchPaths(context, false, false, {}, {});
+  parsing::setupModuleSearchPaths(context, false, false, {}, {});
+
+  // Workaround for performance issues with runAndTrackErrors:
+  // run publicSymbolsForModule on ChapelStandard
+  {
+    if (const resolution::Scope* s = resolution::scopeForAutoModule(context)) {
+      resolution::publicSymbolsForModule(context, s);
+    }
+  }
 
   std::unique_ptr<chpl::Context> ret(context);
   return ret;
