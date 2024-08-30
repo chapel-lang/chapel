@@ -1621,7 +1621,7 @@ helpLookupInScope(Context* context,
                              foundExternBlock,
                              traceCurPath, traceResult,
                              shadowed, traceShadowed,
-                             /* allowCached */ allowCached);
+                             allowCached && traceResult==nullptr);
 
   if (checkExternBlocks) {
     // clear the extern blocks lookup (since it is a 2nd pass)
