@@ -410,11 +410,17 @@ class GpuAssertionReporter {
 
   void printNonGpuizableError(CallExpr* assertion, Expr* loc) const {
     debuggerBreakHere();
-    const char* reason = "contains assertOnGpu()";
-    auto isAttributeSym = toSymExpr(assertion->get(1));
-    INT_ASSERT(isAttributeSym);
-    if (isAttributeSym->symbol() == gTrue) {
-      reason = "is marked with @assertOnGpu";
+    const char* reason = nullptr;
+    if (assertion->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
+      reason = "is marked with @gpu.assertEligible";
+    } else {
+      INT_ASSERT(assertion->isPrimitive(PRIM_ASSERT_ON_GPU));
+      reason = "contains assertOnGpu()";
+      auto isAttributeSym = toSymExpr(assertion->get(1));
+      INT_ASSERT(isAttributeSym);
+      if (isAttributeSym->symbol() == gTrue) {
+        reason = "is marked with @assertOnGpu";
+      }
     }
     USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
   }
@@ -617,6 +623,16 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
+static CallExpr* toCallToGpuEligibilityPrimitive(Expr* expr) {
+  CallExpr *call = toCallExpr(expr);
+  if (call &&
+      (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+       call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
+    return call;
+  }
+  return nullptr;
+}
+
 CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
@@ -629,8 +645,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   // assign to the loop iteration variable if we're iterating
   // over values rather than indices)
   for_alist(expr, cfl->body) {
-    CallExpr *call = toCallExpr(expr);
-    if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
       return call;
     }
 
@@ -639,8 +654,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     BlockStmt *blk = toBlockStmt(expr);
     if (blk && blk->isGpuPrimitivesBlock()) {
       for_alist(expr, blk->body) {
-        CallExpr *call = toCallExpr(expr);
-        if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+        if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
           return call;
         }
       }
@@ -1576,6 +1590,7 @@ bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE) ||
          call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
          call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
 }
@@ -2144,8 +2159,13 @@ static void cleanupPrimitives() {
       // uses of the primitive, which we process by removing the primitive but keeping
       // the copy.
       cleanupTaskIndependentCapturePrimitive(callExpr);
-    }
-    else if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+    } else if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+               callExpr->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
+      callExpr->remove();
+    } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      auto parentBlock = toBlockStmt(callExpr->parentExpr);
+      INT_ASSERT(parentBlock);
+      parentBlock->flattenAndRemove();
       callExpr->remove();
     }
   }

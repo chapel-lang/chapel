@@ -1636,6 +1636,10 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primAssertOnGpu(context, ci);
       break;
 
+    case PRIM_ASSERT_GPU_ELIGIBLE:
+      type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+      break;
+
     case PRIM_GPU_INIT_KERNEL_CFG:
     case PRIM_GPU_INIT_KERNEL_CFG_3D:
       type = QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));

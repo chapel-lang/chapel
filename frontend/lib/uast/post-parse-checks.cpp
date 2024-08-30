@@ -1620,6 +1620,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("stable") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.assertEligible") ||
              node->name() == USTR("gpu.blockSize") ||
              node->name().startsWith(USTR("chpldoc.")) ||
              node->name().startsWith(USTR("chplcheck.")) ||
@@ -1653,13 +1654,15 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
+  if (attr->name() == USTR("assertOnGpu") ||
+      attr->name() == USTR("gpu.blockSize") ||
+      attr->name() == USTR("gpu.assertEligible")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
 
-    if (attr->name() == USTR("assertOnGpu")) {
+    if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.assertEligible")) {
       CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
     } else {
       CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
