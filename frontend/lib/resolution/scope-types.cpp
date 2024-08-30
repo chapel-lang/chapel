@@ -25,6 +25,9 @@
 
 #include "scope-help.h"
 
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/Config/llvm-config.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -305,13 +308,22 @@ void MatchingIdsWithName::removeDuplicateIds() {
   }
 
   if (cur != end) {
+#if LLVM_VERSION_MAJOR >= 14
     idvs_.truncate(cur);
+#else
+    idvs_.resize(cur);
+#endif
   }
 }
 
 void MatchingIdsWithName::truncate(int sz) {
   CHPL_ASSERT(0 <= sz && sz <= (int) idvs_.size());
+#if LLVM_VERSION_MAJOR >= 14
   idvs_.truncate(sz);
+#else
+  idvs_.resize(sz);
+#endif
+
 }
 
 void MatchingIdsWithName::clear() {
