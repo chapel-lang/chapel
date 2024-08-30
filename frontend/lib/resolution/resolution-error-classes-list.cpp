@@ -1309,26 +1309,29 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, id, "'", name, "' has multiple definitions in this scope.");
   }
 
-  bool firstGroup = true;
   int n = matches.numIds();
+  int lastTracePrinted = -1;
   for (int i = 0; i < n; i++) {
     bool encounteredAutoModule = false;
     UniqueString from;
-    bool needsIntroText = true;
+    bool needsIntroText = false;
     std::string intro;
-    if (firstGroup) {
+    if (i == 0) {
       intro = "it was first defined ";
-      firstGroup = false;
     } else {
       intro = "redefined ";
     }
-    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
-                        encounteredAutoModule, from, needsIntroText);
-    bool printedUseTrace = !needsIntroText;
+    if (i == 0 || trace[i] != trace[i-1]) {
+      needsIntroText = true;
+      describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
+                          encounteredAutoModule, from, needsIntroText);
+      if (!needsIntroText) {
+        lastTracePrinted = i;
+      }
+    }
 
     // print out the other IDs
-    const ID& matchId = matches.id(i); 
-    bool firstDef = true;
+    const ID& matchId = matches.id(i);
     if (needsIntroText) {
       if (anchorToDef) {
         wr.message("It was first defined here:");
@@ -1337,19 +1340,18 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
       }
       needsIntroText = false;
     } else {
-      if (printedUseTrace) {
-        if (firstDef) {
+      if (lastTracePrinted != -1) {
+        if (lastTracePrinted == i) {
           wr.note(locationOnly(matchId), "leading to the definition here:");
-          firstDef = false;
         } else {
           wr.note(locationOnly(matchId), "and to the definition here:");
         }
       } else {
         wr.note(locationOnly(matchId), "redefined here:");
       }
-
-      wr.codeForDef(matchId);
     }
+
+    wr.codeForDef(matchId);
   }
 }
 
@@ -1433,7 +1435,7 @@ void ErrorSplitInitMismatchedConditionalTypes::write(
     wr.heading(kind_, type_, var,
              "mismatched types for split-initialization of '", var->name(),
              "' in select branches.");
-    
+
     wr.note(branch1, "Initialized with ", thenType,
             " in one branch");
     wr.note(branch2, "Initialized with ", elseType,
