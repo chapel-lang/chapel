@@ -215,7 +215,7 @@ module GPU
     pragma "codegen for GPU"
     extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     chpl_syncWarp(mask);
   }
 
@@ -365,7 +365,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -376,7 +376,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
