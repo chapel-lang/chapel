@@ -54,6 +54,7 @@ module ChapelStandard {
   public use ChapelLocale;
   public use ChapelPrivatization;
   public use DefaultRectangular;
+  public use ChapelNumLocales;
   public use LocalesArray;
   public use ChapelArray;
   public use ChapelDistribution;
