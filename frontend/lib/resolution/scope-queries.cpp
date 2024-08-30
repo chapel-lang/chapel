@@ -50,7 +50,6 @@ using namespace uast;
 using namespace types;
 
 static const IdAndFlags* getReservedIdentifier(UniqueString name);
-static const Scope* nextHigherScope(Context* context, const Scope* scope);
 static const ModulePublicSymbols*
 publicSymbolsForModuleIfNotRunning(Context* context, const Scope* modScope);
 
@@ -367,6 +366,26 @@ isElseBlockOfConditionalWithIfVarQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+/*
+  Returns 'true' if the passed AST node is the 'else' block in a Conditional
+  that declares a variable.
+
+  The 'if-vars' trickiness is required to implement correct scoping behavior
+  for 'if-vars' in conditionals. The 'if-var' lives in the scope
+  for the conditional, but it is not visible within the 'else'
+  branch. Without this hack, we'd be able to see the 'if-var' in
+  both branches.
+
+  e.g.:
+
+    class C { }
+    if var x = new C() {
+      x;
+    } else {
+      x; // should not resolve to 'var x' from the condition
+    }
+
+*/
 static bool
 isElseBlockOfConditionalWithIfVar(Context* context,
                                   const uast::AstNode* ast) {
@@ -404,6 +423,15 @@ isConditionOfDoWhileLoopQuery(Context* context, ID id) {
   If the current AST node is the condition of a do-while loop, return the
   loop's body, whose scope would be the "parent" scope for the current node.
   Otherwise, return nullptr.
+
+  The do-while logic is required because code like the following is valid:
+
+      do {
+        var x = false;
+      } while x;
+
+  Even though the loop body is not the parent of the conditional, its scope
+  should be visible.
  */
 static const Block*
 isConditionOfDoWhileLoop(Context* context, const uast::AstNode* ast) {
@@ -457,7 +485,13 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
     } else {
       ID parentId = parsing::idToParentId(context, id);
       const Scope* parentScope = scopeForIdQuery(context, parentId);
-
+      // Fix up the parent scope for if-var-else
+      if (parentScope && asttags::isConditional(parentScope->tag()) &&
+          isElseBlockOfConditionalWithIfVar(context, ast)) {
+        // skip the Condition (with the variable) since it's
+        // not valid in the else block
+        parentScope = parentScope->parentScope();
+      }
       bool autoUsesModules = false;
       if (ast->isModule()) {
         if (!parsing::idIsInInternalModule(context, ast->id())) {
@@ -532,24 +566,38 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         }
       }
 
-      // Normally, we won't open a scope unless a variable is declared.
-      // We need the scope in this case so that we can know we're coming
-      // from the else branch of such a conditional when scope-resolving.
-      newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
+      // Always generate a scope for do-while loops, to simplify the below
+      if (ast->isDoWhile()) {
+        newScope = true;
+      }
 
       if (newScope) {
         // Construct the new scope.
         const owned<Scope>& newScope = constructScopeQuery(context, id);
         result = newScope.get();
-      } else if (auto loopBody = isConditionOfDoWhileLoop(context, ast)) {
-        // If this is a condition in do-while loop, its next scope should
-        // be the loop body, even though structurally it's not inside
-        // the loop body.
-        result = scopeForIdQuery(context, loopBody->id());
       } else {
-        // find the scope for the parent node and return that.
+        // No need for a new scope, so compute the appropriate scope to return.
+        // Usually, that is the scope for the parent ID.
         ID parentId = parsing::idToParentId(context, id);
         result = scopeForIdQuery(context, parentId);
+        // Adjust for if-var-else and do-while. For efficiency, we
+        // start by checking if result->tag() indicates these patterns.
+        //
+        // How do we know that we can check for these by tag here?
+        //  * if-var-else introduces a variable, so will have a scope for that
+        //  * we always add a scope for do-while above
+        if (result && isConditional(result->tag()) &&
+            isElseBlockOfConditionalWithIfVar(context, ast)) {
+          // skip the Conditional, so go to the scope above it
+          result = result->parentScope();
+        }
+        if (result && isDoWhile(result->tag())) {
+          if (auto loopBody = isConditionOfDoWhileLoop(context, ast)) {
+            // If this is a condition in do-while loop, use the scope of the
+            // loop body, even though structurally it's not inside the loop body
+            result = scopeForIdQuery(context, loopBody->id());
+          }
+        }
       }
     }
   }
@@ -1078,46 +1126,6 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
   return true;
 }
 
-/**
-  Similar to just calling parentScope() on scope, but does additional work
-  to semantically find the "next scope to be searched". In particular, skips
-  if-var-statement scopes if we're in the else block and jumps to the scope of
-  a do-while body if we're in the do-while condition.
-
-  The 'if-vars' trickiness is required to implement correct scoping behavior
-  for 'if-vars' in conditionals. The 'if-var' lives in the scope
-  for the conditional, but it is not visible within the 'else'
-  branch. Without this hack, we'd be able to see the 'if-var' in
-  both branches.
-
-  The do-while logic is required because code like the following is valid:
-
-      do {
-        var x = false;
-      } while x;
-
-  Even though the loop body is not the parent of the conditional, its scope
-  should be visible.
-
- */
-static const Scope* nextHigherScope(Context* context, const Scope* scope) {
-  auto scopeId = scope->id();
-
-  if (isElseBlockOfConditionalWithIfVarQuery(context, scopeId)) {
-    // We're the else block of an if-statement. Skip the scope of the
-    // if-statement, and go for the next thing up.
-    return nextHigherScope(context, scope->parentScope());
-  }
-
-  if (auto loopBody = isConditionOfDoWhileLoopQuery(context, scopeId)) {
-    // We're the condition of a do-while loop. The scope we should go to
-    // next is the scope of the do-while body.
-    return scopeForIdQuery(context, loopBody->id());
-  }
-
-  return scope->parentScope();
-}
-
 // Returns the IdAndFlags for a common builtin, or nullptr.
 //
 // As a quick optimization to avoid looking up names in scopes where they
@@ -1432,9 +1440,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     bool reachedModule = false;
 
     if (!isModule(scope->tag()) || goPastModules) {
-      for (cur = nextHigherScope(context, scope);
+      for (cur = scope->parentScope();
            cur != nullptr;
-           cur = nextHigherScope(context, cur)) {
+           cur = cur->parentScope()) {
 
         // Allow searching past compiler-generated modules, to pretend like
         // they are children of the module from which they originated.
