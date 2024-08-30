@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-types.h"
 
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/NamedDecl.h"
 
@@ -27,6 +28,46 @@
 namespace chpl {
 namespace resolution {
 
+IdAndFlags::IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
+                       bool isParenfulFunction, bool isMethod,
+                       bool isModule, bool isType)
+  : id_(std::move(id)) {
+
+  // setup the flags
+  Flags flags = 0;
+  if (isPublic) {
+    flags |= PUBLIC;
+  } else {
+    flags |= NOT_PUBLIC;
+  }
+  if (isMethodOrField) {
+    flags |= METHOD_FIELD;
+  } else {
+    flags |= NOT_METHOD_FIELD;
+  }
+  if (isParenfulFunction) {
+    flags |= PARENFUL_FUNCTION;
+  } else {
+    flags |= NOT_PARENFUL_FUNCTION;
+  }
+  if (isMethod) {
+    flags |= METHOD;
+  } else {
+    flags |= NOT_METHOD;
+  }
+  if (isModule) {
+    flags |= MODULE;
+  } else {
+    flags |= NOT_MODULE;
+  }
+  if (isType) {
+    flags |= TYPE;
+  } else {
+    flags |= NOT_TYPE;
+  }
+
+  flags_ = flags;
+}
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
@@ -44,7 +85,18 @@ std::string IdAndFlags::flagsToString(Flags flags) {
 
   if ((flags & MODULE) != 0)     ret += "module ";
   if ((flags & NOT_MODULE) != 0) ret += "!module ";
+
+  if ((flags & TYPE) != 0)     ret += "type ";
+  if ((flags & NOT_TYPE) != 0) ret += "!type ";
   return ret;
+}
+
+void IdAndFlags::stringify(std::ostream& ss,
+                           chpl::StringifyKind stringKind) const {
+  id_.stringify(ss, stringKind);
+  ss << "[";
+  ss << flagsToString(flags_);
+  ss << "=";
 }
 
 using Flags = IdAndFlags::Flags;
@@ -332,12 +384,20 @@ Scope::Scope(Context* context,
   flags_ = flags;
 }
 
-void Scope::addBuiltin(UniqueString name) {
+void Scope::addBuiltinVar(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltin()));
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinVar()));
 }
+
+void Scope::addBuiltinType(UniqueString name) {
+  // Just refer to empty ID since builtin type declarations don't
+  // actually exist in the AST.
+  // The resolver knows that the empty ID means a builtin thing.
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinType()));
+}
+
 
 const Scope* Scope::moduleScope() const {
   const Scope* cur;

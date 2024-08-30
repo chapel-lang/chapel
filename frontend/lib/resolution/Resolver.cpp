@@ -2778,7 +2778,8 @@ MatchingIdsWithName Resolver::lookupIdentifier(
     // Super is a keyword, and should't be looked up in scopes. Return
     // an empty ID to indicate that this identifier points to something,
     // but that something has a special meaning.
-    return MatchingIdsWithName::createWithBuiltinId();
+    return MatchingIdsWithName::createWithIdAndFlags(
+                                      IdAndFlags::createForBuiltinVar());
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;

@@ -37,7 +37,8 @@ namespace resolution {
 
 class MatchingIdsWithName;
 
-/** Helper type to store an ID and visibility constraints. */
+/** Helper type to store an ID and key information that is relevant
+    to scope resolution. */
 class IdAndFlags {
  public:
   // helper types
@@ -65,8 +66,13 @@ class IdAndFlags {
     MODULE = 256,
     /** Something other than a module declaration */
     NOT_MODULE = 512,
+    /** A type declaration */
+    TYPE = 1024,
+    /** Something other than a type declaration */
+    NOT_TYPE = 2048,
 
-    // note: if adding something here, also update flagsToString
+    // note: if adding something here, be sure to also update flagsToString and
+    // the IdAndFlags constructor.
   };
   /// \endcond
 
@@ -152,67 +158,39 @@ class IdAndFlags {
   Flags flags_ = 0;
 
  public:
-  IdAndFlags(ID id, uast::Decl::Visibility vis,
-             bool isField, bool isMethod, bool isParenfulFunction,
-             bool isModule )
-    : id_(std::move(id)) {
-    // setup the flags
-    Flags flags = 0;
-    switch (vis) {
-      case uast::Decl::DEFAULT_VISIBILITY:
-      case uast::Decl::PUBLIC:
-        flags |= PUBLIC;
-        break;
-      case uast::Decl::PRIVATE:
-        flags |= NOT_PUBLIC;
-        break;
-      // no default for compilation error if more are added
-    }
-    if (isMethod || isField) {
-      flags |= METHOD_FIELD;
-    } else {
-      flags |= NOT_METHOD_FIELD;
-    }
-    if (isMethod) {
-      flags |= METHOD;
-    } else {
-      flags |= NOT_METHOD;
-    }
-    if (isParenfulFunction) {
-      flags |= PARENFUL_FUNCTION;
-    } else {
-      flags |= NOT_PARENFUL_FUNCTION;
-    }
-    if (isModule) {
-      flags |= MODULE;
-    } else {
-      flags |= NOT_MODULE;
-    }
-    flags_ = flags;
-  }
+  IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
+             bool isParenfulFunction, bool isMethod,
+             bool isModule, bool isType);
 
-  static IdAndFlags createForToplevelModule(ID id) {
-    auto vis = uast::Decl::Visibility::PUBLIC;
-    bool isField = false;
-    bool isMethod = false;
-    bool isParenfulFunction = false;
-    bool isModule = true;
+  static IdAndFlags createForModule(ID id, bool isPublic) {
     return IdAndFlags(std::move(id),
-                      vis, isField, isMethod, isParenfulFunction,
-                      isModule);
+                      /* isPublic */ isPublic,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ false,
+                      /* isMethod */ false,
+                      /* isModule */ true,
+                      /* isType */ false);
   }
 
-  static IdAndFlags createForBuiltin() {
-    auto vis = uast::Decl::Visibility::PUBLIC;
-    bool isField = false;
-    bool isMethod = false;
-    bool isParenfulFunction = false;
-    bool isModule = false;
+  static IdAndFlags createForBuiltinType() {
     return IdAndFlags(ID(),
-                      vis, isField, isMethod, isParenfulFunction,
-                      isModule);
+                      /* isPublic */ true,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ false,
+                      /* isMethod */ false,
+                      /* isModule */ false,
+                      /* isType */ true);
   }
 
+  static IdAndFlags createForBuiltinVar() {
+    return IdAndFlags(ID(),
+                      /* isPublic */ true,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ false,
+                      /* isMethod */ false,
+                      /* isModule */ false,
+                      /* isType */ false);
+  }
 
   bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
@@ -265,6 +243,12 @@ class IdAndFlags {
   }
 
   static std::string flagsToString(Flags flags);
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -288,16 +272,6 @@ class OwnedIdsWithName {
   owned<std::vector<IdAndFlags>> moreIdvs_;
 
  public:
-  /** Construct an OwnedIdsWithName containing one ID. */
-  OwnedIdsWithName(ID id, uast::Decl::Visibility vis,
-                   bool isField, bool isMethod, bool isParenfulFunction,
-                   bool isModule)
-    : idv_(IdAndFlags(std::move(id), vis, isField, isMethod, isParenfulFunction,
-                      isModule)),
-      flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
-      moreIdvs_(nullptr)
-  { }
-
   /** Construct an OwnedIdsWithName containing one IdAndFlags */
   OwnedIdsWithName(IdAndFlags idv)
     : idv_(std::move(idv)),
@@ -320,15 +294,6 @@ class OwnedIdsWithName {
     // update the flags
     flagsAnd_ &= idv.flags_;
     flagsOr_ |= idv.flags_;
-  }
-
-  /** Append an ID to an OwnedIdsWithName. */
-  void appendId(ID id, uast::Decl::Visibility vis,
-                bool isField, bool isMethod, bool isParenfulFunction,
-                bool isModule) {
-    appendIdAndFlags(IdAndFlags(std::move(id), vis,
-                                isField, isMethod, isParenfulFunction,
-                                isModule));
   }
 
   int numIds() const {
@@ -406,15 +371,11 @@ class MatchingIdsWithName {
     appendMatchingFromOwned(ownedIds, filterFlags, excludeFlagSet);
   }
 
-  /** Construct a MatchingIdsWithName referring to one ID. Requires
-      that the ID will not be filtered out according to the passed
-      settings arePrivateIdsIgnored and onlyMethodsFields.
+  /** Construct a MatchingIdsWithName referring to one ID. Assumes
+      that the caller did any necessary filtering.
     */
-  MatchingIdsWithName(IdAndFlags idv,
-                      IdAndFlags::Flags filterFlags,
-                      const IdAndFlags::FlagSet& excludeFlagSet) {
+  MatchingIdsWithName(IdAndFlags idv) {
     idvs_.push_back(std::move(idv));
-    CHPL_ASSERT(isIdVisible(idvs_.back(), filterFlags, excludeFlagSet));
   }
 
  public:
@@ -452,36 +413,18 @@ class MatchingIdsWithName {
   };
 
   static MatchingIdsWithName
-  createWithSingleIdAndFlags(IdAndFlags idv,
-                             IdAndFlags::Flags filterFlags,
-                             const IdAndFlags::FlagSet& excludeFlagSet) {
+  createWithIdAndFlags(IdAndFlags idv) {
+    return MatchingIdsWithName(std::move(idv));
+  }
+
+  static MatchingIdsWithName
+  createFilteringIdAndFlags(IdAndFlags idv,
+                            IdAndFlags::Flags filterFlags,
+                            const IdAndFlags::FlagSet& excludeFlagSet) {
     if (isIdVisible(idv, filterFlags, excludeFlagSet)) {
-      return MatchingIdsWithName(std::move(idv),
-                                 filterFlags, std::move(excludeFlagSet));
+      return MatchingIdsWithName(std::move(idv));
     }
     return MatchingIdsWithName();
-  }
-
-  static MatchingIdsWithName
-  createWithBuiltinId() {
-    IdAndFlags::Flags filterFlags = 0;
-    IdAndFlags::FlagSet excludeFlagSet;
-    return createWithSingleIdAndFlags(IdAndFlags::createForBuiltin(),
-                                      filterFlags, excludeFlagSet);
-  }
-
-  static MatchingIdsWithName
-  createWithSingleId(ID id, uast::Decl::Visibility vis,
-                     bool isField, bool isMethod, bool isParenfulFunction,
-                     bool isModule,
-                     IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlagSet) {
-
-    auto idv = IdAndFlags(std::move(id),
-                          vis, isField, isMethod, isParenfulFunction,
-                          isModule);
-    return createWithSingleIdAndFlags(std::move(idv),
-                                      filterFlags, excludeFlagSet);
   }
 
   /** Construct a empty MatchingIdsWithName containing no IDs. */
@@ -661,7 +604,11 @@ class Scope {
 
   /** Add a builtin type with the provided name. This needs to
       be called to populate the root scope with builtins. */
-  void addBuiltin(UniqueString name);
+  void addBuiltinType(UniqueString name);
+
+  /** Add a builtin var with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltinVar(UniqueString name);
 
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }

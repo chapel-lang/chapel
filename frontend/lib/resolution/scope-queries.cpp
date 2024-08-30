@@ -49,7 +49,7 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-static bool isReservedIdentifier(UniqueString name);
+static const IdAndFlags* getReservedIdentifier(UniqueString name);
 static const Scope* nextHigherScope(Context* context, const Scope* scope);
 static const ModulePublicSymbols*
 publicSymbolsForModuleIfNotRunning(Context* context, const Scope* modScope);
@@ -98,6 +98,19 @@ static bool isParenfulFunction(const AstNode* d) {
   return false;
 }
 
+static bool isType(const AstNode* d) {
+  if (d != nullptr) {
+    if (d->isTypeDecl()) {
+      return true;
+    } else if (auto var = d->toVarLikeDecl()) {
+      return var->storageKind() == Qualifier::TYPE;
+    }
+  }
+
+  return false;
+}
+
+
 // atFieldLevel indicates that the declaration is directly within
 // a record/class/union (applies to fields, primary methods, and
 // any nested record/class/union).
@@ -106,11 +119,17 @@ static void gather(DeclMap& declared,
                    const AstNode* d,
                    Decl::Visibility visibility,
                    bool atFieldLevel) {
-  auto idv = IdAndFlags(d->id(), visibility,
-                        isField(d, atFieldLevel),
-                        isMethod(d, atFieldLevel),
-                        isParenfulFunction(d),
-                        d->isModule());
+  bool pub = (visibility == Decl::DEFAULT_VISIBILITY ||
+              visibility == Decl::PUBLIC);
+  bool method = isMethod(d, atFieldLevel);
+  bool field = isField(d, atFieldLevel);
+  auto idv = IdAndFlags(d->id(),
+                        /* isPublic */ pub,
+                        /* isMethodOrField */ method | field,
+                        /* isParenfulFunction */ isParenfulFunction(d),
+                        /* isMethod */ method,
+                        /* isModule */ d->isModule(),
+                        /* isType */ isType(d));
 
   auto search = declared.find(name);
   if (search == declared.end()) {
@@ -396,7 +415,7 @@ isConditionOfDoWhileLoop(Context* context, const uast::AstNode* ast) {
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
 static void populateScopeWithBuiltinKeywords(Context* context, Scope* scope) {
-  scope->addBuiltin(UniqueString::get(context, "index"));
+  scope->addBuiltinType(UniqueString::get(context, "index"));
 }
 
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
@@ -405,15 +424,15 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   auto& globalMap = getCompilerGeneratedGlobals(context);
 
   for (const auto& pair : typeMap) {
-    scope->addBuiltin(pair.first);
+    scope->addBuiltinType(pair.first);
   }
   for (const auto& pair : globalMap) {
-    scope->addBuiltin(pair.first);
+    scope->addBuiltinVar(pair.first);
   }
 
   // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
-  scope->addBuiltin(USTR("nil"));
-  scope->addBuiltin(USTR("none"));
+  scope->addBuiltinVar(USTR("nil"));
+  scope->addBuiltinVar(USTR("none"));
 
   populateScopeWithBuiltinKeywords(context, scope);
 }
@@ -651,22 +670,18 @@ getKindForVisibilityClauseId(Context* context, ID visibilityClauseId) {
 
 // Creates a MatchingIdsWithName for the symbol that defines a scope.
 // Used for capturing 'IO' when a visibility statement is 'use IO'.
+// Assumes that the scope refers to a module or an enum.
 static IdAndFlags
 idAndFlagsForScopeSymbol(Context* context, const Scope* scope) {
-  // Note: for the purposes of scope resolution, there shouldn't be a need
-  // to distinguish between public and default visibility, so the below
-  // ternary is sufficient.
-  auto visibility =
-    parsing::idIsPrivateDecl(context, scope->id()) ? Decl::PRIVATE : Decl::PUBLIC;
-  bool isField = false; // target must be module/enum, not field
-  bool isMethod = false; // target must be module/enum, not method
-  bool isParenfulFunction = false;
-  bool isModule = asttags::isModule(scope->tag());
-  auto idv = IdAndFlags(scope->id(),
-                        visibility, isField, isMethod, isParenfulFunction,
-                        isModule);
-  return idv;
-}
+  bool isPublic = !parsing::idIsPrivateDecl(context, scope->id());
+  return IdAndFlags(scope->id(),
+                    /* isPublic */ isPublic,
+                    /* isMethodOrField */ false,
+                    /* isParenfulFunction */ false,
+                    /* isMethod */ false,
+                    /* isModule */ asttags::isModule(scope->tag()),
+                    /* isType */ asttags::isTypeDecl(scope->tag()));
+  }
 
 // config has settings for this part of the search
 // filterFlags has the filter used when considering the module name itself
@@ -882,19 +897,14 @@ bool LookupHelper::doLookupEnclosingModuleName(const Scope* scope,
   // Chapel file names. This avoids compilation failures for
   // implicit modules created from a filename of the form <keyword>.chpl
   // e.g. domain.chpl
-  if (isReservedIdentifier(name))
+  if (getReservedIdentifier(name))
     return false;
 
   // the name matches! record the match
-  auto vis = uast::Decl::Visibility::PRIVATE;
-  bool isField = false;
-  bool isMethod = false;
-  bool isParenfulFn = false;
-  bool isModule = true;
-
-  auto idv = IdAndFlags(scope->id(), vis, isField, isMethod, isParenfulFn,
-                        isModule);
-  result.append(std::move(idv));
+  //
+  // note: it is considered not public here because the enclosing module
+  // name is not available through 'public use' etc.
+  result.append(IdAndFlags::createForModule(scope->id(), /* isPublic */ false));
 
   if (traceCurPath && traceResult) {
     ResultVisibilityTrace t;
@@ -923,7 +933,7 @@ bool LookupHelper::doLookupInToplevelModules(const Scope* scope,
     traceResult->push_back(std::move(t));
   }
 
-  result.append(IdAndFlags::createForToplevelModule(mod->id()));
+  result.append(IdAndFlags::createForModule(mod->id(), /* isPublic */ true));
 
   return true;
 }
@@ -1037,21 +1047,20 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
   // Consider each extern block in turn. Does it have a symbol with that name?
   for (const auto& exbId : exbIds) {
     if (externBlockContainsName(context, exbId, name)) {
-      // note that this extern block can match 'name'
-      bool isField = false; // not possible in an extern block
-      bool isMethod = false; // not possible in an extern block
-      bool isParenfulFunction = false; // might be a lie. TODO does it matter?
-      bool isModule = false; // not possible in an extern block
-
+      // make a note that this extern block can match 'name'
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
 
-      auto idv = IdAndFlags(newId,
-                            Decl::PUBLIC,
-                            isField,
-                            isMethod,
-                            isParenfulFunction,
-                            isModule);
+      // We assume it's not a parenful function or a type,
+      // but that might not be. However, it shouldn't matter for scope
+      // resolution. Adjust this code if it does.
+      auto idv = IdAndFlags(std::move(newId),
+                            /* isPublic */ true,
+                            /* isMethodOrField */ false,
+                            /* isParenfulFunction */ false, // maybe a lie
+                            /* isMethod */ false,
+                            /* isModule */ false,
+                            /* isType */ false); // maybe a lie
 
       result.append(std::move(idv));
 
@@ -1109,13 +1118,16 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
   return scope->parentScope();
 }
 
+// Returns the IdAndFlags for a common builtin, or nullptr.
+//
 // As a quick optimization to avoid looking up names in scopes where they
 // can't possibly be (because they're reserved), skip names like 'int' which
 // can't be redefined.
 //
 // Performance: ideally this could be a SmallPtrSet, but we're getting
 // different .c_str() pointers for USTR("int") and strings we get from the
-// parser. Seems fixable.
+// parser. Seems fixable. (This is due to UniqueString using the small
+// string optimization).
 //
 // Other reserved identifiers (bytes, imag) could be added here, but in
 // my performance benchmarks they didn't occur frequently so were not
@@ -1124,23 +1136,30 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
 //
 // *also* this list is consulted to avoid finding a parent module when
 // that would potentially cause a problem.
-static bool isReservedIdentifier(UniqueString name) {
-  static std::unordered_set<UniqueString> reserved = {
-    USTR("atomic"),
-    USTR("bool"),
-    USTR("complex"),
-    USTR("domain"),
-    USTR("int"),
-    USTR("locale"),
-    USTR("nil"),
-    USTR("real"),
-    USTR("sparse"),
-    USTR("string"),
-    USTR("subdomain"),
-    USTR("uint"),
-    USTR("void"),
+static const IdAndFlags* getReservedIdentifier(UniqueString name) {
+  static const std::unordered_map<UniqueString, IdAndFlags> reserved = {
+    {USTR("atomic"),    IdAndFlags::createForBuiltinType()},
+    {USTR("bool"),      IdAndFlags::createForBuiltinType()},
+    {USTR("bytes"),     IdAndFlags::createForBuiltinType()},
+    {USTR("complex"),   IdAndFlags::createForBuiltinType()},
+    {USTR("domain"),    IdAndFlags::createForBuiltinType()},
+    {USTR("int"),       IdAndFlags::createForBuiltinType()},
+    {USTR("locale"),    IdAndFlags::createForBuiltinType()},
+    {USTR("nil"),       IdAndFlags::createForBuiltinVar()},
+    {USTR("real"),      IdAndFlags::createForBuiltinType()},
+    {USTR("sparse"),    IdAndFlags::createForBuiltinType()},
+    {USTR("string"),    IdAndFlags::createForBuiltinType()},
+    {USTR("subdomain"), IdAndFlags::createForBuiltinType()},
+    {USTR("uint"),      IdAndFlags::createForBuiltinType()},
+    {USTR("void"),      IdAndFlags::createForBuiltinType()},
   };
-  return reserved.count(name);
+
+  auto it = reserved.find(name);
+  if (it != reserved.end()) {
+    return &it->second;
+  }
+
+  return nullptr;
 }
 
 // appends to result
@@ -1182,11 +1201,12 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
   // reserved (non-redefinable) identifiers will be found in the toplevel
   // scope only.
-  if (checkParents && !onlyMethodsFields && isReservedIdentifier(name)) {
-    result.append(IdAndFlags::createForBuiltin());
-    return true;
+  if (checkParents && !onlyMethodsFields) {
+    if (const IdAndFlags* got = getReservedIdentifier(name)) {
+      result.append(*got);
+      return true;
+    }
   }
-
 
   IdAndFlags::Flags curFilter = 0;
   IdAndFlags::FlagSet excludeFilter;
