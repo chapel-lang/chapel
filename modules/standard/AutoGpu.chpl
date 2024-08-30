@@ -44,7 +44,7 @@ module AutoGpu {
                       "that the code can be executed on the GPU without ",
                       "runtime checks.");
     }
-    __primitive("chpl_assert_on_gpu", true);
+    __primitive("chpl_assert_on_gpu");
   }
 
   inline proc chpl__gpuBlockSizeAttr(param counter: int, arg: integral) {

@@ -134,18 +134,6 @@ module GPU
   }
 
   /*
-    Will halt execution at runtime if called from outside a GPU.  If used on
-    first line in ``foreach`` or ``forall`` loop will also do a compile time
-    check that the loop is eligible for execution on a GPU.
-  */
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
-  inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu", false);
-  }
-
-  /*
     Returns value of a per-multiprocessor counter that increments every clock cycle.
     This function is meant to be called to time sections of code within a GPU
     enabled loop.

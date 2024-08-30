@@ -414,13 +414,7 @@ class GpuAssertionReporter {
     if (assertion->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
       reason = "is marked with @gpu.assertEligible";
     } else {
-      INT_ASSERT(assertion->isPrimitive(PRIM_ASSERT_ON_GPU));
-      reason = "contains assertOnGpu()";
-      auto isAttributeSym = toSymExpr(assertion->get(1));
-      INT_ASSERT(isAttributeSym);
-      if (isAttributeSym->symbol() == gTrue) {
-        reason = "is marked with @assertOnGpu";
-      }
+      reason = "is marked with @assertOnGpu";
     }
     USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
   }
