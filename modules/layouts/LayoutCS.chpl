@@ -22,7 +22,7 @@
 
 @unstable("LayoutCS is unstable and may change in the future")
 prototype module LayoutCS {
-
+import Sort.{keyComparator};
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -38,7 +38,7 @@ config param LayoutCSDefaultToSorted = true;
 
 @chpldoc.nodoc
 /* Comparator used for sorting by columns */
-record _ColumnComparator {
+record _ColumnComparator: keyComparator {
   proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
