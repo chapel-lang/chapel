@@ -158,6 +158,8 @@ class IdAndFlags {
   Flags flags_ = 0;
 
  public:
+  IdAndFlags() { }
+
   IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
              bool isParenfulFunction, bool isMethod,
              bool isModule, bool isType);
