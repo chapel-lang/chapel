@@ -2,7 +2,7 @@
  *  Check correctness of search functions
  */
 
-use Search; use Sort only relativeComparator;
+use Search; use Sort only relativeComparator, keyComparator;
 
 proc main() {
 
@@ -117,7 +117,7 @@ proc ReverseComparator.name() { return 'ReverseComparator';}
 
 
 /* Key Sort by absolute value */
-record AbsKeyCmp {
+record AbsKeyCmp: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
