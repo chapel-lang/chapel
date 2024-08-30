@@ -96,7 +96,7 @@ void IdAndFlags::stringify(std::ostream& ss,
   id_.stringify(ss, stringKind);
   ss << "[";
   ss << flagsToString(flags_);
-  ss << "=";
+  ss << "]";
 }
 
 using Flags = IdAndFlags::Flags;
@@ -574,6 +574,7 @@ void ModulePublicSymbols::stringify(std::ostream& ss,
   ss << "}\n";
 }
 
+IMPLEMENT_DUMP(IdAndFlags);
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(MatchingIdsWithName);
 IMPLEMENT_DUMP(Scope);

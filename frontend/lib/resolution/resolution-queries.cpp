@@ -3006,38 +3006,35 @@ isInitialTypedSignatureApplicable(Context* context,
 // or the result of typedSignatureInitial if it is.
 static ApplicabilityResult
 doIsCandidateApplicableInitial(Context* context,
-                               const ID& candidateId,
+                               const IdAndFlags& candidate,
                                const CallInfo& ci) {
-  AstTag tag = asttags::AST_TAG_UNKNOWN;
-
-  if (!candidateId.isEmpty()) {
-    tag = parsing::idToTag(context, candidateId);
-  }
+  bool isParenlessFn = !candidate.isParenfulFunction();
+  bool isField = candidate.isMethodOrField() && !candidate.isMethod();
+  const ID& candidateId = candidate.id();
 
   // if it's a paren-less call, only consider parenless routines
   // (including generated field accessors) but not types/outer variables/
   // calls with parens.
   if (ci.isParenless()) {
-    if (parsing::idIsParenlessFunction(context, candidateId) ||
-        parsing::idIsField(context, candidateId)) {
+    if (isParenlessFn || isField) {
       // OK
     } else {
       return ApplicabilityResult::failure(candidateId, FAIL_PARENLESS_MISMATCH);
     }
   }
 
-  if (isTypeDecl(tag)) {
+  if (candidate.isType() && !ci.isParenless()) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
     return ApplicabilityResult::success(typeConstructorInitial(context, t));
   }
 
-  // not a candidate
-  if (ci.isMethodCall() && isFormal(tag)) {
+  // formals aren't candidates
+  if (ci.isMethodCall() && !candidate.isMethodOrField()) {
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  if (isVariable(tag)) {
+  if (isField) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
       //
@@ -3054,9 +3051,15 @@ doIsCandidateApplicableInitial(Context* context,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  if (!isFunction(tag)) {
-    context->error(candidateId, "Found non-function where function was expected");
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  if (!candidate.isParenfulFunction()) {
+    AstTag tag = asttags::AST_TAG_UNKNOWN;
+    if (!candidateId.isEmpty()) {
+      tag = parsing::idToTag(context, candidateId);
+    }
+    if (!isFunction(tag)) {
+      context->error(candidateId, "Found non-function where function was expected");
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    }
   }
 
   if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
@@ -3110,7 +3113,7 @@ doIsCandidateApplicableInstantiating(Context* context,
 
 static ApplicabilityResult const&
 isCandidateApplicableInitialQuery(Context* context,
-                                  ID candidateId,
+                                  IdAndFlags candidateId,
                                   CallInfo call) {
 
   QUERY_BEGIN(isCandidateApplicableInitialQuery, context, candidateId, call);
@@ -3131,7 +3134,9 @@ filterCandidatesInitialGatherRejected(Context* context,
   CandidatesAndForwardingInfo matching;
   std::vector<ApplicabilityResult> rejected;
 
-  for (const ID& id : lst) {
+  auto end = lst.end();
+  for (auto cur = lst.begin(); cur != end; ++cur) {
+    const IdAndFlags& id = cur.curIdAndFlags();
     auto s = isCandidateApplicableInitialQuery(context, id, call);
     if (s.success()) {
       matching.addCandidate(s.candidate());
@@ -3148,8 +3153,9 @@ const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
                         MatchingIdsWithName lst,
                         CallInfo call) {
-  auto& result = filterCandidatesInitialGatherRejected(context, std::move(lst),
-                                                       call, /* gatherRejected */ false);
+  auto& result =
+    filterCandidatesInitialGatherRejected(context, std::move(lst),
+                                          call, /* gatherRejected */ false);
   return result.first;
 }
 

@@ -227,6 +227,9 @@ class IdAndFlags {
   bool isModule() const {
     return (flags_ & MODULE) != 0;
   }
+  bool isType() const {
+    return (flags_ & TYPE) != 0;
+  }
 
   // return true if haveFlags matches filterFlags, and does not match
   // the exclude flag set. See the comments on Flags and FlagSet for
