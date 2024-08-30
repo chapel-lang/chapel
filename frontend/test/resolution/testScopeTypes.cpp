@@ -94,28 +94,46 @@ static void testMatchFilter() {
   assert(!IdAndFlags::matchFilter(not_pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
 }
 
+static IdAndFlags makeTestIdAndFlags(ID id, bool isPublic, bool isMethod) {
+  return IdAndFlags(id,
+                    /* isPublic */ isPublic,
+                    /* isMethodOrField */ isMethod,
+                    /* isParenfulFunction */ false,
+                    /* isMethod */ isMethod,
+                    /* isModule */ false,
+                    /* isType */ false);
+}
+
 // test OwnedIdsWithName::borrow
 static void testBorrowIds() {
   Context ctx;
   Context* context = &ctx;
 
-  ID x = ID::fromString(context, "M.x");
-  ID y = ID::fromString(context, "M.y");
+  IdAndFlags privVar = makeTestIdAndFlags(ID::fromString(context, "M.x"),
+                                          /* isPublic */ false,
+                                          /* isMethod */ false);
+
+  IdAndFlags pubMethod = makeTestIdAndFlags(ID::fromString(context, "M.y"),
+                                            /* isPublic */ true,
+                                            /* isMethod */ true);
+
+  IdAndFlags pubVar = makeTestIdAndFlags(ID::fromString(context, "M.z"),
+                                         /* isPublic */ true,
+                                         /* isMethod */ false);
+
 
   {
     // check one id with no filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false,
-                         /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(privVar);
     assert(ids.numIds() == 1);
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, 0, FlagSet::empty());
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == x);
+    assert(foundIds.firstId() == privVar.id());
     assert(foundIds.numIds() == 1);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == x);
+      assert(id == privVar.id());
       count++;
     }
     assert(count == 1);
@@ -123,9 +141,7 @@ static void testBorrowIds() {
 
   {
     // check one id with filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false,
-                         /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(privVar);
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
@@ -140,9 +156,7 @@ static void testBorrowIds() {
   }
   {
     // check one id with filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false,
-                         /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(privVar);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(not_method);
     MatchingIdsWithName foundIds;
@@ -152,23 +166,19 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out the 1st
-    OwnedIdsWithName ids(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(y, Decl::PUBLIC,
-                 /* field */ false, /* method */ true,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(privVar);
+    ids.appendIdAndFlags(pubMethod);
     assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, f, e);
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == y);
+    assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 1);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == y);
+      assert(id == pubMethod.id());
       count++;
     }
     assert(count == 1);
@@ -176,22 +186,18 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out the 2nd
-    OwnedIdsWithName ids(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(x, Decl::PRIVATE,
-                 /* field */ false, /* method */ false,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(pubMethod);
+    ids.appendIdAndFlags(privVar);
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, f, e);
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == y);
+    assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 1);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == y);
+      assert(id == pubMethod.id());
       count++;
     }
     assert(count == 1);
@@ -199,22 +205,18 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out neither
-    OwnedIdsWithName ids(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(x, Decl::PRIVATE,
-                 /* field */ false, /* method */ false,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(pubMethod);
+    ids.appendIdAndFlags(privVar);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, f, e);
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == y);
+    assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 2);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == x || id == y);
+      assert(id == privVar.id() || id == pubMethod.id());
       count++;
     }
     assert(count == 2);
@@ -222,22 +224,18 @@ static void testBorrowIds() {
 
   {
     // check two excluding one of them
-    OwnedIdsWithName ids(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(x, Decl::PRIVATE,
-                 /* field */ false, /* method */ false,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(pubMethod);
+    ids.appendIdAndFlags(privVar);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, f, e);
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == x);
+    assert(foundIds.firstId() == privVar.id());
     assert(foundIds.numIds() == 1);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == x);
+      assert(id == privVar.id());
       count++;
     }
     assert(count == 1);
@@ -245,22 +243,18 @@ static void testBorrowIds() {
 
   {
     // check two different ones excluding one of them
-    OwnedIdsWithName ids(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(x, Decl::PUBLIC,
-                 /* field */ false, /* method */ false,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(pubMethod);
+    ids.appendIdAndFlags(pubVar);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     MatchingIdsWithName foundIds;
     foundIds.appendMatchingFromOwned(ids, f, e);
     assert(!foundIds.isEmpty());
-    assert(foundIds.firstId() == x);
+    assert(foundIds.firstId() == pubVar.id());
     assert(foundIds.numIds() == 1);
     int count = 0;
     for (auto id : foundIds) {
-      assert(id == x);
+      assert(id == pubVar.id());
       count++;
     }
     assert(count == 1);
@@ -268,12 +262,8 @@ static void testBorrowIds() {
 
   {
     // check two excluding both
-    OwnedIdsWithName ids(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true,
-                         /* parenful */ false, /* module */ false);
-    ids.appendId(x, Decl::PUBLIC,
-                 /* field */ false, /* method */ false,
-                 /* parenful */ false, /* module */ false);
+    OwnedIdsWithName ids(pubMethod);
+    ids.appendIdAndFlags(pubVar);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub);
     MatchingIdsWithName foundIds;
