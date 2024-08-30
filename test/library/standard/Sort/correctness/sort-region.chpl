@@ -4,7 +4,7 @@ record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
-record AbsKeyCmp {
+record AbsKeyCmp: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }

@@ -8,7 +8,7 @@ class Value {
 }
 
 
-record keyValueComparator {
+record keyValueComparator: keyComparator {
   proc key(v: Value?) {
     if v == nil then
       return 0;
@@ -58,7 +58,7 @@ operator Wrapper.=(ref lhs: Wrapper, ref rhs: Wrapper) {
   lhs.elt = rhs.elt;
 }
 
-record keyWrapperComparator {
+record keyWrapperComparator: keyComparator {
   proc key(v: Wrapper) {
     if v.elt == nil then
       return 0;
@@ -108,7 +108,7 @@ record ArrayWrapper {
     elts[1] = arg;
   }
 }
-record keyArrayWrapperComparator {
+record keyArrayWrapperComparator: keyComparator {
   proc key(v: ArrayWrapper) {
     if v.elts[1] == nil then
       return 0;
@@ -148,7 +148,7 @@ proc ArrayWrapperComparator type do
 
 // TEST 4: SORTING ARRAY CONTAINING ARRAY OF OWNED ELEMENTS
 
-record keyArrayComparator {
+record keyArrayComparator: keyComparator {
   proc key(v: [] owned Value?) {
     if v[1] == nil then
       return 0;

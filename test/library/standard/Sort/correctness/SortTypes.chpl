@@ -3,7 +3,7 @@ config const verbose = false;
 
 use Sort, Math;
 
-record UselessKeyComparator {
+record UselessKeyComparator: keyComparator {
   proc key(x) {
     return x;
   }

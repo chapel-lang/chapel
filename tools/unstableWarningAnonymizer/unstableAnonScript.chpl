@@ -65,7 +65,7 @@ import Set.set;
 import Sort;
 import Regex.regex;
 import ArgumentParser;
-use Sort only relativeComparator;
+use Sort only relativeComparator, keyComparator;
 
 proc countUniqueWarnings(ref warningsMap: map(string, ?t),
                          inputFileReader: IO.fileReader(?)
@@ -172,7 +172,7 @@ proc occurrenceComparator.compare(a: (string, int, int), b: (string, int, int)){
   return b[1] - a[1];  // Reverse sort
 }
 
-record warningComparator {}
+record warningComparator: keyComparator {}
 proc warningComparator.key(a: (string, int, int)) { return a[0]; }
 
 proc convertMapToArray(const m: map(string, ?t), sorted: bool, topX: int)

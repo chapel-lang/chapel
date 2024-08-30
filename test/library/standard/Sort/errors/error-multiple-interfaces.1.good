@@ -1,1 +1,1 @@
-error-multiple-interfaces.chpl:32: error: The comparator R1 should only implement one sort comparator interface.
+error-multiple-interfaces.chpl:27: error: The comparator R1 should only implement one sort comparator interface.

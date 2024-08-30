@@ -1,2 +1,3 @@
 errors-comparator.chpl:9: In function 'main':
+errors-comparator.chpl:17: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record keyAndKeyPart: keyComparator').
 errors-comparator.chpl:17: error: keyAndKeyPart contains both a key method and a keyPart method
