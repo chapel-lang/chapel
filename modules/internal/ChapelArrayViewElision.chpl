@@ -19,14 +19,11 @@
  */
 
 module ChapelArrayViewElision {
-  /*use ChapelBase only iterKind;
+  use ChapelArray;
+  use ChapelBase;
   use ChapelRange;
   use DefaultRectangular;
   use CTypes;
-  use ChapelArray only _validRankChangeArgs;*/
-
-  use ChapelBase;
-
 
   //
   // compiler interface
