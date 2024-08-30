@@ -161,7 +161,7 @@ void chpl_gpu_impl_init(int* num_devices) {
       // on some (all?) platforms. Assume the domain is 0 and carry on.
       domain = 0;
     } else {
-      chpl_gpu_rocm_check(rc, __FILE__, __LINE__);
+      ROCM_CALL(rc);
     }
     ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
                                     allDevices[i]));
