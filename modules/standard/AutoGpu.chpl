@@ -54,6 +54,11 @@ module AutoGpu {
 
   pragma "last resort"
   inline proc chpl__gpuBlockSizeAttr(param counter: int, rest ...) {
-    compilerError("'@gpu.blockSize' attribute must have exactly one argument: the block size");
+    compilerError("'@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size");
+  }
+
+  pragma "last resort"
+  inline proc chpl__gpuBlockSizeAttr(param counter: int) {
+    compilerError("'@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size");
   }
 }
