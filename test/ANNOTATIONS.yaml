@@ -552,6 +552,9 @@ all:
   06/01/23:
     - text: Remove calls to codegenInvariantStart (#22439)
       config: chapcs
+  07/31/23:
+    - text: Changed nightly testing machine used for 16-node-xc
+      config: 16-node-xc
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
@@ -2091,6 +2094,16 @@ thread-ring:
     - Prevent serialization from qthread sync vars (#9737)
   08/30/18:
     - Reduce hugepage waste from call stacks (#10254)
+  08/12/24:
+    - Update bundled qthreads to 1.20 (#25210)
+  08/28/24:
+    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
+
+twopt-buildtrees:
+  08/12/24:
+    - Update bundled qthreads to 1.20 (#25210)
+  08/28/24:
+    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
 
 time_array_vs_ddata:
   05/31/14:
