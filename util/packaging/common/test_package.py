@@ -175,6 +175,11 @@ def main():
     test_dir = os.path.join(chpl_home, "util", "packaging", pkg_type, "test")
     test_dir = os.path.abspath(test_dir)
 
+    # TODO: need to figure out how to test the ofi-slurm package automatically
+    if "ofi-slurm" in package:
+        print("Skipping ofi-slurm package")
+        return
+
     docker_os = args.dockeros
     if docker_os is None:
         docker_os = infer_docker_os(package)
