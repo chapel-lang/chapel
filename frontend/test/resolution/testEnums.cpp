@@ -45,10 +45,10 @@ static void test1() {
 
   auto et = qt.type()->toEnumType();
   auto ep = qt.param()->toEnumParam();
-  assert(et->id().contains(ep->value().first));
+  assert(et->id().contains(ep->value().id));
   auto enumAst = parsing::idToAst(context, et->id());
   assert(enumAst && enumAst->isEnum());
-  auto elemAst = parsing::idToAst(context, ep->value().first);
+  auto elemAst = parsing::idToAst(context, ep->value().id);
   assert(elemAst && elemAst->isEnumElement());
 }
 
@@ -366,11 +366,11 @@ static void test11() {
 
   auto param0 = vars.at("a").param();
   assert(param0 && param0->isEnumParam());
-  assert(param0->toEnumParam()->value().first.postOrderId() == 1);
+  assert(param0->toEnumParam()->value().id.postOrderId() == 1);
 
   auto param1 = vars.at("b").param();
   assert(param1 && param1->isEnumParam());
-  assert(param1->toEnumParam()->value().first.postOrderId() == 5);
+  assert(param1->toEnumParam()->value().id.postOrderId() == 5);
 }
 
 static void test12() {
@@ -579,22 +579,22 @@ static void test17() {
   assert(vars.at("c").type()->isEnumType());
   assert(vars.at("c").param());
   assert(vars.at("c").param()->isEnumParam());
-  assert(vars.at("c").param()->toEnumParam()->value().first.postOrderId() == 0);
+  assert(vars.at("c").param()->toEnumParam()->value().id.postOrderId() == 0);
   assert(vars.at("d").type());
   assert(vars.at("d").type()->isEnumType());
   assert(vars.at("d").param());
   assert(vars.at("d").param()->isEnumParam());
-  assert(vars.at("d").param()->toEnumParam()->value().first.postOrderId() == 0);
+  assert(vars.at("d").param()->toEnumParam()->value().id.postOrderId() == 0);
   assert(vars.at("e").type());
   assert(vars.at("e").type()->isEnumType());
   assert(vars.at("e").param());
   assert(vars.at("e").param()->isEnumParam());
-  assert(vars.at("e").param()->toEnumParam()->value().first.postOrderId() == 1);
+  assert(vars.at("e").param()->toEnumParam()->value().id.postOrderId() == 1);
   assert(vars.at("f").type());
   assert(vars.at("f").type()->isEnumType());
   assert(vars.at("f").param());
   assert(vars.at("f").param()->isEnumParam());
-  assert(vars.at("f").param()->toEnumParam()->value().first.postOrderId() == 2);
+  assert(vars.at("f").param()->toEnumParam()->value().id.postOrderId() == 2);
 
   assert(guard.realizeErrors() == 1);
 }

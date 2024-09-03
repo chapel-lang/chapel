@@ -1540,14 +1540,14 @@ static void test44() {
   assert(pt.type()->isEnumType());
   assert(pt.param()->isEnumParam());
   auto param = pt.param()->toEnumParam();
-  assert(param->value().second == "x");
+  assert(param->value().str == "x");
 
 
   auto parent = xt->basicClassType()->parentClassType();
   auto pf = parent->substitutions();
   assert(pf.size() == 1);
   assert(pf.begin()->second.type()->isEnumType());
-  assert(pf.begin()->second.param()->toEnumParam()->value().second == "red");
+  assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
 }
 
 int main() {

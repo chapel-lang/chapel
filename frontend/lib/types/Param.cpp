@@ -212,10 +212,10 @@ optional<Immediate> paramToImmediate(Context* context,
 
         if (ep) {
           auto numericValueOpt =
-            computeNumericValueOfEnumElement(context, ep->value().first);
+            computeNumericValueOfEnumElement(context, ep->value().id);
 
           if (!numericValueOpt) {
-            auto eltAst = parsing::idToAst(context, ep->value().first)->toEnumElement();
+            auto eltAst = parsing::idToAst(context, ep->value().id)->toEnumElement();
             auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
 
             // In order to be able to compose multiple calls to this function,
@@ -948,7 +948,8 @@ IMPLEMENT_DUMP(Param);
 
 const EnumParam* Param::getEnumParam(Context* context, ID id) {
   auto ast = parsing::idToAst(context, id)->toEnumElement();
-  auto value = std::make_pair(id, ast->name().str());
+  CHPL_ASSERT(ast && "expecting EnumElement");
+  auto value = EnumValue(id, ast->name().str());
   return EnumParam::get(context, value);
 }
 

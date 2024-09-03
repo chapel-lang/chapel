@@ -36,7 +36,7 @@ getRangeInfo(Context* context, const RecordType* r) {
   assert(bounded.type()->isEnumType());
   assert(bounded.param() != nullptr);
   auto boundedValue = bounded.param()->toEnumParam();
-  auto id = boundedValue->value().first;
+  auto id = boundedValue->value().id;
   auto astNode = idToAst(context, id)->toNamedDecl();
   assert(astNode != nullptr);
   std::string boundTypeStr = astNode->name().str();
@@ -46,7 +46,7 @@ getRangeInfo(Context* context, const RecordType* r) {
   assert(stridable.type()->isEnumType());
   assert(stridable.param() != nullptr);
   auto stridableValue = stridable.param()->toEnumParam();
-  auto idS = stridableValue->value().first;
+  auto idS = stridableValue->value().id;
   auto astNodeS = idToAst(context, idS)->toNamedDecl();
   assert(astNodeS != nullptr);
   std::string stridesStr = astNodeS->name().str();
