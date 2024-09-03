@@ -525,7 +525,27 @@ proc chpl_check_comparator(comparator,
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " must implement either 'keyComparator', 'keyPartComparator', or 'relativeComparator' for " + eltType:string);
+    if comparatorImplementsKey(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'keyComparator' but does not correctly provide a ",
+        "'key' method for ", eltType:string);
+    } else if comparatorImplementsKeyPart(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'keyPartComparator' but does not correctly provide a ",
+        "'keyPart' method for ", eltType:string);
+    } else if comparatorImplementsRelative(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'relativeComparator' but does not correctly provide a ",
+        "'compare' method for ", eltType:string);
+    } else {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " must implement either 'keyComparator', 'keyPartComparator', or ",
+        "'relativeComparator' for ", eltType:string);
+    }
   }
 
   return true;
