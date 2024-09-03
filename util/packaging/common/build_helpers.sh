@@ -131,7 +131,7 @@ __test_all_packages() {
   for deb in $(find util/packaging/apt/build -name '*.deb'); do
     __test_package $deb
   done
-  for rpm in $(find util/packaging/rpm/build -name '*.deb'); do
+  for rpm in $(find util/packaging/rpm/build -name '*.rpm'); do
     __test_package $rpm
   done
 }
