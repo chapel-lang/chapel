@@ -270,8 +270,7 @@ static const Type* ctFromSubs(Context* context,
   const Type* ret = nullptr;
 
   if (auto rec = receiverType->toRecordType()) {
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toRecordType();
+    auto instantatiatedFrom = subs.empty() ? nullptr : root->toRecordType();
     ret = RecordType::get(context, rec->id(), rec->name(),
                           instantatiatedFrom,
                           subs);
@@ -281,9 +280,8 @@ static const Type* ctFromSubs(Context* context,
 
     bool genericParent =
         superType && superType->instantiatedFromCompositeType() != nullptr;
-    auto instantiatedFrom = (subs.size() == 0 && !genericParent)
-                                  ? nullptr
-                                  : root->toBasicClassType();
+    auto instantiatedFrom =
+        (subs.empty() && !genericParent) ? nullptr : root->toBasicClassType();
 
     auto basic = BasicClassType::get(context, oldBasic->id(),
                                      oldBasic->name(),
@@ -368,7 +366,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     }
   }
 
-  if (subs.size() != 0 || genericParent) {
+  if (!subs.empty() || genericParent) {
     const Type* ret = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
     CHPL_ASSERT(ret);
     return ret;
