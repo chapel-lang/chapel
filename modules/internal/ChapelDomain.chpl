@@ -2795,17 +2795,15 @@ module ChapelDomain {
 
     // associative array interface
     /* Yields the domain indices in sorted order. */
-    iter sorted(comparator:?t = chpl_defaultComparator()) where this.isAssociative() {
+    iter sorted(comparator:?t = chpl_defaultComparator()) {
+      if !this.isAssociative() then
+        compilerError("'.sorted()' is only supported on associative domains");
       if !noSortedWarnings then
         compilerWarning(
           "It is recommended to use 'Sort.sorted' instead of this method. ",
           "Compile with '-snoSortedWarnings' to suppress this warning.");
-      for i in _value.dsiSorted(comparator) {
-        yield i;
-      }
-    }
-    iter sorted(comparator:?t = chpl_defaultComparator()) where !this.isAssociative() {
-      compilerError("'.sorted()' is only supported on associative domains");
+      import Sort;
+      for x in Sort.sorted(this, comparator=comparator) do yield x;
     }
 
     @chpldoc.nodoc
