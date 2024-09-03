@@ -1,3 +1,4 @@
 sortInterfaces.chpl:5: warning: keyPartComparator is not yet stable
 sortInterfaces.chpl:8: warning: sortComparator is not yet stable
 sortInterfaces.chpl:2: warning: relativeComparator is not yet stable
+sortInterfaces.chpl:10: warning: keyComparator is not yet stable

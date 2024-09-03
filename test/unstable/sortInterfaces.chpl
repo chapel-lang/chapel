@@ -6,3 +6,5 @@ R2 implements keyPartComparator;
 
 record R3 { }
 R3 implements sortComparator;
+
+record R4: keyComparator { }

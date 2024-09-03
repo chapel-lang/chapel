@@ -225,11 +225,11 @@ proc ReverseComparator.name() { return 'ReverseComparator';}
 
 
 /* Key Sort by absolute value */
-record AbsKeyCmp {
+record AbsKeyCmp: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
-class AbsKeyCmpClass {
+class AbsKeyCmpClass: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmpClass'; }
 }
@@ -249,11 +249,11 @@ class AbsCompCmpClass: relativeComparator {
 
 
 /* Key method can return a non-numerical/string type, such as tuple */
-record TupleCmp {
+record TupleCmp: keyComparator {
   proc key(a) { return (a, a); }
   proc name() { return 'TupleCmp'; }
 }
-class TupleCmpClass {
+class TupleCmpClass: keyComparator {
   proc key(a) { return (a, a); }
   proc name() { return 'TupleCmpClass'; }
 }

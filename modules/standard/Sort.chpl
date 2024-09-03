@@ -434,10 +434,9 @@ proc chpl_check_comparator(comparator,
                            type eltType,
                            param errorDepth = 2,
                            param doDeprecationCheck = true) param {
-
-  // TODO: add keyComparator
   // if more than 1 interface is implemented, error
-  if (comparatorImplementsKeyPart(comparator):int +
+  if (comparatorImplementsKey(comparator):int +
+      comparatorImplementsKeyPart(comparator):int +
       comparatorImplementsRelative(comparator):int) > 1 {
     compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " should only implement one sort comparator interface.");
   }
@@ -452,7 +451,6 @@ proc chpl_check_comparator(comparator,
   }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
-    // TODO: check for keyComparator
     // Check return type of key
     const keydata = comparator.key(data);
     type keytype = keydata.type;
@@ -464,6 +462,8 @@ proc chpl_check_comparator(comparator,
         eltType:string,
         " elements");
 
+    // TODO: I think these can be removed once we enforce the interface in
+    //       the compiler and remove `canResolveMethod`
     // Check that there isn't also a compare or keyPart
     if canResolveMethod(comparator, "compare", data, data) {
       compilerError(errorDepth=errorDepth,
@@ -474,6 +474,15 @@ proc chpl_check_comparator(comparator,
       compilerError(errorDepth=errorDepth,
         comparator.type:string,
         " contains both a key method and a keyPart method");
+    }
+    if doDeprecationCheck && !comparatorImplementsKey(comparator) {
+      param atType = if isRecord(comparator) then "record" else "class";
+      param fixString = "'" + atType + " " +
+                        comparator.type:string + ": keyComparator'";
+      compilerWarning(errorDepth=errorDepth,
+        "Defining a comparator with a 'key' method without " +
+        "implementing the keyComparator interface is deprecated. " +
+        "Please implement the keyComparator interface (i.e. " + fixString + ").");
     }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
@@ -515,10 +524,28 @@ proc chpl_check_comparator(comparator,
     // the check and error are in chpl_check_comparator_keyPart
   }
   else {
-
-    // TODO: this error should talk about interfaces
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method for element type " + eltType:string );
+    if comparatorImplementsKey(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'keyComparator' but does not correctly provide a ",
+        "'key' method for ", eltType:string);
+    } else if comparatorImplementsKeyPart(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'keyPartComparator' but does not correctly provide a ",
+        "'keyPart' method for ", eltType:string);
+    } else if comparatorImplementsRelative(comparator) {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " implements 'relativeComparator' but does not correctly provide a ",
+        "'compare' method for ", eltType:string);
+    } else {
+      compilerError(errorDepth=errorDepth,
+        "The comparator ", comparator.type:string,
+        " must implement either 'keyComparator', 'keyPartComparator', or ",
+        "'relativeComparator' for ", eltType:string);
+    }
   }
 
   return true;
@@ -2388,12 +2415,12 @@ module TwoArrayDistributedPartitioning {
   private use Math;
   public use List only list;
   import Sort.{ShellSort, MSBRadixSort, QuickSort};
-  import Sort.{RadixSortHelp, ShallowCopy};
+  import Sort.{RadixSortHelp, ShallowCopy, keyComparator};
   use MSBRadixSort;
 
   private param debugDist = false;
 
-  record TwoArrayDistSortPerBucketTaskStartComparator {
+  record TwoArrayDistSortPerBucketTaskStartComparator: keyComparator {
     proc key(elt: TwoArrayDistSortPerBucketTask) {
       return elt.start;
     }
@@ -3428,6 +3455,25 @@ module MSBRadixSort {
 
 /* Comparators */
 
+/*
+  The keyComparator interface defines how a comparator should sort elements by
+  returning a *key* for each element in the array.
+*/
+@unstable("keyComparator is not yet stable")
+interface keyComparator {
+  /*
+    Given an array element, returns a key element to sort by.
+
+    :arg elt: the array element being compared
+    :returns: a *key* element to sort by
+    :rtype: a type that support '<'
+  */
+  pragma "docs only"
+  proc Self.key(elt);// due to current limitations this signature is only for chpldoc
+}
+
+private proc comparatorImplementsKey(cmp) param do
+  return __primitive("implements interface", cmp, keyComparator) != 2;
 
 /*
   Indicates when the end of an element has been reached and in that event how
