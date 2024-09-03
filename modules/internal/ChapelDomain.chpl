@@ -46,6 +46,9 @@ module ChapelDomain {
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
+  @chpldoc.nodoc
+  config param noSortedWarnings = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -2792,10 +2795,17 @@ module ChapelDomain {
 
     // associative array interface
     /* Yields the domain indices in sorted order. */
-    iter sorted(comparator:?t = chpl_defaultComparator()) {
+    iter sorted(comparator:?t = chpl_defaultComparator()) where this.isAssociative() {
+      if !noSortedWarnings then
+        compilerWarning(
+          "It is recommended to use 'Sort.sorted' instead of this method. ",
+          "Compile with '-snoSortedWarnings' to suppress this warning.");
       for i in _value.dsiSorted(comparator) {
         yield i;
       }
+    }
+    iter sorted(comparator:?t = chpl_defaultComparator()) where !this.isAssociative() {
+      compilerError("'.sorted()' is only supported on associative domains");
     }
 
     @chpldoc.nodoc
