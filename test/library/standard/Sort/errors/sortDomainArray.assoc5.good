@@ -1,1 +1,1 @@
-sortDomainArray.chpl:53: error: isSorted() is not supported on domains
+sortDomainArray.chpl:53: error: isSorted() is currently only supported for 1D rectangular arrays
