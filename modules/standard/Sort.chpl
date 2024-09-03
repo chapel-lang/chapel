@@ -240,7 +240,6 @@ comparator to the initializer of the module-defined
   writeln(Array);
 
  */
-@unstable("The Sort module interface is unstable")
 module Sort {
 
   private use List;
@@ -3542,6 +3541,7 @@ private proc comparatorImplementsRelative(cmp) param do
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/
+@unstable("'DefaultComparator' is unstable and will have its name changed in the future")
 record DefaultComparator: keyPartComparator {
 
   /*
@@ -3856,6 +3856,7 @@ record DefaultComparator: keyPartComparator {
 }
 
 /* Reverse comparator built from another comparator.*/
+@unstable("'ReverseComparator' is unstable and will have its name changed in the future")
 record ReverseComparator: keyPartComparator {
 
   /* Generic comparator defined in initializer.*/
