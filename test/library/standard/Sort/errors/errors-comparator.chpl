@@ -51,7 +51,6 @@ proc keyPartArgs.keyPart(a) {
   return a;
 }
 
-// this should still get a deprecation warning
 // Both key and compare
 record keyAndCompare { }
 proc keyAndCompare.key(a) {
@@ -61,7 +60,6 @@ proc keyAndCompare.compare(a, b) {
   return 0;
 }
 
-// this should still get a deprecation warning
 // Both key and keyPart
 record keyAndKeyPart { }
 proc keyAndKeyPart.key(a) {

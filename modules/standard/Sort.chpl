@@ -451,15 +451,6 @@ proc chpl_check_comparator(comparator,
   }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
-    if doDeprecationCheck && !comparatorImplementsKey(comparator) {
-      param atType = if isRecord(comparator) then "record" else "class";
-      param fixString = "'" + atType + " " +
-                        comparator.type:string + ": keyComparator'";
-      compilerWarning(errorDepth=errorDepth,
-        "Defining a comparator with a 'key' method without " +
-        "implementing the keyComparator interface is deprecated. " +
-        "Please implement the keyComparator interface (i.e. " + fixString + ").");
-      }
     // Check return type of key
     const keydata = comparator.key(data);
     type keytype = keydata.type;
@@ -483,6 +474,15 @@ proc chpl_check_comparator(comparator,
       compilerError(errorDepth=errorDepth,
         comparator.type:string,
         " contains both a key method and a keyPart method");
+    }
+    if doDeprecationCheck && !comparatorImplementsKey(comparator) {
+      param atType = if isRecord(comparator) then "record" else "class";
+      param fixString = "'" + atType + " " +
+                        comparator.type:string + ": keyComparator'";
+      compilerWarning(errorDepth=errorDepth,
+        "Defining a comparator with a 'key' method without " +
+        "implementing the keyComparator interface is deprecated. " +
+        "Please implement the keyComparator interface (i.e. " + fixString + ").");
     }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
