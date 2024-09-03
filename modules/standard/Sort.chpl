@@ -918,7 +918,10 @@ iter sorted(x, comparator:? = new DefaultComparator()) {
     }
   } else if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted") {
     compilerError(x._value.type:string + " does not support dsiSorted(comparator)");
-  } else {
+  } else if isArrayValue(x) && x.isSparse() {
+    compilerError("sorted() is not supported on sparse arrays");
+  }
+  else {
     var y = x; // need to do before isArrayValue test in case x is an iterable
     param iterable = isArrayValue(y) || isSubtype(y.type, List.list(?));
     if iterable {
