@@ -812,9 +812,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   return false;
 }
 
-static bool tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                                         const Type*& mightBeManagerRecord,
-                                                         const Type*& mightBeClass) {
+static bool
+tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
+                                             const Type*& mightBeManagerRecord,
+                                             const Type*& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 
   auto mr = mightBeManagerRecord->toRecordType();
@@ -825,13 +826,15 @@ static bool tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
 
   auto ag = parsing::idToAttributeGroup(context, mr->id());
-  if (!ag || !ag->hasPragma(uast::pragmatags::PragmaTag::PRAGMA_MANAGED_POINTER)) {
+  if (!ag || !ag->hasPragma(pragmatags::PragmaTag::PRAGMA_MANAGED_POINTER)) {
     return false;
   }
 
   // Override the class type to the manager record type
-  mightBeClass = ct->managerRecordType(context); // mightBeClass used to be `owned` of type ClassType,
-                                                 // now it's `_owned` of type RecordType
+  mightBeClass = ct->managerRecordType(context);
+  // mightBeClass used to be `owned` of type ClassType,
+  // now it's `_owned` of type RecordType
+
   return true;
 }
 

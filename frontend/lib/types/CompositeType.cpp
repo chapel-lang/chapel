@@ -193,18 +193,25 @@ static const RecordType* tryCreateManagerRecord(Context* context,
   const RecordType* instantiatedFrom = nullptr;
   SubstitutionsMap subs;
   if (bct != nullptr) {
-    instantiatedFrom = tryCreateManagerRecord(context, moduleName, recordName, nullptr);
+    instantiatedFrom = tryCreateManagerRecord(context,
+                                              moduleName,
+                                              recordName,
+                                              /*bct*/ nullptr);
 
-    auto fields = fieldsForTypeDecl(context, instantiatedFrom, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto fields = fieldsForTypeDecl(context,
+                                    instantiatedFrom,
+                                    DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) != "chpl_t") continue;
-      auto ct = ClassType::get(context, bct, /* manager */ nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
+      auto ctd = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto ct = ClassType::get(context, bct, /* manager */ nullptr, ctd);
 
       subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
       break;
     }
     if (fields.numFields() == 0) {
-      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context, instantiatedFrom->id()));
+      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context,
+                                                            instantiatedFrom->id()));
       return nullptr;
     }
   }
@@ -216,11 +223,13 @@ static const RecordType* tryCreateManagerRecord(Context* context,
                          std::move(subs));
 }
 
-const RecordType* CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
+const RecordType*
+CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
   return tryCreateManagerRecord(context, "OwnedObject", "_owned", bct);
 }
 
-const RecordType* CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
+const RecordType*
+CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
   return tryCreateManagerRecord(context, "SharedObject", "_shared", bct);
 }
 
