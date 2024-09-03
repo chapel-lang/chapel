@@ -72,6 +72,7 @@ RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
     rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
     echo "CHPL_COMM=ofi" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_LAUNCHER=slurm-srun" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_COMM_OFI_OOB=pmi2" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_LIBFABRIC=bundled" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
