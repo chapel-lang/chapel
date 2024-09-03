@@ -11557,7 +11557,7 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 @chpldoc.nodoc
-proc fileWriter._writefOne(fmtStr, ref arg, i: int,
+proc fileWriter._writefOne(fmtStr, const ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,
