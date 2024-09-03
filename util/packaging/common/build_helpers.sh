@@ -128,10 +128,10 @@ __test_package() {
   python3 $chpl_home/util/packaging/common/test_package.py $@
 }
 __test_all_packages() {
-  for deb in util/packaging/apt/build/*/*/*.deb; do
+  for deb in $(find util/packaging/apt/build -name '*.deb'); do
     __test_package $deb
   done
-  for rpm in util/packaging/rpm/build/*/*/*.rpm; do
+  for rpm in $(find util/packaging/rpm/build -name '*.rpm'); do
     __test_package $rpm
   done
 }
