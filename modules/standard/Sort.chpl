@@ -870,16 +870,13 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 }
 
 @chpldoc.nodoc
-iter sorted(x : domain, comparator:? = new DefaultComparator())
-  where x.isAssociative() {
+iter sorted(x : domain, comparator:? = new DefaultComparator()) {
+  if !x.isAssociative() then
+    compilerError("sorted() is currently only supported on associative domains");
   for i in x._value.dsiSorted(comparator) {
     yield i;
   }
 }
-@chpldoc.nodoc
-iter sorted(x: domain, comparator:? = new DefaultComparator())
-  where !x.isAssociative() do
-  compilerError("sorted() is currently only supported on associative domains");
 
 //
 // This is a first draft "sorterator" which is designed to take some
