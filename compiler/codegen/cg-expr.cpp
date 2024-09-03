@@ -6288,9 +6288,6 @@ DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
 
 DEFINE_PRIM(ASSERT_ON_GPU) {
-  // Remove the string argument to the GPU primitive.
-  call->get(1)->remove();
-
   ret = call->codegenBasicPrimitiveExpr();
 }
 
