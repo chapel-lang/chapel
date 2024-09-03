@@ -21,5 +21,5 @@ RUN mason new MyPackage
 WORKDIR /home/user/MyPackage
 RUN chplcheck src/*.chpl
 RUN mason build
-RUN mason run
+RUN mason run -- -nl 1
 WORKDIR /home/user
