@@ -266,6 +266,7 @@ class QueryMapResultBase {
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
+  mutable bool errorsPresentInSelfOrDependencies = false;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
@@ -274,6 +275,7 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool emittedErrors,
+                     bool errorsPresentInSelfOrDependencies,
                      std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
@@ -294,18 +296,20 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
                  bool emittedErrors,
+                 bool errorsPresentInSelfOrDependencies,
                  std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
     : QueryMapResultBase(lastChecked, lastChanged, emittedErrors,
+                         errorsPresentInSelfOrDependencies,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {

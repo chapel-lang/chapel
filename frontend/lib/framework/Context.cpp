@@ -892,10 +892,12 @@ void Context::report(owned<ErrorBase> error) {
 
     errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
   } else if (queryStack.size() > 0) {
     bool isSilencing = false;
 
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
     reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
@@ -1181,7 +1183,8 @@ static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
     into.storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
-    if (!dependency.errorCollectionRoot) {
+    if (!dependency.errorCollectionRoot &&
+        dependency.query->errorsPresentInSelfOrDependencies) {
       storeErrorsForHelp(dependency.query, visited, into);
     }
   }
@@ -1215,6 +1218,8 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
       parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      parentQuery->errorsPresentInSelfOrDependencies |=
+        resultEntry->errorsPresentInSelfOrDependencies;
     }
 
     // Propagate query errors that occurred in the child query to the parent
@@ -1301,12 +1306,14 @@ void queryArgsPrintSep() {
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool emittedErrors,
+                   bool errorsPresentInSelfOrDependencies,
                    std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     dependencies(),
     emittedErrors(emittedErrors),
+    errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
     recursionErrors(std::move(recursionErrors)),
     errors(),
     parentQueryMap(parentQueryMap) {
