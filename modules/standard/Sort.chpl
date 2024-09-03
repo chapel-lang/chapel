@@ -332,6 +332,8 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a == b: returns 0
 */
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
+  // TODO: this should also check interfaces for deprecation because it gets
+  // used in things like Search, Heap, treap, SortedSet, SortedMap, etc.
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
@@ -341,7 +343,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
                                              comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
-    return comparator.compare(a ,b);
+    return comparator.compare(a, b);
   } else if canResolveMethod(comparator, "chpl_keyPartInternal", a, 0) ||
             canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
@@ -352,54 +354,17 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 }
 
 
+// helper for chpl_check_comparator, should not be called elsewhere
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
-/*
-    Check if a comparator was passed and confirm that it will work, otherwise
-    throw a compile-time error.
-
-   :arg a: Sample data passed to confirm that comparator methods can resolve
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc chpl_check_comparator(comparator,
-                           type eltType,
-                           param errorDepth = 2,
-                           param doDeprecationCheck = true) param {
+proc chpl_check_comparator_keyPart(comparator,
+                                   type eltType,
+                                   param errorDepth = 2,
+                                   param doDeprecationCheck = true) param {
   // Dummy data for checking method resolution
   // This may need updating when constructors support non-default args
   const data: eltType;
 
-  if comparator.type == DefaultComparator {}
-  else if isSubtype(comparator.type, ReverseComparator) {
-    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1);
-  }
-  // Check for valid comparator methods
-  else if canResolveMethod(comparator, "key", data) {
-    // TODO: check for keyComparator
-    // Check return type of key
-    const keydata = comparator.key(data);
-    type keytype = keydata.type;
-    if !(canResolve("<", keydata, keydata)) then
-      compilerError(errorDepth=errorDepth, "The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
-
-    // TODO: this should check that multiple interfaces are not implemented as well
-    // Check that there isn't also a compare or keyPart
-    if canResolveMethod(comparator, "compare", data, data) {
-      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
-    }
-    if canResolveMethod(comparator, "keyPart", data, 0) {
-      compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
-    }
-  }
-  else if canResolveMethod(comparator, "compare", data, data) {
-    // TODO: check for keyPartComparator or relativeComparator
-    // Check return type of compare
-    type comparetype = comparator.compare(data, data).type;
-    if !(isNumericType(comparetype)) then
-      compilerError(errorDepth=errorDepth, "The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
-  }
-  else if canResolveMethod(comparator, "chpl_keyPartInternal") {
+  if canResolveMethod(comparator, "chpl_keyPartInternal", data, 0) {
     var idx: int = 0;
     type partType = comparator.chpl_keyPartInternal(data, idx).type;
     if !isTupleType(partType) then
@@ -412,6 +377,8 @@ proc chpl_check_comparator(comparator,
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     // no need to check the interface,'chpl_keyPartInternal' is internal
+
+    return true;
   }
   else if canResolveMethod(comparator, "keyPart", data, 0) {
     if comparatorImplementsKeyPart(comparator) {
@@ -449,11 +416,110 @@ proc chpl_check_comparator(comparator,
       if !(isInt(expectIntUint) || isUint(expectIntUint)) then
         compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     }
+    return true;
+  }
+  return false;
+}
+
+pragma "unsafe" // due to 'data' default-initialized to nil for class types
+/*
+    Check if a comparator was passed and confirm that it will work, otherwise
+    throw a compile-time error.
+
+   :arg a: Sample data passed to confirm that comparator methods can resolve
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+proc chpl_check_comparator(comparator,
+                           type eltType,
+                           param errorDepth = 2,
+                           param doDeprecationCheck = true) param {
+
+  // TODO: add keyComparator
+  // if more than 1 interface is implemented, error
+  if (comparatorImplementsKeyPart(comparator):int +
+      comparatorImplementsRelative(comparator):int) > 1 {
+    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " should only implement one sort comparator interface.");
+  }
+
+  // Dummy data for checking method resolution
+  // This may need updating when constructors support non-default args
+  const data: eltType;
+
+  if comparator.type == DefaultComparator {}
+  else if isSubtype(comparator.type, ReverseComparator) {
+    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1);
+  }
+  // Check for valid comparator methods
+  else if canResolveMethod(comparator, "key", data) {
+    // TODO: check for keyComparator
+    // Check return type of key
+    const keydata = comparator.key(data);
+    type keytype = keydata.type;
+    if !(canResolve("<", keydata, keydata)) then
+      compilerError(errorDepth=errorDepth,
+        "The key method in ",
+        comparator.type:string,
+        " must return an object that supports the '<' function when used with ",
+        eltType:string,
+        " elements");
+
+    // Check that there isn't also a compare or keyPart
+    if canResolveMethod(comparator, "compare", data, data) {
+      compilerError(errorDepth=errorDepth,
+        comparator.type:string,
+        " contains both a key method and a compare method");
+    }
+    if canResolveMethod(comparator, "keyPart", data, 0) {
+      compilerError(errorDepth=errorDepth,
+        comparator.type:string,
+        " contains both a key method and a keyPart method");
+    }
+  }
+  else if canResolveMethod(comparator, "compare", data, data) {
+    if doDeprecationCheck {
+      if !comparatorImplementsRelative(comparator) &&
+         !comparatorImplementsKeyPart(comparator) {
+        // if there is a keyPart method, we should use that interface
+        param hasKeyPart = canResolveMethod(comparator, "keyPart", data, 0);
+        param atType = if isRecord(comparator) then "record" else "class";
+        param fixString = "'" + atType + " " +
+                              comparator.type:string + ": relativeComparator'";
+        if !hasKeyPart {
+          compilerWarning(errorDepth=errorDepth,
+            "Defining a comparator with a 'compare' method without " +
+            "implementing the relativeComparator interface is deprecated. " +
+            "Please implement the relativeComparator interface (i.e. " + fixString + ").");
+        } else {
+          compilerWarning(errorDepth=errorDepth,
+            "Defining a comparator with both a 'compare' method and a 'keyPart' without " +
+            "implementing the keyPartComparator interface is deprecated. " +
+            "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
+        }
+      }
+    }
+    // Check return type of compare
+    type comparetype = comparator.compare(data, data).type;
+    if !(isNumericType(comparetype)) then
+      compilerError(errorDepth=errorDepth, "The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
+
+    // if the user has implemented the keyPart interface, we also have to check
+    // that the keyPart method is implemented correctly to satisfy the interface
+    if comparatorImplementsKeyPart(comparator) then
+      if !chpl_check_comparator_keyPart(comparator,
+                                        eltType,
+                                        errorDepth+1,
+                                        doDeprecationCheck=false) then
+        compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " implements the keyPartComparator interface, but the keyPart method is not implemented");
+  } else if chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, doDeprecationCheck) {
+    // the check and error are in chpl_check_comparator_keyPart
   }
   else {
+
     // TODO: this error should talk about interfaces
     // If we make it this far, the passed comparator was defined incorrectly
-    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
+    compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method for element type " + eltType:string );
   }
 
   return true;
@@ -3382,19 +3448,61 @@ private inline proc reverseKeyPartStatus(status: keyPartStatus): keyPartStatus d
 private inline proc reverseKeyPartStatus(status) do
   return -status;
 
-// TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
+/*
+  The keyPartComparator interface defines how a comparator should sort parts of
+  a key, by defining :proc:`~keyPartComparator.Self.keyPart`. This is used for
+  certain sort algorithms. If :proc:`~keyPartComparator.Self.keyPart` is not
+  appropriate, the sort implementation may use
+  :proc:`~keyPartComparator.Self.compare` instead.
+*/
+@unstable("keyPartComparator is not yet stable")
 interface keyPartComparator {
-  /*
-  proc Self.keyPart(elt, i: int): (keyPartStatus, integral);
 
-  // return type must be signed integral
-  proc Self.compare(x, y: x.type) {
+  /*
+    A ``keyPart(elt, i)`` method returns *parts* of key value at a time. This
+    interface supports radix sorting for variable length data types, such as
+    strings. It accepts two arguments:
+
+    * ``elt`` is the element being sorted
+    * ``i`` is the part number of the key requested, starting from 0
+
+    A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
+
+    * The *section* must be of type :type:`keyPartStatus`. It indicates when the
+      end of ``elt`` has been reached and in that event how it should be sorted
+      relative to other array elements.
+
+    * The *part* can be any signed or unsigned integral type and can contain any
+      value. The *part* will be ignored unless the *section* returned is
+      :enumconstant:`keyPartStatus.returned`.
+
+    :arg elt: the element being sorted
+    :arg i: the part number requested
+    :returns: ``(section, part)`` where ``section`` is a :type:`keyPartStatus`
+              and ``part`` is an integral type.
+  */
+  pragma "docs only"
+  proc Self.keyPart(elt, i: int): (keyPartStatus, integral); // due to current limitations this signature is only for chpldoc
+
+  /*
+    Defines a comparison between two elements of the same type. This method is
+    not required to be implemented by comparators that implement the
+    :interface:`keyPartComparator` interface.
+
+    :arg x: the first element to compare
+    :arg y: the second element to compare
+    :returns: -1 if ``x`` should be sorted before ``y``,
+               1 if ``x`` should be sorted after ``y``,
+               and 0 if ``x`` and ``y`` are equal
+    :rtype: a signed integral
+  */
+  pragma "docs only"
+  proc Self.compare(x, y: x.type) { // due to current limitations this signature is only for chpldoc
     if x < y      then return -1;
     else if y < x then return 1;
     else          return 0;
   }
-  */
 }
 private proc comparatorImplementsKeyPart(cmp) param do
   return __primitive("implements interface", cmp, keyPartComparator) != 2;
@@ -3402,11 +3510,35 @@ private proc comparatorImplementsKeyPart(cmp) param do
 @chpldoc.nodoc
 config param useKeyPartStatus = false;
 
+// TODO: this is a hack to workaround issues with interfaces
+/*
+  The relativeComparator interface defines a comparison between two elements
+*/
+@unstable("relativeComparator is not yet stable")
+interface relativeComparator {
+  /*
+    Defines a comparison between two elements of the same type.
+
+    :arg x: the first element to compare
+    :arg y: the second element to compare
+    :returns: -1 if ``x`` should be sorted before ``y``,
+               1 if ``x`` should be sorted after ``y``,
+               and 0 if ``x`` and ``y`` are equal
+    :rtype: a signed integral
+  */
+  pragma "docs only"
+  proc Self.compare(x, y: x.type); // due to current limitations this signature is only for chpldoc
+}
+private proc comparatorImplementsRelative(cmp) param do
+  return __primitive("implements interface", cmp, relativeComparator) != 2;
+
 // TODO: this represents the mutually exclusive OR of keyComparator,
 //       keyPartComparator, and relativeComparator
 //       This cannot be represented in Chapel today, but we still want to
 //       reserve the identifier.
 //       See https://github.com/chapel-lang/chapel/issues/25554.
+@chpldoc.nodoc // keep this nodoc since its not implemented yet
+@unstable("sortComparator is not yet stable")
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/

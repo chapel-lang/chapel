@@ -1,6 +1,6 @@
 use Sort;
 
-record AbsCompCmp {
+record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }

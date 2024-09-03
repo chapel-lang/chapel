@@ -1,0 +1,4 @@
+sortInterfaces.chpl:1: warning: The Sort module interface is unstable
+sortInterfaces.chpl:5: warning: keyPartComparator is not yet stable
+sortInterfaces.chpl:8: warning: sortComparator is not yet stable
+sortInterfaces.chpl:2: warning: relativeComparator is not yet stable

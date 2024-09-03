@@ -397,6 +397,7 @@ proc sortAtomsInCell() {
       return a.gid - b.gid;
     }
   }
+  cmp implements relativeComparator;
 
   const c = new cmp();
 

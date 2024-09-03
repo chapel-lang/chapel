@@ -19,7 +19,7 @@ record HashedPath {
   var path: string;
 }
 
-record HashedPathComparator {
+record HashedPathComparator: relativeComparator {
   proc compare(a: HashedPath, b: HashedPath) {
     if a.size < b.size {
       return -1;

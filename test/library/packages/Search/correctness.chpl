@@ -2,7 +2,7 @@
  *  Check correctness of search functions
  */
 
-use Search;
+use Search; use Sort only relativeComparator;
 
 proc main() {
 
@@ -124,12 +124,12 @@ record AbsKeyCmp {
 
 
 /* Compare Sort by absolute value */
-record AbsCompCmp {
+record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
 
-
+// unused
 /* Key method should take priority over compare method */
 record AbsKeyCompCmp {
   proc key(a) { return abs(a); }
@@ -137,7 +137,7 @@ record AbsKeyCompCmp {
   proc name() { return 'AbsKeyCompCmp'; }
 }
 
-
+// unused
 /* Key method can return a non-numerical/string type, such as tuple */
 record TupleCmp {
   proc key(a) { return (a, a); }

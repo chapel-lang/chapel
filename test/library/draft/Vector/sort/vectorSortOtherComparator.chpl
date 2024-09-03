@@ -22,6 +22,7 @@ vec2.clear();
 // comparator (this is just absval).
 //
 record myComparator {}
+myComparator implements relativeComparator;
 proc myComparator.compare(a, b) {
   return abs(a) - abs(b);
 }

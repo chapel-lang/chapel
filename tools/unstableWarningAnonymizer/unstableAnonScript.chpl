@@ -65,6 +65,7 @@ import Set.set;
 import Sort;
 import Regex.regex;
 import ArgumentParser;
+use Sort only relativeComparator;
 
 proc countUniqueWarnings(ref warningsMap: map(string, ?t),
                          inputFileReader: IO.fileReader(?)
@@ -165,9 +166,9 @@ inline proc csvPrintArr(arr: [] (string, int, int),
 }
 
 // Comparator to sort our array representation of the map
-// by the number of occurences of each warning
-record occurenceComparator {}
-proc occurenceComparator.compare(a: (string, int, int), b: (string, int, int)){
+// by the number of occurrences of each warning
+record occurrenceComparator: relativeComparator {}
+proc occurrenceComparator.compare(a: (string, int, int), b: (string, int, int)){
   return b[1] - a[1];  // Reverse sort
 }
 
@@ -183,7 +184,7 @@ proc convertMapToArray(const m: map(string, ?t), sorted: bool, topX: int)
     a = (key, m[key][0], m[key][1].size);
   }
   if sorted {
-    var comp: occurenceComparator;
+    var comp: occurrenceComparator;
     Sort.sort(arr, comparator=comp);
   } else {
     var comp: warningComparator;
