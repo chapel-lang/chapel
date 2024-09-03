@@ -383,6 +383,11 @@ if ($memleakslog ne "") {
     }
 }
 
+#
+# directory variables
+#
+$testdir = "$chplhomedir/test";
+print "\$chplhomedir = $chplhomedir\n";
 
 $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
@@ -450,11 +455,7 @@ unlink($mysystemlog); # the file gets appended to, so clear it first.
 ensureMysystemlogExists($mysystemlog); # empty (vs nonexistent) file is easier to compare against
 $prevmysystemlog = "$cronlogdir/last-mysystemerrs-$config_name.txt";
 
-#
-# directory variables
-#
-$testdir = "$chplhomedir/test";
-print "\$chplhomedir = $chplhomedir\n";
+
 
 
 $launchcmd = "$ENV{'CHPL_TEST_LAUNCHCMD'}";
