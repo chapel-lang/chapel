@@ -473,6 +473,10 @@ static void expandVarArgsBody(FnSymbol*      fn,
     needTuple = true;
   }
 
+  if (formal->intent == INTENT_CONST) {
+    var->addFlag(FLAG_CONST);
+  }
+
   if (needTuple == true) {
     CallExpr* tupleCall = NULL;
 
