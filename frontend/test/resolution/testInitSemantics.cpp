@@ -1348,9 +1348,14 @@ static void testInheritance() {
         proc init(type A) {
           super.init(A);
         }
+
+        proc doNothing() {}
       }
 
       var x = new Child(int);
+
+      // ensure we can call a method on this receiver type after init
+      x.doNothing();
     )""";
 
     auto vars = resolveTypesOfVariables(context, program, {"x"});
