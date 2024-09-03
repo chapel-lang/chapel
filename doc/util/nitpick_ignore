@@ -55,6 +55,7 @@ cpp:identifier ParamTag
 cpp:identifier PragmaTag
 cpp:identifier TypeTag
 cpp:identifier PrimitiveTag
+cpp:identifier EnumParam
 cpp:identifier chpl::uast::PrimitiveTag
 cpp:identifier types::RealParam
 cpp:identifier types::IntParam

@@ -3886,7 +3886,7 @@ Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
                                           bool ambiguous) {
   if (!refersToId.isEmpty()) {
     // Found a single enum element, the type can be a param.
-    auto newParam = EnumParam::get(context, refersToId);
+    auto newParam = Param::getEnumParam(context, refersToId);
     return QualifiedType(QualifiedType::PARAM, enumType, newParam);
   } else if (ambiguous) {
     // multiple candidates. but the expression most likely has a type given by
@@ -4433,9 +4433,7 @@ resolveIterTypeWithTag(Resolver& rv,
     // The iterand is an unresolved call, or it is a resolved iterator but
     // not the one that we need. Regather existing actuals and reuse the
     // receiver if it is present.
-    } else {
-      auto call = iterand->toCall();
-      CHPL_ASSERT(call);
+    } else if (auto call = iterand->toCall()) {
 
       bool raiseErrors = false;
       auto tmp = CallInfo::create(context, call, rv.byPostorder, raiseErrors);
@@ -4445,6 +4443,9 @@ resolveIterTypeWithTag(Resolver& rv,
       callIsMethodCall = tmp.isMethodCall();
       callIsParenless = tmp.isParenless();
       for (auto& a : tmp.actuals()) callActuals.push_back(a);
+    } else {
+      CHPL_UNIMPL("unknown iterand");
+      return error;
     }
 
     if (!needSerial) {
