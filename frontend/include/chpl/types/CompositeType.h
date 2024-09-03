@@ -117,8 +117,11 @@ class CompositeType : public Type {
     CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
 
-    // check that subs is consistent with instantiatedFrom
-    CHPL_ASSERT((instantiatedFrom_ == nullptr) == subs_.empty());
+    // check that subs is consistent with instantiatedFrom, except in the
+    // case of class types which can be generic with empty subs due to
+    // inheritance
+    CHPL_ASSERT(tag == typetags::BasicClassType ||
+                (instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {

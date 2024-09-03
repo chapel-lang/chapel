@@ -279,13 +279,15 @@ static const Type* ctFromSubs(Context* context,
     auto oldBasic = cls->basicClassType();
     CHPL_ASSERT(oldBasic && "Not handled!");
 
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toBasicClassType();
+    bool genericParent = superType && superType->substitutions().size() != 0;
+    auto instantiatedFrom = (subs.size() == 0 && !genericParent)
+                                  ? nullptr
+                                  : root->toBasicClassType();
 
     auto basic = BasicClassType::get(context, oldBasic->id(),
                                      oldBasic->name(),
                                      superType,
-                                     instantatiatedFrom,
+                                     instantiatedFrom,
                                      subs);
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
