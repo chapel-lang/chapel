@@ -1,6 +1,1 @@
-sortDomainArray.chpl:39: error: unresolved call 'unmanaged DefaultSparseDom(1,int(64),domain(1,int(64),one)).dsiSorted(DefaultComparator)'
-$CHPL_HOME/modules/internal/DefaultAssociative.chpl:nnnn: note: this candidate did not match: DefaultAssociativeDom.dsiSorted(comparator)
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note: because method call receiver with type 'unmanaged DefaultSparseDom(1,int(64),domain(1,int(64),one))'
-$CHPL_HOME/modules/internal/DefaultAssociative.chpl:nnnn: note: is passed to formal 'this: borrowed DefaultAssociativeDom'
-sortDomainArray.chpl:39: note: other candidates are:
-$CHPL_HOME/modules/internal/DefaultAssociative.chpl:nnnn: note:   DefaultAssociativeArr.dsiSorted(comparator)
+sortDomainArray.chpl:39: error: '.sorted()' is only supported on associative domains

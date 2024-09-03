@@ -36,7 +36,7 @@ if sparse3 then sorted(SpsD); // should be an error
 if sparse4 then sort(SpsA); // should be an error
 if sparse5 then isSorted(SpsA); // should be an error
 if sparse6 then sorted(SpsA); // should be an error
-/*TODO*/ if sparse7 then SpsD.sorted(); // should be an error
+if sparse7 then SpsD.sorted(); // should be an error
 
 
 //
@@ -52,7 +52,7 @@ if assoc3 then sorted(AssocD);
 if assoc4 then sort(AssocA); // should be an error
 if assoc5 then isSorted(AssocA); // should be an error
 if assoc6 then sorted(AssocA);
-/*TODO*/ if assoc7 then AssocD.sorted(); // not an error, but should it warn???? prefer `sorted(AssocD)`
+if assoc7 then AssocD.sorted(); // not an error, but warns
 
 
 //
@@ -68,4 +68,4 @@ if rect3 then sorted(RectD); // should be an error
 if rect4 then sort(RectA);
 if rect5 then isSorted(RectA);
 if rect6 then sorted(RectA);
-/*TODO*/ if rect7 then RectD.sorted(); // should be an error, see https://github.com/chapel-lang/chapel/issues/25109
+if rect7 then RectD.sorted(); // should be an error

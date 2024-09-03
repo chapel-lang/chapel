@@ -1,6 +1,11 @@
 # good case with no compiler errors
 -sassoc3 -sassoc6 -srect4 -srect5 -srect6 # sortDomainArray.good
+
+# this case has warnings
 -sassoc7 # sortDomainArray.assoc7.good
+# disable the warnings with a compiler flag
+-sassoc7 -snoSortedWarnings # sortDomainArray.good
+
 
 # the rest should be some form of compiler error
 -ssparse1   # sortDomainArray.sparse1.good
