@@ -630,7 +630,7 @@ if ($examples == 1) {
     $testdirs .= " release/examples";
 }
 
-if ($blogonly == 1) {
+if ($blogonly == 1 || ($testblog == 1 && $examples == 1)) {
     # test the sub-directories explicitly to avoid a bunch of skipped directories,
     # and also avoid the problem of testing the archetypes directory
     $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
