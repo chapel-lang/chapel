@@ -1338,6 +1338,48 @@ class ModulePublicSymbols {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+/** This type helps lookupNameInScope and related functions
+    by containing the set of scopes that should be searched
+    and by providing a way to evaluate a method candidate according
+    to its method receiver.
+
+    This type can apply in two different ways:
+      1. When resolving something like 'x.field', the resolver
+         can compute a MethodApplicableLookupHelper for 'x' based
+         on its type and then pass this to the lookup process.
+      2. When resolving something like 'field' within a method,
+         the lookup process can ask to compute one of these
+         at the right time with a MethodScopesLookupHelper.
+    */
+class MethodLookupHelper {
+  /** Returns a reference to the receiver scopes */
+  virtual llvm::ArrayRef<const Scope*> reciverScopes();
+  /** Returns 'true' if the ID passed refers to a method
+      with a receiver that is applicable */
+  virtual bool isReceiverApplicable(Context* context, const ID& methodId);
+};
+
+/** This type helps lookupNameInScope and related functions.
+    When performing name lookup within a method, the name
+    might refer to a field or tertiary method. Such matches
+    are checked for by searching the method reciver scopes
+    at the time that the method signature is encountered in the
+    process of searching parent scopes. This type includes
+    a method that can return an appropriate MethodApplicableLookupHelper
+    to handle the method receiver scopes.
+ */
+class ReceiverScopeHelper {
+  /* Returns a MethodLookupHelper to support the method lookup
+     that should be done when processing the scope for an enclosing method.
+     The MethodLookupHelper will include the
+     receiver scopes to traverse and a way to evaluate methods.
+
+     The returned value needs to live at least as long as the lookup
+     process. It is the responsibility for the subclass implementation
+     here to free it eventually. */
+  virtual const MethodLookupHelper* methodLookupForId(const ID& methodId);
+};
+
 
 } // end namespace resolution
 

@@ -72,6 +72,54 @@ struct Resolver {
     bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
   };
 
+  // Temporarily, this is used for scope resolution.
+  // Long-term, TypedMethodLookupHelper should be used.
+  struct SimpleMethodLookupHelper : MethodLookupHelper {
+    ID receiverTypeId;
+    ReceiverScopesVec scopes;
+    MethodLookupHelperImpl(ID receiverTypeId,
+                           ReceiverScopesVec scopes)
+      : receiverTypeId(receiverTypeid), scopes(scopes) {
+    }
+
+    llvm::ArrayRef<const Scope*> reciverScopes() const override {
+      return scopes;
+    }
+    bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  };
+  // Similarly, applies only to scope resolution
+  struct ReceiverScopeSimpleHelper : ReceiverScopeHelper {
+    mutable std::map<ID, owned<MethodLookupHelper>> byTypeId;
+
+    ReceiverScopeSimpleHelper() { }
+    const MethodLookupHelper* methodLookupForId(const ID& methodId) const override;
+  };
+
+  // used for resolution
+  struct TypedMethodLookupHelper : MethodLookupHelper {
+    const TypedFnSignature* curTfs = nullptr;
+    QualifiedType receiverType;
+    ReceiverScopesVec scopes;
+    MethodLookupHelperImpl(const TypedFnSignature* curTfs,
+                           QualifiedType receiverType,
+                           ReceiverScopesVec scopes)
+      : curTfs(curTfs), receiverType(receiverType), scopes(scopes) {
+    }
+
+    llvm::ArrayRef<const Scope*> reciverScopes() const override {
+      return scopes;
+    }
+    bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  };
+  // similarly, used for full resolution
+  struct ReceiverScopeTypedHelper : ReceiverScopeHelper {
+    Resolver& resolver;
+    mutable std::map<Type*, owned<MethodLookupHelper>> byType;
+
+    ReceiverScopeTypedHelper(Resolver& r) : resolver(r) { }
+    const MethodLookupHelper* methodLookupForId(const ID& methodId) const override;
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -98,8 +146,6 @@ struct Resolver {
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
-  bool receiverScopesComputed = false;
-  ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
   owned<OuterVariables> outerVars;
@@ -269,10 +315,13 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Gather scopes for a given receiver decl and all its parents */
+  /* Gather scopes for a given receiver decl and all its parents
+     (without using Types; for use when scope resolving) */
   static ReceiverScopesVec
-  gatherReceiverAndParentScopesForDeclId(Context* context,
-                                         ID aggregateDeclId);
+  gatherReceiverAndParentScopesForDeclId(ID aggregateDeclId);
+  /* Compute the aggregate decl ID for a method */
+  ID computeMethodReceiverId(Context* context);
+
   /* Gather scopes for a given receiver type and all its parents */
   static ReceiverScopesVec
   gatherReceiverAndParentScopesForType(Context* context,

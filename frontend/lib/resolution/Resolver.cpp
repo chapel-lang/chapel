@@ -578,6 +578,52 @@ static bool isOuterVariable(Resolver* rv, ID target) {
 }
 
 /**
+  Find method receiver aggregate decl ID (for use when scope resolving).
+  This function does not support certain patterns; it should be viewed
+  as an approximation that should be replaced by full resolution.
+  */
+static ID& methodReceiverIdForMethodId(Context* context, ID methodId) {
+  QUERY_BEGIN(methodReceiverIdForMethodId, context, methodId);
+
+  ID result;
+
+  if (auto ast = parsing::idToAst(context, methodId)) {
+    if (auto fn = ast->toFunction()) {
+      if (fn->isMethod()) {
+        if (fn->isPrimaryMethod()) {
+          // Find the containing aggregate ID
+          result = parsing::idToParentId(context, methodId);
+        } else {
+          // Resolve the method receiver to an ID
+          ResolutionResultByPostorderID r;
+          owned<OuterVariables> outerVars =
+            toOwned(new OuterVariables(context, methodId));
+          auto visitor =
+            Resolver::createForScopeResolvingFunction(context, fn, r,
+                                                      std::move(outerVars));
+
+          const AstNode* typeExpr = nullptr;
+          if (auto thisFormal = fn->thisFormal()) {
+            typeExpr = thisFormal->typeExpression();
+          }
+
+          if (typeExpr) {
+            fn->thisFormal->traverse(visitor);
+            ResolvedExpression& re = r.byAst(typeExpr);
+            result = re.toId();
+          }
+
+          // result might not have been set but that is OK;
+          // we want to ignore errors here while just scope resolving.
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+/**
   Find scopes for superclasses of a class.  The passed ID should refer to a
   Class declaration node.  If not, this function will return an empty vector.
 
@@ -674,7 +720,7 @@ Resolver::gatherReceiverAndParentScopesForDeclId(Context* context,
   return scopes;
 }
 
-Resolver::ReceiverScopesVec
+static Resolver::ReceiverScopesVec
 Resolver::gatherReceiverAndParentScopesForType(Context* context,
                                                const types::Type* thisType) {
   ReceiverScopesVec scopes;
@@ -697,6 +743,81 @@ Resolver::gatherReceiverAndParentScopesForType(Context* context,
 
   return scopes;
 }
+
+bool
+Resolver::SimpleMethodLookupHelper::isReceiverApplicable(Context* context, const ID& methodId) override {
+  const ID& methodReceiverId = methodReceiverIdForMethodId(context, methodId);
+  if (methodReceiverId.isEmpty() || receiverTypeId.isEmpty()) {
+    return false; // empty IDs here mean something wasn't handled
+  }
+
+  return methodReceiverId == receiverTypeId;
+}
+
+const MethodLookupHelper*
+ReceiverScopeSimpleHelper::methodLookupForId(const ID& methodId) {
+  // compute the receiver type's ID using simplified scope resolution rules
+  const ID& typeId = methodReceiverIdForMethodId(methodId);
+  if (typeId.isEmpty()) {
+    return nullptr;
+  }
+  auto it = byTypeId.find(typeId);
+  if (it == cache.end()) {
+    auto vec = gatherReceiverAndParentScopesForDeclId(typeId);
+    auto ret = toOwned(new SimpleMethodLookupHelper(std::move(vec));
+    auto got = cache.emplace_hint(it, methodId, std::move(ret));
+    return got->second.get();
+  }
+  return it->second.get();
+}
+
+bool
+Resolver::TypedMethodLookupHelper::isReceiverApplicable(Context* context, const ID& methodId) override {
+  const TypedFnSignature* tfs = nullptr;
+  if (curTfs && curTfs->id() == methodId) {
+    tfs = curTfs;
+  } else {
+    tfs = typedSignatureInitial(context,
+                                UniquedFnSignature::get(context, methodId));
+  }
+
+  if (tf->isMethod()) {
+    QualifiedType methodFormalType = tfs->formalType(0);
+  }
+
+  return canPass(context, receiverType, methodFormalType);
+}
+
+const MethodLookupHelper*
+ReceiverScopeTypedHelper::methodLookupForId(const ID& methodId) {
+  // compute the receiver type for the method ID using full resolution
+  const TypedFnSignature* tfs = nullptr;
+  if (resolver.typedSignature && resolver.typedSignature->id() == methodId) {
+    tfs = resolver.typedSignature; // the method we were working on
+  } else {
+    tfs = typedSignatureInitial(context,
+                                UniquedFnSignature::get(context, methodId));
+  }
+
+  const Type* receiverTypePtr = nullptr;
+  if (tfs && tfs->isMethod()) {
+    receiverTypePtr = tfs->formalType(0).type();
+  }
+
+  if (receiverTypePtr == nullptr) {
+    return nullptr;
+  }
+
+  auto it = byType.find(methodId);
+  if (it == byType.end()) {
+    auto vec = gatherReceiverAndParentScopesForType(context, receiverTypePtr);
+    auto ret = toOwned(new TypedMethodLookupHelper(std::move(vec)));
+    auto got = cache.emplace_hint(it, methodId, std::move(ret));
+    return got->second.get();
+  }
+  return it->second.get();
+}
+
 
 bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
   if (!scopeResolveOnly &&
@@ -1546,7 +1667,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // update qtKind with the result of resolving the intent
         if (!typeExprT.type()->isTupleType()) {
           // skip for tuple types, which are handled along with ref/value below
-          computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());  
+          computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
         }
       }
       // Check that the initExpr type is compatible with declared type
@@ -1658,7 +1779,8 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
   if (configWithPrivate != config) {
     auto modScope = scopeForModule(context, moduleId);
     auto ids = lookupNameInScope(context, modScope,
-                                 /* receiverScopes */ {},
+                                 /* methodLookupHelper */ nullptr,
+                                 /* receiverScopeHelper */ nullptr,
                                  dot->field(), configWithPrivate);
     for (auto& id : ids) {
       // Only report "bla is private" if it's originally declared in the
@@ -1686,7 +1808,10 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
     CHPL_ASSERT(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
     std::vector<ResultVisibilityTrace> trace;
-    lookupNameInScopeTracing(context, scope, { }, dotModName,
+    lookupNameInScopeTracing(context, scope,
+                             /* methodLookupHelper */ nullptr,
+                             /* receiverScopeHelper */ nullptr,
+                             dotModName,
                              LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
                              LOOKUP_PARENTS | LOOKUP_INNERMOST |
                              LOOKUP_EXTERN_BLOCKS,
@@ -2754,9 +2879,11 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
     bool printFirstMention = identHasMoreMentions(ident);
 
     std::vector<ResultVisibilityTrace> traceResult;
-    auto vec = lookupNameInScopeTracing(context, scope, receiverScopes,
-                                   ident->name(), prevConfig,
-                                   traceResult);
+    auto vec = lookupNameInScopeTracing(context, scope,
+                                        /* methodLookupHelper */ nullptr,
+                                        /* receiverScopeHelper */ TODO,
+                                        ident->name(), prevConfig,
+                                        traceResult);
 
     // emit an ambiguity error if this is not resolving a called ident
     CHPL_REPORT(context, AmbiguousIdentifier,
@@ -2783,7 +2910,9 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto m = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
+  auto m = lookupNameInScopeWithWarnings(context, scope,
+                                         /* methodLookupHelper */ nullptr,
+                                         /* receiverScopeHelper */ TODO,
                                          ident->name(), config, ident->id());
 
   if (!m.isEmpty()) {
@@ -3856,7 +3985,8 @@ ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
   LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
   auto enumScope = scopeForId(context, enumAst->id());
   auto ids = lookupNameInScope(context, enumScope,
-                               /* receiverScopes */ {},
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                elementName, config);
   if (ids.numIds() == 0) {
     // Do not report the error here, because it might not be an error.
@@ -3995,7 +4125,8 @@ void Resolver::exit(const Dot* dot) {
 
     auto modScope = scopeForModule(context, moduleId);
     auto ids = lookupNameInScope(context, modScope,
-                                 /* receiverScopes */ {},
+                                 /* methodLookupHelper */ nullptr,
+                                 /* receiverScopeHelper */ nullptr,
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (ids.numIds() == 0) {
@@ -4740,7 +4871,9 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 
   auto receiverScopes = resolver.methodReceiverScopes();
 
-  auto ids = lookupNameInScope(resolver.context, scope, receiverScopes,
+  auto ids = lookupNameInScope(resolver.context, scope,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ TODO,
                                intent->name(), config);
 
   if (ids.numIds() == 1) {

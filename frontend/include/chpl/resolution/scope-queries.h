@@ -61,12 +61,16 @@ namespace resolution {
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
-    'receiverScopes' is the scope of a type containing the name, in the case of
-    method calls, field accesses, and resolving a name within a method.  It is a
-    Scope representing the record/class/union itself for the receiver. If
-    provided, the receiverScopes will be consulted after declarations within
-    'scope' but before its parents. It accepts multiple scopes in order to
-    handle classes with inheritance.
+    'methodLookupHelper' should be nullptr unless working on resolving
+    a Dot expression for a method/field access. It should be used for
+    something like 'foo.bar()' and in such a case, when looking up 'bar',
+    it should reflect the scopes for 'foo'.
+
+    'receiverScopeHelper' should be provided any time it's possible for
+    the scope lookup process to encounter an enclosing method. Within a method,
+    something like 'baz' might refer to a field or a method. So, the
+    'receiverScopeHelper' assists in such cases by calculating a
+    MethodLookupHelper for the receiver.
 
     The config argument is a group of or-ed together bit flags that adjusts the
     behavior of the lookup. Please see 'LookupConfig' and the related constants
@@ -75,7 +79,8 @@ namespace resolution {
   MatchingIdsWithName
   lookupNameInScope(Context* context,
                     const Scope* scope,
-                    llvm::ArrayRef<const Scope*> receiverScopes,
+                    const MethodLookupHelper* methodLookupHelper,
+                    const ReceiverScopeHelper* receiverScopeHelper,
                     UniqueString name,
                     LookupConfig config);
 
@@ -87,6 +92,8 @@ namespace resolution {
   lookupNameInScopeWithWarnings(Context* context,
                                 const Scope* scope,
                                 llvm::ArrayRef<const Scope*> receiverScopes,
+                                const MethodLookupHelper* methodLookupHelper,
+                                const ReceiverScopeHelper* receiverScopeHelper,
                                 UniqueString name,
                                 LookupConfig config,
                                 ID idForWarnings);
@@ -99,7 +106,8 @@ namespace resolution {
   MatchingIdsWithName
   lookupNameInScopeTracing(Context* context,
                            const Scope* scope,
-                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           const MethodLookupHelper* methodLookupHelper,
+                           const ReceiverScopeHelper* receiverScopeHelper,
                            UniqueString name,
                            LookupConfig config,
                            std::vector<ResultVisibilityTrace>& traceResult);
@@ -110,7 +118,8 @@ namespace resolution {
   MatchingIdsWithName
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
-                           const llvm::ArrayRef<const Scope*> receiverScopes,
+                           const MethodLookupHelper* methodLookupHelper,
+                           const ReceiverScopeHelper* receiverScopeHelper,
                            UniqueString name,
                            LookupConfig config,
                            CheckedScopes& visited);
@@ -126,7 +135,7 @@ namespace resolution {
    */
   std::map<UniqueString, MatchingIdsWithName>
   getSymbolsAvailableInScope(Context* context,
-                            const Scope* scope);
+                             const Scope* scope);
 
   /**
     Returns true if all of checkScope is visible from fromScope
