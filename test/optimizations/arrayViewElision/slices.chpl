@@ -1,4 +1,4 @@
-config param useDomain = true, rank = 1;
+config param useDomain = false, rank = 1;
 config param dist = "stencil";
 
 proc multuplify(param rank, x) {

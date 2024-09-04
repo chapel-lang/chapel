@@ -885,12 +885,7 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
 
 iter StencilImpl.activeTargetLocales(const space : range(?)) {
   compilerAssert(rank==1);
-  const low = chpl__tuplify(targetLocsIdx(space.first));
-  const high = chpl__tuplify(targetLocsIdx(space.last));
-  var dims : rank*range(low(0).type);
-  for param i in 0..rank-1 {
-    dims(i) = low(i)..high(i);
-  }
+  const dims = targetLocsIdx(space.first)..targetLocsIdx(space.last);
 
   // In case 'locSpace' is a strided domain we need to check that the locales
   // in 'dims' actually contain indices in 'locSpace'.
@@ -907,7 +902,7 @@ iter StencilImpl.activeTargetLocales(const space : range(?)) {
   foreach i in dims {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
-    if locSpace[chunk].sizeAs(int) > 0 then
+    if space[chunk[0]].sizeAs(int) > 0 then
       yield i;
   }
 
