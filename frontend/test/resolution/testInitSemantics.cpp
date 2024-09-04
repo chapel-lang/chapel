@@ -1348,9 +1348,54 @@ static void testInheritance() {
         proc init(type A) {
           super.init(A);
         }
+
+        proc doNothing() {}
       }
 
       var x = new Child(int);
+
+      // ensure we can call a method on this receiver type after init
+      x.doNothing();
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto x = vars["x"];
+
+    std::stringstream ss;
+    x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "owned Child(int(64))");
+  }
+
+  // Generic grandparent, concrete parent, concrete child
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Grandparent {
+        type A;
+      }
+
+      class Parent : Grandparent {
+        proc init(type A) {
+          super.init(A);
+        }
+      }
+
+      class Child : Parent {
+
+        proc init(type A) {
+          super.init(A);
+        }
+
+        proc doNothing() {}
+      }
+
+      var x = new Child(int);
+
+      // ensure we can call a method on this receiver type after init
+      x.doNothing();
     )""";
 
     auto vars = resolveTypesOfVariables(context, program, {"x"});

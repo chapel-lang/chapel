@@ -270,8 +270,7 @@ static const Type* ctFromSubs(Context* context,
   const Type* ret = nullptr;
 
   if (auto rec = receiverType->toRecordType()) {
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toRecordType();
+    auto instantatiatedFrom = subs.empty() ? nullptr : root->toRecordType();
     ret = RecordType::get(context, rec->id(), rec->name(),
                           instantatiatedFrom,
                           subs);
@@ -279,13 +278,15 @@ static const Type* ctFromSubs(Context* context,
     auto oldBasic = cls->basicClassType();
     CHPL_ASSERT(oldBasic && "Not handled!");
 
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toBasicClassType();
+    bool genericParent =
+        superType && superType->instantiatedFromCompositeType() != nullptr;
+    auto instantiatedFrom =
+        (subs.empty() && !genericParent) ? nullptr : root->toBasicClassType();
 
     auto basic = BasicClassType::get(context, oldBasic->id(),
                                      oldBasic->name(),
                                      superType,
-                                     instantatiatedFrom,
+                                     instantiatedFrom,
                                      subs);
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
@@ -309,7 +310,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                                        DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
-  bool genericParent = superType_ && superType_->substitutions().size() != 0;
+  bool genericParent =
+      superType_ && superType_->instantiatedFromCompositeType() != nullptr;
 
   if (!rfNoDefaults.isGeneric()) {
     if (genericParent) {
@@ -364,7 +366,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     }
   }
 
-  if (subs.size() != 0 || genericParent) {
+  if (!subs.empty() || genericParent) {
     const Type* ret = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
     CHPL_ASSERT(ret);
     return ret;
