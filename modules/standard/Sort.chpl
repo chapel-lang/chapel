@@ -892,8 +892,8 @@ iter sorted(x : domain, comparator:? = new DefaultComparator()) {
 //
 // TODO - Make standalone or leader/follower parallel iterator
 /*
-   Yield the elements of argument `x` in sorted order, using sort
-   algorithm.
+   Yield the elements of argument `x` in sorted order, using the same algorithm
+   as :proc:`sort`.
 
    .. note:
 
