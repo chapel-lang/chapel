@@ -2751,12 +2751,17 @@ class TypedMethodLookupHelper final : public MethodLookupHelper {
 
 struct ReceiverScopeTypedHelper final : public ReceiverScopeHelper {
  private:
-  const TypedFnSignature* currentlyResolvingTfs_ = nullptr;
+  // TODO: these should be a map, to support nested functions
+  ID resolvingMethodId_;
+  types::QualifiedType resolvingMethodReceiverType_;
  public:
   ReceiverScopeTypedHelper() { }
 
-  ReceiverScopeTypedHelper(const TypedFnSignature* currentlyResolvingTfs)
-    : currentlyResolvingTfs_(currentlyResolvingTfs) {
+  ReceiverScopeTypedHelper(ID resolvingMethodId,
+                           types::QualifiedType resolvingMethodReceiverType)
+    : resolvingMethodId_(std::move(resolvingMethodId)),
+      resolvingMethodReceiverType_(std::move(resolvingMethodReceiverType))
+  {
   }
 
   const MethodLookupHelper*

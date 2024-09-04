@@ -1017,6 +1017,8 @@ bool LookupHelper::doLookupInReceiverScopes(
 
   int startSize = result.numIds();
 
+  // consider primary methods / fields
+  // these do not need checking for applicability
   for (auto rcvScope : receiverScopes->receiverScopes()) {
     if (trace) {
       // push the receiver scope
@@ -1027,8 +1029,25 @@ bool LookupHelper::doLookupInReceiverScopes(
 
     doLookupInScope(rcvScope, name, newConfig);
 
-    // also check receiver parent scopes
-    if (checkParents) {
+    if (trace) {
+      // pop the receiver scope
+      traceCurPath->pop_back();
+    }
+  }
+
+  int startParentsSize = result.numIds();
+
+  // now consider parent scopes, if we are checking parents
+  if (checkParents) {
+    for (auto rcvScope : receiverScopes->receiverScopes()) {
+      if (trace) {
+        // push the receiver scope
+        VisibilityTraceElt elt;
+        elt.methodReceiverScope = rcvScope;
+        traceCurPath->push_back(std::move(elt));
+      }
+
+      // check the receiver's parent scopes
       for (const Scope* cur = rcvScope->parentScope();
            cur != nullptr;
            cur = cur->parentScope()) {
@@ -1063,18 +1082,19 @@ bool LookupHelper::doLookupInReceiverScopes(
         if (isModule(cur->tag()) && !goPastModules)
           break;
       }
-    }
 
-    if (trace) {
-      // pop the receiver scope
-      traceCurPath->pop_back();
+      if (trace) {
+        // pop the receiver scope
+        traceCurPath->pop_back();
+      }
     }
   }
 
-  // Filter any matches found according to receiverScopes->isReceiverApplicable.
+  // Filter any matches found through parent scopes
+  // using receiverScopes->isReceiverApplicable.
   int endSize = result.numIds();
-  int cur = startSize;
-  for (int i = startSize; i < endSize; i++) {
+  int cur = startParentsSize;
+  for (int i = startParentsSize; i < endSize; i++) {
     IdAndFlags& idv = result.idAndFlags(i);
     if (receiverScopes->isReceiverApplicable(context, idv.id())) {
       // copy it to 'cur' unless it is already 'cur'
@@ -1486,7 +1506,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
         // and then search only considering receiver scopes
         // as if the receiver scope were just outside of this scope.
-        if (cur->isMethodScope()) {
+        if (cur->isMethodScope() && receiverScopeHelper != nullptr) {
           auto rcvScopes =
             receiverScopeHelper->methodLookupForMethodId(context, cur->id());
           bool got = doLookupInReceiverScopes(scope, rcvScopes,

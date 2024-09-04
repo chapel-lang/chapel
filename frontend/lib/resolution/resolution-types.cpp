@@ -1533,17 +1533,16 @@ ReceiverScopeTypedHelper::methodLookupForType(Context* context,
 const MethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
                                                   const ID& methodId) const {
-  const TypedFnSignature* tfs = nullptr;
 
-  if (currentlyResolvingTfs_->id() == methodId) {
-    tfs = currentlyResolvingTfs_;
+  if (resolvingMethodId_ == methodId) {
+    return methodLookupForType(context, resolvingMethodReceiverType_);
   } else {
+    const TypedFnSignature* tfs = nullptr;
     tfs = typedSignatureInitialForId(context, methodId);
-  }
-
-  if (tfs && tfs->isMethod()) {
-    QualifiedType rcvType = tfs->formalType(0);
-    return methodLookupForType(context, rcvType);
+    if (tfs && tfs->isMethod()) {
+      QualifiedType rcvType = tfs->formalType(0);
+      return methodLookupForType(context, rcvType);
+    }
   }
 
   return nullptr;

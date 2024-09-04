@@ -192,6 +192,7 @@ Resolver::ParenlessOverloadInfo::fromMatchingIds(Context* context,
       anyNonMethodOrField = true;
     }
 
+    // TODO: should this check NOT_PARENFUL_FUNCTION ?
     if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
       return {};
     }
@@ -237,6 +238,7 @@ Resolver::createForInitialSignature(Context* context, const Function* fn,
       if (auto ct = receiverType.type()->toCompositeType()) {
         ret.inCompositeType = ct;
       }
+      ret.allowReceiverScopes = true;
     }
   }
 
@@ -254,6 +256,10 @@ Resolver::createForInstantiatedSignature(Context* context,
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+
+  if (fn->isMethod()) {
+    ret.allowReceiverScopes = true;
+  }
 
   return ret;
 }
@@ -650,11 +656,26 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
   if (!receiverScopesComputed) {
     receiverScopeHelper = nullptr;
     if (!scopeResolveOnly) {
-      if (typedSignature != nullptr && typedSignature->isMethod()) {
-        receiverScopeTypedHelper = ReceiverScopeTypedHelper(typedSignature);
-        receiverScopeHelper = &receiverScopeTypedHelper;
+      if (typedSignature != nullptr) {
+        if (typedSignature->isMethod()) {
+          // if we have a method typedFnSignature, use that
+          receiverScopeTypedHelper =
+            ReceiverScopeTypedHelper(typedSignature->id(),
+                                     typedSignature->formalType(0));
+          receiverScopeHelper = &receiverScopeTypedHelper;
+        }
+      } else if (auto fn = symbol->toFunction()) {
+        if (fn->isMethod()) {
+          // use the result from byPostorder
+          auto receiverType = byPostorder.byAst(fn->thisFormal()).type();
+          receiverScopeTypedHelper =
+            ReceiverScopeTypedHelper(fn->id(), std::move(receiverType));
+          receiverScopeHelper = &receiverScopeTypedHelper;
+        }
       }
+
     } else {
+      // scope resolve only
       receiverScopeHelper = &receiverScopeSimpleHelper;
     }
 
@@ -2319,10 +2340,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (parentId == symbol->id() && inCompositeType) {
     ct = inCompositeType;
   } else {
+    // TODO: this needs to consider the possibility
+    // that we are working with a nested method
     if (auto rt = methodReceiverType().type()) {
       if (auto comprt = rt->getCompositeType()) {
-        ct = comprt; // start with the receiver type
-        if (auto bct = comprt->toBasicClassType()) {
+        if (comprt->id() == parentId) {
+          ct = comprt; // handle record, class with field
+        } else if (auto bct = comprt->toBasicClassType()) {
           // if it's a class, check for parent classes to decide
           // which type corresponds to the uAST ID parentId
           while (bct != nullptr) {
@@ -3292,6 +3316,8 @@ void Resolver::exit(const NamedDecl* decl) {
 
   if (decl->isFormal() && decl->name() == USTR("this")) {
     allowReceiverScopes = true;
+    // when needed, the receiver scopes can be computed, now that
+    // 'this' has been resolved.
   }
 
   exitScope(decl);
