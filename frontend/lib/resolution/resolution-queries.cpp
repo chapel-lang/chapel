@@ -3006,38 +3006,36 @@ isInitialTypedSignatureApplicable(Context* context,
 // or the result of typedSignatureInitial if it is.
 static ApplicabilityResult
 doIsCandidateApplicableInitial(Context* context,
-                               const ID& candidateId,
+                               const IdAndFlags& candidate,
                                const CallInfo& ci) {
-  AstTag tag = asttags::AST_TAG_UNKNOWN;
-
-  if (!candidateId.isEmpty()) {
-    tag = parsing::idToTag(context, candidateId);
-  }
+  bool isParenlessFn = !candidate.isParenfulFunction();
+  bool isField = candidate.isMethodOrField() && !candidate.isMethod();
+  const ID& candidateId = candidate.id();
 
   // if it's a paren-less call, only consider parenless routines
   // (including generated field accessors) but not types/outer variables/
   // calls with parens.
   if (ci.isParenless()) {
-    if (parsing::idIsParenlessFunction(context, candidateId) ||
-        parsing::idIsField(context, candidateId)) {
+    if (isParenlessFn || isField) {
       // OK
     } else {
       return ApplicabilityResult::failure(candidateId, FAIL_PARENLESS_MISMATCH);
     }
   }
 
-  if (isTypeDecl(tag)) {
+  if (candidate.isType() && !ci.isParenless()) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
     return ApplicabilityResult::success(typeConstructorInitial(context, t));
   }
 
-  // not a candidate
-  if (ci.isMethodCall() && isFormal(tag)) {
+  // quickly rule out formals as candidates for method calls
+  // by checking that, if it's a method call, the candidate is a method or field
+  if (ci.isMethodCall() && !candidate.isMethodOrField()) {
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  if (isVariable(tag)) {
+  if (isField) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
       //
@@ -3054,9 +3052,15 @@ doIsCandidateApplicableInitial(Context* context,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
-  if (!isFunction(tag)) {
-    context->error(candidateId, "Found non-function where function was expected");
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  if (!candidate.isParenfulFunction()) {
+    AstTag tag = asttags::AST_TAG_UNKNOWN;
+    if (!candidateId.isEmpty()) {
+      tag = parsing::idToTag(context, candidateId);
+    }
+    if (!isFunction(tag)) {
+      context->error(candidateId, "Found non-function where function was expected");
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    }
   }
 
   if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
@@ -3110,7 +3114,7 @@ doIsCandidateApplicableInstantiating(Context* context,
 
 static ApplicabilityResult const&
 isCandidateApplicableInitialQuery(Context* context,
-                                  ID candidateId,
+                                  IdAndFlags candidateId,
                                   CallInfo call) {
 
   QUERY_BEGIN(isCandidateApplicableInitialQuery, context, candidateId, call);
@@ -3124,21 +3128,21 @@ isCandidateApplicableInitialQuery(Context* context,
 static const std::pair<CandidatesAndForwardingInfo,
                        std::vector<ApplicabilityResult>>&
 filterCandidatesInitialGatherRejected(Context* context,
-                                      std::vector<BorrowedIdsWithName> lst,
+                                      MatchingIdsWithName lst,
                                       CallInfo call, bool gatherRejected) {
   QUERY_BEGIN(filterCandidatesInitialGatherRejected, context, lst, call, gatherRejected);
 
   CandidatesAndForwardingInfo matching;
   std::vector<ApplicabilityResult> rejected;
 
-  for (const BorrowedIdsWithName& ids : lst) {
-    for (const ID& id : ids) {
-      auto s = isCandidateApplicableInitialQuery(context, id, call);
-      if (s.success()) {
-        matching.addCandidate(s.candidate());
-      } else if (gatherRejected) {
-        rejected.push_back(s);
-      }
+  auto end = lst.end();
+  for (auto cur = lst.begin(); cur != end; ++cur) {
+    const IdAndFlags& id = cur.curIdAndFlags();
+    auto s = isCandidateApplicableInitialQuery(context, id, call);
+    if (s.success()) {
+      matching.addCandidate(s.candidate());
+    } else if (gatherRejected) {
+      rejected.push_back(s);
     }
   }
 
@@ -3148,10 +3152,11 @@ filterCandidatesInitialGatherRejected(Context* context,
 
 const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
+                        MatchingIdsWithName lst,
                         CallInfo call) {
-  auto& result = filterCandidatesInitialGatherRejected(context, std::move(lst),
-                                                       call, /* gatherRejected */ false);
+  auto& result =
+    filterCandidatesInitialGatherRejected(context, std::move(lst),
+                                          call, /* gatherRejected */ false);
   return result.first;
 }
 
@@ -3927,7 +3932,7 @@ considerCompilerGeneratedCandidates(Context* context,
   candidates.addCandidate(instantiated.candidate());
 }
 
-static std::vector<BorrowedIdsWithName>
+static MatchingIdsWithName
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,

@@ -180,7 +180,7 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
 static
 void describeAmbiguousMatch(ErrorWriterBase& wr,
                             const uast::Identifier* ident,
-                            const resolution::BorrowedIdsWithName& match,
+                            const resolution::MatchingIdsWithName& match,
                             const resolution::ResultVisibilityTrace& trace,
                             bool oneOnly,
                             const char* intro) {
@@ -220,7 +220,7 @@ void describeAmbiguousMatch(ErrorWriterBase& wr,
 void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info_);
   auto moreMentions = std::get<bool>(info_);
-  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto matches = std::get<resolution::MatchingIdsWithName>(info_);
   auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   wr.heading(kind_, type_, ident,
@@ -229,17 +229,9 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 
   wr.code(ident, { ident });
 
-  CHPL_ASSERT(matches.size() > 0);
-  if (matches[0].numIds() > 1) {
-    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
-                           /* one only */ false, /* intro */ "");
-  } else {
-    CHPL_ASSERT(matches.size() > 1);
-    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
-                           /* one only */ true, /* intro */ "first, ");
-    describeAmbiguousMatch(wr, ident, matches[1], trace[1],
-                           /* one only */ true, /* intro */ "additionally, ");
-  }
+  CHPL_ASSERT(matches.numIds() > 0);
+  describeAmbiguousMatch(wr, ident, matches, trace[0],
+                         /* one only */ false, /* intro */ "");
 
   return;
 }
@@ -247,7 +239,7 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
   auto name = std::get<UniqueString>(info_);
   auto mentionId = std::get<ID>(info_);
-  auto potentialTargetIds = std::get<std::vector<ID>>(info_);
+  auto potentialTargetIds = std::get<resolution::MatchingIdsWithName>(info_);
 
   wr.heading(kind_, type_, mentionId,
              "'", name, "' is ambiguous");
@@ -1132,13 +1124,13 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
              "potentially surprising shadowing for '", name.c_str(), "'");
   wr.code<ID,ID>(id, { id });
   // only print out two matches
-  if (result.size() > 0 && shadowed.size() > 0) {
+  if (result.numIds() > 0 && shadowed.numIds() > 0) {
     const char* intro = "it refers to a symbol found ";
     bool encounteredAutoModule = false;
     UniqueString from;
     bool needsIntroText = true;
 
-    ID firstId = result[0].firstId();
+    ID firstId = result.firstId();
 
     describeSymbolTrace(wr, id, name,
                         traceResult[0], /* start */ 0, intro,
@@ -1156,7 +1148,7 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
                         traceShadowed[0], /* start */ 0, intro2,
                         encounteredAutoModule, from, needsIntroText);
 
-    ID otherId = shadowed[0].firstId();
+    ID otherId = shadowed.firstId();
     if (needsIntroText) {
       wr.note(locationOnly(otherId), "but, there is a shadowed symbol '", from, "' defined here:");
     } else {
@@ -1210,17 +1202,17 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
 // find the first ID not from use/import, returns true and sets result
 // if one is found.
 static bool firstIdFromDecls(
-    const std::vector<resolution::BorrowedIdsWithName>& matches,
+    const resolution::MatchingIdsWithName& matches,
     const std::vector<resolution::ResultVisibilityTrace>& trace,
     ID& result) {
-  int n = matches.size();
+  int n = matches.numIds();
   for (int i = 0; i < n; i++) {
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithName
+      // To do that, would use flags in MatchingIdsWithName
       // to filter Ids.
-      result = matches[i].firstId();
+      result = matches.id(i);
       return true;
     }
   }
@@ -1300,7 +1292,7 @@ void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto scopeId = std::get<ID>(info_);
   auto name = std::get<UniqueString>(info_);
-  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto& matches = std::get<resolution::MatchingIdsWithName>(info_);
   auto& trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   // compute the anchor ID for the error message
@@ -1317,48 +1309,49 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, id, "'", name, "' has multiple definitions in this scope.");
   }
 
-  bool firstGroup = true;
-  int n = matches.size();
+  int n = matches.numIds();
+  int lastTracePrinted = -1;
   for (int i = 0; i < n; i++) {
     bool encounteredAutoModule = false;
     UniqueString from;
-    bool needsIntroText = true;
+    bool needsIntroText = false;
     std::string intro;
-    if (firstGroup) {
+    if (i == 0) {
       intro = "it was first defined ";
-      firstGroup = false;
     } else {
       intro = "redefined ";
     }
-    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
-                        encounteredAutoModule, from, needsIntroText);
-    bool printedUseTrace = !needsIntroText;
+    if (i == 0 || trace[i] != trace[i-1]) {
+      needsIntroText = true;
+      describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
+                          encounteredAutoModule, from, needsIntroText);
+      if (!needsIntroText) {
+        lastTracePrinted = i;
+      }
+    }
 
     // print out the other IDs
-    bool firstDef = true;
-    for (const auto& matchId : matches[i]) {
-      if (needsIntroText) {
-        if (anchorToDef) {
-          wr.message("It was first defined here:");
-        } else {
-          wr.note(locationOnly(matches[i].firstId()), intro + "here:");
-        }
-        needsIntroText = false;
+    const ID& matchId = matches.id(i);
+    if (needsIntroText) {
+      if (anchorToDef) {
+        wr.message("It was first defined here:");
       } else {
-        if (printedUseTrace) {
-          if (firstDef) {
-            wr.note(locationOnly(matchId), "leading to the definition here:");
-            firstDef = false;
-          } else {
-            wr.note(locationOnly(matchId), "and to the definition here:");
-          }
-        } else {
-          wr.note(locationOnly(matchId), "redefined here:");
-        }
+        wr.note(locationOnly(matchId), intro + "here:");
       }
-
-      wr.codeForDef(matchId);
+      needsIntroText = false;
+    } else {
+      if (lastTracePrinted != -1) {
+        if (lastTracePrinted == i) {
+          wr.note(locationOnly(matchId), "leading to the definition here:");
+        } else {
+          wr.note(locationOnly(matchId), "and to the definition here:");
+        }
+      } else {
+        wr.note(locationOnly(matchId), "redefined here:");
+      }
     }
+
+    wr.codeForDef(matchId);
   }
 }
 
@@ -1442,7 +1435,7 @@ void ErrorSplitInitMismatchedConditionalTypes::write(
     wr.heading(kind_, type_, var,
              "mismatched types for split-initialization of '", var->name(),
              "' in select branches.");
-    
+
     wr.note(branch1, "Initialized with ", thenType,
             " in one branch");
     wr.note(branch2, "Initialized with ", elseType,

@@ -88,7 +88,7 @@ static void checkScopeContentsViaLookup(Context* context, const Module* mod,
 
     auto result = lookupNameInScope(context, scope, {}, name, IDENTIFIER_LOOKUP_CONFIG);
 
-    if (result.empty()) {
+    if (result.isEmpty()) {
       assert(allSyms.find(name) == allSyms.end());
     } else {
       assert(allSyms.find(name) != allSyms.end());

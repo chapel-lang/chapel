@@ -19,11 +19,11 @@
  */
 
 module ChapelArrayViewElision {
-  use ChapelBase only iterKind;
+  use ChapelArray;
+  use ChapelBase;
   use ChapelRange;
   use DefaultRectangular;
   use CTypes;
-  use ChapelArray only _validRankChangeArgs;
 
   //
   // compiler interface
@@ -222,7 +222,6 @@ module ChapelArrayViewElision {
       }
     }
 
-    inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
 

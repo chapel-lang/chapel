@@ -59,8 +59,8 @@ struct Resolver {
    public:
     ParenlessOverloadInfo() = default;
 
-    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
-                                                 const std::vector<BorrowedIdsWithName>&);
+    static ParenlessOverloadInfo fromMatchingIds(Context* context,
+                                                 const MatchingIdsWithName&);
 
     bool areCandidatesOnlyParenlessProcs() const {
       // Note: constructor sets both to false when it discovers a single
@@ -537,7 +537,7 @@ struct Resolver {
                                    llvm::ArrayRef<const Scope*> receiverScopes,
                                    LookupConfig prevConfig);
 
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes,
                    ParenlessOverloadInfo& outParenlessOverloadInfo);

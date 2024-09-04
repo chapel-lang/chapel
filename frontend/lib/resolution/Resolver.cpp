@@ -179,22 +179,21 @@ struct GatherFieldsOrFormals {
 
 
 Resolver::ParenlessOverloadInfo
-Resolver::ParenlessOverloadInfo::fromBorrowedIds(Context* context,
-                                                 const std::vector<BorrowedIdsWithName>& bids) {
+Resolver::ParenlessOverloadInfo::fromMatchingIds(Context* context,
+                                                 const MatchingIdsWithName& ids)
+{
   bool anyMethodOrField = false;
   bool anyNonMethodOrField = false;
 
-  for (auto& ids : bids) {
-    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (idIt.curIdAndFlags().isMethodOrField()) {
-        anyMethodOrField = true;
-      } else {
-        anyNonMethodOrField = true;
-      }
+  for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+    if (idIt.curIdAndFlags().isMethodOrField()) {
+      anyMethodOrField = true;
+    } else {
+      anyNonMethodOrField = true;
+    }
 
-      if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
-        return {};
-      }
+    if (!parsing::idIsParenlessFunction(context, idIt.curIdAndFlags().id())) {
+      return {};
     }
   }
   return Resolver::ParenlessOverloadInfo(anyMethodOrField, anyNonMethodOrField);
@@ -1658,19 +1657,17 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
   // No need to do the search if we already did search for private symbols
   if (configWithPrivate != config) {
     auto modScope = scopeForModule(context, moduleId);
-    auto vec = lookupNameInScope(context, modScope,
+    auto ids = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
                                  dot->field(), configWithPrivate);
-    for (auto& bids : vec) {
-      for (auto& id : bids) {
-        // Only report "bla is private" if it's originally declared in the
-        // given module (i.e., don't do so if the found ID is imported from
-        // elsewhere)
-        auto modId = parsing::idToParentModule(context, id);
-        if (modId != moduleId) continue;
+    for (auto& id : ids) {
+      // Only report "bla is private" if it's originally declared in the
+      // given module (i.e., don't do so if the found ID is imported from
+      // elsewhere)
+      auto modId = parsing::idToParentModule(context, id);
+      if (modId != moduleId) continue;
 
-        thereButPrivate = true;
-      }
+      thereButPrivate = true;
     }
   }
 
@@ -2767,7 +2764,7 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
-std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
+MatchingIdsWithName Resolver::lookupIdentifier(
     const Identifier* ident, llvm::ArrayRef<const Scope*> receiverScopes,
     ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
@@ -2778,17 +2775,18 @@ std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
     // Super is a keyword, and should't be looked up in scopes. Return
     // an empty ID to indicate that this identifier points to something,
     // but that something has a special meaning.
-    return {BorrowedIdsWithName::createWithBuiltinId()};
+    return MatchingIdsWithName::createWithIdAndFlags(
+                                      IdAndFlags::createForBuiltinVar());
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
-                                           ident->name(), config, ident->id());
+  auto m = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
+                                         ident->name(), config, ident->id());
 
-  if (!vec.empty()) {
+  if (!m.isEmpty()) {
     // We might be ambiguous, but due to having found multiple parenless procs.
     // It's not certain that this is an error; in particular, some parenless
     // procs can be ruled out if their 'where' clauses are false. If even
@@ -2798,10 +2796,10 @@ std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
     // IDs. In that case we may emit an ambiguity error later, after filtering
     // out incorrect receivers.
     outParenlessOverloadInfo =
-        ParenlessOverloadInfo::fromBorrowedIds(context, vec);
+        ParenlessOverloadInfo::fromMatchingIds(context, m);
   }
 
-  return vec;
+  return m;
 }
 
 void Resolver::validateAndSetToId(ResolvedExpression& r,
@@ -3034,7 +3032,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
   // lookupIdentifier reports any errors that are needed
   auto parenlessInfo = ParenlessOverloadInfo();
-  auto vec = lookupIdentifier(ident, receiverScopes, parenlessInfo);
+  auto ids = lookupIdentifier(ident, receiverScopes, parenlessInfo);
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
   // TODO: these errors should be enabled for scope resolution
@@ -3050,7 +3048,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     //
     // Call resolution will issue an error if the overload selection fails.
     tryResolveParenlessCall(parenlessInfo, ident, receiverScopes);
-  } else if (vec.size() == 0) {
+  } else if (ids.numIds() == 0) {
     if (emitLookupErrors) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());
       if (pair.second) {
@@ -3061,7 +3059,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     }
 
     result.setType(QualifiedType());
-  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+  } else if (ids.numIds() > 1) {
     // Ambiguous. Check if we can break ambiguity by performing function resolution with
     // an implicit 'this' receiver, to filter based on receiver type.
     QualifiedType receiverType;
@@ -3079,10 +3077,10 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
       // Ensure we error out for redeclarations within the method itself,
       // which resolution with an implicit 'this' currently does not catch.
-      std::vector<BorrowedIdsWithName> redeclarations;
+      MatchingIdsWithName redeclarations;
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
-      if (!redeclarations.empty()) {
+      if (!redeclarations.isEmpty()) {
         bool resolvingCalledIdent = nearestCalledExpression() == ident;
         LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
         if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
@@ -3100,9 +3098,8 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       result.setType(QualifiedType());
     }
   } else {
-    // vec.size() == 1 and vec[0].numIds() <= 1
-    const IdAndFlags& idv = vec[0].firstIdAndFlags();
-    const ID& id = idv.id();
+    // just a single match
+    const ID& id = ids.firstId();
     QualifiedType type;
 
     // empty IDs from the scope resolution process are builtins or super
@@ -3858,15 +3855,14 @@ ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
   outAmbiguous = false;
   LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
   auto enumScope = scopeForId(context, enumAst->id());
-  auto vec = lookupNameInScope(context, enumScope,
+  auto ids = lookupNameInScope(context, enumScope,
                                /* receiverScopes */ {},
                                elementName, config);
-  if (vec.size() == 0) {
+  if (ids.numIds() == 0) {
     // Do not report the error here, because it might not be an error.
     // In particular, we could be in a parenless method call. Callers
     // will decide whether or not to emit the error.
-  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    auto& ids = vec[0];
+  } else if (ids.numIds() > 1) {
     // multiple candidates. report an error, but the expression most likely has a type given by the enum.
     std::vector<ID> redefinedIds(ids.numIds());
     std::copy(ids.begin(), ids.end(), redefinedIds.begin());
@@ -3874,7 +3870,7 @@ ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
                 std::move(redefinedIds));
     outAmbiguous = true;
   } else {
-    return vec[0].firstId();
+    return ids.firstId();
   }
 
   return ID();
@@ -3998,20 +3994,20 @@ void Resolver::exit(const Dot* dot) {
     }
 
     auto modScope = scopeForModule(context, moduleId);
-    auto vec = lookupNameInScope(context, modScope,
+    auto ids = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
-    if (vec.size() == 0) {
+    if (ids.numIds() == 0) {
       // emit a "can't find that thing" error
       issueErrorForFailedModuleDot(dot, moduleId, config);
       r.setType(QualifiedType());
-    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+    } else if (ids.numIds() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
     } else {
-      // vec.size() == 1 and vec[0].numIds() <= 1
-      const ID& id = vec[0].firstId();
+      // ids.numIds == 1
+      const ID& id = ids.firstId();
 
       // TODO: handle extern blocks correctly.
       // This conditional is a workaround to leave extern block resolution
@@ -4744,11 +4740,11 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 
   auto receiverScopes = resolver.methodReceiverScopes();
 
-  auto vec = lookupNameInScope(resolver.context, scope, receiverScopes,
+  auto ids = lookupNameInScope(resolver.context, scope, receiverScopes,
                                intent->name(), config);
 
-  if (vec.size() == 1) {
-    resolvedId = vec[0].firstId();
+  if (ids.numIds() == 1) {
+    resolvedId = ids.firstId();
     if (resolver.scopeResolveOnly == false) {
       if (resolvedId.isEmpty()) {
         type = typeForBuiltin(resolver.context, intent->name());

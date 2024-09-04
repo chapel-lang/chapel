@@ -202,7 +202,7 @@ static void test3() {
                          )"""";
 
   auto qt = resolveQualifiedTypeOfX(context, contents);
-  assert(qt.type()->isRealType()); // and not real
+  assert(qt.type()->isRealType()); // and not int
 }
 
 static void test4() {

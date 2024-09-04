@@ -72,7 +72,7 @@ namespace resolution {
     behavior of the lookup. Please see 'LookupConfig' and the related constants
     such as 'LOOKUP_DECLS' for further details.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScope(Context* context,
                     const Scope* scope,
                     llvm::ArrayRef<const Scope*> receiverScopes,
@@ -83,8 +83,7 @@ namespace resolution {
     Same as lookupNameInScope but can produce warnings based on
     the ID passed in.
    */
-
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeWithWarnings(Context* context,
                                 const Scope* scope,
                                 llvm::ArrayRef<const Scope*> receiverScopes,
@@ -97,7 +96,7 @@ namespace resolution {
     Same as lookupNameInScope but traces how each symbol was found,
     for error messages.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeTracing(Context* context,
                            const Scope* scope,
                            llvm::ArrayRef<const Scope*> receiverScopes,
@@ -108,7 +107,7 @@ namespace resolution {
   /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
                            const llvm::ArrayRef<const Scope*> receiverScopes,
@@ -125,7 +124,7 @@ namespace resolution {
     Currently, this is only intended for tool support; the resolver itself
     should rely on lookupNameInScope.
    */
-  std::map<UniqueString, BorrowedIdsWithName>
+  std::map<UniqueString, MatchingIdsWithName>
   getSymbolsAvailableInScope(Context* context,
                             const Scope* scope);
 
@@ -202,6 +201,13 @@ namespace resolution {
     This query only exists to emit errors.
    */
   void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
+
+
+  /**
+    Given a Scope* for a Module, return a DeclMap containing all symbols
+    publically available from that module, including those brought in
+    transitively by use/import. */
+  const ModulePublicSymbols* publicSymbolsForModule(Context* context, const Scope* modScope);
 
 
 } // end namespace resolution

@@ -370,7 +370,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
  */
 const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
+                        MatchingIdsWithName lst,
                         CallInfo call);
 
 /**

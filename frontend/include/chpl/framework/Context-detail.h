@@ -151,25 +151,24 @@ struct QueryMapArgTupleEqual final {
 };
 
 // define a way to debug-print out a tuple
-void queryArgsPrintSep();
+void queryArgsPrintSep(std::ostream& s);
 
 template<typename T>
-static void queryArgsPrintOne(const T& v) {
+static void queryArgsPrintOne(std::ostream& s, const T& v) {
   stringify<T> tString;
-  std::ostringstream ss;
-  tString(ss, chpl::StringifyKind::DEBUG_SUMMARY, v);
-  printf("%s", ss.str().c_str() );
+  tString(s, chpl::StringifyKind::DEBUG_SUMMARY, v);
 }
 
 
 template<typename TUP, size_t... I>
-static inline void queryArgsPrintImpl(const TUP& tuple,
+static inline void queryArgsPrintImpl(std::ostream& s,
+                                      const TUP& tuple,
                                       std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
-  auto print = [](bool printsep, const auto& elem) {
+  auto print = [](std::ostream& s, bool printsep, const auto& elem) {
       if(printsep)
-        queryArgsPrintSep();
-      queryArgsPrintOne(elem);
+        queryArgsPrintSep(s);
+      queryArgsPrintOne(s, elem);
   };
 
   // TODO: C++17 comma fold expression
@@ -179,9 +178,17 @@ static inline void queryArgsPrintImpl(const TUP& tuple,
   // This prints the elements in order, with a separator in-between.
   // The comma (, 0) is used to initialize a dummy initializer_list.
   // The compiler optimizes away the dummy variable and list of 0s.
-  auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
+  auto dummy = { (print(s, I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
 }
+
+template<typename... Ts>
+void queryArgsPrint(std::ostream& s, const std::tuple<Ts...>& tuple) {
+  queryArgsPrintImpl(s, tuple, std::index_sequence_for<Ts...>{});
+}
+static inline void queryArgsPrint(std::ostream& s, const std::tuple<>& tuple) {
+}
+
 
 // taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
 // when the queryArgsToStringsImpl is dropped we can remove these too
@@ -219,13 +226,6 @@ auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   // std::ostringstream ss;
   // stringifier(ss, chpl::StringifyKind::DEBUG_SUMMARY, tuple);
   // return ss.str();
-}
-
-template<typename... Ts>
-void queryArgsPrint(const std::tuple<Ts...>& tuple) {
-  queryArgsPrintImpl(tuple, std::index_sequence_for<Ts...>{});
-}
-static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
 // Performance: this struct only contains a pointer and an additional bit

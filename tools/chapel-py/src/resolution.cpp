@@ -90,8 +90,8 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
                                             identToLookUp->name(),
                                             config);
 
-            if (ids.empty()) return ID();
-            toReturn = ids[0].firstId();
+            if (ids.isEmpty()) return ID();
+            toReturn = ids.firstId();
           }
         }
       }

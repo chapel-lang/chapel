@@ -144,7 +144,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
                 << " { ";
       clearTerminalColor(std::cout);
       std::cout << traceQueryName << " (";
-      queryArgsPrint(tupleOfArg);
+      queryArgsPrint(std::cout, tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
       std::cout <<"hash: 0x"
@@ -619,7 +619,8 @@ Context::querySetterUpdateResult(
 
 #define QUERY_BEGIN_TIMING(context__) \
   context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP, \
+                                                             BEGIN_QUERY_ARGS);
 
 #else
 
