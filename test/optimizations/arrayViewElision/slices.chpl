@@ -1,4 +1,4 @@
-config param useDomain = false, rank = 1, dist = "block";
+config param useDomain = false, rank = 1, dist = "default";
 
 proc multuplify(param rank, x) {
   var ret: rank*x.type;
