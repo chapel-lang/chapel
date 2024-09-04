@@ -701,20 +701,7 @@ QualifiedType Resolver::methodReceiverType() {
 
 bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType) {
   if (ident->name() == USTR("super")) {
-    // compute the type of 'super' for the method being resolved
-    QualifiedType rcvType;
-    if (getMethodReceiver(&rcvType) && rcvType.type()) {
-      CHPL_ASSERT(!rcvType.type()->isBasicClassType()); // or adjust below
-      if (auto ct = rcvType.type()->toClassType()) {
-        auto parentBct = ct->basicClassType()->parentClassType();
-        // compute it with the same management
-        const ClassType* parentCt =
-          ClassType::get(context, parentBct, ct->manager(), ct->decorator());
-        // compute it with the same Qualifier kind
-        *outType = QualifiedType(rcvType.kind(), parentCt);
-        return true;
-      }
-    }
+    return getMethodReceiver(outType);
   }
   return false;
 }

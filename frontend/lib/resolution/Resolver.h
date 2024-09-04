@@ -290,7 +290,7 @@ struct Resolver {
 
   /* Given an identifier, check if this identifier could refer to a superclass,
      as opposed to a variable of the name 'super'. If it can, sets
-     outType to the type of the parent class.
+     outType to the type of the current method's receiver.
    */
   bool isPotentialSuper(const uast::Identifier* identifier,
                         types::QualifiedType* outType = nullptr);
