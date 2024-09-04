@@ -660,6 +660,84 @@ static void test13() {
   guard.realizeErrors();
 }
 
+static void test14() {
+  // Test that the error from test13 is not spuriously emitted when inheritance
+  // is in play.
+  //
+  // Original error in https://github.com/Cray/chapel-private/issues/6673,
+  // where 'myFoo.asdf' would complain about asdf being a generic field.
+  // It's not actually generic when the error is emitted; it's just that
+  // fields of parent class Bar aren't instantiated yet. A robust check
+  // (locked down by this issue) must ensure that all parent classes are
+  // fully instantiated before issuing the error.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      enum strideKind { one }
+
+      record Wrapper {
+        param strides: strideKind = strideKind.one;
+      }
+
+      class Bar {
+        param strides: strideKind;
+      }
+
+      class Foo: Bar(?) {
+        var asdf : Wrapper(strides);
+
+        proc init(param strides) {
+          super.init(strides);
+        }
+      }
+
+      var myFoo = new unmanaged Foo(strideKind.one);
+      var myFooAsdf = myFoo.asdf;
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf" });
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test14b() {
+  // Test that the error from test13 is correctly emitted when inheritance
+  // is in play.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      enum strideKind { one }
+
+      record Wrapper {
+        param strides: strideKind = strideKind.one;
+      }
+
+      class Bar {
+        param strides: strideKind;
+      }
+
+      class Foo: Bar(?) {
+        var asdf : Wrapper(strides);
+        var notConcrete: SecretlyGeneric;
+
+        proc init(param strides) {
+          super.init(strides);
+        }
+      }
+
+      proc SecretlyGeneric type do return owned class;
+      var myFoo = new unmanaged Foo(strideKind.one);
+      var myFooAsdf = myFoo.asdf;
+      var myNotConcrete = myFoo.notConcrete;
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf", "myNotConcrete" });
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -674,6 +752,8 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
+  test14b();
 
   return 0;
 }
