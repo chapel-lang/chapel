@@ -27,10 +27,6 @@
 module ChapelLocale {
 
   public use LocaleModel as _; // let LocaleModel refer to the class
-  /*public import LocaleModel.{LocaleModel,
-                             RootLocale,
-                             localeModelHasSublocales,
-                             localeModelPartitionsIterationOnSublocales};*/
   use ChapelIOSerialize;
   import HaltWrappers;
   use CTypes;

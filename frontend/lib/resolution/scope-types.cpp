@@ -199,66 +199,13 @@ void FlagSet::mark(Context* context) const {
   // nothing, because flags don't need to be marked.
 }
 
-void OwnedIdsWithName::stringify(std::ostream& ss,
-                                 chpl::StringifyKind stringKind) const {
-  if (auto ptr = moreIdvs_.get()) {
-    for (const auto& elt : *ptr) {
-      elt.id_.stringify(ss, stringKind);
-      ss << " ";
-    }
-  } else {
-    if (!idv_.id_.isEmpty()) {
-      idv_.id_.stringify(ss, stringKind);
-    }
-  }
-}
+bool
+OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
+                                IdAndFlags::Flags filterFlags,
+                                const IdAndFlags::FlagSet& excludeFlagSet) const
+{
+  const OwnedIdsWithName& ownedIds = *this;
 
-/*
-MatchingIdsWithName
-OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
-                         const IdAndFlags::FlagSet& excludeFlagSet) const {
-  // Are all of the filter flags present in flagsOr?
-  // If not, it is not possible for this to match.
-  if ((flagsOr_ & filterFlags) != filterFlags) {
-    return MatchingIdsWithName();
-  }
-
-  if (MatchingIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
-    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
-  }
-  // The first ID isn't visible; are others?
-  if (moreIdvs_.get() == nullptr) {
-    return MatchingIdsWithName();
-  }
-
-  // Are all of the filter flags present in flagsAnd?
-  // And, if excludeFlags is present, some flag in it is not present in flagsOr?
-  // If so, return the borrow
-  if ((flagsAnd_ & filterFlags) == filterFlags &&
-      excludeFlagSet.noneMatch(flagsOr_)) {
-    // filter does not rule out anything in the OwnedIds,
-    // so we can return a match.
-    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
-  }
-
-  // Otherwise, use a loop to decide if we can borrow
-  for (auto& idv : *moreIdvs_) {
-    if (!MatchingIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
-      continue;
-
-    // Found a visible ID! Return a MatchingIds referring to the whole thing
-    return MatchingIdsWithName(*this, filterFlags, excludeFlagSet);
-  }
-
-  // No ID was visible, so return empty.
-  return MatchingIdsWithName();
-}
-*/
-
-bool MatchingIdsWithName::appendMatchingFromOwned(
-                                    const OwnedIdsWithName& ownedIds,
-                                    IdAndFlags::Flags filterFlags,
-                                    const IdAndFlags::FlagSet& excludeFlagSet) {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((ownedIds.flagsOr_ & filterFlags) != filterFlags) {
@@ -279,13 +226,28 @@ bool MatchingIdsWithName::appendMatchingFromOwned(
 
   bool anyAppended = false;
   for (auto cur = beginIds; cur != endIds; ++cur) {
-    if (isIdVisible(*cur, filterFlags, excludeFlagSet)) {
-      idvs_.push_back(*cur);
+    if (cur->matchesFilter(filterFlags, excludeFlagSet)) {
+      dst.idvs_.push_back(*cur);
       anyAppended = true;
     }
   }
 
   return anyAppended;
+
+}
+
+void OwnedIdsWithName::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  if (auto ptr = moreIdvs_.get()) {
+    for (const auto& elt : *ptr) {
+      elt.id_.stringify(ss, stringKind);
+      ss << " ";
+    }
+  } else {
+    if (!idv_.id_.isEmpty()) {
+      idv_.id_.stringify(ss, stringKind);
+    }
+  }
 }
 
 void MatchingIdsWithName::removeDuplicateIds() {
@@ -354,8 +316,7 @@ bool lookupInDeclMap(const DeclMap& declared,
                      const IdAndFlags::FlagSet& excludeFlags) {
   auto search = declared.find(name);
   if (search != declared.end()) {
-    return result.appendMatchingFromOwned(search->second,
-                                          filterFlags, excludeFlags);
+    return search->second.gatherMatches(result, filterFlags, excludeFlags);
   }
   return false;
 }

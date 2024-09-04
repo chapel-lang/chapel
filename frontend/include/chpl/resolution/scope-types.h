@@ -233,9 +233,10 @@ class IdAndFlags {
     return (flags_ & TYPE) != 0;
   }
 
-  // return true if haveFlags matches filterFlags, and does not match
-  // the exclude flag set. See the comments on Flags and FlagSet for
-  // how the matching works.
+  /** Returns true if haveFlags matches filterFlags, and does not match
+      the exclude flag set. See the comments on Flags and FlagSet for
+      how the matching works.
+   */
   static bool matchFilter(Flags haveFlags,
                           Flags filterFlags,
                           const FlagSet& excludeFlagSet) {
@@ -243,7 +244,11 @@ class IdAndFlags {
            excludeFlagSet.noneMatch(haveFlags);
   }
 
-  bool matchesFilter(Flags filterFlags, const FlagSet& excludeFlagSet) {
+  /** Returns true if this IdAndFlags matches filterFlags, and does not match
+      the exclude flag set. See the comments on Flags and FlagSet for
+      how the matching works.
+   */
+  bool matchesFilter(Flags filterFlags, const FlagSet& excludeFlagSet) const {
     return matchFilter(flags_, filterFlags, excludeFlagSet);
   }
 
@@ -257,8 +262,7 @@ class IdAndFlags {
 };
 
 /**
-  Collects IDs with a particular name. These can be referred to
-  by a MatchingIdsWithName in a way that avoids copies.
+  Collects IDs with a particular name.
  */
 class OwnedIdsWithName {
  friend class MatchingIdsWithName;
@@ -301,6 +305,13 @@ class OwnedIdsWithName {
     flagsOr_ |= idv.flags_;
   }
 
+  /** Append any entries that match filterFlags and aren't excluded
+      by excludeFlagSet to a MatchingIdsWithName.
+      Returns 'true' if any matches were appended. */
+  bool gatherMatches(MatchingIdsWithName& dst,
+                     IdAndFlags::Flags filterFlags,
+                     const IdAndFlags::FlagSet& excludeFlagSet) const;
+
   int numIds() const {
     if (moreIdvs_.get() == nullptr) {
       return 1;
@@ -339,9 +350,6 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  //MatchingIdsWithName
-  //borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
-
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
@@ -361,19 +369,12 @@ class MatchingIdsWithName {
  private:
   llvm::SmallVector<IdAndFlags, 1> idvs_;
 
-  static inline bool isIdVisible(const IdAndFlags& idv,
-                                 IdAndFlags::Flags filterFlags,
-                                 const IdAndFlags::FlagSet& excludeFlagSet) {
-    // check that all flags set in filterFlags are also set in idv.flags_
-    return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlagSet);
-  }
-
   /** Construct a MatchingIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.  */
   MatchingIdsWithName(const OwnedIdsWithName& ownedIds,
                       IdAndFlags::Flags filterFlags,
                       const IdAndFlags::FlagSet& excludeFlagSet) {
-    appendMatchingFromOwned(ownedIds, filterFlags, excludeFlagSet);
+    ownedIds.gatherMatches(*this, filterFlags, excludeFlagSet);
   }
 
   /** Construct a MatchingIdsWithName referring to one ID. Assumes
@@ -385,10 +386,9 @@ class MatchingIdsWithName {
 
  public:
   /**
-    Iterator that skips invisible entries from the list of borrowed IDs.
+    Iterator that yields IDs rather than IdAndFlags.
    */
   class MatchingIdsWithNameIter {
-    // To allow use of isIdVisible
     friend class MatchingIdsWithName;
    private:
     /** The ID this iterator is pointing too. */
@@ -407,6 +407,12 @@ class MatchingIdsWithName {
       return *this;
     }
     inline const ID& operator*() const { return currentIdv->id_; }
+
+    // TODO: instead of having curIdAndFlags here, write support code
+    // so that the loop iterating requests IDs or IdAndFlags:
+    //   for (const IdAndFlags& x : myMatchingIdsWithName)
+    // vs
+    //   for (const ID& x : myMatchingIdsWithName.ids())
     inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
 
     // iterator traits
@@ -422,37 +428,8 @@ class MatchingIdsWithName {
     return MatchingIdsWithName(std::move(idv));
   }
 
-  static MatchingIdsWithName
-  createFilteringIdAndFlags(IdAndFlags idv,
-                            IdAndFlags::Flags filterFlags,
-                            const IdAndFlags::FlagSet& excludeFlagSet) {
-    if (isIdVisible(idv, filterFlags, excludeFlagSet)) {
-      return MatchingIdsWithName(std::move(idv));
-    }
-    return MatchingIdsWithName();
-  }
-
   /** Construct a empty MatchingIdsWithName containing no IDs. */
   MatchingIdsWithName() { }
-
-  /** Append an IdAndFlags if it matches filterFlags / excludeFlagSet.
-      Returns 'true' if it matched and was appended. */
-  bool appendIfMatching(IdAndFlags idv, IdAndFlags::Flags filterFlags,
-                        const IdAndFlags::FlagSet& excludeFlagSet) {
-    if (isIdVisible(idv, filterFlags, excludeFlagSet)) {
-      idvs_.push_back(std::move(idv));
-      return true;
-    }
-
-    return false;
-  }
-
-  /** Append each IdAndFlags in ownedIds that matches
-      filterFlags / excludeFlag set. Returns 'true' if any
-      matched and were appended. */
-  bool appendMatchingFromOwned(const OwnedIdsWithName& ownedIds,
-                               IdAndFlags::Flags filterFlags,
-                               const IdAndFlags::FlagSet& excludeFlagSet);
 
   /** Append an IdAndFlags. */
   void append(IdAndFlags idv) {
@@ -553,6 +530,10 @@ class MatchingIdsWithName {
  */
 using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 
+/**
+  Gather matches to 'name' that match 'filterFlags' and aren't
+  excluded by 'excludeFlags'. Store any gathered into 'result'
+ */
 bool lookupInDeclMap(const DeclMap& declared,
                      UniqueString name,
                      MatchingIdsWithName& result,

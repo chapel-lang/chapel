@@ -1332,8 +1332,6 @@ static void test33() {
 
 
 int main() {
-  test6();
-
   test1();
   test2();
   test3();

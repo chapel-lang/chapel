@@ -127,7 +127,7 @@ static void testBorrowIds() {
     OwnedIdsWithName ids(privVar);
     assert(ids.numIds() == 1);
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, 0, FlagSet::empty());
+    ids.gatherMatches(foundIds, 0, FlagSet::empty());
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == privVar.id());
     assert(foundIds.numIds() == 1);
@@ -145,7 +145,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(foundIds.isEmpty());
     int count = 0;
     for (auto id : foundIds) {
@@ -160,7 +160,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(not_method);
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(foundIds.isEmpty());
   }
 
@@ -172,7 +172,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 1);
@@ -191,7 +191,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 1);
@@ -210,7 +210,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::empty();
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == pubMethod.id());
     assert(foundIds.numIds() == 2);
@@ -229,7 +229,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == privVar.id());
     assert(foundIds.numIds() == 1);
@@ -248,7 +248,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(!foundIds.isEmpty());
     assert(foundIds.firstId() == pubVar.id());
     assert(foundIds.numIds() == 1);
@@ -267,7 +267,7 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub);
     MatchingIdsWithName foundIds;
-    foundIds.appendMatchingFromOwned(ids, f, e);
+    ids.gatherMatches(foundIds, f, e);
     assert(foundIds.isEmpty());
   }
 }

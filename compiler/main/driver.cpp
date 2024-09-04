@@ -2488,9 +2488,7 @@ int main(int argc, char* argv[]) {
 
   if (fDynoTimingPath[0] != '\0' &&
       (fDriverCompilationPhase || fDriverDoMonolithic)) {
-    printf("begin query timing trace\n");
     gContext->beginQueryTimingTrace(fDynoTimingPath);
-    //gContext->setQueryTimingFlag(true);
   }
 
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
@@ -2532,10 +2530,6 @@ int main(int argc, char* argv[]) {
 
   if (fDynoTimingPath[0] != '\0' &&
       (fDriverCompilationPhase || fDriverDoMonolithic)) {
-    printf("ending query timing trace\n");
-
-    //auto f = std::ofstream(fDynoTimingPath);
-    //gContext->queryTimingReport(f);
     gContext->endQueryTimingTrace();
   }
 

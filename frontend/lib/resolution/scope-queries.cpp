@@ -1187,13 +1187,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                    llvm::ArrayRef<const Scope*> receiverScopes,
                                    UniqueString name,
                                    LookupConfig config) {
-
-  /*
-  if (name == "BaseLocale")
-    printf("Looking up BaseLocale in %s\n", scope->id().str().c_str());
-  if (name == "writef")
-    printf("Looking up writef in %s\n", scope->id().str().c_str());*/
-
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
   bool checkUseImport = (config & LOOKUP_IMPORT_AND_USE) != 0;
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
@@ -1288,9 +1281,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // Note, private imports end up in shadow scope 0, but are private.
   if (checkDecls && checkUseImport && isModule(scope->tag()) &&
       skipPrivateVisibilities && allowCached) {
-    //printf("Looking up public symbols for module %s\n", scope->id().str().c_str());
     modPublicSyms = publicSymbolsForModuleIfNotRunning(context, scope);
-    //printf("done\n");
   }
 
   // Get the resolved visibility statements, if they will be needed
@@ -1301,8 +1292,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       r = resolveVisibilityStmts(context, scope);
     }
 
-    // don't check use/import if there is no ResolvedVisibilityScope
-    // since that would imply there are no use/imports
+    // as an optimization, don't check use/import if there is no
+    // ResolvedVisibilityScope since that would imply there are no use/imports
     if (r == nullptr && !scope->autoUsesModules())
       checkUseImport = false;
   }
@@ -1755,6 +1746,12 @@ static bool lookupInScopeViz(Context* context,
       config |= LOOKUP_DECLS;
     }
 
+    // Why is allowCached 'false' below?
+    //
+    // It prevents the use of 'publicSymbolsForModule' in the lookup process.
+    // That is just to keep things simpler when facing mutually recursive
+    // modules.
+
     got = helpLookupInScopeWithShadowingWarning(
                             context, scope, /* receiverScopes */ {},
                             resolving, name, config,
@@ -1927,8 +1924,7 @@ getSymbolsAvailableInScopeQuery(Context* context,
     UniqueString renameTo;
     if (!allowedByVisibility(pair.first, renameTo, false)) continue;
 
-    toReturn[renameTo].appendMatchingFromOwned(pair.second,
-                                               flags, excludeNothing);
+    pair.second.gatherMatches(toReturn[renameTo], flags, excludeNothing);
   }
 
   // Handle introducing the 'IO' in 'use IO'
@@ -1960,8 +1956,10 @@ getSymbolsAvailableInScopeQuery(Context* context,
       const MatchingIdsWithName& ids = pair.second;
       auto end = ids.end();
       for (auto cur = ids.begin(); cur != end; ++cur) {
-        toReturn[name].appendIfMatching(cur.curIdAndFlags(),
-                                              flags, excludeNothing);
+        const IdAndFlags& idv = cur.curIdAndFlags();
+        if (idv.matchesFilter(flags, excludeNothing)) {
+          toReturn[name].append(idv);
+        }
       }
     }
   }
@@ -3624,12 +3622,6 @@ static void collectAllPublicContents(Context* context, const Scope* scope,
     CheckedScopes lookupCheckedScopes;
     MatchingIdsWithName lookupResult;
 
-    /*
-    if (scope->id().str() == "LocaleModelHelpFlat" &&
-        name == "writef") {
-      gdbShouldBreakHere();
-    }*/
-
     helpLookupInScope(context, scope,
                       /* receiverScopes */ { },
                       /* resolving */ r,
@@ -3662,25 +3654,10 @@ static const owned<ModulePublicSymbols>&
 publicSymbolsForModuleQuery(Context* context, const Scope* modScope) {
   QUERY_BEGIN(publicSymbolsForModuleQuery, context, modScope);
 
-  //if (modScope->id().str() == "MemConsistency")
-  //  gdbShouldBreakHere();
-
-  //printf("publicSymbolsForModuleQuery %s begins\n",
-  //       modScope->id().str().c_str());
-
   DeclMap syms;
   collectAllPublicContents(context, modScope, syms);
 
   auto ownedResult = toOwned(new ModulePublicSymbols(std::move(syms)));
-
-
-  /*
-  printf("publicSymbolsForModuleQuery %s ends\n",
-         modScope->id().str().c_str());
-  printf("result:\n");
-  ownedResult->dump();
-  printf("\n\n");
-  */
 
   return QUERY_END(ownedResult);
 }

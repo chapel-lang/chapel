@@ -596,9 +596,6 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
   auto c = ast->toClass();
   if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
 
-  if (classDeclId.str() == "ChapelLocale.AbstractRootLocale")
-    gdbShouldBreakHere();
-
   const uast::AstNode* lastParentClass = nullptr;
   ID parentClassDeclId;
   for (auto inheritExpr : c->inheritExprs()) {

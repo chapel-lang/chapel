@@ -3029,7 +3029,8 @@ doIsCandidateApplicableInitial(Context* context,
     return ApplicabilityResult::success(typeConstructorInitial(context, t));
   }
 
-  // formals aren't candidates
+  // quickly rule out formals as candidates for method calls
+  // by checking that, if it's a method call, the candidate is a method or field
   if (ci.isMethodCall() && !candidate.isMethodOrField()) {
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
