@@ -1,6 +1,195 @@
 Release Changes List
 ====================
 
+version 2.2
+===========
+
+released September 26, 2024
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Updates to Chapel's Release Formats
+-----------------------------------
+
+Prerequisite Updates
+--------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+New Language Features
+---------------------
+
+Language Feature Improvements
+-----------------------------
+
+Semantic Changes / Changes to the Language Definition
+-----------------------------------------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+New Standard Library Features
+-----------------------------
+
+New Package Module Features
+---------------------------
+
+Changes / Feature Improvements in Standard Libraries
+----------------------------------------------------
+
+Changes / Feature Improvements in Package Modules
+-------------------------------------------------
+
+Standard Layouts and Distributions
+----------------------------------
+
+Name Changes in Libraries
+-------------------------
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+
+Tool Improvements
+-----------------
+
+GPU Computing
+-------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Documentation Improvements
+--------------------------
+
+Documentation Improvements for Tools
+------------------------------------
+
+Language Specification Improvements
+-----------------------------------
+
+Platform-Specific Documentation Improvements
+--------------------------------------------
+
+Technical Note Improvements
+---------------------------
+
+Documentation Improvements for Libraries
+----------------------------------------
+
+Documentation Improvements to the 'man' Pages
+---------------------------------------------
+
+Example Codes
+-------------
+
+Compilation Time Improvements
+-----------------------------
+
+Generated Code Improvements
+---------------------------
+
+Memory Improvements
+-------------------
+
+Syntax Highlighting
+-------------------
+
+Configuration / Build Changes
+-----------------------------
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Generated Executable Flags
+--------------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Launchers
+---------
+
+Runtime Library Changes
+-----------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for GPU Computing
+---------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Bug Fixes for the Runtime
+-------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements / changes
+-----------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements / changes
+------------------------------------------------------------------
+
+Developer-oriented changes: GPU support
+---------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
 version 2.1
 ===========
 
