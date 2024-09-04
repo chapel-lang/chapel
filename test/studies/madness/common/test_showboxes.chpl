@@ -1,3 +1,4 @@
+import Sort;
 use MRA;
 use MadAnalytics;
 
@@ -19,10 +20,10 @@ proc main() {
     F.evalNPT(npt);
 
     writeln("\nDumping the boxes at each level:");
-    
+
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
-        for (n, l) in F.sumC.indices.sorted() do
+        for (n, l) in Sort.sorted(F.sumC.indices) do
             if n == lvl then write(" [",n,", ",l,"]");
     }
     writeln();

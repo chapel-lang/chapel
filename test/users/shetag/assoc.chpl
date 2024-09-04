@@ -1,3 +1,4 @@
+import Sort;
 type t = (int,int);
 var td : domain(t);
 
@@ -9,19 +10,19 @@ td.add(one);
 td.add(two);
 
 //The two outputs match
-writeln("A  ", td.sorted());
+writeln("A  ", Sort.sorted(td));
 for ind in td do
   writeln("A ", ind);
 
 td.remove(two);
 //The two outputs match
-writeln("B  ", td.sorted());
+writeln("B  ", Sort.sorted(td));
 for ind in td do
   writeln("B ", ind);
 
 td.remove(one);
 //The two outputs match
-writeln("C  ", td.sorted());
+writeln("C  ", Sort.sorted(td));
 for ind in td do
   writeln("C ", ind);
 //Scenario 1 ends
@@ -31,19 +32,19 @@ td.add(one);
 td.add(two);
 
 //The two outputs match
-writeln("D  ", td.sorted());
+writeln("D  ", Sort.sorted(td));
 for ind in td do
   writeln("D ", ind);
 
 td.remove(one);
 //The two outputs *do not* match
-writeln("E  ", td.sorted());
+writeln("E  ", Sort.sorted(td));
 for ind in td do
   writeln("E ", ind); 
 
 td.remove(two);
 //The two outputs match
-writeln("F  ", td.sorted());
+writeln("F  ", Sort.sorted(td));
 for ind in td do
   writeln("F ", ind);
 //Scenario 2 ends

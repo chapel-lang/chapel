@@ -1,3 +1,4 @@
+import Sort;
 use printHelp;
 
 var d : domain(int);
@@ -12,5 +13,5 @@ a(0) = 4;
 writelnSorted(d);
 writelnSortedByDom(a);
 
-for i in d.sorted() do
+for i in Sort.sorted(d) do
   writeln(i, " -> ", a(i));
