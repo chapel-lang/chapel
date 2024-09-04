@@ -651,8 +651,8 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
 // paths that comes from elided array views. We could consider using this
 // lighterweight implementation as a more general special case for 1D bulk
 // transfers.
-proc bulkCommTranslateDomain(srcSlice : domain, srcView : range,
-                             targetView : range) {
+proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
+                             targetView : range(?)) {
   if srcSlice.rank != 1 then
     compilerError("bulkCommTranslateDomain: source slice and source domain must have identical rank");
 
