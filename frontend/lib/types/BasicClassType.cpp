@@ -44,7 +44,7 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
                     SubstitutionsMap subs) {
-  // getObjectType should be used to construct object
+  // getRootClassType should be used to construct RootClass
   // everything else should have a parent type.
   CHPL_ASSERT(parentType != nullptr);
   return getBasicClassType(context, id, name,
