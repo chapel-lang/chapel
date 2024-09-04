@@ -744,7 +744,17 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 static bool
 syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
                                            const CompositeType* ct,
+                                           const SubstitutionsMap& subs,
                                            ID fieldId) {
+  if (auto bct = ct->toBasicClassType()) {
+    if (auto parentCt = bct->parentClassType()) {
+      if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, parentCt,
+                                                      subs, fieldId)) {
+        return false;
+      }
+    }
+  }
+
   // Compute the fields without types so that we can iterate the fields.
   auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                            /* syntaxOnly */ true);
@@ -765,7 +775,6 @@ syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
     }
   }
 
-  CHPL_ASSERT(false && "fieldId was not in the composite type!");
   return true;
 }
 
@@ -784,7 +793,10 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
     return;
   }
 
-  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, fieldsOfType, fields_[0].declId)) {
+  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context,
+                                                  fieldsOfType,
+                                                  fieldsOfType->substitutions(),
+                                                  fields_[0].declId)) {
     return;
   }
 
