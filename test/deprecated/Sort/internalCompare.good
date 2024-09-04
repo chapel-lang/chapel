@@ -1,1 +1,2 @@
 internalCompare.chpl:9: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record R: keyComparator').
+-1
