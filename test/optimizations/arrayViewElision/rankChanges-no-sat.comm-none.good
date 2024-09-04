@@ -46,32 +46,24 @@ ArrayViewElision not supported rankChanges.chpl:20
 		int(64)
 		range(int(64),both,one)
 
-<ShortArrayTransfer> Size: 3 Threshold: 60
-<ShortArrayTransfer> size qualifies
 1 1 1 1 1
 1 1 1 1 1
 2 2 2 1 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 3 Threshold: 60
-<ShortArrayTransfer> size qualifies
 1 1 2 1 1
 1 1 2 1 1
 1 1 2 1 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 5 Threshold: 60
-<ShortArrayTransfer> size qualifies
 1 1 1 1 1
 1 1 1 1 1
 2 2 2 2 2
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 5 Threshold: 60
-<ShortArrayTransfer> size qualifies
 1 1 2 1 1
 1 1 2 1 1
 1 1 2 1 1
