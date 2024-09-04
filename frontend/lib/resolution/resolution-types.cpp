@@ -1513,18 +1513,23 @@ void TypedMethodLookupHelper::stringify(std::ostream& ss,
 const MethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForType(Context* context,
                                               QualifiedType type) const {
-  const Type* typePtr = type.type();
-  if (typePtr != nullptr && typePtr->getCompositeType()) {
-    // normalize the kind of the type: always use one of VAR PARAM TYPE
-    QualifiedType::Kind kind = type.kind();
-    if (kind != QualifiedType::PARAM && kind != QualifiedType::TYPE) {
-      kind = QualifiedType::VAR;
-    }
-    const TypedMethodLookupHelper& got =
-      typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+  if (const Type* typePtr = type.type()) {
+    if (typePtr->getCompositeType() ||
+        typePtr->isCPtrType() ||
+        typePtr->isExternType()) {
+      // OK, it's a type that we need to gather receiver scopes for
 
-    if (!got.isEmpty())
-      return &got;
+      // normalize the kind of the type: always use one of VAR PARAM TYPE
+      QualifiedType::Kind kind = type.kind();
+      if (kind != QualifiedType::PARAM && kind != QualifiedType::TYPE) {
+        kind = QualifiedType::VAR;
+      }
+      const TypedMethodLookupHelper& got =
+        typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+
+      if (!got.isEmpty())
+        return &got;
+    }
   }
 
   return nullptr;
