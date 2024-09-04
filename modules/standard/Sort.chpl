@@ -331,25 +331,57 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a == b: returns 0
 */
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
-  // this is an internal proc, but other stdlib consumers like Search may call it
-  // TODO: this can probably be removed when the logic here uses interfaces
-  //       instead of duck typing
-  chpl_check_comparator(comparator, t);
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
+    if !comparatorImplementsKey(comparator) {
+      param atType = if isRecord(comparator) then "record" else "class";
+      param fixString = "'" + atType + " " +
+                        comparator.type:string + ": keyComparator'";
+      compilerWarning(
+        "Defining a comparator with a 'key' method without " +
+        "implementing the keyComparator interface is deprecated. " +
+        "Please implement the keyComparator interface (i.e. " + fixString + ").");
+    }
     // Use the default comparator to compare the integer keys
     return (new DefaultComparator()).compare(comparator.key(a),
                                              comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
+    if !comparatorImplementsRelative(comparator) &&
+        !comparatorImplementsKeyPart(comparator) {
+      // if there is a keyPart method, we should use that interface
+      param hasKeyPart = canResolveMethod(comparator, "keyPart", a, 0);
+      param atType = if isRecord(comparator) then "record" else "class";
+      param fixString = "'" + atType + " " +
+                            comparator.type:string + ": relativeComparator'";
+      if !hasKeyPart {
+        compilerWarning(
+          "Defining a comparator with a 'compare' method without " +
+          "implementing the relativeComparator interface is deprecated. " +
+          "Please implement the relativeComparator interface (i.e. " + fixString + ").");
+      } else {
+        compilerWarning(
+          "Defining a comparator with both a 'compare' method and a 'keyPart' without " +
+          "implementing the keyPartComparator interface is deprecated. " +
+          "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
+      }
+    }
     return comparator.compare(a, b);
   } else if canResolveMethod(comparator, "chpl_keyPartInternal", a, 0) ||
             canResolveMethod(comparator, "keyPart", a, 0) {
+    if !comparatorImplementsKeyPart(comparator) {
+        param atType = if isRecord(comparator) then "record" else "class";
+        param fixString = "'" + atType + " " +
+                              comparator.type:string + ": keyPartComparator'";
+        compilerWarning(
+          "Defining a comparator with a 'keyPart' method without " +
+          "implementing the keyPartComparator interface is deprecated. " +
+          "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
+    }
     return compareByPart(a, b, comparator);
   } else {
-    // this case should not occur, since chpl_check_comparator should catch it
     compilerError(
       "The comparator ", comparator.type:string,
       " must implement either 'keyComparator', 'keyPartComparator', or ",
