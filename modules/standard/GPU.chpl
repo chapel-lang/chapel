@@ -134,18 +134,6 @@ module GPU
   }
 
   /*
-    Will halt execution at runtime if called from outside a GPU.  If used on
-    first line in ``foreach`` or ``forall`` loop will also do a compile time
-    check that the loop is eligible for execution on a GPU.
-  */
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
-  inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu", false);
-  }
-
-  /*
     Returns value of a per-multiprocessor counter that increments every clock cycle.
     This function is meant to be called to time sections of code within a GPU
     enabled loop.
@@ -227,7 +215,7 @@ module GPU
     pragma "codegen for GPU"
     extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     chpl_syncWarp(mask);
   }
 
@@ -265,14 +253,6 @@ module GPU
     var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
     var arrayPtr = voidPtr : c_ptr(theType);
     return arrayPtr.deref();
-  }
-
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
   }
 
   @chpldoc.nodoc
@@ -385,7 +365,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -396,7 +376,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 

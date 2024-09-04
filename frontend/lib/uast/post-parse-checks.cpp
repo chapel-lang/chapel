@@ -129,7 +129,6 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
-  void checkRemoteVar(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -162,6 +161,7 @@ struct Visitor {
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
+  void checkIterNames(const Function* node);
 
   /*
   TODO
@@ -180,6 +180,7 @@ struct Visitor {
   void checkExportedName(const NamedDecl* node);
   void checkReservedSymbolName(const NamedDecl* node);
   void checkLinkageName(const NamedDecl* node);
+  void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
 
@@ -428,7 +429,10 @@ Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
 void Visitor::check(const AstNode* node) {
 
   // First run blanket checks over superclass node types.
-  if (auto decl = node->toDecl()) checkPrivateDecl(decl);
+  if (auto decl = node->toDecl()) {
+    checkPrivateDecl(decl);
+    checkRemoteVar(decl);
+  }
   if (auto named = node->toNamedDecl()) {
     checkUnderscoreName(named);
     checkExportedName(named);
@@ -684,6 +688,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   if (auto foundFn = searchParents(asttags::Function, nullptr)) {
     auto fn = foundFn->toFunction();
     if (fn->name() == "chpl__delete") return;
+    if (fn->name() == "chpl__deleteWithAllocator") return;
   }
 
   error(node, "explicit calls to deinit() are not allowed.");
@@ -902,7 +907,7 @@ void Visitor::checkExportVar(const Variable* node) {
   }
 }
 
-void Visitor::checkRemoteVar(const Variable* node) {
+void Visitor::checkRemoteVar(const Decl* node) {
   // These checks only apply to remote variables.
   if (!node->destination()) return;
 
@@ -912,12 +917,28 @@ void Visitor::checkRemoteVar(const Variable* node) {
     }
   }
 
-  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST) {
-    error(node, "unsupported intent for remote variable.");
+  optional<uast::Variable::Kind> kind;
+  bool isField = false;
+  if (auto var = node->toVariable()) {
+    kind = var->kind();
+    isField = var->isField();
+  } else if (auto multivar = node->toMultiDecl()) {
+    for (auto child : multivar->decls()) {
+      if (auto var = child->toVariable()) {
+        kind = var->kind();
+        isField = var->isField();
+      } else {
+        error(child, "only (multi)variable declarations can target a specific locale.");
+      }
+    }
   }
 
-  if (!node->initExpression() && !node->typeExpression()) {
-    error(node, "remote variables must have an initializer or type expression.");
+  if (isField) {
+    error(node, "fields cannot be declared as remote variables");
+  }
+
+  if (kind && kind != Variable::VAR && kind != Variable::CONST) {
+    error(node, "unsupported intent for remote variable.");
   }
 }
 
@@ -1385,7 +1406,6 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("bytes")     ||
       name == USTR("string")    ||
       name == USTR("sync")      ||
-      name == USTR("single")    ||
       name == USTR("owned")     ||
       name == USTR("shared")    ||
       name == USTR("borrowed")  ||
@@ -1600,8 +1620,10 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("stable") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.assertEligible") ||
              node->name() == USTR("gpu.blockSize") ||
              node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
     // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
     return;
@@ -1632,13 +1654,15 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
+  if (attr->name() == USTR("assertOnGpu") ||
+      attr->name() == USTR("gpu.blockSize") ||
+      attr->name() == USTR("gpu.assertEligible")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
 
-    if (attr->name() == USTR("assertOnGpu")) {
+    if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.assertEligible")) {
       CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
     } else {
       CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
@@ -1711,7 +1735,6 @@ void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
-  checkRemoteVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {
@@ -1731,6 +1754,7 @@ void Visitor::visit(const Function* node) {
   checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
+  checkIterNames(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1925,6 +1949,28 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
   if (!success) {
     error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
   }
+}
+
+void Visitor::checkIterNames(const Function* node) {
+  if (node->kind() == Function::ITER && node->isMethod()) {
+    auto name = node->name();
+
+    if (name == USTR("init")) {
+      error(node,
+            "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be deinitializers, please rename this iterator");
+    } else if (name == USTR("init=")) {
+      error(node,
+            "iterators can't be copy initializers, please rename this iterator");
+    } else if (chpl::parsing::isSpecialMethodName(name)) {
+      error(node,
+            "iterators can't be the '%s' method, please rename this iterator",
+            name.c_str());
+    }
+  }
+  return;
 }
 
 void Visitor::visit(const Module* node){

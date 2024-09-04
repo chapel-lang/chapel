@@ -58,6 +58,20 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
 
+    # 'else if' statements do not have proper locations
+    #
+    # https://github.com/chapel-lang/chapel/issues/25256
+    elif isinstance(node, Conditional):
+        parent = node.parent()
+        grandparent = parent.parent() if parent else None
+        if (
+            isinstance(parent, Block)
+            and parent.block_style() == "implicit"
+            and grandparent
+            and isinstance(grandparent, Conditional)
+        ):
+            return True
+
     return False
 
 
@@ -813,7 +827,13 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                yield child
+                # conditionals do not support attributes
+                anchor = (
+                    parent_for_indentation
+                    if not isinstance(parent_for_indentation, Conditional)
+                    else None
+                )
+                yield AdvancedRuleResult(child, anchor=anchor)
 
             prev_depth = depth
             prev = child

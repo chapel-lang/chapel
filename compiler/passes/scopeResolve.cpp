@@ -1673,11 +1673,11 @@ static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
     if (isAggregateType(canonicalClassType(ts->type))) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
-          if (grandParentCall->isPrimitive(PRIM_NEW)) {
+          if (isNewLike(grandParentCall)) {
             return parentCall;
           } else if(callSpecifiesClassKind(grandParentCall)) {
             if (CallExpr* outerCall = toCallExpr(grandParentCall->parentExpr)) {
-              if (outerCall->isPrimitive(PRIM_NEW))
+              if (isNewLike(outerCall))
                 return parentCall;
             }
           }

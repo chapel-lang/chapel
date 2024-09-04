@@ -17,7 +17,7 @@ incrementalTests = ["time_iterate", "time_access", "optimizeOnClauses_basic", "o
                     "access2d", "access3d", "ri-4-arrdom", "ri-4-arrdom.replicated", "ri-3-stress", "ri-3-stress-coforall", "assign",
                     "assign_across_locales", "copy_to_local", "dgemm", "init", "reductions-stress-fast", "sparse-iter-performance",
                     "externMethodCallPerf", "forVersusWhilePerf", "test_cholesky_performance", "mandelbrot-error-works",
-                    "mandelbrot-error", "atomic_bool", "atomic_vars", "ontest","uts_deq", "uts_rec", "dequeue", "sudoku-simple",
+                    "mandelbrot-error", "chpl_atomic_bool", "atomic_vars", "ontest","uts_deq", "uts_rec", "dequeue", "sudoku-simple",
                     "sudoku-simpler", "sudoku-smart", "sudoku", "leadFollowOpt", "ra-cleanloop", "ra-atomics", "ra", "test_for2d",
                     "test_cgapb", "test_cgapb_loop", "cg-sparse-timecomp", "fft-timecomp", "ManyThreads", "ft-serial", "cg-sparse",
                     "cg-printa", "cg-makea1-sparse-sort", "enumerated-array2", "enumerated-array", "formalDomainChecks3",

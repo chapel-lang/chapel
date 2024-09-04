@@ -1,7 +1,13 @@
-Start analyzing forall for automatic aggregation (arrTypes.chpl:7)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (arrTypes.chpl:7)
 | Found an aggregation candidate (arrTypes.chpl:8)
 |  Potential source aggregation (arrTypes.chpl:8)
-End analyzing forall for automatic aggregation (arrTypes.chpl:7)
+|  Potential destination aggregation (arrTypes.chpl:8)
+End analyzing forall for automatic aggregation [static only ALA clone]  (arrTypes.chpl:7)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (arrTypes.chpl:7)
+| Found an aggregation candidate (arrTypes.chpl:8)
+|  Potential source aggregation (arrTypes.chpl:8)
+End analyzing forall for automatic aggregation [no ALA clone]  (arrTypes.chpl:7)
 
 Iterable type not suitable for aggregation (arrTypes.chpl:8)
 Aggregation candidate has reverted local child  (arrTypes.chpl:8)

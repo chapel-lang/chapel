@@ -1051,6 +1051,11 @@ CanPassResult CanPassResult::canPass(Context* context,
           } else if (formalQT.kind() == QualifiedType::TYPE &&
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
+          } else if (formalQT.kind() != QualifiedType::TYPE) {
+            auto got = canConvert(context, actualQT, formalQT);
+            if (got.passes()) {
+              return got;
+            }
           }
         }
         // TODO: promotion
@@ -1116,6 +1121,10 @@ void KindProperties::setParam(bool isParam) {
   this->isParam = isParam;
 }
 
+void KindProperties::setConst(bool isConst) {
+  this->isConst = isConst;
+}
+
 bool KindProperties::checkValidCombine(const KindProperties& other) const {
   if (!isValid || !other.isValid) {
     return false;
@@ -1179,6 +1188,12 @@ QualifiedType::Kind KindProperties::toKind() const {
   } else {
     return isRef ? QualifiedType::REF : QualifiedType::VAR ;
   }
+}
+
+types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind kind) {
+  auto props = KindProperties::fromKind(kind);
+  props.setConst(true);
+  return props.toKind();
 }
 
 static optional<QualifiedType>

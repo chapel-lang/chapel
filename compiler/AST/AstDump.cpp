@@ -234,9 +234,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (isAggregateType(sym->type)) {
         if (sym->hasFlag(FLAG_SYNC))
           write("sync");
-
-        if (sym->hasFlag(FLAG_SINGLE))
-          write("single");
       }
 
       writeSymbol("type", sym, true);
@@ -245,8 +242,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (isSyncType(vs->type)) {
         write("sync");
 
-      } else if (isSingleType(vs->type)) {
-        write("single");
       }
 
       write(true, sym->qualType().qualStr(), false);

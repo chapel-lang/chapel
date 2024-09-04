@@ -1200,11 +1200,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = astr("NULL");
 
-  dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
-
-  CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = astr("NULL");
-
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
@@ -1619,7 +1614,6 @@ bool isBuiltinGenericType(Type* t) {
          t == dtAnyPOD ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||
-         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
          t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
 }
 
@@ -1684,7 +1678,6 @@ bool isUserRecord(Type* t) {
       t->symbol->hasFlag(FLAG_RANGE) ||
       t->symbol->hasFlag(FLAG_TUPLE) ||
       t->symbol->hasFlag(FLAG_SYNC) ||
-      t->symbol->hasFlag(FLAG_SINGLE) ||
       t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
       t->symbol->hasFlag(FLAG_MANAGED_POINTER))
     return false;
@@ -1833,10 +1826,6 @@ bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isSingleType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_SINGLE);
-}
-
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
@@ -1871,9 +1860,6 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
 }
 bool isOrContainsSyncType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_SYNC, checkRefs);
-}
-bool isOrContainsSingleType(Type* t, bool checkRefs) {
-  return isOrContains(t, FLAG_SINGLE, checkRefs);
 }
 bool isOrContainsAtomicType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
@@ -2027,7 +2013,6 @@ bool needsCapture(Type* t) {
     // Ensure we have covered all types.
     INT_ASSERT(isRecordWrappedType(t) ||
                isSyncType(t)          ||
-               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }

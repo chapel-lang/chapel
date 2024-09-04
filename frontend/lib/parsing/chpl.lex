@@ -195,7 +195,6 @@ scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);
 serial           return processToken(yyscanner, TSERIAL);
 shared           return processToken(yyscanner, TSHARED);
-single           return processToken(yyscanner, TSINGLE);
 sparse           return processToken(yyscanner, TSPARSE);
 string           return processToken(yyscanner, TSTRING);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);

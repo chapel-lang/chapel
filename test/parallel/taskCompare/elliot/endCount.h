@@ -2,7 +2,7 @@
 #include "chpl-mem.h"
 
 typedef struct _EndCount {
-  atomic_int_least64_t runningTasks;
+  chpl_atomic_int_least64_t runningTasks;
 } EndCount;
 
 static EndCount* constructEndCount(void) {

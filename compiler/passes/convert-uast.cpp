@@ -59,6 +59,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
+#include "stmt.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 
@@ -125,6 +126,9 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.assertEligible attribute, which asserts GPU eligibility,
+  // if one is provided by the user.
+  const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
 
@@ -206,6 +210,7 @@ struct LoopAttributeInfo {
 
   void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
@@ -237,6 +242,7 @@ struct LoopAttributeInfo {
   bool empty() const {
     return llvmMetadata.size() == 0 &&
            assertOnGpuAttr == nullptr &&
+           assertEligibleAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
@@ -461,12 +467,6 @@ struct Converter {
     return nullptr;
   }
 
-  void readNativeGpuAttributes(LoopAttributeInfo& into,
-                               const uast::AttributeGroup* attrs) {
-    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
-  }
-
   Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
@@ -568,7 +568,6 @@ struct Converter {
       { USTR("owned"), "_owned" },
       { USTR("shared"), "_shared" },
       { USTR("sync"), "_syncvar" },
-      { USTR("single"), "_singlevar" },
       { USTR("domain"), "_domain" },
       { USTR("align"), "chpl_align" },
       { USTR("by"), "chpl_by" },
@@ -772,12 +771,6 @@ struct Converter {
         return remap;
       }
     } else {
-      if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-      }
-
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -1766,6 +1759,9 @@ struct Converter {
     if (loopAttributes.assertOnGpuAttr != nullptr) {
       CHPL_REPORT(context, InvalidGpuAssertion, node,
                   loopAttributes.assertOnGpuAttr);
+    } else if (loopAttributes.assertEligibleAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAssertion, node,
+                  loopAttributes.assertEligibleAttr);
     }
     return std::move(loopAttributes.llvmMetadata);
   }
@@ -2265,11 +2261,6 @@ struct Converter {
 
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-        ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == USTR("sync")) {
@@ -2635,7 +2626,27 @@ struct Converter {
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-    for (auto decl : node->decls()) {
+
+    MultiDeclState desugaringState;
+    if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
+
+    // Field multi-decl desugaring happens later in build.cpp and produces
+    // different code; don't do redundant work here.
+    bool isField = parsing::idIsField(context, node->id());
+    if (!isField) {
+      // post-parse checks should rule this out
+      CHPL_ASSERT(!node->destination());
+    }
+
+    // Iterate in reverse just in case this is a remote variable declaration
+    // and we need to mimic the desugaring of multi-decls.
+    //
+    // We need to mimic this here because remote variables are desugared early.
+    for (int i = node->numDeclOrComments() - 1; i >= 0; i--) {
+      auto child = node->declOrComment(i);
+      auto decl = child->toDecl();
+      if (!decl) continue;
+
       INT_ASSERT(decl->linkage() == node->linkage());
 
       Expr* conv = nullptr;
@@ -2643,20 +2654,36 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName).entireExpr;
+        auto convAll = convertVariable(var, useLinkageName,
+                                       isField ? nullptr : &desugaringState);
+        conv = convAll.entireExpr;
 
-        DefExpr* defExpr = toDefExpr(conv);
+        DefExpr* defExpr = convAll.variableDef;
         INT_ASSERT(defExpr);
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
 
       // Otherwise convert in a generic fashion.
       } else {
+        // post-parse checks should rule this out
+        INT_ASSERT(!desugaringState.localeTemp);
+
+        // tuple decls between variable decls interrupt multi-decl desugaring:
+        //
+        //    var x, (y,z) = ..., w: int;
+        //
+        // the 'x' does not get type 'int'.
+        desugaringState.reset();
         conv = convertAST(decl);
       }
 
       INT_ASSERT(conv);
-      ret->insertAtTail(conv);
+      ret->insertAtHead(conv);
+    }
+
+    if (auto dest = node->destination()) {
+      auto destExpr = convertAST(dest);
+      ret->insertAtHead(new DefExpr(desugaringState.localeTemp, destExpr));
     }
 
     INT_ASSERT(!inTupleDecl);
@@ -3842,9 +3869,53 @@ struct Converter {
     }
   };
 
+  // State required to mimic the desugaring of multi-declarations into
+  // regular ones.
+  struct MultiDeclState {
+    // The result of computing the target locale, stored in a temp, used
+    // for remote variables.
+    Symbol* localeTemp = nullptr;
+
+    Symbol* typeTemp = nullptr;
+    Symbol* prev = nullptr;
+    Expr* prevTypeExpr = nullptr;
+    Expr* prevInitExpr = nullptr;
+
+    void reset() {
+      typeTemp = nullptr;
+      prev = nullptr;
+      prevTypeExpr = nullptr;
+      prevInitExpr = nullptr;
+    }
+
+    // For remote variables, these helpers don't modify the def point, since
+    // def point is quite different (it's an invocation of a remote variable
+    // wrapper builder with extra arguments).
+
+    void replaceTypeExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevTypeExpr->replace(newExpr);
+      } else {
+        prev->defPoint->exprType = newExpr;
+      }
+      prevTypeExpr = nullptr;
+    }
+
+    void replaceInitExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevInitExpr->replace(newExpr);
+      } else {
+        prev->defPoint->init = newExpr;
+      }
+    }
+  };
+
   // Returns a DefExpr that has not yet been inserted into the tree.
+  // For children of remote multi-decls, parentDestination is the destination
+  // of the outer multiDecl.
   VariableDefInfo convertVariable(const uast::Variable* node,
-                           bool useLinkageName) {
+                           bool useLinkageName,
+                           MultiDeclState* multiState = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
@@ -3864,11 +3935,9 @@ struct Converter {
       }
     }
 
-    bool isRemote = node->destination() != nullptr;
-    if (isRemote) {
-      // post-parse checks rule this out.
-      CHPL_ASSERT(node->initExpression() || node->typeExpression());
-    }
+    bool isRemote = node->destination() != nullptr ||
+                    (multiState != nullptr && multiState->localeTemp != nullptr);
+    auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -3977,12 +4046,65 @@ struct Converter {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
+    if ((!typeExpr && !initExpr) && multiState) {
+      // Need to draw type expr and init expr from previous variable.
+      CHPL_ASSERT(block);
+
+      if (!multiState->typeTemp && multiState->prevTypeExpr) {
+        auto newTypeTemp = newTemp("type_tmp");
+        newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        multiState->typeTemp = newTypeTemp;
+
+        auto prevTypeExpr = multiState->prevTypeExpr;
+        multiState->replaceTypeExpr(new SymExpr(newTypeTemp));
+
+        // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
+        std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
+      }
+      if (auto typeTemp = multiState->typeTemp) {
+        // Once we create the type temp we clear the type expressions so that
+        // there's no risk of copying it.
+        CHPL_ASSERT(multiState->prevTypeExpr == nullptr);
+
+        // If the type symbol was defined by a previously-visited variable,
+        // and since we visit in reverse, its current definition will be
+        // after us, which is not good. Move it up to before this symbol.
+        auto typeDefPoint = typeTemp->defPoint;
+        if (typeDefPoint->list) typeDefPoint->remove();
+        block->insertAtHead(typeDefPoint);
+
+        typeExpr = new SymExpr(typeTemp);
+      }
+      if (auto prevInitExpr = multiState->prevInitExpr) {
+        Expr* replaceWith;
+        if (prevInitExpr->isNoInitExpr()) {
+          replaceWith = prevInitExpr->copy();
+        } else if (typeExpr) {
+          replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
+        } else {
+          replaceWith = new SymExpr(varSym);
+        }
+        multiState->replaceInitExpr(replaceWith);
+        initExpr = prevInitExpr;
+      }
+
+      multiState->prev = varSym;
+    } else if (multiState) {
+      CHPL_ASSERT(block);
+      multiState->prevTypeExpr = typeExpr;
+      multiState->prevInitExpr = initExpr;
+      multiState->typeTemp = nullptr;
+      multiState->prev = varSym;
+    }
+
     DefExpr* def = nullptr;
     VariableDefInfo ret;
     if (isRemote) {
+      CHPL_ASSERT(block);
       auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
-      wrapperCall->insertAtTail(destinationExpr);
+      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
+
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
       if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
@@ -3991,13 +4113,18 @@ struct Converter {
       def = new DefExpr(varSym, new CallExpr(wrapperGet));
       varSym->addFlag(FLAG_REMOTE_VARIABLE);
 
-      auto block = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(wrapperDef);
       block->insertAtTail(def);
       ret = VariableDefInfo { def, block };
     } else {
       def = new DefExpr(varSym, initExpr, typeExpr);
-      ret = VariableDefInfo { def, /* entireExpr */ def };
+      Expr* entireExpr = def;
+      if (block) {
+        entireExpr = block;
+        block->insertAtTail(def);
+      }
+
+      ret = VariableDefInfo { def, entireExpr };
     }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
@@ -4241,12 +4368,16 @@ struct Converter {
 };
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  bool inserted = false;
   if (assertOnGpuAttr) {
-    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                    new SymExpr(gTrue)));
-    return true;
+    body->insertAtTail(new CallExpr("chpl__assertOnGpuAttr"));
+    inserted = true;
   }
-  return false;
+  if (assertEligibleAttr) {
+    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
+    inserted = true;
+  }
+  return inserted;
 }
 
 bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
@@ -4259,16 +4390,11 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   static int counter = 0;
 
   if (blockSizeAttr) {
-    if (blockSizeAttr->numActuals() != 1) {
-      USR_FATAL(blockSizeAttr->id(),
-                "'@gpu.blockSize' attribute must have exactly one argument: "
-                "the block size");
+    auto newCall = new CallExpr("chpl__gpuBlockSizeAttr", new_IntSymbol(counter++));
+    for (auto actual : blockSizeAttr->actuals()) {
+      newCall->insertAtTail(converter.convertAST(actual));
     }
-
-    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
-                                    blockSize,
-                                    new_IntSymbol(counter++)));
+    body->insertAtTail(newCall);
     return true;
   }
   return false;
@@ -4394,7 +4520,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
-    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types

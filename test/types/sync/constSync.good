@@ -1,0 +1,8 @@
+constSync.chpl:4: error: const actual is passed to 'ref' formal 'this' of writeEF()
+note: to formal of type sync int(64)
+constSync.chpl:5: error: const actual is passed to 'ref' formal 'this' of writeFF()
+note: to formal of type sync int(64)
+constSync.chpl:6: error: const actual is passed to 'ref' formal 'this' of writeXF()
+note: to formal of type sync int(64)
+constSync.chpl:7: error: const actual is passed to 'ref' formal 'this' of reset()
+note: to formal of type sync int(64)

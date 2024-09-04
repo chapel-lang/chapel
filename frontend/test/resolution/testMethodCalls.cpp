@@ -570,6 +570,95 @@ static void test10() {
   assert(t2.type()->isBoolType());
 }
 
+static void test11() {
+  // Type method calls are allowed on nilable classes; their receiver should
+  // be generic over nilability and management.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class C {
+      proc type typeMethod() {
+        return 42;
+      }
+    }
+    var x1 = (C).typeMethod();
+    var x2 = (owned C).typeMethod();
+    var x3 = (borrowed C?).typeMethod();
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2", "x3" });
+  assert(!guard.realizeErrors());
+
+  for (auto& [name, var] : vars) {
+    assert(var.type());
+    assert(var.type()->isIntType());
+  }
+}
+
+static void test12() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class C {
+      proc parenlessParam param {
+        return 42;
+      }
+      proc parenlessType type {
+        return this.type;
+      }
+    }
+
+    var x: owned C? = new owned C?();
+    param p1 = x.parenlessParam;
+    type t1 = x.parenlessType;
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"p1", "t1"});
+  assert(!guard.realizeErrors());
+
+  ensureParamInt(vars["p1"], 42);
+
+  auto t1 = vars["t1"];
+  assert(t1.type());
+  assert(t1.type()->isClassType());
+  assert(t1.type()->toClassType()->decorator().isNilable());
+  assert(t1.type()->toClassType()->manager() == AnyOwnedType::get(context));
+}
+
+static void test13() {
+  // Test fields that are deemed concrete by the initial type constructor
+  // logic but are then discovered to be generic (this should produce errors).
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record r {
+      var x: SecretlyGeneric;
+      var y: poop(x.type);
+      var z: SecretlyNotGeneric;
+    }
+
+    proc poop(type arg) type do return arg;
+    proc SecretlyGeneric type do return owned class;
+    proc SecretlyNotGeneric type do return int;
+
+    var myR: r;
+    var tmp = (myR.x, myR.y, myR.z);
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "tmp" });
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::SyntacticGenericityMismatch);
+  }
+  guard.realizeErrors();
+}
 
 int main() {
   test1();
@@ -582,6 +671,9 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
+  test13();
 
   return 0;
 }

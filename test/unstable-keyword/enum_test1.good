@@ -1,3 +1,7 @@
+enum_test1.chpl:4: In function 'main':
+enum_test1.chpl:5: warning: a is unstable
+enum_test1.chpl:6: warning: a is unstable
+enum_test1.chpl:11: warning: a is unstable
 a
 a
 a

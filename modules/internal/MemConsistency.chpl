@@ -20,7 +20,7 @@
 
 module MemConsistency {
   pragma "c memory order type"
-  extern type memory_order;
+  extern "chpl_memory_order" type memory_order;
 
   // When I finish removing PRIM_INIT before initialization to a known
   // value, then this method should work.  Until then, my stopgap will be
@@ -65,12 +65,12 @@ module MemConsistency {
       writer.write("memory_order_unknown");
   }
 
-  extern const memory_order_relaxed:memory_order;
-  extern const memory_order_consume:memory_order;
-  extern const memory_order_acquire:memory_order;
-  extern const memory_order_release:memory_order;
-  extern const memory_order_acq_rel:memory_order;
-  extern const memory_order_seq_cst:memory_order;
+  extern "chpl_memory_order_relaxed" const memory_order_relaxed:memory_order;
+  extern "chpl_memory_order_consume" const memory_order_consume:memory_order;
+  extern "chpl_memory_order_acquire" const memory_order_acquire:memory_order;
+  extern "chpl_memory_order_release" const memory_order_release:memory_order;
+  extern "chpl_memory_order_acq_rel" const memory_order_acq_rel:memory_order;
+  extern "chpl_memory_order_seq_cst" const memory_order_seq_cst:memory_order;
 
   pragma "memory order type"
   enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}

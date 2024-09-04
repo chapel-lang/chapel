@@ -145,6 +145,7 @@ _chpl ()
 --live-analysis \
 --lldb \
 --llvm-print-ir \
+--llvm-print-ir-file \
 --llvm-print-ir-stage \
 --llvm-print-passes \
 --llvm-remarks \
@@ -251,6 +252,7 @@ _chpl ()
 --no-munge-user-idents \
 --no-munge-with-ids \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -313,6 +315,7 @@ _chpl ()
 --no-warn-unstable-internal \
 --no-warn-unstable-standard \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \
@@ -534,6 +537,7 @@ _chpl ()
 --no-loop-invariant-code-motion \
 --no-munge-user-idents \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -569,6 +573,7 @@ _chpl ()
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \

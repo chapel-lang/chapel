@@ -142,14 +142,14 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version 4.x or <5.5 must be installed.
-
-    * You can check the current status of ROCm version support `here
-      <https://github.com/chapel-lang/chapel/issues/23480>`_.
+  * ROCm version between 4.x and 5.4 or between ROCm 6.0 and 6.2 must be installed.
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM.
+
+  * For ROCm 6.x, only LLVM 18+ is supported. Currently, only
+    ``CHPL_LLVM=bundled`` is supported due to bugs in LLVM. 
 
 * Specifically for using the `CPU-as-Device mode`_:
 
@@ -458,7 +458,7 @@ its own.
 
 For AMD
 ^^^^^^^
-The ROCm versions we currently support (<=5.4) do not support enabling
+The ROCm 4.x and 5.x versions we support do not support enabling
 peer-to-peer communication in the way above. However, for optimum bandwidth
 between two devices ``export HSA_ENABLE_SDMA=0`` can be used. This will enable
 using multiple Infinity Fabric links between GPUs/GCDs. However, note that it
@@ -612,7 +612,7 @@ marked with * are covered in our nightly testing configuration.
 
   * Hardware: MI60*, MI100 and MI250X*
 
-  * Software:ROCm 4.2*, 4.4, 5.4*
+  * Software:ROCm 4.2*, 4.4, 5.4*, 6.0, 6.1, 6.2
 
 
 GPU Support on Windows Subsystem for Linux

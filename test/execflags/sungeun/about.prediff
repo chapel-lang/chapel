@@ -41,7 +41,7 @@ with open(goodfile, 'w') as gfh:
         first_flag = False
         flags_str += flag
 
-    gfh.write('Compilation command: chpl -o about %s about.chpl \n'%(flags_str))
+    gfh.write('Compilation command: chpl %s about.chpl \n'%(flags_str))
     gfh.write('Chapel compiler version:\n')
     gfh.write('Chapel environment:\n')
     gfh.write('  CHPL_HOME: %s\n'%(chpl_home))

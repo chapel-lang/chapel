@@ -1016,8 +1016,10 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
         // get the substitution for that field from the CompositeType
         // and recurse with the result to set types for nested TypeQuery nodes
-        const uast::Decl* field = fa->formal();
+        auto formal = fa->formal()->toNamedDecl();
         const SubstitutionsMap& subs = actualCt->substitutions();
+        auto ad = parsing::idToAst(context, actualCt->id())->toAggregateDecl();
+        auto field = findFieldByName(context, ad, actualCt, formal->name());
         auto search = subs.find(field->id());
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;
@@ -1423,11 +1425,34 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
+      //
+      // An exception to this is when we are looking at a type method or
+      // a parenless, type- or param returning method. In that case, the
+      // decorator is 'anymanaged any-nilable', not borrowed nonnil.
       bool identOrNoTypeExpr = !typeExpr || typeExpr->isIdentifier();
       bool isClassType = typeExprT.type() && typeExprT.type()->isClassType();
       if (isFormalThis && isClassType && identOrNoTypeExpr) {
-        auto ct = typeExprT.type()->toClassType();
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        bool useFullyGenericDecorator = false;
+
+        if (auto varLikeDecl = decl->toVarLikeDecl()) {
+          useFullyGenericDecorator |=
+            varLikeDecl->storageKind() == QualifiedType::TYPE;
+        }
+
+        if (symbol && symbol->isFunction()) {
+          auto fn = symbol->toFunction();
+          useFullyGenericDecorator |=
+            (fn->returnIntent() == Function::TYPE ||
+             fn->returnIntent() == Function::PARAM) &&
+            fn->isParenless();
+        }
+
+        if (useFullyGenericDecorator) {
+          dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
+        }
+
+        auto ct = typeExprT.type()->toClassType();
         typeExprT = QualifiedType(typeExprT.kind(),
                                   ct->withDecorator(context, dec),
                                   typeExprT.param());
@@ -1520,7 +1545,10 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (!isVarArgs && typeExprT.hasTypePtr() &&
           (isFormal || (signatureOnly && isField))) {
         // update qtKind with the result of resolving the intent
-        computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
+        if (!typeExprT.type()->isTupleType()) {
+          // skip for tuple types, which are handled along with ref/value below
+          computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());  
+        }
       }
       // Check that the initExpr type is compatible with declared type
       // Check kinds are OK
@@ -1556,16 +1584,19 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   // adjust tuple declarations for value / referential tuples
   if (typePtr != nullptr && decl->isVarArgFormal() == false) {
     if (auto tupleType = typePtr->toTupleType()) {
-      if (declaredKind == QualifiedType::DEFAULT_INTENT ||
-          declaredKind == QualifiedType::CONST_INTENT) {
+      if (declaredKind == QualifiedType::DEFAULT_INTENT) {
         typePtr = tupleType->toReferentialTuple(context);
         qtKind = QualifiedType::CONST_REF;
+      } else if (declaredKind == QualifiedType::CONST_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context, /* makeConst */ true);
+        qtKind = QualifiedType::CONST_REF;
+      } else if (qtKind == QualifiedType::CONST_IN ||
+                 qtKind == QualifiedType::CONST_REF) {
+        typePtr = tupleType->toValueTuple(context, /* makeConst */ true);
       } else if (qtKind == QualifiedType::VAR ||
                  qtKind == QualifiedType::CONST_VAR ||
-                 qtKind == QualifiedType::CONST_REF ||
                  qtKind == QualifiedType::REF ||
                  qtKind == QualifiedType::IN ||
-                 qtKind == QualifiedType::CONST_IN ||
                  qtKind == QualifiedType::OUT ||
                  qtKind == QualifiedType::INOUT ||
                  qtKind == QualifiedType::TYPE) {
@@ -1773,7 +1804,7 @@ void Resolver::adjustTypesForSplitInit(ID id,
   // what variable does the LHS refer to? is it within the purview of this
   // Resolver?
   bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
-                         id.postOrderId() >= 0);
+                         !id.isSymbolDefiningScope());
 
   // if the the lhs variable has not been initialized and
   // the type of LHS is generic or unknown, update it based on the RHS type.
@@ -2298,7 +2329,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   }
 
   bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
-                         id.postOrderId() >= 0);
+                         !id.isSymbolDefiningScope());
   bool error = false;
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
@@ -2359,11 +2390,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   if (id.isFabricatedId()) {
     switch (id.fabricatedIdKind()) {
-      case ID::ExternBlockElement:
-      // TODO: resolve types for extern block
-      // (will need the Identifier name for that)
-      auto unknownType = UnknownType::get(context);
-      return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      case ID::ExternBlockElement: {
+        // TODO: resolve types for extern block
+        // (will need the Identifier name for that)
+        auto unknownType = UnknownType::get(context);
+        return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      }
+      case ID::Generated: break;
     }
   }
 
@@ -3268,7 +3301,7 @@ static bool shouldUseGenericTypeForTypeExpr(const NamedDecl* decl) {
 
 bool Resolver::enter(const NamedDecl* decl) {
 
-  if (decl->id().postOrderId() < 0) {
+  if (decl->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
@@ -3690,8 +3723,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   // EXCEPT, type construction can work with unknown or generic types
   // EXCEPT, tuple type construction also works with unknown/generic types
 
-  if (!ci.calledType().isType() &&
-      !call->isTuple()) {
+  if (!call->isTuple()) {
     int actualIdx = 0;
     for (const auto& actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?
@@ -3716,6 +3748,8 @@ void Resolver::handleCallExpr(const uast::Call* call) {
                  qt.isRef() == false) {
         // don't skip because it could be initialized with 'out' intent,
         // but not for non-out formals because they can't be split-initialized.
+      } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+        // don't skip for type queries in type constructors
       } else {
         if (qt.isParam() && qt.param() == nullptr) {
           skip = UNKNOWN_PARAM;
@@ -3736,6 +3770,18 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           }
         }
       }
+
+      // Don't skip for type constructors, except due to unknown params.
+      if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+        skip = NONE;
+      }
+
+      // Do not skip primitive calls that accept a generic type, since they
+      // may be valid.
+      if (skip == GENERIC_TYPE && call->toPrimCall()) {
+        skip = NONE;
+      }
+
       if (skip) {
         break;
       }
@@ -3745,12 +3791,6 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   // Don't try to resolve calls to '=' until later
   if (ci.isOpCall() && ci.name() == USTR("=")) {
     skip = OTHER_REASON;
-  }
-
-  if (skip == GENERIC_TYPE && call->toPrimCall()) {
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    skip = NONE;
   }
 
   if (!skip) {
@@ -3846,7 +3886,7 @@ Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
                                           bool ambiguous) {
   if (!refersToId.isEmpty()) {
     // Found a single enum element, the type can be a param.
-    auto newParam = EnumParam::get(context, refersToId);
+    auto newParam = Param::getEnumParam(context, refersToId);
     return QualifiedType(QualifiedType::PARAM, enumType, newParam);
   } else if (ambiguous) {
     // multiple candidates. but the expression most likely has a type given by
@@ -3904,7 +3944,8 @@ void Resolver::exit(const Dot* dot) {
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->isCompositeType()) {
+        receiver.type().type()->isCompositeType() &&
+        dot->field() != "init") {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -4392,9 +4433,7 @@ resolveIterTypeWithTag(Resolver& rv,
     // The iterand is an unresolved call, or it is a resolved iterator but
     // not the one that we need. Regather existing actuals and reuse the
     // receiver if it is present.
-    } else {
-      auto call = iterand->toCall();
-      CHPL_ASSERT(call);
+    } else if (auto call = iterand->toCall()) {
 
       bool raiseErrors = false;
       auto tmp = CallInfo::create(context, call, rv.byPostorder, raiseErrors);
@@ -4404,6 +4443,9 @@ resolveIterTypeWithTag(Resolver& rv,
       callIsMethodCall = tmp.isMethodCall();
       callIsParenless = tmp.isParenless();
       for (auto& a : tmp.actuals()) callActuals.push_back(a);
+    } else {
+      CHPL_UNIMPL("unknown iterand");
+      return error;
     }
 
     if (!needSerial) {
@@ -4461,13 +4503,20 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     auto low = lowParam ? lowParam->toIntParam() : nullptr;
     auto hi = hiParam ? hiParam->toIntParam() : nullptr;
 
+    int hiVal = hi->value();
+    if (rng->opKind() == Range::OPEN_HIGH) {
+      // TODO: overflow issue here; if hiVal is INT_MIN, subtracting would
+      // overflow.
+      hiVal--;
+    }
+
     if (low == nullptr || hi == nullptr) {
       context->error(forLoop, "param loops may only iterate over range literals with integer bounds");
       return false;
     }
 
     std::vector<ResolutionResultByPostorderID> loopResults;
-    for (int64_t i = low->value(); i <= hi->value(); i++) {
+    for (int64_t i = low->value(); i <= hiVal; i++) {
       ResolutionResultByPostorderID bodyResults;
       auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 

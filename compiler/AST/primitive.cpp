@@ -176,6 +176,11 @@ returnInfoFirst(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoSecond(CallExpr* call) {
+  return call->get(2)->qualType();
+}
+
+static QualifiedType
 returnInfoFirstAsValue(CallExpr* call) {
   return QualifiedType(Qualifier::QUAL_CONST_VAL, call->get(1)->qualType().type());
 }
@@ -871,6 +876,7 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
+  prim_def(PRIM_NEW_WITH_ALLOCATOR, "new with allocator", returnInfoSecond);
   // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   // given a complex value, produce a reference to the imag component
@@ -966,6 +972,7 @@ initPrimitive() {
 
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+  prim_def(PRIM_ASSERT_GPU_ELIGIBLE, "assert gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_REDUCE_WRAPPER, "gpu reduce wrapper", returnInfoVoid, true);
 

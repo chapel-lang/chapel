@@ -98,6 +98,23 @@ static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+std::string llvmPrintIrFileName;
+bool shouldLlvmPrintIrToFile() {
+  return !llvmPrintIrFileName.empty();
+}
+chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile = nullptr;
+llvm::raw_fd_ostream* getLlvmPrintIrFile() {
+  if (!llvmPrintIrFile && shouldLlvmPrintIrToFile()) {
+    std::error_code error;
+    llvmPrintIrFile =
+      std::make_unique<llvm::raw_fd_ostream>(llvmPrintIrFileName, error);
+    if (!llvmPrintIrFile) {
+      USR_FATAL("Could not open file '%s'", llvmPrintIrFileName.c_str());
+    }
+  }
+
+  return shouldLlvmPrintIrToFile() ? llvmPrintIrFile.get() : &llvm::outs();
+}
 
 const char* llvmStageName[llvmStageNum::LAST] = {
   "", //llvmStageNum::NOPRINT
@@ -191,9 +208,11 @@ static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
 
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    std::cout << "; " << "LLVM IR representation of " << name
+    auto fd = getLlvmPrintIrFile();
+    *fd << "; " << "LLVM IR representation of " << name
               << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-              << " optimization stage\n" << std::flush;
+              << " optimization stage\n";
+    fd->flush();
     if (!(numStage == llvmStageNum::BASIC ||
           numStage == llvmStageNum::FULL)) {
       // Basic and full can happen module-at-a-time due to current

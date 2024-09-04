@@ -51,6 +51,7 @@ substitutions[
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
     rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
+    echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
     unset CHPL_HOME
@@ -60,23 +61,23 @@ substitutions["BUILD_GASNET_UDP"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
     rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
     echo "CHPL_COMM=gasnet" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
     unset CHPL_HOME
 """
 
-# TODO: remove `export CHPL_COMM_OFI_OOB=pmi2` when https://github.com/chapel-lang/chapel/issues/25236 is resolved
 substitutions["BUILD_OFI_SLURM"] = """
 RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
-    export CHPL_COMM_OFI_OOB=pmi2 && \\
-    rm -f $CHPL_HOME/chplconfig && \\
+    rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
     echo "CHPL_COMM=ofi" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_LAUNCHER=slurm-srun" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_COMM_OFI_OOB=pmi2" >> $CHPL_HOME/chplconfig && \\
     echo "CHPL_LIBFABRIC=bundled" >> $CHPL_HOME/chplconfig && \\
+    echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
     ./configure --prefix=/usr && \\
     nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL && \\
-    unset CHPL_HOME && unset CHPL_COMM_OFI_OOB
+    unset CHPL_HOME
 """
 
 substitutions[
@@ -106,14 +107,6 @@ RUN rpmdev-setuptree && \\
 COPY --chown=user ./common/fixpaths.py /home/user/fixpaths.py
 USER root
 RUN python3 fixpaths.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
-USER user
-
-
-# hot fixes for rpm, can be removed in 2.1
-USER root
-RUN short_version=$(python3 package_name.py --short-version $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH) && \
-    sed -i 's|#!/usr/bin/env python|#!/usr/bin/env python3|' /usr/share/chapel/${short_version}/util/config/compileline.py && \
-    unset short_version
 USER user
 """
 

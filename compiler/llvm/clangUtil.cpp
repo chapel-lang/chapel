@@ -4383,6 +4383,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
                                  gContext->llvmContext());
+  if (!bcLib) {
+    USR_FATAL("IR parsing failed on '%s': %s",
+              bitCodeFilePath,
+              err.getMessage().str().c_str());
+  }
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
@@ -5447,6 +5452,12 @@ static void llvmRunOptimizations(void) {
 static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
+    // TODO: llvm-print-ir-file is not handled here, since 'llvm-objdump' does't
+    // have a --output flag, that would require some fd management in `mysystem`
+    if (shouldLlvmPrintIrToFile()) {
+      USR_WARN("'--llvm-print-ir-file' is not supported for 'asm' output");
+    }
+
 
     std::string llvmObjDump = findSiblingClangToolPath("llvm-objdump");
 

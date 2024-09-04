@@ -138,6 +138,14 @@ class AstNode {
       deserialize the AstNode fields other than the children */
   AstNode(AstTag tag, Deserializer& des);
 
+  AstNode(const AstNode& node) {
+    this->tag_ = node.tag_;
+    this->attributeGroupChildNum_ = node.attributeGroupChildNum_;
+    for (auto child : node.children()) {
+      children_.push_back(child->copy());
+    }
+  }
+
   /** Completes the deserialization process for an AstNode
       by deserializing the children. */
   void deserializeChildren(Deserializer& des);
@@ -554,6 +562,8 @@ class AstNode {
       #undef CASE_OTHER
     }
   }
+
+  owned<AstNode> copy() const;
 };
 } // end namespace uast
 

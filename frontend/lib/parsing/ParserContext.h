@@ -742,8 +742,8 @@ struct ParserContext {
                                 PODUniqueString name);
 
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
-                                     YYLTYPE identLocation,
-                                     PODUniqueString name,
+                                     YYLTYPE headerLoc,
+                                     TypeDeclParts parts,
                                      ParserExprList* formals,
                                      YYLTYPE locBody,
                                      CommentsAndStmt body);

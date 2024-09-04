@@ -62,7 +62,6 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
   BUILTIN_TYPE_NODE(OpaqueType, "opaque")
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
-  BUILTIN_TYPE_NODE(SingleAuxType, "_single_aux_t")
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_taskID_t")
 
   // generic builtin types. AnyComplexType must be the first of these

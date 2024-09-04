@@ -1,8 +1,9 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Casey Battaglino, Ben Harshbarger, Brad Chamberlain, and Jade Abraham
-   derived from the GNU C version by Jeremy Zerfas
+   contributed by Jade Abraham
+   based on the Chapel #3 version by Casey Battaglino, Ben Harshbarger, and
+     Brad Chamberlain
 */
 
 config const n = 10;         // the maximum tree depth

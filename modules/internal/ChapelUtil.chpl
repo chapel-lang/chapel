@@ -134,8 +134,6 @@ module ChapelUtil {
   proc _command_line_cast(param s: chpl_c_string, type t, x:c_ptrConst(c_char)) {
     if isSyncType(t) then
       compilerError("config variables of sync type are not supported");
-    if isSingleType(t) then
-      compilerError("config variables of single type are not supported");
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 

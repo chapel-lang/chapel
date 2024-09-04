@@ -123,3 +123,15 @@ __run_container() {
 
   docker run -it --rm $__docker_tag
 }
+
+__test_package() {
+  python3 $CHPL_HOME/util/packaging/common/test_package.py $@
+}
+__test_all_packages() {
+  for deb in $(find $CHPL_HOME/util/packaging/apt/build -name '*.deb'); do
+    __test_package $deb
+  done
+  for rpm in $(find $CHPL_HOME/util/packaging/rpm/build -name '*.rpm'); do
+    __test_package $rpm
+  done
+}

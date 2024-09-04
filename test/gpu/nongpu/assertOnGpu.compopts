@@ -1,0 +1,2 @@
+-scase=0 # assertOnGpu.stmt.good
+-scase=1 # assertOnGpu.var.good

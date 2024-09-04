@@ -99,7 +99,7 @@ typedef qio_fdflag_t fdflag_t;
 
 // make a re-entrant lock.
 typedef struct {
-  atomic_spinlock_t lock;
+  chpl_atomic_spinlock_t lock;
   chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
@@ -1287,6 +1287,15 @@ static inline
 int64_t qio_channel_end_offset_unlocked(qio_channel_t* ch)
 {
   return ch->end_pos;
+}
+
+/*
+ * Returns the starting position of the channel.
+*/
+static inline
+int64_t qio_channel_start_offset_unlocked(qio_channel_t* ch)
+{
+  return ch->start_pos;
 }
 
 qioerr qio_channel_end_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);

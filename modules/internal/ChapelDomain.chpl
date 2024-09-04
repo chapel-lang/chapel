@@ -2858,6 +2858,16 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    proc supportsOffsetAutoLocalAccess() param {
+      return _value.dsiSupportsOffsetAutoLocalAccess();
+    }
+
+    @chpldoc.nodoc
+    proc autoLocalAccessOffsetCheck(offsets) {
+      return _value.dsiAutoLocalAccessOffsetCheck(offsets);
+    }
+
+    @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }

@@ -19,9 +19,11 @@
  */
 
 /*
-  This module contains the ``precisionSerializer`` type which provides
-  formatting like the :record:`~IO.defaultSerializer`, but with finer control
-  over the precision and padding of numerical values.
+  Support for controlling I/O precision and padding.
+
+  Provides the ``precisionSerializer`` type, whose formatting is identical to
+  the :record:`~IO.defaultSerializer`, except numbers are printed with the
+  specified precision and padding.
 */
 module PrecisionSerializer {
   use IO;

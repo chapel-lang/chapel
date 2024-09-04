@@ -81,6 +81,7 @@ module ChapelStandard {
   // Standard modules.
   public use Types as Types;
   public use AutoMath as AutoMath;
+  public use AutoGpu as AutoGpu;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

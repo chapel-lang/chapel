@@ -1384,7 +1384,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
            cur != nullptr;
            cur = nextHigherScope(context, cur)) {
 
-        if (asttags::isModule(cur->tag()) && !goPastModules) {
+        // Allow searching past compiler-generated modules, to pretend like
+        // they are children of the module from which they originated.
+        if (asttags::isModule(cur->tag()) && !goPastModules &&
+            !cur->id().isFabricatedId()) {
           reachedModule = true;
           break;
         }
@@ -1972,6 +1975,18 @@ static const bool& isNameBuiltinType(Context* context, UniqueString name) {
   Type::gatherBuiltins(context, typeMap);
   bool toReturn = typeMap.find(name) != typeMap.end();
   return QUERY_END(toReturn);
+}
+
+const bool& isNameBuiltinGenericType(Context* context, UniqueString name) {
+  QUERY_BEGIN(isNameBuiltinGenericType, context, name);
+  bool result = false;
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto it = typeMap.find(name);
+  if (it != typeMap.end()) {
+    result = it->second->genericity() == Type::GENERIC;
+  }
+  return QUERY_END(result);
 }
 
 // if it's the first time encountering a particular module (and if it is

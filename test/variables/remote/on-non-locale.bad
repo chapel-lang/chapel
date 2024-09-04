@@ -1,7 +1,0 @@
-on-non-locale.chpl:2: error: unresolved call 'chpl__buildRemoteWrapper(int(64), _tr_chpl__thunk3)'
-$CHPL_HOME/modules/internal/ChapelRemoteVars.chpl:nnnn: note: this candidate did not match: chpl__buildRemoteWrapper(loc: locale, type inType)
-on-non-locale.chpl:2: note: because actual argument #1 with type 'int(64)'
-$CHPL_HOME/modules/internal/ChapelRemoteVars.chpl:nnnn: note: is passed to formal 'loc: locale'
-on-non-locale.chpl:2: note: other candidates are:
-$CHPL_HOME/modules/internal/ChapelRemoteVars.chpl:nnnn: note:   chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord)
-$CHPL_HOME/modules/internal/ChapelRemoteVars.chpl:nnnn: note:   chpl__buildRemoteWrapper(loc: locale, type inType, in tr: _thunkRecord)

@@ -210,6 +210,7 @@ bool fEnableMemInterleaving = false;
 
 bool fAutoLocalAccess = true;
 bool fDynamicAutoLocalAccess = true;
+bool fOffsetAutoLocalAccess = true;
 bool fReportAutoLocalAccess= false;
 
 bool fAutoAggregation = false;
@@ -647,6 +648,13 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+static void setPrintIrFile(const ArgumentDescription* desc, const char* arg) {
+  if (shouldLlvmPrintIrToFile()) {
+    USR_FATAL("Cannot specify --llvm-print-ir-file more than once");
+  }
+  llvmPrintIrFileName = std::string(arg);
 }
 
 /*
@@ -1275,6 +1283,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
  {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
+ {"offset-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically with offset indices", "N", &fOffsetAutoLocalAccess, "CHPL_DISABLE_OFFSET_AUTO_LOCAL_ACCESS", NULL},
 
  {"auto-aggregation", ' ', NULL, "Enable [disable] automatically aggregating remote accesses in foralls", "N", &fAutoAggregation, "CHPL_AUTO_AGGREGATION", NULL},
 
@@ -1386,6 +1395,7 @@ static ArgumentDescription arg_desc[] = {
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-print-ir-file", ' ', "<file>", "Specifies the filename to write the LLVM IR to", "S", NULL, "CHPL_LLVM_PRINT_IR_FILE", &setPrintIrFile},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
@@ -1817,7 +1827,7 @@ static void setChapelEnvs() {
         gGpuSdkPath = envMap["CHPL_CUDA_PATH"];
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
+        gGpuSdkPath = envMap["CHPL_ROCM_BITCODE_PATH"];
         break;
       case GpuCodegenType::GPU_CG_CPU:
         gGpuSdkPath = "";

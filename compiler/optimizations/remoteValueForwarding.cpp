@@ -1017,15 +1017,14 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   }
 }
 
-static bool isSyncSingleMethod(FnSymbol* fn) {
+static bool isSyncMethod(FnSymbol* fn) {
 
   bool retval = false;
 
   if (fn->_this != NULL) {
     Type* valType = fn->_this->getValType();
 
-    if  (isSyncType(valType)   == true ||
-         isSingleType(valType) == true) {
+    if (isSyncType(valType) == true) {
       retval = true;
     }
   }
@@ -1046,7 +1045,7 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   // Find all methods on sync/single vars
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (isSyncSingleMethod(fn)) {
+    if (isSyncMethod(fn)) {
       if (!fn->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&
           !syncAccessFunctionSet.set_in(fn)) {
         syncAccessFunctionSet.set_add(fn);

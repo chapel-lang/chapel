@@ -122,6 +122,30 @@ static const resolution::ResolvedExpression* scopeResolveViaModule(Context* cont
   return nullptr;
 }
 
+static const resolution::ResolvedExpression*
+scopeResolveViaAggregate(Context* context,
+                         const AstNode* aggNode,
+                         const AstNode* node) {
+  if (auto agg = aggNode->toAggregateDecl()) {
+    auto& byId = resolution::scopeResolveAggregate(context, agg->id());
+    if (auto res = byId.byAstOrNull(node)) {
+      return res;
+    }
+  }
+  return nullptr;
+}
+
+static const resolution::ResolvedExpression*
+scopeResolveViaEnum(Context* context, const AstNode* enumNode, const AstNode* node) {
+  if (auto enumDecl = enumNode->toEnum()) {
+    auto& byId = resolution::scopeResolveEnum(context, enumDecl->id());
+    if (auto res = byId.byAstOrNull(node)) {
+      return res;
+    }
+  }
+  return nullptr;
+}
+
 // For scope resolution, we handle AST nodes that don't necessarily get
 // their own ResolvedExpression (specificlaly, uses/imports), so return an ID
 // instead of a ResolvedExpression.
@@ -129,6 +153,10 @@ static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
     if (auto rr = scopeResolveViaFunction(context, search, node)) {
+      return rr->toId();
+    } else if (auto rr = scopeResolveViaAggregate(context, search, node)) {
+      return rr->toId();
+    } else if (auto rr = scopeResolveViaEnum(context, search, node)) {
       return rr->toId();
     } else if (auto rr = scopeResolveViaModule(context, search, node)) {
       return rr->toId();

@@ -29,6 +29,7 @@
       - The implementation relies on using either ``GCC`` style inline assembly
         (for x86-64) or a GCC/clang builtin, and so is restricted to a
         ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   This module provides support for performing atomic operations on pointers
   to  ``unmanaged`` classes, which can be thought of as building blocks for
@@ -248,7 +249,7 @@ prototype module AtomicObjects {
   }
 
   @chpldoc.nodoc
-  extern type atomic_uint_least64_t;
+  extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
   @chpldoc.nodoc
   extern type wide_ptr_t;

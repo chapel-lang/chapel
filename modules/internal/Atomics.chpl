@@ -167,20 +167,20 @@ module Atomics {
   // Compute the C/Runtime type from the Chapel type
   // TODO support extern type renaming?
   private proc externT(type valType) type {
-    extern type atomic_bool;
+    extern "chpl_atomic_bool" type atomic_bool;
 
-    extern type atomic_int_least8_t;
-    extern type atomic_int_least16_t;
-    extern type atomic_int_least32_t;
-    extern type atomic_int_least64_t;
+    extern "chpl_atomic_int_least8_t" type atomic_int_least8_t;
+    extern "chpl_atomic_int_least16_t" type atomic_int_least16_t;
+    extern "chpl_atomic_int_least32_t" type atomic_int_least32_t;
+    extern "chpl_atomic_int_least64_t" type atomic_int_least64_t;
 
-    extern type atomic_uint_least8_t;
-    extern type atomic_uint_least16_t;
-    extern type atomic_uint_least32_t;
-    extern type atomic_uint_least64_t;
+    extern "chpl_atomic_uint_least8_t" type atomic_uint_least8_t;
+    extern "chpl_atomic_uint_least16_t" type atomic_uint_least16_t;
+    extern "chpl_atomic_uint_least32_t" type atomic_uint_least32_t;
+    extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
-    extern type atomic__real64;
-    extern type atomic__real32;
+    extern "chpl_atomic__real64" type atomic__real64;
+    extern "chpl_atomic__real32" type atomic__real32;
 
     select valType {
       when bool     do return atomic_bool;

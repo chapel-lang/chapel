@@ -36,6 +36,7 @@ source $CHPL_HOME/util/packaging/common/build_helpers.sh
 # if using a local tarball, copy it to the expected location
 if [ -n "$CHPL_TARBALL" ]; then
   log_info "Using local tarball: $CHPL_TARBALL"
+  mkdir -p $CHPL_HOME/util/packaging/tarballs
   cp $CHPL_TARBALL $CHPL_HOME/util/packaging/tarballs/chapel-${CHPL_VERSION}.tar.gz
 fi
 
@@ -47,3 +48,6 @@ else
   log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
   __build_native_package $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $PARALLEL
 fi
+
+log_info "Testing $PACKAGE_NAME"
+__test_all_packages

@@ -1608,13 +1608,6 @@ static void addArgCoercion(FnSymbol*  fn,
     USR_WARN(actual, "implicitly reading from a sync is deprecated; "
                      "apply a 'read\?\?()' method to the actual");
 
-  } else if (isSingleType(ats->getValType()) == true) {
-    checkAgain = true;
-
-    castCall   = new CallExpr("readFF", gMethodToken, prevActual);
-    USR_WARN(actual, "implicitly reading from a single is deprecated; "
-                     "apply a 'read\?\?()' method to the actual");
-
   } else if (isManagedPtrType(ats->getValType()) == true &&
              !isManagedPtrType(formal->getValType())) {
     checkAgain = true;

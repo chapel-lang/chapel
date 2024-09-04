@@ -599,6 +599,9 @@ def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
+    if "CHPL_EXE_NAME" in os.environ:  # unset CHPL_EXE_NAME
+        del os.environ["CHPL_EXE_NAME"]
+        
     if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
         os.environ["CHPL_RT_UNWIND"] = "0"
 

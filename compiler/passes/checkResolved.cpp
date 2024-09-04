@@ -79,10 +79,10 @@ static void checkForClassAssignOps(FnSymbol* fn) {
 
 // This function is checking for any AggregateType (record/class/union) which
 // contains a non-default initializable/non-copyable field
-// (sync/single/atomic), but fails to explicitly define either `init` or
+// (sync/atomic), but fails to explicitly define either `init` or
 // `init=`. This includes having a field which is a container for that type
 // like an array or tuple.
-static void checkSyncSingleAtomicDefaultInit() {
+static void checkSyncAtomicDefaultInit() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
     bool hasCompilerGeneratedInit = false;
     bool hasCompilerGeneratedCopyInit = false;
@@ -100,14 +100,13 @@ static void checkSyncSingleAtomicDefaultInit() {
     if (hasCompilerGeneratedInit || hasCompilerGeneratedCopyInit) {
       for_fields(field, at) {
         bool isSync = isOrContainsSyncType(field->type);
-        bool isSingle = isOrContainsSingleType(field->type);
         bool isAtomic = isOrContainsAtomicType(field->type);
-        if (isSync || isSingle || isAtomic) {
+        if (isSync || isAtomic) {
           USR_WARN(at,
                   "compiler generated default initializers for %s with '%s' "
                   "fields are deprecated, please supply an 'init%s' method",
                   at->isClass() ? "classes" : (at->isRecord() ? "records" : "unions"),
-                  isSync ? "sync" : (isSingle ? "single" : "atomic"), hasCompilerGeneratedCopyInit ? "=" : "");
+                  isSync ? "sync" :  "atomic", hasCompilerGeneratedCopyInit ? "=" : "");
         }
       }
     }
@@ -117,23 +116,22 @@ static void checkSyncSingleAtomicDefaultInit() {
 
 
 // This function is checking for any function which returns a non-default
-// copyable type (sync/single/atomic). This has exclusions for functions that
+// copyable type (sync/atomic). This has exclusions for functions that
 // don't copy like array aliases or explicit "no copy" functions. This
 // includes functions which return a type which is a container for that type
 // like an array or tuple.
-static void checkSyncSingleAtomicReturnByCopy() {
+static void checkSyncAtomicReturnByCopy() {
 
-  const char* astrCompilerCopySyncSingle = astr("chpl__compilerGeneratedCopySyncSingle");
+  const char* astrCompilerCopySync = astr("chpl__compilerGeneratedCopySync");
 
   //checks for return by anything by ref
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
     // skip functions which support deprecation
-    if (fn->name == astrCompilerCopySyncSingle) continue;
+    if (fn->name == astrCompilerCopySync) continue;
     if (fn->hasFlag(FLAG_DEPRECATED)) continue;
 
     bool isSync = isOrContainsSyncType(fn->retType, false);
-    bool isSingle = isOrContainsSingleType(fn->retType, false);
     bool isAtomic = isOrContainsAtomicType(fn->retType, false);
     bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
 
@@ -146,12 +144,12 @@ static void checkSyncSingleAtomicReturnByCopy() {
     bool optOut = isInitAutoCopy || isNoCopy ||
                   isCoerce || isDefaultOf || isAliasing || isDefaultActualFn;
 
-    bool shouldWarn = !optOut && !isRef && (isSync || isSingle || isAtomic);
+    bool shouldWarn = !optOut && !isRef && (isSync || isAtomic);
 
     if (shouldWarn) {
       USR_WARN(fn,
                "returning a%s by %s is deprecated",
-               isSync ? " sync" : (isSingle ? " single" : "n atomic"),
+               isSync ? " sync" : "n atomic",
                retTagDescrString(fn->retTag));
     }
   }
@@ -217,8 +215,8 @@ checkResolved() {
   checkExternProcs();
   checkExportedProcs();
 
-  checkSyncSingleAtomicDefaultInit();
-  checkSyncSingleAtomicReturnByCopy();
+  checkSyncAtomicDefaultInit();
+  checkSyncAtomicReturnByCopy();
 
   checkTheseWithArguments();
 }

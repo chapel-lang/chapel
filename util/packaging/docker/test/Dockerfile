@@ -1,7 +1,7 @@
 # This is a container used to run homebrew-ci
 
-# Get the homebrew ubuntu container, set the platform to avoid warnings when on M1
-FROM --platform=linux/amd64 ghcr.io/homebrew/ubuntu22.04:master
+# Get the homebrew ubuntu container
+FROM ghcr.io/homebrew/ubuntu22.04:master
 
 # Redundant to brew_install.bash but imporant for anyone working in this container
 # which can be ran without brew_install.bash

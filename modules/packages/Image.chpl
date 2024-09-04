@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-/*
-The Image module provides a way to write arrays of pixels to an output image format.
+/* Provides a way to write arrays of pixels to an output image format.
 
 For example, the following code creates a 3x3 array of pixels and writes it to
 a BMP file. The array is then scaled by a factor of 2 (creating a 9x9 image)
@@ -46,6 +45,10 @@ and written to a second BMP file.
 module Image {
 
   private use IO, Math;
+
+  private import this.BMPHelper;
+  private import this.PNGHelper;
+  private import this.JPGHelper;
 
 
   //
@@ -91,16 +94,27 @@ module Image {
   //
   // how far to shift a color component when packing into a pixelType
   //
-  private inline proc colorOffset(param color) param do
+  @chpldoc.nodoc
+  inline proc colorOffset(param color) param do
     return color:int * bitsPerColor;
-  private inline proc colorOffset(color) do
+  @chpldoc.nodoc
+  inline proc colorOffset(color) do
     return color:int * bitsPerColor;
 
   /* Defines what kind of image to output */
   enum imageType {
     /* A BMP image is written from a 2D array of pixels */
-    bmp
+    bmp,
+    /* a PNG image is written from a 2D array of pixels */
+    png,
+    /* a JPG image is written from a 2D array of pixels */
+    jpg,
   }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc writeImage(image, format: imageType, pixels: [] pixelType) throws do
+    compilerError("'pixels' must be a 2D array of colors");
 
   /*
     Write an array of pixels as an image
@@ -109,74 +123,37 @@ module Image {
     :arg format: the image format
     :arg pixels: an array of pixel values
   */
-  proc writeImage(image, format: imageType, pixels: [] pixelType) throws {
+  proc writeImage(image, format: imageType, pixels: [] pixelType) throws
+    where pixels.isRectangular() && pixels.rank == 2 {
     // the output file channel
     const outfile = if isSubtype(image.type, fileWriter)
                       then image
                       else open(image, ioMode.cw).writer(locking=true);
     select format {
-      when imageType.bmp do writeImageBMP(outfile, pixels);
+      when imageType.bmp do BMPHelper.write(outfile, pixels);
+      when imageType.png do PNGHelper.write(outfile, pixels);
+      when imageType.jpg do JPGHelper.write(outfile, pixels);
       otherwise
         halt("Don't know how to write images of type: ", format);
     }
   }
 
-  pragma "last resort"
-  private proc writeImageBMP(outfile, pixels) do
-    compilerError("pixels must be a 2D array of colors");
+  /*
+    Read an image file into an array of pixels
 
-  private proc writeImageBMP(outfile, pixels: [?d]) throws
-    where d.isRectangular() && d.rank == 2 {
-    const rows = d.dim(0).size,
-          cols = d.dim(1).size,
-          headerSize = 14,
-          dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
-          bitsPerPixel = (rgbColor.size)*bitsPerColor,
-          // row size in bytes. Pad each row out to 4 bytes.
-          rowQuads = divCeil(bitsPerPixel * cols, 32),
-          rowSize = 4 * rowQuads,
-          rowSizeBits = 8 * rowSize,
-          pixelsSize = rowSize * rows,
-          size = headerSize + dibHeaderSize + pixelsSize,
-          offsetToPixelData = headerSize + dibHeaderSize;
-
-    // Write the BMP image header
-    outfile.writef("BM");
-    outfile.writeBinary(size:uint(32), endianness.little);
-    outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
-    outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
-    outfile.writeBinary(offsetToPixelData:uint(32), endianness.little);
-
-    // Write the DIB header BITMAPINFOHEADER
-    outfile.writeBinary(dibHeaderSize:uint(32), endianness.little);
-    outfile.writeBinary(cols:int(32), endianness.little);
-    outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
-    outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
-    outfile.writeBinary(bitsPerPixel:uint(16), endianness.little);
-    outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
-    outfile.writeBinary(pixelsSize:uint(32), endianness.little);
-    outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
-    outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
-    outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
-    outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
-
-    for i in d.dim(0) {
-      for j in d.dim(1) {
-        var p = pixels[i,j];
-        var redv = (p >> colorOffset(rgbColor.red)) & colorMask;
-        var greenv = (p >> colorOffset(rgbColor.green)) & colorMask;
-        var bluev = (p >> colorOffset(rgbColor.blue)) & colorMask;
-
-        // write 24-bit color value
-        outfile.writeBits(bluev, bitsPerColor);
-        outfile.writeBits(greenv, bitsPerColor);
-        outfile.writeBits(redv, bitsPerColor);
-      }
-      // write the padding.
-      // The padding is only rounding up to 4 bytes so
-      // can be written in a single writeBits call.
-      const nbits = bitsPerColor * (rgbColor.size) * cols;
-      outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
+    :arg image: the input filename or an open fileReader
+    :arg format: the image format
+    :returns: an array of pixel values
+  */
+  proc readImage(image, format: imageType): [] pixelType throws{
+    const infile = if isSubtype(image.type, fileReader)
+                     then image
+                     else open(image, ioMode.r).reader(locking=true);
+    select format {
+      when imageType.png do return PNGHelper.read(infile);
+      when imageType.jpg do return JPGHelper.read(infile);
+      otherwise
+        halt("Don't know how to read images of type: ", format);
     }
   }
 
@@ -213,6 +190,41 @@ module Image {
     }
 
     return outPixels;
+  }
+
+  /*
+    Takes a 2D array of pixels and turns them into color values. The order of
+    the colors is determined by the ``format`` formal. The default format is
+    ``(red, green, blue)``.
+
+    :arg pixels: the 2D array of pixels
+    :arg format: the order of the colors in the array. it must be a permutation
+                 of ``(red, green, blue)``
+    :returns: a new array of colors with the same domain as ``pixels``
+  */
+  proc pixelToColor(pixels: [?d] pixelType, format: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): [d] 3*pixelType
+    where d.isRectangular() && d.rank == 2 {
+
+    // check format
+    if boundsChecking {
+      if !(format[0] != format[1] &&
+           format[1] != format[2] &&
+           format[0] != format[2]) then
+        halt("pixelToColor: format must be a permutation of (red, green, blue)");
+    }
+
+    proc getColorFromPixel(pixel: pixelType, offset: rgbColor) {
+      return (pixel >> colorOffset(offset)) & colorMask;
+    }
+
+    var outColors: [d] 3*pixelType;
+    forall (p, outColor) in zip(pixels, outColors) {
+      outColor = (getColorFromPixel(p, format[0]),
+                  getColorFromPixel(p, format[1]),
+                  getColorFromPixel(p, format[2]));
+    }
+
+    return outColors;
   }
 
   /*
@@ -355,6 +367,307 @@ module Image {
         finished = true;
       }
     }
+  }
+
+  private module BMPHelper {
+    private use IO;
+
+    enum Implementation {
+      native,
+      stb_image
+    }
+    config param impl = Implementation.native;
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
+      if impl == Implementation.native {
+        writeNative(outfile, pixels);
+      } else if impl == Implementation.stb_image {
+        compilerError("stb_image is not yet supported for BMP");
+      } else {
+        compilerError("Unknown BMP implementation");
+      }
+    }
+    proc read(const ref infile: fileReader(?)) throws {
+      if impl == Implementation.native {
+        compilerError("Native BMP reading is not yet supported");
+      } else if impl == Implementation.stb_image {
+        compilerError("stb_image is not yet supported for BMP");
+      } else {
+        compilerError("Unknown BMP implementation");
+      }
+    }
+
+    private proc writeNative(const ref outfile: fileWriter(?), pixels: [?d]) throws {
+      private use Image;
+      private use IO;
+      const rows = d.dim(0).size,
+            cols = d.dim(1).size,
+            headerSize = 14,
+            dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
+            bitsPerPixel = (rgbColor.size)*bitsPerColor,
+            // row size in bytes. Pad each row out to 4 bytes.
+            rowQuads = divCeil(bitsPerPixel * cols, 32),
+            rowSize = 4 * rowQuads,
+            rowSizeBits = 8 * rowSize,
+            pixelsSize = rowSize * rows,
+            size = headerSize + dibHeaderSize + pixelsSize,
+            offsetToPixelData = headerSize + dibHeaderSize;
+
+      // Write the BMP image header
+      outfile.writef("BM");
+      outfile.writeBinary(size:uint(32), endianness.little);
+      outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
+      outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
+      outfile.writeBinary(offsetToPixelData:uint(32), endianness.little);
+
+      // Write the DIB header BITMAPINFOHEADER
+      outfile.writeBinary(dibHeaderSize:uint(32), endianness.little);
+      outfile.writeBinary(cols:int(32), endianness.little);
+      outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
+      outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
+      outfile.writeBinary(bitsPerPixel:uint(16), endianness.little);
+      outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
+      outfile.writeBinary(pixelsSize:uint(32), endianness.little);
+      outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+      outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+      outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
+      outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
+
+      for i in d.dim(0) {
+        for j in d.dim(1) {
+          var p = pixels[i,j];
+          var redv = (p >> colorOffset(rgbColor.red)) & colorMask;
+          var greenv = (p >> colorOffset(rgbColor.green)) & colorMask;
+          var bluev = (p >> colorOffset(rgbColor.blue)) & colorMask;
+
+          // write 24-bit color value
+          outfile.writeBits(bluev, bitsPerColor);
+          outfile.writeBits(greenv, bitsPerColor);
+          outfile.writeBits(redv, bitsPerColor);
+        }
+        // write the padding.
+        // The padding is only rounding up to 4 bytes so
+        // can be written in a single writeBits call.
+        const nbits = bitsPerColor * (rgbColor.size) * cols;
+        outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
+      }
+    }
+  }
+
+  private module PNGHelper {
+    private use IO;
+    enum Implementation {
+      stb_image,
+      libpng
+    }
+    config param impl = Implementation.stb_image;
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
+      if impl == Implementation.stb_image {
+        import super.STBImageHelper;
+        STBImageHelper.writePng(outfile, pixels);
+      } else if impl == Implementation.libpng {
+        compilerError("libpng is not yet supported");
+      } else {
+        compilerError("Unknown PNG implementation");
+      }
+    }
+    proc read(const ref infile: fileReader(?)) throws {
+      if impl == Implementation.stb_image {
+        import super.STBImageHelper;
+        return STBImageHelper.readPng(infile);
+      } else if impl == Implementation.libpng {
+        compilerError("libpng is not yet supported");
+      } else {
+        compilerError("Unknown PNG implementation");
+      }
+    }
+  }
+
+  private module JPGHelper {
+    private use IO;
+    enum Implementation {
+      stb_image
+    }
+    config param impl = Implementation.stb_image;
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
+      if impl == Implementation.stb_image {
+        import super.STBImageHelper;
+        STBImageHelper.writeJpg(outfile, pixels);
+      } else {
+        compilerError("Unknown JPG implementation");
+      }
+    }
+    proc read(const ref infile: fileReader(?)) throws {
+      if impl == Implementation.stb_image {
+        import super.STBImageHelper;
+        return STBImageHelper.readJpg(infile);
+      } else {
+        compilerError("Unknown JPG implementation");
+      }
+    }
+  }
+
+  private module STBImageHelper {
+    require "ImageHelper/stb_image_helper.h";
+
+    private use CTypes;
+    private use IO;
+    private use Image;
+
+    /*private*/ type stbi_write_func = c_fn_ptr;
+    private extern proc stbi_write_png_to_func(func: stbi_write_func,
+                               context: c_ptr(void),
+                               w: c_int,
+                               h: c_int,
+                               comp: c_int,
+                               data: c_ptrConst(void),
+                               stride_in_bytes: c_int): c_int;
+
+    private extern proc stbi_write_jpg_to_func(func: stbi_write_func,
+                               context: c_ptr(void),
+                               w: c_int,
+                               h: c_int,
+                               comp: c_int,
+                               data: c_ptrConst(void),
+                               quality: c_int): c_int;
+
+    private proc stbi_writeFuncLocking(context: c_ptr(void),
+                             data: c_ptrConst(void),
+                             size: c_int) {
+      const outfile = (context:c_ptr(fileWriter(locking=true))).deref();
+      try! outfile.writeBinary(data:c_ptrConst(uint(8)):c_ptr(uint(8)), size);
+    }
+    private proc stbi_writeFunc(context: c_ptr(void),
+                             data: c_ptrConst(void),
+                             size: c_int) {
+      const outfile = (context:c_ptr(fileWriter(locking=false))).deref();
+      try! outfile.writeBinary(data:c_ptrConst(uint(8)), size);
+    }
+
+    // rewrite pixels into the right format for stb_image
+    private proc writeCommon(const ref outfile: fileWriter(?), pixels: [?dom]):
+      (c_fn_ptr, c_ptr(void), c_int, c_int, c_int, c_ptr(uint(8))) throws {
+      const rows = dom.dim(0).size, cols = dom.dim(1).size;
+
+      // 1=Y, 2=YA, 3=RGB, 4=RGBA
+      const mode: c_int = 3;
+      const width = cols;
+      const height = rows;
+      const nBytes = width * height * mode;
+      var data = allocate(uint(8), nBytes.safeCast(c_size_t));
+      forall idx in 0..<(rows*cols) {
+        const (i,j) = dom.orderToIndex(idx);
+        const offset = idx * mode;
+        const p = pixels[i, j];
+        data[offset] = ((p >> colorOffset(rgbColor.red)) & colorMask):uint(8);
+        data[offset + 1] = ((p >> colorOffset(rgbColor.green)) & colorMask):uint(8);
+        data[offset + 2] = ((p >> colorOffset(rgbColor.blue)) & colorMask):uint(8);
+      }
+
+      const writeFunc = if outfile.locking
+                          then c_ptrTo(stbi_writeFuncLocking)
+                          else c_ptrTo(stbi_writeFunc);
+
+      const context = c_ptrToConst(outfile):c_ptrConst(void):c_ptr(void);
+      return (writeFunc, context, width.safeCast(c_int), height.safeCast(c_int), mode, data);
+    }
+
+    proc writePng(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
+      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const stride = width * mode;
+      stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
+      deallocate(data);
+    }
+
+    proc writeJpg(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
+      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const quality: c_int = 100;
+      stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
+      deallocate(data);
+    }
+
+
+    private extern proc stbi_info_from_memory(data: c_ptrConst(void),
+                                      size: c_int,
+                                      x: c_ptr(c_int),
+                                      y: c_ptr(c_int),
+                                      comp: c_ptr(c_int)): c_int;
+    private extern proc stbi_is_16_bit_from_memory(data: c_ptrConst(void),
+                                                   size: c_int): c_int;
+    private extern proc stbi_load_from_memory(data: c_ptrConst(void),
+                                      size: c_int,
+                                      x: c_ptr(c_int),
+                                      y: c_ptr(c_int),
+                                      comp: c_ptr(c_int),
+                                      req_comp: c_int): c_ptr(uint(8));
+    private extern proc stbi_image_free(data: c_ptr(void)): void;
+
+    private proc readCommon(const ref infile: fileReader(?)) throws {
+      // read bytes in
+      const bytes_ = infile.readAll();
+      const nBytes = bytes_.size.safeCast(c_int);
+      const buffer = bytes_.c_str():c_ptrConst(void);
+
+      // check image
+      var x, y, comp: c_int;
+      const ok = stbi_info_from_memory(buffer, nBytes, c_ptrTo(x), c_ptrTo(y), c_ptrTo(comp));
+      if ok == 0 then
+        halt("Failed to read image info");
+
+      // check that the image is 3 channels and 8 bits per channel
+      if comp != 3 && comp != 4 then
+        halt("Image must have 3 or 4 channels");
+
+      const is_16 = stbi_is_16_bit_from_memory(buffer, nBytes);
+      if is_16 then
+        halt("Image must have 8 bits per channel");
+
+
+      // read image
+      var x_, y_, comp_: c_int;
+      var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 0);
+      if data == nil then
+        halt("Failed to read image");
+      assert(x_ == x && y_ == y && comp_ == comp);
+      defer stbi_image_free(data);
+
+      // convert to Chapel array
+      const pixelDom = {0..<y:int, 0..<x:int};
+      var pixels: [pixelDom] pixelType;
+      forall order in 0..<(x*y) {
+        const idx = pixelDom.orderToIndex(order);
+        const offset = order * comp;
+
+        var r = data[offset]: pixelType;
+        var g = data[offset + 1]: pixelType;
+        var b = data[offset + 2]: pixelType;
+
+        if comp == 4 {
+          // merge alpha into the RGB, this assumes 8 bits-per-channel
+          const a = data[offset + 3]: pixelType;
+          const rNorm = r / 255.0;
+          const gNorm = g / 255.0;
+          const bNorm = b / 255.0;
+          const aNorm = a / 255.0;
+          r = ((rNorm * aNorm + (1.0 - aNorm)) * 255):int;
+          g = ((gNorm * aNorm + (1.0 - aNorm)) * 255):int;
+          b = ((bNorm * aNorm + (1.0 - aNorm)) * 255):int;
+        }
+        pixels[idx] = r << colorOffset(rgbColor.red) |
+                      g << colorOffset(rgbColor.green) |
+                      b << colorOffset(rgbColor.blue);
+
+      }
+
+      return pixels;
+    }
+
+    proc readPng(const ref infile: fileReader(?)) throws {
+      return readCommon(infile);
+    }
+    proc readJpg(const ref infile: fileReader(?)) throws {
+      return readCommon(infile);
+    }
+
   }
 
 }

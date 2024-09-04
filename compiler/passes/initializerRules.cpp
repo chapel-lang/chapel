@@ -80,6 +80,7 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
 
 static Type*          typeForExpr(Expr* expr);
 static AggregateType* typeForNewExpr(CallExpr* newExpr);
+static AggregateType* typeForNewWithAllocatorExpr(CallExpr* newExpr);
 
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
@@ -144,16 +145,18 @@ static Type* typeForExpr(Expr* expr) {
   } else if (CallExpr* initCall = toCallExpr(expr)) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       retval = typeForNewExpr(initCall);
+    } else if (initCall->isPrimitive(PRIM_NEW_WITH_ALLOCATOR) == true) {
+      retval = typeForNewWithAllocatorExpr(initCall);
     }
   }
 
   return retval;
 }
 
-static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
   AggregateType* retval = NULL;
 
-  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+  if (CallExpr* constructor = toCallExpr(newExpr->get(type_idx))) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
@@ -166,6 +169,12 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
   }
 
   return retval;
+}
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  return typeForNewExprHelper(newExpr, 1);
+}
+static AggregateType* typeForNewWithAllocatorExpr(CallExpr* newExpr) {
+  return typeForNewExprHelper(newExpr, 2);
 }
 
 /************************************* | **************************************

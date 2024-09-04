@@ -1,21 +1,41 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:13)
+| Found an aggregation candidate (basicSourceAgg.chpl:14)
+|  Potential source aggregation (basicSourceAgg.chpl:14)
+|  Potential destination aggregation (basicSourceAgg.chpl:14)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:13)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:24)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:24)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:34)
+| Found an aggregation candidate (basicSourceAgg.chpl:35)
+|  Potential source aggregation (basicSourceAgg.chpl:35)
+|  Potential destination aggregation (basicSourceAgg.chpl:35)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicSourceAgg.chpl:34)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
+
 Start analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:13)
 | Found an aggregation candidate (basicSourceAgg.chpl:14)
 |  Potential source aggregation (basicSourceAgg.chpl:14)
 End analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:13)
 
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
+
 Start analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:24)
 End analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:24)
 
-Start analyzing forall for automatic aggregation (basicSourceAgg.chpl:34)
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:34)
 | Found an aggregation candidate (basicSourceAgg.chpl:35)
 |  Potential source aggregation (basicSourceAgg.chpl:35)
-End analyzing forall for automatic aggregation (basicSourceAgg.chpl:34)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:34)
 
-Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
-End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
-
-Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
-End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:34)
+| Found an aggregation candidate (basicSourceAgg.chpl:35)
+|  Potential source aggregation (basicSourceAgg.chpl:35)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:34)
 
 Aggregation candidate has confirmed local child [static only ALA clone] (basicSourceAgg.chpl:14)
 LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (basicSourceAgg.chpl:14)

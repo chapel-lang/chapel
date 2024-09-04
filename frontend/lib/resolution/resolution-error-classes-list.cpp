@@ -741,6 +741,39 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
+void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
+  auto call = std::get<0>(info_);
+  auto& genericFormals = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "call does not provide enough type information for a complete instantiation.");
+  wr.code(call, {call});
+  for (auto& formal : genericFormals) {
+    auto decl = std::get<0>(formal);
+    auto qt = std::get<1>(formal);
+
+    std::string formalName = "formal";
+    if (auto fieldDecl = decl->toVariable(); fieldDecl && fieldDecl->isField()) {
+      formalName = std::string("field '") + fieldDecl->name().c_str() + "'";
+    } else if (auto formalDecl = decl->toNamedDecl()) {
+      formalName = formalName + " '" + formalDecl->name().c_str() + "'";
+    }
+
+    wr.note(decl, formalName, " has generic type '", qt.type(), "', but is expected to have a concrete type.");
+    wr.codeForDef(decl);
+
+    if (qt.type()) {
+      if (auto ct = qt.type()->toClassType()) {
+        if (ct->decorator().isUnknownManagement() && ct->basicClassType()) {
+          wr.note(decl, "one reason that ", formalName, " is generic is that it doesn't have a specified memory management strategy like 'owned', 'shared' or 'unmanaged'.");
+          wr.message("Consider explicitly specifying a memory management strategy, or adding a new type parameter to explicitly make the formal generic.");
+        }
+      }
+    }
+
+    wr.message("");
+  }
+}
+
 void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
   auto node = std::get<0>(info_);
   auto parent = std::get<1>(info_);
@@ -1433,6 +1466,37 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
   wr.codeForLocation(mod);
+}
+
+static const char* genericityToString(types::Type::Genericity genericity) {
+  switch (genericity) {
+    case types::Type::GENERIC:
+      return "generic";
+    case types::Type::GENERIC_WITH_DEFAULTS:
+      return "generic with defaults";
+    case types::Type::MAYBE_GENERIC:
+      return "maybe generic";
+    case types::Type::CONCRETE:
+      return "concrete";
+    default:
+      CHPL_ASSERT(false && "shouldn't happen");
+      return "";
+  }
+}
+
+void ErrorSyntacticGenericityMismatch::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::Decl*>(info_);
+  auto actualGenericity = std::get<1>(info_);
+  auto syntacticGenericity = std::get<2>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  CHPL_ASSERT(decl->isVarLikeDecl());
+  auto var = decl->toVarLikeDecl();
+
+  wr.heading(kind_, type_, decl, "field '", var->name(), "' appears to be ",
+             genericityToString(syntacticGenericity), " in the program's syntax, but it has been inferred to be ",
+             type, ", which is ", genericityToString(actualGenericity), ".");
+  wr.codeForLocation(decl);
 }
 
 void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {

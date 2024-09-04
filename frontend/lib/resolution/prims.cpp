@@ -1606,6 +1606,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
+    case PRIM_NEW_WITH_ALLOCATOR:
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
@@ -1633,6 +1634,10 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_ASSERT_ON_GPU:
       type = primAssertOnGpu(context, ci);
+      break;
+
+    case PRIM_ASSERT_GPU_ELIGIBLE:
+      type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       break;
 
     case PRIM_GPU_INIT_KERNEL_CFG:

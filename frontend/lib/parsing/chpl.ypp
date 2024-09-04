@@ -424,7 +424,7 @@
 %token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
 %token <uniqueStr> TPROC TPROTOTYPE TPUBLIC TPROCLP
 %token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
+%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
 %token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
 %token <uniqueStr> TUINT TUNION TUNMANAGED TUSE
@@ -481,7 +481,7 @@
           TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT TINIT
 %nonassoc TFALSE TNONE TTHIS TTRUE
 
-%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -551,6 +551,7 @@
 %type <exprList> import_ls
 %type <exprList> renames_ls use_renames_ls opt_only_ls
 
+%type <typeDeclParts> interface_start
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
 %type <exprList>  ifc_formal_ls
@@ -715,7 +716,6 @@ stmt_base:
 | require_stmt              { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
 | implements_stmt           { $$ = context->finishStmt($1); }
-| interface_stmt            { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
     std::vector<ParserComment>* comments;
@@ -924,6 +924,7 @@ tryable_stmt:
 decl_base:
   module_decl_stmt
 | class_level_stmt
+| interface_stmt
 ;
 
 collect_attributes:
@@ -1278,7 +1279,6 @@ import_internal_type_ident:
 | TBYTES
 | TSTRING
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -1413,7 +1413,6 @@ internal_type_ident_def:
 | TBYTES
 | TSTRING
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -1445,7 +1444,6 @@ reserved_type_ident_use:
      places in the parser. Additionally their type versions have
      different names. */
   TSYNC
-| TSINGLE
 | TDOMAIN
 | TINDEX
 ;
@@ -1876,7 +1874,6 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
-                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::VAR,
                                    /*isConfig*/ false,
@@ -1892,7 +1889,6 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
-                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::CONST,
                                    /*isConfig*/ false,
@@ -1903,14 +1899,25 @@ ifvar:
   }
 ;
 
-interface_stmt:
-  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+interface_start:
+  TINTERFACE ident_def
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, $4, @6, $6);
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, @2, $2, asttags::Interface);
   }
-| TINTERFACE ident_def                       block_stmt
+;
+
+interface_stmt:
+  interface_start TLP ifc_formal_ls TRP block_stmt
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, nullptr, @3, $3);
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, $3, @5, $5);
+    context->exitScope(asttags::Interface, parts.name);
+  }
+| interface_start                       block_stmt
+  {
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, nullptr, @2, $2);
+    context->exitScope(asttags::Interface, parts.name);
   }
 ;
 
@@ -1953,7 +1960,6 @@ implements_type_error_ident:
 | TTRUE
 /* it would be nice to include these, alas they cause shift/reduce conflicts:
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -2039,7 +2045,6 @@ catch_expr_inner:
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
-                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
@@ -2053,7 +2058,6 @@ catch_expr_inner:
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
-                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
@@ -2286,6 +2290,7 @@ enum_item:
       auto decl = EnumElement::build(BUILDER, LOC(@$),
                                      context->buildAttributeGroup(@$),
                                      $1);
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
@@ -2294,6 +2299,7 @@ enum_item:
                                      context->buildAttributeGroup(@$),
                                      $1,
                                      toOwned($3));
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
@@ -2824,7 +2830,6 @@ type_alias_decl_stmt_inner:
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
-                                context->consumeVarDestinationExpr(),
                                 /*name*/ $1,
                                 context->varDeclKind,
                                 context->isVarDeclConfig,
@@ -2905,7 +2910,6 @@ var_decl_stmt_inner:
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
-                                     context->consumeVarDestinationExpr(),
                                      /*name*/ $1,
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
@@ -3063,8 +3067,6 @@ sub_type_level_expr:
 | cond_expr                 // type b = if b then uint else int
 | unary_op_expr             // We allow binary exprs as types...why not unary?
 | binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
-| TSINGLE expr
-  { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TINDEX TLP opt_actual_ls TRP
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TDOMAIN TLP opt_actual_ls TRP

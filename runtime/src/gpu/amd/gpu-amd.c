@@ -31,7 +31,7 @@
 #include "chpl-linefile-support.h"
 #include "gpu/amd/rocm-utils.h"
 #include "gpu/amd/rocm-version.h"
-
+#include "chpl-topo.h"
 
 #include <assert.h>
 
@@ -45,12 +45,15 @@
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
 
+static int numAllDevices = -1;
+static int numDevices = -1;
+static int *deviceIDToIndex = NULL;
+static hipDevice_t *indexToDeviceID = NULL;
+
 // array indexed by device ID (we load the same module once for each GPU).
 static hipModule_t *chpl_gpu_rocm_modules;
 
 static int *deviceClockRates;
-
-
 
 static inline
 void* chpl_gpu_load_module(const char* fatbin_data) {
@@ -62,28 +65,24 @@ void* chpl_gpu_load_module(const char* fatbin_data) {
   return (void*)rocm_module;
 }
 
-void* chpl_gpu_impl_load_function(const char* kernel_name) {
-  hipFunction_t function;
-  hipDevice_t device;
-  hipModule_t module;
-
-  ROCM_CALL(hipGetDevice(&device));
-
-  module = chpl_gpu_rocm_modules[(int)device];
-
-  ROCM_CALL(hipModuleGetFunction(&function, module, kernel_name));
-  assert(function);
-
-  return (void*)function;
-}
-
-
 static void switch_context(int dev_id) {
-  ROCM_CALL(hipSetDevice(dev_id));
+  ROCM_CALL(hipSetDevice(indexToDeviceID[dev_id]));
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
   switch_context(dev_id);
+}
+
+static hipModule_t get_module(void) {
+  hipDevice_t device;
+  hipModule_t module;
+
+  ROCM_CALL(hipGetDevice(&device));
+  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
+  int index = deviceIDToIndex[(int)device];
+  assert((index >= 0) && (index < numDevices));
+  module = chpl_gpu_rocm_modules[index];
+  return module;
 }
 
 extern c_nodeid_t chpl_nodeID;
@@ -105,20 +104,15 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
     // The validation only happens when built with assertions (commonly
     // enabled by CHPL_DEVELOPER), and chpl_gpu_impl_copy_host_to_device
     // only causes issues in that case.
-    ROCM_CALL(hipMemcpyDtoD(ptr, (void*)&chpl_nodeID, glob_size));
+    ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
   }
 }
 
 
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
                                size_t* size) {
+  hipModule_t module = get_module();
 
-  hipDevice_t device;
-  hipModule_t module;
-
-  ROCM_CALL(hipGetDevice(&device));
-
-  module = chpl_gpu_rocm_modules[(int)device];
   //
   // Engin: The AMDGPU backend seems to optimize globals away when they are not
   // used.  So, we should not error out if we can't find its definition. We can
@@ -132,36 +126,128 @@ void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
   ROCM_CALL(err);
 }
 
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
+  hipFunction_t function;
+  hipModule_t module = get_module();
+
+  ROCM_CALL(hipModuleGetFunction(&function, module, kernel_name));
+  assert(function);
+
+  return (void*)function;
+}
 
 void chpl_gpu_impl_init(int* num_devices) {
   ROCM_CALL(hipInit(0));
 
-  ROCM_CALL(hipGetDeviceCount(num_devices));
+  // Find all the GPUs (devices) on the machine then decide which we will
+  // use. If there are co-locales then the GPUs are evenly divided among
+  // them, otherwise we use them all.
 
-  const int loc_num_devices = *num_devices;
-  chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*loc_num_devices);
-  deviceClockRates = chpl_malloc(sizeof(int)*loc_num_devices);
-
-  int i;
-  for (i=0 ; i<loc_num_devices ; i++) {
-    hipDevice_t device;
-    hipCtx_t context;
-
-    ROCM_CALL(hipDeviceGet(&device, i));
-    ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
-    ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
-
-    ROCM_CALL(hipSetDevice(device));
-    hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_rocm_modules[i] = module;
-
-    hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
-
-    chpl_gpu_impl_set_globals(i, module);
+  ROCM_CALL(hipGetDeviceCount(&numAllDevices));
+  hipDevice_t *allDevices = chpl_malloc(sizeof(*allDevices) * numAllDevices);
+  chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
+  // Find all the GPUs and get their PCI bus addresses.
+  for (int i=0 ; i < numAllDevices; i++) {
+#if ROCM_VERSION_MAJOR >= 6
+    allDevices[i] = i;
+#else
+    ROCM_CALL(hipDeviceGet(&allDevices[i], i));
+#endif
+    int domain, bus, device;
+    int rc = hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
+                                    allDevices[i]);
+    if (rc == hipErrorInvalidValue) {
+      // hipDeviceGetAttribute for hipDeviceAttributePciDomainID fails
+      // on some (all?) platforms. Assume the domain is 0 and carry on.
+      domain = 0;
+    } else {
+      ROCM_CALL(rc);
+    }
+    ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
+                                    allDevices[i]));
+    ROCM_CALL(hipDeviceGetAttribute(&device, hipDeviceAttributePciDeviceId,
+                                    allDevices[i]));
+    allAddrs[i].domain = (uint8_t) domain;
+    allAddrs[i].bus = (uint8_t) bus;
+    allAddrs[i].device = (uint8_t) device;
+    allAddrs[i].function = 0;
   }
+
+  // Call the topo module to determine which GPUs we should use.
+
+  int numAddrs = numAllDevices;
+  chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
+
+  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
+  if (rc) {
+    chpl_warning("unable to select GPUs for this locale, using them all",
+                 0, 0);
+    for (int i = 0; i < numAllDevices; i++) {
+        addrs[i] = allAddrs[i];
+    }
+    numAddrs = numAllDevices;
+  }
+
+  // Allocate the GPU data structures. Note that the HIP API, specifically
+  // hipGetDevice, returns the global device ID so we need deviceIDToIndex
+  // to map from the global device ID to an array index.
+
+  numDevices = numAddrs;
+  chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*numDevices);
+  deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
+  indexToDeviceID = chpl_malloc(sizeof(int) * numDevices);
+  deviceIDToIndex = chpl_malloc(sizeof(int) * numAllDevices);
+
+  for (int i = 0; i < numDevices; i++) {
+    chpl_gpu_rocm_modules[i] = NULL;
+    indexToDeviceID[i] = -1;
+  }
+
+  for (int i = 0; i < numAllDevices; i++) {
+    deviceIDToIndex[i] = -1;
+  }
+
+  // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
+  // and find the corresponding GPUs. Initialize each GPU and its array
+  // entries.
+
+  int j = 0;
+  for (int i = 0; i < numDevices; i++ ) {
+    for (; j < numAllDevices; j++) {
+      if (CHPL_TOPO_PCI_ADDR_EQUAL(&addrs[i], &allAddrs[j])) {
+        hipDevice_t device = allDevices[j];
+#if ROCM_VERSION_MAJOR >= 6
+        ROCM_CALL(hipSetDevice(device));
+        ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
+#else
+        hipCtx_t context;
+        ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
+        ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
+
+        ROCM_CALL(hipSetDevice(device));
+#endif
+        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
+        chpl_gpu_rocm_modules[i] = module;
+
+        hipDeviceGetAttribute(&deviceClockRates[i],
+                              hipDeviceAttributeClockRate, device);
+
+        // map array indices (relative device numbers) to global device IDs
+        indexToDeviceID[i] = device;
+        deviceIDToIndex[device] = i;
+        chpl_gpu_impl_set_globals(i, module);
+        break;
+      }
+    }
+  }
+  chpl_free(allDevices);
+  chpl_free(allAddrs);
+  chpl_free(addrs);
+  *num_devices = numDevices;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -176,10 +262,16 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
+#if ROCM_VERSION_MAJOR >= 6
+  // TODO: is this right?
+  return res.type != hipMemoryTypeUnregistered;
+#else
   return true;
+#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -194,7 +286,11 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
     }
   }
   else {
+#if ROCM_VERSION_MAJOR >= 6
+    return res.type == hipMemoryTypeHost || res.type == hipMemoryTypeUnregistered;
+#else
     return res.memoryType == hipMemoryTypeHost;
+#endif
   }
 
   return true;
@@ -314,7 +410,7 @@ void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
   // buffer, which degrades performance. So in the array_on_device mode we
   // choose to page-lock such memory even if it's on the host-side.
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  hipHostRegister(memAlloc, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(memAlloc, size, hipHostRegisterPortable));
   #endif
 }
 
@@ -333,16 +429,20 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
 
 bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
   int p2p;
-  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev1, dev2));
+  int id1 = indexToDeviceID[dev1];
+  int id2 = indexToDeviceID[dev2];
+  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, id1, id2));
   return p2p != 0;
 }
 
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  ROCM_CALL(hipSetDevice(dev1));
+  int id1 = indexToDeviceID[dev1];
+  int id2 = indexToDeviceID[dev2];
+  ROCM_CALL(hipSetDevice(id1));
   if(enable) {
-    ROCM_CALL(hipDeviceEnablePeerAccess(dev2, 0));
+    ROCM_CALL(hipDeviceEnablePeerAccess(id2, 0));
   } else {
-    ROCM_CALL(hipDeviceDisablePeerAccess(dev2));
+    ROCM_CALL(hipDeviceDisablePeerAccess(id2));
   }
 }
 
@@ -392,7 +492,7 @@ bool chpl_gpu_impl_can_sort(void){
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
-  hipHostRegister(var, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
   void *dev_var;
   ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
   return dev_var;
