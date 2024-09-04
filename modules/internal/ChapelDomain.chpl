@@ -2794,7 +2794,15 @@ module ChapelDomain {
     }
 
     // associative array interface
-    /* Yields the domain indices in sorted order. */
+    /*
+      Yields the domain indices in sorted order. This method is only supported
+      on associative domains.
+
+      .. warning::
+
+         It is recommended to use :proc:`Sort.sorted` instead of this method.
+
+    */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if !this.isAssociative() then
         compilerError("'.sorted()' is only supported on associative domains");
