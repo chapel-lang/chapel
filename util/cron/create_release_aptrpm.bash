@@ -31,6 +31,9 @@ source $CWD/functions.bash
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
+# if any errors occur, this script should fail
+set -e
+
 source $CHPL_HOME/util/packaging/common/build_helpers.sh
 
 # if using a local tarball, copy it to the expected location

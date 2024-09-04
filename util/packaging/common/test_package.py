@@ -128,6 +128,7 @@ def docker_build_image(
         "docker",
         "buildx",
         "build",
+        "--load",
         "--platform",
         platform,
         "-t",
