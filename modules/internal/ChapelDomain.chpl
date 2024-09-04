@@ -2802,8 +2802,7 @@ module ChapelDomain {
         compilerWarning(
           "It is recommended to use 'Sort.sorted' instead of this method. ",
           "Compile with '-snoSortedWarnings' to suppress this warning.");
-      import Sort;
-      for x in Sort.sorted(this, comparator=comparator) do yield x;
+      for x in this._value.dsiSorted(comparator) do yield x;
     }
 
     @chpldoc.nodoc
