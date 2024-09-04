@@ -360,8 +360,8 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
 static void cfg_init_dims_1d(kernel_cfg* cfg, int64_t num_threads,
                              int blk_dim) {
   cfg->num_threads = num_threads;
-  if (cfg->num_threads > 0){
-    cfg->grd_dim_x = (cfg->num_threads+blk_dim-1)/blk_dim;
+  if (num_threads > 0) {
+    cfg->grd_dim_x = (num_threads+blk_dim-1)/blk_dim;
     cfg->grd_dim_y = 1;
     cfg->grd_dim_z = 1;
     cfg->blk_dim_x = blk_dim;
@@ -493,7 +493,7 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   // with pid=-1 and n_pids will include those. But we don't need to offload
   // them. Checking for `max_pid` is a more robust thing to do here
   if (cfg->max_pid < 0) {
-    CHPL_GPU_DEBUG("No real private instances were found");
+    CHPL_GPU_DEBUG("No real private instances were found\n");
     return;
   }
 

@@ -68,6 +68,7 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_GET_USER_FILE:
       case PRIM_BLOCK_LOCAL:
       case PRIM_GPU_SET_BLOCKSIZE:
+      case PRIM_GPU_SET_ITERS_PER_THREAD:
       case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
         return FAST_AND_LOCAL;
 

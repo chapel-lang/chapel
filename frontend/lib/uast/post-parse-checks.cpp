@@ -1622,6 +1622,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("assertOnGpu") ||
              node->name() == USTR("gpu.assertEligible") ||
              node->name() == USTR("gpu.blockSize") ||
+             node->name() == USTR("gpu.itersPerThread") ||
              node->name().startsWith(USTR("chpldoc.")) ||
              node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
@@ -1630,9 +1631,8 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
-  } else {
+  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS)) {
     // Check for other possible tool name given from command line
-    bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
     auto toolNames = chpl::parsing::AttributeToolNames(this->context_);
     for (auto toolName : toolNames) {
       auto nameDot = UniqueString::getConcat(this->context_, toolName.c_str(), ".");
@@ -1641,9 +1641,11 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
         return;
       }
     }
-    if (doWarn) {
-      auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
-      auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
+    auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    if (toolName == "gpu") {
+      warn(node, "Unknown gpu attribute '%s'", node->name().c_str());
+    } else {
       warn(node, "Unknown attribute tool name '%s'", toolName.c_str());
     }
   }
@@ -1656,18 +1658,14 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto node = parents_[parents_.size() - 2];
   if (attr->name() == USTR("assertOnGpu") ||
       attr->name() == USTR("gpu.blockSize") ||
+      attr->name() == USTR("gpu.itersPerThread") ||
       attr->name() == USTR("gpu.assertEligible")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
+    CHPL_REPORT(context_, InvalidGpuAttribute, node, attr);
 
-    if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.assertEligible")) {
-      CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
-    } else {
-      CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
-      CHPL_REPORT(context_, InvalidBlockSize, node, attr);
-    }
   } else if (attr->name() == USTR("functionStatic")) {
     if (!node->isVariable()) {
       error(node, "the '@functionStatic' attribute can only be applied to variables.");

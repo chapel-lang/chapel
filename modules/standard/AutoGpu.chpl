@@ -61,4 +61,19 @@ module AutoGpu {
   inline proc chpl__gpuBlockSizeAttr(param counter: int) {
     compilerError("'@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size");
   }
+
+  inline proc chpl__gpuItersPerThreadAttr(param counter: int, arg: integral) {
+    if CHPL_LOCALE_MODEL == "gpu" then
+      __primitive("gpu set itersPerThread", arg, counter);
+  }
+
+  pragma "last resort"
+  inline proc chpl__gpuItersPerThreadAttr(param counter: int, rest ...) {
+    compilerError("'@gpu.itersPerThread' attribute must have exactly one argument: an integral value for the number of iterations per GPU thread");
+  }
+
+  pragma "last resort"
+  inline proc chpl__gpuItersPerThreadAttr(param counter: int) {
+    compilerError("'@gpu.itersPerThread' attribute must have exactly one argument: an integral value for the number of iterations per GPU thread");
+  }
 }
