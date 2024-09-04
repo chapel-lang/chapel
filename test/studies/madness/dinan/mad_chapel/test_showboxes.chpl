@@ -1,3 +1,4 @@
+import Sort;
 use MRA;
 use MadAnalytics;
 
@@ -22,7 +23,7 @@ proc main() {
     
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
-        for (n, l) in F.s.indices.sorted() do
+        for (n, l) in Sort.sorted(F.s.indices) do
             if n == lvl then write(" [",n,", ",l,"]");
     }
     writeln();

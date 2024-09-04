@@ -13,8 +13,8 @@ for i in D {
   DomStringType += s;
 }
 
-writeln(DomIntType.sorted());
-writeln(DomUintType.sorted());
-writeln(DomRealType.sorted());
-writeln(DomStringType.sorted());
+writeln(Sort.sorted(DomIntType));
+writeln(Sort.sorted(DomUintType));
+writeln(Sort.sorted(DomRealType));
+writeln(Sort.sorted(DomStringType));
 

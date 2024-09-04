@@ -811,6 +811,11 @@ proc sort(ref x: [?Dom] , comparator:? = new DefaultComparator(), param stable:b
   where Dom.rank != 1 || !x.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
+@chpldoc.nodoc
+proc sort(ref x: domain,
+          comparator:? = new DefaultComparator(),
+          param stable:bool = false) do
+  compilerError("sort() is not supported on domains");
 
 /*
    Check if array `x` is in sorted order
@@ -868,9 +873,12 @@ proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc isSorted(x: [], comparator:? = new DefaultComparator())
-  where x.domain.rank != 1 {
-    compilerError("isSorted() requires 1-D array");
+  where x.rank != 1 || !x.isRectangular() {
+    compilerError("isSorted() is currently only supported for 1D rectangular arrays");
 }
+@chpldoc.nodoc
+proc isSorted(x: domain, comparator:? = new DefaultComparator()) do
+  compilerError("isSorted() is not supported on domains");
 
 /*
    Check if array `Data` is in sorted order
@@ -890,6 +898,8 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 
 @chpldoc.nodoc
 iter sorted(x : domain, comparator:? = new DefaultComparator()) {
+  if !x.isAssociative() then
+    compilerError("sorted() is currently only supported on associative domains");
   for i in x._value.dsiSorted(comparator) {
     yield i;
   }
@@ -909,8 +919,8 @@ iter sorted(x : domain, comparator:? = new DefaultComparator()) {
 //
 // TODO - Make standalone or leader/follower parallel iterator
 /*
-   Yield the elements of argument `x` in sorted order, using sort
-   algorithm.
+   Yield the elements of argument `x` in sorted order, using the same algorithm
+   as :proc:`sort`.
 
    .. note:
 
@@ -935,7 +945,10 @@ iter sorted(x, comparator:? = new DefaultComparator()) {
     }
   } else if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted") {
     compilerError(x._value.type:string + " does not support dsiSorted(comparator)");
-  } else {
+  } else if isArrayValue(x) && x.isSparse() {
+    compilerError("sorted() is not supported on sparse arrays");
+  }
+  else {
     var y = x; // need to do before isArrayValue test in case x is an iterable
     param iterable = isArrayValue(y) || isSubtype(y.type, List.list(?));
     if iterable {

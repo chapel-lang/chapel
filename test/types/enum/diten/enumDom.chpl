@@ -1,3 +1,4 @@
+import Sort;
 use LinkedLists;
 
 enum color { red, green, blue };
@@ -16,13 +17,13 @@ var b: [E] int = s;
 
 writeln("(a.domain, s)");
 
-for (i, j) in zip(a.domain.sorted(), s) {
+for (i, j) in zip(Sort.sorted(a.domain), s) {
   writeln(i, " ", j);
 }
 
 writeln("(s, a.domain)");
 
-for (j, i) in zip(s, a.domain.sorted()) {
+for (j, i) in zip(s, Sort.sorted(a.domain)) {
   writeln(i, " ", j);
 }
 

@@ -1,3 +1,4 @@
+import Sort;
 config param parSafe = true;
 config const n = 50000;
 
@@ -11,4 +12,4 @@ serial !parSafe {
     D1 -= max(int)-i;
 }
 
-writeln(D1.sorted());
+writeln(Sort.sorted(D1));
