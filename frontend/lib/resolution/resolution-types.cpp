@@ -744,12 +744,10 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 static bool
 syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
                                            const CompositeType* ct,
-                                           const SubstitutionsMap& subs,
                                            ID fieldId) {
   if (auto bct = ct->toBasicClassType()) {
     if (auto parentCt = bct->parentClassType()) {
-      if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, parentCt,
-                                                      subs, fieldId)) {
+      if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, parentCt, fieldId)) {
         return false;
       }
     }
@@ -793,9 +791,7 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
     return;
   }
 
-  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context,
-                                                  fieldsOfType,
-                                                  fieldsOfType->substitutions(),
+  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, fieldsOfType,
                                                   fields_[0].declId)) {
     return;
   }
