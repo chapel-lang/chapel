@@ -295,6 +295,11 @@ Resolver::createForFunction(Context* context,
       ret.resolveTupleUnpackDecl(td, qt);
   }
 
+  if (typedFnSignature->isMethod()) {
+    // allow computing the receiver scope from the typedSignature.
+    ret.allowReceiverScopes = true;
+  }
+
   return ret;
 }
 
@@ -636,10 +641,19 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
 }
 
 const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
+  if (!allowReceiverScopes) {
+    // can't use receiver scopes yet
+    // (e.g. we are computing the type of 'this' & otherwise that would recurse)
+    return nullptr;
+  }
+
   if (!receiverScopesComputed) {
+    receiverScopeHelper = nullptr;
     if (!scopeResolveOnly) {
-      receiverScopeTypedHelper = ReceiverScopeTypedHelper(typedSignature);
-      receiverScopeHelper = &receiverScopeTypedHelper;
+      if (typedSignature != nullptr && typedSignature->isMethod()) {
+        receiverScopeTypedHelper = ReceiverScopeTypedHelper(typedSignature);
+        receiverScopeHelper = &receiverScopeTypedHelper;
+      }
     } else {
       receiverScopeHelper = &receiverScopeSimpleHelper;
     }
@@ -3275,6 +3289,10 @@ void Resolver::exit(const NamedDecl* decl) {
   }
 
   resolveNamedDecl(decl, /* useType */ nullptr);
+
+  if (decl->isFormal() && decl->name() == USTR("this")) {
+    allowReceiverScopes = true;
+  }
 
   exitScope(decl);
 }

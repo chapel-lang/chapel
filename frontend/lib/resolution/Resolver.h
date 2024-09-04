@@ -98,6 +98,7 @@ struct Resolver {
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
 
+  bool allowReceiverScopes = false;
   bool receiverScopesComputed = false;
   ReceiverScopeSimpleHelper receiverScopeSimpleHelper;
   ReceiverScopeTypedHelper receiverScopeTypedHelper;
