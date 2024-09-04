@@ -2175,7 +2175,7 @@ module ChapelArray {
       eqVals = (a._value == b._value);
     }
     else if isProtoSlice(a) && isProtoSlice(b) {
-      eqVals = (a == b); // default record comparison should cover it
+      eqVals = (a == b);
     }
     else {
       compilerError("Internal error: cross-type assignments are not supported");
