@@ -1694,6 +1694,10 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
+  iter chpl__serialViewIter1D(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
