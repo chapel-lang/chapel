@@ -6,35 +6,27 @@ The following people have contributed to Chapel releases:
 Contributors to the Chapel 2.1 release
 --------------------------------------
 * Jade Abraham, [HPE]
-* [Dan Bonachea], [Lawrence Berkeley National Laboratory]
-* Gabriel Brown, individual contributor
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
 * Jeremiah Corrado, [HPE]
-* Mark Dewing, individual contributor
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
-* Luca Ferranti, individual contributor
-* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
-* Bonnie Hurwitz, [University of Arizona] / [HPE] contractor
+* Ian Henriksen, [Sandia National Laboratories]
 * Engin Kayraklioglu, [HPE]
 * [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Josh Milthorpe, [ORNL]
-* Fábio Malacco Moreira, individual contributor
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
-* [Nicole Vadot], individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -54,7 +46,9 @@ Contributors to previous releases
 * Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
+* [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * Kyle Brady, [Cray Inc.]
+* Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
@@ -72,6 +66,7 @@ Contributors to previous releases
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
 * Joel Denny, [ETI]
 * Garvit Dewan, individual contributor, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
+* Mark Dewing, individual contributor
 * Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Roxana Diaconescu, [CalTech]
 * Nelson Luís Dias, individual contributor
@@ -80,11 +75,13 @@ Contributors to previous releases
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Saliya Ekanayake, [Indiana University]
 * Omar Elawady, individual contributor
+* Luca Ferranti, individual contributor
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
+* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
@@ -92,6 +89,7 @@ Contributors to previous releases
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Samuel Howard, individual contributor
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
+* Bonnie Hurwitz, [University of Arizona] / [HPE] contractor
 * Serghei Iakovlev, individual contributor
 * Sai Rajendra Immadi, individual contributor
 * David Iten, [HPE]
@@ -126,9 +124,11 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
+* Josh Milthorpe, [ORNL]
 * Kyle Milz, individual contributor
 * Iain Moncrief, [HPE] intern from [Oregon State University]
 * Barry Moore, [University of Pittsburgh]
+* Fábio Malacco Moreira, individual contributor
 * Sarthak Munshi, individual contributor / [GSoC 2017] student from [Pune Institute of Computer Technology]
 * Ram Nad, individual contributor
 * Mohammed Nafees, [GSoC 2019] student from [University of Waterloo]
@@ -193,6 +193,7 @@ Contributors to previous releases
 * Max Tursi, [HPE]
 * Anubhav Ujjawal, individual contributor
 * Rob Upcraft, individual contributor
+* [Nicole Vadot], individual contributor
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Varsha Verma, individual contributor
 * Branch Vincent, individual contributor
