@@ -266,6 +266,12 @@ class QueryMapResultBase {
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
+  // Whether or not any errors were produced by this query or its dependencies.
+  // This is useful to short-circuit collecting errors (emitted or not)
+  // when they are being tracked and stored in a list.
+  //
+  // This is not too strongly connected to emittedErrors (which tracks whether
+  // errors --- if any --- were shown to the user for this query result only)
   mutable bool errorsPresentInSelfOrDependencies = false;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
