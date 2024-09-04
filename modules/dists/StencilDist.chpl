@@ -887,7 +887,7 @@ iter StencilImpl.activeTargetLocales(const space : range(?)) {
   compilerAssert(rank==1);
   const dims = targetLocsIdx(space.first)..targetLocsIdx(space.last);
 
-  // In case 'locSpace' is a strided domain we need to check that the locales
+  // In case 'space' is a strided domain we need to check that the locales
   // in 'dims' actually contain indices in 'locSpace'.
   //
   // Note that we cannot use a simple stride here because it is not guaranteed
