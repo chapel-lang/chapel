@@ -76,21 +76,25 @@ module ChapelArrayViewElision {
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
                                               b: chpl__protoSlice) param: bool {
-    if a.isRankChange != b.isRankChange then return false; //or assert?
+    // for now, only same array types on both sides are supported
+    if a.ptrToArr.type != b.ptrToArr.type then return false;
 
-    if !a.isRankChange then return true; // nothing else to check
+    // either both sides are rank-changes, or neither is
+    if a.isRankChange != b.isRankChange then return false;
 
-    // we want to check that if there are integrals in the original slicing
-    // expressions, they are at the same rank. In other words, if we are working
-    // with rank-changes, we want to make sure that the collapsed dims on both
-    // sides match
-    type aType = a.slicingExprType;
-    type bType = b.slicingExprType;
-    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
-    for param i in 0..<a.slicingExprType.size {
-      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
-           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
-        return false;
+    if a.isRankChange {
+      // we want to check that if there are integrals in the original slicing
+      // expressions, they are at the same rank. In other words, if we are
+      // working with rank-changes, we want to make sure that the collapsed dims
+      // on both sides match
+      type aType = a.slicingExprType;
+      type bType = b.slicingExprType;
+      compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
+      for param i in 0..<a.slicingExprType.size {
+        if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
+             (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
+          return false;
+        }
       }
     }
 
