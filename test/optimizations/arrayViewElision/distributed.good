@@ -1,16 +1,27 @@
-ArrayViewElision not supported distributed.chpl:11
+ArrayViewElision supported distributed.chpl:11
 	lhsBaseType: [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: 
+	rhsBaseType: [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64)
 	rhsIndexingExprs: 
+		range(int(64),both,one)
 
-ArrayViewElision not supported distributed.chpl:22
+ArrayViewElision supported distributed.chpl:22
 	lhsBaseType: [CyclicDom(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: 
+	rhsBaseType: [CyclicDom(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
+		range(int(64),both,one)
 
+ArrayViewElision supported distributed.chpl:33
+	lhsBaseType: [StencilDom(1,int(64),one,false)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+	rhsBaseType: [StencilDom(1,int(64),one,false)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+
+1 1 2 2 2 1 1 1 1 1
 1 1 2 2 2 1 1 1 1 1
 1 1 2 2 2 1 1 1 1 1
