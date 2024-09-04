@@ -950,7 +950,7 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
-    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
@@ -974,7 +974,7 @@ iter BlockImpl.activeTargetLocales(const space : range(?)) {
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   foreach i in dims {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
-    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
     if space[chunk[0]].sizeAs(int) > 0 then
       yield i;
   }
