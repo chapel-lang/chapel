@@ -196,8 +196,12 @@ module ChapelArrayViewElision {
       halt("protoSlice copy initializer should never be called");
     }
 
+    // 1D always returns a range
     inline proc domOrRange where rank==1 {
-      return ranges; // doesn't matter whether it is a domain or a range
+      if isDomain(ranges) then
+        return ranges.dim[0];
+      else
+        return ranges;
     }
 
     inline proc domOrRange where rank>1 {
