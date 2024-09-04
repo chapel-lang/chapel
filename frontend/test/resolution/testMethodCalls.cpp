@@ -663,6 +663,13 @@ static void test13() {
 static void test14() {
   // Test that the error from test13 is not spuriously emitted when inheritance
   // is in play.
+  //
+  // Original error in https://github.com/Cray/chapel-private/issues/6673,
+  // where 'myFoo.asdf' would complain about asdf being a generic field.
+  // It's not actually generic when the error is emitted; it's just that
+  // fields of parent class Bar aren't instantiated yet. A robust check
+  // (locked down by this issue) must ensure that all parent classes are
+  // fully instantiated before issuing the error.
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
