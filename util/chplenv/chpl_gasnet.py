@@ -4,15 +4,6 @@ from utils import error, warning, memoize
 import os
 
 @memoize
-def get_version():
-    version = overrides.get('CHPL_GASNET_VERSION')
-    if not version:
-        version = 'ex'
-    if version not in ("1", "ex"):
-        error("CHPL_GASNET_VERSION must be '1' or 'ex'")
-    return version
-
-@memoize
 def get_uniq_cfg_path():
     base_uniq_cfg = third_party_utils.default_uniq_cfg_path()
     if chpl_comm_debug.get() == 'debug':
