@@ -313,6 +313,33 @@ static const Type* ctFromSubs(Context* context,
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(context, basic, manager, dec);
+  } else if (auto dt = receiverType->toDomainType()) {
+    // Extract domain information from _instance substitution
+    // TODO: also support associative domains here; currently assumes rectangular
+    QualifiedType rank;
+    QualifiedType idxType;
+    QualifiedType stridable;
+
+    CHPL_ASSERT(subs.size() == 1);
+    if (auto instance = subs.begin()->second.type()) {
+      auto instanceCt = instance->toClassType();
+      CHPL_ASSERT(instanceCt);
+      auto instanceBct = instanceCt->basicClassType();
+      CHPL_ASSERT(instanceBct);
+
+      // Get BaseRectangularDom parent subs for rectangular domain info
+      auto baseRect = instanceBct->parentClassType();
+      CHPL_ASSERT(baseRect->name() == "BaseRectangularDom");
+
+      auto innerSubs = baseRect->sortedSubstitutions();
+      CHPL_ASSERT(innerSubs.size() == 3);
+
+      rank = innerSubs[0].second;
+      idxType = innerSubs[1].second;
+      stridable = innerSubs[2].second;
+    }
+
+    ret = DomainType::getRectangularType(context, rank, idxType, stridable);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
@@ -400,9 +427,12 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
   if (initialRecvType_->isClassType()) {
     return QualifiedType::CONST_IN;
-  } else {
-    CHPL_ASSERT(initialRecvType_->isRecordType());
+  } else if (initialRecvType_->isRecordType() ||
+             initialRecvType_->isDomainType()) {
     return QualifiedType::REF;
+  } else {
+    CHPL_ASSERT(false && "Not handled");
+    return QualifiedType::UNKNOWN;
   }
 }
 
