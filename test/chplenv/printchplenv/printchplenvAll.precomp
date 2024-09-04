@@ -7,6 +7,5 @@ $CHPL_HOME/util/printchplenv --all \
     | grep -v CHPL_HOST_MEM | grep -v CHPL_HOST_JEMALLOC \
     | grep -v CHPL_TARGET_JEMALLOC | grep -v CHPL_LLVM_SUPPORT \
     | grep -v CHPL_LLVM_CONFIG | grep -v CHPL_LLVM_VERSION \
-    | grep -v CHPL_GASNET_VERSION \
     | grep -v CHPL_SANITIZE | grep -o '^ *\S\+: \S\+' \
     | grep -v CHPL_AUX_FILESYS > printchplenvAll.good
