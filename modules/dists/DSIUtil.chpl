@@ -701,6 +701,17 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   return result;
 }
 
+// this is a 1D, range-based version of the above. It is used by AVE, which
+// tries to avoid creating domains for views.
+proc bulkCommConvertCoordinate(ind, bView:range(?), aView:range(?))
+{
+  if boundsChecking then
+    assert(bView.contains(ind));
+
+  const result = aView.orderToIndex(bView.indexOrder(ind));
+  return (result,);
+}
+
 record chpl_PrivatizedDistHelper : writeSerializable {
 //  type instanceType;
   var _pid:int;  // only used when privatized
