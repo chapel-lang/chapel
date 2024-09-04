@@ -1,18 +1,16 @@
-ArrayViewElision supported slices.chpl:24
+ArrayViewElision supported (dynamic locality check required) slices.chpl:24
 	lhsIndexingExprs: 
 		domain(2,int(64),one)
 	rhsIndexingExprs: 
 		domain(2,int(64),one)
 
-ArrayViewElision supported slices.chpl:24
+ArrayViewElision supported (dynamic locality check required) slices.chpl:24
 	lhsIndexingExprs: 
 		domain(2,int(64),one)
 	rhsIndexingExprs: 
 		domain(2,int(64),one)
 
 Set first two:
-<ShortArrayTransfer> Size: 4 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 1
 2 2 1 1 1
 2 2 1 1 1
@@ -20,8 +18,6 @@ Test 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 2
 2 2 1 1 1
 2 2 1 1 1
@@ -31,8 +27,6 @@ Test 2
 
 -----------------
 Set last two:
-<ShortArrayTransfer> Size: 4 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 3
 1 1 1 1 1
 1 1 1 1 1
@@ -40,8 +34,6 @@ Test 3
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 4
 1 1 1 1 1
 1 1 1 1 1
@@ -51,8 +43,6 @@ Test 4
 
 -----------------
 Set all:
-<ShortArrayTransfer> Size: 25 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 5
 2 2 2 2 2
 2 2 2 2 2
@@ -60,8 +50,6 @@ Test 5
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 60
-<ShortArrayTransfer> size qualifies
 Test 6
 2 2 2 2 2
 2 2 2 2 2
