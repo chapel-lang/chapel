@@ -616,6 +616,7 @@ using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 struct LookupHelper {
   Context* context = nullptr;
   const ResolvedVisibilityScope* resolving = nullptr;
+  const ReceiverScopeHelper* receiverScopeHelper = nullptr;
   CheckedScopes& checkedScopes;
   MatchingIdsWithName& result;
   bool& foundExternBlock;
@@ -628,6 +629,7 @@ struct LookupHelper {
 
   LookupHelper(Context* context,
                const ResolvedVisibilityScope* resolving,
+               const ReceiverScopeHelper* receiverScopeHelper,
                CheckedScopes& checkedScopes,
                MatchingIdsWithName& result,
                bool& foundExternBlock,
@@ -637,6 +639,7 @@ struct LookupHelper {
                std::vector<ResultVisibilityTrace>* traceShadowedResults,
                bool allowCached)
     : context(context), resolving(resolving),
+      receiverScopeHelper(receiverScopeHelper),
       checkedScopes(checkedScopes),
       result(result), foundExternBlock(foundExternBlock),
       traceCurPath(traceCurPath), traceResult(traceResult),
@@ -668,17 +671,15 @@ struct LookupHelper {
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
   bool doLookupInReceiverScopes(const Scope* scope,
-                                llvm::ArrayRef<const Scope*> receiverScopes,
+                                const MethodLookupHelper* receiverScopes,
                                 UniqueString name,
                                 LookupConfig config);
 
   bool doLookupInExternBlocks(const Scope* scope, UniqueString name);
 
   bool doLookupInScope(const Scope* scope,
-                       llvm::ArrayRef<const Scope*> receiverScopes,
                        UniqueString name,
                        LookupConfig config);
-
 };
 
 static const Scope* const& scopeForAutoModuleQuery(Context* context) {
@@ -836,7 +837,7 @@ bool LookupHelper::doLookupInImportsAndUses(
           traceCurPath->push_back(std::move(elt));
         }
 
-        bool foundHere = doLookupInScope(symScope, {}, nameToLookUp, newConfig);
+        bool foundHere = doLookupInScope(symScope, nameToLookUp, newConfig);
         found |= foundHere;
         // note if we found it from the contents in a bulk
         // operation like 'use M'
@@ -922,7 +923,7 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
       }
 
       // find it in that scope
-      found = doLookupInScope(autoModScope, {}, name, newConfig);
+      found = doLookupInScope(autoModScope, name, newConfig);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -995,10 +996,10 @@ bool LookupHelper::doLookupInToplevelModules(const Scope* scope,
 // if LOOKUP_PARENTS is included in 'config'.
 bool LookupHelper::doLookupInReceiverScopes(
                          const Scope* scope,
-                         llvm::ArrayRef<const Scope*> receiverScopes,
+                         const MethodLookupHelper* receiverScopes,
                          UniqueString name,
                          LookupConfig config) {
-  if (receiverScopes.empty()) {
+  if (receiverScopes == nullptr) {
     return false;
   }
 
@@ -1014,8 +1015,9 @@ bool LookupHelper::doLookupInReceiverScopes(
   // (but that's all that we should find in a record/class decl anyway...)
   newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
 
-  bool got = false;
-  for (auto rcvScope : receiverScopes) {
+  int startSize = result.numIds();
+
+  for (auto rcvScope : receiverScopes->receiverScopes()) {
     if (trace) {
       // push the receiver scope
       VisibilityTraceElt elt;
@@ -1023,7 +1025,7 @@ bool LookupHelper::doLookupInReceiverScopes(
       traceCurPath->push_back(std::move(elt));
     }
 
-    got |= doLookupInScope(rcvScope, {}, name, newConfig);
+    doLookupInScope(rcvScope, name, newConfig);
 
     // also check receiver parent scopes
     if (checkParents) {
@@ -1050,7 +1052,7 @@ bool LookupHelper::doLookupInReceiverScopes(
           traceCurPath->push_back(std::move(elt));
         }
 
-        got |= doLookupInScope(cur, {}, name, useConfig);
+        doLookupInScope(cur, name, useConfig);
 
         if (trace) {
           // pop the parent scope
@@ -1068,7 +1070,29 @@ bool LookupHelper::doLookupInReceiverScopes(
       traceCurPath->pop_back();
     }
   }
-  return got;
+
+  // Filter any matches found according to receiverScopes->isReceiverApplicable.
+  int endSize = result.numIds();
+  int cur = startSize;
+  for (int i = startSize; i < endSize; i++) {
+    IdAndFlags& idv = result.idAndFlags(i);
+    if (receiverScopes->isReceiverApplicable(context, idv.id())) {
+      // copy it to 'cur' unless it is already 'cur'
+      if (cur != i) {
+        result.idAndFlags(cur) = idv;
+      }
+      cur++;
+    }
+  }
+
+  // truncate 'result' down to 'cur' elements
+  result.truncate(cur);
+  if (trace) {
+    // and also for traceResult
+    traceResult->resize(cur);
+  }
+
+  return cur > startSize;
 }
 
 // returns IDs of all extern blocks directly contained within scope
@@ -1184,7 +1208,6 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
 // have one entry for each of the elements in result, saving the traceCurPath
 // that provided that element in result.
 bool LookupHelper::doLookupInScope(const Scope* scope,
-                                   llvm::ArrayRef<const Scope*> receiverScopes,
                                    UniqueString name,
                                    LookupConfig config) {
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
@@ -1216,7 +1239,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
   if (onlyMethodsFields) {
     curFilter |= IdAndFlags::METHOD_FIELD;
-  } else if (!includeMethods && receiverScopes.empty()) {
+  } else if (!includeMethods && receiverScopeHelper == nullptr) {
     curFilter |= IdAndFlags::NOT_METHOD;
   }
   // note: setting excludeFilter in some way other than the
@@ -1409,8 +1432,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // (so we imagine them to be just outside of the method scope).
   // If we are not at a method scope (but within a method), it
   // will be handled later.
-  if (scope->isMethodScope()) {
-    bool got = doLookupInReceiverScopes(scope, receiverScopes, name, config);
+  if (scope->isMethodScope() && receiverScopeHelper != nullptr) {
+    auto rcvScopes =
+      receiverScopeHelper->methodLookupForMethodId(context, scope->id());
+    bool got = doLookupInReceiverScopes(scope, rcvScopes, name, config);
     if (onlyInnermost && got) return true;
   }
 
@@ -1451,7 +1476,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
         // search without considering receiver scopes
         // (considered separately below)
-        bool got = doLookupInScope(cur, {}, name, newConfig);
+        bool got = doLookupInScope(cur, name, newConfig);
 
         if (trace) {
           traceCurPath->pop_back();
@@ -1462,7 +1487,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
         // and then search only considering receiver scopes
         // as if the receiver scope were just outside of this scope.
         if (cur->isMethodScope()) {
-          bool got = doLookupInReceiverScopes(scope, receiverScopes,
+          auto rcvScopes =
+            receiverScopeHelper->methodLookupForMethodId(context, cur->id());
+          bool got = doLookupInReceiverScopes(scope, rcvScopes,
                                               name, newConfig);
           if (onlyInnermost && got) return true;
         }
@@ -1477,7 +1504,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->push_back(std::move(elt));
       }
 
-      bool got = doLookupInScope(cur, {}, name, newConfig);
+      bool got = doLookupInScope(cur, name, newConfig);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -1527,7 +1554,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->push_back(std::move(elt));
       }
 
-      bool got = doLookupInScope(rootScope, {}, name, newConfig);
+      bool got = doLookupInScope(rootScope, name, newConfig);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -1591,8 +1618,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 static bool
 helpLookupInScope(Context* context,
                   const Scope* scope,
-                  llvm::ArrayRef<const Scope*> receiverScopes,
                   const ResolvedVisibilityScope* resolving,
+                  const MethodLookupHelper* methodLookupHelper,
+                  const ReceiverScopeHelper* receiverScopeHelper,
                   UniqueString name,
                   LookupConfig config,
                   CheckedScopes& checkedScopes,
@@ -1608,7 +1636,8 @@ helpLookupInScope(Context* context,
   bool foundExternBlock = false;
   CheckedScopes savedCheckedScopes;
 
-  auto helper = LookupHelper(context, resolving, checkedScopes, result,
+  auto helper = LookupHelper(context, resolving, receiverScopeHelper,
+                             checkedScopes, result,
                              foundExternBlock,
                              traceCurPath, traceResult,
                              shadowed, traceShadowed,
@@ -1623,13 +1652,14 @@ helpLookupInScope(Context* context,
 
   bool got = false;
 
-  got |= helper.doLookupInScope(scope, receiverScopes, name, config);
+  got |= helper.doLookupInScope(scope, name, config);
 
   // When resolving a Dot expression like myRecord.foo, we might not be inside
   // of a method at all, but we should still search the definition point
   // of the relevant record.
-  if (!receiverScopes.empty() && !(got && onlyInnermost)) {
-    got |= helper.doLookupInReceiverScopes(scope, receiverScopes, name, config);
+  if (methodLookupHelper != nullptr && !(got && onlyInnermost)) {
+    got |= helper.doLookupInReceiverScopes(scope, methodLookupHelper,
+                                           name, config);
   }
 
   // If we found any extern blocks, and there were no other symbols,
@@ -1637,7 +1667,7 @@ helpLookupInScope(Context* context,
   if (checkExternBlocks && !got && foundExternBlock) {
     config |= LOOKUP_EXTERN_BLOCKS;
     checkedScopes = savedCheckedScopes;
-    got = helper.doLookupInScope(scope, receiverScopes, name, config);
+    got = helper.doLookupInScope(scope, name, config);
   }
 
   // TODO: check for "last resort" symbols here, as well
@@ -1651,21 +1681,23 @@ helpLookupInScope(Context* context,
 // similar to helpLookupInScope but also emits a shadowing warning
 // in some cases.
 static bool helpLookupInScopeWithShadowingWarning(
-                                    Context* context,
-                                    const Scope* scope,
-                                    llvm::ArrayRef<const Scope*> receiverScopes,
-                                    const ResolvedVisibilityScope* resolving,
-                                    UniqueString name,
-                                    LookupConfig config,
-                                    CheckedScopes& checkedScopes,
-                                    MatchingIdsWithName& vec,
-                                    ID idForWarnings,
-                                    bool allowCached) {
+                            Context* context,
+                            const Scope* scope,
+                            const ResolvedVisibilityScope* resolving,
+                            const MethodLookupHelper* methodLookupHelper,
+                            const ReceiverScopeHelper* receiverScopeHelper,
+                            UniqueString name,
+                            LookupConfig config,
+                            CheckedScopes& checkedScopes,
+                            MatchingIdsWithName& vec,
+                            ID idForWarnings,
+                            bool allowCached) {
 
   CheckedScopes checkedScopesForRetry = checkedScopes;
   MatchingIdsWithName shadowed;
 
-  bool got = helpLookupInScope(context, scope, receiverScopes, resolving,
+  bool got = helpLookupInScope(context, scope, resolving,
+                               methodLookupHelper, receiverScopeHelper,
                                name, config, checkedScopes, vec,
                                allowCached,
                                /* traceCurPath */ nullptr,
@@ -1682,7 +1714,8 @@ static bool helpLookupInScopeWithShadowingWarning(
     std::vector<ResultVisibilityTrace> traceShadowed;
     std::vector<VisibilityTraceElt> traceCurPath;
 
-    helpLookupInScope(context, scope, receiverScopes, resolving,
+    helpLookupInScope(context, scope, resolving,
+                      methodLookupHelper, receiverScopeHelper,
                       name, config, checkedScopesForRetry, result,
                       allowCached,
                       &traceCurPath, &traceResult,
@@ -1753,8 +1786,10 @@ static bool lookupInScopeViz(Context* context,
     // modules.
 
     got = helpLookupInScopeWithShadowingWarning(
-                            context, scope, /* receiverScopes */ {},
-                            resolving, name, config,
+                            context, scope, resolving,
+                            /* methodLookupHelper */ nullptr,
+                            /* receiverScopeHelper */ nullptr,
+                            name, config,
                             checkedScopes, result,
                             idForWarnings,
                             /* allowCached */ false);
@@ -1778,8 +1813,10 @@ static bool lookupInScopeViz(Context* context,
     // check for submodules of the current module, even if we're an import
     config |= LOOKUP_DECLS;
 
-    helpLookupInScope(context, scope, /* receiverScopes */ {},
-                      resolving, name, config,
+    helpLookupInScope(context, scope, resolving,
+                      /* methodLookupHelper */ nullptr,
+                      /* receiverScopeHelper */ nullptr,
+                      name, config,
                       checkedScopes, improperMatches,
                       /* allowCached */ false);
   }
@@ -1790,15 +1827,17 @@ static bool lookupInScopeViz(Context* context,
 MatchingIdsWithName
 lookupNameInScope(Context* context,
                   const Scope* scope,
-                  llvm::ArrayRef<const Scope*> receiverScopes,
+                  const MethodLookupHelper* methodLookupHelper,
+                  const ReceiverScopeHelper* receiverScopeHelper,
                   UniqueString name,
                   LookupConfig config) {
   CheckedScopes visited;
   MatchingIdsWithName vec;
 
   if (scope) {
-    helpLookupInScope(context, scope, receiverScopes,
+    helpLookupInScope(context, scope,
                       /* resolving scope */ nullptr,
+                      methodLookupHelper, receiverScopeHelper,
                       name, config, visited, vec,
                       /* allowCached */ true);
   }
@@ -1809,7 +1848,8 @@ lookupNameInScope(Context* context,
 MatchingIdsWithName
 lookupNameInScopeWithWarnings(Context* context,
                               const Scope* scope,
-                              llvm::ArrayRef<const Scope*> receiverScopes,
+                              const MethodLookupHelper* methodLookupHelper,
+                              const ReceiverScopeHelper* receiverScopeHelper,
                               UniqueString name,
                               LookupConfig config,
                               ID idForWarnings) {
@@ -1817,8 +1857,10 @@ lookupNameInScopeWithWarnings(Context* context,
   MatchingIdsWithName vec;
 
   if (scope) {
-    helpLookupInScopeWithShadowingWarning(context, scope, receiverScopes,
+    helpLookupInScopeWithShadowingWarning(context, scope,
                                           /* resolving scope */ nullptr,
+                                          methodLookupHelper,
+                                          receiverScopeHelper,
                                           name, config, visited, vec,
                                           idForWarnings,
                                           /* allowCached */ true);
@@ -1830,7 +1872,8 @@ lookupNameInScopeWithWarnings(Context* context,
 MatchingIdsWithName
 lookupNameInScopeTracing(Context* context,
                          const Scope* scope,
-                         llvm::ArrayRef<const Scope*> receiverScopes,
+                         const MethodLookupHelper* methodLookupHelper,
+                         const ReceiverScopeHelper* receiverScopeHelper,
                          UniqueString name,
                          LookupConfig config,
                          std::vector<ResultVisibilityTrace>& traceResult) {
@@ -1838,8 +1881,9 @@ lookupNameInScopeTracing(Context* context,
   std::vector<VisibilityTraceElt> traceCurPath;
   MatchingIdsWithName vec;
   if (scope) {
-    helpLookupInScope(context, scope, receiverScopes,
+    helpLookupInScope(context, scope,
                       /* resolving scope */ nullptr,
+                      methodLookupHelper, receiverScopeHelper,
                       name, config, visited, vec,
                       /* allowCached */ true,
                       &traceCurPath,
@@ -1855,15 +1899,17 @@ lookupNameInScopeTracing(Context* context,
 MatchingIdsWithName
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
-                         llvm::ArrayRef<const Scope*> receiverScopes,
+                         const MethodLookupHelper* methodLookupHelper,
+                         const ReceiverScopeHelper* receiverScopeHelper,
                          UniqueString name,
                          LookupConfig config,
                          CheckedScopes& visited) {
   MatchingIdsWithName vec;
 
   if (scope) {
-    helpLookupInScope(context, scope, receiverScopes,
+    helpLookupInScope(context, scope,
                       /* resolving scope */ nullptr,
+                      methodLookupHelper, receiverScopeHelper,
                       name, config, visited, vec,
                       /* allowCached */ true);
   }
@@ -2116,7 +2162,10 @@ static void checkNameInScopeViz(Context* context,
                         LOOKUP_METHODS |
                         LOOKUP_SKIP_PRIVATE_VIS;
 
-  bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+  bool got = helpLookupInScope(context, scope, resolving,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
+                               name, config,
                                checkedScopes, result, allowCached);
 
   // gather any modules named in the use/import clause
@@ -2142,7 +2191,10 @@ static void checkNameInScopeViz(Context* context,
     // https://github.com/chapel-lang/chapel/issues/22761
 
     config &= ~LOOKUP_SKIP_PRIVATE_VIS;
-    bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+    bool got = helpLookupInScope(context, scope, resolving,
+                                 /* methodLookupHelper */ nullptr,
+                                 /* receiverScopeHelper */ nullptr,
+                                 name, config,
                                  checkedScopes, result, allowCached);
 
     found = got && result.numIds() > 0;
@@ -2975,8 +3027,8 @@ const PoiScope* pointOfInstantiationScope(Context* context,
 }
 
 const InnermostMatch& findInnermostDecl(Context* context,
-                                     const Scope* scope,
-                                     UniqueString name)
+                                        const Scope* scope,
+                                        UniqueString name)
 {
   QUERY_BEGIN(findInnermostDecl, context, scope, name);
 
@@ -2988,7 +3040,12 @@ const InnermostMatch& findInnermostDecl(Context* context,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  MatchingIdsWithName r = lookupNameInScope(context, scope, {}, name, config);
+  auto helper = ReceiverScopeSimpleHelper();
+
+  MatchingIdsWithName r = lookupNameInScope(context, scope,
+                                            /* methodLookupHelper */ nullptr,
+                                            /* receiverScopeHelper */ &helper,
+                                            name, config);
 
   if (r.numIds() > 0) {
     if (r.numIds() > 1)
@@ -3083,7 +3140,9 @@ GatherMentionedModules::lookupAndGather(const Scope* scope,
                               LOOKUP_PARENTS |
                               LOOKUP_INNERMOST;
 
-  auto v = lookupNameInScope(context, scope, /* receiver scopes */ {},
+  auto v = lookupNameInScope(context, scope,
+                             /* methodLookupHelper */ nullptr,
+                             /* receiverScopeHelper */ nullptr,
                              name, config);
 
   bool foundModule = false;
@@ -3542,7 +3601,10 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
                         LOOKUP_SKIP_SHADOW_SCOPES;
   for (auto name : namesDefinedMultiply) {
     MatchingIdsWithName v =
-      lookupNameInScope(context, scope, { }, name, config);
+      lookupNameInScope(context, scope,
+                        /* methodLookupHelper */ nullptr,
+                        /* receiverScopeHelper */ nullptr,
+                        name, config);
     int nParenfulMethods = 0;
     int nParenfulNonMethodFunctions = 0;
     int nParenlessMethods = 0;
@@ -3582,7 +3644,10 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
     if (error) {
       // emit a multiply-defined symbol error
       std::vector<ResultVisibilityTrace> traceResult;
-      v = lookupNameInScopeTracing(context, scope, { }, name, config,
+      v = lookupNameInScopeTracing(context, scope,
+                                   /* methodLookupHelper */ nullptr,
+                                   /* receiverScopeHelper */ nullptr,
+                                   name, config,
                                    traceResult);
 
       CHPL_REPORT(context, Redefinition, scope->id(), name, v, traceResult);
@@ -3623,8 +3688,9 @@ static void collectAllPublicContents(Context* context, const Scope* scope,
     MatchingIdsWithName lookupResult;
 
     helpLookupInScope(context, scope,
-                      /* receiverScopes */ { },
                       /* resolving */ r,
+                      /* methodLookupHelper */ nullptr,
+                      /* receiverScopeHelper */ nullptr,
                       name, config,
                       lookupCheckedScopes, lookupResult,
                       /* allowCached */ true);

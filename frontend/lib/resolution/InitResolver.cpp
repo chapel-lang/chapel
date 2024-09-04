@@ -833,8 +833,7 @@ ID InitResolver::solveNameConflictByIgnoringField(const MatchingIdsWithName& vec
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   auto parenlessInfo = Resolver::ParenlessOverloadInfo();
-  auto scope = initResolver_.methodReceiverScopes();
-  auto ids = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
+  auto ids = initResolver_.lookupIdentifier(node, parenlessInfo);
 
   // Handle and exit early if there were no ambiguities.
   if (ids.numIds() == 1) {

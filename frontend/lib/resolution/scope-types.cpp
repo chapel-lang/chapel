@@ -547,17 +547,10 @@ void ModulePublicSymbols::stringify(std::ostream& ss,
   ss << "}\n";
 }
 
-/*
-const MethodLookupHelper*
-ReceiverScopeHelper::methodLookupForId(const ID& methodId) {
-  auto it = cache.find(methodId);
-  if (it == cache.end()) {
-    auto got = cache.emplace_hint(it, methodId, computeMethodLookup(methodId));
-    return got->second.get();
-  }
+MethodLookupHelper::~MethodLookupHelper() { }
 
-  return it->second.get();
-}*/
+ReceiverScopeHelper::~ReceiverScopeHelper() { }
+
 
 IMPLEMENT_DUMP(IdAndFlags);
 IMPLEMENT_DUMP(OwnedIdsWithName);

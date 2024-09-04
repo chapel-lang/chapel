@@ -585,6 +585,19 @@ typedSignatureInitial(Context* context,
   return ret;
 }
 
+static const TypedFnSignature* const&
+typedSignatureInitialForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(typedSignatureInitialForIdQuery, context, id);
+
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
+  const TypedFnSignature* result = typedSignatureInitial(context, uSig);
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature* typedSignatureInitialForId(Context* context, ID id) {
+  return typedSignatureInitialForIdQuery(context, std::move(id));
+}
 
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
@@ -2738,8 +2751,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   // If there were outer variables, then do not bother trying to resolve.
   if (computeOuterVariables(context, id)) return nullptr;
 
-  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
-  const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
+  const TypedFnSignature* sig = typedSignatureInitialForId(context, id);
 
   if (sig == nullptr || sig->needsInstantiation()) {
     return nullptr;
@@ -2788,9 +2800,9 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
       // Recompute the method receiver after the 'this' formal is
       // scope-resolved, when we might be able to gather some information
       // about the type on which the method is declared.
-      if (fn->isMethod() && child == fn->thisFormal()) {
-        visitor.methodReceiverScopes(/*recompute=*/true);
-      }
+      //if (fn->isMethod() && child == fn->thisFormal()) {
+      //  visitor.methodReceiverScopes(/*recompute=*/true);
+      //}
     }
 
     checkForParenlessMethodFieldRedefinition(context, fn, visitor);
@@ -3080,9 +3092,9 @@ doIsCandidateApplicableInitial(Context* context,
     }
   }
 
-  auto ufs = UntypedFnSignature::get(context, candidateId);
+  auto ret = typedSignatureInitialForId(context, candidateId);
+  auto ufs = ret->untyped();
   auto faMap = FormalActualMap(ufs, ci);
-  auto ret = typedSignatureInitial(context, ufs);
 
   if (!ret) {
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
@@ -3938,23 +3950,15 @@ lookupCalledExpr(Context* context,
                  const CallInfo& ci,
                  CheckedScopes& visited) {
 
-  Resolver::ReceiverScopesVec receiverScopes;
+  const MethodLookupHelper* lookupHelper = nullptr;
 
   // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
     // TODO: should types of all arguments be considered for an op call?
     CHPL_ASSERT(ci.numActuals() >= 1);
-    auto& qtReceiver = ci.actual(0).type();
-    if (auto t = qtReceiver.type()) {
-      if (auto compType = t->getCompositeType()) {
-        receiverScopes =
-          Resolver::gatherReceiverAndParentScopesForType(context, compType);
-      } else if (auto cptr = t->toCPtrType()) {
-        receiverScopes.push_back(scopeForId(context, cptr->id(context)));
-      } else if (const ExternType* et = t->toExternType()) {
-        receiverScopes.push_back(scopeForId(context, et->id()));
-      }
-    }
+    QualifiedType receiverType = ci.actual(0).type();
+    ReceiverScopeTypedHelper typedHelper;
+    lookupHelper = typedHelper.methodLookupForType(context, receiverType);
   }
 
   LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
@@ -3974,8 +3978,10 @@ lookupCalledExpr(Context* context,
 
   UniqueString name = ci.name();
 
-  auto ret = lookupNameInScopeWithSet(context, scope, receiverScopes, name,
-                                      config, visited);
+  auto ret = lookupNameInScopeWithSet(context, scope,
+                                      lookupHelper,
+                                      /* receiverScopeHelper */ nullptr,
+                                      name, config, visited);
 
   return ret;
 }

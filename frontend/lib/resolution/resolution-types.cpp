@@ -36,6 +36,8 @@
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
 
+#include "Resolver.h"
+
 #include <iomanip>
 
 namespace chpl {
@@ -1239,6 +1241,315 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
 }
 
 
+/**
+  Find method receiver aggregate decl ID (for use when scope resolving).
+  This function does not support certain patterns; it should be viewed
+  as an approximation that should be replaced by full resolution.
+  */
+static const ID& methodReceiverTypeIdForMethodId(Context* context,
+                                                 ID methodId) {
+  QUERY_BEGIN(methodReceiverTypeIdForMethodId, context, methodId);
+
+  ID result;
+
+  if (auto ast = parsing::idToAst(context, methodId)) {
+    if (auto fn = ast->toFunction()) {
+      if (fn->isMethod()) {
+        if (fn->isPrimaryMethod()) {
+          // Find the containing aggregate ID
+          result = parsing::idToParentId(context, methodId);
+        } else {
+          // Resolve the method receiver to an ID
+          ResolutionResultByPostorderID r;
+          owned<OuterVariables> outerVars =
+            toOwned(new OuterVariables(context, methodId));
+          auto visitor =
+            Resolver::createForScopeResolvingFunction(context, fn, r,
+                                                      std::move(outerVars));
+
+          const AstNode* typeExpr = nullptr;
+          if (auto thisFormal = fn->thisFormal()) {
+            typeExpr = thisFormal->typeExpression();
+          }
+
+          if (typeExpr) {
+            fn->thisFormal()->traverse(visitor);
+            ResolvedExpression& re = r.byAst(typeExpr);
+            result = re.toId();
+          }
+
+          // result might not have been set but that is OK;
+          // we want to ignore errors here while just scope resolving.
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+/**
+  Find scopes for superclasses of a class.  The passed ID should refer to a
+  Class declaration node.  If not, this function will return an empty vector.
+
+  This function is temporary and should only be used in scopeResolveOnly mode.
+  */
+static const std::vector<const Scope*>&
+gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
+  QUERY_BEGIN(gatherParentClassScopesForScopeResolving, context, classDeclId);
+
+  std::vector<const Scope*> result;
+
+  bool encounteredError = false;
+  auto ast = parsing::idToAst(context, classDeclId);
+  if (!ast) return QUERY_END(result);
+
+  auto c = ast->toClass();
+  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
+
+  const uast::AstNode* lastParentClass = nullptr;
+  ID parentClassDeclId;
+  for (auto inheritExpr : c->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClassScopeResolve(context, c, r);
+    // Parsing excludes non-identifiers as parent class expressions.
+    //
+    // Intended to avoid calling methodReceiverScopes() recursively.
+    // Uses the empty 'savecReceiverScopes' because the class expression
+    // can't be a method anyways.
+    bool ignoredMarkedGeneric = false;
+    auto inherit = Class::getUnwrappedInheritExpr(inheritExpr,
+                                                ignoredMarkedGeneric);
+    inherit->traverse(visitor);
+
+
+    ResolvedExpression& re = r.byAst(inherit);
+    if (re.toId().isEmpty()) {
+      context->error(inheritExpr, "invalid parent class expression");
+      encounteredError = true;
+      break;
+    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface)
+    {
+      // this is an interface; ignore it for the purposes of parent scopes.
+    } else {
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+        encounteredError = true;
+        break;
+      }
+      lastParentClass = inheritExpr;
+
+      result.push_back(scopeForId(context, re.toId()));
+      parentClassDeclId = re.toId();
+      // keep going through the list of parent expressions. hitting
+      // another parent expression that's a class after this point
+      // will result in an error. When we're done with other parent
+      // expressions, the loop will continue to searching for the
+      // parent classes of this parent class.
+    }
+  }
+
+  if (!encounteredError && !parentClassDeclId.isEmpty()) {
+    const auto& parentScopes =
+      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
+    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
+  }
+
+  return QUERY_END(result);
+}
+
+/* Gather scopes for a given receiver decl and all its parents
+   (without using Types; for use when scope resolving) */
+static SimpleMethodLookupHelper::ReceiverScopesVec
+gatherReceiverAndParentScopesForDeclId(Context* context, ID aggregateDeclId) {
+  SimpleMethodLookupHelper::ReceiverScopesVec scopes;
+
+  if (aggregateDeclId.isEmpty()) {
+    return scopes;
+  }
+
+  // use temporary code to scope resolve the parent class Identifiers
+  scopes.push_back(scopeForId(context, aggregateDeclId));
+  // if it's a class type, also gather the parent class scopes
+  auto tag = parsing::idToTag(context, aggregateDeclId);
+  if (asttags::isClass(tag)) {
+    const std::vector<const Scope*>& v =
+      gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
+
+    scopes.append(v.begin(), v.end());
+  }
+
+  return scopes;
+}
+
+static const SimpleMethodLookupHelper&
+simpleMethodLookupQuery(Context* context, ID methodId) {
+  QUERY_BEGIN(simpleMethodLookupQuery, context, methodId);
+
+  // compute the receiver type's ID using simplified scope resolution rules
+  const ID& typeId = methodReceiverTypeIdForMethodId(context, methodId);
+  if (typeId.isEmpty()) {
+    auto result = SimpleMethodLookupHelper();
+    return QUERY_END(result);
+  }
+  auto vec = gatherReceiverAndParentScopesForDeclId(context, typeId);
+  auto result = SimpleMethodLookupHelper(typeId, std::move(vec));
+
+  return QUERY_END(result);
+}
+
+/* Gather scopes for a given receiver type and all its parents */
+static TypedMethodLookupHelper::ReceiverScopesVec
+gatherReceiverAndParentScopesForType(Context* context,
+                                     const types::Type* thisType) {
+  TypedMethodLookupHelper::ReceiverScopesVec scopes;
+
+  if (thisType != nullptr) {
+    if (const CompositeType* ct = thisType->getCompositeType()) {
+      // add the scope declaring the type
+      scopes.push_back(scopeForId(context, ct->id()));
+
+      if (auto bct = ct->toBasicClassType()) {
+        // also add scopes for all superclass types
+        auto cur = bct->parentClassType();
+        while (cur != nullptr) {
+          scopes.push_back(scopeForId(context, cur->id()));
+          cur = cur->parentClassType();
+        }
+      }
+    } else if (auto cptr = thisType->toCPtrType()) {
+      scopes.push_back(scopeForId(context, cptr->id(context)));
+    } else if (const ExternType* et = thisType->toExternType()) {
+      scopes.push_back(scopeForId(context, et->id()));
+    }
+  }
+
+  return scopes;
+}
+
+static const TypedMethodLookupHelper&
+typedMethodLookupQuery(Context* context, QualifiedType receiverType) {
+  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType);
+
+  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type());
+  auto result = TypedMethodLookupHelper(receiverType, std::move(vec));
+
+  return QUERY_END(result);
+}
+
+
+llvm::ArrayRef<const Scope*>
+SimpleMethodLookupHelper::receiverScopes() const {
+  return scopes_;
+}
+
+bool SimpleMethodLookupHelper::isReceiverApplicable(Context* context,
+                                                    const ID& methodId) const {
+  const ID& methodReceiverId =
+    methodReceiverTypeIdForMethodId(context, methodId);
+  if (methodReceiverId.isEmpty() || receiverTypeId_.isEmpty()) {
+    return false; // empty IDs here mean something wasn't handled
+  }
+
+  return methodReceiverId == receiverTypeId_;
+}
+
+void SimpleMethodLookupHelper::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  ss << "SimpleMethodLookupHelper ";
+  receiverTypeId_.stringify(ss, stringKind);
+  ss << " [";
+  for (auto p : scopes_) {
+    ss << " ";
+    p->stringify(ss, stringKind);
+  }
+  ss << "]";
+}
+
+const MethodLookupHelper*
+ReceiverScopeSimpleHelper::methodLookupForMethodId(Context* context,
+                                                   const ID& methodId) const {
+  const SimpleMethodLookupHelper& got =
+    simpleMethodLookupQuery(context, methodId);
+  if (!got.isEmpty())
+    return &got;
+
+  return nullptr;
+}
+
+llvm::ArrayRef<const Scope*>
+TypedMethodLookupHelper::receiverScopes() const {
+  return scopes_;
+}
+
+bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
+                                                   const ID& methodId) const {
+  const TypedFnSignature* tfs = typedSignatureInitialForId(context, methodId);
+
+  if (tfs && tfs->isMethod()) {
+    QualifiedType methodRcvType = tfs->formalType(0);
+    auto p = canPass(context,
+                     /* actual */ receiverType_, /* formal */ methodRcvType);
+    return p.passes();
+  }
+
+  return false;
+}
+
+void TypedMethodLookupHelper::stringify(std::ostream& ss,
+                                        chpl::StringifyKind stringKind) const {
+  ss << "TypedMethodLookupHelper ";
+  receiverType_.stringify(ss, stringKind);
+  ss << " [";
+  for (auto p : scopes_) {
+    ss << " ";
+    p->stringify(ss, stringKind);
+  }
+  ss << "]";
+}
+
+
+const MethodLookupHelper*
+ReceiverScopeTypedHelper::methodLookupForType(Context* context,
+                                              QualifiedType type) const {
+  const Type* typePtr = type.type();
+  if (typePtr != nullptr && typePtr->getCompositeType()) {
+    // normalize the kind of the type: always use one of VAR PARAM TYPE
+    QualifiedType::Kind kind = type.kind();
+    if (kind != QualifiedType::PARAM && kind != QualifiedType::TYPE) {
+      kind = QualifiedType::VAR;
+    }
+    const TypedMethodLookupHelper& got =
+      typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+
+    if (!got.isEmpty())
+      return &got;
+  }
+
+  return nullptr;
+}
+
+const MethodLookupHelper*
+ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
+                                                  const ID& methodId) const {
+  const TypedFnSignature* tfs = nullptr;
+
+  if (currentlyResolvingTfs_->id() == methodId) {
+    tfs = currentlyResolvingTfs_;
+  } else {
+    tfs = typedSignatureInitialForId(context, methodId);
+  }
+
+  if (tfs && tfs->isMethod()) {
+    QualifiedType rcvType = tfs->formalType(0);
+    return methodLookupForType(context, rcvType);
+  }
+
+  return nullptr;
+}
+
+
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);
 IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
@@ -1249,6 +1560,8 @@ IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);
 IMPLEMENT_DUMP(CallResolutionResult);
+IMPLEMENT_DUMP(SimpleMethodLookupHelper);
+IMPLEMENT_DUMP(TypedMethodLookupHelper);
 
 } // end namespace resolution
 } // end namespace chpl

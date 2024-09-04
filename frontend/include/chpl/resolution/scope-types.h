@@ -474,6 +474,11 @@ class MatchingIdsWithName {
     CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
     return idvs_[i];
   }
+  /** Return a mutable reference to the i'th IdAndFlags in the list */
+  IdAndFlags& idAndFlags(int i) {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i];
+  }
 
   /** Returns 'true' if the list contains only IDs that represent
       methods or fields. */
@@ -1352,11 +1357,15 @@ class ModulePublicSymbols {
          at the right time with a MethodScopesLookupHelper.
     */
 class MethodLookupHelper {
+ public:
+  virtual ~MethodLookupHelper();
+
   /** Returns a reference to the receiver scopes */
-  virtual llvm::ArrayRef<const Scope*> reciverScopes();
+  virtual llvm::ArrayRef<const Scope*> receiverScopes() const = 0;
   /** Returns 'true' if the ID passed refers to a method
       with a receiver that is applicable */
-  virtual bool isReceiverApplicable(Context* context, const ID& methodId);
+  virtual bool isReceiverApplicable(Context* context,
+                                    const ID& methodId) const = 0;
 };
 
 /** This type helps lookupNameInScope and related functions.
@@ -1369,6 +1378,9 @@ class MethodLookupHelper {
     to handle the method receiver scopes.
  */
 class ReceiverScopeHelper {
+ public:
+  virtual ~ReceiverScopeHelper();
+
   /* Returns a MethodLookupHelper to support the method lookup
      that should be done when processing the scope for an enclosing method.
      The MethodLookupHelper will include the
@@ -1377,7 +1389,8 @@ class ReceiverScopeHelper {
      The returned value needs to live at least as long as the lookup
      process. It is the responsibility for the subclass implementation
      here to free it eventually. */
-  virtual const MethodLookupHelper* methodLookupForId(const ID& methodId);
+  virtual const MethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const = 0;
 };
 
 

@@ -705,7 +705,8 @@ isDefinedInBlock(Context* context, const Scope* scope,
                  const TypedFnSignature* fn) {
   LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
   auto ids = lookupNameInScope(context, scope,
-                               /* receiver scopes */ {},
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                fn->untyped()->name(), onlyDecls);
   for (const auto& id : ids) {
     if (id == fn->id()) return true;
@@ -728,7 +729,8 @@ isDefinedInUseImport(Context* context, const Scope* scope,
   }
 
   auto ids = lookupNameInScope(context, scope,
-                               /* receiver scopes */ {},
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                fn->untyped()->name(), importAndUse);
   for (const auto& id : ids) {
     if (id == fn->id()) return true;

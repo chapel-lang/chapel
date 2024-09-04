@@ -61,13 +61,13 @@ namespace resolution {
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
-    'methodLookupHelper' should be nullptr unless working on resolving
-    a Dot expression for a method/field access. It should be used for
-    something like 'foo.bar()' and in such a case, when looking up 'bar',
-    it should reflect the scopes for 'foo'.
+    'methodLookupHelper' should be nullptr unless working on resolving a method
+    call/field access. It should be used for something like 'foo.bar()' and in
+    such a case, when looking up 'bar', it should reflect the scopes for 'foo'.
 
     'receiverScopeHelper' should be provided any time it's possible for
-    the scope lookup process to encounter an enclosing method. Within a method,
+    the scope lookup process to encounter an enclosing method when resolving
+    something that might use the implicit 'this'. In particular, in a method,
     something like 'baz' might refer to a field or a method. So, the
     'receiverScopeHelper' assists in such cases by calculating a
     MethodLookupHelper for the receiver.
@@ -91,7 +91,6 @@ namespace resolution {
   MatchingIdsWithName
   lookupNameInScopeWithWarnings(Context* context,
                                 const Scope* scope,
-                                llvm::ArrayRef<const Scope*> receiverScopes,
                                 const MethodLookupHelper* methodLookupHelper,
                                 const ReceiverScopeHelper* receiverScopeHelper,
                                 UniqueString name,

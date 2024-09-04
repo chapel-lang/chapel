@@ -577,248 +577,6 @@ static bool isOuterVariable(Resolver* rv, ID target) {
   return false;
 }
 
-/**
-  Find method receiver aggregate decl ID (for use when scope resolving).
-  This function does not support certain patterns; it should be viewed
-  as an approximation that should be replaced by full resolution.
-  */
-static ID& methodReceiverIdForMethodId(Context* context, ID methodId) {
-  QUERY_BEGIN(methodReceiverIdForMethodId, context, methodId);
-
-  ID result;
-
-  if (auto ast = parsing::idToAst(context, methodId)) {
-    if (auto fn = ast->toFunction()) {
-      if (fn->isMethod()) {
-        if (fn->isPrimaryMethod()) {
-          // Find the containing aggregate ID
-          result = parsing::idToParentId(context, methodId);
-        } else {
-          // Resolve the method receiver to an ID
-          ResolutionResultByPostorderID r;
-          owned<OuterVariables> outerVars =
-            toOwned(new OuterVariables(context, methodId));
-          auto visitor =
-            Resolver::createForScopeResolvingFunction(context, fn, r,
-                                                      std::move(outerVars));
-
-          const AstNode* typeExpr = nullptr;
-          if (auto thisFormal = fn->thisFormal()) {
-            typeExpr = thisFormal->typeExpression();
-          }
-
-          if (typeExpr) {
-            fn->thisFormal->traverse(visitor);
-            ResolvedExpression& re = r.byAst(typeExpr);
-            result = re.toId();
-          }
-
-          // result might not have been set but that is OK;
-          // we want to ignore errors here while just scope resolving.
-        }
-      }
-    }
-  }
-
-  return QUERY_END(result);
-}
-
-/**
-  Find scopes for superclasses of a class.  The passed ID should refer to a
-  Class declaration node.  If not, this function will return an empty vector.
-
-  This function is temporary and should only be used in scopeResolveOnly mode.
-  */
-static const std::vector<const Scope*>&
-gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
-  QUERY_BEGIN(gatherParentClassScopesForScopeResolving, context, classDeclId);
-
-  std::vector<const Scope*> result;
-
-  bool encounteredError = false;
-  auto ast = parsing::idToAst(context, classDeclId);
-  if (!ast) return QUERY_END(result);
-
-  auto c = ast->toClass();
-  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
-
-  const uast::AstNode* lastParentClass = nullptr;
-  ID parentClassDeclId;
-  for (auto inheritExpr : c->inheritExprs()) {
-    // Resolve the parent class type expression
-    ResolutionResultByPostorderID r;
-    auto visitor =
-      Resolver::createForParentClassScopeResolve(context, c, r);
-    // Parsing excludes non-identifiers as parent class expressions.
-    //
-    // Intended to avoid calling methodReceiverScopes() recursively.
-    // Uses the empty 'savecReceiverScopes' because the class expression
-    // can't be a method anyways.
-    bool ignoredMarkedGeneric = false;
-    auto inherit = Class::getUnwrappedInheritExpr(inheritExpr,
-                                                ignoredMarkedGeneric);
-    inherit->traverse(visitor);
-
-
-    ResolvedExpression& re = r.byAst(inherit);
-    if (re.toId().isEmpty()) {
-      context->error(inheritExpr, "invalid parent class expression");
-      encounteredError = true;
-      break;
-    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
-      // this is an interface; ignore it for the purposes of parent scopes.
-    } else {
-      if (lastParentClass) {
-        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-        encounteredError = true;
-        break;
-      }
-      lastParentClass = inheritExpr;
-
-      result.push_back(scopeForId(context, re.toId()));
-      parentClassDeclId = re.toId();
-      // keep going through the list of parent expressions. hitting
-      // another parent expression that's a class after this point
-      // will result in an error. When we're done with other parent
-      // expressions, the loop will continue to searching for the
-      // parent classes of this parent class.
-    }
-  }
-
-  if (!encounteredError && !parentClassDeclId.isEmpty()) {
-    const auto& parentScopes =
-      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
-    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
-  }
-
-  return QUERY_END(result);
-}
-
-
-
-Resolver::ReceiverScopesVec
-Resolver::gatherReceiverAndParentScopesForDeclId(Context* context,
-                                                 ID aggregateDeclId) {
-  ReceiverScopesVec scopes;
-
-  if (aggregateDeclId.isEmpty()) {
-    return scopes;
-  }
-
-  // use temporary code to scope resolve the parent class Identifiers
-  scopes.push_back(scopeForId(context, aggregateDeclId));
-  // if it's a class type, also gather the parent class scopes
-  auto tag = parsing::idToTag(context, aggregateDeclId);
-  if (asttags::isClass(tag)) {
-
-    const std::vector<const Scope*>& v =
-      gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
-
-    scopes.append(v.begin(), v.end());
-  }
-
-  return scopes;
-}
-
-static Resolver::ReceiverScopesVec
-Resolver::gatherReceiverAndParentScopesForType(Context* context,
-                                               const types::Type* thisType) {
-  ReceiverScopesVec scopes;
-
-  if (thisType != nullptr) {
-    if (const CompositeType* ct = thisType->getCompositeType()) {
-      // add the scope declaring the type
-      scopes.push_back(scopeForId(context, ct->id()));
-
-      if (auto bct = ct->toBasicClassType()) {
-        // also add scopes for all superclass types
-        auto cur = bct->parentClassType();
-        while (cur != nullptr) {
-          scopes.push_back(scopeForId(context, cur->id()));
-          cur = cur->parentClassType();
-        }
-      }
-    }
-  }
-
-  return scopes;
-}
-
-bool
-Resolver::SimpleMethodLookupHelper::isReceiverApplicable(Context* context, const ID& methodId) override {
-  const ID& methodReceiverId = methodReceiverIdForMethodId(context, methodId);
-  if (methodReceiverId.isEmpty() || receiverTypeId.isEmpty()) {
-    return false; // empty IDs here mean something wasn't handled
-  }
-
-  return methodReceiverId == receiverTypeId;
-}
-
-const MethodLookupHelper*
-ReceiverScopeSimpleHelper::methodLookupForId(const ID& methodId) {
-  // compute the receiver type's ID using simplified scope resolution rules
-  const ID& typeId = methodReceiverIdForMethodId(methodId);
-  if (typeId.isEmpty()) {
-    return nullptr;
-  }
-  auto it = byTypeId.find(typeId);
-  if (it == cache.end()) {
-    auto vec = gatherReceiverAndParentScopesForDeclId(typeId);
-    auto ret = toOwned(new SimpleMethodLookupHelper(std::move(vec));
-    auto got = cache.emplace_hint(it, methodId, std::move(ret));
-    return got->second.get();
-  }
-  return it->second.get();
-}
-
-bool
-Resolver::TypedMethodLookupHelper::isReceiverApplicable(Context* context, const ID& methodId) override {
-  const TypedFnSignature* tfs = nullptr;
-  if (curTfs && curTfs->id() == methodId) {
-    tfs = curTfs;
-  } else {
-    tfs = typedSignatureInitial(context,
-                                UniquedFnSignature::get(context, methodId));
-  }
-
-  if (tf->isMethod()) {
-    QualifiedType methodFormalType = tfs->formalType(0);
-  }
-
-  return canPass(context, receiverType, methodFormalType);
-}
-
-const MethodLookupHelper*
-ReceiverScopeTypedHelper::methodLookupForId(const ID& methodId) {
-  // compute the receiver type for the method ID using full resolution
-  const TypedFnSignature* tfs = nullptr;
-  if (resolver.typedSignature && resolver.typedSignature->id() == methodId) {
-    tfs = resolver.typedSignature; // the method we were working on
-  } else {
-    tfs = typedSignatureInitial(context,
-                                UniquedFnSignature::get(context, methodId));
-  }
-
-  const Type* receiverTypePtr = nullptr;
-  if (tfs && tfs->isMethod()) {
-    receiverTypePtr = tfs->formalType(0).type();
-  }
-
-  if (receiverTypePtr == nullptr) {
-    return nullptr;
-  }
-
-  auto it = byType.find(methodId);
-  if (it == byType.end()) {
-    auto vec = gatherReceiverAndParentScopesForType(context, receiverTypePtr);
-    auto ret = toOwned(new TypedMethodLookupHelper(std::move(vec)));
-    auto got = cache.emplace_hint(it, methodId, std::move(ret));
-    return got->second.get();
-  }
-  return it->second.get();
-}
-
-
 bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
   if (!scopeResolveOnly &&
       typedSignature &&
@@ -861,7 +619,7 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
       }
       return true;
     } else if (auto agg = symbol->toAggregateDecl()) {
-      // Lacking any more specific information, use the parent aggregate ID
+      // Lacking any more specific information, use the containing aggregate ID
       // if available.
       //
       // TODO: when enabled for 'scopeResolveOnly' we must start issuing
@@ -877,32 +635,19 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
   return false;
 }
 
-Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
-  if (recompute) {
-    receiverScopesComputed = false;
-  }
-
-  if (receiverScopesComputed) return savedReceiverScopes;
-
-  QualifiedType receiverType;
-  ID receiverId;
-
-  if (getMethodReceiver(&receiverType, &receiverId)) {
-    if (receiverType.type()) {
-      // use type information to compute the scopes
-      savedReceiverScopes =
-        gatherReceiverAndParentScopesForType(context, receiverType.type());
+const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
+  if (!receiverScopesComputed) {
+    if (!scopeResolveOnly) {
+      receiverScopeTypedHelper = ReceiverScopeTypedHelper(typedSignature);
+      receiverScopeHelper = &receiverScopeTypedHelper;
     } else {
-      // TODO: gatherReceiverAndParentScopesForDeclId is intended
-      // to support scopeResolveOnly but this code is executed in other
-      // cases. Does it need to be?
-      savedReceiverScopes =
-        gatherReceiverAndParentScopesForDeclId(context, receiverId);
+      receiverScopeHelper = &receiverScopeSimpleHelper;
     }
+
+    receiverScopesComputed = true;
   }
 
-  receiverScopesComputed = true;
-  return savedReceiverScopes;
+  return receiverScopeHelper;
 }
 
 QualifiedType Resolver::methodReceiverType() {
@@ -921,7 +666,20 @@ QualifiedType Resolver::methodReceiverType() {
 
 bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType) {
   if (ident->name() == USTR("super")) {
-    return getMethodReceiver(outType);
+    // compute the type of 'super' for the method being resolved
+    QualifiedType rcvType;
+    if (getMethodReceiver(&rcvType) && rcvType.type()) {
+      CHPL_ASSERT(!rcvType.type()->isBasicClassType()); // or adjust below
+      if (auto ct = rcvType.type()->toClassType()) {
+        auto parentBct = ct->basicClassType()->parentClassType();
+        // compute it with the same management
+        const ClassType* parentCt =
+          ClassType::get(context, parentBct, ct->manager(), ct->decorator());
+        // compute it with the same Qualifier kind
+        *outType = QualifiedType(rcvType.kind(), parentCt);
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -2871,17 +2629,18 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
 
 void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                                            const Scope* scope,
-                                           llvm::ArrayRef<const Scope*> receiverScopes,
                                            LookupConfig prevConfig) {
+
   auto pair = namesWithErrorsEmitted.insert(ident->name());
   if (pair.second) {
     // insertion took place so emit the error
     bool printFirstMention = identHasMoreMentions(ident);
 
+    const ReceiverScopeHelper* helper = getMethodReceiverScopeHelper();
     std::vector<ResultVisibilityTrace> traceResult;
     auto vec = lookupNameInScopeTracing(context, scope,
                                         /* methodLookupHelper */ nullptr,
-                                        /* receiverScopeHelper */ TODO,
+                                        /* receiverScopeHelper */ helper,
                                         ident->name(), prevConfig,
                                         traceResult);
 
@@ -2892,8 +2651,8 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
 }
 
 MatchingIdsWithName Resolver::lookupIdentifier(
-    const Identifier* ident, llvm::ArrayRef<const Scope*> receiverScopes,
-    ParenlessOverloadInfo& outParenlessOverloadInfo) {
+      const Identifier* ident,
+      ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
@@ -2910,9 +2669,11 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
+  const ReceiverScopeHelper* helper = getMethodReceiverScopeHelper();
+
   auto m = lookupNameInScopeWithWarnings(context, scope,
                                          /* methodLookupHelper */ nullptr,
-                                         /* receiverScopeHelper */ TODO,
+                                         /* receiverScopeHelper */ helper,
                                          ident->name(), config, ident->id());
 
   if (!m.isEmpty()) {
@@ -3076,8 +2837,7 @@ QualifiedType Resolver::getSuperType(Context* context,
 }
 
 void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
-                                       const Identifier* ident,
-                                       llvm::ArrayRef<const Scope*> receiverScopes) {
+                                       const Identifier* ident) {
 
   ResolvedExpression& r = byPostorder.byAst(ident);
   // resolve a parenless call
@@ -3124,7 +2884,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
       if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-      issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
+      issueAmbiguityErrorIfNeeded(ident, inScope, config);
       auto& rr = byPostorder.byAst(ident);
       rr.setType(QualifiedType(QualifiedType::UNKNOWN,
                                ErroneousType::get(context)));
@@ -3147,8 +2907,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
   }
 }
 
-void Resolver::resolveIdentifier(const Identifier* ident,
-                                 llvm::ArrayRef<const Scope*> receiverScopes) {
+void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
@@ -3161,7 +2920,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
   // lookupIdentifier reports any errors that are needed
   auto parenlessInfo = ParenlessOverloadInfo();
-  auto ids = lookupIdentifier(ident, receiverScopes, parenlessInfo);
+  auto ids = lookupIdentifier(ident, parenlessInfo);
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
   // TODO: these errors should be enabled for scope resolution
@@ -3176,7 +2935,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     // This might be fine, if their 'where' clauses leave only one.
     //
     // Call resolution will issue an error if the overload selection fails.
-    tryResolveParenlessCall(parenlessInfo, ident, receiverScopes);
+    tryResolveParenlessCall(parenlessInfo, ident);
   } else if (ids.numIds() == 0) {
     if (emitLookupErrors) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());
@@ -3213,7 +2972,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
         bool resolvingCalledIdent = nearestCalledExpression() == ident;
         LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
         if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
-        issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
+        issueAmbiguityErrorIfNeeded(ident, inScope, config);
       } else {
         // Save result if successful
         if (handleResolvedCallWithoutError(result, ident, ci, c) &&
@@ -3335,7 +3094,7 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
-    resolveIdentifier(ident, methodReceiverScopes());
+    resolveIdentifier(ident);
     return false;
   }
 }
@@ -4869,11 +4628,11 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  auto receiverScopes = resolver.methodReceiverScopes();
+  const ReceiverScopeHelper* helper = resolver.getMethodReceiverScopeHelper();
 
   auto ids = lookupNameInScope(resolver.context, scope,
                                /* methodLookupHelper */ nullptr,
-                               /* receiverScopeHelper */ TODO,
+                               /* receiverScopeHelper */ helper,
                                intent->name(), config);
 
   if (ids.numIds() == 1) {

@@ -2632,6 +2632,141 @@ struct CopyableAssignableInfo {
   }
 };
 
+/* SimpleMethodLookupHelper helps lookupInScope to find matches
+   due to the method receiver during scope resolution.
+   This version is temporary and long-term, TypedMethodLookupHelper
+   should be used instead. */
+class SimpleMethodLookupHelper final : public MethodLookupHelper {
+ public:
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+ private:
+  ID receiverTypeId_;
+  ReceiverScopesVec scopes_;
+ public:
+  SimpleMethodLookupHelper() { }
+
+  SimpleMethodLookupHelper(ID receiverTypeId,
+                           ReceiverScopesVec scopes)
+    : receiverTypeId_(receiverTypeId), scopes_(scopes) {
+  }
+
+  bool isEmpty() const {
+    return receiverTypeId_.isEmpty();
+  }
+  llvm::ArrayRef<const Scope*> receiverScopes() const override;
+  bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+
+  bool operator==(const SimpleMethodLookupHelper &other) const {
+    return receiverTypeId_ == other.receiverTypeId_ &&
+           scopes_ == other.scopes_;
+  }
+  bool operator!=(const SimpleMethodLookupHelper& other) const {
+    return !(*this == other);
+  }
+
+  void swap(SimpleMethodLookupHelper& other) {
+    receiverTypeId_.swap(other.receiverTypeId_);
+    scopes_.swap(other.scopes_);
+  }
+
+  static bool update(SimpleMethodLookupHelper& keep,
+                     SimpleMethodLookupHelper& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void mark(Context* context) const {
+    receiverTypeId_.mark(context);
+    for (auto p : scopes_) {
+      context->markPointer(p);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+};
+
+class ReceiverScopeSimpleHelper final : public ReceiverScopeHelper {
+ public:
+  ReceiverScopeSimpleHelper() { }
+  const MethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const override;
+};
+
+class TypedMethodLookupHelper final : public MethodLookupHelper {
+ public:
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+ private:
+  types::QualifiedType receiverType_;
+  ReceiverScopesVec scopes_;
+ public:
+  TypedMethodLookupHelper() { }
+
+  TypedMethodLookupHelper(types::QualifiedType receiverType,
+                          ReceiverScopesVec scopes)
+    : receiverType_(std::move(receiverType)),
+      scopes_(std::move(scopes)) {
+  }
+
+  bool isEmpty() const {
+    return receiverType_.type() == nullptr;
+  }
+
+  llvm::ArrayRef<const Scope*> receiverScopes() const override;
+  bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+
+  bool operator==(const TypedMethodLookupHelper &other) const {
+    return receiverType_ == other.receiverType_ &&
+           scopes_ == other.scopes_;
+  }
+  bool operator!=(const TypedMethodLookupHelper& other) const {
+    return !(*this == other);
+  }
+
+  void swap(TypedMethodLookupHelper& other) {
+    receiverType_.swap(other.receiverType_);
+    scopes_.swap(other.scopes_);
+  }
+
+  static bool update(TypedMethodLookupHelper& keep,
+                     TypedMethodLookupHelper& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void mark(Context* context) const {
+    receiverType_.mark(context);
+    for (auto p : scopes_) {
+      context->markPointer(p);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+};
+
+struct ReceiverScopeTypedHelper final : public ReceiverScopeHelper {
+ private:
+  const TypedFnSignature* currentlyResolvingTfs_ = nullptr;
+ public:
+  ReceiverScopeTypedHelper() { }
+
+  ReceiverScopeTypedHelper(const TypedFnSignature* currentlyResolvingTfs)
+    : currentlyResolvingTfs_(currentlyResolvingTfs) {
+  }
+
+  const MethodLookupHelper*
+  methodLookupForType(Context* context, types::QualifiedType type) const;
+
+  const MethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const override;
+};
+
+
 } // end namespace resolution
 
 
