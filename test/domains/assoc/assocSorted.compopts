@@ -1,1 +1,1 @@
--sassocParSafeDefault -snoParSafeWarning -snoSortedWarnings
+-sassocParSafeDefault=false -snoParSafeWarning -snoSortedWarnings
