@@ -2357,7 +2357,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         std::vector<CallInfoActual> actuals;
         // Set up receiver
         auto receiverType =
-            QualifiedType(QualifiedType::VAR, rCalledExp.type().type());
+            QualifiedType(QualifiedType::INIT_RECEIVER, rCalledExp.type().type());
         auto receiverArg = CallInfoActual(receiverType, USTR("this"));
         actuals.push_back(std::move(receiverArg));
         // Set up distribution arg
