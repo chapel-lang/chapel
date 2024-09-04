@@ -659,9 +659,9 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
   param strides = chpl_strideUnion(targetView, srcSlice);
 
   const dense = densify(srcSlice.dim(0), srcView);
-  const rngs  = unDensify(dense, targetView);
+  const rng  = unDensify(dense, targetView);
 
-  return {rngs};
+  return {rng};
 }
 //
 // bulkCommConvertCoordinate() converts
