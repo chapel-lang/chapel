@@ -660,6 +660,40 @@ static void test13() {
   guard.realizeErrors();
 }
 
+static void test14() {
+  // Test that the error from test13 is not spuriously emitted when inheritance
+  // is in play.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      enum strideKind { one }
+
+      record Wrapper {
+        param strides: strideKind = strideKind.one;
+      }
+
+      class Bar {
+        param strides: strideKind;
+      }
+
+      class Foo: Bar(?) {
+        var asdf : Wrapper(strides);
+
+        proc init(param strides) {
+          super.init(strides);
+        }
+      }
+
+      var myFoo = new unmanaged Foo(strideKind.one);
+      var myFooAsdf = myFoo.asdf;
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf" });
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -674,6 +708,7 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
 
   return 0;
 }
