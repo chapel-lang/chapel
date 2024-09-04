@@ -1762,10 +1762,10 @@ struct Converter {
   LLVMMetadataList extractLlvmAttributesAndRejectOthers(const uast::Loop* node) {
     auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
     if (loopAttributes.assertOnGpuAttr != nullptr) {
-      CHPL_REPORT(context, InvalidGpuAssertion, node,
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
                   loopAttributes.assertOnGpuAttr);
     } else if (loopAttributes.assertEligibleAttr != nullptr) {
-      CHPL_REPORT(context, InvalidGpuAssertion, node,
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
                   loopAttributes.assertEligibleAttr);
     }
     return std::move(loopAttributes.llvmMetadata);
@@ -4385,7 +4385,10 @@ bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
   return inserted;
 }
 
-bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+static bool convertAttributeCall(Converter& converter,
+                                 BlockStmt* body,
+                                 const uast::Attribute* blockSizeAttr,
+                                 const char* supportFn) {
   // In cases like compound promotion (A + 1 + 1), we might end up inserting
   // the GPU blockSize attribute several times, even though there's only
   // one place in the code where the attribute was created. To work around this,
@@ -4395,7 +4398,7 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   static int counter = 0;
 
   if (blockSizeAttr) {
-    auto newCall = new CallExpr("chpl__gpuBlockSizeAttr", new_IntSymbol(counter++));
+    auto newCall = new CallExpr(supportFn, new_IntSymbol(++counter));
     for (auto actual : blockSizeAttr->actuals()) {
       newCall->insertAtTail(converter.convertAST(actual));
     }
@@ -4405,18 +4408,14 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   return false;
 }
 
-bool LoopAttributeInfo::insertItersPerThreadCall(Converter& converter, BlockStmt* body) {
-  static int counter = 0;   // see comment in insertBlockSizeCall()
+bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                              blockSizeAttr, "chpl__gpuBlockSizeAttr");
+}
 
-  if (itersPerThreadAttr) {
-    auto newCall = new CallExpr("chpl__gpuItersPerThreadAttr", new_IntSymbol(counter++));
-    for (auto actual : itersPerThreadAttr->actuals()) {
-      newCall->insertAtTail(converter.convertAST(actual));
-    }
-    body->insertAtTail(newCall);
-    return true;
-  }
-  return false;
+bool LoopAttributeInfo::insertItersPerThreadCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                           itersPerThreadAttr, "chpl__gpuItersPerThreadAttr");
 }
 
 BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {

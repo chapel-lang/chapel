@@ -1630,62 +1630,60 @@ void GpuKernel::generatePostBody() {
   fn_->insertAtTail(this->postBody_);
 }
 
+// Returns the GPU primives block within 'body', or null if none.
+// Note: this searches inside nested loops - needed for multi-dim arrays, ex:
+//   var A: [1..n,1..n] int;
+//   @gpu.blockSize foreach A {}
+// Otherwise we could simply traverse the alist body->body.
+static BlockStmt* getGpuPrimitivesBlock(CForLoop* body) {
+  std::vector<BlockStmt*> blocksInBody;
+  collectBlockStmts(body, blocksInBody);
+  for (auto block : blocksInBody)
+    if (block->isGpuPrimitivesBlock())
+      return block;
+  return nullptr;
+}
+
+// Returns true if 'recordedAttr' already has information.
+// If so and this information is not a duplicate of 'call', report an error.
+static bool isAttrCloneOrError(CallExpr* recordedAttr, CallExpr* call) {
+  if (recordedAttr == nullptr) return false;
+
+  // Check if the two attribute calls are clones of each other by comparing
+  // their unique identifier actuals. Calls created for blockSize and other
+  // attributes get unique number as a second actual, and for clones,
+  // that number should match.
+  // See convert-uast.cpp / convertAttributeCall().
+  if (recordedAttr->numActuals() == 2 && call->numActuals() == 2) {
+    auto sym1 = toSymExpr(recordedAttr->get(2))->symbol();
+    auto sym2 = toSymExpr(call->get(2))->symbol();
+    if (sym1 == sym2) return true;
+  }
+  USR_FATAL_CONT(call, "can apply this attribute only once per loop");
+  USR_PRINT(recordedAttr, "the attribute is previously applied here");
+  return true;
+}
+
 // Detect attributes if any, store them in 'this', remove them from the tree.
 void GpuKernel::processGpuPrimitivesBlock() {
-  BlockStmt* block = nullptr; // this will be the primitives block
-
-  // find the primitives block
-  // Note: this searches inside nested loops, needed for multi-dim arrays
-  // ex:  var A: [1..n,1..n] int; @gpu.blockSize foreach A {}
-  std::vector<BlockStmt*> blocksInBody;
-  collectBlockStmts(gpuLoop.loop(), blocksInBody);
-  for (auto block2 : blocksInBody) {
-    if (block2->isGpuPrimitivesBlock()) {
-      block = block2;
-      break;
-    }
-  }
-
-  if (block == nullptr) return; // did not find it
+  BlockStmt* origPrimBlock = getGpuPrimitivesBlock(gpuLoop.loop());
+  if (origPrimBlock == nullptr) return; // no attributes in this loop
 
   // to make sure that DefExprs are also properly copied
-  // (in most cases we can move 'block' instead of creating a copy)
-  BlockStmt* newGpuPrimBlock = block->copy();
+  // (in most cases we can move 'origPrimBlock' instead of creating a copy)
+  BlockStmt* newGpuPrimBlock = origPrimBlock->copy();
   launchBlock_->insertAtTail(newGpuPrimBlock);
   for_alist(expr, newGpuPrimBlock->body) {
     // process any important primitives before we remove them from this new
     // block
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-        if (blockSizeCall_ != nullptr) {
-          // Check if the blockSize calls are clones of each other by comparing
-          // their unique identifier actuals. blockSize calls created for
-          // attributes get unique number as a second actual, and for clones,
-          // that number should match.
-          if (blockSizeCall_->numActuals() == 2 &&
-              call->numActuals() == 2) {
-            auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
-            auto sym2 = toSymExpr(call->get(2))->symbol();
-            if (sym1 == sym2) continue;
-          }
-          USR_FATAL(call, "Can only set GPU block size once per GPU-eligible loop.");
-        }
-
+        if (isAttrCloneOrError(blockSizeCall_, call)) continue;
         blockSizeCall_ = call;
         blockSize_ = toSymExpr(call->get(1))->symbol();
       }
       else if (call->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD)) {
-        if (itersPerThreadCall_ != nullptr) {
-          // See the comment above for PRIM_GPU_SET_BLOCKSIZE
-          if (itersPerThreadCall_->numActuals() == 2 &&
-              call->numActuals() == 2) {
-            auto sym1 = toSymExpr(itersPerThreadCall_->get(2))->symbol();
-            auto sym2 = toSymExpr(call->get(2))->symbol();
-            if (sym1 == sym2) continue;
-          }
-          USR_FATAL(call, "can set GPU itersPerThread only once per GPU-eligible loop");
-        }
-
+        if (isAttrCloneOrError(itersPerThreadCall_, call)) continue;
         itersPerThreadCall_ = call;
         itersPerThread_ = toSymExpr(call->get(1))->symbol();
       }
