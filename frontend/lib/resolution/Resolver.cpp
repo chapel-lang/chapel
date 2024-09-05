@@ -415,6 +415,7 @@ Resolver::createForInitialFieldStmt(Context* context,
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
+  ret.allowReceiverScopes = true;
   return ret;
 }
 
@@ -434,6 +435,7 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
+  ret.allowReceiverScopes = true;
   return ret;
 }
 
@@ -655,34 +657,70 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
 
   if (!receiverScopesComputed) {
     receiverScopeHelper = nullptr;
-    if (!scopeResolveOnly) {
-      if (typedSignature != nullptr) {
-        if (typedSignature->isMethod()) {
-          // if we have a method typedFnSignature, use that
-          receiverScopeTypedHelper =
-            ReceiverScopeTypedHelper(typedSignature->id(),
-                                     typedSignature->formalType(0));
-          receiverScopeHelper = &receiverScopeTypedHelper;
-        }
-      } else if (auto fn = symbol->toFunction()) {
-        if (fn->isMethod()) {
+
+    auto fn = symbol->toFunction();
+    if (fn && fn->isMethod()) {
+      if (!scopeResolveOnly) {
+        if (typedSignature != nullptr) {
+          if (typedSignature->isMethod()) {
+            // if we have a method typedFnSignature, use that
+            receiverScopeTypedHelper =
+              ReceiverScopeTypedHelper(typedSignature->id(),
+                                       typedSignature->formalType(0));
+            receiverScopeHelper = &receiverScopeTypedHelper;
+          }
+        } else {
           // use the result from byPostorder
           auto receiverType = byPostorder.byAst(fn->thisFormal()).type();
           receiverScopeTypedHelper =
             ReceiverScopeTypedHelper(fn->id(), std::move(receiverType));
           receiverScopeHelper = &receiverScopeTypedHelper;
         }
-      }
 
-    } else {
-      // scope resolve only
-      receiverScopeHelper = &receiverScopeSimpleHelper;
+      } else {
+        // scope resolve only
+        receiverScopeHelper = &receiverScopeSimpleHelper;
+      }
     }
 
     receiverScopesComputed = true;
   }
 
   return receiverScopeHelper;
+}
+
+const MethodLookupHelper* Resolver::getFieldDeclarationLookupHelper() {
+  if (!allowReceiverScopes) {
+    // can't use receiver scopes yet
+    // (e.g. we are computing the parent class types)
+    return nullptr;
+  }
+
+  if (!methodHelperComputed) {
+    methodLookupHelper = nullptr;
+
+    if (symbol->isTypeDecl()) {
+      // the case of being in a method will be handled
+      // by getMethodReceiverScopeHelper.
+
+      if (!scopeResolveOnly) {
+        if (inCompositeType) {
+          // create a helper for the containing class/record type
+          // to help with field/method access in field & forwarding declarations
+          auto qt = methodReceiverType();
+          auto helper = ReceiverScopeTypedHelper();
+          methodLookupHelper = helper.methodLookupForType(context, qt);
+        }
+      } else {
+        auto helper = ReceiverScopeSimpleHelper();
+        ID typeId = symbol->id();
+        methodLookupHelper = helper.methodLookupForTypeId(context, typeId);
+      }
+      methodHelperComputed = true;
+    }
+  }
+
+  return methodLookupHelper;
 }
 
 QualifiedType Resolver::methodReceiverType() {
@@ -2667,11 +2705,12 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
     // insertion took place so emit the error
     bool printFirstMention = identHasMoreMentions(ident);
 
-    const ReceiverScopeHelper* helper = getMethodReceiverScopeHelper();
+    auto fHelper = getFieldDeclarationLookupHelper();
+    auto helper = getMethodReceiverScopeHelper();
     std::vector<ResultVisibilityTrace> traceResult;
     auto vec = lookupNameInScopeTracing(
                         context, scope,
-                        /* methodLookupHelper */ forwardingLookupHelper,
+                        /* methodLookupHelper */ fHelper,
                         /* receiverScopeHelper */ helper,
                         ident->name(), prevConfig,
                         traceResult);
@@ -2701,11 +2740,12 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  const ReceiverScopeHelper* helper = getMethodReceiverScopeHelper();
+  auto fHelper = getFieldDeclarationLookupHelper();
+  auto helper = getMethodReceiverScopeHelper();
 
   auto m = lookupNameInScopeWithWarnings(
                      context, scope,
-                     /* methodLookupHelper */ forwardingLookupHelper,
+                     /* methodLookupHelper */ fHelper,
                      /* receiverScopeHelper */ helper,
                      ident->name(), config, ident->id());
 
@@ -3434,36 +3474,6 @@ bool Resolver::enter(const TupleDecl* decl) {
 void Resolver::exit(const TupleDecl* decl) {
   resolveTupleDecl(decl, /* useType */ nullptr);
   exitScope(decl);
-}
-
-bool Resolver::enter(const uast::ForwardingDecl* decl) {
-  if (decl->expr() && decl->expr()->toVariable()) {
-    // no need for special handling for 'forwarding var'
-    return true;
-  }
-
-  // when resolving the forwarding expression, we need
-  // to consider methods/fields in-scope.
-  CHPL_ASSERT(forwardingLookupHelper == nullptr);
-  if (!scopeResolveOnly) {
-    if (inCompositeType) {
-      // compute the receiver type for the implied method call
-      auto qt = methodReceiverType();
-      auto helper = ReceiverScopeTypedHelper();
-      forwardingLookupHelper = helper.methodLookupForType(context, qt);
-    }
-  } else {
-    auto helper = ReceiverScopeSimpleHelper();
-    if (symbol->isTypeDecl()) {
-      ID typeId = symbol->id();
-      forwardingLookupHelper = helper.methodLookupForTypeId(context, typeId);
-    }
-  }
-  return true;
-}
-
-void Resolver::exit(const uast::ForwardingDecl* decl) {
-  forwardingLookupHelper = nullptr;
 }
 
 bool Resolver::enter(const Range* range) {
@@ -4697,11 +4707,11 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  const ReceiverScopeHelper* helper = resolver.getMethodReceiverScopeHelper();
-  auto methodHelper = resolver.forwardingLookupHelper;
+  auto fHelper = resolver.getFieldDeclarationLookupHelper();
+  auto helper = resolver.getMethodReceiverScopeHelper();
 
   auto ids = lookupNameInScope(resolver.context, scope,
-                               /* methodLookupHelper */ methodHelper,
+                               /* methodLookupHelper */ fHelper,
                                /* receiverScopeHelper */ helper,
                                intent->name(), config);
 

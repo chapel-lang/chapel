@@ -100,12 +100,11 @@ struct Resolver {
 
   bool allowReceiverScopes = false;
   bool receiverScopesComputed = false;
+  bool methodHelperComputed = false;
   ReceiverScopeSimpleHelper receiverScopeSimpleHelper;
   ReceiverScopeTypedHelper receiverScopeTypedHelper;
   const ReceiverScopeHelper* receiverScopeHelper = nullptr;
-
-  // these are used for handling receiver scopes during forwarding expressions
-  const MethodLookupHelper* forwardingLookupHelper = nullptr;
+  const MethodLookupHelper* methodLookupHelper = nullptr;
 
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
@@ -295,6 +294,10 @@ struct Resolver {
   /* Return a helper that can compute the additional scopes
      that need to be consulted for resolving symbols within a method. */
   const ReceiverScopeHelper* getMethodReceiverScopeHelper();
+
+  /* Return a helper that represents the additional scopes to searched
+     when resolving symbols at a field declaration level. */
+  const MethodLookupHelper* getFieldDeclarationLookupHelper();
 
   /* Given an identifier, check if this identifier could refer to a superclass,
      as opposed to a variable of the name 'super'. If it can, sets
@@ -584,9 +587,6 @@ struct Resolver {
 
   bool enter(const uast::TupleDecl* decl);
   void exit(const uast::TupleDecl* decl);
-
-  bool enter(const uast::ForwardingDecl* decl);
-  void exit(const uast::ForwardingDecl* decl);
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
