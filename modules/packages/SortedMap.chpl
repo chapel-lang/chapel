@@ -32,6 +32,7 @@ module SortedMap {
   private use HaltWrappers;
   private use SortedSet;
   private use IO;
+  import Sort.{relativeComparator};
   public use Sort only DefaultComparator;
 
   // TODO: remove this module and its public use when the deprecations have been
@@ -133,7 +134,7 @@ module SortedMap {
     }
 
     @chpldoc.nodoc
-    record _keyComparator {
+    record _keyComparator: relativeComparator {
       var comparator: record;
       proc compare(a, b) {
         return comparator.compare(a[0], b[0]);
