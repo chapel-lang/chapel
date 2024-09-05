@@ -107,9 +107,13 @@ introspectParsedFiles(Context* context);
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
+
+  If setParentSymbolPath is not nullptr, sets it to the parentSymbolPath used
+  when creating the BuilderResult.
  */
 const uast::BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id);
+parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setParentSymbolPath=nullptr);
 
 /**
   Fetch the BuilderResult storing compiler-generated uAST based on the given

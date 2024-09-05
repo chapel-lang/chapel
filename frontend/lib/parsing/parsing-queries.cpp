@@ -203,7 +203,9 @@ compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
 
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id) {
+parseFileContainingIdToBuilderResult(Context* context,
+                                     ID id,
+                                     UniqueString* setParentSymbolPath) {
   if (id.isFabricatedId() &&
       id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     // Find the generated module's symbol path
@@ -219,6 +221,7 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
 
     const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
     assert(br.numTopLevelExpressions() != 0);
+    if (setParentSymbolPath) *setParentSymbolPath = UniqueString();
     return &br;
   } else  {
     UniqueString path;
@@ -227,6 +230,7 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
     if (found) {
       const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                         parentSymbolPath);
+      if (setParentSymbolPath) *setParentSymbolPath = parentSymbolPath;
       return &p;
     }
 
@@ -1425,11 +1429,26 @@ const ID& idToParentId(Context* context, ID id) {
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
 
+  // Performance: Could this query use id.parentSymbolId in many cases?
+
   ID result;
 
-  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  UniqueString parentSymbolPath;
+  const BuilderResult* r =
+    parseFileContainingIdToBuilderResult(context, id, &parentSymbolPath);
+
   if (r != nullptr) {
     result = r->idToParentId(id);
+    // For a submodule in a separate file, the BuilderResult's idToParentId
+    // will return an empty ID for the submodule.
+    // Detect that and return the parent module in that case.
+    if (result.isEmpty() && !parentSymbolPath.isEmpty()) {
+      ID parentSymbolId = id.parentSymbolId(context);
+      if (!parentSymbolId.isEmpty()) {
+        CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
+        result = parentSymbolId;
+      }
+    }
   }
 
   return QUERY_END(result);
