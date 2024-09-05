@@ -473,7 +473,8 @@ static void expandVarArgsBody(FnSymbol*      fn,
     needTuple = true;
   }
 
-  if (formal->intent == INTENT_CONST || formal->intent == INTENT_CONST_IN) {
+  if (formal->intent == INTENT_CONST || formal->intent == INTENT_CONST_IN ||
+      formal->intent == INTENT_BLANK) {
     var->addFlag(FLAG_CONST);
   }
 
