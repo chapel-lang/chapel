@@ -30,24 +30,18 @@ module AutoGpu {
   use Errors;
 
   /*
-   This attribute can be applied to loops and variable declarations to ensure
-   that they are elgibile for GPU execution. Unlike :annotation:`@assertOnGpu`,
-   this attribute has no runtime effect. It only asserts that the code
-   `could` be executed on the GPU, and not that it `will` be executed.
-
-   When applied to loops, this attribute asserts that the loop itself is
-   GPU-eligible. When applied to variables, this attribute asserts that
-   all promoted expressions and loop expressions (e.g., foreach expressions)
-   are GPU-eligible instead.
+   This attribute can be applied to loops to ensure that they are eligible
+   for GPU execution. Unlike :annotation:`@assertOnGpu`, this attribute has no
+   execution-time effect. It only asserts that the code `could` be executed on
+   the GPU, and not that it `will` be executed.
 
 
    .. code-block:: chapel
 
-     // loop version
      @gpu.assertEligible
      foreach i in 1..128 { /* ... */ }
 
-     // variable version
+     // variable version (applies to loop expressions and promoted expressions)
      @gpu.assertEligible
      var A = (foreach i in 1..128 do i*i) + 1;
   */
@@ -59,34 +53,28 @@ module AutoGpu {
 
   /*
    This configuration parameter is used to disable warnings that are emitted
-   when :annotation:`@assertOnGpu` is used in a non-GPU compilation. Since :annotation:`@assertOnGpu`'s
-   runtime semantics are to halt execution if it is not on the GPU, it will
-   always halt execution when the program is not compiled for the GPU. This
-   is likely an issue, so the warning is emitted by default. However, in
-   case the user is aware of this and wants to silence the warning, they can
-   set this configuration parameter to ``true``.
+   when :annotation:`@assertOnGpu` is used in a non-GPU compilation. Since
+   :annotation:`@assertOnGpu`'s execution-time semantics are to halt execution
+   if it is not on the GPU, it will always halt execution when the program is
+   not compiled for the GPU. This is likely an issue, so the warning is emitted
+   by default. However, in case the user is aware of this and wants to silence
+   the warning, they can set this configuration parameter to ``true``.
   */
   config param silenceAssertOnGpuWarning = false;
 
   /*
-   This attribute can be applied to loops and variable declarations to ensure
-   that they are execute on the GPU. It has the effect of :annotation:`@gpu.assertEligible`,
-   halting compilation if the construct it is applied to cannot be executed
-   on the GPU. In addition, this attribute causes a runtime check to be
-   performed when it is reached, ensuring that the code is executed on the GPU.
-
-   When applied to loops, this attribute asserts that the loop itself
-   runs on the GPU. When applied to variables, this attribute asserts that
-   all promoted expressions and loop expressions (e.g., foreach expressions)
-   run on the GPU instead.
+   This attribute can be applied to loops to ensure that they are executed on
+   the GPU. It has the effect of :annotation:`@gpu.assertEligible`, halting
+   compilation if the construct it is applied to cannot be executed on the GPU.
+   In addition, this attribute causes an execution-time check to be performed
+   when it is reached, ensuring that the code is executed on the GPU.
 
    .. code-block:: chapel
 
-     // loop version
      @assertOnGpu
      foreach i in 1..128 { /* ... */ }
 
-     // variable version
+     // variable version (applies to loop expressions and promoted expressions)
      @assertOnGpu
      var A = (foreach i in 1..128 do i*i) + 1;
   */
@@ -104,13 +92,8 @@ module AutoGpu {
   }
 
   /*
-   This attribute can be applied to loops and variable declarations to specify
-   the GPU block size to use when executing the loop on the GPU.
-
-   When applied to loops, this attribute specifies the block size for the
-   loop itself. When applied to variables, this attribute specifies the block
-   size for all promoted expressions and loop expressions (e.g., foreach
-   expressions) instead.
+   This attribute can be applied to loops to specify the GPU block size to use
+   when executing the loop on the GPU.
 
    .. code-block:: chapel
 
@@ -118,7 +101,7 @@ module AutoGpu {
      @gpu.blockSize(64)
      foreach i in 1..128 { /* ... */ }
 
-     // variable version
+     // variable version (applies to loop expressions and promoted expressions)
      @gpu.blockSize(64)
      var A = (foreach i in 1..128 do i*i) + 1;
   */
@@ -142,16 +125,10 @@ module AutoGpu {
   }
 
   /*
-   This attribute requests that the kernel
-   executes each consecutive ``numIters`` iterations of the affected loop
-   sequentially within the same GPU thread. Users must ensure that
-   the arguments to the "blockSize" and "itersPerThread" attributes
-   are positive and non-zero.
-
-   When applied to loops, this attribute specifies the block size for the
-   loop itself. When applied to variables, this attribute specifies the block
-   size for all promoted expressions and loop expressions (e.g., foreach
-   expressions) instead.
+   This attribute requests that the kernel executes each consecutive
+   ``numIters`` iterations of the affected loop sequentially within the same
+   GPU thread. Users must ensure that the arguments to this attribute are
+   positive.
 
    .. code-block:: chapel
 
@@ -159,7 +136,7 @@ module AutoGpu {
      @gpu.itersPerThread(4)
      foreach i in 1..128 { /* ... */ }
 
-     // variable version
+     // variable version (applies to loop expressions and promoted expressions)
      @gpu.itersPerThread(4)
      var A = (foreach i in 1..128 do i*i) + 1;
   */
