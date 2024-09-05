@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 
@@ -471,6 +472,11 @@ class MatchingIdsWithName {
 
   /** Return the i'th IdAndFlags in the list */
   const IdAndFlags& idAndFlags(int i) const {
+    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    return idvs_[i];
+  }
+  /** Return a mutable reference to the i'th IdAndFlags in the list */
+  IdAndFlags& idAndFlags(int i) {
     CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
     return idvs_[i];
   }
@@ -1336,6 +1342,56 @@ class ModulePublicSymbols {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+/** This type helps lookupNameInScope and related functions
+    by containing the set of scopes that should be searched
+    and by providing a way to evaluate a method candidate according
+    to its method receiver.
+
+    This type can apply in two different ways:
+      1. When resolving something like 'x.field', the resolver
+         can compute a MethodLookupHelper for 'x' based
+         on its type and then pass this to the lookup process.
+      2. When resolving something like 'field' within a method,
+         the lookup process can ask to compute one of these
+         at the right time with a ReceiverScopeHelper.
+    */
+class MethodLookupHelper {
+ public:
+  virtual ~MethodLookupHelper();
+
+  /** Returns a reference to the receiver scopes */
+  virtual llvm::ArrayRef<const Scope*> receiverScopes() const = 0;
+  /** Returns 'true' if the ID passed refers to a method
+      with a receiver that is applicable */
+  virtual bool isReceiverApplicable(Context* context,
+                                    const ID& methodId) const = 0;
+};
+
+/** This type helps lookupNameInScope and related functions.
+    When performing name lookup within a method, the name
+    might refer to a field or tertiary method. Such matches
+    are checked for by searching the method reciver scopes
+    at the time that the method signature is encountered in the
+    process of searching parent scopes. This type includes
+    a method that can return an appropriate MethodLookupHelper
+    to handle the method receiver scopes.
+ */
+class ReceiverScopeHelper {
+ public:
+  virtual ~ReceiverScopeHelper();
+
+  /* Returns a MethodLookupHelper to support the method lookup
+     that should be done when processing the scope for an enclosing method.
+     The MethodLookupHelper will include the
+     receiver scopes to traverse and a way to evaluate methods.
+
+     The returned value needs to live at least as long as the lookup
+     process. It is the responsibility for the subclass implementation
+     here to free it eventually. */
+  virtual const MethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const = 0;
 };
 
 

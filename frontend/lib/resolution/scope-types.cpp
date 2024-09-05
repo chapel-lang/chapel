@@ -547,6 +547,11 @@ void ModulePublicSymbols::stringify(std::ostream& ss,
   ss << "}\n";
 }
 
+MethodLookupHelper::~MethodLookupHelper() { }
+
+ReceiverScopeHelper::~ReceiverScopeHelper() { }
+
+
 IMPLEMENT_DUMP(IdAndFlags);
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(MatchingIdsWithName);
@@ -556,6 +561,7 @@ IMPLEMENT_DUMP(ResolvedVisibilityScope);
 IMPLEMENT_DUMP(PoiScope);
 IMPLEMENT_DUMP(InnermostMatch);
 IMPLEMENT_DUMP(ModulePublicSymbols);
+
 
 } // end namespace resolution
 } // end namespace chpl

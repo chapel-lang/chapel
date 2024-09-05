@@ -1,0 +1,5 @@
+forwarding-in-init.chpl:11: In initializer:
+forwarding-in-init.chpl:12: error: unresolved call 'foo()'
+forwarding-in-init.chpl:2: note: this candidate did not match: R1.foo()
+forwarding-in-init.chpl:12: note: because call is not written as a method call
+forwarding-in-init.chpl:2: note: but candidate function is a method

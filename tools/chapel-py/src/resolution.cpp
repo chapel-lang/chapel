@@ -86,7 +86,8 @@ static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* v
                           resolution::LOOKUP_SKIP_PRIVATE_VIS;
             auto ids =
               resolution::lookupNameInScope(context, visCla.scope(),
-                                            /* receiverScopes */ {},
+                                            /* methodLookupHelper */ nullptr,
+                                            /* receiverScopeHelper */ nullptr,
                                             identToLookUp->name(),
                                             config);
 

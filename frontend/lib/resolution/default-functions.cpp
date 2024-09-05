@@ -76,7 +76,8 @@ areOverloadsPresentInDefiningScope(Context* context,
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
 
   auto ids = lookupNameInScope(context, scopeForReceiverType,
-                               /* receiver scopes */ {},
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                name, config);
 
   // nothing found
