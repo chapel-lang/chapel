@@ -16,5 +16,5 @@ proc R3.keyPart(elt, i) do return (keyPartStatus.returned, elt);
 writeln(chpl_compare(5, 6, comparator=new R3()));
 
 record R4 {}
-proc R4.keyPart(elt, i) do return (keyPartStatus.returned, elt);
+proc R4.keyPart(elt, i) do return (0, elt);
 writeln(chpl_compare(7, 8, comparator=new R4()));
