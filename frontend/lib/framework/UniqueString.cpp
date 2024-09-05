@@ -210,7 +210,21 @@ bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
 
 void UniqueString::stringify(std::ostream& ss,
                              chpl::StringifyKind stringKind) const {
-  ss.write(c_str(),length());
+  if (stringKind != StringifyKind::DEBUG_SUMMARY) {
+    ss.write(c_str(),length());
+  } else {
+    size_t len = length();
+    const char* ptr = c_str();
+    const char* period = ".";
+    for (size_t i = 0; i < len; i++) {
+      int c = ptr[i];
+      if (isprint(c) && (c == ' ' || !isspace(c))) {
+        ss.write(ptr+i, 1);
+      } else {
+        ss.write(period, 1);
+      }
+    }
+  }
 }
 IMPLEMENT_DUMP(UniqueString);
 

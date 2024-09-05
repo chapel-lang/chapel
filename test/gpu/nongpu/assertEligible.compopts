@@ -1,0 +1,2 @@
+-scase=0 # assertEligible.stmt.good
+-scase=1 # assertEligible.var.good

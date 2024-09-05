@@ -3263,16 +3263,21 @@ AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
-                                                  YYLTYPE identLocation,
-                                                  PODUniqueString name,
+                                                  YYLTYPE headerLoc,
+                                                  TypeDeclParts parts,
                                                   ParserExprList* formals,
                                                   YYLTYPE locBody,
                                                   CommentsAndStmt body) {
-  std::vector<ParserComment>* comments;
+  // interfaces do not have visibility, linkage, or linkage names
+  CHPL_ASSERT(parts.visibility == Decl::DEFAULT_VISIBILITY);
+  CHPL_ASSERT(parts.linkage == Decl::DEFAULT_LINKAGE);
+  CHPL_ASSERT(parts.linkageName == nullptr);
+
+  std::vector<ParserComment>* bodyComments;
   ParserExprList* bodyExprLst;
   BlockStyle blockStyle;
 
-  prepareStmtPieces(comments, bodyExprLst, blockStyle, location,
+  prepareStmtPieces(bodyComments, bodyExprLst, blockStyle, location,
                     false,
                     locBody,
                     body);
@@ -3291,16 +3296,17 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
   const bool isFormalListPresent = formals != nullptr;
 
   auto node = Interface::build(builder, convertLocation(location),
-                               buildAttributeGroup(location),
+                               toOwned(parts.attributeGroup),
                                visibility,
-                               name,
+                               parts.name,
                                isFormalListPresent,
                                std::move(formalList),
                                std::move(bodyStmts));
-  builder->noteDeclNameLocation(node.get(), convertLocation(identLocation));
+  builder->noteDeclNameLocation(node.get(), convertLocation(parts.locName));
+  builder->noteDeclHeaderLocation(node.get(), convertLocation(headerLoc));
 
 
-  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  CommentsAndStmt cs = { .comments=parts.comments, .stmt=node.release() };
 
   return cs;
 }

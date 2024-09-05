@@ -130,6 +130,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('  CHPL_GMP_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
+    ChapelEnv('  CHPL_HWLOC_PCI', RUNTIME | INTERNAL, 'pci'),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
@@ -226,6 +227,7 @@ def compute_all_values():
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
     ENV_VALS['  CHPL_GMP_IS_OVERRIDDEN'] = chpl_gmp.is_overridden()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
+    ENV_VALS['  CHPL_HWLOC_PCI'] = chpl_hwloc_pci.get()
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
@@ -349,6 +351,7 @@ def filter_tidy(chpl_env):
     gpu = ENV_VALS['  CHPL_GPU']
     host_mem = ENV_VALS['CHPL_HOST_MEM']
     tgt_mem = ENV_VALS['CHPL_MEM']
+    hwloc = ENV_VALS['CHPL_HWLOC']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
@@ -380,6 +383,8 @@ def filter_tidy(chpl_env):
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_HWLOC_PCI':
+        return hwloc == 'bundled'
     return True
 
 

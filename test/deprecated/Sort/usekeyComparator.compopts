@@ -1,0 +1,4 @@
+                    # usekeyComparator.good
+-sresolveDeps=false # usekeyComparator.good
+-sresolveDeps       # usekeyComparator-resolved.good
+-sresolveDeps=true  # usekeyComparator-resolved.good

@@ -51,3 +51,67 @@ index 4fc99a6fd1..a51d191348 100644
  # if defined(QTHREAD_ATOMIC_INCR) && !defined(QTHREAD_MUTEX_INCREMENT)
  #  define qthread_incr(ADDR, INCVAL) \
 ```
+
+Only fence on swaps for architectures where that's necessary.
+This is backported from the upstream development version of qthreads.
+```
+diff --git a/include/qthread/qthread.h b/include/qthread/qthread.h
+index 2bd2c3b5..4152d577 100644
+--- a/include/qthread/qthread.h
++++ b/include/qthread/qthread.h
+@@ -104,6 +104,10 @@ using std::memory_order_relaxed;
+ #define Q_ALIGNED(x) __attribute__((aligned(x)))
+ #endif
+
++#if QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
++#define QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
++#endif
++
+ Q_STARTCXX /* */
+ /* NOTE!!!!!!!!!!!
+  * Reads and writes operate on aligned_t-size segments of memory.
+diff --git a/src/feb.c b/src/feb.c
+index 164805d5..ae0c4ba1 100644
+--- a/src/feb.c
++++ b/src/feb.c
+@@ -1127,7 +1127,9 @@ int API_FUNC qthread_writeEF(aligned_t *restrict dest,
+       &me->thread_state, QTHREAD_STATE_FEB_BLOCKED, memory_order_relaxed);
+     me->rdata->blockedon.addr = m;
+     QTHREAD_WAIT_TIMER_START();
++#ifndef QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+     MACHINE_FENCE;
++#endif
+     qthread_back_to_master(me);
+     QTHREAD_WAIT_TIMER_STOP(me, febwait);
+ #ifdef QTHREAD_USE_EUREKAS
+@@ -1300,7 +1302,9 @@ int API_FUNC qthread_writeFF(aligned_t *restrict dest,
+       &me->thread_state, QTHREAD_STATE_FEB_BLOCKED, memory_order_relaxed);
+     me->rdata->blockedon.addr = m;
+     QTHREAD_WAIT_TIMER_START();
++#ifndef QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+     MACHINE_FENCE;
++#endif
+     qthread_back_to_master(me);
+     QTHREAD_WAIT_TIMER_STOP(me, febwait);
+ #ifdef QTHREAD_USE_EUREKAS
+@@ -1414,7 +1418,9 @@ int API_FUNC qthread_readFF(aligned_t *restrict dest,
+     me->rdata->blockedon.addr = m;
+     QTHREAD_WAIT_TIMER_START();
+     qthread_back_to_master(me);
++#ifndef QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+     MACHINE_FENCE;
++#endif
+     QTHREAD_WAIT_TIMER_STOP(me, febwait);
+ #ifdef QTHREAD_USE_EUREKAS
+     qt_eureka_check(0);
+@@ -1600,7 +1606,9 @@ int API_FUNC qthread_readFE(aligned_t *restrict dest,
+     me->rdata->blockedon.addr = m;
+     QTHREAD_WAIT_TIMER_START();
+     qthread_back_to_master(me);
++#ifndef QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+     MACHINE_FENCE;
++#endif
+     QTHREAD_WAIT_TIMER_STOP(me, febwait);
+ #ifdef QTHREAD_USE_EUREKAS
+     qt_eureka_check(0);
+```

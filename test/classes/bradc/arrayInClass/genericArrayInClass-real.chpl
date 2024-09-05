@@ -1,3 +1,4 @@
+import Sort;
 // declare class types
 
 class ArithC {
@@ -30,7 +31,7 @@ class EnumC {
 }
 
 iter sortedAssoc(arr) {
-  for k in arr.domain.sorted() {
+  for k in Sort.sorted(arr.domain) {
     yield arr[k];
   }
 }
@@ -39,7 +40,7 @@ iter sortedAssoc(arr) {
 
 proc foo(C) {
   if (C.x.domain.isAssociative()) {
-    writeln("C.x.domain is: ", C.x.domain.sorted());
+    writeln("C.x.domain is: ", Sort.sorted(C.x.domain));
     writeln("x is: ", sortedAssoc(C.x));
   } else {
     writeln("C.x.domain is: ", C.x.domain);

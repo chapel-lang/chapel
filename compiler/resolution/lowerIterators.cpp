@@ -272,8 +272,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     hazard = true;
   } else if (thisTypeSymbol != NULL &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
-              thisTypeSymbol->hasFlag(FLAG_SYNC) ||
-              thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
+              thisTypeSymbol->hasFlag(FLAG_SYNC))) {
     // methods on synchronization constructs do synchronization!
     hazard = true;
   } else {

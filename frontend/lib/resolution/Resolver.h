@@ -32,7 +32,6 @@ namespace resolution {
 
 struct Resolver {
   // types used below
-  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
 
   /**
@@ -59,8 +58,8 @@ struct Resolver {
    public:
     ParenlessOverloadInfo() = default;
 
-    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
-                                                 const std::vector<BorrowedIdsWithName>&);
+    static ParenlessOverloadInfo fromMatchingIds(Context* context,
+                                                 const MatchingIdsWithName&);
 
     bool areCandidatesOnlyParenlessProcs() const {
       // Note: constructor sets both to false when it discovers a single
@@ -98,8 +97,15 @@ struct Resolver {
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
+
+  bool allowReceiverScopes = false;
   bool receiverScopesComputed = false;
-  ReceiverScopesVec savedReceiverScopes;
+  bool methodHelperComputed = false;
+  ReceiverScopeSimpleHelper receiverScopeSimpleHelper;
+  ReceiverScopeTypedHelper receiverScopeTypedHelper;
+  const ReceiverScopeHelper* receiverScopeHelper = nullptr;
+  const MethodLookupHelper* methodLookupHelper = nullptr;
+
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
   owned<OuterVariables> outerVars;
@@ -269,34 +275,33 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Gather scopes for a given receiver decl and all its parents */
-  static ReceiverScopesVec
-  gatherReceiverAndParentScopesForDeclId(Context* context,
-                                         ID aggregateDeclId);
-  /* Gather scopes for a given receiver type and all its parents */
-  static ReceiverScopesVec
-  gatherReceiverAndParentScopesForType(Context* context,
-                                       const types::Type* thisType);
-
-
-  /* Determine the method receiver,  which is a type under
+  /* Determine the method receiver, which is a type under
      full resolution, but only an ID under scope resolution.
     */
   bool getMethodReceiver(types::QualifiedType* outType = nullptr,
                          ID* outId = nullptr);
-  /* Compute the receiver scopes (when resolving a method)
-     and return an empty vector if it is not applicable.
-   */
-  ReceiverScopesVec methodReceiverScopes(bool recompute = false);
 
   /* Compute the receiver type (when resolving a method)
      and return a type containing nullptr if it is not applicable.
+
+     This one is different from getMethodReceiver in two ways:
+       1. It isn't useful during scope resolution
+       2. For declarations contained in a class or record (even if they are
+          not methods), it will return the class/record type here.
    */
   types::QualifiedType methodReceiverType();
 
+  /* Return a helper that can compute the additional scopes
+     that need to be consulted for resolving symbols within a method. */
+  const ReceiverScopeHelper* getMethodReceiverScopeHelper();
+
+  /* Return a helper that represents the additional scopes to searched
+     when resolving symbols at a field declaration level. */
+  const MethodLookupHelper* getFieldDeclarationLookupHelper();
+
   /* Given an identifier, check if this identifier could refer to a superclass,
      as opposed to a variable of the name 'super'. If it can, sets
-     outType to the type of the parent class.
+     outType to the type of the current method's receiver.
    */
   bool isPotentialSuper(const uast::Identifier* identifier,
                         types::QualifiedType* outType = nullptr);
@@ -534,21 +539,17 @@ struct Resolver {
   // figure out how each candidate was found.
   void issueAmbiguityErrorIfNeeded(const chpl::uast::Identifier* ident,
                                    const Scope* scope,
-                                   llvm::ArrayRef<const Scope*> receiverScopes,
                                    LookupConfig prevConfig);
 
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes,
                    ParenlessOverloadInfo& outParenlessOverloadInfo);
 
 
   void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
-                               const uast::Identifier* ident,
-                               llvm::ArrayRef<const Scope*> receiverScopes);
+                               const uast::Identifier* ident);
 
-  void resolveIdentifier(const uast::Identifier* ident,
-                         llvm::ArrayRef<const Scope*> receiverScopes);
+  void resolveIdentifier(const uast::Identifier* ident);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */

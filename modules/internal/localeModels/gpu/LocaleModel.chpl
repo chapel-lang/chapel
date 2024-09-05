@@ -32,6 +32,10 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
 
+  use ChapelBase;
+  use ChapelIOSerialize;
+  use ChapelLocale;
+  use ChapelNumLocales;
   use IO, CTypes;
 
   private inline

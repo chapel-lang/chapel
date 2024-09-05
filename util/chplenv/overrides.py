@@ -66,6 +66,7 @@ chplvars = [
 
              'CHPL_GMP',
              'CHPL_HWLOC',
+             'CHPL_HWLOC_PCI',
              'CHPL_RE2',
 
              'CHPL_LLVM',

@@ -75,6 +75,7 @@ _chpl ()
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
+--dyno-timing \
 --dyno-verify-serialization \
 --early-deinit \
 --exit-leaks \

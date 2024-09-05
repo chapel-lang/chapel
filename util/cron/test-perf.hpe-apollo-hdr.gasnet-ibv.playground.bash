@@ -25,10 +25,8 @@ export GASNET_PHYSMEM_MAX="0.90"
 #
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
-# Currently tests https://github.com/chapel-lang/chapel/pull/25517. We'll
-# determine whether to turn that optimization on-by-default.
 
-SKIP_ML_PLAYGROUND=0
+SKIP_ML_PLAYGROUND=1
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit

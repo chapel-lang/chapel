@@ -1289,6 +1289,15 @@ int64_t qio_channel_end_offset_unlocked(qio_channel_t* ch)
   return ch->end_pos;
 }
 
+/*
+ * Returns the starting position of the channel.
+*/
+static inline
+int64_t qio_channel_start_offset_unlocked(qio_channel_t* ch)
+{
+  return ch->start_pos;
+}
+
 qioerr qio_channel_end_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
 
 

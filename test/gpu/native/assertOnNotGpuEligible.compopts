@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+import os
+
+for i in range(1, 5):
+  # We currently skip configuration 3 when CHPL_COMM is not none see
+  # https://github.com/chapel-lang/chapel/issues/20641.  TODO: re-enable this
+  # once this works in our gasnet configuration.
+  if i == 3 and os.getenv('CHPL_COMM') != 'none':
+    continue
+  print('-sfailureMode={} # assertOnNotGpuEligible.{}.good'.format(i, i))

@@ -1,0 +1,1 @@
+sortDomainArray.chpl:66: error: isSorted() is not supported on domains

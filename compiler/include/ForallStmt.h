@@ -126,6 +126,9 @@ class ForallOptimizationInfo {
     ForallAutoLocalAccessCloneType cloneType;
 
     ForallOptimizationInfo();
+
+    Expr* getIterand(int idx);
+    Expr* getLoopDomainExpr();
 };
 
 ///////////////////////////////////

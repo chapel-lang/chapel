@@ -99,6 +99,16 @@ void CompositeType::stringify(std::ostream& ss,
   bool printSupertype =
     superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX;
 
+  // Prepend parent substitutions to 'sorted' list
+  if (!printSupertype && superType != nullptr) {
+    auto cur = superType->toBasicClassType();
+    while (cur != nullptr) {
+      auto parentSubs = cur->getCompositeType()->sortedSubstitutions();
+      sorted.insert(sorted.begin(), parentSubs.begin(), parentSubs.end());
+      cur = cur->parentClassType();
+    }
+  }
+
   if (printSupertype || !sorted.empty()) {
     bool emittedField = false;
     ss << "(";

@@ -3,28 +3,28 @@ config const verbose = false;
 
 use Sort;
 
-record UselessKeyComparator {
+record UselessKeyComparator: keyComparator {
   proc key(x) {
     return x;
   }
 }
 
-record UselessKeyPartComparator {
+record UselessKeyPartComparator: keyPartComparator {
   proc keyPart(x, i:int) {
     if isTuple(x) {
       type tt = x(0).type;
       if i < x.size then
-        return (0, x(i));
+        return (keyPartStatus.returned, x(i));
       else
-        return (-1, 0:tt);
+        return (keyPartStatus.pre, 0:tt);
 
     } else if x.type == string {
       return (new DefaultComparator()).keyPart(x, i);
     } else if isNumericType(x.type) {
       if i == 0 then
-        return (0, x);
+        return (keyPartStatus.returned, x);
       else
-        return (-1, x);
+        return (keyPartStatus.pre, x);
     } else {
       compilerError("not handled");
     }

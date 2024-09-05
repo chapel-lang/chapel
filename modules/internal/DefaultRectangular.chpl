@@ -33,7 +33,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil;
-  public use ChapelArray;
+  use ChapelArray;
   use ChapelDistribution, ChapelRange, OS, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
@@ -56,7 +56,7 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
-  config param defaultRectangularSupportsAutoLocalAccess = true;
+  config param defaultRectangularSupportsAutoLocalAccess = false;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
@@ -1694,6 +1694,10 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
+  iter chpl__serialViewIter1D(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
@@ -1758,6 +1762,14 @@ module DefaultRectangular {
 
   override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
     return defaultRectangularSupportsAutoLocalAccess;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsArrayViewElision() param {
+    return true;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsShortArrayTransfer() param {
+    return true;
   }
 
   // Why can the following two functions not be collapsed into one

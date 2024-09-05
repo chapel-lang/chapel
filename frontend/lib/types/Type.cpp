@@ -284,7 +284,6 @@ bool Type::isPod(Context* context, const Type* t) {
   if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
   if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
   if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
-  if (t->hasPragma(context, uast::PRAGMA_SINGLE)) return false;
   if (t->isDomainType()) return false;
   if (t->isArrayType()) return false;
   if (auto cls = t->toClassType()) {

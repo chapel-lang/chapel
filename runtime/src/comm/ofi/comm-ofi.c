@@ -1566,6 +1566,13 @@ struct fi_info* findProvInList(struct fi_info* info,
     best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
     best->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
   }
+
+  // According the "Limitations" section of the fi_efa man page, inject is not
+  // supported. However, fi_getinfo returns a non-zero inject_size. Set it to
+  // zero to prevent injection.
+  if (best && (isInProvider("efa", best))) {
+    best->tx_attr->inject_size = 0;
+  }
   return (best == NULL) ? NULL : fi_dupinfo(best);
 }
 

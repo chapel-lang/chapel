@@ -875,7 +875,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
         if (formal->intent == INTENT_REF) {
           Type* vt = formal->getValType();
           if (vt->scalarPromotionType == NULL &&
-              !(isAtomicType(vt) || isSyncType(vt) || isSingleType(vt)) &&
+              !(isAtomicType(vt) || isSyncType(vt)) &&
               !formal->hasFlag(FLAG_ERROR_VARIABLE)) {
             if (formal == fn->_this)
               USR_FATAL_CONT(fn, "Racy promotion of scalar method receiver");

@@ -1,2 +1,2 @@
-sortRegion.chpl:1: warning: The Sort module interface is unstable
+sortRegion.chpl:5: warning: 'DefaultComparator' is unstable and will have its name changed in the future
 sortRegion.chpl:5: warning: sort with a region argument is unstable

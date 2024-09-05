@@ -86,6 +86,17 @@ module Zarr {
     var compressor: string;
   }
 
+  record zarrMetadataV2Required {
+    var zarr_format: int;
+    var chunks: list(int);
+    var dtype: string;
+    var shape: list(int);
+  }
+
+  record zarrMetadataV2Optional {
+    var compressor: string;
+  }
+
   /* Unused until support is added for v3.0 stores */
   record zarrMetadataV3 {
     var zarr_format: int;
@@ -108,8 +119,18 @@ module Zarr {
   private proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
-    var md: zarrMetadataV2;
-    r.readf("%?", md);
+    var mdRequired: zarrMetadataV2Required;
+    r.readf("%?", mdRequired);
+
+    r.seek(0..);
+    var mdOptional: zarrMetadataV2Optional;
+    try {
+      r.readf("%?", mdOptional);
+    } catch {
+      mdOptional.compressor = "blosclz";
+    }
+
+    var md = new zarrMetadataV2(mdRequired.zarr_format, mdRequired.chunks, mdRequired.dtype, mdRequired.shape, mdOptional.compressor);
     return md;
   }
 
@@ -347,7 +368,7 @@ module Zarr {
     :arg dimCount: Dimensionality of the zarr array
 
   */
-  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) throws {
+  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
     // Size and shape tuples
@@ -365,7 +386,7 @@ module Zarr {
 
     // Initialize the distributed domain and array
     const undistD : domain(dimCount) = totalRanges;
-    const Dist = new blockDist(boundingBox=undistD);
+    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
     const D = Dist.createDomain(undistD);
     var A: [D] dtype;
 

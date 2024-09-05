@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./PREDIFF-filter-accessors $1 $2 --no-this

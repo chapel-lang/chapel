@@ -2281,7 +2281,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 static void fixPrimNew(CallExpr* primNewToFix);
 
 static bool isCallToConstructor(CallExpr* call) {
-  return call->isPrimitive(PRIM_NEW);
+  return isNewLike(call);
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
@@ -2768,7 +2768,7 @@ static bool shouldInsertCallTemps(CallExpr* call) {
 
       // Avoid normalizing the type expression in a new call, because
       // this gets handled later by fixPrimNew.
-      (parentCall && parentCall->isPrimitive(PRIM_NEW)
+      (parentCall && isNewLike(parentCall)
                   && parentCall->get(1) == call) )
     return false;
 

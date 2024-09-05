@@ -32,6 +32,8 @@
 // - support other kinds of domains
 // - allow run-time change in locales
 
+/* Draft support for replicating complete domains/arrays across target locales. */
+
 @unstable("ReplicatedDist is unstable and may change in the future")
 prototype module ReplicatedDist {
 

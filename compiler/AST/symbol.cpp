@@ -70,7 +70,6 @@ Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
-Symbol *gSingleVarAuxFields = NULL;
 Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;

@@ -161,6 +161,9 @@ class UntypedFnSignature {
   // this will not be present for compiler-generated functions
   const uast::AstNode* whereClause_;
 
+  // The ID that this compiler-generated function is based on
+  ID compilerGeneratedOrigin_;
+
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
@@ -170,7 +173,8 @@ class UntypedFnSignature {
                      uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
-                     const uast::AstNode* whereClause)
+                     const uast::AstNode* whereClause,
+                     ID compilerGeneratedOrigin = ID())
     : id_(id),
       name_(name),
       isMethod_(isMethod),
@@ -180,7 +184,8 @@ class UntypedFnSignature {
       idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
-      whereClause_(whereClause) {
+      whereClause_(whereClause),
+      compilerGeneratedOrigin_(compilerGeneratedOrigin) {
     CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
@@ -200,7 +205,8 @@ class UntypedFnSignature {
                         uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::AstNode* whereClause);
+                        const uast::AstNode* whereClause,
+                        ID compilerGeneratedOrigin = ID());
 
  public:
   /** Get the unique UntypedFnSignature containing these components */
@@ -213,7 +219,8 @@ class UntypedFnSignature {
                                        uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
-                                       const uast::AstNode* whereClause);
+                                       const uast::AstNode* whereClause,
+                                       ID compilerGeneratedOrigin = ID());
 
   /** Get the unique UntypedFnSignature representing a Function's
       signature from a Function uAST pointer. */
@@ -234,7 +241,8 @@ class UntypedFnSignature {
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
-           whereClause_ == other.whereClause_;
+           whereClause_ == other.whereClause_ &&
+           compilerGeneratedOrigin_ == other.compilerGeneratedOrigin_;
   }
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
@@ -251,6 +259,7 @@ class UntypedFnSignature {
       context->markPointer(elt.decl);
     }
     context->markPointer(whereClause_);
+    compilerGeneratedOrigin_.mark(context);
   }
 
 
@@ -273,6 +282,10 @@ class UntypedFnSignature {
   /** Returns true if this compiler generated */
   bool isCompilerGenerated() const {
     return isCompilerGenerated_;
+  }
+
+  ID compilerGeneratedOrigin() const {
+    return compilerGeneratedOrigin_;
   }
 
   /** Returns true if id() refers to a Function */
@@ -2426,7 +2439,9 @@ class ResolvedFields {
     }
   }
 
-  void finalizeFields(Context* context);
+  void validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const;
+
+  void finalizeFields(Context* context, bool syntaxOnly);
 
   /** Returns true if this is a generic type */
   bool isGeneric() const { return isGeneric_; }
@@ -2616,6 +2631,148 @@ struct CopyableAssignableInfo {
   void mark(Context* context) const {
   }
 };
+
+/* SimpleMethodLookupHelper helps lookupInScope to find matches
+   due to the method receiver during scope resolution.
+   This version is temporary and long-term, TypedMethodLookupHelper
+   should be used instead. */
+class SimpleMethodLookupHelper final : public MethodLookupHelper {
+ public:
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+ private:
+  ID receiverTypeId_;
+  ReceiverScopesVec scopes_;
+ public:
+  SimpleMethodLookupHelper() { }
+
+  SimpleMethodLookupHelper(ID receiverTypeId,
+                           ReceiverScopesVec scopes)
+    : receiverTypeId_(receiverTypeId), scopes_(scopes) {
+  }
+
+  bool isEmpty() const {
+    return receiverTypeId_.isEmpty();
+  }
+  llvm::ArrayRef<const Scope*> receiverScopes() const override;
+  bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+
+  bool operator==(const SimpleMethodLookupHelper &other) const {
+    return receiverTypeId_ == other.receiverTypeId_ &&
+           scopes_ == other.scopes_;
+  }
+  bool operator!=(const SimpleMethodLookupHelper& other) const {
+    return !(*this == other);
+  }
+
+  void swap(SimpleMethodLookupHelper& other) {
+    receiverTypeId_.swap(other.receiverTypeId_);
+    scopes_.swap(other.scopes_);
+  }
+
+  static bool update(SimpleMethodLookupHelper& keep,
+                     SimpleMethodLookupHelper& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void mark(Context* context) const {
+    receiverTypeId_.mark(context);
+    for (auto p : scopes_) {
+      context->markPointer(p);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+};
+
+class ReceiverScopeSimpleHelper final : public ReceiverScopeHelper {
+ public:
+  ReceiverScopeSimpleHelper() { }
+  const SimpleMethodLookupHelper*
+  methodLookupForTypeId(Context* context, const ID& typeId) const;
+  const SimpleMethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const override;
+};
+
+class TypedMethodLookupHelper final : public MethodLookupHelper {
+ public:
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+ private:
+  types::QualifiedType receiverType_;
+  ReceiverScopesVec scopes_;
+ public:
+  TypedMethodLookupHelper() { }
+
+  TypedMethodLookupHelper(types::QualifiedType receiverType,
+                          ReceiverScopesVec scopes)
+    : receiverType_(std::move(receiverType)),
+      scopes_(std::move(scopes)) {
+  }
+
+  bool isEmpty() const {
+    return receiverType_.type() == nullptr;
+  }
+
+  llvm::ArrayRef<const Scope*> receiverScopes() const override;
+  bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+
+  bool operator==(const TypedMethodLookupHelper &other) const {
+    return receiverType_ == other.receiverType_ &&
+           scopes_ == other.scopes_;
+  }
+  bool operator!=(const TypedMethodLookupHelper& other) const {
+    return !(*this == other);
+  }
+
+  void swap(TypedMethodLookupHelper& other) {
+    receiverType_.swap(other.receiverType_);
+    scopes_.swap(other.scopes_);
+  }
+
+  static bool update(TypedMethodLookupHelper& keep,
+                     TypedMethodLookupHelper& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void mark(Context* context) const {
+    receiverType_.mark(context);
+    for (auto p : scopes_) {
+      context->markPointer(p);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+};
+
+struct ReceiverScopeTypedHelper final : public ReceiverScopeHelper {
+ private:
+  // TODO: these should be a map, to support nested functions
+  ID resolvingMethodId_;
+  types::QualifiedType resolvingMethodReceiverType_;
+ public:
+  ReceiverScopeTypedHelper() { }
+
+  ReceiverScopeTypedHelper(ID resolvingMethodId,
+                           types::QualifiedType resolvingMethodReceiverType)
+    : resolvingMethodId_(std::move(resolvingMethodId)),
+      resolvingMethodReceiverType_(std::move(resolvingMethodReceiverType))
+  {
+  }
+
+  const TypedMethodLookupHelper*
+  methodLookupForType(Context* context, types::QualifiedType type) const;
+
+  const TypedMethodLookupHelper*
+  methodLookupForMethodId(Context* context, const ID& methodId) const override;
+};
+
 
 } // end namespace resolution
 

@@ -769,7 +769,6 @@ static bool isCalleReservedWord(const AstNode* callee) {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")
        || callee->toIdentifier()->name() == USTR("atomic")))
       return true;
     return false;
@@ -1011,6 +1010,14 @@ struct RstSignatureVisitor {
   bool enter(const Dot* d) {
     d->receiver()->traverse(*this);
     os_ << "." << d->field().c_str();
+    return false;
+  }
+
+  bool enter(const Interface* i) {
+    os_ << "interface " << i->name().c_str();
+    if (i->isFormalListExplicit() && i->numFormals() > 0) {
+      interpose(i->formals(), ", ", "(", ")");
+    }
     return false;
   }
 
@@ -1591,6 +1598,14 @@ struct RstResultBuilder {
     return getResult(true);
   }
 
+  owned<RstResult> visit(const Interface* i) {
+    if (isNoDoc(i)) return {};
+    show("interface", i);
+    visitChildren(i);
+    return getResult(true);
+  }
+
+
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
@@ -1973,6 +1988,7 @@ struct CommentVisitor {
   DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
+  DEF_ENTER(Interface, true)
 
 #undef DEF_ENTER
 

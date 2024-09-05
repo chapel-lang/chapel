@@ -54,7 +54,6 @@ IntentTag constIntentForType(Type* t) {
     return INTENT_CONST_IN;
 
   } else if (isSyncType(t)          ||
-             isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
              isManagedPtrType(t) ||
              isConstrainedType(t) ||
@@ -107,10 +106,6 @@ static bool isTupleContainingSyncType(Type* t) {
   return isTupleContainingTypeWithFlag(t, FLAG_SYNC);
 }
 
-static bool isTupleContainingSingleType(Type* t) {
-  return isTupleContainingTypeWithFlag(t, FLAG_SINGLE);
-}
-
 static bool isTupleContainingAtomicType(Type* t) {
   return isTupleContainingTypeWithFlag(t, FLAG_ATOMIC_TYPE);
 }
@@ -128,7 +123,6 @@ IntentTag blankIntentForType(Type* t) {
   } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
             || isTupleContainingRefMaybeConst(t)
             || isTupleContainingSyncType(t)
-            || isTupleContainingSingleType(t)
             || isTupleContainingAtomicType(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 

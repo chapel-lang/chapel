@@ -1,0 +1,3 @@
+class IteratorInit {
+  iter init() {}
+}

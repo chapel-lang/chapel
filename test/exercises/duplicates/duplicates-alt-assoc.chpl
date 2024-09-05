@@ -60,10 +60,10 @@ proc main(args: [] string) {
   // stumbling block: associative array key+value iteration
   // stumbling block: associative array key+value iteration in sorted order
   writeln("Duplicate files found:");
-  for hash in hashes.sorted() {
+  for hash in sorted(hashes) {
     if hashesToPaths[hash].size > 1 {
       writeln(hash);
-      for path in hashesToPaths[hash].sorted() {
+      for path in sorted(hashesToPaths[hash]) {
         writeln("  ", path);
       }
     }

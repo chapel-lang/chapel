@@ -1165,8 +1165,6 @@ static void testInitEqOther(void) {
 }
 
 static void testInheritance() {
-  // TODO: generics
-
   std::string parentChild = R"""(
     class Parent {
       var x : int;
@@ -1297,6 +1295,116 @@ static void testInheritance() {
     std::ignore = resolveModule(context, m->id());
   }
 
+  // Basic generic case
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Parent {
+        type A;
+      }
+
+      class Child : Parent {
+        type B;
+
+        proc init(type A, type B) {
+          super.init(A);
+          this.B = B;
+        }
+
+        proc helper() { return "test"; }
+      }
+
+      var x = new Child(int, string);
+      var y = x.helper();
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+    auto x = vars["x"];
+    auto y = vars["y"];
+
+    std::stringstream ss;
+    x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "owned Child(int(64), string)");
+
+    assert(y.type()->isStringType());
+  }
+
+  // Generic parent, concrete child
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Parent {
+        type A;
+      }
+
+      class Child : Parent {
+
+        proc init(type A) {
+          super.init(A);
+        }
+
+        proc doNothing() {}
+      }
+
+      var x = new Child(int);
+
+      // ensure we can call a method on this receiver type after init
+      x.doNothing();
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto x = vars["x"];
+
+    std::stringstream ss;
+    x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "owned Child(int(64))");
+  }
+
+  // Generic grandparent, concrete parent, concrete child
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Grandparent {
+        type A;
+      }
+
+      class Parent : Grandparent {
+        proc init(type A) {
+          super.init(A);
+        }
+      }
+
+      class Child : Parent {
+
+        proc init(type A) {
+          super.init(A);
+        }
+
+        proc doNothing() {}
+      }
+
+      var x = new Child(int);
+
+      // ensure we can call a method on this receiver type after init
+      x.doNothing();
+    )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto x = vars["x"];
+
+    std::stringstream ss;
+    x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "owned Child(int(64))");
+  }
 }
 
 static void testInitGenericAfterConcrete() {

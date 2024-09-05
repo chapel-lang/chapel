@@ -144,9 +144,6 @@ The following are further requirements for GPU support:
 
   * ROCm version between 4.x and 5.4 or between ROCm 6.0 and 6.2 must be installed.
 
-    * You can check the current status of ROCm version support `here
-      <https://github.com/chapel-lang/chapel/issues/23480>`_.
-
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM.
@@ -267,11 +264,14 @@ GPU-Related Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
 to control various aspects of how code is compiled or executed on the GPU.
-Specifically, the two GPU-specific Chapel attributes are ``@assertOnGpu``
-(described in `Diagnostics and Utilities`_) and ``@gpu.blockSize``. Because
+Currently the following GPU-specific attributes are available:
+``@assertOnGpu`` (described in `Diagnostics and Utilities`_),
+``@gpu.assertEligible``,
+``@gpu.blockSize``,
+``@gpu.itersPerThread``.
+Because
 Chapel's GPU support primarily works by converting eligible loops into GPU
-kernels, GPU-specific attributes primarily apply to loops. The following
-example demonstrates these attributes:
+kernels, GPU-specific attributes primarily apply to loops. For example:
 
 .. code-block:: chapel
 
@@ -287,6 +287,16 @@ In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
 GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
 ``myBlockSize``.
 
+``@gpu.assertEligible`` reports a compile-time error when compiling with
+``CHPL_LOCALE_MODEL==gpu`` and the annotated loop is not GPU-eligible.
+No runtime checks are performed.
+
+The attribute ``@gpu.itersPerThread(numIters)`` requests that the kernel
+executes each consecutive ``numIters`` iterations of the affected loop
+sequentially within the same GPU thread. Users must ensure that
+the arguments to the "blockSize" and "itersPerThread" attributes
+are positive and non-zero.
+
 In addition to applying GPU attributes to loops, Chapel provides (experimental)
 support for applying them to variable declarations. This is intended for use
 with variables whose initializers contain GPU-bound code. The following example
@@ -294,9 +304,9 @@ demonstrates initializing an array ``A`` from a ``foreach`` expression:
 
 .. code-block:: chapel
 
-   @assertOnGpu
    @gpu.blockSize(128)
-   var A = foreach i in 1..1024 do i * i;
+   @gpu.itersPerThread(4)
+   var A = foreach i in 1..1000000 do i * i;
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -579,6 +589,9 @@ improvements in the future.
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+* The compiler assumes without complete checking that the loop indices
+  of the loops executed on GPUs are incremented by ``1``.
 
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~

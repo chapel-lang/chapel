@@ -210,7 +210,8 @@ static void checkExplicitDeinitCalls(CallExpr* call) {
         if (arg2->symbol() == deinitStrLiteral)
           // OK to invoke explicitly from chpl__delete()
           // which is our internal implementation of 'delete' statements.
-          if (strcmp(call->parentSymbol->name, "chpl__delete"))
+          if (strcmp(call->parentSymbol->name, "chpl__delete") &&
+              strcmp(call->parentSymbol->name, "chpl__deleteWithAllocator"))
             USR_FATAL_CONT(call, "direct calls to deinit() are not allowed");
   }
 }

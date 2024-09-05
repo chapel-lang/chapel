@@ -31,8 +31,8 @@
 module LocaleModelHelpSetup {
 
   use ChapelLocale;
-  public use DefaultRectangular;
-  public use ChapelNumLocales;
+  use DefaultRectangular;
+  use ChapelNumLocales;
   use OS.POSIX;
   use CTypes;
 

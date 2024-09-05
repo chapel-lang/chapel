@@ -251,9 +251,6 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
       if (node->sym->hasFlag(FLAG_SYNC))
         fprintf(mFP, "<B>sync</B> ");
 
-      if (node->sym->hasFlag(FLAG_SINGLE))
-        fprintf(mFP, "<B>single</B> ");
-
       fprintf(mFP, "<B>type ");
       writeSymbol(node->sym, true);
       fprintf(mFP, "</B><UL>\n");
@@ -267,8 +264,6 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
     if (isSyncType(vs->type)) {
       fprintf(mFP, "<B>sync </B>");
 
-    } else if (isSingleType(vs->type)) {
-      fprintf(mFP, "<B>single </B>");
     }
 
     fprintf(mFP, "<B>var </B> ");

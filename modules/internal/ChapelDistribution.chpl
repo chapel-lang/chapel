@@ -506,6 +506,14 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiSupportsArrayViewElision() param {
+      return false;
+    }
+
+    proc dsiSupportsShortArrayTransfer() param {
+      return false;
+    }
+
     proc dsiIteratorYieldsLocalElements() param {
       return false;
     }
