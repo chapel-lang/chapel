@@ -3664,13 +3664,14 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
     if (error) {
       // emit a multiply-defined symbol error
       std::vector<ResultVisibilityTrace> traceResult;
-      v = lookupNameInScopeTracing(context, scope,
-                                   /* methodLookupHelper */ nullptr,
-                                   /* receiverScopeHelper */ nullptr,
-                                   name, config,
-                                   traceResult);
+      MatchingIdsWithName v2 =
+        lookupNameInScopeTracing(context, scope,
+                                 /* methodLookupHelper */ nullptr,
+                                 /* receiverScopeHelper */ nullptr,
+                                 name, config,
+                                 traceResult);
 
-      CHPL_REPORT(context, Redefinition, scope->id(), name, v, traceResult);
+      CHPL_REPORT(context, Redefinition, scope->id(), name, v2, traceResult);
 
       result = true;
     }
