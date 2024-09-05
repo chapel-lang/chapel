@@ -820,8 +820,9 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
 
   auto mr = mightBeManagerRecord->toRecordType();
   auto ct = mightBeClass->toClassType();
+  auto aot = mightBeClass->toAnyOwnedType();
 
-  if (!mr || !ct || !ct->manager() || !ct->decorator().isManaged()) return false;
+  if (!mr || ((!ct || !ct->manager() || !ct->decorator().isManaged()) && !aot )) return false;
 
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
 
@@ -831,9 +832,13 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   }
 
   // Override the class type to the manager record type
-  mightBeClass = ct->managerRecordType(context);
   // mightBeClass used to be `owned` of type ClassType,
   // now it's `_owned` of type RecordType
+  if (aot) {
+    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr);
+  } else {
+    mightBeClass = ct->managerRecordType(context);
+  }
 
   return true;
 }
