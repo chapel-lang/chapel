@@ -123,12 +123,12 @@ static void test4(Context* context) {
 }
 
 int main() {
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context context(config);
+  // Use a single context instance to avoid re-resolving internal modules.
+  auto ctx = buildStdContext();
+  Context* context = ctx.get();
 
-  test1(&context);
-  test2(&context);
-  test3(&context);
-  test4(&context);
+  test1(context);
+  test2(context);
+  test3(context);
+  test4(context);
 }

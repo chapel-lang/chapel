@@ -377,7 +377,8 @@ stringSet += "b";
 stringSet += "c";
 stringSet += "a"; // Redundant add "a"
 stringSet -= "c"; // Remove "c"
-writeln(stringSet.sorted());
+import Sort;
+writeln(Sort.sorted(stringSet));
 
 // Associative domains can also have a literal syntax
 var intSet = {1, 2, 4, 5, 100};
@@ -447,7 +448,7 @@ writeln(rSum, "\n", realArray);
 var dictDomain: domain(string) = { "one", "two", "three"};
 var dict: [dictDomain] int = ["one" => 1, "two" => 2, "three" => 3];
 
-for key in dictDomain.sorted() do
+for key in Sort.sorted(dictDomain) do
   writeln(dict[key]);
 
 // Arrays can be assigned to each other in a few different ways.

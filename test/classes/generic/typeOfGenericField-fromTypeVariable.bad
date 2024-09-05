@@ -3,6 +3,6 @@ $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: this candidate did not 
 typeOfGenericField-fromTypeVariable.chpl:12: note: because method call receiver is a type
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: but is passed to non-type formal 'ref this: []'
 typeOfGenericField-fromTypeVariable.chpl:12: note: other candidates are:
-$CHPL_HOME/modules/internal/ExternalArray.chpl:nnnn: note:   chpl_opaque_array._instance
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: note:   locale._instance
+$CHPL_HOME/modules/internal/ExternalArray.chpl:nnnn: note:   chpl_opaque_array._instance
 note: and 2 other candidates, use --print-all-candidates to see them

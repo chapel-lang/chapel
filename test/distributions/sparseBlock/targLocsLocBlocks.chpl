@@ -1,4 +1,4 @@
-use BlockDist, LayoutCS;
+use BlockDist, CompressedSparseLayout;
 
 config const n = 10,
              useTupleIndexing = true;

@@ -5,7 +5,7 @@
 */
 use BlockDist;
 use Time;
-use LayoutCS;
+use CompressedSparseLayout;
 
 param PRKVERSION = "2.17";
 

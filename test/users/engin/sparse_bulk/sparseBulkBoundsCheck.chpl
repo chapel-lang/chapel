@@ -1,12 +1,12 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N=8;
 config type layoutType = DefaultDist;
-var layout = if isRecordType(layoutType) then new layoutType() else new dmap(new unmanaged layoutType());
+const layout = if layoutType == DefaultDist then new dmap(new unmanaged layoutType())
+                                            else new layoutType();
 
 const ParentDom = {0..#N, 0..#N};
 var SparseDom: sparse subdomain(ParentDom) dmapped layout;
-
 var SparseArr: [SparseDom] int;
 
 const LargeDom = {0..#N*2, 0..#N*2};

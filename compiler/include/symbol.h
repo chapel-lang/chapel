@@ -940,7 +940,6 @@ extern VarSymbol *gUninstantiated;
 extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
-extern Symbol *gSingleVarAuxFields;
 
 extern FnSymbol* chplUserMain;
 

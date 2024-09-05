@@ -59,6 +59,7 @@ prefixes = {
     'san':          'CHPL_SANITIZE_EXE',
     'lib_pic':      'CHPL_LIB_PIC',
     'hwloc':        'CHPL_HWLOC',
+    'pci':          'CHPL_HWLOC_PCI',
     're2':          'CHPL_RE2'
 }
 

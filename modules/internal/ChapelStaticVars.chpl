@@ -22,6 +22,7 @@ module ChapelStaticVars {
   use OwnedObject;
   use Atomics;
   use ChapelLocale;
+  use LocalesArray;
 
   pragma "sharing kind enum"
   enum sharingKind {

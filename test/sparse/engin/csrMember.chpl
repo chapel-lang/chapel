@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 10;
 const ParentDom = {0..#N, 0..#N};

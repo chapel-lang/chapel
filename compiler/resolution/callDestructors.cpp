@@ -711,10 +711,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               // Skip this transformation if
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
-              //  * if it's a sync or single variable (different init/auto copy)
-              if (actualType == returnType &&
-                  isSyncType(formalType)   == false &&
-                  isSingleType(formalType) == false)
+              //  * if it's a sync variable (different init/auto copy)
+              if (actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {

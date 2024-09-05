@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 use List;
 use Sort;
 
@@ -8,9 +8,9 @@ var parentDom2D = {1..100, 1..100};
 var distParentDom1D = {1..100} dmapped new blockDist({1..100});
 var distParentDom2DCOO = {1..100, 1..100} dmapped new blockDist({1..100, 1..100});
 var distParentDom2DCSR = {1..100, 1..100} dmapped new blockDist({1..100, 1..100},
-    sparseLayoutType=cs(compressRows=true));
+    sparseLayoutType=csrLayout());
 var distParentDom2DCSC = {1..100, 1..100} dmapped new blockDist({1..100, 1..100},
-    sparseLayoutType=cs(compressRows=false));
+    sparseLayoutType=cscLayout());
 
 const indexRange = 10..90 by 20;
 
@@ -50,9 +50,9 @@ test(cooDom1D);
 // test local 2D domains
 var cooDom2D: sparse subdomain(parentDom2D);
 test(cooDom2D);
-var csrDom: sparse subdomain(parentDom2D) dmapped new cs(compressRows=true);
+var csrDom: sparse subdomain(parentDom2D) dmapped new csrLayout();
 test(csrDom);
-var cscDom: sparse subdomain(parentDom2D) dmapped new cs(compressRows=false);
+var cscDom: sparse subdomain(parentDom2D) dmapped new cscLayout();
 test(cscDom);
 
 // test distributed 1D domains

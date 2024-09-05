@@ -11,7 +11,7 @@
      - [ ] mkl_dcsrmultcsr()
 
 */
-use LayoutCS;
+use CompressedSparseLayout;
 use Random;
 use Time;
 
@@ -28,8 +28,8 @@ proc main() {
         D2 = {1..n, 1..m};
 
   // Domains
-  var ADom: sparse subdomain(D1) dmapped new cs(compressRows=true),
-      BDom: sparse subdomain(D2) dmapped new cs(compressRows=false);
+  var ADom: sparse subdomain(D1) dmapped new csrLayout(),
+      BDom: sparse subdomain(D2) dmapped new cscLayout();
 
   // Arrays
   var A: [ADom] real,

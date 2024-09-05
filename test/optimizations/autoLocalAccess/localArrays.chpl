@@ -4,7 +4,7 @@
 // 
 // See: https://github.com/Cray/chapel-private/issues/1897
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 var baseDom1D = {1..10};
 var baseDom2D = {1..10, 1..10};

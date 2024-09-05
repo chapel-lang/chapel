@@ -1,5 +1,5 @@
 
-use LayoutCS;
+use CompressedSparseLayout;
 use LinearAlgebra;
 use LinearAlgebra.Sparse;
 

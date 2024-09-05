@@ -1,11 +1,11 @@
 // This is from issue https://github.com/chapel-lang/chapel/issues/18656
 
-use SortedSet;
+use SortedSet; use Sort;
 
 enum E { A = 0, B, C, D, };
 
-record R1 { proc key(a) do return  a:int; };
-record R2 { proc key(a) do return -a:int; };
+record R1: keyComparator { proc key(a) do return  a:int; };
+record R2: keyComparator { proc key(a) do return -a:int; };
 
 const comp1: R1, comp2: R2;
 

@@ -131,6 +131,18 @@ class Enum final : public TypeDecl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
+
+  /**
+   Return the number of EnumElements in this Enum.
+   */
+  int numElements() const {
+    int numElts = 0;
+    for (auto elt : this->enumElements()) {
+      (void) elt;
+      numElts++;
+    }
+    return numElts;
+  }
 };
 
 

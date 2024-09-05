@@ -1,3 +1,4 @@
+import Sort;
 use List;
 
 config const n = 100;
@@ -58,5 +59,5 @@ for 1..n {
   assert(D.size == recs.size);
 }
 
-for d in D.sorted() do
+for d in Sort.sorted(D) do
   writeln(d, " => ", A[d]);

@@ -166,7 +166,7 @@ def get_sdk_path(for_gpu, sdk_type='bitcode'):
     gpu_type = get()
 
     # No SDK path if GPU is not being used.
-    if gpu_type == 'cpu':
+    if gpu_type in ('cpu', 'none'):
         return 'none'
 
     # Check vendor-specific environment variable for SDK path

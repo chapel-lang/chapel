@@ -6,8 +6,6 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# Create a tarball from current repo.
-# The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
 
 # common-tarball sets CHPL_HOME
@@ -18,6 +16,8 @@ source $CWD/common-tarball.bash
 export CHPL_GEN_RELEASE_NO_CLONE=true
 
 export CHPL_LLVM=none
+# $CWD/common.bash sets this to none, but Homebrew builds with native
+export CHPL_TARGET_CPU=native
 
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -26,6 +26,8 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+# Create a tarball from current repo.
+# The tarball is left in root of repo in tar/ directory.
 gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
@@ -33,16 +35,23 @@ cd ${CHPL_HOME}/util/packaging/homebrew
 
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
+# Bail early if the tarball doesn't exist
+if [[ ! -f $location ]]; then
+  log_error "FATAL: Did not find tarball at ${location}"
+  exit 1
+fi
+
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
-# create sed -i '' -e for macOS
-sed_command="sed -i '' -e"
-$sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
 sha=($(shasum -a 256 $location))
 sha256=${sha[0]}
 log_info $sha256
-$sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
+
+# create sed command
+sed_command="sed -i.bak -e "
+$sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
+$sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
 # Test if homebrew install using the chapel formula works.
 brew upgrade

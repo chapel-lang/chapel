@@ -42,15 +42,15 @@ proc stringToTwoRepeated(arg:string) {
   }
 }
 
-record MyComparator {
+record MyComparator: keyPartComparator {
   proc keyPart(arg:TwoRepeated, i:int) {
     var sum = arg.nFirst + arg.nSecond;
     if i < arg.nFirst then
-      return (0, arg.first);
+      return (keyPartStatus.returned, arg.first);
     else if i < sum then
-      return (0, arg.second);
+      return (keyPartStatus.returned, arg.second);
     else
-      return (-1, 0);
+      return (keyPartStatus.pre, 0);
   }
 }
 

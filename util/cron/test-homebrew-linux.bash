@@ -30,39 +30,42 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# gen_release $short_version
+gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
+# Bail early if the tarball doesn't exist
+if [[ ! -f $location ]]; then
+    log_error "FATAL: Did not find tarball at $location"
+    exit 1
+fi
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
-# create sed -i '' -e for macOS
-sed_command="sed -i '' -e"
-$sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
+
+# Get the sha256 of the tarball
 sha=($(shasum -a 256 $location))
 sha256=${sha[0]}
 log_info $sha256
-$sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
-#To mimic home-brew CI. Run home-brew chpl install inside a container.
-# check if docker desktop is installed, if not fail the test.
-# TODO: maybe change this for linux?
-source ${CHPL_HOME}/util/cron/docker.bash
-start_docker
-# This mimics homebrew-ci
-# This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
-cd ${CHPL_HOME}/util/packaging/homebrew
+# create sed -i command
+sed_command="sed -i.bak -e "
+#
 
 # Replace the tarball location in the container where the tarball is copied over
 $sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
+$sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
+
+# To mimic home-brew CI. Run homebrew chpl install inside a container.
+# This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
+cd ${CHPL_HOME}/util/packaging/homebrew
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
 
-#This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
+# This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew-linux"

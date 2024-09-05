@@ -21,6 +21,7 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/framework/Context.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
 #include "chpl/parsing/FileContents.h"
@@ -669,6 +670,12 @@ void reportUnstableWarningForId(Context* context, ID idMention,
   Given an ID, returns the module kind for the ID.
 */
 uast::Module::Kind idToModuleKind(Context* context, ID id);
+
+/*
+  Given a unique string, determine if it matches the name of a known special
+  method.
+*/
+bool isSpecialMethodName(UniqueString name);
 
 } // end namespace parsing
 } // end namespace chpl

@@ -69,6 +69,16 @@ module ParallelIO {
     This routine is similar to :proc:`readLinesAsArray`, except that it yields
     each line as it is read instead of returning an array of lines.
 
+    **Example**:
+
+    .. code-block:: chapel
+
+      use ParallelIO;
+
+      var sum = 0;
+      forall line in readLines("ints.txt") with (+ reduce sum) do
+        sum += line:int;
+
     .. warning::
 
       This routine will halt if the file cannot be opened or if an
@@ -80,13 +90,18 @@ module ParallelIO {
       Only serial and standalone-parallel iteration is supported. This
       iterator cannot yet be used in a zippered context.
 
-    :arg filePath: a path to the file to read from
-    :arg lineType: which type to return for each line — either ``string`` or ``bytes``
+    :arg filePath: the file to read
+    :arg lineType: which type to return for each line: either ``string`` or
+                   ``bytes`` — defaults to ``string``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg nTasks: the number of tasks used to read the file
+    :arg nTasks: the number of tasks used to read the file — defaults to
+                 ``here.maxTaskPar``
+    :arg targetLocales: the locales to use for reading the file — by default,
+                        only the calling locale is used
   */
   iter readLines(filePath: string, type lineType = string,
-                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                 targetLocales: [] locale = [here,]
   ): lineType
     where lineType == string || lineType == bytes
   {
@@ -105,23 +120,42 @@ module ParallelIO {
 
   @chpldoc.nodoc
   iter readLines(param tag: iterKind, filePath: string, type lineType = string,
-                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                 targetLocales: [?tld] locale = [here,]
   ): lineType
     where tag == iterKind.standalone && (lineType == string || lineType == bytes)
   {
     param delim = b"\n";
 
     const fMeta = try! open(filePath, ioMode.r),
-          fileBounds = 0..<(try! fMeta.size),
-          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+          fileBounds = 0..<(try! fMeta.size);
 
-    coforall tid in 0..<nTasks {
-      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
-            r = try! fMeta.reader(locking=false, region=taskBounds);
+    if tld.size == 0 || (tld.size == 1 && targetLocales.first == here) {
+      const byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! fMeta.reader(locking=false, region=taskBounds);
 
-      var line: lineType;
-      while (try! r.readLine(line, stripNewline=true)) do
-        yield line;
+        var line: lineType;
+        while (try! r.readLine(line, stripNewline=true)) do
+          yield line;
+      }
+    } else {
+      const byteOffsets = try! findDelimChunks(fMeta, delim, tld.size, fileBounds, header);
+      coforall (loc, id) in zip(targetLocales, 0..) do on loc {
+        const locBounds = byteOffsets[id]..byteOffsets[id+1],
+              locFile = try! open(filePath, ioMode.r),
+              locByteOffsets = try! findDelimChunks(locFile, delim, nTasks, locBounds, headerPolicy.noHeader);
+
+        coforall tid in 0..<nTasks {
+          const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                r = try! locFile.reader(locking=false, region=taskBounds);
+
+          var line: lineType;
+          while (try! r.readLine(line, stripNewline=true)) do
+            yield line;
+        }
+      }
     }
   }
 
@@ -130,6 +164,27 @@ module ParallelIO {
 
     This routine is similar to :proc:`readDelimitedAsArray`, except that it
     yields each value as it is read instead of returning an array of values.
+
+    **Example**:
+
+    .. code-block:: chapel
+
+      use IO, ParallelIO;
+
+      record color {
+        var r, g, b: uint(8);
+
+        proc ref deserialize(reader: fileReader(?), ref deserializer) throws {
+          reader.read(this.r);
+          reader.readLiteral(b",");
+          reader.read(this.g);
+          reader.readLiteral(b",");
+          reader.read(this.b);
+        }
+      }
+
+      forall c in readDelimited("colors.csv", color, header=headerPolicy.skipLines(1)) do
+        processColor(c);
 
     .. warning::
 
@@ -142,16 +197,22 @@ module ParallelIO {
       Only serial and standalone-parallel iteration is supported. This
       iterator cannot yet be used in a zippered context.
 
-    :arg filePath: a path to the file to read from
+    :arg filePath: the file to read
     :arg t: the type of value to read from the file
-    :arg delim: the delimiter to use to separate ``t`` values in the file
+    :arg delim: the delimiter to use to separate ``t`` values in the file —
+                defaults to the newline character
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg nTasks: the number of tasks used to read the file
-    :arg deserializerType: the type of deserializer to use when reading values
+    :arg nTasks: the number of tasks used to read the file — defaults to
+                 ``here.maxTaskPar``
+    :arg deserializerType: The type of deserializer to use when reading values —
+                           defaults to the I/O module's default deserializer
+    :arg targetLocales: the locales to use for reading the file — by default,
+                        only the calling locale is used
   */
   iter readDelimited(filePath: string, type t, in delim: ?dt = b"\n",
                      header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                     type deserializerType = defaultDeserializer
+                     type deserializerType = defaultDeserializer,
+                     targetLocales: [] locale = [here,]
   ): t
     where dt == string || dt == bytes
   {
@@ -173,23 +234,45 @@ module ParallelIO {
   iter readDelimited(param tag: iterKind,
                      filePath: string, type t, in delim: ?dt = b"\n",
                      header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                     type deserializerType = defaultDeserializer
+                     type deserializerType = defaultDeserializer,
+                     targetLocales: [?tld] locale = [here,]
   ): t
     where tag == iterKind.standalone && (dt == string || dt == bytes)
   {
     const fMeta = try! open(filePath, ioMode.r),
-          fileBounds = 0..<(try! fMeta.size),
-          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+          fileBounds = 0..<(try! fMeta.size);
 
-    coforall tid in 0..<nTasks {
-      var des: deserializerType;
-      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
-            r = try! fMeta.reader(locking=false, region=taskBounds, deserializer=des);
+    if tld.size == 0 || (tld.size == 1 && targetLocales.first == here) {
+      const byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+      coforall tid in 0..<nTasks {
+        var des: deserializerType;
+        const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
+              r = try! fMeta.reader(locking=false, region=taskBounds, deserializer=des);
 
-      var item: t;
-      while (try! r.read(item)) {
-        yield item;
-        try! r.advanceThrough(delim);
+        var item: t;
+        while (try! r.read(item)) {
+          yield item;
+          try! r.advanceThrough(delim);
+        }
+      }
+    } else {
+      const byteOffsets = try! findDelimChunks(fMeta, delim, tld.size, fileBounds, header);
+      coforall (loc, id) in zip(targetLocales, 0..) do on loc {
+        const locBounds = byteOffsets[id]..<byteOffsets[id+1],
+              locFile = try! open(filePath, ioMode.r),
+              locByteOffsets = try! findDelimChunks(locFile, delim, nTasks, locBounds, headerPolicy.noHeader);
+
+        coforall tid in 0..<nTasks {
+          var des: deserializerType;
+          const taskBounds = locByteOffsets[tid]..locByteOffsets[tid+1],
+                r = try! locFile.reader(locking=false, region=taskBounds, deserializer=des);
+
+          var item: t;
+          while (try! r.read(item)) {
+            yield item;
+            try! r.advanceThrough(delim);
+          }
+        }
       }
     }
   }
@@ -200,12 +283,14 @@ module ParallelIO {
     This routine is similar to :proc:`readDelimitedAsBlockArray`, except that it
     reads each line as a :type:`~String.string` or :type:`~Bytes.bytes` value.
 
-    :arg filePath: a path to the file to read from
-    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
-    :arg nTasks: the number of tasks to use per locale
-        (if ``-1``, query ``here.maxTaskPar`` on each locale)
+    :arg filePath: the file to read
+    :arg lineType: the element type of the returned array: either ``string`` or
+                   ``bytes`` — defaults to ``string``
+    :arg nTasks: the number of tasks to use per locale — defaults to ``-1``, meaning
+                 each locale should query ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg targetLocales: the locales to read the file on
+    :arg targetLocales: the locales to read the file on and the target locales for
+                        the returned block-distributed array
 
     :returns: a block-distributed array of ``lineType`` values
 
@@ -255,15 +340,16 @@ module ParallelIO {
     that it only executes on the calling locale. As such, it does not accept a
     ``targetLocales`` argument and returns a non-distributed array.
 
-    :arg filePath: a path to the file to read from
-    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
-    :arg nTasks: the number of tasks to use
+    :arg filePath: the file to read
+    :arg lineType: the element type of the returned array: either ``string`` or
+                   ``bytes`` — defaults to ``string``
+    :arg nTasks: the number of tasks to use — defaults to ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
 
     :returns: a default rectangular array of ``lineType`` values
 
     :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
-             in any of the chunks
+             in one or more of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
   */
@@ -320,38 +406,49 @@ module ParallelIO {
     ``t`` value. For CSV, the commas between ``t``'s fields must be parsed by
     it's ``deserialize`` method. This can be accomplished in one of two ways:
     (1) by using a custom deserialize method that parses the comma values
-    manually, e.g.,
+    manually (like in the example below), or (2) by using a deserializer that
+    will handle commas appropriately with ``t``'s default ``deserialize`` method.
+
+    **Example:**
 
     .. code-block:: chapel
 
-        record color {
-          var r, g, b: uint(8);
-        }
+      use IO, ParallelIO;
 
-        proc ref color.deserialize(reader, ref deserializer) throws {
-          reader.read(this.r);
-          reader.readLiteral(b",");
-          reader.read(this.g);
-          reader.readLiteral(b",");
-          reader.read(this.b);
-        }
+      record color {
+        var r, g, b: uint(8);
+      }
 
-    or (2) by using a deserializer that will handle commas appropriately
-    with ``t``'s default ``deserialize`` method.
+      proc ref color.deserialize(reader, ref deserializer) throws {
+        reader.read(this.r);
+        reader.readLiteral(b",");
+        reader.read(this.g);
+        reader.readLiteral(b",");
+        reader.read(this.b);
+      }
 
-    :arg filePath: a path to the file to read from
-    :arg delim: the delimiter to use to separate ``t`` values in the file
+      var colors = readDelimitedAsBlockArray(
+        "colors.csv",
+        t=color,
+        header=headerPolicy.skipLines(1)
+      );
+
+    :arg filePath: the file to read
     :arg t: the type of value to read from the file
-    :arg nTasks: the number of tasks to use per locale
-        (if ``-1``, query ``here.maxTaskPar`` on each locale)
+    :arg delim: the delimiter to use to separate ``t`` values in the file —
+                defaults to the newline character
+    :arg nTasks: the number of tasks to use per locale — defaults to ``-1``, meaning
+                 each locale should query ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
-    :arg targetLocales: the locales to read the file on
+    :arg deserializerType: the type of deserializer to use — defaults to the I/O
+                           module's default deserializer
+    :arg targetLocales: the locales to read the file on and the target locales for
+                        the returned block-distributed array
 
     :returns: a block-distributed array of ``t`` values
 
     :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
-             in any of the chunks
+             in one or more of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
@@ -400,17 +497,19 @@ module ParallelIO {
     except that it only executes on the calling locale. As such, it does not
     accept a ``targetLocales`` argument and returns a non-distributed array.
 
-    :arg filePath: a path to the file to read from
-    :arg delim: the delimiter to use to separate ``t`` values in the file
+    :arg filePath: the file to read
     :arg t: the type of value to read from the file
-    :arg nTasks: the number of tasks to use
+    :arg delim: the delimiter to use to separate ``t`` values in the file —
+                defaults to the newline character
+    :arg nTasks: the number of tasks to use — defaults to ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
+    :arg deserializerType: the type of deserializer to use — defaults to the I/O
+                           module's default deserializer
 
     :returns: a default rectangular array of ``t`` values
 
     :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found in
-              any of the chunks
+              one or more of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
@@ -474,19 +573,22 @@ module ParallelIO {
           * have a 'deserialize' method that throws when a valid ``t`` cannot be read
           * have a default (zero argument) initializer
 
-    :arg filePath: a path to the file to read from
-    :arg delim: the delimiter used to guide file chunking
+    :arg filePath: the file to read
     :arg t: the type of value to read from the file
-    :arg nTasks: the number of tasks to use per locale
-        (if ``-1``, query ``here.maxTaskPar`` on each locale)
+    :arg delim: the delimiter used to guide file chunking - defaults to the
+                newline character
+    :arg nTasks: the number of tasks to use per locale — defaults to ``-1``,
+                 meaning each locale should query ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
-    :arg targetLocales: the locales to read the file on
+    :arg deserializerType: the type of deserializer to use — defaults to the I/O
+                           module's default deserializer
+    :arg targetLocales: the locales to read the file on and the target locales for
+                        the returned block-distributed array
 
     :returns: a block-distributed array of ``t`` values
 
     :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
-             in any of the chunks
+             in one or more of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
@@ -551,17 +653,19 @@ module ParallelIO {
     except that it only executes on the calling locale. As such, it does not
     accept a ``targetLocales`` argument and returns a non-distributed array.
 
-    :arg filePath: a path to the file to read from
-    :arg delim: the delimiter used to guide file chunking
+    :arg filePath: the file to read
     :arg t: the type of value to read from the file
-    :arg nTasks: the number of tasks to use
+    :arg delim: the delimiter used to guide file chunking - defaults to the
+                newline character
+    :arg nTasks: the number of tasks to use — defaults to ``here.maxTaskPar``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
+    :arg deserializerType: the type of deserializer to use — defaults to the I/O
+                           module's default deserializer
 
     :returns: a default rectangular array of ``t`` values
 
     :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
-             in any of the chunks
+             in one or more of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file

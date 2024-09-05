@@ -1,6 +1,6 @@
 
 use utilities;
-use LayoutCS;
+use CompressedSparseLayout;
 
 // RES = + reduce (shape=RES.domain) [idx in DOM] FEXPR(idx)
 

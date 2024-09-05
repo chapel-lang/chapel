@@ -26,6 +26,8 @@ module LocaleModelHelpFlat {
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
   use CTypes;
+  use ChapelBase;
+  use ChapelLocale;
 
   //////////////////////////////////////////
   //

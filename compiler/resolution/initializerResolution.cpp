@@ -116,16 +116,23 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   return retval;
 }
 
-static std::map<FnSymbol*,FnSymbol*> newWrapperMap;
+// This is a map from the original initializer to the new wrapper
+// The map is keyed by the FnSymbol of the original initializer and the expr of
+//   the allocator (if any)
+// The value is the '_new' wrapped initializer
+static std::map<std::pair<FnSymbol*,Expr*>,FnSymbol*> newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
-static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
+static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   SET_LINENO(initFn);
 
+  // TODO: allocator needs to be threaded through as a formal and an actual
   AggregateType* type = toAggregateType(initFn->_this->getValType());
-  if (newWrapperMap.find(initFn) != newWrapperMap.end()) {
-    return newWrapperMap[initFn];
+  if (newWrapperMap.find({initFn, allocator}) != newWrapperMap.end()) {
+    // TODO: this should use a ptr to a symbol, not a Expr
+    // the Expr will either be NULL or always a new pointer
+    return newWrapperMap[std::make_pair(initFn, allocator)];
   }
 
   FnSymbol* fn = new FnSymbol(astrNew);
@@ -150,6 +157,11 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   fn->insertFormalAtTail(chpl_t);
 
   SymbolMap initToNewMap;
+  ArgSymbol* allocatorFormal = nullptr;
+  if (isClass(type) && allocator != nullptr) {
+    allocatorFormal = new ArgSymbol(INTENT_BLANK, "allocator_formal", allocator->typeInfo());
+    fn->insertFormalAtTail(allocatorFormal);
+  }
   for_formals(formal, initFn) {
     if (formal != initFn->_this && formal->type != dtMethodToken) {
       ArgSymbol* newArg = formal->copy();
@@ -172,8 +184,11 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 
   body->insertAtTail(new DefExpr(initTemp));
   if (isClass(type)) {
-    body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
-    body->insertAtTail(new CallExpr(PRIM_SETCID, initTemp));
+    if (allocatorFormal != nullptr) {
+      body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAllocWithAllocator(type, new SymExpr(allocatorFormal))));
+    } else {
+      body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
+    }
   }
 
   if (initFn->throwsError()) {
@@ -236,7 +251,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 
   normalize(fn);
 
-  newWrapperMap[initFn] = fn;
+  newWrapperMap[std::make_pair(initFn, allocator)] = fn;
 
   return fn;
 }
@@ -389,13 +404,24 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     USR_FATAL_CONT(newExpr, "cannot create a 'borrowed' object using 'new'");
   }
 
-  INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
+  INT_ASSERT(isNewLike(newExpr));
   AggregateType* at = resolveNewFindType(newExpr);
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
   Expr* stmt = newExpr->getStmtExpr();
   stmt->insertBefore(block);
 
+
+  // pull out the allocator before `buildInitCall`
+  Expr* allocator = nullptr;
+  if (newExpr->isPrimitive(PRIM_NEW_WITH_ALLOCATOR)) {
+    if (!isClass(at)) {
+      USR_FATAL_CONT(newExpr, "cannot use an allocator with non-class types");
+    }
+
+    allocator = newExpr->get(1)->copy();
+    newExpr->get(1)->remove();
+  }
   CallExpr* initCall = buildInitCall(newExpr, at, block);
   FnSymbol* initFn = initCall->resolvedFunction();
   Symbol* initTemp = toSymExpr(toNamedExpr(initCall->get(2))->actual)->symbol();
@@ -411,11 +437,14 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   makeActualsVector(info, actualIdxToFormal);
 
   if (isClass(at) || isPromotionRequired(initFn, info, actualIdxToFormal)) {
-    FnSymbol* newWrapper = buildNewWrapper(initFn);
+    FnSymbol* newWrapper = buildNewWrapper(initFn, allocator);
 
     initCall->setResolvedFunction(newWrapper);
     initCall->get(2)->remove(); // 'this'
     initCall->get(1)->remove(); // '_mt'
+    if (allocator) {
+      initCall->insertAtHead(allocator);
+    }
     initCall->insertAtHead(new SymExpr(initType->symbol));
     CallExpr* newCall = toCallExpr(initCall->remove());
 
@@ -890,19 +919,21 @@ static void makeActualsVector(const CallInfo&          info,
 static AggregateType* resolveNewFindType(CallExpr* newExpr) {
   SymExpr* typeExpr = NULL;
 
+  int type_index = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+
   // Find the SymExpr for the type.
   //   1) Common case  :- primNew(Type, arg1, ...);
   //   2) Module scope :- primNew(module=, moduleName, Type, arg1, ...);
   //   3) Nested call  :- primNew(Inner(_mt, this), arg1, ...);
-  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+  if (SymExpr* se = toSymExpr(newExpr->get(type_index))) {
     if (se->symbol() != gModuleToken) {
       typeExpr = se;
 
     } else {
-      typeExpr = toSymExpr(newExpr->get(3));
+      typeExpr = toSymExpr(newExpr->get(type_index+2));
     }
 
-  } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+  } else if (CallExpr* partial = toCallExpr(newExpr->get(type_index))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
       typeExpr = partial->partialTag ? se : NULL;
     }

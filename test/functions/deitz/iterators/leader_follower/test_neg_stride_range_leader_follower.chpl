@@ -1,3 +1,4 @@
+import Sort;
 var D: domain((int,int), parSafe=false);
 
 var lock: sync bool;
@@ -8,7 +9,7 @@ forall (i,j) in zip(1..7 by -1, 0..) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 D.clear();
 
 forall (i,j) in zip(1..7 by -2, 0..) with (ref D) {
@@ -17,7 +18,7 @@ forall (i,j) in zip(1..7 by -2, 0..) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 D.clear();
 
 forall (i,j) in zip(1..4, 1..7 by -2) with (ref D) {
@@ -26,7 +27,7 @@ forall (i,j) in zip(1..4, 1..7 by -2) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 D.clear();
 
 forall (i,j) in zip({1..7 by -1}, 0..) with (ref D) {
@@ -35,7 +36,7 @@ forall (i,j) in zip({1..7 by -1}, 0..) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 D.clear();
 
 forall (i,j) in zip({1..7 by -2}, 0..) with (ref D) {
@@ -44,7 +45,7 @@ forall (i,j) in zip({1..7 by -2}, 0..) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 D.clear();
 
 forall (i,j) in zip({1..4}, {1..7 by -2}) with (ref D) {
@@ -53,4 +54,4 @@ forall (i,j) in zip({1..4}, {1..7 by -2}) with (ref D) {
   lock.readFE();
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));

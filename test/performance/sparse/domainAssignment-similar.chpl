@@ -1,6 +1,6 @@
 use Time;
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 var t = new stopwatch();
 

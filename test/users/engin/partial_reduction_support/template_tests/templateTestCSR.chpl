@@ -2,7 +2,7 @@ use templates;
 use utilities;
 use dsiMethods;
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 4;
 

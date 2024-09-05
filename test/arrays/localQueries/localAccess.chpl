@@ -11,7 +11,7 @@ var baseDom = {1..10};
 }
 
 {
-  use LayoutCS;
+  use CompressedSparseLayout;
 
   var dom2D = {1..10, 1..10};
 

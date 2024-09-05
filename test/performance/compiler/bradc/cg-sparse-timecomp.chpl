@@ -2,7 +2,7 @@
 //   618.233 with default arguments, linear search for sparse domain this()
 //    62.169 with --cflags=-O3, linear search
 //    25.4556 with --cflags=-O3, binary search
-use CGMakeA, LayoutCS, Time;
+use CGMakeA, CompressedSparseLayout, Time;
 
 type elemType = real(64);
 

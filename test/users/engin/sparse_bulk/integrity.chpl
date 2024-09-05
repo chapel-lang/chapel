@@ -1,9 +1,9 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 8;
 const ParentDom = {0..#N, 0..#N};
 
-var SparseDom: sparse subdomain(ParentDom) dmapped new cs();
+var SparseDom: sparse subdomain(ParentDom) dmapped new csrLayout();
 var SparseMat: [SparseDom] int;
 
 var inds: [{0..#2*N}] 2*int;

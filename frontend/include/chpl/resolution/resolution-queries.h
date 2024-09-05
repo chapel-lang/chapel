@@ -116,6 +116,13 @@ typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig);
 
 /**
+  Compute a initial TypedFnSignature for an ID.
+  The TypedFnSignature will represent generic and potentially unknown
+  types if the function is generic.
+ */
+const TypedFnSignature* typedSignatureInitialForId(Context* context, ID id);
+
+/**
   Returns a Type that represents the initial type provided by a TypeDecl
   (e.g. Class, Record, etc). This type does not store the fields.
   */
@@ -370,7 +377,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
  */
 const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
+                        MatchingIdsWithName lst,
                         CallInfo call);
 
 /**

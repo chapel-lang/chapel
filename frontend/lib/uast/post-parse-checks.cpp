@@ -161,6 +161,7 @@ struct Visitor {
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
+  void checkIterNames(const Function* node);
 
   /*
   TODO
@@ -687,6 +688,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   if (auto foundFn = searchParents(asttags::Function, nullptr)) {
     auto fn = foundFn->toFunction();
     if (fn->name() == "chpl__delete") return;
+    if (fn->name() == "chpl__deleteWithAllocator") return;
   }
 
   error(node, "explicit calls to deinit() are not allowed.");
@@ -1404,7 +1406,6 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("bytes")     ||
       name == USTR("string")    ||
       name == USTR("sync")      ||
-      name == USTR("single")    ||
       name == USTR("owned")     ||
       name == USTR("shared")    ||
       name == USTR("borrowed")  ||
@@ -1619,7 +1620,9 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("stable") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.assertEligible") ||
              node->name() == USTR("gpu.blockSize") ||
+             node->name() == USTR("gpu.itersPerThread") ||
              node->name().startsWith(USTR("chpldoc.")) ||
              node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
@@ -1628,9 +1631,8 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
-  } else {
+  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS)) {
     // Check for other possible tool name given from command line
-    bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
     auto toolNames = chpl::parsing::AttributeToolNames(this->context_);
     for (auto toolName : toolNames) {
       auto nameDot = UniqueString::getConcat(this->context_, toolName.c_str(), ".");
@@ -1639,9 +1641,11 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
         return;
       }
     }
-    if (doWarn) {
-      auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
-      auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
+    auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    if (toolName == "gpu") {
+      warn(node, "Unknown gpu attribute '%s'", node->name().c_str());
+    } else {
       warn(node, "Unknown attribute tool name '%s'", toolName.c_str());
     }
   }
@@ -1652,18 +1656,16 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
+  if (attr->name() == USTR("assertOnGpu") ||
+      attr->name() == USTR("gpu.blockSize") ||
+      attr->name() == USTR("gpu.itersPerThread") ||
+      attr->name() == USTR("gpu.assertEligible")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
+    CHPL_REPORT(context_, InvalidGpuAttribute, node, attr);
 
-    if (attr->name() == USTR("assertOnGpu")) {
-      CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
-    } else {
-      CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
-      CHPL_REPORT(context_, InvalidBlockSize, node, attr);
-    }
   } else if (attr->name() == USTR("functionStatic")) {
     if (!node->isVariable()) {
       error(node, "the '@functionStatic' attribute can only be applied to variables.");
@@ -1750,6 +1752,7 @@ void Visitor::visit(const Function* node) {
   checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
+  checkIterNames(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1944,6 +1947,28 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
   if (!success) {
     error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
   }
+}
+
+void Visitor::checkIterNames(const Function* node) {
+  if (node->kind() == Function::ITER && node->isMethod()) {
+    auto name = node->name();
+
+    if (name == USTR("init")) {
+      error(node,
+            "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be deinitializers, please rename this iterator");
+    } else if (name == USTR("init=")) {
+      error(node,
+            "iterators can't be copy initializers, please rename this iterator");
+    } else if (chpl::parsing::isSpecialMethodName(name)) {
+      error(node,
+            "iterators can't be the '%s' method, please rename this iterator",
+            name.c_str());
+    }
+  }
+  return;
 }
 
 void Visitor::visit(const Module* node){

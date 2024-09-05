@@ -1,0 +1,5 @@
+assertOnGpu.chpl:14: warning: @assertOnGpu encountered in non-GPU compilation
+assertOnGpu.chpl:14: warning: this attribute has a runtime component, and will always halt execution in a non-GPU context.
+assertOnGpu.chpl:14: warning: consider using '@gpu.assertEligible' to ensure that the code can be executed on the GPU without runtime checks.
+assertOnGpu.chpl:14: warning: consider using '@gpu.assertEligible' to ensure that the code can be executed on the GPU without runtime checks.
+assertOnGpu.chpl:14: error: assertOnGpu() failed

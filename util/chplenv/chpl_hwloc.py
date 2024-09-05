@@ -4,6 +4,7 @@ import os
 
 import optparse
 import chpl_locale_model, chpl_tasks, chpl_platform, overrides, third_party_utils
+import chpl_hwloc_pci
 from utils import error, memoize, warning, try_run_command, run_command
 
 
@@ -22,8 +23,8 @@ def get():
 
 @memoize
 def get_uniq_cfg_path():
-    return '{0}-{1}'.format(third_party_utils.default_uniq_cfg_path(),
-                            chpl_locale_model.get())
+    return '{0}-{1}-{2}'.format(third_party_utils.default_uniq_cfg_path(),
+                            chpl_locale_model.get(), chpl_hwloc_pci.get())
 
 
 # returns 2-tuple of lists

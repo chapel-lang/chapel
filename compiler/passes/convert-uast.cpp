@@ -126,8 +126,13 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.assertEligible attribute, which asserts GPU eligibility,
+  // if one is provided by the user.
+  const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
+  // The @gpu.itersPerThread attribute, if one is provided by the user.
+  const uast::Attribute* itersPerThreadAttr = nullptr;
 
  private:
   LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
@@ -207,7 +212,9 @@ struct LoopAttributeInfo {
 
   void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+    this->itersPerThreadAttr = attrs->getAttributeNamed(USTR("gpu.itersPerThread"));
   }
 
  public:
@@ -238,6 +245,8 @@ struct LoopAttributeInfo {
   bool empty() const {
     return llvmMetadata.size() == 0 &&
            assertOnGpuAttr == nullptr &&
+           assertEligibleAttr == nullptr &&
+           itersPerThreadAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
@@ -247,6 +256,7 @@ struct LoopAttributeInfo {
 
   bool insertGpuEligibilityAssertion(BlockStmt* body);
   bool insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  bool insertItersPerThreadCall(Converter& converter, BlockStmt* body);
   BlockStmt* createPrimitivesBlock(Converter& converter);
   void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
@@ -462,12 +472,6 @@ struct Converter {
     return nullptr;
   }
 
-  void readNativeGpuAttributes(LoopAttributeInfo& into,
-                               const uast::AttributeGroup* attrs) {
-    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
-  }
-
   Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
@@ -569,7 +573,6 @@ struct Converter {
       { USTR("owned"), "_owned" },
       { USTR("shared"), "_shared" },
       { USTR("sync"), "_syncvar" },
-      { USTR("single"), "_singlevar" },
       { USTR("domain"), "_domain" },
       { USTR("align"), "chpl_align" },
       { USTR("by"), "chpl_by" },
@@ -773,12 +776,6 @@ struct Converter {
         return remap;
       }
     } else {
-      if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-      }
-
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -1765,8 +1762,11 @@ struct Converter {
   LLVMMetadataList extractLlvmAttributesAndRejectOthers(const uast::Loop* node) {
     auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
     if (loopAttributes.assertOnGpuAttr != nullptr) {
-      CHPL_REPORT(context, InvalidGpuAssertion, node,
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
                   loopAttributes.assertOnGpuAttr);
+    } else if (loopAttributes.assertEligibleAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
+                  loopAttributes.assertEligibleAttr);
     }
     return std::move(loopAttributes.llvmMetadata);
   }
@@ -2266,11 +2266,6 @@ struct Converter {
 
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (name == USTR("single")) {
-        if (topLevelModTag == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-        ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == USTR("sync")) {
@@ -4378,15 +4373,22 @@ struct Converter {
 };
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  bool inserted = false;
   if (assertOnGpuAttr) {
-    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                    new SymExpr(gTrue)));
-    return true;
+    body->insertAtTail(new CallExpr("chpl__assertOnGpuAttr"));
+    inserted = true;
   }
-  return false;
+  if (assertEligibleAttr) {
+    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
+    inserted = true;
+  }
+  return inserted;
 }
 
-bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+static bool convertAttributeCall(Converter& converter,
+                                 BlockStmt* body,
+                                 const uast::Attribute* blockSizeAttr,
+                                 const char* supportFn) {
   // In cases like compound promotion (A + 1 + 1), we might end up inserting
   // the GPU blockSize attribute several times, even though there's only
   // one place in the code where the attribute was created. To work around this,
@@ -4396,19 +4398,24 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   static int counter = 0;
 
   if (blockSizeAttr) {
-    if (blockSizeAttr->numActuals() != 1) {
-      USR_FATAL(blockSizeAttr->id(),
-                "'@gpu.blockSize' attribute must have exactly one argument: "
-                "the block size");
+    auto newCall = new CallExpr(supportFn, new_IntSymbol(++counter));
+    for (auto actual : blockSizeAttr->actuals()) {
+      newCall->insertAtTail(converter.convertAST(actual));
     }
-
-    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
-                                    blockSize,
-                                    new_IntSymbol(counter++)));
+    body->insertAtTail(newCall);
     return true;
   }
   return false;
+}
+
+bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                              blockSizeAttr, "chpl__gpuBlockSizeAttr");
+}
+
+bool LoopAttributeInfo::insertItersPerThreadCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                           itersPerThreadAttr, "chpl__gpuItersPerThreadAttr");
 }
 
 BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
@@ -4418,6 +4425,7 @@ BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
   bool insertedAny = false;
   insertedAny |= insertGpuEligibilityAssertion(primBlock);
   insertedAny |= insertBlockSizeCall(converter, primBlock);
+  insertedAny |= insertItersPerThreadCall(converter, primBlock);
 
   return insertedAny ? primBlock : nullptr;
 }
@@ -4531,7 +4539,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
-    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types

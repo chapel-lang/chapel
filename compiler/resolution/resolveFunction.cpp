@@ -2901,23 +2901,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
 
       // for sync/single, getCopyTypeDuringResolution returns the valType.
-      if (isSyncType(fromValType) || isSingleType(fromValType)) {
+      if (isSyncType(fromValType)) {
         Type* valType = getCopyTypeDuringResolution(fromValType);
 
         VarSymbol* tmp = newTemp("_cast_tmp_", valType);
         insertBefore->insertBefore(new DefExpr(tmp));
 
         CallExpr* readCall = NULL;
-        if (isSyncType(fromValType)) {
-          readCall = new CallExpr("readFE", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a sync is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        } else {
-          INT_ASSERT(isSingleType(fromValType));
-          readCall = new CallExpr("readFF", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a single is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        }
+        INT_ASSERT(isSyncType(fromValType));
+        readCall = new CallExpr("readFE", gMethodToken, from);
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                      "apply a 'read\?\?()' method to the actual");
 
         newCalls.push_back(readCall);
         CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);

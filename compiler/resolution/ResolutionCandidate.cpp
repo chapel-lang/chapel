@@ -771,7 +771,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
       return actualType;
   }
 
-  if (isSyncType(actualType) || isSingleType(actualType)) {
+  if (isSyncType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
     if (canInstantiate(baseType, formalType))
       return baseType;

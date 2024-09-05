@@ -37,7 +37,8 @@ private use ChapelUtil;
 private use BlockDist;
 private use RangeChunk;
 private use HaltWrappers;
-private use LayoutCS;
+private use CompressedSparseLayout;
+import Sort.{keyComparator};
 
 //
 // These flags are used to output debug information and run extra
@@ -52,7 +53,7 @@ config param debugSparseBlockDistBulkTransfer = false;
 // just use Block.
 
 // Helper type for sorting locales
-record targetLocaleComparator {
+record targetLocaleComparator: keyComparator {
   param rank;
   type idxType;
   type sparseLayoutType;

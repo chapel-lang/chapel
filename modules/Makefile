@@ -68,6 +68,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
+	standard/Allocators.chpl \
 	standard/AutoMath.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
@@ -175,6 +176,7 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
+	layouts/CompressedSparseLayout.chpl \
 
 
 #

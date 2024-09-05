@@ -13,6 +13,7 @@ import chpl_gasnet
 import chpl_gmp
 import chpl_hwloc
 import chpl_hwloc_debug
+import chpl_hwloc_pci
 import chpl_jemalloc
 import chpl_launcher
 import chpl_libfabric

@@ -88,6 +88,10 @@ ChapelSyncvar
   from print-module-resolution.ChapelStandard.ChapelSyncvar
 ChapelTaskDataHelp
   from print-module-resolution.ChapelStandard.ChapelTaskDataHelp
+ChapelIOSerialize
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelIOSerialize
+ChapelNumLocales
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelNumLocales
 ChapelLocale
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale
 ArrayViewSlice
@@ -164,14 +168,14 @@ ExternalArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ExternalArray
 DefaultRectangular
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular
-ChapelNumLocales
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelNumLocales
 LocaleModelHelpSetup
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup
 LocaleModelHelpRuntime
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpRuntime
 LocaleModelHelpFlat
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat
+Allocators
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem.Allocators
 LocaleModelHelpMem
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem
 LocaleModel
@@ -180,8 +184,6 @@ LocalesArray
   from print-module-resolution.ChapelStandard.LocalesArray
 ChapelAutoLocalAccess
   from print-module-resolution.ChapelStandard.ChapelAutoLocalAccess
-ChapelIOSerialize
-  from print-module-resolution.ChapelStandard.ChapelIOSerialize
 ChapelTaskID
   from print-module-resolution.ChapelStandard.ChapelTaskID
 ChapelTaskTable
@@ -208,6 +210,8 @@ ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
 ChapelRemoteVars
   from print-module-resolution.ChapelStandard.ChapelRemoteVars
+AutoGpu
+  from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

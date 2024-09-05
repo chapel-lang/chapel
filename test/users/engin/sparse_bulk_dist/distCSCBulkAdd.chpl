@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 use List;
 
 var space = {1..10, 1..10};
