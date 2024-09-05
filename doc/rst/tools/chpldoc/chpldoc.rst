@@ -518,6 +518,18 @@ a matching identifier is found:
 ``:attr:``
 
     Reference a data attribute (const, var, param, generic type) of an object.
+    Note that this does _not_ refer to a Chapel attribute; Sphinx uses
+    the term "attribute" in a different way than Chapel does, and we pick
+    the Sphinx terminology here.
+
+    For attributes, you should use the ``:annotation:`` role instead.
+
+``:annotation:``
+
+    Reference to the documentation for an attribute like ``@assertOnGpu``.
+    The name of this role is ``annotation`` because Sphinx uses the term
+    "attribute" in a different way than Chapel does; see also the documentation
+    for ``:attr:`` above.
 
 For example::
 
