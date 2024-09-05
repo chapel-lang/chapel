@@ -2,3 +2,7 @@ internalCompare.chpl:7: warning: Defining a comparator with a 'key' method witho
 internalCompare.chpl:11: warning: Defining a comparator with a 'compare' method without implementing the relativeComparator interface is deprecated. Please implement the relativeComparator interface (i.e. 'record R2: relativeComparator').
 internalCompare.chpl:16: warning: Defining a comparator with both a 'compare' method and a 'keyPart' without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record R3: relativeComparator').
 internalCompare.chpl:20: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record R4: keyPartComparator').
+-1
+-1
+-1
+-1
