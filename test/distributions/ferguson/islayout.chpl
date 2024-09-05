@@ -9,7 +9,7 @@ proc main() {
   var blk = new blockDist(boundingBox={1..10});
   assert(!blk.dsiIsLayout());
   
-  var mycs = new cs();
+  var mycs = new csrLayout();
   assert(mycs.dsiIsLayout());
 
   // Check also the distribution for default arrays,

@@ -5,11 +5,9 @@ config param compressRows = true;
 config const countComms = true;
 
 const D = {1..9, 1..9};
-
 var SD: sparse subdomain(D) dmapped if compressRows then new csrLayout()
                                                     else new cscLayout()
                             = [i in 1..9] (i,i);
-
 var A: [SD] real;
 
 for i in 1..9 do

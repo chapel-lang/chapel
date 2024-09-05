@@ -18,9 +18,10 @@
  * limitations under the License.
  */
 
+@chplcheck.ignore("IncorrectIndentation")
 @unstable("'CompressedSparseLayout' is unstable and may change in the future")
 module CompressedSparseLayout {
-
+import Sort.{keyComparator};
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -36,7 +37,7 @@ config param csLayoutDefaultToSorted = true;
 
 @chpldoc.nodoc
 /* Comparator used for sorting by columns */
-record _ColumnComparator {
+record _ColumnComparator: keyComparator {
   proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
@@ -44,8 +45,16 @@ record _ColumnComparator {
 const _columnComparator: _ColumnComparator;
 
 
+/*
 @chpldoc.nodoc
 proc isCSType(type t:csLayout(?)) param do return true;
+*/
+
+@chpldoc.nodoc
+proc isCSType(type t:csrLayout(?)) param do return true;
+
+@chpldoc.nodoc
+proc isCSType(type t:cscLayout(?)) param do return true;
 
 /*
 @chpldoc.nodoc
@@ -136,12 +145,61 @@ record chpl_layoutHelper {
   }
 }
 
-type csrLayout;
-csrLayout = csLayout(compressRows=true, ?);
+record csrLayout {
+  param sortedIndices: bool = csLayoutDefaultToSorted;
+  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=true, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=true, sortedIndices));
 
-type cscLayout;
-cscLayout = csLayout(compressRows=false, ?);
+  proc init(param sortedIndices: bool = csLayoutDefaultToSorted) {
+    const value = new unmanaged CSImpl(compressRows=true, sortedIndices);
+    this.sortedIndices = sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
 
+  proc init(value: CSImpl(?)) {
+    this.sortedIndices = value.sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
+
+  operator ==(l: csrLayout(?), r: csrLayout(?)) param {
+    return l.type == r.type;
+  }
+
+  operator !=(l: csrLayout(?), r: csrLayout(?)) param {
+    return l.type != r.type;
+  }
+}
+
+@chpldoc.nodoc
+record cscLayout {
+  param sortedIndices: bool = csLayoutDefaultToSorted;
+  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=false, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=false, sortedIndices));
+
+  proc init(param sortedIndices: bool = csLayoutDefaultToSorted) {
+    const value = new unmanaged CSImpl(compressRows=false, sortedIndices);
+    this.sortedIndices = sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
+
+  proc init(value: CSImpl(?)) {
+    this.sortedIndices = value.sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
+
+  operator ==(l: cscLayout(?), r: cscLayout(?)) param {
+    return l.type == r.type;
+  }
+
+  operator !=(l: cscLayout(?), r: cscLayout(?)) param {
+    return l.type != r.type;
+  }
+}
+/*
+*/
+
+/* This was a record that was designed to be re-usable for both csr and
+   csc, but I wasn't able to get it to work (in time for 2.2) due to the
+   challenges mentioned in the comment blocks that follow this one.
+   
 @chpldoc.nodoc
 record csLayout {
   param compressRows: bool = true;
@@ -170,7 +228,39 @@ record csLayout {
     return l.type != r.type;
   }
 }
+*/
+  
+/*
+  At first I considered a type-returning procedure, but that wouldn't
+  support being called with arguments or used as a fully-defaulted type,
+  so I never even sketched it out...
+*/
+ 
+/*
+  This works in many cases, but doesn't support using 'csrLayout' as a
+  fully-defaulted type / without args...
+  
+  type csrLayout;
+  csrLayout = csLayout(compressRows=true, ?);
 
+  type cscLayout;
+  cscLayout = csLayout(compressRows=false, ?);
+*/
+
+/*
+  These lead to an assertion error in the compiler or segfault if the
+  assertion is removed:
+  
+  record csrLayout {
+  param sortedIndices: bool = csLayoutDefaultToSorted;
+  forwarding var csl: csLayout(compressRows=true, sortedIndices);
+  }
+
+  record cscLayout {
+  param sortedIndices: bool = csLayoutDefaultToSorted;
+  forwarding var csl: csLayout(compressRows=false, sortedIndices);
+  }
+*/
 
 class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
@@ -226,7 +316,9 @@ class CSDom: BaseSparseDomImpl(?) {
   override proc dsiMyDist() do return dist;
 
   proc dsiGetDist() {
-    return new csLayout(dist);
+    return if compressRows then new csrLayout(dist)
+                           else new cscLayout(dist);
+    //    return new csLayout(dist);
   }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {

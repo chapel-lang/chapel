@@ -15,11 +15,11 @@ var baseDom = {1..10};
 
   var dom2D = {1..10, 1..10};
 
-  var csrDom: sparse subdomain(dom2D) dmapped new cs(compressRows=true);
+  var csrDom: sparse subdomain(dom2D) dmapped new csrLayout();
   csrDom += [(3,3),(4,4),(5,5)];
   test(csrDom);
 
-  var cscDom: sparse subdomain(dom2D) dmapped new cs(compressRows=false);
+  var cscDom: sparse subdomain(dom2D) dmapped new cscLayout();
   cscDom += [(3,3),(4,4),(5,5)];
   test(cscDom);
 }
