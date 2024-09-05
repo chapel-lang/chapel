@@ -1,4 +1,1 @@
 sortDomainArray.chpl:55: warning: It is recommended to use 'Sort.sorted' instead of this method. Compile with '-snoSortedWarnings' to suppress this warning.
-sortDomainArray.chpl:55: warning: It is recommended to use 'Sort.sorted' instead of this method. Compile with '-snoSortedWarnings' to suppress this warning.
-Note: This source location is a guess.
-sortDomainArray.chpl:55: warning: It is recommended to use 'Sort.sorted' instead of this method. Compile with '-snoSortedWarnings' to suppress this warning.
