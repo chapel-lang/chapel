@@ -1,16 +1,12 @@
 ArrayViewElision supported (dynamic locality check required) slices.chpl:24
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		domain(1,int(64),one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		domain(1,int(64),one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:24
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		domain(1,int(64),one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		domain(1,int(64),one)
 

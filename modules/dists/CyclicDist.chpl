@@ -37,6 +37,7 @@ proc _determineIdxTypeFromStartIdx(startIdx) type {
 config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
 config param debugCyclicDistBulkTransfer = false;
+config param disableCyclicDistArrayViewElision = false;
 
 private config param allowDuplicateTargetLocales = false;
 //
@@ -499,6 +500,10 @@ override proc CyclicImpl.dsiDisplayRepresentation() {
 }
 
 override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
+
+override proc CyclicDom.dsiSupportsArrayViewElision() param {
+  return !disableCyclicDistArrayViewElision;
+}
 
 proc CyclicImpl.init(other: CyclicImpl, privateData,
                  param rank = other.rank,

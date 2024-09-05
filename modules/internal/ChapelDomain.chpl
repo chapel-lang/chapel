@@ -2883,6 +2883,16 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    proc supportsArrayViewElision() param {
+      return _value.dsiSupportsArrayViewElision();
+    }
+
+    @chpldoc.nodoc
+    proc supportsShortArrayTransfer() param {
+      return _value.dsiSupportsShortArrayTransfer();
+    }
+
+    @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }

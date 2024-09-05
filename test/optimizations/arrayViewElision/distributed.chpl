@@ -22,3 +22,27 @@ const Space = {1..10};
   A[3..5] = B[3..5];
   writeln(A);
 }
+
+{
+  use StencilDist;
+
+  const D = Space dmapped new stencilDist(Space);
+  var A: [D] int = 1;
+  var B: [D] int = 2;
+
+  A[3..5] = B[3..5];
+  writeln(A);
+}
+
+{
+  use BlockDist;
+  use StencilDist;
+
+  const BD = Space dmapped new blockDist(Space);
+  const SD = Space dmapped new stencilDist(Space);
+  var A: [BD] int = 1;
+  var B: [SD] int = 2;
+
+  A[3..5] = B[3..5];
+  writeln(A);
+}
