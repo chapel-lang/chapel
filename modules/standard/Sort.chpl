@@ -331,57 +331,27 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a == b: returns 0
 */
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
+  // this innerFunc is a hack so that errorDepth is correct.
+  // it has to be 3 to match the errorDepth of chpl_check_comparator, otherwise
+  // users will get additional and confusing error messages.
+  proc innerFunc() param do
+    chpl_check_comparator_helper(comparator, a, t, errorDepth=3);
+  innerFunc();
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
-    if !comparatorImplementsKey(comparator) {
-      param atType = if isRecord(comparator) then "record" else "class";
-      param fixString = "'" + atType + " " +
-                        comparator.type:string + ": keyComparator'";
-      compilerWarning(
-        "Defining a comparator with a 'key' method without " +
-        "implementing the keyComparator interface is deprecated. " +
-        "Please implement the keyComparator interface (i.e. " + fixString + ").");
-    }
     // Use the default comparator to compare the integer keys
     return (new DefaultComparator()).compare(comparator.key(a),
                                              comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
-    if !comparatorImplementsRelative(comparator) &&
-        !comparatorImplementsKeyPart(comparator) {
-      // if there is a keyPart method, we should use that interface
-      param hasKeyPart = canResolveMethod(comparator, "keyPart", a, 0);
-      param atType = if isRecord(comparator) then "record" else "class";
-      param fixString = "'" + atType + " " +
-                            comparator.type:string + ": relativeComparator'";
-      if !hasKeyPart {
-        compilerWarning(
-          "Defining a comparator with a 'compare' method without " +
-          "implementing the relativeComparator interface is deprecated. " +
-          "Please implement the relativeComparator interface (i.e. " + fixString + ").");
-      } else {
-        compilerWarning(
-          "Defining a comparator with both a 'compare' method and a 'keyPart' without " +
-          "implementing the keyPartComparator interface is deprecated. " +
-          "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
-      }
-    }
     return comparator.compare(a, b);
   } else if canResolveMethod(comparator, "chpl_keyPartInternal", a, 0) ||
             canResolveMethod(comparator, "keyPart", a, 0) {
-    if !comparatorImplementsKeyPart(comparator) {
-        param atType = if isRecord(comparator) then "record" else "class";
-        param fixString = "'" + atType + " " +
-                              comparator.type:string + ": keyPartComparator'";
-        compilerWarning(
-          "Defining a comparator with a 'keyPart' method without " +
-          "implementing the keyPartComparator interface is deprecated. " +
-          "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
-    }
     return compareByPart(a, b, comparator);
   } else {
+    // never reached, chpl_check_comparator will catch this
     compilerError(
       "The comparator ", comparator.type:string,
       " must implement either 'keyComparator', 'keyPartComparator', or ",
@@ -391,15 +361,11 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 
 
 // helper for chpl_check_comparator, should not be called elsewhere
-pragma "unsafe" // due to 'data' default-initialized to nil for class types
-proc chpl_check_comparator_keyPart(comparator,
-                                   type eltType,
-                                   param errorDepth = 2,
-                                   param doDeprecationCheck = true) param {
-  // Dummy data for checking method resolution
-  // This may need updating when constructors support non-default args
-  const data: eltType;
-
+private proc chpl_check_comparator_keyPart(comparator,
+                                           data,
+                                           type eltType,
+                                           param errorDepth = 2,
+                                           param doDeprecationCheck = true) param {
   if canResolveMethod(comparator, "chpl_keyPartInternal", data, 0) {
     var idx: int = 0;
     type partType = comparator.chpl_keyPartInternal(data, idx).type;
@@ -457,20 +423,11 @@ proc chpl_check_comparator_keyPart(comparator,
   return false;
 }
 
-pragma "unsafe" // due to 'data' default-initialized to nil for class types
-/*
-    Check if a comparator was passed and confirm that it will work, otherwise
-    throw a compile-time error.
-
-   :arg a: Sample data passed to confirm that comparator methods can resolve
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc chpl_check_comparator(comparator,
-                           type eltType,
-                           param errorDepth = 2,
-                           param doDeprecationCheck = true) param {
+private proc chpl_check_comparator_helper(comparator,
+                                          data,
+                                          type eltType,
+                                          param errorDepth = 3,
+                                          param doDeprecationCheck = true) param {
   // if more than 1 interface is implemented, error
   if (comparatorImplementsKey(comparator):int +
       comparatorImplementsKeyPart(comparator):int +
@@ -478,13 +435,9 @@ proc chpl_check_comparator(comparator,
     compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " should only implement one sort comparator interface.");
   }
 
-  // Dummy data for checking method resolution
-  // This may need updating when constructors support non-default args
-  const data: eltType;
-
   if comparator.type == DefaultComparator {}
   else if isSubtype(comparator.type, ReverseComparator) {
-    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1);
+    return chpl_check_comparator_helper(comparator.comparator, data, eltType, errorDepth+1);
   }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
@@ -553,11 +506,12 @@ proc chpl_check_comparator(comparator,
     // that the keyPart method is implemented correctly to satisfy the interface
     if comparatorImplementsKeyPart(comparator) then
       if !chpl_check_comparator_keyPart(comparator,
+                                        data,
                                         eltType,
                                         errorDepth+1,
                                         doDeprecationCheck=false) then
         compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " implements the keyPartComparator interface, but the keyPart method is not implemented");
-  } else if chpl_check_comparator_keyPart(comparator, eltType, errorDepth+1, doDeprecationCheck) {
+  } else if chpl_check_comparator_keyPart(comparator, data, eltType, errorDepth+1, doDeprecationCheck) {
     // the check and error are in chpl_check_comparator_keyPart
   }
   else {
@@ -588,6 +542,26 @@ proc chpl_check_comparator(comparator,
   return true;
 }
 
+pragma "unsafe" // due to 'data' default-initialized to nil for class types
+/*
+    Check if a comparator was passed and confirm that it will work, otherwise
+    throw a compile-time error.
+
+   :arg a: Sample data passed to confirm that comparator methods can resolve
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+*/
+proc chpl_check_comparator(comparator,
+                           type eltType,
+                           param errorDepth = 2,
+                           param doDeprecationCheck = true) param {
+  // Dummy data for checking method resolution
+  // This may need updating when constructors support non-default args
+  const data: eltType;
+
+  return chpl_check_comparator_helper(comparator, data, eltType, errorDepth+1, doDeprecationCheck);
+}
 
 /* Basic Functions */
 
