@@ -1,3 +1,3 @@
 use Sort;
-Sort.DefaultComparator;
-Sort.ReverseComparator;
+new Sort.DefaultComparator();
+new Sort.ReverseComparator();
