@@ -2691,7 +2691,9 @@ class SimpleMethodLookupHelper final : public MethodLookupHelper {
 class ReceiverScopeSimpleHelper final : public ReceiverScopeHelper {
  public:
   ReceiverScopeSimpleHelper() { }
-  const MethodLookupHelper*
+  const SimpleMethodLookupHelper*
+  methodLookupForTypeId(Context* context, const ID& typeId) const;
+  const SimpleMethodLookupHelper*
   methodLookupForMethodId(Context* context, const ID& methodId) const override;
 };
 
@@ -2764,10 +2766,10 @@ struct ReceiverScopeTypedHelper final : public ReceiverScopeHelper {
   {
   }
 
-  const MethodLookupHelper*
+  const TypedMethodLookupHelper*
   methodLookupForType(Context* context, types::QualifiedType type) const;
 
-  const MethodLookupHelper*
+  const TypedMethodLookupHelper*
   methodLookupForMethodId(Context* context, const ID& methodId) const override;
 };
 

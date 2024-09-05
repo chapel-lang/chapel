@@ -62,8 +62,10 @@ namespace resolution {
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
     'methodLookupHelper' should be nullptr unless working on resolving a method
-    call/field access. It should be used for something like 'foo.bar()' and in
+    call/field access or forwarding expressions within a class/record.
+    It should be used for something like 'foo.bar()' and in
     such a case, when looking up 'bar', it should reflect the scopes for 'foo'.
+    Methods at this scope will be considered in addition to the usual.
 
     'receiverScopeHelper' should be provided any time it's possible for
     the scope lookup process to encounter an enclosing method when resolving

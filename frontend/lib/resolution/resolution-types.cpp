@@ -1384,15 +1384,9 @@ gatherReceiverAndParentScopesForDeclId(Context* context, ID aggregateDeclId) {
 }
 
 static const SimpleMethodLookupHelper&
-simpleMethodLookupQuery(Context* context, ID methodId) {
-  QUERY_BEGIN(simpleMethodLookupQuery, context, methodId);
+simpleMethodLookupQuery(Context* context, ID typeId) {
+  QUERY_BEGIN(simpleMethodLookupQuery, context, typeId);
 
-  // compute the receiver type's ID using simplified scope resolution rules
-  const ID& typeId = methodReceiverTypeIdForMethodId(context, methodId);
-  if (typeId.isEmpty()) {
-    auto result = SimpleMethodLookupHelper();
-    return QUERY_END(result);
-  }
   auto vec = gatherReceiverAndParentScopesForDeclId(context, typeId);
   auto result = SimpleMethodLookupHelper(typeId, std::move(vec));
 
@@ -1467,11 +1461,27 @@ void SimpleMethodLookupHelper::stringify(std::ostream& ss,
   ss << "]";
 }
 
-const MethodLookupHelper*
+const SimpleMethodLookupHelper*
+ReceiverScopeSimpleHelper::methodLookupForTypeId(Context* context,
+                                                 const ID& typeId) const {
+  const SimpleMethodLookupHelper& got =
+    simpleMethodLookupQuery(context, typeId);
+  if (!got.isEmpty())
+    return &got;
+
+  return nullptr;
+}
+
+const SimpleMethodLookupHelper*
 ReceiverScopeSimpleHelper::methodLookupForMethodId(Context* context,
                                                    const ID& methodId) const {
+  const ID& typeId = methodReceiverTypeIdForMethodId(context, methodId);
+  if (typeId.isEmpty()) {
+    return nullptr;
+  }
+
   const SimpleMethodLookupHelper& got =
-    simpleMethodLookupQuery(context, methodId);
+    simpleMethodLookupQuery(context, typeId);
   if (!got.isEmpty())
     return &got;
 
@@ -1510,7 +1520,7 @@ void TypedMethodLookupHelper::stringify(std::ostream& ss,
 }
 
 
-const MethodLookupHelper*
+const TypedMethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForType(Context* context,
                                               QualifiedType type) const {
   if (const Type* typePtr = type.type()) {
@@ -1535,7 +1545,7 @@ ReceiverScopeTypedHelper::methodLookupForType(Context* context,
   return nullptr;
 }
 
-const MethodLookupHelper*
+const TypedMethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
                                                   const ID& methodId) const {
 

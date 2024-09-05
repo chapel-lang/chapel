@@ -104,6 +104,9 @@ struct Resolver {
   ReceiverScopeTypedHelper receiverScopeTypedHelper;
   const ReceiverScopeHelper* receiverScopeHelper = nullptr;
 
+  // these are used for handling receiver scopes during forwarding expressions
+  const MethodLookupHelper* forwardingLookupHelper = nullptr;
+
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
   owned<OuterVariables> outerVars;
@@ -273,7 +276,7 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Determine the method receiver,  which is a type under
+  /* Determine the method receiver, which is a type under
      full resolution, but only an ID under scope resolution.
     */
   bool getMethodReceiver(types::QualifiedType* outType = nullptr,
@@ -281,6 +284,11 @@ struct Resolver {
 
   /* Compute the receiver type (when resolving a method)
      and return a type containing nullptr if it is not applicable.
+
+     This one is different from getMethodReceiver in two ways:
+       1. It isn't useful during scope resolution
+       2. For declarations contained in a class or record (even if they are
+          not methods), it will return the class/record type here.
    */
   types::QualifiedType methodReceiverType();
 
@@ -576,6 +584,9 @@ struct Resolver {
 
   bool enter(const uast::TupleDecl* decl);
   void exit(const uast::TupleDecl* decl);
+
+  bool enter(const uast::ForwardingDecl* decl);
+  void exit(const uast::ForwardingDecl* decl);
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
