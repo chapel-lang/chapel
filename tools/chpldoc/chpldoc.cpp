@@ -1130,8 +1130,7 @@ struct RstSignatureVisitor {
 
     // Function Name
     auto attrName = nameOfAttributeSignature(f);
-    os_ << (attrName.isEmpty() ? kindToString(f->kind()) : "attribute")
-        << " ";
+    os_ << (attrName.isEmpty() ? kindToString(f->kind()) : "attribute");
     os_ << " ";
 
     // storage kind
