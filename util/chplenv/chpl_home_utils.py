@@ -15,21 +15,73 @@ def get_chpl_home():
 
 @memoize
 def get_chpl_runtime_incl():
-    default = os.path.join(get_chpl_home(), 'runtime', 'include')
+    prefix = get_install_prefix()
+    if prefix is None:
+        default = os.path.join(get_chpl_home(), 'runtime', 'include')
+    else:
+        chpl_vers = get_chpl_version_from_install()
+        assert chpl_vers is not None
+        default = os.path.join(prefix, 'lib', 'chapel', chpl_vers, 'runtime', 'include')
     chpl_runtime_incl = overrides.get('CHPL_RUNTIME_INCL', default)
     return chpl_runtime_incl
 
 @memoize
 def get_chpl_runtime_lib():
-    default = os.path.join(get_chpl_home(), 'lib')
+    prefix = get_install_prefix()
+    if prefix is None:
+        default = os.path.join(get_chpl_home(), 'lib')
+    else:
+        chpl_vers = get_chpl_version_from_install()
+        assert chpl_vers is not None
+        default = os.path.join(prefix, 'lib', 'chapel', chpl_vers, 'runtime', 'lib')
     chpl_runtime_lib = overrides.get('CHPL_RUNTIME_LIB', default)
     return chpl_runtime_lib
 
 @memoize
 def get_chpl_third_party():
-    default = os.path.join(get_chpl_home(), 'third-party')
+    prefix = get_install_prefix()
+    if prefix is None:
+        default = os.path.join(get_chpl_home(), 'third-party')
+    else:
+        chpl_vers = get_chpl_version_from_install()
+        assert chpl_vers is not None
+        default = os.path.join(prefix, 'lib', 'chapel', chpl_vers, 'third-party')
     chpl_third_party = overrides.get('CHPL_THIRD_PARTY', default)
     return chpl_third_party
+
+install_path_regex = re.compile(
+    '^(.*){}share{}chapel{}(\\d+\\.\\d+)$'.format(os.path.sep,
+                                                  os.path.sep,
+                                                  os.path.sep))
+
+@memoize
+def get_chpl_version_from_install():
+    if get_install_prefix():
+        chpl_home = get_chpl_home()
+        m = install_path_regex.match(chpl_home)
+        # if we are in an installed directory, this should always match
+        assert m is not None
+        return m.group(2)
+    return None
+
+
+@memoize
+def get_install_prefix():
+    """
+    gets the prefix where Chapel is installed, if not installed returns None
+    """
+    chpl_home = get_chpl_home()
+    # if the last three parts of chpl_home are "share", "chapel", and a version number
+    # and there are no makefiles in the chpl_home directory,
+    # then we are in an installed directory
+
+    m = install_path_regex.match(chpl_home)
+    if m is None or os.path.exists(os.path.join(chpl_home, 'Makefile')):
+        return None
+    prefix = m.group(1)
+    if prefix == "":
+        prefix = os.path.sep
+    return prefix
 
 # Fix paths in the passed string according to the provided list of pairs
 # in tofix
