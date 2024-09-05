@@ -71,13 +71,29 @@ def get_install_prefix():
     gets the prefix where Chapel is installed, if not installed returns None
     """
     chpl_home = get_chpl_home()
-    # if the last three parts of chpl_home are "share", "chapel", and a version number
-    # and there are no makefiles in the chpl_home directory,
-    # then we are in an installed directory
 
-    m = install_path_regex.match(chpl_home)
-    if m is None or os.path.exists(os.path.join(chpl_home, 'Makefile')):
+    frontend_path = os.path.join(chpl_home, 'frontend')
+    doc_path = os.path.join(chpl_home, 'doc')
+    has_frontend = os.path.exists(frontend_path) and os.path.isdir(frontend_path)
+    has_doc = os.path.exists(doc_path) and os.path.isdir(doc_path)
+    is_installed = has_frontend and has_doc
+    if not is_installed:
         return None
+
+    bin_path = os.path.join(chpl_home, 'bin')
+    lib_path = os.path.join(chpl_home, 'lib')
+    has_bin = os.path.exists(bin_path) and os.path.isdir(bin_path)
+    has_lib = os.path.exists(lib_path) and os.path.isdir(lib_path)
+    is_chpl_home_install = has_bin and has_lib
+    if is_chpl_home_install:
+        return None
+
+    # if we reach this point, we can be fairly confident that this is a prefix-install
+    # the regex should always match in this case
+    m = install_path_regex.match(chpl_home)
+    if m is None:
+        return None
+
     prefix = m.group(1)
     if prefix == "":
         prefix = os.path.sep
