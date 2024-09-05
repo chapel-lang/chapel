@@ -76,8 +76,8 @@ def get_install_prefix():
     doc_path = os.path.join(chpl_home, 'doc')
     has_frontend = os.path.exists(frontend_path) and os.path.isdir(frontend_path)
     has_doc = os.path.exists(doc_path) and os.path.isdir(doc_path)
-    is_installed = has_frontend and has_doc
-    if not is_installed:
+    is_source_dir = has_frontend and has_doc
+    if is_source_dir:
         return None
 
     bin_path = os.path.join(chpl_home, 'bin')
