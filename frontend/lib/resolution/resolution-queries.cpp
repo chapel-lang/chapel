@@ -2796,13 +2796,6 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
     //  cause it to be scope resolved).
     for (auto child: fn->children()) {
       child->traverse(visitor);
-
-      // Recompute the method receiver after the 'this' formal is
-      // scope-resolved, when we might be able to gather some information
-      // about the type on which the method is declared.
-      //if (fn->isMethod() && child == fn->thisFormal()) {
-      //  visitor.methodReceiverScopes(/*recompute=*/true);
-      //}
     }
 
     checkForParenlessMethodFieldRedefinition(context, fn, visitor);
