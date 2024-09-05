@@ -1351,11 +1351,11 @@ class ModulePublicSymbols {
 
     This type can apply in two different ways:
       1. When resolving something like 'x.field', the resolver
-         can compute a MethodApplicableLookupHelper for 'x' based
+         can compute a MethodLookupHelper for 'x' based
          on its type and then pass this to the lookup process.
       2. When resolving something like 'field' within a method,
          the lookup process can ask to compute one of these
-         at the right time with a MethodScopesLookupHelper.
+         at the right time with a ReceiverScopeHelper.
     */
 class MethodLookupHelper {
  public:
@@ -1375,7 +1375,7 @@ class MethodLookupHelper {
     are checked for by searching the method reciver scopes
     at the time that the method signature is encountered in the
     process of searching parent scopes. This type includes
-    a method that can return an appropriate MethodApplicableLookupHelper
+    a method that can return an appropriate MethodLookupHelper
     to handle the method receiver scopes.
  */
 class ReceiverScopeHelper {
