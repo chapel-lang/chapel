@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 var D1: domain(2) = {1..10, 1..10};
 var D2: domain(2) = {1..3, 1..3};

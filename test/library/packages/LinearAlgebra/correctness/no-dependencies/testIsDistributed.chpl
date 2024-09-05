@@ -1,7 +1,7 @@
 use LinearAlgebra;
 
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 
 
 var distArr = blockDist.createArray({1..10}, int);

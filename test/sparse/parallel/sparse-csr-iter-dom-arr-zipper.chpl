@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 config var n = 8;
 

@@ -1,10 +1,10 @@
 module SpsMatUtil {
   // The following are routines that should arguably be supported directly
-  // by the LayoutCS and SparseBlockDist modules themselves
+  // by the CompressedSparseLayout and SparseBlockDist modules themselves
   //
-  //  public use LayoutCSUtil, SparseBlockDistUtil;
+  //  public use CompressedSparseLayoutUtil, SparseBlockDistUtil;
 
-  use BlockDist, LayoutCS, Map, Random;
+  use BlockDist, CompressedSparseLayout, Map, Random;
 
   enum layout { CSR, CSC };
   public use layout;

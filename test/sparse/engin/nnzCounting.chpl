@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 use BlockDist;
 
 config const N = 8;

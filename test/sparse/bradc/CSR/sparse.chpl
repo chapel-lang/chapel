@@ -4,7 +4,7 @@
  * so your feedback on them is particularly valuable.
  */
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 
 //

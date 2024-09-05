@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 9;
 

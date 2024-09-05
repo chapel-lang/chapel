@@ -111,7 +111,7 @@ use IO;
 
   /* CSR Sparse array -> Dense array */
   {
-    use LayoutCS;
+    use CompressedSparseLayout;
     var spsD: sparse subdomain(MDom) dmapped new cs(sortedIndices=false);
     var spsA: [spsD] real;
     spsD += (1,1);

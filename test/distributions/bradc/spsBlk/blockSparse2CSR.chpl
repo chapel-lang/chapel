@@ -2,7 +2,7 @@
 // We need to use the block distribution module.
 //
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 
 //
 // The per-dimension size of the array.  Override using --n <val> on

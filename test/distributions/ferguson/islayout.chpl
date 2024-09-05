@@ -1,5 +1,5 @@
 use CTypes;
-use LayoutCS;
+use CompressedSparseLayout;
 use BlockDist;
 use ExternalArray;
 

@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 var baseDom1D = {1..10};
 var baseDom2D = {1..10, 1..10};
