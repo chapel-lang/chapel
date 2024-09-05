@@ -15,7 +15,7 @@ def get_chpl_home():
 
 @memoize
 def get_chpl_runtime_incl():
-    prefix = get_install_prefix()
+    prefix = get_prefix_install_prefix()
     if prefix is None:
         default = os.path.join(get_chpl_home(), 'runtime', 'include')
     else:
@@ -27,7 +27,7 @@ def get_chpl_runtime_incl():
 
 @memoize
 def get_chpl_runtime_lib():
-    prefix = get_install_prefix()
+    prefix = get_prefix_install_prefix()
     if prefix is None:
         default = os.path.join(get_chpl_home(), 'lib')
     else:
@@ -39,7 +39,7 @@ def get_chpl_runtime_lib():
 
 @memoize
 def get_chpl_third_party():
-    prefix = get_install_prefix()
+    prefix = get_prefix_install_prefix()
     if prefix is None:
         default = os.path.join(get_chpl_home(), 'third-party')
     else:
@@ -56,7 +56,7 @@ install_path_regex = re.compile(
 
 @memoize
 def get_chpl_version_from_install():
-    if get_install_prefix():
+    if get_prefix_install_prefix():
         chpl_home = get_chpl_home()
         m = install_path_regex.match(chpl_home)
         # if we are in an installed directory, this should always match
@@ -66,9 +66,11 @@ def get_chpl_version_from_install():
 
 
 @memoize
-def get_install_prefix():
+def get_prefix_install_prefix():
     """
-    gets the prefix where Chapel is installed, if not installed returns None
+    If Chapel is installed as a prefix install (with `./configure --prefix` etc)
+    then this function returns the prefix where it is installed.
+    If it's not installed or installed as a `--chpl-home` install, it returns `None`
     """
     chpl_home = get_chpl_home()
 
