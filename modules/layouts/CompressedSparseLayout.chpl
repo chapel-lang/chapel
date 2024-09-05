@@ -18,10 +18,8 @@
  * limitations under the License.
  */
 
-/* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
-
-@deprecated("'LayoutCS' and the 'CS' layout are deprecated; please use 'CompressedSparseLayout' and 'csrLayout' or 'cscLayout' instead")
-prototype module LayoutCS {
+@unstable("'CompressedSparseLayout' is unstable and may change in the future")
+module CompressedSparseLayout {
 
 import RangeChunk;
 
@@ -34,7 +32,7 @@ config param csLayoutSupportsAutoLocalAccess = true;
 
 /* Default sparse dimension index sorting mode for LayoutCS.
 Sparse dimension indices will default to sorted order if true, inserted order if false */
-config param LayoutCSDefaultToSorted = true;
+config param csLayoutDefaultToSorted = true;
 
 @chpldoc.nodoc
 /* Comparator used for sorting by columns */
@@ -46,11 +44,16 @@ record _ColumnComparator {
 const _columnComparator: _ColumnComparator;
 
 
-//
-// Necessary since `t == CS` does not support classes with param fields
-//
 @chpldoc.nodoc
-proc isCSType(type t) param do return isSubtype(_to_borrowed(t), CS);
+proc isCSType(type t:csLayout(?)) param do return true;
+
+/*
+@chpldoc.nodoc
+proc isCSType(type t:CSImpl(?)) param do return true;
+*/
+
+@chpldoc.nodoc
+proc isCSType(type t) param do return false;
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
@@ -86,17 +89,16 @@ This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.  By default, the CS
 layout stores sparse indices in sorted order.  However, this default can
-be changed for a program by compiling with ``-sLayoutCSDefaultToSorted=false``,
+be changed for a program by compiling with ``-scsLayoutDefaultToSorted=false``,
 or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
-@deprecated("'CS' is deprecated, please use 'CompressedSparseLayout.[csrLayout|cscLayout]' instead")
-class CS: BaseDist {
+class CSImpl: BaseDist {
   param compressRows: bool = true;
-  param sortedIndices: bool = LayoutCSDefaultToSorted;
+  param sortedIndices: bool = csLayoutDefaultToSorted;
 
   proc init(param compressRows: bool = true,
-            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+            param sortedIndices: bool = csLayoutDefaultToSorted) {
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
   }
@@ -106,10 +108,10 @@ class CS: BaseDist {
   }
 
   proc dsiClone() {
-    return new unmanaged CS(compressRows=this.compressRows,sortedIndices=this.sortedIndices);
+    return new unmanaged CSImpl(compressRows=this.compressRows,sortedIndices=this.sortedIndices);
   }
 
-  proc dsiEqualDMaps(that: CS(this.compressRows,this.sortedIndices)) param {
+  proc dsiEqualDMaps(that: CSImpl(this.compressRows,this.sortedIndices)) param {
     return true;
   }
 
@@ -122,12 +124,59 @@ class CS: BaseDist {
   }
 } // CS
 
+record chpl_layoutHelper {
+  forwarding var _value;
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    var x = _value.dsiNewSparseDom(rank, idxType, dom);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+}
+
+type csrLayout;
+csrLayout = csLayout(compressRows=true, ?);
+
+type cscLayout;
+cscLayout = csLayout(compressRows=false, ?);
+
+@chpldoc.nodoc
+record csLayout {
+  param compressRows: bool = true;
+  param sortedIndices: bool = csLayoutDefaultToSorted;
+  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
+
+  proc init(param compressRows: bool = true,
+            param sortedIndices: bool = csLayoutDefaultToSorted) {
+    const value = new unmanaged CSImpl(compressRows, sortedIndices);
+    this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
+
+  proc init(value: CSImpl(?)) {
+    this.compressRows = value.compressRows;
+    this.sortedIndices = value.sortedIndices;
+    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+  }
+
+  operator ==(l: csLayout(?), r: csLayout(?)) param {
+    return l.type == r.type;
+  }
+
+  operator !=(l: csLayout(?), r: csLayout(?)) param {
+    return l.type != r.type;
+  }
+}
+
 
 class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
   param sortedIndices;
   param strides;
-  var dist: unmanaged CS(compressRows,sortedIndices);
+  var dist: unmanaged CSImpl(compressRows,sortedIndices);
 
   var rowRange: range(idxType, strides=strides);
   var colRange: range(idxType, strides=strides);
@@ -145,7 +194,7 @@ class CSDom: BaseSparseDomImpl(?) {
   var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CSImpl(compressRows,sortedIndices), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -175,6 +224,10 @@ class CSDom: BaseSparseDomImpl(?) {
     return _nnz;
   }
   override proc dsiMyDist() do return dist;
+
+  proc dsiGetDist() {
+    return new csLayout(dist);
+  }
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type &&
@@ -624,16 +677,16 @@ class CSDom: BaseSparseDomImpl(?) {
 
   iter dimIter(param d, ind) {
     if (d != 1 && this.compressRows) {
-      compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
+      compilerError("dimIter(0, ..) not supported on 'csrLayout' domains");
     } else if (d != 0 && !this.compressRows) {
-      compilerError("dimIter(1, ..) not supported on CS(compressRows=false) domains");
+      compilerError("dimIter(1, ..) not supported on 'cscLayout' domains");
     }
 
     foreach i in startIdx[ind]..stopIdx[ind] do
       yield idx[i];
   }
 
-  proc dsiSerialWrite(f) {
+  proc dsiSerialWrite(f) throws {
     f.write("{\n");
     if this.compressRows {
       for r in rowRange {
@@ -761,7 +814,7 @@ class CSArr: BaseSparseArrImpl(?) {
     yield 0;    // Dummy.
   }
 
-  proc dsiSerialWrite(f) {
+  proc dsiSerialWrite(f) throws {
     if dom.compressRows {
       for r in dom.rowRange {
         const lo = dom.startIdx(r);
