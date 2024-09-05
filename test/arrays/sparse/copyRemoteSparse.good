@@ -1,7 +1,7 @@
 In initCopy(definedConst=true), domain definedConst: false; localizing
 | locale | get | execute_on |
 | -----: | --: | ---------: |
-|      0 |  39 |          0 |
+|      0 |  32 |          0 |
 |      1 |   0 |          0 |
 |      2 |   0 |          0 |
 |      3 |  93 |          1 |
@@ -17,7 +17,7 @@ In initCopy(definedConst=true), domain definedConst: false; localizing
 In initCopy(definedConst=false), domain definedConst: false; taking normal path
 | locale | get | put | execute_on |
 | -----: | --: | --: | ---------: |
-|      0 |  43 |   2 |          0 |
+|      0 |  36 |   2 |          0 |
 |      1 |   0 |   0 |          0 |
 |      2 |   0 |   0 |          0 |
 |      3 |  32 |   0 |          3 |
