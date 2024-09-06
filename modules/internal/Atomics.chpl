@@ -756,7 +756,7 @@ module Atomics {
     }
 
     inline proc ref min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
-      fetchMin(val);
+      fetchMin(val, order=order);
     }
 
     inline proc ref fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
@@ -772,7 +772,7 @@ module Atomics {
     }
 
     inline proc ref max(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
-      fetchMax(val);
+      fetchMax(val, order=order);
     }
 
     /*
