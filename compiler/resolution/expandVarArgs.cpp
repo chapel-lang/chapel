@@ -474,7 +474,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
   }
 
   if (formal->intent == INTENT_CONST || formal->intent == INTENT_CONST_IN ||
-      formal->intent == INTENT_BLANK) {
+      formal->intent == INTENT_CONST_REF || formal->intent == INTENT_BLANK) {
     // TODO: Note that this will be overly strict for arrays, syncs, and
     // atomics, since their default is "pass-by-ref".  However, we think this is
     // okay for now, in part due to thinking it's unlikely to be relied upon and
