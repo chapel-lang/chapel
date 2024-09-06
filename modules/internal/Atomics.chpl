@@ -142,6 +142,7 @@ module Atomics {
 
   use ChapelBase;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
+  import AutoMath;
 
   pragma "local fn" pragma "fast-on safe extern function"
   extern proc chpl_atomic_thread_fence(order:memory_order);
@@ -740,6 +741,38 @@ module Atomics {
         proc atomic_fetch_xor(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
       on this do atomic_fetch_xor(_v, val, c_memory_order(order));
+    }
+
+    inline proc ref fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.min(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    inline proc ref min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMin(val);
+    }
+
+    inline proc ref fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.max(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    inline proc ref max(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMax(val);
     }
 
     /*
