@@ -3097,6 +3097,8 @@ module ChapelArray {
                                      rhs._value) {
         if dom == rhs.domain &&
            dom.distribution == rhs.domain.distribution &&
+           eltType == rhs.eltType && // note: eltType might have runtime part
+           !isArrayType(eltType) && // arrays-of-arrays not working yet
            !rhs._unowned {
           // ask the array implementation to steal the buffer
           pragma "no copy" // avoid error about recursion for initCopy
