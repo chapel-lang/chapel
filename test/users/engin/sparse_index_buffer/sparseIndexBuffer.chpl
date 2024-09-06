@@ -28,9 +28,8 @@ iter indexGen(d) {
 
 proc test(d) {
   var spsIndexBuffer = d.createIndexBuffer(size=4);
-  for i in indexGen(d) do {
+  for i in indexGen(d) do
     spsIndexBuffer.add(i);
-  }
   spsIndexBuffer.commit();
   printDomain(d);
 }

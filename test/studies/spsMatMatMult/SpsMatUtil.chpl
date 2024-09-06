@@ -67,7 +67,7 @@ module SpsMatUtil {
 
     // writeln(grid);
 
-    type layoutType = cs(compressRows=(layout==CSR));
+    type layoutType = if layout==CSR then csrLayout else cscLayout;
     const DenseBlkDom = parentDom dmapped new blockDist(boundingBox=parentDom,
                                                   targetLocales=localeGrid,
                                                   sparseLayoutType=layoutType);

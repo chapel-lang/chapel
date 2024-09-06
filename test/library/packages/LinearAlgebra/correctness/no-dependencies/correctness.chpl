@@ -112,7 +112,7 @@ use IO;
   /* CSR Sparse array -> Dense array */
   {
     use CompressedSparseLayout;
-    var spsD: sparse subdomain(MDom) dmapped new cs(sortedIndices=false);
+    var spsD: sparse subdomain(MDom) dmapped new csrLayout(sortedIndices=false);
     var spsA: [spsD] real;
     spsD += (1,1);
     spsD += (2,2);
@@ -632,15 +632,15 @@ use IO;
   // 1-based variants
   const parentDom1 = {1..3, 1..3};
 
-  var   Dom: sparse subdomain(parentDom) dmapped new cs(sortedIndices=false),
-        Dom2: sparse subdomain(parentDom2) dmapped new cs(sortedIndices=false),
-        IDom: sparse subdomain (parentDom) dmapped new cs(sortedIndices=false),
-        tDom: sparse subdomain (tParentDom) dmapped new cs(sortedIndices=false),
-        tDomT: sparse subdomain (tParentDomT) dmapped new cs(sortedIndices=false);
+  var   Dom: sparse subdomain(parentDom) dmapped new csrLayout(sortedIndices=false),
+        Dom2: sparse subdomain(parentDom2) dmapped new csrLayout(sortedIndices=false),
+        IDom: sparse subdomain (parentDom) dmapped new csrLayout(sortedIndices=false),
+        tDom: sparse subdomain (tParentDom) dmapped new csrLayout(sortedIndices=false),
+        tDomT: sparse subdomain (tParentDomT) dmapped new csrLayout(sortedIndices=false);
 
   // 1-based variants
-  var   Dom1: sparse subdomain(parentDom1) dmapped new cs(sortedIndices=false),
-        IDom1: sparse subdomain(parentDom1) dmapped new cs(sortedIndices=false);
+  var   Dom1: sparse subdomain(parentDom1) dmapped new csrLayout(sortedIndices=false),
+        IDom1: sparse subdomain(parentDom1) dmapped new csrLayout(sortedIndices=false);
 
 
   // Identity sparse domain
@@ -958,7 +958,7 @@ use IO;
     // Create dense, COO, and CSR domains
     var domDense: domain(2) = {0..<3, 0..<3},
         domCOO: sparse subdomain(domDense),
-        domCSR: sparse subdomain(domDense) dmapped new cs();
+        domCSR: sparse subdomain(domDense) dmapped new csrLayout();
 
     // Create dense, COO, and CSR matrices (arrays)
     var matDense: [domDense] complex,

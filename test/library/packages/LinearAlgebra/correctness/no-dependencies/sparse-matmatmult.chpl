@@ -23,7 +23,7 @@ proc ones(Dom: domain(2), type eltType=real) {
 // Combination of 0-based, 1-based, and other-based parent domains.
 {
     const AparentDom = {0..4,1..2};
-    var ADom: sparse subdomain(AparentDom) dmapped new cs(); // CSR domain
+    var ADom: sparse subdomain(AparentDom) dmapped new csrLayout(); // CSR domain
     var A: [ADom] real;
     ADom += [(1,2),(0,1)];
     A(0,1) = 0.1;
@@ -32,7 +32,7 @@ proc ones(Dom: domain(2), type eltType=real) {
     writeArr(A,AparentDom);
 
     const BparentDom = {1..2,3..5};
-    var BDom: sparse subdomain(BparentDom) dmapped new cs(); // CSR domain
+    var BDom: sparse subdomain(BparentDom) dmapped new csrLayout(); // CSR domain
     var B: [BDom] real;
     BDom += [(1,3),(1,5)];
     B(1,3) = 1;
@@ -77,7 +77,7 @@ proc ones(Dom: domain(2), type eltType=real) {
     writeln("// Empty matrices should have an empty result when multiplied");
     writeln("A.dot(B) = ", A.dot(B));
 
-    var xDom: sparse subdomain({0..2, 0..2}) dmapped new cs(sortedIndices=true);
+    var xDom: sparse subdomain({0..2, 0..2}) dmapped new csrLayout(sortedIndices=true);
     xDom += [(0,0),(0,1)];
 
     var X = eye(xDom);
@@ -123,7 +123,7 @@ proc ones(Dom: domain(2), type eltType=real) {
   var D34 = {0..2,0..3};
   var D43 = {0..3,0..2};
 
-  var BDom: sparse subdomain(BparentDom) dmapped new cs(compressRows=true,sortedIndices=true);
+  var BDom: sparse subdomain(BparentDom) dmapped new csrLayout(sortedIndices=true);
   var B: [BDom] real;
   var B_complex: [BDom] complex;
   BDom += [(0,0),(0,1),(1,1),(2,2)];

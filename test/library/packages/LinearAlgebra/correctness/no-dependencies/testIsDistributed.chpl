@@ -18,7 +18,7 @@ var locSparseArrCSR: [locSparseDomCSR] int;
 var distSparseDom: sparse subdomain(distArr.domain);
 var distSparseArr: [distSparseDom] int;
 
-var distCSRBlock = {1..10, 1..10} dmapped new blockDist({1..10, 1..10}, sparseLayoutType=cs);
+var distCSRBlock = {1..10, 1..10} dmapped new blockDist({1..10, 1..10}, sparseLayoutType=csrLayout);
 var distSparseArrCSR: [distCSRBlock] int;
 
 assert(isDistributed(distArr) == true);
