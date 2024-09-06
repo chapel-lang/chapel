@@ -35,7 +35,7 @@ const dnsDom = {1..n, 1..n};
 // dnsDom - spsDom.  Because we don't initialize the sparse domain, it
 // is initially an empty set of indices.
 //
-var spsDom: sparse subdomain(dnsDom) dmapped new cs();
+var spsDom: sparse subdomain(dnsDom) dmapped new csrLayout();
 
 //
 // Next, we use the sparse domain to declare a sparse array.  This

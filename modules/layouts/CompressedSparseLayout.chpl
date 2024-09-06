@@ -103,10 +103,10 @@ or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
 class CSImpl: BaseDist {
-  param compressRows: bool = true;
+  param compressRows: bool;
   param sortedIndices: bool = csLayoutDefaultToSorted;
 
-  proc init(param compressRows: bool = true,
+  proc init(param compressRows: bool,
             param sortedIndices: bool = csLayoutDefaultToSorted) {
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
@@ -202,11 +202,11 @@ record cscLayout {
    
 @chpldoc.nodoc
 record csLayout {
-  param compressRows: bool = true;
+  param compressRows: bool;
   param sortedIndices: bool = csLayoutDefaultToSorted;
   forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
 
-  proc init(param compressRows: bool = true,
+  proc init(param compressRows: bool,
             param sortedIndices: bool = csLayoutDefaultToSorted) {
     const value = new unmanaged CSImpl(compressRows, sortedIndices);
     this.compressRows = compressRows;
