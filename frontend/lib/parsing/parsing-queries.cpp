@@ -1444,10 +1444,9 @@ const ID& idToParentId(Context* context, ID id) {
     // Detect that and return the parent module in that case.
     if (result.isEmpty() && !parentSymbolPath.isEmpty()) {
       ID parentSymbolId = id.parentSymbolId(context);
-      if (!parentSymbolId.isEmpty()) {
-        CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
-        result = parentSymbolId;
-      }
+      CHPL_ASSERT(!parentSymbolId.isEmpty());
+      CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
+      result = parentSymbolId;
     }
   }
 
