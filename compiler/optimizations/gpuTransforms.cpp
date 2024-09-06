@@ -1589,10 +1589,12 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
  * Not to mention that the latter will break codegen.
  * So use WhileDoStmt instead as follows:
  *
- * WhileDoStmt(cond: index[0] <= threadBound; body: {
+ * def whileVar = index[0] <= threadBound
+ * WhileDoStmt(whileVar, {
  *   {  // empty block stored in this->userBody_
  *   }
  *   for all i: index[i] += 1;
+ *   whileVar = index[0] <= threadBound
  * })
  */
 void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
@@ -1615,6 +1617,12 @@ void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
   switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
   fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
 
+  // while loop condition variable
+  VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
+  Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
+                             whileVar, index0, threadBound);
+  fn_->insertAtTail(whileExpr);
+
   // while loop execute userBody_ then increment all indices
   BlockStmt* whileBody = new BlockStmt();
   whileBody->insertAtTail(this->userBody_);
@@ -1623,12 +1631,10 @@ void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
     whileBody->insertAtTail("'+='(%S,%S)", index, new_IntSymbol(1));
   }
 
-  // create WhileDoStmt
-  Expr* whileCond = new_Expr("'<='(%S,%S)", index0, threadBound);
-  // wass inline 'whileLoop' into 'insertAtTail'
-  WhileDoStmt* whileLoop = new WhileDoStmt(whileCond, whileBody);
-  gdbShouldBreakHere(); //wass
-  fn_->insertAtTail(whileLoop);
+  whileBody->insertAtTail(whileExpr->copy());
+
+  // create AST for the loop
+  fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
 }
 
 void GpuKernel::generatePostBody() {
