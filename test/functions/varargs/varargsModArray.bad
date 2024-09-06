@@ -1,0 +1,4 @@
+varargsModArray.chpl:2: In function 'myPrintln':
+varargsModArray.chpl:7: error: cannot assign to const variable
+  varargsModArray.chpl:13: called as myPrintln(args(0): [domain(1,int(64),one)] int(64), args(1): real(64), args(2): string)
+note: generic instantiations are underlined in the above callstack

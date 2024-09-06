@@ -1,0 +1,2 @@
+bug: can't modify array passed as part of vararg with default intent
+#25903
