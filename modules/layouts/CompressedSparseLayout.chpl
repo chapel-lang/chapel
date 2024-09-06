@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
+
 @chplcheck.ignore("IncorrectIndentation")
 @unstable("'CompressedSparseLayout' is unstable and may change in the future")
 module CompressedSparseLayout {
@@ -45,24 +47,20 @@ record _ColumnComparator: keyComparator {
 const _columnComparator: _ColumnComparator;
 
 
-/*
-@chpldoc.nodoc
-proc isCSType(type t:csLayout(?)) param do return true;
-*/
-
 @chpldoc.nodoc
 proc isCSType(type t:csrLayout(?)) param do return true;
 
 @chpldoc.nodoc
 proc isCSType(type t:cscLayout(?)) param do return true;
 
-/*
+/* This worked before I had to move away from the csLayout approach
 @chpldoc.nodoc
-proc isCSType(type t:CSImpl(?)) param do return true;
+proc isCSType(type t:csLayout(?)) param do return true;
 */
 
 @chpldoc.nodoc
 proc isCSType(type t) param do return false;
+
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
