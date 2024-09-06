@@ -3,7 +3,7 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.1 release
+Contributors to the Chapel 2.2 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Brad Chamberlain], [HPE]
