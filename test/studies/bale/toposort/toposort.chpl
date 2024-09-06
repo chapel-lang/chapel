@@ -1166,7 +1166,7 @@ proc main(){
     when ToposortImplementation.Serial {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new cs(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new cscLayout();
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Serial implementation.");
@@ -1175,7 +1175,7 @@ proc main(){
     when ToposortImplementation.Parallel {
        if !silentMode then writeln("Converting to CSC domain");
 
-      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new cs(compressRows=false);
+      var dmappedPermutedSparseD : sparse subdomain(D) dmapped new cscLayout();
       dmappedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );
 
       if !silentMode then writeln("Toposorting permuted upper triangluar domain using Parallel implementation.");

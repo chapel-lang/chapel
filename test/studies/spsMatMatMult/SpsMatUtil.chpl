@@ -43,7 +43,9 @@ module SpsMatUtil {
   proc randSparseDomain(parentDom, density, param layout, param distributed)
    where distributed == false {
 
-    var SD: sparse subdomain(parentDom) dmapped new cs(compressRows=(layout==CSR));
+    var SD: sparse subdomain(parentDom) dmapped if layout == CSR
+                                                  then new csrLayout()
+                                                  else new cscLayout();
 
     for (i,j) in parentDom do
       if rands.next() <= density then
@@ -109,7 +111,7 @@ module SpsMatUtil {
   proc makeSparseMat(parentDom, spsData) {
     use Sort;
 
-    var CDom: sparse subdomain(parentDom) dmapped new cs();
+    var CDom: sparse subdomain(parentDom) dmapped new csrLayout();
     var inds: [0..<spsData.size] 2*int;
     for (idx, i) in zip(spsData.keys(), 0..) do
       inds[i] = idx;

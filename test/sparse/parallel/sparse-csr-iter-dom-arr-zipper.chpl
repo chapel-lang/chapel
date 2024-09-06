@@ -10,7 +10,7 @@ test(2, d2);
 proc test(param dim:int, d: domain(dim)) {
   writeln("=== ", dim, " ===");
   // This is our sparse domain that everything will spin around.
-  var sd: sparse subdomain(d) dmapped new cs();
+  var sd: sparse subdomain(d) dmapped new csrLayout();
   populateDomain(dim, sd);
   writeln("sd(", dim, ") = ", sd);
 

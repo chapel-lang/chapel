@@ -15,17 +15,17 @@ use IO;
         tParentDom = {1..3, 1..5},
         tParentDomT = {1..5, 1..3};
 
-  var   Dom: sparse subdomain(parentDom) dmapped new cs(sortedIndices=false),
-        Dom2: sparse subdomain(parentDom2) dmapped new cs(sortedIndices=false),
-        IDom: sparse subdomain (parentDom) dmapped new cs(sortedIndices=false),
-        tDom: sparse subdomain (tParentDom) dmapped new cs(sortedIndices=false),
-        tDomT: sparse subdomain (tParentDomT) dmapped new cs(sortedIndices=false);
+  var   Dom: sparse subdomain(parentDom) dmapped new csrLayout(sortedIndices=false),
+        Dom2: sparse subdomain(parentDom2) dmapped new csrLayout(sortedIndices=false),
+        IDom: sparse subdomain (parentDom) dmapped new csrLayout(sortedIndices=false),
+        tDom: sparse subdomain (tParentDom) dmapped new csrLayout(sortedIndices=false),
+        tDomT: sparse subdomain (tParentDomT) dmapped new csrLayout(sortedIndices=false);
 
   // 0-based domains
   const parentDom0 = {0..<3, 0..<3};
 
-  var Dom0: sparse subdomain(parentDom0) dmapped new cs(sortedIndices=false),
-      IDom0: sparse subdomain (parentDom0) dmapped new cs(sortedIndices=false);
+  var Dom0: sparse subdomain(parentDom0) dmapped new csrLayout(sortedIndices=false),
+      IDom0: sparse subdomain (parentDom0) dmapped new csrLayout(sortedIndices=false);
 
   // Identity sparse domain
   IDom += [(1,1), (2,2), (3,3)];
@@ -342,7 +342,7 @@ use IO;
     // Create dense, COO, and CSR domains
     var domDense: domain(2) = {1..3, 1..3},
         domCOO: sparse subdomain(domDense),
-        domCSR: sparse subdomain(domDense) dmapped new cs();
+        domCSR: sparse subdomain(domDense) dmapped new csrLayout();
 
     // Create dense, COO, and CSR matrices (arrays)
     var matDense: [domDense] complex,

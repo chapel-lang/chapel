@@ -4,7 +4,7 @@ config const n = 10,
              useTupleIndexing = true;
 
 const D = {0..<n, 0..<n} dmapped new blockDist({0..<n, 0..<n},
-                                               sparseLayoutType=cs(compressRows=true));
+                                               sparseLayoutType=csrLayout);
 const DS: sparse subdomain(D);
 
 // check that targetLocales on domains is working as expected
@@ -25,7 +25,7 @@ coforall loc in DS.targetLocales() do on loc {
   // compute this locale's contribution to the index set, creating a
   // diagonal pattern per locale
   const myInds = DS.parentDom.localSubdomain();
-  var locSpsInds: sparse subdomain(myInds) dmapped new cs(compressRows=true);
+  var locSpsInds: sparse subdomain(myInds) dmapped new csrLayout();
 
   for i in 0..<min(myInds.dim(0).size, myInds.dim(1).size) {
     locSpsInds += myInds.low + (i,i);
