@@ -2283,6 +2283,12 @@ proc StencilImpl.chpl__locToLocIdx(loc: locale) {
   return (false, targetLocDom.first);
 }
 
+iter StencilImpl.chpl__locToLocIdxs(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocales[locIdx] == loc) then
+      yield locIdx;
+}
+
 // Stencil subdomains are continuous
 
 proc StencilArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
@@ -2314,6 +2320,17 @@ proc StencilDom.dsiLocalSubdomain(loc: locale) {
   } else {
     var d: domain(rank, idxType, strides);
     return d;
+  }
+}
+iter StencilDom.dsiLocalSubdomains(loc: locale) {
+  for locid in dist.chpl__locToLocIdxs(loc) {
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
+    yield whole[(...inds)];
+  }
+}
+iter StencilArr.dsiLocalSubdomains(loc: locale) {
+  for subdoms in dom.dsiLocalSubdomains(loc) {
+    yield subdoms;
   }
 }
 

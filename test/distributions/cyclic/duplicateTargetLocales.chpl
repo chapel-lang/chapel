@@ -16,7 +16,7 @@ writeln(A);
 
 A = 0;
 A.localAccess[1] = 1;
-A.localAccess[n] = n;
+A.localAccess[9] = 9;
 writeln(A);
 
 A = space;
