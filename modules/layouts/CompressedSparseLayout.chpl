@@ -199,7 +199,7 @@ record cscLayout {
 /* This was a record that was designed to be re-usable for both csr and
    csc, but I wasn't able to get it to work (in time for 2.2) due to the
    challenges mentioned in the comment blocks that follow this one.
-   
+
 @chpldoc.nodoc
 record csLayout {
   param compressRows: bool;
@@ -229,17 +229,17 @@ record csLayout {
   }
 }
 */
-  
+
 /*
   At first I considered a type-returning procedure, but that wouldn't
   support being called with arguments or used as a fully-defaulted type,
   so I never even sketched it out...
 */
- 
+
 /*
   This works in many cases, but doesn't support using 'csrLayout' as a
   fully-defaulted type / without args...
-  
+
   type csrLayout;
   csrLayout = csLayout(compressRows=true, ?);
 
@@ -250,7 +250,7 @@ record csLayout {
 /*
   These lead to an assertion error in the compiler or segfault if the
   assertion is removed:
-  
+
   record csrLayout {
   param sortedIndices: bool = csLayoutDefaultToSorted;
   forwarding var csl: csLayout(compressRows=true, sortedIndices);
