@@ -844,11 +844,11 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   int node;
 
   if (!haveTopology) {
-    return c_sublocid_any;
+    return c_sublocid_none;
   }
 
   if (!topoSupport->cpubind->get_thread_cpubind) {
-    return c_sublocid_any;
+    return c_sublocid_none;
   }
 
   CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
@@ -1071,15 +1071,15 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
   int node;
 
   if (!haveTopology) {
-    return c_sublocid_any;
+    return c_sublocid_none;
   }
 
   if (!topoSupport->membind->get_area_memlocation) {
-    return c_sublocid_any;
+    return c_sublocid_none;
   }
 
   if (p == NULL) {
-    return c_sublocid_any;
+    return c_sublocid_none;
   }
 
   CHK_ERR_ERRNO((nodeset = hwloc_bitmap_alloc()) != NULL);
@@ -1090,7 +1090,7 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 
   node = hwloc_bitmap_first(nodeset);
   if (!isActualSublocID(node)) {
-    node = c_sublocid_any;
+    node = c_sublocid_none;
   }
 
   hwloc_bitmap_free(nodeset);

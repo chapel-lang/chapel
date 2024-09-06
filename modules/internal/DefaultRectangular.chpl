@@ -2179,12 +2179,12 @@ module DefaultRectangular {
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Alocid = Adata.locale.id;
-    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Adata.locale.chpl_localeid());
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     const Blocid = Bdata.locale.id;
-    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Bdata.locale.chpl_localeid());
 
     type t = A.eltType;
@@ -2298,10 +2298,10 @@ module DefaultRectangular {
     use ChplConfig;
 
     const Alocid = A.data.locale.id;
-    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(A.data.locale.chpl_localeid());
     const Blocid = B.data.locale.id;
-    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(B.data.locale.chpl_localeid());
 
     if !_isLocSublocSameAsHere(Alocid, Asublocid) &&

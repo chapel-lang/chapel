@@ -429,7 +429,7 @@ module LocaleModel {
     override proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
+      if (subloc == c_sublocid_none) || (subloc == c_sublocid_none) then
         return (myLocales[node:int]):locale;
       else
         return (myLocales[node:int]._getChild(subloc:int)):locale;

@@ -879,7 +879,7 @@ void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
     // source is on device, we can't pass device pointers to comm layer. We'll
     // create a copy of the source on the local host.
     src_data = chpl_malloc(size);
-    src_data_subloc = c_sublocid_any;
+    src_data_subloc = c_sublocid_none;
 
     chpl_gpu_memcpy(src_data_subloc, src_data, src_subloc, src, size, commID,
                     ln, fn);
@@ -911,7 +911,7 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
     // destination is on device, we can't pass device pointers to comm layer.
     // We'll create a buffer on the local host.
     dst_buff = chpl_malloc(size);
-    dst_buff_subloc = c_sublocid_any;
+    dst_buff_subloc = c_sublocid_none;
   }
 
   if (src_subloc >= 0) {
