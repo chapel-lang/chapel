@@ -882,7 +882,7 @@ module ChapelArray {
           }
         }
         if ensureLocal {
-          const locInds = this.localSubdomains(),
+          const locInds = this.chpl__localStoredSubdomains(),
                 locIdx = || reduce for blk in locInds do blk.contains(indices);
           
           if !locIdx {
@@ -1630,6 +1630,24 @@ module ChapelArray {
         yield localSubdomain(loc);
       } else {
         for d in _value.dsiLocalSubdomains(loc) do yield d;
+      }
+    }
+
+    // This internal iterator is like 'localSubdomains()' but gives a
+    // distribution the option of indicating that it stores more
+    // indices than just those in its local subdomain; The stencil
+    // distribution is such an example since each locale stores cached
+    // boundary values ("fluff") in addition to its true local
+    // subdomain.  Thus, locality checks should pass if they're within
+    // the fluff even though that's outside of the normal
+    // localSubdomain() index set.
+    @chpldoc.nodoc
+    iter chpl__localStoredSubdomains(loc: locale = here) {
+      use Reflection;
+      if canResolveMethod(_value, "doiLocalStoredSubdomains", loc) {
+        for d in _value.doiLocalStoredSubdomains(loc) do yield d;
+      } else {
+        for d in localSubdomains(loc) do yield d;
       }
     }
 

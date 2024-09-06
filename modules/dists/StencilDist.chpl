@@ -2334,6 +2334,26 @@ iter StencilArr.dsiLocalSubdomains(loc: locale) {
   }
 }
 
+// These are similar to the normal dsiLocalSubdomains() itertors, but
+// they yield the local blocks as extended by the fluff for the sake
+// of locality-checking rather than just the local blocks.
+//
+iter StencilDom.doiLocalStoredSubdomains(loc: locale) {
+  for locid in dist.chpl__locToLocIdxs(loc) {
+
+    // Could calculate the indices directly, as in the normal
+    // subdomains case above, but that's more complicated for
+    // StencilDist, and this isn't on performance-critical paths
+    // anyway, so I'm just looking it up.
+    yield locDoms[locid].myFluff;
+  }
+}
+iter StencilArr.doiLocalStoredSubdomains(loc: locale) {
+  for subdom in dom.doiLocalStoredSubdomains(loc) do {
+    yield subdom;
+  }
+}
+
 proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
