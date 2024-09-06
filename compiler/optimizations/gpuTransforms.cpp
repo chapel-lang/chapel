@@ -1595,18 +1595,18 @@ void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
 
   VarSymbol* iptMinus1 = insertNewVarAndDef(fn_->body, "iptMinus1",
                                             localItersPerThread_->type);
-  fn_->insertAtTail("'='(%S,'-'(%S,%S))", iptMinus1,
+  fn_->insertAtTail("'move'(%S,'-'(%S,%S))", iptMinus1,
                     localItersPerThread_, new_IntSymbol(1));
 
   VarSymbol* threadBound = insertNewVarAndDef(fn_->body, "threadBound",
                                               index0->type);
-  fn_->insertAtTail("'='(%S,'+'(%S,%S))", threadBound, index0, iptMinus1);
+  fn_->insertAtTail("'move'(%S,'+'(%S,%S))", threadBound, index0, iptMinus1);
 
   VarSymbol* switchToLB = insertNewVarAndDef(fn_->body, "switchToLB", dtBool);
-  fn_->insertAtTail("'='(%S,'<'(%S,%S))", switchToLB, upperBound, threadBound);
+  fn_->insertAtTail("'move'(%S,'<'(%S,%S))", switchToLB, upperBound, threadBound);
 
   BlockStmt* switchBlock = new BlockStmt();
-  switchBlock->insertAtTail("'='(%S,%S)", threadBound, upperBound);
+  switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
   fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
 
   BlockStmt* testBlock = new BlockStmt();
@@ -2046,13 +2046,13 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
                                              "chpl_num_gpu_threads",
                                              dtInt[INT_SIZE_64]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
+  CallExpr *c1 = new CallExpr(PRIM_MOVE, varBoundDelta,
                               new CallExpr(PRIM_SUBTRACT,
                                            gpuLoop.upperBound(),
                                            gpuLoop.lowerBounds()[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, numThreads,
+  CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
                               new CallExpr(PRIM_ADD, varBoundDelta,
                                            new_IntSymbol(1)));
   gpuLaunchBlock->insertAtTail(c2);
@@ -2169,7 +2169,7 @@ static void doGpuTransforms() {
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
-  forv_Vec(FnSymbol*, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol*, fn, gFnSymbols) {
     bool canAssumeFnWillRunOnCpu = fGpuSpecialization &&
                                    !isFnGpuSpecialized(fn) &&
                                    assumeNonGpuSpecFnsAreOnCpu;
