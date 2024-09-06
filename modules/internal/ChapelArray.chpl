@@ -3084,11 +3084,29 @@ module ChapelArray {
 
     param moveElts = !typeMismatch;
 
-    // If the domains point to the same thing (and aren't just identical),
-    // then we can simply return the RHS array.
-    // TODO: if the domain types match, could steal data pointers
-    if moveElts && dom._instance == rhs.domain._instance {
-      return rhs;
+    if moveElts {
+      // If the domains point to the same thing (and aren't just identical),
+      // then we can simply return the RHS array.
+      if dom._instance == rhs.domain._instance {
+        return rhs;
+      }
+      // If the domains have the same value but aren't pointing to the same
+      // thing, we can ask the array implementation to steal the buffer
+      if Reflection.canResolveMethod(dom._value,
+                                     "doiBuildArrayMoving",
+                                     rhs._value) {
+        if dom == rhs.domain &&
+           dom.distribution == rhs.domain.distribution &&
+           !rhs._unowned {
+          // ask the array implementation to steal the buffer
+          pragma "no copy" // avoid error about recursion for initCopy
+          pragma "unsafe" // when eltType is non-nilable
+          var lhs = dom.buildArrayMoving(rhs._value);
+          // destroy the husk that we moved from
+          _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=false);
+          return lhs;
+        }
+      }
     }
 
     pragma "no copy" // avoid error about recursion for initCopy

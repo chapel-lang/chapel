@@ -717,9 +717,23 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-
-      var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
       return new unmanaged DefaultRectangularArr(eltType=eltType,
+                                       rank=rank,
+                                       idxType=idxType,
+                                       strides=strides,
+                                       dom=_to_unmanaged(this),
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
+                                       data=data);
+    }
+
+    proc doiBuildArrayMoving(from: DefaultRectangularArr(?)) {
+      var movedData = from.data;
+      from.data = nil; // so that it won't be freed when 'from' is deleted
+      return new unmanaged DefaultRectangularArr(
+                                       eltType=from.eltType,
                                        rank=rank,
                                        idxType=idxType,
                                        strides=strides,
@@ -728,9 +742,8 @@ module DefaultRectangular {
                                        // but the array should deinit them
                                        deinitElts=true,
                                        dom=_to_unmanaged(this),
-                                       data=data);
+                                       data=movedData);
     }
-
 
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
@@ -1137,6 +1150,11 @@ module DefaultRectangular {
     }
 
     override proc dsiDestroyArr(deinitElts:bool) {
+      // give up early if the array's data has already been stolen
+      if data == nil {
+        return;
+      }
+
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }
