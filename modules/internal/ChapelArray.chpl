@@ -35,6 +35,7 @@ module ChapelArray {
   use ChapelPrivatization;
   use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
   use ChapelArrayViewElision;
+  use ChapelNumLocales;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -2212,7 +2213,7 @@ module ChapelArray {
       eqVals = (a._value == b._value);
     }
     else if isProtoSlice(a) && isProtoSlice(b) {
-      eqVals = (a == b); // default record comparison should cover it
+      eqVals = (a == b);
     }
     else {
       compilerError("Internal error: cross-type assignments are not supported");

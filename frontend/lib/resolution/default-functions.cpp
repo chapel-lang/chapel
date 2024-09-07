@@ -75,42 +75,43 @@ areOverloadsPresentInDefiningScope(Context* context,
   // do not look outside the defining module
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
 
-  auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               /* receiver scopes */ {},
+  auto ids = lookupNameInScope(context, scopeForReceiverType,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                name, config);
 
   // nothing found
-  if (vec.size() == 0) return false;
+  if (ids.numIds() == 0) return false;
 
   auto haveQt = QualifiedType(kind, type);
 
   // loop through IDs and see if any are methods or operators (method or
   // standalone) on the same type
-  for (auto& ids : vec) {
-    for (const auto& id : ids) {
-      auto node = parsing::idToAst(context, id);
-      CHPL_ASSERT(node);
+  for (const auto& id : ids) {
+    // TODO: is idToAst appropriate here? Might be better to use
+    // UntypedFnSignature / TypedFnSignature.
+    auto node = parsing::idToAst(context, id);
+    CHPL_ASSERT(node);
 
-      if (auto fn = node->toFunction()) {
-        if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
-          ResolutionResultByPostorderID r;
-          auto vis = Resolver::createForInitialSignature(context, fn, r);
-          // use receiver for method, first formal for standalone operator
-          auto checkFormal =
-              (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
-          checkFormal->traverse(vis);
-          auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
+    if (auto fn = node->toFunction()) {
+      if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
+        ResolutionResultByPostorderID r;
+        auto vis = Resolver::createForInitialSignature(context, fn, r);
+        // use receiver for method, first formal for standalone operator
+        auto checkFormal =
+            (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
+        checkFormal->traverse(vis);
+        auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
-          // Return true if:
-          // * the receiver type matches
-          // * the receiver type is a generic type and we have an instantiation
-          // * the receiver type converts via implicit borrowing
-          auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() &&
-              (!result.converts() || result.convertsWithBorrowing()) &&
-              !result.promotes()) {
-            return true;
-          }
+        // Return true if:
+        // * the receiver type matches
+        // * the receiver type is a generic type and we have an instantiation
+        // * the receiver type converts via implicit borrowing
+        auto result = canPass(context, haveQt, receiverQualType);
+        if (result.passes() &&
+            (!result.converts() || result.convertsWithBorrowing()) &&
+            !result.promotes()) {
+          return true;
         }
       }
     }

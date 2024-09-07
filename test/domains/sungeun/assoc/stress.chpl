@@ -1,3 +1,4 @@
+import Sort;
 config param parSafe = true;
 config const doSerial = false;
 
@@ -25,7 +26,7 @@ for p in 1..numSwapPasses {
   }
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));
 sync serial doSerial || (!doSerial && !parSafe) {
   writeln("Start adding..");
   begin with (ref D, ref inserted) forall i in 1..numAdds with (ref D, ref inserted) {
@@ -48,4 +49,4 @@ sync serial doSerial || (!doSerial && !parSafe) {
   }
 }
 
-writeln(D.sorted());
+writeln(Sort.sorted(D));

@@ -30,6 +30,10 @@
 
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
+
+  .. include:: AutoGpu.rst
+     :start-line: 7
+     :start-after: Automatically included GPU symbols
 */
 @unstable("The GPU module is unstable and its interface is subject to change in the future.")
 module GPU

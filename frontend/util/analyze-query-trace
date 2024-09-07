@@ -106,7 +106,12 @@ def parse_lines(fname):
 
     with open(fname) as fh:
         for line in fh:
-            depth, fn, time = line.strip().split()
+            depth, fn, time_and_args = line.strip().split(maxsplit=2)
+            tup = time_and_args.split(maxsplit=1)
+            time = tup[0]
+            args = ""
+            if len(tup) > 1:
+                args = tup[1]
             d = int(depth)
             t = int(time)
             node = Node(d, fn, t, [])

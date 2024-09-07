@@ -1,3 +1,4 @@
+import Sort;
 // declare class types
 
 class ArithC {
@@ -31,7 +32,7 @@ class EnumC {
 
 /* We have to handle nested associative types */
 iter sortedOut(arr) {
-  const ks = if arr.domain.isAssociative() then arr.domain.sorted() else arr.domain;
+  const ks = if arr.domain.isAssociative() then Sort.sorted(arr.domain) else arr.domain;
   for k in ks {
     const x = arr[k];
     if isArrayType(x.type) && x.domain.isAssociative() {
@@ -47,7 +48,7 @@ iter sortedOut(arr) {
 
 proc foo(C) {
   if (C.x.domain.isAssociative()) {
-    writeln("C.x.domain is: ", C.x.domain.sorted());
+    writeln("C.x.domain is: ", Sort.sorted(C.x.domain));
     writeln("x is: ", sortedOut(C.x));
   } else {
     writeln("C.x.domain is: ", C.x.domain);

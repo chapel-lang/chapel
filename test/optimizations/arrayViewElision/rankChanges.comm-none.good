@@ -1,59 +1,47 @@
 ArrayViewElision supported rankChanges.chpl:11
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		int(64)
 		range(int(64),both,one)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		int(64)
 		range(int(64),both,one)
 
 ArrayViewElision supported rankChanges.chpl:12
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
 		int(64)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 		int(64)
 
 ArrayViewElision supported rankChanges.chpl:15
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		int(64)
 		range(int(64),neither,one)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		int(64)
 		range(int(64),neither,one)
 
 ArrayViewElision supported rankChanges.chpl:16
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
 		int(64)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 		int(64)
 
 ArrayViewElision not supported rankChanges.chpl:19
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		int(64)
 		range(int(64),both,one)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 		int(64)
 
 ArrayViewElision not supported rankChanges.chpl:20
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
 		int(64)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		int(64)
 		range(int(64),both,one)

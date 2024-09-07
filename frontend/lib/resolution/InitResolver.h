@@ -34,8 +34,6 @@ namespace resolution {
 struct Resolver;
 
 class InitResolver {
-  using NameVec = std::vector<BorrowedIdsWithName>;
-
   // Used over 'ResolutionResultsByPostorderID' due to additional fields.
   struct FieldInitState {
     int ordinalPos = -1;
@@ -110,7 +108,7 @@ class InitResolver {
   bool handleCallToSuperInit(const uast::FnCall* node, const CallResolutionResult* c);
   bool handleCallToInit(const uast::FnCall* node, const CallResolutionResult* c);
   bool handleAssignmentToField(const uast::OpCall* node);
-  ID solveNameConflictByIgnoringField(const NameVec& vec);
+  ID solveNameConflictByIgnoringField(const MatchingIdsWithName& vec);
 
   static Phase getMaxPhase(Phase A, Phase B);
   void copyState(InitResolver& other);

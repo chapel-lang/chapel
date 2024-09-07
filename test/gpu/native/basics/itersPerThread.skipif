@@ -1,0 +1,2 @@
+# This test calls GPU primitives such as getThreadIdxX.
+CHPL_GPU==cpu

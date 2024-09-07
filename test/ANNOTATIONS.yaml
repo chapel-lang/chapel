@@ -2476,7 +2476,10 @@ arkouda: &arkouda-base
     - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
   6/27/24:
     - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
-
+  8/19/24:
+    - Array transfer perf fix (Bears-R-Us/arkouda#3671)
+  8/27/24:
+    - Fix performance regression in to_ndarray (Bears-R-Us/arkouda#3697)
 
 arkouda-string:
   <<: *arkouda-base

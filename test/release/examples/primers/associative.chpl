@@ -191,13 +191,14 @@ writeln("Our 'Scores' associative array: ", Scores);
 // Given an array, print in the following format:
 // [ idx => val, ... ]
 //
-// We'll use the ``sorted`` iterator to print in a consistent order. Otherwise,
+// We'll use the ``Sort`` module to print in a consistent order. Otherwise,
 // the order in which indices are yielded is nondeterministic.
 //
 proc prettyPrint(arr : [?dom]) {
   write("[ ");
   var first = true;
-  for k in dom.sorted() {
+  import Sort;
+  for k in Sort.sorted(dom) {
     if !first {
       write(", ", k, " => ", arr[k]);
     } else {

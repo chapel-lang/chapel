@@ -20,6 +20,7 @@
 
 module ChapelAutoLocalAccess {
   use ChapelLocale;
+  use ChapelArray;
 
   // note that the compiler can pass an iterator to `loopDomain` argument. Make
   // sure that we don't do anything with iterators as we cannot optimize such

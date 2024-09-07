@@ -14,6 +14,7 @@ from pprint import pprint
 import datetime
 from enum import Enum, unique
 from collections import defaultdict
+import chpl_home_utils
 
 # Parsing the build directory path is implemented as a state machine. Some
 # of the components start with a prefix, some do not. The state machine
@@ -346,12 +347,8 @@ def main(argv):
         builds = [Parse(args.path.split(os.sep))]
     else:
         # gather the paths for all builds
-        home = os.getenv('CHPL_HOME')
-        if home is None:
-            print("Error: CHPL_HOME is not set", file=sys.stderr)
-            sys.exit(1)
+        base = chpl_home_utils.get_chpl_runtime_lib()
 
-        base = os.path.join(home, "lib")
         # "targets" is a list of all paths that contain a "libchpl.a" file
         targets = []
         for root, dirs, files in os.walk(base):

@@ -930,7 +930,7 @@ static void testExample12() {
            )"""",
            "M.outer.test",
            "M.outer.test@2",
-           "" /* some sort of error */);
+           "M.recordA@1");
 }
 
 static void testExample13() {

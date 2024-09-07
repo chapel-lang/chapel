@@ -1,5 +1,6 @@
+import Sort;
 iter sortedAssoc(arr) {
-  for k in arr.domain.sorted() {
+  for k in Sort.sorted(arr.domain) {
     yield arr[k];
   }
 }
@@ -11,7 +12,7 @@ class C {
 
   proc foo() {
     if (x.domain.isAssociative()) {
-      writeln("x.domain is: ", x.domain.sorted());
+      writeln("x.domain is: ", Sort.sorted(x.domain));
       writeln("x is: ", sortedAssoc(x));
     } else {
       writeln("x.domain is: ", x.domain);

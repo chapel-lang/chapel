@@ -270,8 +270,7 @@ static const Type* ctFromSubs(Context* context,
   const Type* ret = nullptr;
 
   if (auto rec = receiverType->toRecordType()) {
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toRecordType();
+    auto instantatiatedFrom = subs.empty() ? nullptr : root->toRecordType();
     ret = RecordType::get(context, rec->id(), rec->name(),
                           instantatiatedFrom,
                           subs);
@@ -279,13 +278,15 @@ static const Type* ctFromSubs(Context* context,
     auto oldBasic = cls->basicClassType();
     CHPL_ASSERT(oldBasic && "Not handled!");
 
-    auto instantatiatedFrom = subs.size() == 0 ? nullptr :
-                                                 root->toBasicClassType();
+    bool genericParent =
+        superType && superType->instantiatedFromCompositeType() != nullptr;
+    auto instantiatedFrom =
+        (subs.empty() && !genericParent) ? nullptr : root->toBasicClassType();
 
     auto basic = BasicClassType::get(context, oldBasic->id(),
                                      oldBasic->name(),
                                      superType,
-                                     instantatiatedFrom,
+                                     instantiatedFrom,
                                      subs);
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
@@ -309,7 +310,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                                        DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
-  bool genericParent = superType_ && superType_->substitutions().size() != 0;
+  bool genericParent =
+      superType_ && superType_->instantiatedFromCompositeType() != nullptr;
 
   if (!rfNoDefaults.isGeneric()) {
     if (genericParent) {
@@ -364,7 +366,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     }
   }
 
-  if (subs.size() != 0 || genericParent) {
+  if (!subs.empty() || genericParent) {
     const Type* ret = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
     CHPL_ASSERT(ret);
     return ret;
@@ -817,11 +819,10 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   return false;
 }
 
-ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
-  if (vec.size() != 2) return ID();
-  if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
-  auto one = vec[0].firstId();
-  auto two = vec[1].firstId();
+ID InitResolver::solveNameConflictByIgnoringField(const MatchingIdsWithName& vec) {
+  if (vec.numIds() != 2) return ID();
+  auto one = vec.id(0);
+  auto two = vec.id(1);
   CHPL_ASSERT(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
@@ -832,12 +833,11 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   auto parenlessInfo = Resolver::ParenlessOverloadInfo();
-  auto scope = initResolver_.methodReceiverScopes();
-  auto vec = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
+  auto ids = initResolver_.lookupIdentifier(node, parenlessInfo);
 
   // Handle and exit early if there were no ambiguities.
-  if (vec.size() == 1 && vec[0].numIds() == 1) {
-    auto& id = vec[0].firstId();
+  if (ids.numIds() == 1) {
+    auto& id = ids.firstId();
     if (parsing::idIsField(ctx_, id)) {
       auto state = fieldStateFromId(id);
       auto qt = state->qt;
@@ -849,7 +849,8 @@ bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   }
 
   // If there are two names and one is a field, get the other name.
-  auto id = solveNameConflictByIgnoringField(vec);
+  // TODO: is this still needed?
+  auto id = solveNameConflictByIgnoringField(ids);
   if (!id.isEmpty()) {
     CHPL_ASSERT(!parsing::idIsField(ctx_, id));
     const bool localGenericToUnknown = true;

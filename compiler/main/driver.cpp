@@ -387,6 +387,7 @@ bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
 bool fDynoNoBreakError = false;
+static char fDynoTimingPath[FILENAME_MAX] = "";
 
 bool fResolveConcreteFns = false;
 bool fIdBasedMunging = false;
@@ -1512,6 +1513,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
+ {"dyno-timing", ' ', NULL, "Enable [disable] timing output when using dyno compiler library", "P", &fDynoTimingPath, "CHPL_DYNO_TIMING", NULL},
  {"dyno-debug-print-parsed-files", ' ', NULL, "Enable [disable] printing all files that were parsed by Dyno", "N", &fDynoDebugPrintParsedFiles, "CHPL_DYNO_DEBUG_PRINT_PARSED_FILES", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
@@ -2481,6 +2483,12 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+
+  }
+
+  if (fDynoTimingPath[0] != '\0' &&
+      (fDriverCompilationPhase || fDriverDoMonolithic)) {
+    gContext->beginQueryTimingTrace(fDynoTimingPath);
   }
 
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
@@ -2518,6 +2526,11 @@ int main(int argc, char* argv[]) {
     Phase::ReportText(
         "\n\nTiming for driver mode overhead\n--------------\n");
     tracker.ReportPass();
+  }
+
+  if (fDynoTimingPath[0] != '\0' &&
+      (fDriverCompilationPhase || fDriverDoMonolithic)) {
+    gContext->endQueryTimingTrace();
   }
 
   tracker.StartPhase("driverCleanup");
