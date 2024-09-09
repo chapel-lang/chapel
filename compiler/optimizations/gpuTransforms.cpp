@@ -1478,7 +1478,7 @@ Symbol* GpuKernel::addLocalVariable(Symbol* symInLoop) {
  *  t1 = t0 + threadIdxX      // aka `global thread idx`
  *  index = t1 + lowerBound   // aka `calculated thread idx`
  *
- *  If we have gpu.itersPerThread, instead generates:
+ *  If we have @gpu.itersPerThread, instead generates:
  *
  *  index = lowerBound + t1 * itersPerThread
  *
@@ -2047,8 +2047,17 @@ const std::unordered_set<PrimitiveTag>
  *
  *   chpl_block_delta = ub - lb
  *   chpl_gpu_num_threads = chpl_block_delta + 1
+ *
+ *  If we have @gpu.itersPerThread, chpl_gpu_num_threads should be
+ *      ceil( (ub-lb) / itersPerThread )
+ *  so generate the following instead:
+ *
+ *   chpl_block_delta = ub - lb
+ *   chpl_block_delta_plus = chpl_block_delta + ipt
+ *   chpl_gpu_num_threads = chpl_block_delta_plus / itersPerThread
  */
 static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     GpuKernel* kernel,
                                      const GpuizableLoop& gpuLoop) {
 
   VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
@@ -2064,10 +2073,25 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
                                            gpuLoop.lowerBounds()[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
+  if (kernel->itersPerThread() == nullptr) {
+
+    CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
                               new CallExpr(PRIM_ADD, varBoundDelta,
                                            new_IntSymbol(1)));
-  gpuLaunchBlock->insertAtTail(c2);
+    gpuLaunchBlock->insertAtTail(c2);
+    
+  } else {
+
+    VarSymbol* varBoundDeltaPlus = insertNewVarAndDef(gpuLaunchBlock,
+                          "chpl_block_delta_plus", dtInt[INT_SIZE_64]);
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, varBoundDeltaPlus,
+      new CallExpr(PRIM_ADD, varBoundDelta, kernel->itersPerThread())));
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, numThreads,
+      new CallExpr(PRIM_DIV, varBoundDeltaPlus, kernel->itersPerThread())));
+
+  }
 
   return numThreads;
 }
@@ -2075,7 +2099,7 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
 void GpuKernel::generateKernelLaunch() {
   VarSymbol* cfg = insertNewVarAndDef(launchBlock_, "kernel_cfg", dtCVoidPtr);
 
-  VarSymbol* numThreads = generateNumThreads(launchBlock_, gpuLoop);
+  VarSymbol* numThreads = generateNumThreads(launchBlock_, this, gpuLoop);
 
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
