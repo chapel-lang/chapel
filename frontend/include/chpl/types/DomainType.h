@@ -91,6 +91,7 @@ class DomainType final : public CompositeType {
 
   /** Return a rectangular domain type */
   static const DomainType* getRectangularType(Context* context,
+                                              const QualifiedType& instance,
                                               const QualifiedType& rank,
                                               const QualifiedType& idxType,
                                               const QualifiedType& stridable);

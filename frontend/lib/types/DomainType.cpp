@@ -79,18 +79,38 @@ DomainType::getGenericDomainType(Context* context) {
 
 const DomainType*
 DomainType::getRectangularType(Context* context,
+                               const QualifiedType& instance,
                                const QualifiedType& rank,
                                const QualifiedType& idxType,
                                const QualifiedType& stridable) {
+  auto genericDomain = getGenericDomainType(context);
+
   SubstitutionsMap subs;
   subs.emplace(ID(UniqueString(), 0, 0), rank);
   subs.emplace(ID(UniqueString(), 1, 0), idxType);
   subs.emplace(ID(UniqueString(), 2, 0), stridable);
+
+  // Add substitution for _instance field
+  auto& rf = fieldsForTypeDecl(context, genericDomain,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+  if (instanceFieldId.isEmpty()) {
+    CHPL_ASSERT(isMissingBundledRecordType(context, genericDomain->id()));
+    instanceFieldId = ID(USTR("_instance"), 0, 0);
+  }
+  subs.emplace(instanceFieldId, instance);
+
   auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
-  auto instantiatedFrom = getGenericDomainType(context);
-  return getDomainType(context, id, name, instantiatedFrom, subs,
-                       DomainType::Kind::Rectangular).get();
+  return getDomainType(context, id, name, /* instantiatedFrom*/ genericDomain,
+                       subs, DomainType::Kind::Rectangular).get();
 }
 
 const DomainType*

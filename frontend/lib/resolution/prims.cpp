@@ -286,6 +286,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   if (ci.numActuals() == 3) {
     auto type = DomainType::getRectangularType(context,
+                                          QualifiedType(),
                                           ci.actual(0).type(),
                                           ci.actual(1).type(),
                                           ci.actual(2).type());

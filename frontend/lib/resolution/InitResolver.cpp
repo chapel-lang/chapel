@@ -321,25 +321,28 @@ static const Type* ctFromSubs(Context* context,
     QualifiedType stridable;
 
     CHPL_ASSERT(subs.size() == 1);
-    if (auto instance = subs.begin()->second.type()) {
-      auto instanceCt = instance->toClassType();
-      CHPL_ASSERT(instanceCt);
-      auto instanceBct = instanceCt->basicClassType();
-      CHPL_ASSERT(instanceBct);
+    auto instanceQt = subs.begin()->second;
+    auto instance = subs.begin()->second.type();
+    CHPL_ASSERT(instance);
 
-      // Get BaseRectangularDom parent subs for rectangular domain info
-      auto baseRect = instanceBct->parentClassType();
-      CHPL_ASSERT(baseRect->name() == "BaseRectangularDom");
+    auto instanceCt = instance->toClassType();
+    CHPL_ASSERT(instanceCt);
+    auto instanceBct = instanceCt->basicClassType();
+    CHPL_ASSERT(instanceBct);
 
-      auto innerSubs = baseRect->sortedSubstitutions();
-      CHPL_ASSERT(innerSubs.size() == 3);
+    // Get BaseRectangularDom parent subs for rectangular domain info
+    auto baseRect = instanceBct->parentClassType();
+    CHPL_ASSERT(baseRect->name() == "BaseRectangularDom");
 
-      rank = innerSubs[0].second;
-      idxType = innerSubs[1].second;
-      stridable = innerSubs[2].second;
-    }
+    auto innerSubs = baseRect->sortedSubstitutions();
+    CHPL_ASSERT(innerSubs.size() == 3);
 
-    ret = DomainType::getRectangularType(context, rank, idxType, stridable);
+    rank = innerSubs[0].second;
+    idxType = innerSubs[1].second;
+    stridable = innerSubs[2].second;
+
+    ret = DomainType::getRectangularType(context, instanceQt, rank, idxType,
+                                         stridable);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
