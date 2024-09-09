@@ -885,7 +885,7 @@ module ChapelArray {
         if ensureLocal {
           const locInds = this.chpl__localStoredSubdomains(),
                 locIdx = || reduce for blk in locInds do blk.contains(indices);
-          
+
           if !locIdx {
             if chpl_isNonDistributedArray() {
               halt("Cannot use .localAccess() from locale ", here.id,
