@@ -2076,10 +2076,10 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   if (kernel->itersPerThread() == nullptr) {
 
     CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
-                              new CallExpr(PRIM_ADD, varBoundDelta,
-                                           new_IntSymbol(1)));
-    gpuLaunchBlock->insertAtTail(c2);
-    
+                                new CallExpr(PRIM_ADD, varBoundDelta,
+                                             new_IntSymbol(1)));
+      gpuLaunchBlock->insertAtTail(c2);
+
   } else {
 
     VarSymbol* varBoundDeltaPlus = insertNewVarAndDef(gpuLaunchBlock,
