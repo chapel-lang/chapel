@@ -2380,9 +2380,18 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
         auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
+        // TODO: appropriate AssociatedAction?
         handleResolvedCall(r, call, ci, result);
-        // Use the init call type as a TYPE value
-        r.setType(QualifiedType(QualifiedType::TYPE, r.type().type()));
+
+        // Use the init call's receiver type as the resulting TYPE
+        const Type* receiverTy;
+        if (auto initMsc = result.mostSpecific().only()) {
+          receiverTy = initMsc.fn()->formalType(0).type();
+          assert(receiverTy);
+        } else {
+          receiverTy = ErroneousType::get(context);
+        }
+        r.setType(QualifiedType(QualifiedType::TYPE, receiverTy));
         // return result;
       // });
 
