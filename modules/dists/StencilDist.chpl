@@ -2368,8 +2368,8 @@ iter StencilArr.dsiLocalSubdomains(loc: locale) {
 // they yield the local blocks as extended by the fluff for the sake
 // of locality-checking rather than just the local blocks.
 //
-iter StencilDom.doiLocalStoredSubdomains(loc: locale) {
-  for locid in dist.chpl__locToLocIdxs(loc) {
+iter StencilDom.doiLocalStoredSubdomains() {
+  for locid in dist.chpl__locToLocIdxs(here) {
 
     // Could calculate the indices directly, as in the normal
     // subdomains case above, but that's more complicated for
@@ -2378,8 +2378,8 @@ iter StencilDom.doiLocalStoredSubdomains(loc: locale) {
     yield locDoms[locid].myFluff;
   }
 }
-iter StencilArr.doiLocalStoredSubdomains(loc: locale) {
-  for subdom in dom.doiLocalStoredSubdomains(loc) do {
+iter StencilArr.doiLocalStoredSubdomains() {
+  for subdom in dom.doiLocalStoredSubdomains() do {
     yield subdom;
   }
 }

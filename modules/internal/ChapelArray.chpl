@@ -1045,6 +1045,7 @@ module ChapelArray {
     inline proc const this(const i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
+
     pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
@@ -1059,9 +1060,9 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() {
+      if chpl_isNonDistributedArray() then
         return this(i);
-      } else
+      else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1080,9 +1081,9 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() {
+      if chpl_isNonDistributedArray() then
         return this(i);
-      } else
+      else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1100,9 +1101,9 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() {
+      if chpl_isNonDistributedArray() then
         return this(i);
-      } else
+      else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1646,12 +1647,12 @@ module ChapelArray {
     // the fluff even though that's outside of the normal
     // localSubdomain() index set.
     @chpldoc.nodoc
-    iter chpl__localStoredSubdomains(loc: locale = here) {
+    iter chpl__localStoredSubdomains() {
       use Reflection;
-      if canResolveMethod(_value, "doiLocalStoredSubdomains", loc) {
-        for d in _value.doiLocalStoredSubdomains(loc) do yield d;
+      if canResolveMethod(_value, "doiLocalStoredSubdomains") {
+        for d in _value.doiLocalStoredSubdomains() do yield d;
       } else {
-        for d in localSubdomains(loc) do yield d;
+        for d in localSubdomains() do yield d;
       }
     }
 
