@@ -1,0 +1,1 @@
+localAccess-block2-2D.chpl:8: error: halt reached - Call to .localAccess(0, 0) from locale 1 refers to remote data (local indices are: {50..99 by 50, 0..99 by 50})

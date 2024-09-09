@@ -895,9 +895,12 @@ module ChapelArray {
                 halt("Call to .localAccess() from locale ", here.id,
                      " is illegal because it has no local array elements");
               } else {
-                halt("Call to .localAccess(", indices, ") from locale ",
-                     here.id, " refers to remote data (local indices are: ",
-                     locInds, ")");
+                halt("Call to .localAccess",
+                     if indices.size == 1 then "(" + indices(0):string + ")"
+                                          else indices,
+                     " from locale ", here.id,
+                     " refers to remote data (local indices are: ", locInds,
+                     ")");
               }
             }
           }
