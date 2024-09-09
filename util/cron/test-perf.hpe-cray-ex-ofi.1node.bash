@@ -9,7 +9,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='1-node-hpe-cray-ex'
 
 source $CWD/common-perf.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-cray-ex.ofi"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-cray-ex.ofi.1node"
 
 source $CWD/common-ofi.bash || \
   ( echo "Could not set up comm=ofi testing." && exit 1 )
