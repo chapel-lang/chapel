@@ -13,7 +13,7 @@ wget https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$C
 tar xvzf cmake-$CMAKE_VERSION.tar.gz
 cd cmake-$CMAKE_VERSION
 ./bootstrap
-make -j8
+make $MAKEJ
 make install
 
 update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
