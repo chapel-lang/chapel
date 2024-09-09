@@ -176,6 +176,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
                            LabelSymbol*      retLabel,
                            bool              isDeadCode,
                            bool              inScopelessBlock,
+                           bool              isEarlyVisitForGotoError,
                            Expr*             stmt,
                            std::set<VarSymbol*>& ignoredVariables,
                            LastMentionMap&   lmm) {
@@ -207,7 +208,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
     // Consider the catch blocks now
     for (Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
-      cur = walkBlockStmt(fn, scope, retLabel, false, false, cur,
+      cur = walkBlockStmt(fn, scope, retLabel, false, false, false, cur,
                           ignoredVariables, lmm);
       ret = cur;
     }
@@ -256,7 +257,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       if (isCheckErrorStmt(stmt->next)) {
         // Visit the check-error block now - do not consider
         // the variables initialized when running that check-error block.
-        ret = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
+        ret = walkBlockStmt(fn, scope, retLabel, false, false, true, stmt->next,
                             ignoredVariables, lmm);
       }
 
@@ -370,7 +371,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     }
   }
 
-  if (isDeadCode == false) {
+  if (isDeadCode == false && isEarlyVisitForGotoError == false) {
     // Destroy the variable after this statement if it's the last mention
     // Since this adds the destroy immediately after this statement,
     // it ends up destroying multiple variables to be destroyed here
@@ -400,7 +401,7 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     std::set<VarSymbol*>& ignoredVariables,
                                     LastMentionMap&   lmm) {
   for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
-    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
+    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, false, stmt,
                          ignoredVariables, lmm);
   }
 }
@@ -556,7 +557,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
     //
     // Handle the current statement
     //
-    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
+    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, false, stmt,
                          ignoredVariables, lmm);
 
     //
