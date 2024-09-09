@@ -36,3 +36,60 @@ on here.gpus(0) {
   }
   writeln("blsz=2 ipt=3   (600): ", A);
 }
+
+// This following checks correctness of thread/block/grid indices/dimensions.
+// These should be calculated as follows, using ceiling divisions:
+//   num.Threads = numIndices / itersPerThread
+//   gridSize    = num.Blocks = num.Threads / blockSize
+//   threadIdx   = 0..<blockSize, each index repeated itersPerThread times
+//   blockIdx    = 0..<gridSize, each index (blockSize * itersPerThread) times
+
+proc show(name: string, arr) {
+  writef("%11s:", name);
+  for elm in arr do writef("%3i", elm);
+  writef("\n");
+}
+
+proc test(numIndices: int, itersPerThread: int, blockSize: int) {
+  on here.gpus(0) {
+    var threadIdx, blockDim, blockId, gridDim: [1..numIndices] int;
+
+    @gpu.blockSize(blockSize)
+    @gpu.itersPerThread(itersPerThread)
+    foreach i in 1..numIndices {
+      threadIdx[i] = __primitive("gpu threadIdx x");
+      blockDim[i] = __primitive("gpu blockDim x");
+      blockId[i] = __primitive("gpu blockIdx x");
+      gridDim[i] = __primitive("gpu gridDim x");
+    }
+
+    // all entries in 'blockDim' and 'gridDim' should be the same
+    for elm in blockDim do
+      if elm != blockDim[1] then
+        { show("blockDim", blockDim); break; }
+    for elm in gridDim do
+      if elm != gridDim[1] then
+        { show("gridDim", gridDim); break; }
+
+    writef("numIndices %i  itersPerThread %i  blockSize %i/%i  gridSize %i\n",
+           numIndices, itersPerThread, blockSize, blockDim[1], gridDim[1]);
+    show("threadIdx", threadIdx);
+    show("blockId",   blockId);
+    writeln();
+  }
+}
+
+
+writeln();
+
+test(32, 1, 3);
+test(32, 2, 3);
+test(32, 3, 3);
+test(32, 4, 3);
+test(32, 5, 3);
+
+test(32, 8, 1);
+test(32, 8, 2);
+test(32, 8, 3);
+test(32, 8, 4);
+test(32, 8, 5);
