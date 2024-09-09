@@ -2351,53 +2351,50 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
     } else {
       // Get type by resolving the type of corresponding '_domain' init call
       // TODO: prohibit associative domain with idxType 'domain'
-      // TODO: put runAndTrackErrors back after resolving perf issues with it
-      // auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-        const AstNode* questionArg = nullptr;
-        std::vector<CallInfoActual> actuals;
-        // Set up receiver
-        auto receiverType =
-            QualifiedType(QualifiedType::INIT_RECEIVER, rCalledExp.type().type());
-        auto receiverArg = CallInfoActual(receiverType, USTR("this"));
-        actuals.push_back(std::move(receiverArg));
-        // Set up distribution arg
-        auto defaultDistArg = CallInfoActual(
-            DomainType::getDefaultDistType(context), UniqueString());
-        actuals.push_back(std::move(defaultDistArg));
-        // Remaining given args from domain() call as written
-        prepareCallInfoActuals(call, actuals, questionArg);
-        CHPL_ASSERT(!questionArg);
+      const AstNode* questionArg = nullptr;
+      std::vector<CallInfoActual> actuals;
+      // Set up receiver
+      auto receiverType =
+          QualifiedType(QualifiedType::INIT_RECEIVER, rCalledExp.type().type());
+      auto receiverArg = CallInfoActual(receiverType, USTR("this"));
+      actuals.push_back(std::move(receiverArg));
+      // Set up distribution arg
+      auto defaultDistArg = CallInfoActual(
+          DomainType::getDefaultDistType(context), UniqueString());
+      actuals.push_back(std::move(defaultDistArg));
+      // Remaining given args from domain() call as written
+      prepareCallInfoActuals(call, actuals, questionArg);
+      CHPL_ASSERT(!questionArg);
 
-        auto ci =
-            CallInfo(USTR("init"),
-                     /* calledType */ receiverType,
-                     /* isMethodCall */ true,
-                     /* hasQuestionArg */ false,
-                     /* isParenless */ false,
-                     std::move(actuals));
+      auto ci =
+          CallInfo(USTR("init"),
+                   /* calledType */ receiverType,
+                   /* isMethodCall */ true,
+                   /* hasQuestionArg */ false,
+                   /* isParenless */ false,
+                   std::move(actuals));
 
-        auto scope = scopeStack.back();
-        auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-        auto result = resolveGeneratedCall(context, call, ci, inScopes);
-
+      auto scope = scopeStack.back();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+      auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+        auto res = resolveGeneratedCall(context, call, ci, inScopes);
         // TODO: appropriate AssociatedAction?
-        handleResolvedCall(r, call, ci, result);
+        handleResolvedCall(r, call, ci, res);
+        return res;
+      });
 
-        // Use the init call's receiver type as the resulting TYPE
-        const Type* receiverTy;
-        if (auto initMsc = result.mostSpecific().only()) {
-          receiverTy = initMsc.fn()->formalType(0).type();
-          assert(receiverTy);
-        } else {
-          receiverTy = ErroneousType::get(context);
-        }
-        r.setType(QualifiedType(QualifiedType::TYPE, receiverTy));
-        // return result;
-      // });
-
-      // if (!runResult.ranWithoutErrors()) {
-      //   CHPL_REPORT(context, InvalidDomainCall, fnCall);
-      // }
+      // Use the init call's receiver type as the resulting TYPE
+      const Type* receiverTy;
+      if (runResult.ranWithoutErrors()) {
+        auto initMsc = runResult.result().mostSpecific().only();
+        CHPL_ASSERT(initMsc);
+        receiverTy = initMsc.fn()->formalType(0).type();
+        assert(receiverTy);
+      } else {
+        receiverTy = ErroneousType::get(context);
+        CHPL_REPORT(context, InvalidDomainCall, fnCall);
+      }
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverTy));
     }
     return true;
   }
