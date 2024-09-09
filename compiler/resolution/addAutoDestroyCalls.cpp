@@ -540,6 +540,18 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
 
+  // If the body is empty, the scope may still have variables to be
+  // auto-destroyed; one key example is loop index variables in a forall.
+  // We need an anchor to call 'insertAutoDestroys', so if we do need to
+  // insert them, create a noop.
+  if (block->body.empty() && scope.numLocalsAndDefers() > 0) {
+    SET_LINENO(block);
+    auto noop = new CallExpr(PRIM_NOOP);
+    block->body.insertAtTail(noop);
+    scope.insertAutoDestroys(fn, noop, ignoredVariables);
+    noop->remove();
+  }
+
   for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
     //
     // Handle the current statement
