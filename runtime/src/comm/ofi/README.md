@@ -529,11 +529,6 @@ the same memory address occur in program order. Note that this is a stronger
 guarantee than is necessary to enforce the MCM because it ensures that all
 writes by a task occur in program order, independent of memory address.
 
-To force prior operations to be visible, the FI_DELIVERY_COMPLETE flag is
-required in addition to the FI_FENCE flag. Otherwise, the FI_FENCE merely
-causes the prior operations to be transmit-compete, they may not be visible
-in memory. See the fi_cq man page for more details.
-
 #### Message-order MCM Mode
 
 In message-order mode the comm layer also takes the provider's default
