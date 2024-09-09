@@ -403,8 +403,7 @@ struct Converter {
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
-      return fDynoScopeBundled ||
-             !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return fDynoScopeBundled || topLevelModTag == MOD_USER;
     }
 
     return false;
@@ -418,7 +417,7 @@ struct Converter {
   }
   bool shouldResolve(ID symbolId) {
     if (fDynoCompilerLibrary) {
-      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return topLevelModTag == MOD_USER;
     } else {
       return shouldResolve(symbolId.symbolPath());
     }
@@ -457,15 +456,6 @@ struct Converter {
     }
 
     return FLAG_UNKNOWN;
-  }
-
-  static bool isBlockComment(const uast::Comment* node) {
-    const auto& str = node->str();
-    if (str.size() < 4) return false;
-    if (str[0] != '/' || str[1] != '*') return false;
-    INT_ASSERT(str[str.size()-1] == '/');
-    INT_ASSERT(str[str.size()-2] == '*');
-    return true;
   }
 
   Expr* visit(const uast::Comment* node) {
