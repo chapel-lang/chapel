@@ -119,6 +119,8 @@ public:
   bool     enterCatchStmt   (CatchStmt*         node) override;
   void     exitCatchStmt    (CatchStmt*         node) override;
 
+  bool     enterImplementsStmt(ImplementsStmt* node)  override;
+
 private:
                    AstDump();
 
