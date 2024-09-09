@@ -32,11 +32,11 @@ var SpsA: [SpsD] real;
 
 if sparse1 then sort(SpsD); // should be an error
 if sparse2 then isSorted(SpsD); // should be an error
-if sparse3 then var x = sorted(SpsD); // should be an error
+if sparse3 then sorted(SpsD); // should be an error
 if sparse4 then sort(SpsA); // should be an error
 if sparse5 then isSorted(SpsA); // should be an error
-if sparse6 then var x = sorted(SpsA); // should be an error
-if sparse7 then var x = SpsD.sorted(); // should be an error
+if sparse6 then sorted(SpsA); // should be an error
+if sparse7 then SpsD.sorted(); // should be an error
 
 
 //
@@ -48,11 +48,11 @@ var AssocA = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
 
 if assoc1 then sort(AssocD); // should be an error
 if assoc2 then isSorted(AssocD); // should be an error
-if assoc3 then var x = sorted(AssocD);
+if assoc3 then sorted(AssocD);
 if assoc4 then sort(AssocA); // should be an error
 if assoc5 then isSorted(AssocA); // should be an error
-if assoc6 then var x = sorted(AssocA);
-if assoc7 then var x = AssocD.sorted(); // not an error, but warns
+if assoc6 then sorted(AssocA);
+if assoc7 then AssocD.sorted(); // not an error, but warns
 
 
 //
@@ -64,8 +64,8 @@ var RectA: [RectD] real;
 
 if rect1 then sort(RectD); // should be an error
 if rect2 then isSorted(RectD); // should be an error
-if rect3 then var x = sorted(RectD); // should be an error
+if rect3 then sorted(RectD); // should be an error
 if rect4 then sort(RectA);
 if rect5 then isSorted(RectA);
-if rect6 then var x = sorted(RectA);
-if rect7 then var x = RectD.sorted(); // should be an error
+if rect6 then sorted(RectA);
+if rect7 then RectD.sorted(); // should be an error
