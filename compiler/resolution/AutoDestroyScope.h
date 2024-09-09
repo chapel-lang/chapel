@@ -44,7 +44,7 @@ public:
 
   void                     addEarlyDeinit(VarSymbol* var);
 
-  // Counts how many declarations exists
+  // Counts how many local declarations and defers are in the scope
   size_t                   numLocalsAndDefers() const;
 
   VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
