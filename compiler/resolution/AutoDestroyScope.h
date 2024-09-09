@@ -44,6 +44,9 @@ public:
 
   void                     addEarlyDeinit(VarSymbol* var);
 
+  // Counts how many declarations exists
+  size_t                   numLocalsAndDefers() const;
+
   VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
 
   // Forget about initializations for outer variables initialized
