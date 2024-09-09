@@ -1,0 +1,4 @@
+If there's any patch to keep ChAI testing up and running, add them here by
+updating the local copy of ChAI, then running `git diff >../patches/<patch-name>.patch`.
+Please also file a PR against chapel-lang's fork of ChAI in order to remove the
+patch as soon as you can to avoid maintenance burden.
