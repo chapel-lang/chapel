@@ -39,7 +39,7 @@ static QualifiedType findVarType(const Module* m,
 static void testRectangular(std::string domainType,
                                   int rank,
                                   std::string idxType,
-                                  bool stridable) {
+                                  std::string strides) {
   Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
   Context ctx(config);
@@ -59,7 +59,7 @@ module M {
 
   // param r = d.rank;
   // type i = d.idxType;
-  // param s = d.stridable;
+  // param s = d.strides;
   // param rk = d.isRectangular();
   // param ak = d.isAssociative();
 
@@ -101,7 +101,7 @@ module M {
 
   // assert(findVarType(m, rr, "ig") == findVarType(m, rr, "i"));
 
-  // assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == stridable);
+  // assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == strides);
 
   // assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
 
@@ -315,12 +315,12 @@ module M {
 // }
 
 int main() {
-  testRectangular("domain(1)", 1, "int", false);
-  testRectangular("domain(2)", 2, "int", false);
-  testRectangular("domain(1, stridable=true)", 1, "int", true);
-  testRectangular("domain(2, int(8))", 2, "int(8)", false);
-  testRectangular("domain(3, int(16), true)", 3, "int(16)", true);
-  testRectangular("domain(stridable=false, idxType=int, rank=1)", 1, "int", false);
+  testRectangular("domain(1)", 1, "int", "strideKind.one");
+  testRectangular("domain(2)", 2, "int", "strideKind.one");
+  testRectangular("domain(1, strides=strideKind.one)", 1, "int", "strideKind.one");
+  testRectangular("domain(2, int(8))", 2, "int(8)", "strideKind.one");
+  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "strideKind.negOne");
+  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "strideKind.negative");
 
   // TODO: re-enable associative
   // testAssociative("domain(int)", "int", true);
