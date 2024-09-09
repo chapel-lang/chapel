@@ -95,7 +95,7 @@ typedef int32_t c_sublocid_t;
 #define SCN_c_sublocid_t SCNi32
 typedef int64_t c_localeid_t;
 
-// These are special values that mean "no", "any", and "all sublocales",
+// These are special values that mean "no" and "all sublocales",
 // respectively.
 #define c_sublocid_none_val -1
 #define c_sublocid_all_val  -3

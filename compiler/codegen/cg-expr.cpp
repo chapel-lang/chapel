@@ -795,7 +795,6 @@ static
 GenRet codegenLocaleForNode(GenRet node)
 {
   node = codegenValue(node);
-  GenRet anySublocale = codegenUseGlobal("c_sublocid_none");
 
   std::vector<GenRet> args;
   args.push_back(codegenValue(node));
