@@ -11,8 +11,11 @@ A.updateFluff();
 // test ensures that we don't get an OOB access check on such local
 // accesses to fluff values.
 
-writeln(A.localAccess(6));
+writeln(A.localAccess(5));    // this is properly owned by me
+writeln(A.localAccess(6));    // this is part of my fluff
 
 on Locales.last {
-  writeln(A.localAccess(5));
+  writeln(A.localAccess(6));  // this is properly owned by me
+  writeln(A.localAccess(5));  // this is part of my fluff
+  writeln(A.localAccess(4));  // this is not local
 }
