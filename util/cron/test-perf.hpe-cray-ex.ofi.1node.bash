@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Run performance tests on an HPE Cray EX
+# Run performance tests on an HPE Cray EX (build for multilocale runs, but only
+# run single locale perf tests).
 
 CWD=$(cd $(dirname $0) ; pwd)
 
