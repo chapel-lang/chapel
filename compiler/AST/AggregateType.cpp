@@ -2955,7 +2955,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       }
 
       auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
-      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      auto istmt = ImplementsStmt::build(isym, ifcActuals, nullptr);
       getEnclosingBlockForImplements(this->symbol)->insertAtTail(istmt);
 
       expr->remove();

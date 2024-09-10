@@ -317,6 +317,9 @@ struct Witnesses {
 
 class ImplementsStmt final : public Stmt {
 public:
+  static ImplementsStmt* build(InterfaceSymbol* isym,
+                               CallExpr* actuals,
+                               BlockStmt* body);
   static ImplementsStmt* build(const char* name,
                                CallExpr* actuals,
                                BlockStmt* body);
