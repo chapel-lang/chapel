@@ -5,7 +5,7 @@ config const read = true;
 var Arr = createArray();
 
 on Locales[numLocales-1] {
-  if read then writeln(Arr.localAccess[0,0]); else Arr.localAccess[0,0] += 1;
+  local { if read then writeln(Arr.localAccess[0,0]); else Arr.localAccess[0,0] += 1;  }
 }
 
 proc createArray() {

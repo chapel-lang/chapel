@@ -2370,11 +2370,10 @@ iter StencilArr.dsiLocalSubdomains(loc: locale) {
 //
 iter StencilDom.doiLocalStoredSubdomains() {
   for locid in dist.chpl__locToLocIdxs(here) {
-
-    // Could calculate the indices directly, as in the normal
-    // subdomains case above, but that's more complicated for
-    // StencilDist, and this isn't on performance-critical paths
-    // anyway, so I'm just looking it up.
+    // Return the locally stored domain associated with each 'locid'.
+    // This shouldn't result in communication since we're always
+    // making queries about 'here' rather than a potentially remote
+    // locale.
     yield locDoms[locid].myFluff;
   }
 }
