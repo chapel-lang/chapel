@@ -16,9 +16,12 @@ writeln(A);
 
 A = 0;
 A.localAccess[1] = 1;
-A.localAccess[n] = n;
+A.localAccess[7] = 7;
 writeln(A);
 
 A = space;
 const B = + scan A;
 writeln(B);
+
+A.localAccess[n] = n;
+writeln(A);
