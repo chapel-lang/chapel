@@ -874,7 +874,8 @@ CHPL_LLVM_GCC_INSTALL_DIR
    Sometimes it's necessary to request that ``clang`` work with a
    particular version of GCC. If many versions are installed at the same
    prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
-   do that. That is where ``CHPL_LLVM_GCC_INSTALL_DIR`` comes in!
+   differentate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
+   comes in!
 
    To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
    cases, try a test compile:
@@ -882,9 +883,7 @@ CHPL_LLVM_GCC_INSTALL_DIR
       * ``echo int main() { return 0; } > hello.cc``
       * ``clang++ -v hello.cc``
 
-   This will print out lines along these lines:
-
-   ..
+   This will print out lines along these lines::
 
       Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/11
       Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/12
