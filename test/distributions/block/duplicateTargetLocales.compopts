@@ -1,2 +1,2 @@
--sBlockDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
--sBlockDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good
+--checks -sBlockDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
+--checks -sBlockDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good

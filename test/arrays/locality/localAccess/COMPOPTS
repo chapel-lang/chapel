@@ -1,2 +1,2 @@
--sPOD=true
--sPOD=false
+-sPOD=true --checks
+-sPOD=false --checks
