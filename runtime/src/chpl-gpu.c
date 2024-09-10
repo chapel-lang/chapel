@@ -1397,24 +1397,6 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
-  /* Engin: I am commenting out the chpl_gpu_impl_use_device call below. We
-     recently bumped into a case where a GPU-allocated memory was attempted to
-     be freed from CPU because it was stored in a map that was allocated on the
-     CPU. So, we want to allow CPU (subloc_any/subloc_none) to deallocate GPU
-     memory.
-    
-     Currently, I do that by making the implementation layer responsible for
-     picking the right device/context based on the allocation. This logic that
-     relies on `chpl_gpu_impl_use_device` is used only in memory
-     allocation/deallocation logic today. I think what we want is to use
-     stream-ordered memory allocators and pass streams to the implementation
-     layer.
-
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-
-  */
-
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);
 
