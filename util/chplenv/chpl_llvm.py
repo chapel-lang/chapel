@@ -714,6 +714,14 @@ def get_gcc_prefix_dir():
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
 
+    if gcc_dir:
+        llvm_version = get_llvm_version()
+        if llvm_version in ('11', '12', '13', '14', '15'):
+            warning("This LLVM / clang version {0} is too old to use "
+                    "CHPL_LLVM_GCC_INSTALL_DIR -- "
+                    "it will be ignored".format(llvm_version))
+            return ''
+
     return gcc_dir
 
 
