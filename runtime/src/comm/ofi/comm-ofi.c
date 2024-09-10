@@ -1762,11 +1762,9 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
   //
   // Note: we don't ask for FI_ORDER_ATOMIC_RAW because the some providers
   // doesn't support it.  FI_ORDER_ATOMIC_WAR ordering is enforced by the
-  // MCM. We need FI_ORDER_RMA_WAW to ensure sequential consistency of
-  // writes.
+  // MCM.
   //
   uint64_t need_msg_orders =   FI_ORDER_ATOMIC_WAW
-                             | FI_ORDER_RMA_WAW
                              | FI_ORDER_SAS;
   if (set) {
     // Only use this mode if the tasking layer has a fixed number of threads.
