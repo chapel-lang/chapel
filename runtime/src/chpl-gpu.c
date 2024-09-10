@@ -1205,6 +1205,13 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src, size_t n,
                      int32_t commID, int ln, int32_t fn) {
+
+  /* This generates just a lot of output
+
+  CHPL_GPU_DEBUG("chpl_gpu_memcpy of %zu bytes <src subloc:%d, ptr:%p> "
+                 "<dst subloc:%d, ptr:%p>\n", n, src_subloc, src, dst_subloc,
+                 dst);
+  */
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
     memmove(dst, src, n);
@@ -1241,6 +1248,10 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
   memmove(dst, src, n);
   #endif
 
+  /* This generates just a lot of output
+
+  CHPL_GPU_DEBUG("chpl_gpu_memcpy successful\n");
+  */
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
