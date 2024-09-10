@@ -55,11 +55,11 @@ module M {
   type ig = )""" + idxType + R"""(;
   type fullIndex = if rg == 1 then ig else rg*ig;
 
-  // param r = d.rank;
-  // type i = d.idxType;
-  // param s = d.strides;
-  // param rk = d.isRectangular();
-  // param ak = d.isAssociative();
+  param r = d.rank;
+  type i = d.idxType;
+  param s = d.strides;
+  param rk = d.isRectangular();
+  param ak = d.isAssociative();
 
   // var p = d.pid();
 
@@ -107,15 +107,17 @@ module M {
   QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
   (void)fullIndexType;
 
-  // assert(findVarType(m, rr, "r").param()->toIntParam()->value() == rank);
+  assert(findVarType(m, rr, "r").param()->toIntParam()->value() == rank);
 
-  // assert(findVarType(m, rr, "ig") == findVarType(m, rr, "i"));
+  assert(findVarType(m, rr, "ig") == findVarType(m, rr, "i"));
 
-  // assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == strides);
+  assert(findVarType(m, rr, "s").param()->toEnumParam()->value().str == strides);
 
-  // assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
+  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
 
-  // assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
+  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
+
+  // TODO: uncommented and fix remaining testing
 
   // assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
@@ -325,12 +327,12 @@ module M {
 // }
 
 int main() {
-  testRectangular("domain(1)", 1, "int", "strideKind.one");
-  testRectangular("domain(2)", 2, "int", "strideKind.one");
-  testRectangular("domain(1, strides=strideKind.one)", 1, "int", "strideKind.one");
-  testRectangular("domain(2, int(8))", 2, "int(8)", "strideKind.one");
-  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "strideKind.negOne");
-  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "strideKind.negative");
+  testRectangular("domain(1)", 1, "int", "one");
+  testRectangular("domain(2)", 2, "int", "one");
+  testRectangular("domain(1, strides=strideKind.one)", 1, "int", "one");
+  testRectangular("domain(2, int(8))", 2, "int(8)", "one");
+  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
 
   // TODO: re-enable associative
   // testAssociative("domain(int)", "int", true);
