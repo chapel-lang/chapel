@@ -279,7 +279,7 @@ def register_rules(driver: LintDriver):
 
         # Now, we should warn: there's a node in a conditional or
         # if/else, it has parentheses at the top level, but it doesn't need them.
-        return BasicRuleResult(node, data=subject)
+        return BasicRuleResult(subject, data=subject)
 
     @driver.fixit(ControlFlowParentheses)
     def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
