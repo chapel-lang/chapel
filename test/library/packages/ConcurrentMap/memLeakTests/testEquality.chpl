@@ -1,1 +1,0 @@
-../testEquality.chpl
