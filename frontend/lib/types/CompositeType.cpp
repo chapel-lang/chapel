@@ -27,6 +27,7 @@
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ClassTypeDecorator.h"
 #include "chpl/types/CPtrType.h"
+#include "chpl/types/DomainType.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Decl.h"
