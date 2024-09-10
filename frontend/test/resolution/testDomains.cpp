@@ -50,8 +50,6 @@ static void testRectangular(std::string domainType,
   std::string program =
 R"""(
 module M {
-  use ChapelDomain;
-  
   var d : )""" + domainType + R"""(;
   param rg = )""" + std::to_string(rank) + R"""(;
   type ig = )""" + idxType + R"""(;
@@ -92,10 +90,22 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  QualifiedType dType = findVarType(m, rr, "d");
+  const Variable* d = m->stmt(0)->toVariable();
+  assert(d);
+  assert(d->name() == "d");
+
+  QualifiedType dType = rr.byAst(d).type();
   assert(dType.type()->isDomainType());
 
-  // QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
+  auto dTypeExpr = d->typeExpression();
+  assert(dTypeExpr);
+  auto typeRe = rr.byAst(dTypeExpr);
+  auto& aa = typeRe.associatedActions()[0];
+  assert(!aa.id().isEmpty());
+  assert(aa.action() == AssociatedAction::RUNTIME_TYPE);
+
+  QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
+  (void)fullIndexType;
 
   // assert(findVarType(m, rr, "r").param()->toIntParam()->value() == rank);
 

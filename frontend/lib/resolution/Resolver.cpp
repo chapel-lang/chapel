@@ -2377,17 +2377,19 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto scope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-        auto res = resolveGeneratedCall(context, call, ci, inScopes);
-        // TODO: appropriate AssociatedAction?
-        handleResolvedCall(r, call, ci, res);
-        return res;
+        return resolveGeneratedCall(context, call, ci, inScopes);
       });
 
       // Use the init call's receiver type as the resulting TYPE
       const Type* receiverTy;
       if (runResult.ranWithoutErrors()) {
-        auto initMsc = runResult.result().mostSpecific().only();
+        auto result = runResult.result();
+        auto initMsc = result.mostSpecific().only();
         CHPL_ASSERT(initMsc);
+
+        handleResolvedCall(r, call, ci, result,
+                           {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
+
         receiverTy = initMsc.fn()->formalType(0).type();
         assert(receiverTy);
       } else {
