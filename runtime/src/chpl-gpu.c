@@ -1397,9 +1397,6 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);
 

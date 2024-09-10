@@ -352,6 +352,14 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
+
+    // see note in chpl_gpu_mem_free
+    int64_t dev_id = c_sublocid_none;
+    CUDA_CALL(cuPointerGetAttribute((void*)&dev_id,
+                                    CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+                                    (CUdeviceptr)memAlloc));
+    switch_context(dev_id);
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
       CUDA_CALL(cuMemFreeHost(memAlloc));

@@ -394,6 +394,12 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
+    // see note in chpl_gpu_mem_free
+    int64_t dev_id = c_sublocid_none;
+    hipPointerAttribute_t res;
+    ROCM_CALL(hipPointerGetAttributes(&res, memAlloc));
+    switch_context(res.device);
+
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {

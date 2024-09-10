@@ -152,9 +152,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to realloc a GPU pointer outside a GPU sublocale");
-      }
       return chpl_gpu_mem_realloc(ptr, size.safeCast(c_size_t), md + chpl_memhook_md_num());
     }
     else {
@@ -187,9 +184,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_free(ptr:c_ptr(void)) : void;
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to free a GPU pointer outside a GPU sublocale");
-      }
       chpl_gpu_mem_free(ptr);
     }
     else {
