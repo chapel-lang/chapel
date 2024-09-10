@@ -860,6 +860,52 @@ CHPL_LLVM_GCC_PREFIX
    ``--gcc-toolchain`` flag; or you can set it to a particular directory
    to pass to ``clang`` with the ``--gcc-toolchain`` flag.
 
+   Please note that, on some systems, it's possible to install multiple
+   versions of gcc to ``/usr``. In that event, ``CHPL_LLVM_GCC_PREFIX``
+   and ``--gcc-toolchain`` cannot distinguish between these multiple versions.
+   Use the next option, ``CHPL_LLVM_GCC_INSTALL_DIR``, instead for such
+   cases.
+
+.. _readme-chplenv.CHPL_LLVM_GCC_INSTALL_DIR:
+
+CHPL_LLVM_GCC_INSTALL_DIR
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Sometimes it's necessary to request that ``clang`` work with a
+   particular version of GCC. If many versions are installed at the same
+   prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
+   differentate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
+   comes in!
+
+   To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
+   cases, try a test compile:
+
+      * ``echo int main() { return 0; } > hello.cc``
+      * ``clang++ -v hello.cc``
+
+   This will print out lines along these lines::
+
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/11
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/12
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/13
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+      Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+
+   The paths printed here are suitable for use with
+   ``CHPL_LLVM_GCC_INSTALL_DIR``. Choose the path that corresponds to the
+   ``g++`` version that you are trying to use. If you are not sure which
+   ``g++`` version to use -- the version that comes with your system is a
+   good starting point. You can use
+   ``/usr/bin/g++ --version`` or just ``g++ --version`` to find that
+   version.
+
+   .. note::
+
+      ``CHPL_LLVM_GCC_INSTALL_DIR`` works with the clang flag
+      ``--gcc-install-dir`` which was added in LLVM / clang 16. As a
+      result, ``CHPL_LLVM_GCC_INSTALL_DIR`` will not work for earlier
+      versions of LLVM / clang.
+
 .. _readme-chplenv.CHPL_UNWIND:
 
 CHPL_UNWIND
