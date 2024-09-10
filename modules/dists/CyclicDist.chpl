@@ -483,6 +483,12 @@ proc CyclicImpl.chpl__locToLocIdx(loc: locale) {
   return (false, targetLocDom.first);
 }
 
+iter CyclicImpl.chpl__locToLocIdxs(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocs[locIdx] == loc) then
+      yield locIdx;
+}
+
 proc CyclicImpl.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   return chunk;
@@ -1619,6 +1625,17 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   } else {
     var d: myBlockType(rank, idxType);
     return d;
+  }
+}
+iter CyclicDom.dsiLocalSubdomains(loc: locale) {
+  for locid in dist.chpl__locToLocIdxs(loc) {
+    var inds = chpl__computeCyclic(idxType, locid, dist.targetLocDom.dims(), dist.startIdx);
+    yield whole[(...inds)];
+  }
+}
+iter CyclicArr.dsiLocalSubdomains(loc: locale) {
+  for subdoms in dom.dsiLocalSubdomains(loc) {
+    yield subdoms;
   }
 }
 

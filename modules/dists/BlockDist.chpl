@@ -1917,6 +1917,12 @@ proc BlockImpl.chpl__locToLocIdx(loc: locale) {
   return (false, targetLocDom.first);
 }
 
+iter BlockImpl.chpl__locToLocIdxs(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocales[locIdx] == loc) then
+      yield locIdx;
+}
+
 // Block subdomains are continuous
 
 proc BlockArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
@@ -1951,6 +1957,17 @@ proc BlockDom.dsiLocalSubdomain(loc: locale) {
   } else {
     var d: domain(rank, idxType, strides);
     return d;
+  }
+}
+iter BlockDom.dsiLocalSubdomains(loc: locale) {
+  for locid in dist.chpl__locToLocIdxs(loc) {
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
+    yield whole[(...inds)];
+  }
+}
+iter BlockArr.dsiLocalSubdomains(loc: locale) {
+  for subdoms in dom.dsiLocalSubdomains(loc) {
+    yield subdoms;
   }
 }
 

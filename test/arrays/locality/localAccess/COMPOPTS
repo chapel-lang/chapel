@@ -1,0 +1,2 @@
+-sPOD=true --checks
+-sPOD=false --checks

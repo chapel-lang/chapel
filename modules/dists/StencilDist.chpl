@@ -2313,6 +2313,12 @@ proc StencilImpl.chpl__locToLocIdx(loc: locale) {
   return (false, targetLocDom.first);
 }
 
+iter StencilImpl.chpl__locToLocIdxs(loc: locale) {
+  for locIdx in targetLocDom do
+    if (targetLocales[locIdx] == loc) then
+      yield locIdx;
+}
+
 // Stencil subdomains are continuous
 
 proc StencilArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
@@ -2344,6 +2350,36 @@ proc StencilDom.dsiLocalSubdomain(loc: locale) {
   } else {
     var d: domain(rank, idxType, strides);
     return d;
+  }
+}
+iter StencilDom.dsiLocalSubdomains(loc: locale) {
+  for locid in dist.chpl__locToLocIdxs(loc) {
+    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
+    yield whole[(...inds)];
+  }
+}
+iter StencilArr.dsiLocalSubdomains(loc: locale) {
+  for subdoms in dom.dsiLocalSubdomains(loc) {
+    yield subdoms;
+  }
+}
+
+// These are similar to the normal dsiLocalSubdomains() itertors, but
+// they yield the local blocks as extended by the fluff for the sake
+// of locality-checking rather than just the local blocks.
+//
+iter StencilDom.doiLocalStoredSubdomains() {
+  for locid in dist.chpl__locToLocIdxs(here) {
+    // Return the locally stored domain associated with each 'locid'.
+    // This shouldn't result in communication since we're always
+    // making queries about 'here' rather than a potentially remote
+    // locale.
+    yield locDoms[locid].myFluff;
+  }
+}
+iter StencilArr.doiLocalStoredSubdomains() {
+  for subdom in dom.doiLocalStoredSubdomains() do {
+    yield subdom;
   }
 }
 
