@@ -354,7 +354,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 
     // see note in chpl_gpu_mem_free
-    int64_t dev_id = c_sublocid_any;
+    int64_t dev_id = c_sublocid_none;
     CUDA_CALL(cuPointerGetAttribute((void*)&dev_id,
                                     CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
                                     (CUdeviceptr)memAlloc));
