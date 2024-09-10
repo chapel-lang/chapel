@@ -533,11 +533,6 @@ issuing a new write. This ensures writes by a single task are performed in
 program order. FI_ORDER_RMA_WAW has signficant performance implications, so
 it should be avoided if possible.
 
-To force prior operations to be visible, the FI_DELIVERY_COMPLETE flag is
-required in addition to the FI_FENCE flag. Otherwise, the FI_FENCE merely
-causes the prior operations to be transmit-compete, they may not be visible
-in memory. See the fi_cq man page for more details.
-
 #### Message-order MCM Mode
 
 In message-order mode the comm layer also takes the provider's default
