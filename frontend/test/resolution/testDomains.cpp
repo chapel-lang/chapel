@@ -67,18 +67,18 @@ module M {
   //   var z = loopI;
   // }
 
-  // proc generic(arg: domain) {
-  //   type GT = arg.type;
-  //   return 42;
-  // }
+  proc generic(arg: domain) {
+    type GT = arg.type;
+    return 42;
+  }
 
-  // proc concrete(arg: )""" + domainType + R"""() {
-  //   type CT = arg.type;
-  //   return 42;
-  // }
+  proc concrete(arg: )""" + domainType + R"""() {
+    type CT = arg.type;
+    return 42;
+  }
 
-  // var g_ret = generic(d);
-  // var c_ret = concrete(d);
+  var g_ret = generic(d);
+  var c_ret = concrete(d);
 }
 )""";
 
@@ -117,37 +117,37 @@ module M {
 
   assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
 
-  // TODO: uncommented and fix remaining testing
-
+  // TODO: fix and test .pid
   // assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
+  // TODO: fix and test iteration
   // assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
-  // {
-  //   const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
-  //   auto res = rr.byAst(g_ret);
-  //   assert(res.type().type()->isIntType());
+  {
+    const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
+    auto res = rr.byAst(g_ret);
+    assert(res.type().type()->isIntType());
 
-  //   auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
-  //   // Generic function, should have been instantiated
-  //   assert(call->signature()->instantiatedFrom() != nullptr);
+    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    // Generic function, should have been instantiated
+    assert(call->signature()->instantiatedFrom() != nullptr);
 
-  //   const Variable* GT = findOnlyNamed(m, "GT")->toVariable();
-  //   assert(call->byAst(GT).type().type() == dType.type());
-  // }
+    const Variable* GT = findOnlyNamed(m, "GT")->toVariable();
+    assert(call->byAst(GT).type().type() == dType.type());
+  }
 
-  // {
-  //   const Variable* c_ret = findOnlyNamed(m, "c_ret")->toVariable();
-  //   auto res = rr.byAst(c_ret);
-  //   assert(res.type().type()->isIntType());
+  {
+    const Variable* c_ret = findOnlyNamed(m, "c_ret")->toVariable();
+    auto res = rr.byAst(c_ret);
+    assert(res.type().type()->isIntType());
 
-  //   auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
-  //   // Concrete function, should not be instantiated
-  //   assert(call->signature()->instantiatedFrom() == nullptr);
+    auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
+    // Concrete function, should not be instantiated
+    assert(call->signature()->instantiatedFrom() == nullptr);
 
-  //   const Variable* CT = findOnlyNamed(m, "CT")->toVariable();
-  //   assert(call->byAst(CT).type().type() == dType.type());
-  // }
+    const Variable* CT = findOnlyNamed(m, "CT")->toVariable();
+    assert(call->byAst(CT).type().type() == dType.type());
+  }
 
   assert(guard.errors().size() == 0);
 
