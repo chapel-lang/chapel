@@ -893,8 +893,19 @@ CHPL_LLVM_GCC_INSTALL_DIR
       Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
 
    The paths printed here are suitable for use with
-   ``CHPL_LLVM_GCC_INSTALL_DIR``.
+   ``CHPL_LLVM_GCC_INSTALL_DIR``. Choose the path that corresponds to the
+   ``g++`` version that you are trying to use. If you are not sure which
+   ``g++`` version to use -- the version that comes with your system is a
+   good starting point. You can use
+   ``/usr/bin/g++ --version`` or just ``g++ --version`` to find that
+   version.
 
+   .. note::
+
+      ``CHPL_LLVM_GCC_INSTALL_DIR`` works with the clang flag
+      ``--gcc-install-dir`` which was added in LLVM / clang 16. As a
+      result, ``CHPL_LLVM_GCC_INSTALL_DIR`` will not work for earlier
+      versions of LLVM / clang.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
