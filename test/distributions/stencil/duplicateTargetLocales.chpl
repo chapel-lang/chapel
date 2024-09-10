@@ -23,5 +23,5 @@ A = space;
 const B = + scan A;
 writeln(B);
 
-A.localAccess[n] = n;
+A.localAccess[n] = -n;
 writeln(A);
