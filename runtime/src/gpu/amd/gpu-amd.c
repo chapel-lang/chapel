@@ -396,7 +396,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
   // see note in chpl_gpu_mem_free
   int64_t dev_id = c_sublocid_none;
   hipPointerAttribute_t res;
-  ROCM_CALL(hipPointerGetAttribute(&res, memAlloc));
+  ROCM_CALL(hipPointerGetAttributes(&res, memAlloc));
   switch_context(res.device);
 
   if (memAlloc != NULL) {
