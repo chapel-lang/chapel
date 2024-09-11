@@ -22,9 +22,43 @@ variety of Linux distributions. For more information on WSL, see the
 
 To use Chapel on WSL, you will need to install a Linux distribution from the
 Microsoft Store. We recommend using Ubuntu, but others will likely work.
-Once you have installed your distribution, get the list of prerequisites
-from :ref:`readme-prereqs` and install Chapel as you would on a native Linux
-system. There are no platform-specific settings for Chapel on WSL at this time.
+
+This example shows how to install WSL and Ubuntu on Windows 10/11::
+
+    # Open PowerShell
+    wsl --install -d Ubuntu
+
+
+There are two main approaches for using Chapel on WSL:
+
+1) Install via a prebuilt Chapel package. This is the quickest way to get up
+   and running, but it results in a copy of Chapel without GPU support and that
+   only supports shared-memory (single-locale) executions. See the list of available
+   packages released on the `Chapel GitHub page <https://github.com/chapel-lang/chapel/releases>`_.
+
+2) Build Chapel from source, as with any other UN*X system. This is slightly
+   more involved, but supports Chapel's full feature set. See the list of prerequisites
+   for your distribution from :ref:`readme-prereqs`
+
+
+For option 1, see the following example of how to install Chapel on WSL::
+
+    # Download the Chapel package
+    # From the Ubuntu terminal, use the following command to download the Chapel package.
+    wget https://github.com/chapel-lang/chapel/releases/download/2.1.0/chapel-2.1.0-1.ubuntu22.amd64.deb
+
+    # Verify that the package is official by checking the shasum 256 against the known good value:
+
+    echo "5928c31bb1ffe704356a86c52006b7bd3c8115190bc4a833abc6a6040c07b368 *chapel-2.1.0-1.ubuntu22.amd64.deb" | shasum -a 256 -c
+
+    # Install Chapel
+    sudo apt-get update
+    sudo apt-get install ./chapel-2.1.0-1.ubuntu22.amd64.deb
+
+    # Test that chpl is available
+    chpl --version
+
+There are no platform-specific settings for Chapel on WSL at this time.
 
   .. note::
 
