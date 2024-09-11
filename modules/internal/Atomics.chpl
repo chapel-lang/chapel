@@ -743,6 +743,7 @@ module Atomics {
       on this do atomic_fetch_xor(_v, val, c_memory_order(order));
     }
 
+    @unstable("'fetchMin' on an atomic is unstable")
     inline proc ref fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       var t = if orderIncludesRelease(order)
               then fetchAdd(0, order)
@@ -755,10 +756,12 @@ module Atomics {
       return t;
     }
 
+    @unstable("'min' on an atomic is unstable")
     inline proc ref min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       fetchMin(val, order=order);
     }
 
+    @unstable("'fetchMax' on an atomic is unstable")
     inline proc ref fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       var t = if orderIncludesRelease(order)
               then fetchAdd(0, order)
@@ -771,6 +774,7 @@ module Atomics {
       return t;
     }
 
+    @unstable("'max' on an atomic is unstable")
     inline proc ref max(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       fetchMax(val, order=order);
     }
