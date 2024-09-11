@@ -34,7 +34,8 @@ RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
 RUNTIME_CXXFLAGS += -Wno-error=unused-local-typedef
 #
 # With cuda 11, cub headers have deprecated builtins
-RUNTIME_CXXFLAGS += -Wno-error=deprecated-builtins -Wno-error=unknown-pragmas
+RUNTIME_CXXFLAGS += -Wno-error=deprecated-builtins -Wno-error=unknown-pragmas \
+		    -Wno-error=unknown-warning-option
 
 $(RUNTIME_OBJ_DIR)/gpu-nvidia-cub.o: gpu-nvidia-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
