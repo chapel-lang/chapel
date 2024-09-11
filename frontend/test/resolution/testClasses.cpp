@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#include "test-resolution.h"
-
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/BasicClassType.h"
@@ -31,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include "test-resolution.h"
 
 static void test1() {
   printf("test1\n");
@@ -73,12 +72,12 @@ static void test1() {
   auto bct = it->getCompositeType()->toBasicClassType();
   assert(bct);
 
-  auto borrowedNonNil = ClassType::get(context, bct, nullptr,
-                                       ClassTypeDecorator(
-                                         ClassTypeDecorator::BORROWED_NONNIL));
-  auto anyNonNil = ClassType::get(context, bct, nullptr,
-                                  ClassTypeDecorator(
-                                    ClassTypeDecorator::GENERIC_NONNIL));
+  auto borrowedNonNil =
+      ClassType::get(context, bct, nullptr,
+                     ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
+  auto anyNonNil =
+      ClassType::get(context, bct, nullptr,
+                     ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL));
 
   assert(methodT->formalName(0) == "this");
   assert(methodT->formalType(0).kind() == QualifiedType::CONST_IN);
@@ -155,11 +154,44 @@ static void test3() {
   assert(qt.type()->toIntType()->bitwidth() == 64);
 }
 
+// Test resolving dependently-typed field usage in method body
+static void test4() {
+  printf("test4\n");
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class Bar {
+      param rank : int;
+      var myTup : rank*int;
+
+      proc getSomething() {
+        return myTup;
+      }
+    }
+
+    var b = new Bar(2);
+    var x = b.getSomething();
+    )""";
+
+  auto m = parseModule(context, program);
+  auto r = resolveModule(context, m->id());
+
+  auto x = findVariable(m, "x");
+  auto qt = r.byAst(x).type();
+  assert(qt.type()->isTupleType());
+  assert(qt.type()->toTupleType()->numElements() == 2);
+  assert(qt.type()->toTupleType()->starType().type());
+  assert(qt.type()->toTupleType()->starType().type()->isIntType());
+}
 
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }
