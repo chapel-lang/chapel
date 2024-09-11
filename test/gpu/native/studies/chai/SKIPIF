@@ -17,12 +17,4 @@ if ! git clone ${CHAI_URL} --branch=${CHAI_BRANCH} --depth=1 2>gitClone.out; the
   exit
 fi
 
-# Apply patches, if any
-if ! (for p in $(find patches -name "*patch"); do git -C ChAI apply ../$p; done) 2>gitPatch.out; then
-  echo "Patching failed; output:" >&2
-  cat gitPatch.out >&2
-  echo "True"
-  exit
-fi
-
 echo "False"
