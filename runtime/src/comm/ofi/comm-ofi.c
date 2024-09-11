@@ -4995,7 +4995,7 @@ size_t handleAmReq(amRequest_t *req) {
         struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                      .rma = req->rma, };
         chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
-                                 &arg, sizeof(arg), c_sublocid_any,
+                                 &arg, sizeof(arg), c_sublocid_none,
                                  chpl_nullTaskID);
       }
       size = sizeof(req->rma);
@@ -5006,7 +5006,7 @@ size_t handleAmReq(amRequest_t *req) {
         struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                      .rma = req->rma, };
         chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
-                                 &arg, sizeof(arg), c_sublocid_any,
+                                 &arg, sizeof(arg), c_sublocid_none,
                                  chpl_nullTaskID);
       }
       size = sizeof(req->rma);

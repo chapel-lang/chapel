@@ -157,7 +157,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
     if (data && data->bundle) {
         return data->bundle->requestedSubloc;
     }
-    return c_sublocid_any;
+    return c_sublocid_none;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
@@ -184,7 +184,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
         !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     // Only change sublocales if the caller asked for a particular one,
@@ -206,7 +206,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
             data->bundle->requestedSubloc = full_subloc;
         }
 
-        if (execution_subloc != c_sublocid_any &&
+        if (execution_subloc != c_sublocid_none &&
             (qthread_shepherd_id_t) execution_subloc != curr_shep) {
             qthread_migrate_to((qthread_shepherd_id_t) execution_subloc);
         }

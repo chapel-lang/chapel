@@ -764,7 +764,7 @@ module String {
       // a null-terminator.
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -1001,7 +1001,7 @@ module String {
       // pattern.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
@@ -1818,7 +1818,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isLower(cp) {
@@ -1845,7 +1845,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isUpper(cp) {
@@ -1872,7 +1872,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isWhitespace(cp)) {
           result = false;
@@ -1894,7 +1894,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isAlpha(cp) {
           result = false;
@@ -1916,7 +1916,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isDigit(cp) {
           result = false;
@@ -1938,7 +1938,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
           result = false;
@@ -1960,7 +1960,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isPrintable(cp) {
           result = false;
@@ -1983,7 +1983,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for cp in this.codepoints() {
@@ -2323,7 +2323,7 @@ module String {
     /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_none)) {
         ret = doEq(a, b);
       }
       return ret;

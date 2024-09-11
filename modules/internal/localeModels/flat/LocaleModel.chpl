@@ -100,7 +100,7 @@ module LocaleModel {
     override proc chpl_id() do return _node_id;
 
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_none);
     }
     override proc chpl_name() do return local_name;
 
