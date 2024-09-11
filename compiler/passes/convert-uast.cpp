@@ -300,6 +300,9 @@ struct Converter {
   // stores type fixups that are needed
   std::vector<Symbol*> typeFixups;
 
+  // stores a mapping from chpl::Type* to Type*
+  std::unordered_map<const chpl::types::Type*, Type*> convertedTypes;
+
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
@@ -354,6 +357,7 @@ struct Converter {
   void setResolvedCall(const uast::FnCall* call, CallExpr* ret);
 
   // type conversion helpers
+  Type* helpConvertType(types::QualifiedType qt);
   Type* convertClassType(const types::QualifiedType qt);
   Type* convertCPtrType(const types::CPtrType* t);
   Type* convertEnumType(const types::QualifiedType qt);
@@ -4519,12 +4523,44 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
 }
 
 Type* Converter::convertType(types::QualifiedType qt) {
+  if (!qt.hasTypePtr())
+    return dtUnknown;
+
+  const chpl::types::Type* t = qt.type();
+
+  // reuse one from the map if we have already converted it
+  {
+    auto it = convertedTypes.find(t);
+    if (it != convertedTypes.end()) {
+      return it->second;
+    }
+  }
+
+  // convert the type
+  types::QualifiedType::Kind kind = types::QualifiedType::TYPE;
+  auto useQt = types::QualifiedType(kind, t); // normalize qualifier
+  Type* ret = helpConvertType(useQt);
+
+  // save the result to the map
+  convertedTypes[t] = ret;
+
+  return ret;
+}
+
+Type* Converter::helpConvertType(types::QualifiedType qt) {
   using namespace types;
 
   if (!qt.hasTypePtr())
     return dtUnknown;
 
   const chpl::types::Type* t = qt.type();
+
+  // reuse one from the map if we have already converted it
+  auto it = convertedTypes.find(t);
+  if (it != convertedTypes.end()) {
+    return it->second;
+  }
+
   switch (t->tag()) {
     // builtin types with their own classes
     case typetags::AnyType:       return dtAny;
