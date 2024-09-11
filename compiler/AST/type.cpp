@@ -1017,9 +1017,8 @@ bool FunctionType::isGeneric() const {
 *                                                                             *
 ************************************** | *************************************/
 
-TemporaryConversionType::TemporaryConversionType(chpl::ID id,
-                                                 chpl::types::QualifiedType qt)
-  : Type(E_TemporaryConversionType, nullptr), uastId(id), qt(qt)
+TemporaryConversionType::TemporaryConversionType(chpl::types::QualifiedType qt)
+  : Type(E_TemporaryConversionType, nullptr), qt(qt)
 {
   this->symbol = dtUnknown->symbol;
   gTemporaryConversionTypes.add(this);
@@ -1038,7 +1037,7 @@ void TemporaryConversionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void TemporaryConversionType::verify() {
   Type::verify();
   if (astTag != E_TemporaryConversionType) {
-    INT_FATAL(this, "Bad PrimitiveType::astTag");
+    INT_FATAL(this, "Bad TemporaryConversionType::astTag");
   }
 }
 

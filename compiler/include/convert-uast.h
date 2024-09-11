@@ -24,23 +24,35 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "ModuleSymbol.h"
+
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-// when converting, only convert modules in this set
-// TODO: switch to converting a module-at-a-time (including submodules)
-extern std::set<chpl::ID> gConvertFilterModuleIds;
+class Converter;
 
-ModuleSymbol*
-convertToplevelModule(chpl::Context* context,
-                      const chpl::uast::Module* mod,
-                      ModTag modTag);
+class UastConverter {
+ private:
+  std::unique_ptr<Converter> converter_;
 
-// apply fixups to fix SymExprs to refer to Symbols that
-// might have been created in a different order.
-// TODO: in the future, this should be a method on Converter,
-// and there should be 1 Converter to convert a module and its dependencies.
-void postConvertApplyFixups(chpl::Context* context);
+ public:
+  UastConverter(chpl::Context* context);
+  ~UastConverter();
+
+  // these help to know if submodules should be handled.
+  // when converting, only convert modules that were added to this set.
+  void clearModulesToConvert();
+  void addModuleToConvert(chpl::ID id);
+
+  ModuleSymbol*
+  convertToplevelModule(const chpl::uast::Module* mod,
+                        ModTag modTag);
+
+  // apply fixups to fix SymExprs to refer to Symbols that
+  // might have been created in a different order.
+  void postConvertApplyFixups();
+};
+
 
 #endif

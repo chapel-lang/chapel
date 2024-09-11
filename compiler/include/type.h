@@ -526,13 +526,11 @@ class FunctionType final : public Type {
 
 
 // Similar to TemporaryConversionSymbol and works with it for
-// temporarily representing a Type. The symbol field should store
-// the TemporaryConversionSymbol which contains additional details.
+// temporarily representing a Type.
 class TemporaryConversionType final : public Type {
  public:
-  chpl::ID uastId;
   chpl::types::QualifiedType qt;
-  TemporaryConversionType(chpl::ID id, chpl::types::QualifiedType qt);
+  TemporaryConversionType(chpl::types::QualifiedType qt);
   void verify()                                         override;
   void accept(AstVisitor* visitor)                      override;
   DECLARE_COPY(TemporaryConversionType);
