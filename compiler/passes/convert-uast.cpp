@@ -128,7 +128,7 @@ struct ConvertedSymbolsMap {
   Symbol* convertParam(types::QualifiedType qt);
 
   // helpers for converting a type
-  Type* convertCPtrType(types::CPtrType* t);
+  Type* convertCPtrType(const types::CPtrType* t);
   Type* convertClassType(types::QualifiedType qt);
   Type* convertEnumType(types::QualifiedType qt);
   Type* convertExternType(types::QualifiedType qt);
@@ -4519,8 +4519,354 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
   }
 }
 
+Type* ConvertedSymbolsMap::convertType(types::QualifiedType qt) {
+  using namespace types;
+
+  if (!qt.hasTypePtr())
+    return dtUnknown;
+
+  const chpl::types::Type* t = qt.type();
+  switch (t->tag()) {
+    // builtin types with their own classes
+    case typetags::AnyType:       return dtAny;
+    case typetags::CStringType:   return dtStringC;
+    case typetags::ErroneousType: return dtUnknown; // a lie
+    case typetags::NilType:       return dtNil;
+    case typetags::NothingType:   return dtNothing;
+    case typetags::UnknownType:   return dtUnknown;
+    case typetags::VoidType:      return dtVoid;
+
+    // subclasses of BuiltinType
+
+    // concrete builtin types
+    case typetags::CFnPtrType:    return dtCFnPtr;
+    case typetags::CVoidPtrType:  return dtCVoidPtr;
+    case typetags::OpaqueType:    return dtOpaque;
+    case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::TaskIdType:    return dtTaskID;
+
+    // generic builtin types
+    case typetags::AnyComplexType:               return dtAnyComplex;
+    case typetags::AnyEnumType:                  return dtAnyEnumerated;
+    case typetags::AnyImagType:                  return dtAnyImag;
+    case typetags::AnyIntType:                   return dtIntegral; // a lie
+    case typetags::AnyIntegralType:              return dtIntegral;
+    case typetags::AnyIteratorClassType:         return dtIteratorClass;
+    case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
+    case typetags::AnyNumericType:               return dtNumeric;
+    case typetags::AnyOwnedType:                 return dtOwned;
+    case typetags::AnyPodType:                   return dtAnyPOD;
+    case typetags::AnyRealType:                  return dtAnyReal;
+    case typetags::AnyRecordType:                return dtAnyRecord;
+    case typetags::AnySharedType:                return dtShared;
+    case typetags::AnyUintType:                  return dtIntegral; // a lie
+    case typetags::AnyUninstantiatedType:        return dtUninstantiated;
+    case typetags::AnyUnionType:                 return dtUnknown; // a lie
+
+    // declared types
+    case typetags::ClassType:     return convertClassType(qt);
+    case typetags::EnumType:      return convertEnumType(qt);
+    case typetags::ExternType:    return convertExternType(qt);
+    case typetags::FunctionType:  return convertFunctionType(qt);
+
+    case typetags::ArrayType:      return dtUnknown;
+    case typetags::BasicClassType: return convertBasicClassType(qt);
+    case typetags::AnyClassType:   return dtAnyManagementNonNilable;
+    case typetags::DomainType:     return dtUnknown;
+    case typetags::RecordType:     return convertRecordType(qt);
+    case typetags::TupleType:      return convertTupleType(qt);
+    case typetags::UnionType:      return convertUnionType(qt);
+
+    // primitive types
+    case typetags::BoolType:       return convertBoolType(qt);
+    case typetags::ComplexType:    return convertComplexType(qt);
+    case typetags::ImagType:       return convertImagType(qt);
+    case typetags::IntType:        return convertIntType(qt);
+    case typetags::RealType:       return convertRealType(qt);
+    case typetags::UintType:       return convertUintType(qt);
+    case typetags::CPtrType:       return convertCPtrType(t->toCPtrType());
+
+    // implementation detail tags (should not be reachable)
+    case typetags::START_ManageableType:
+    case typetags::END_ManageableType:
+    case typetags::START_BuiltinType:
+    case typetags::END_BuiltinType:
+    case typetags::START_DeclaredType:
+    case typetags::END_DeclaredType:
+    case typetags::START_CompositeType:
+    case typetags::END_CompositeType:
+    case typetags::START_PrimitiveType:
+    case typetags::END_PrimitiveType:
+    case typetags::NUM_TYPE_TAGS:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
+
+    // intentionally no default --
+    // want a C++ compiler error if a case is missing in the above
+  }
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertCPtrType(const types::CPtrType* t) {
+  // find the C pointer type to instantiate
+  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+
+  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  if (t->eltType() == nullptr) {
+    return base;
+  }
+
+  // otherwise, we will need the c_ptr class
+  if (base->numFields() == 0) {
+    // the proper AST for CPointer hasn't been created yet, so return
+    // a temporary conversion symbol.
+    auto p = chpl::UniqueString::getConcat(context, "CTypes.", base->name());
+    auto id = ID(p, 0, 0);
+    Type* t = new TemporaryConversionType(id, qt);
+    return t;
+  }
+
+  // otherwise, convert the element type
+  auto eltQt = types::QualifiedType(types::QualifiedType::TYPE, t->eltType());
+  Type* convertedEltT = Converter::convertType(eltQt);
+  if (auto tct = toTemporaryConversionType(convertedEltT)) {
+    // return a temporary conversion type with the same ID to await something
+    Type* t = new TemporaryConversionType(tct->uastId, qt);
+    return t;
+  }
+
+  // instantiate it with the element type
+  // note: getInstantiation should re-use existing instantiations
+  int index = 1;
+  Expr* insnPoint = nullptr; // TODO: set this to something?
+  AggregateType* ret =
+    base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+  return ret;
+}
+
+Type* ConvertedSymbolsMap::convertClassType(types::QualifiedType qt) {
+  auto classType = qt.type()->toClassType();
+
+  if (auto mt = classType->manageableType()) {
+    if (mt->isAnyClassType()) {
+      // The production compiler represents these as special builtins
+      auto dec = classType->decorator();
+      if (dec.isUnmanaged()) {
+        if (dec.isNilable()) return dtUnmanagedNilable;
+        if (dec.isNonNilable()) return dtUnmanagedNonNilable;
+        return dtUnmanaged;
+      } else if (dec.isBorrowed()) {
+        if (dec.isNilable()) return dtBorrowedNilable;
+        if (dec.isNonNilable()) return dtBorrowedNonNilable;
+        return dtBorrowed;
+      } else if (dec.isUnknownManagement()) {
+        if (dec.isNilable()) return dtAnyManagementNilable;
+        if (dec.isNonNilable()) return dtAnyManagementNonNilable;
+        return dtAnyManagementAnyNilable;
+      } else {
+        // fall through
+      }
+    }
+  }
+
+  CHPL_UNIMPL("Unhandled class type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertEnumType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled enum type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertExternType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled extern type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertFunctionType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled function type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertBasicClassType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled basic class type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertRecordType(types::QualifiedType qt) {
+  const types::RecordType* t = qt.type()->toRecordType();
+  if (t->isStringType()) {
+    return dtString;
+  } else if (t->isBytesType()) {
+    return dtBytes;
+  }
+
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertTupleType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled tuple type");
+  return nullptr;
+}
+
+Type* ConvertedSymbolsMap::convertUnionType(types::QualifiedType qt) {
+  CHPL_UNIMPL("Unhandled union type");
+  return nullptr;
+}
+
+// helper functions to convert a type to a size
+
+static IF1_complex_type getComplexSize(const types::ComplexType* t) {
+  if (t->isDefaultWidth())
+    return COMPLEX_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 64)  return COMPLEX_SIZE_64;
+  else if (width == 128) return COMPLEX_SIZE_128;
+
+  INT_FATAL("should not be reached");
+  return COMPLEX_SIZE_DEFAULT;
+}
+
+
+static IF1_float_type getImagSize(const types::ImagType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getIntSize(const types::IntType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+static IF1_float_type getRealSize(const types::RealType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+static IF1_int_type getUintSize(const types::UintType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+
+Type* ConvertedSymbolsMap::convertBoolType(types::QualifiedType qt) {
+  return dtBool;
+}
+
+Type* ConvertedSymbolsMap::convertComplexType(types::QualifiedType qt) {
+  const types::ComplexType* t = qt.type()->toComplexType();
+  return dtComplex[getComplexSize(t)];
+}
+
+Type* ConvertedSymbolsMap::convertImagType(types::QualifiedType qt) {
+  const types::ImagType* t = qt.type()->toImagType();
+  return dtImag[getImagSize(t)];
+}
+
+Type* ConvertedSymbolsMap::convertIntType(types::QualifiedType qt) {
+  const types::IntType* t = qt.type()->toIntType();
+  return dtInt[getIntSize(t)];
+}
+
+Type* ConvertedSymbolsMap::convertRealType(types::QualifiedType qt) {
+  const types::RealType* t = qt.type()->toRealType();
+  return dtReal[getRealSize(t)];
+}
+
+Type* ConvertedSymbolsMap::convertUintType(types::QualifiedType qt) {
+  const types::UintType* t = qt.type()->toUintType();
+  return dtUInt[getUintSize(t)];
+}
+
+Symbol* ConvertedSymbolsMap::convertParam(types::QualifiedType qt) {
+
+  const types::Param* p = qt.param();
+  const types::Type* t = qt.type();
+  INT_ASSERT(p && t);
+
+  if (auto bp = p->toBoolParam()) {
+    return new_BoolSymbol(bp->value());
+  } else if (auto cp = p->toComplexParam()) {
+    const types::ComplexType* ct = t->toComplexType();
+    types::Param::ComplexDouble tmp = cp->value();
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a+%ai", tmp.re, tmp.im);
+    return new_ComplexSymbol(buf, tmp.re, tmp.im, getComplexSize(ct));
+  } else if (auto ip = p->toIntParam()) {
+    const types::IntType* it = t->toIntType();
+    return new_IntSymbol(ip->value(), getIntSize(it));
+  } else if (p->isNoneParam()) {
+    return gNone;
+  } else if (auto rp = p->toRealParam()) {
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a", rp->value());
+
+    if (auto rt = t->toRealType()) {
+      return new_RealSymbol(buf, getRealSize(rt));
+    } else if (auto it = t->toImagType()) {
+      return new_ImagSymbol(buf, getImagSize(it));
+    }
+  } else if (auto sp = p->toStringParam()) {
+    if (t->isStringType()) {
+      return new_StringSymbol(sp->value().c_str());
+    } else if (t->isCStringType()) {
+      return new_CStringSymbol(sp->value().c_str());
+    } else if (t->isBytesType()) {
+      return new_BytesSymbol(sp->value().c_str());
+    }
+  } else if (auto up = p->toUintParam()) {
+    const types::UintType* t = qt.type()->toUintType();
+    return new_UIntSymbol(up->value(), getUintSize(t));
+  }
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+
 Type* Converter::convertType(types::QualifiedType qt) {
-  if (!canResolve) return nullptr;
+  if (!fDynoCompilerLibrary) return nullptr;
 
   if (symStack.size() > 0) {
     return symStack.back().convertedSyms->convertType(qt);
@@ -4530,7 +4876,7 @@ Type* Converter::convertType(types::QualifiedType qt) {
 }
 
 Symbol* Converter::convertParam(types::QualifiedType qt) {
-  if (!canResolve) return nullptr;
+  if (!fDynoCompilerLibrary) return nullptr;
 
   if (symStack.size() > 0) {
     return symStack.back().convertedSyms->convertParam(qt);
@@ -4939,348 +5285,6 @@ ConvertedSymbolsMap* ConvertedSymbolsMap::findMapContainingBoth(ID id1,
     }
   }
 
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertType(types::QualifiedType qt) {
-  using namespace types;
-
-  if (!qt.hasTypePtr())
-    return dtUnknown;
-
-  const chpl::types::Type* t = qt.type();
-  switch (t->tag()) {
-    // builtin types with their own classes
-    case typetags::AnyType:       return dtAny;
-    case typetags::CStringType:   return dtStringC;
-    case typetags::ErroneousType: return dtUnknown; // a lie
-    case typetags::NilType:       return dtNil;
-    case typetags::NothingType:   return dtNothing;
-    case typetags::UnknownType:   return dtUnknown;
-    case typetags::VoidType:      return dtVoid;
-
-    // subclasses of BuiltinType
-
-    // concrete builtin types
-    case typetags::CFnPtrType:    return dtCFnPtr;
-    case typetags::CVoidPtrType:  return dtCVoidPtr;
-    case typetags::OpaqueType:    return dtOpaque;
-    case typetags::SyncAuxType:   return dtSyncVarAuxFields;
-    case typetags::TaskIdType:    return dtTaskID;
-
-    // generic builtin types
-    case typetags::AnyComplexType:               return dtAnyComplex;
-    case typetags::AnyEnumType:                  return dtAnyEnumerated;
-    case typetags::AnyImagType:                  return dtAnyImag;
-    case typetags::AnyIntType:                   return dtIntegral; // a lie
-    case typetags::AnyIntegralType:              return dtIntegral;
-    case typetags::AnyIteratorClassType:         return dtIteratorClass;
-    case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
-    case typetags::AnyNumericType:               return dtNumeric;
-    case typetags::AnyOwnedType:                 return dtOwned;
-    case typetags::AnyPodType:                   return dtAnyPOD;
-    case typetags::AnyRealType:                  return dtAnyReal;
-    case typetags::AnyRecordType:                return dtAnyRecord;
-    case typetags::AnySharedType:                return dtShared;
-    case typetags::AnyUintType:                  return dtIntegral; // a lie
-    case typetags::AnyUninstantiatedType:        return dtUninstantiated;
-    case typetags::AnyUnionType:                 return dtUnknown; // a lie
-
-    // declared types
-    case typetags::ClassType:     return convertClassType(qt);
-    case typetags::EnumType:      return convertEnumType(qt);
-    case typetags::ExternType:    return convertExternType(qt);
-    case typetags::FunctionType:  return convertFunctionType(qt);
-
-    case typetags::ArrayType:      return dtUnknown;
-    case typetags::BasicClassType: return convertBasicClassType(qt);
-    case typetags::AnyClassType:   return dtAnyManagementNonNilable;
-    case typetags::DomainType:     return dtUnknown;
-    case typetags::RecordType:     return convertRecordType(qt);
-    case typetags::TupleType:      return convertTupleType(qt);
-    case typetags::UnionType:      return convertUnionType(qt);
-
-    // primitive types
-    case typetags::BoolType:       return convertBoolType(qt);
-    case typetags::ComplexType:    return convertComplexType(qt);
-    case typetags::ImagType:       return convertImagType(qt);
-    case typetags::IntType:        return convertIntType(qt);
-    case typetags::RealType:       return convertRealType(qt);
-    case typetags::UintType:       return convertUintType(qt);
-    case typetags::CPtrType:       return convertCPtrType(t->toCPtrType());
-
-    // implementation detail tags (should not be reachable)
-    case typetags::START_ManageableType:
-    case typetags::END_ManageableType:
-    case typetags::START_BuiltinType:
-    case typetags::END_BuiltinType:
-    case typetags::START_DeclaredType:
-    case typetags::END_DeclaredType:
-    case typetags::START_CompositeType:
-    case typetags::END_CompositeType:
-    case typetags::START_PrimitiveType:
-    case typetags::END_PrimitiveType:
-    case typetags::NUM_TYPE_TAGS:
-      INT_FATAL("should not be reachable");
-      return dtUnknown;
-
-    // intentionally no default --
-    // want a C++ compiler error if a case is missing in the above
-  }
-  INT_FATAL("should not be reached");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertCPtrType(const types::CPtrType* t) {
-  // find the C pointer type to instantiate
-  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
-
-  // handle 'c_ptr' and 'c_ptrConst' without an element type
-  if (t->eltType() == nullptr) {
-    return base;
-  }
-
-  // otherwise, we will need the c_ptr class
-  if (base->numFields() == 0) {
-    // the proper AST for CPointer hasn't been created yet, so return
-    // a temporary conversion symbol.
-    auto p = chpl::UniqueString::getConcat(context, "CTypes.", base->name());
-    auto id = ID(p, 0, 0);
-    Type* t = new TemporaryConversionType(id, qt);
-    return t;
-  }
-
-  // otherwise, convert the element type
-  auto eltQt = types::QualifiedType(types::QualifiedType::TYPE, t->eltType());
-  Type* convertedEltT = Converter::convertType(eltQt);
-  if (auto tct = toTemporaryConversionType(convertedEltT)) {
-    // return a temporary conversion type with the same ID to await something
-    Type* t = new TemporaryConversionType(tct->uastId, qt);
-    return t;
-  }
-
-  // instantiate it with the element type
-  // note: getInstantiation should re-use existing instantiations
-  int index = 1;
-  Expr* insnPoint = nullptr; // TODO: set this to something?
-  AggregateType* ret =
-    base->getInstantiation(convertedEltT->symbol, index, insnPoint);
-
-  return ret;
-}
-
-Type* ConvertedSymbolsMap::convertClassType(types::QualifiedType qt) {
-  auto classType = qt.type()->toClassType();
-
-  if (auto mt = classType->manageableType()) {
-    if (mt->isAnyClassType()) {
-      // The production compiler represents these as special builtins
-      auto dec = classType->decorator();
-      if (dec.isUnmanaged()) {
-        if (dec.isNilable()) return dtUnmanagedNilable;
-        if (dec.isNonNilable()) return dtUnmanagedNonNilable;
-        return dtUnmanaged;
-      } else if (dec.isBorrowed()) {
-        if (dec.isNilable()) return dtBorrowedNilable;
-        if (dec.isNonNilable()) return dtBorrowedNonNilable;
-        return dtBorrowed;
-      } else if (dec.isUnknownManagement()) {
-        if (dec.isNilable()) return dtAnyManagementNilable;
-        if (dec.isNonNilable()) return dtAnyManagementNonNilable;
-        return dtAnyManagementAnyNilable;
-      } else {
-        // fall through
-      }
-    }
-  }
-
-  CHPL_UNIMPL("Unhandled class type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertEnumType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled enum type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertExternType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled extern type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertFunctionType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled function type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertBasicClassType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled basic class type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertRecordType(types::QualifiedType qt) {
-  const types::RecordType* t = qt.type()->toRecordType();
-  if (t->isStringType()) {
-    return dtString;
-  } else if (t->isBytesType()) {
-    return dtBytes;
-  }
-
-  CHPL_UNIMPL("unhandled record type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertTupleType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled tuple type");
-  return nullptr;
-}
-
-Type* ConvertedSymbolsMap::convertUnionType(types::QualifiedType qt) {
-  CHPL_UNIMPL("Unhandled union type");
-  return nullptr;
-}
-
-// helper functions to convert a type to a size
-
-static IF1_complex_type getComplexSize(const types::ComplexType* t) {
-  if (t->isDefaultWidth())
-    return COMPLEX_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 64)  return COMPLEX_SIZE_64;
-  else if (width == 128) return COMPLEX_SIZE_128;
-
-  INT_FATAL("should not be reached");
-  return COMPLEX_SIZE_DEFAULT;
-}
-
-
-static IF1_float_type getImagSize(const types::ImagType* t) {
-  if (t->isDefaultWidth())
-    return FLOAT_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 32) return FLOAT_SIZE_32;
-  else if (width == 64) return FLOAT_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return FLOAT_SIZE_DEFAULT;
-}
-
-static IF1_int_type getIntSize(const types::IntType* t) {
-  if (t->isDefaultWidth())
-    return INT_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 8)  return INT_SIZE_8;
-  else if (width == 16) return INT_SIZE_16;
-  else if (width == 32) return INT_SIZE_32;
-  else if (width == 64) return INT_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return INT_SIZE_DEFAULT;
-}
-
-static IF1_float_type getRealSize(const types::RealType* t) {
-  if (t->isDefaultWidth())
-    return FLOAT_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 32) return FLOAT_SIZE_32;
-  else if (width == 64) return FLOAT_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return FLOAT_SIZE_DEFAULT;
-}
-
-static IF1_int_type getUintSize(const types::UintType* t) {
-  if (t->isDefaultWidth())
-    return INT_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 8)  return INT_SIZE_8;
-  else if (width == 16) return INT_SIZE_16;
-  else if (width == 32) return INT_SIZE_32;
-  else if (width == 64) return INT_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return INT_SIZE_DEFAULT;
-}
-
-
-Type* ConvertedSymbolsMap::convertBoolType(types::QualifiedType qt) {
-  return dtBool;
-}
-
-Type* ConvertedSymbolsMap::convertComplexType(types::QualifiedType qt) {
-  const types::ComplexType* t = qt.type()->toComplexType();
-  return dtComplex[getComplexSize(t)];
-}
-
-Type* ConvertedSymbolsMap::convertImagType(types::QualifiedType qt) {
-  const types::ImagType* t = qt.type()->toImagType();
-  return dtImag[getImagSize(t)];
-}
-
-Type* ConvertedSymbolsMap::convertIntType(types::QualifiedType qt) {
-  const types::IntType* t = qt.type()->toIntType();
-  return dtInt[getIntSize(t)];
-}
-
-Type* ConvertedSymbolsMap::convertRealType(types::QualifiedType qt) {
-  const types::RealType* t = qt.type()->toRealType();
-  return dtReal[getRealSize(t)];
-}
-
-Type* ConvertedSymbolsMap::convertUintType(types::QualifiedType qt) {
-  const types::UintType* t = qt.type()->toUintType();
-  return dtUInt[getUintSize(t)];
-}
-
-Symbol* ConvertedSymbolsMap::convertParam(types::QualifiedType qt) {
-
-  const types::Param* p = qt.param();
-  const types::Type* t = qt.type();
-  INT_ASSERT(p && t);
-
-  if (auto bp = p->toBoolParam()) {
-    return new_BoolSymbol(bp->value());
-  } else if (auto cp = p->toComplexParam()) {
-    const types::ComplexType* ct = t->toComplexType();
-    types::Param::ComplexDouble tmp = cp->value();
-    char buf[64];
-    // compute the hexadecimal string form for the number
-    snprintf(buf, sizeof(buf), "%a+%ai", tmp.re, tmp.im);
-    return new_ComplexSymbol(buf, tmp.re, tmp.im, getComplexSize(ct));
-  } else if (auto ip = p->toIntParam()) {
-    const types::IntType* it = t->toIntType();
-    return new_IntSymbol(ip->value(), getIntSize(it));
-  } else if (p->isNoneParam()) {
-    return gNone;
-  } else if (auto rp = p->toRealParam()) {
-    char buf[64];
-    // compute the hexadecimal string form for the number
-    snprintf(buf, sizeof(buf), "%a", rp->value());
-
-    if (auto rt = t->toRealType()) {
-      return new_RealSymbol(buf, getRealSize(rt));
-    } else if (auto it = t->toImagType()) {
-      return new_ImagSymbol(buf, getImagSize(it));
-    }
-  } else if (auto sp = p->toStringParam()) {
-    if (t->isStringType()) {
-      return new_StringSymbol(sp->value().c_str());
-    } else if (t->isCStringType()) {
-      return new_CStringSymbol(sp->value().c_str());
-    } else if (t->isBytesType()) {
-      return new_BytesSymbol(sp->value().c_str());
-    }
-  } else if (auto up = p->toUintParam()) {
-    const types::UintType* t = qt.type()->toUintType();
-    return new_UIntSymbol(up->value(), getUintSize(t));
-  }
-
-  INT_FATAL("should not be reached");
   return nullptr;
 }
 
