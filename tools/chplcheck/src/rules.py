@@ -289,7 +289,7 @@ def register_rules(driver: LintDriver):
         paren_loc = subject.parenth_location()
         assert paren_loc
 
-        # If parentheeses span multiple lines, don't provide a fixit,
+        # If parentheses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
         end_line, end_col = paren_loc.end()
