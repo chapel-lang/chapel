@@ -636,7 +636,12 @@ static void helpSetFieldTypes(const CompositeType* ct,
       if (fwdTo->isDecl()) {
         helpSetFieldTypes(ct, fwd->expr(), r, initedInParent, fields, syntaxOnly);
       }
-      fields.addForwarding(fwd->id(), r.byAst(fwdTo).type());
+      // If it's a visibility clause, use the type of the symbol rather than
+      // the whole clause.
+      auto fwdToSymbol = fwdTo->isVisibilityClause()
+                             ? fwdTo->toVisibilityClause()->symbol()
+                             : fwdTo;
+      fields.addForwarding(fwd->id(), r.byAst(fwdToSymbol).type());
     }
   }
 
