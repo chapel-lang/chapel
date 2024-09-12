@@ -1,2 +1,2 @@
---checks -sStencilDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
---checks -sStencilDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good
+-sStencilDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
+-sStencilDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good

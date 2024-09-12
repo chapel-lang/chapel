@@ -1,2 +1,2 @@
---checks -sCyclicDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
---checks -sCyclicDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good
+-sCyclicDist.allowDuplicateTargetLocales=false # duplicateTargetLocales.noallow.good
+-sCyclicDist.allowDuplicateTargetLocales       # duplicateTargetLocales.allow.good

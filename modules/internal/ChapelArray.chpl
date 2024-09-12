@@ -848,7 +848,7 @@ module ChapelArray {
     pragma "insert line file info"
     pragma "always propagate line file info"
     @chpldoc.nodoc
-    proc checkAccess(indices, value, param ensureLocal=false) {
+    proc checkAccess(indices, value) {
       if this.isRectangular() {
         if !value.dsiBoundsCheck(indices) {
           if rank == 1 {
@@ -880,29 +880,6 @@ module ChapelArray {
                  "note: index was (", istr, ") ",
                  "but array bounds are (", bstr, ")\n",
                  "note: ", dimstr);
-          }
-        }
-        if ensureLocal {
-          const locInds = this.chpl__localStoredSubdomains(),
-                locIdx = || reduce for blk in locInds do blk.contains(indices);
-
-          if !locIdx {
-            if chpl_isNonDistributedArray() {
-              halt("Cannot use .localAccess() from locale ", here.id,
-                   " on a remote array stored on locale ", value.locale.id);
-            } else {
-              if locInds.size == 1 && locInds[0].size == 0 {
-                halt("Call to .localAccess() from locale ", here.id,
-                     " is illegal because it has no local array elements");
-              } else {
-                halt("Call to .localAccess",
-                     if indices.size == 1 then "(" + indices(0):string + ")"
-                                          else indices,
-                     " from locale ", here.id,
-                     " refers to remote data (local indices are: ", locInds,
-                     ")");
-              }
-            }
           }
         }
       }
@@ -1054,7 +1031,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value, ensureLocal=true);
+        checkAccess(i, value=value);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
@@ -1075,7 +1052,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value, ensureLocal=true);
+        checkAccess(i, value=value);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
@@ -1095,7 +1072,7 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value, ensureLocal=true);
+        checkAccess(i, value=value);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
@@ -1635,24 +1612,6 @@ module ChapelArray {
         yield localSubdomain(loc);
       } else {
         for d in _value.dsiLocalSubdomains(loc) do yield d;
-      }
-    }
-
-    // This internal iterator is like 'localSubdomains()' but gives a
-    // distribution the option of indicating that it stores more
-    // indices than just those in its local subdomain; The stencil
-    // distribution is such an example since each locale stores cached
-    // boundary values ("fluff") in addition to its true local
-    // subdomain.  Thus, locality checks should pass if they're within
-    // the fluff even though that's outside of the normal
-    // localSubdomain() index set.
-    @chpldoc.nodoc
-    iter chpl__localStoredSubdomains() {
-      use Reflection;
-      if canResolveMethod(_value, "doiLocalStoredSubdomains") {
-        for d in _value.doiLocalStoredSubdomains() do yield d;
-      } else {
-        for d in localSubdomains() do yield d;
       }
     }
 

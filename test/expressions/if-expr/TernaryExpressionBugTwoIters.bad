@@ -1,4 +1,4 @@
 TernaryExpressionBugTwoIters.chpl:1: In function 'test1':
 TernaryExpressionBugTwoIters.chpl:3: error: Unable to resolve type of if-expression
-note: 'then' branch returns type "_ir_chpl__loopexpr_iter13"
-note: 'else' branch returns type "_ir_chpl__loopexpr_iter14"
+note: 'then' branch returns type "_ir_chpl__loopexpr_iter12"
+note: 'else' branch returns type "_ir_chpl__loopexpr_iter13"
