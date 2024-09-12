@@ -838,3 +838,47 @@ def register_rules(driver: LintDriver):
             prev_depth = depth
             prev = child
             prev_line = line
+
+    @driver.advanced_rule
+    def LineLength(context: Context, root: AstNode):
+        """
+        Warn for lines that exceed 80 characters.
+        """
+
+        # TODO: this rule currently hardcode 80 characters
+        # we should make it configurable in the future
+        # but currently it's not possible to pass any configuration to rules
+        MAX_LINE_LENGTH = 80
+
+        if isinstance(root, Comment):
+            return True
+
+        warned = set()
+        lines = None
+        for node in postorder(root):
+            if isinstance(node, Comment):
+                continue
+
+            if lines is None:
+                lines = chapel.get_file_lines(context, node)
+
+            loc = node.location()
+            lines_for_node = range(loc.start()[0], loc.end()[0] + 1)
+            for line_number in lines_for_node:
+                line = lines[line_number - 1]
+                if len(line) > MAX_LINE_LENGTH and line_number not in warned:
+                    warned.add(line_number)
+                    # TODO: ideally we would warn on the whole line, but we
+                    # have to warn on a node
+
+                    # find the outermost node that starts on this line
+                    outermost = node
+                    while True:
+                        parent = outermost.parent()
+                        if parent is None:
+                            break
+                        if parent.location().start()[0] == line_number:
+                            outermost = parent
+                        else:
+                            break
+                    yield AdvancedRuleResult(outermost, data=line_number)
