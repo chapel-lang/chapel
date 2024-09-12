@@ -882,30 +882,6 @@ module ChapelArray {
                  "note: ", dimstr);
           }
         }
-        if ensureLocal {
-          compilerError("Got into ensureLocal");
-          const locInds = this.chpl__localStoredSubdomains(),
-                locIdx = || reduce for blk in locInds do blk.contains(indices);
-
-          if !locIdx {
-            if chpl_isNonDistributedArray() {
-              halt("Cannot use .localAccess() from locale ", here.id,
-                   " on a remote array stored on locale ", value.locale.id);
-            } else {
-              if locInds.size == 1 && locInds[0].size == 0 {
-                halt("Call to .localAccess() from locale ", here.id,
-                     " is illegal because it has no local array elements");
-              } else {
-                halt("Call to .localAccess",
-                     if indices.size == 1 then "(" + indices(0):string + ")"
-                                          else indices,
-                     " from locale ", here.id,
-                     " refers to remote data (local indices are: ", locInds,
-                     ")");
-              }
-            }
-          }
-        }
       }
     }
 
