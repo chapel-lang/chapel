@@ -1,5 +1,0 @@
-5.0
-6.0
-6.0
-5.0
-localAccess.chpl:20: error: halt reached - Call to .localAccess(4) from locale 1 refers to remote data (local indices are: {5..11})
