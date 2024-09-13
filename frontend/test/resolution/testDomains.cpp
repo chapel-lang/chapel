@@ -61,7 +61,7 @@ module M {
   param rk = d.isRectangular();
   param ak = d.isAssociative();
 
-  // var p = d.pid();
+  var p = d.pid;
 
   // for loopI in d {
   //   var z = loopI;
@@ -117,8 +117,7 @@ module M {
 
   assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
 
-  // TODO: fix and test .pid
-  // assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
+  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
   // TODO: fix and test iteration
   // assert(findVarType(m, rr, "z").type() == fullIndexType.type());
