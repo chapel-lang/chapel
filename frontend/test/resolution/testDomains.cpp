@@ -63,9 +63,9 @@ module M {
 
   var p = d.pid;
 
-  // for loopI in d {
-  //   var z = loopI;
-  // }
+  for loopI in d {
+    var z = loopI;
+  }
 
   proc generic(arg: domain) {
     type GT = arg.type;
@@ -119,8 +119,7 @@ module M {
 
   assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
-  // TODO: fix and test iteration
-  // assert(findVarType(m, rr, "z").type() == fullIndexType.type());
+  assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
   {
     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
