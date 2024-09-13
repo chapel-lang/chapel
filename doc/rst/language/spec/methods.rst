@@ -342,7 +342,7 @@ method. The compiler will implicitly add a ``this.`` in such cases.
 
    *Example (implicitThis.chpl)*.
 
-   In the below example, within ``proc R.method()``, ``field``,
+   In the below example, within ``proc R.method()``, the identifiers ``field``,
    ``parenlessMethod``, and ``parenfulMethod`` will implicitly refer to
    ``this.field``, ``this.parenlessMethod``, and ``this.parenfulMethod``.
 
@@ -380,10 +380,10 @@ resolution (see :ref:`Determining_Most_Specific_Functions`).
 
    *Example (shadowingAndImplicitThis.chpl)*.
 
-   In the below example, within ``proc R.method()``, ``a``, ``b``, and
-   ``c`` could all refer to a field or to a variable. In the example, the
-   variables ``a`` and ``b`` are considered closer than the fields, but
-   the variable ``c`` is considered further away.
+   In the below example, within ``proc R.method()``, the identifiers
+   ``a``, ``b``, and ``c`` could all refer to a field or to a variable.
+   In the example, the variables ``a`` and ``b`` are considered closer
+   than the fields, but the variable ``c`` is considered further away.
 
    .. code-block:: chapel
 
@@ -394,11 +394,12 @@ resolution (see :ref:`Determining_Most_Specific_Functions`).
       }
 
       var c: int = 2;
+
       proc R.method(b=20) {
         var a = 200;
 
         var x = a;
-        // 'a' here refers to the local variable 'c', because the lookup
+        // 'a' here refers to the local variable 'a', because the lookup
         // process considers the method body before considering
         // fields and methods.
 
@@ -410,8 +411,8 @@ resolution (see :ref:`Determining_Most_Specific_Functions`).
         var z = c;
         // 'c' here refers to 'this.c', because the lookup process
         // considers fields and methods just after reaching the method
-        // declaration. Since a match is found, it is used before
-        // reaching the outer 'var c'.
+        // declaration. Since a match is found with the field, it is used
+        // before the 'var c' declared outside this method is considered.
 
         writeln(x+y+z);
       }
