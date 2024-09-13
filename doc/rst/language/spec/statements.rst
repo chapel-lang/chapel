@@ -791,8 +791,8 @@ to the directory from which the Chapel compiler was invoked. Any
 directories specified using the Chapel compiler's -I or -L flags will
 also be searched for matching .h or .a files, respectively. Similarly,
 filenames that are .chpl files not containing a slash will
-be searched for in the usual module search path (which can be adjusted
-with the -M flag).
+be searched for in the usual module search path (see also
+:ref:`Finding_Toplevel_Module_Files`).
 
 .. code-block:: syntax
 

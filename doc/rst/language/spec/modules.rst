@@ -178,6 +178,27 @@ identifier, it cannot be referenced in a use statement.
    Module implicit defines the module-scope symbols x, y, printX, and
    printY.
 
+.. _Finding_Toplevel_Module_Files:
+
+Finding Toplevel Module Files
+-----------------------------
+
+When a top-level module is named in a ``use`` or ``import`` statement,
+the compiler will find an appropriately named module in the module search
+path and use that module for the ``use`` or ``import``.
+
+For example, if the module is named ``MyLib``, the compiler will search
+for a file named ``MyLib.chpl`` in the module search path. This exact
+filename must match even on case-insensitive filesystems.
+
+The module search path is a list of directories in which the compiler will
+search for a such file names.
+
+   *Implementation Notes*.
+
+   The *––M* flag can be used to add to the module search path.
+   See :ref:`the chpl manual page <man-chpl>`.
+
 .. index::
    single: modules; nested
    single: modules; sub-modules
@@ -294,9 +315,9 @@ Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
 A top-level module is available for use (:ref:`Using_Modules`) or import
-(:ref:`Importing_Modules`) anywhere.  A module name is not accessible in other
-statements or expressions unless an ``import`` or ``use`` statement has brought
-the name into scope.
+(:ref:`Importing_Modules`) anywhere.  A top-level module name is not
+accessible in other statements or expressions unless an ``import`` or
+``use`` statement has brought the name into scope.
 
 Additionally, ``use`` and ``import`` can both name a module with a relative
 path; for example, ``this.Submodule`` or ``super.Siblingmodule``.  ``use`` and
@@ -1225,7 +1246,7 @@ the following situations in order:
 
    The *––main-module* flag can be used to specify the main module. This
    is particularly useful in the event that multiple modules define a
-   ``main`` procedure.
+   ``main`` procedure. See :ref:`the chpl manual page <man-chpl>`.
 
    *Example (main-module.chpl)*.
 
