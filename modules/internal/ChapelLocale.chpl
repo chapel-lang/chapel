@@ -443,9 +443,11 @@ module ChapelLocale {
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
 
+    // if using a gpu locale return its position in the parent locale's
+    // `here.gpus` array
     proc gpuId : int do return gpuIdImpl();
 
-    @chpldoc.noDoc
+    @chpldoc.nodoc
     proc gpuIdImpl() : int {
       halt("Can not use 'gpuId' field on a non gpu locale");
       return -1;
