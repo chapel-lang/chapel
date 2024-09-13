@@ -443,6 +443,14 @@ module ChapelLocale {
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
 
+    proc gpuId : int do return gpuIdImpl();
+
+    @chpldoc.noDoc
+    proc gpuIdImpl() : int {
+      halt("Can not use 'gpuId' field on a non gpu locale");
+      return -1;
+    }
+
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {

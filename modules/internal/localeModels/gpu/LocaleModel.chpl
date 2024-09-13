@@ -262,6 +262,10 @@ module LocaleModel {
     }
 
     override proc isGpu() : bool { return true; }
+
+    override proc gpuIdImpl() : int {
+      return sid;
+    }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
