@@ -3021,7 +3021,12 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   // and probably a few other features.
   bool emitLookupErrors = !resolvingCalledIdent && !scopeResolveOnly;
 
-  if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
+  if (parenlessInfo.hasMethodCandidates() &&
+      getTypeGenericity(context, methodReceiverType()) != Type::CONCRETE) {
+    // Can't establish type yet, defer until receiver is instantiated.
+    result.setType(QualifiedType());
+  } else if (parenlessInfo.areCandidatesOnlyParenlessProcs() &&
+             !scopeResolveOnly) {
     // Ambiguous, but a special case: there are many parenless functions.
     // This might be fine, if their 'where' clauses leave only one.
     //
