@@ -4058,6 +4058,12 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
+  // Handle generic receiver type later in function resolution,
+  // once we have an instantiation.
+  if (getTypeGenericity(context, receiver.type()) != Type::CONCRETE) {
+    deferToFunctionResolution = true;
+  }
+
   if (scopeResolveOnly || deferToFunctionResolution)
     return;
 
