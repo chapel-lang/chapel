@@ -235,7 +235,7 @@ Resolver::createForInitialSignature(Context* context, const Function* fn,
     fn->thisFormal()->traverse(ret);
     auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
     if (receiverType.hasTypePtr()) {
-      if (auto ct = receiverType.type()->toCompositeType()) {
+      if (auto ct = receiverType.type()->getCompositeType()) {
         ret.inCompositeType = ct;
       }
       ret.allowReceiverScopes = true;
