@@ -1558,6 +1558,94 @@ static void test25() {
   }
 }
 
+static void test26() {
+  // Test resolving a generic type field usage in a method signature.
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // 'this' qualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1584,6 +1672,7 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
 
   return 0;
 }
