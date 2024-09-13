@@ -444,11 +444,16 @@ struct QueryTimingStopwatch {
   typename Clock::time_point start_;
 
   QueryTimingStopwatch(bool enabled, F onExit)
-      : onExit_(onExit) {
+      : onExit_(std::move(onExit)) {
     if (enabled) {
       start_ = Clock::now();
     }
   }
+
+  QueryTimingStopwatch(QueryTimingStopwatch&& rhs) = default;
+  QueryTimingStopwatch(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(QueryTimingStopwatch&& rhs) = default;
 
   QueryTimingDuration elapsed() {
     auto stop = Clock::now();
@@ -461,7 +466,7 @@ struct QueryTimingStopwatch {
 // Helper function to sort out the templates over lambda's
 template <typename F> QueryTimingStopwatch<F>
 makeQueryTimingStopwatch(bool enabled, F onExit) {
-  return QueryTimingStopwatch<F>(enabled, onExit);
+  return QueryTimingStopwatch<F>(enabled, std::move(onExit));
 }
 
 inline auto

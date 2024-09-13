@@ -53,9 +53,10 @@ static const char* tagToString(const AstNode* ast) {
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
+resolvedExpressionForAstInteractive(ResolutionContext* rc, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly) {
+  Context* context = rc->context();
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
     int postorder = ast->id().postOrderId();
@@ -81,9 +82,9 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
               auto rFn = scopeResolveFunction(context, parentFn->id());
               return rFn->byAstOrNull(ast);
             } else {
-              auto typed = typedSignatureInitial(context, untyped);
+              auto typed = typedSignatureInitial(rc, untyped);
               if (typed != nullptr && !typed->needsInstantiation()) {
-                if (auto rFn = resolveFunction(context, typed, nullptr)) {
+                if (auto rFn = resolveFunction(rc, typed, nullptr)) {
                   return rFn->byAstOrNull(ast);
                 }
               }
@@ -108,28 +109,29 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
 }
 
 static void
-computeAndPrintStuff(Context* context,
+computeAndPrintStuff(ResolutionContext* rc,
                      const AstNode* ast,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns,
                      bool scopeResolveOnly,
                      int maxIdWidth,
                      bool quiet) {
+  Context* context = rc->context();
   // Scope resolve / resolve concrete functions before printing
   if (auto fn = ast->toFunction()) {
     if (scopeResolveOnly) {
       inFn = scopeResolveFunction(context, fn->id());
     } else {
       auto untyped = UntypedFnSignature::get(context, fn);
-      auto typed = typedSignatureInitial(context, untyped);
+      auto typed = typedSignatureInitial(rc, untyped);
       if (typed != nullptr && !typed->needsInstantiation()) {
-        inFn = resolveFunction(context, typed, nullptr);
+        inFn = resolveFunction(rc, typed, nullptr);
       }
     }
   }
 
   for (const AstNode* child : ast->children()) {
-    computeAndPrintStuff(context, child, inFn, calledFns,
+    computeAndPrintStuff(rc, child, inFn, calledFns,
                          scopeResolveOnly, maxIdWidth, quiet);
     if (!quiet) {
       if (child->isModule() || child->isFunction()) {
@@ -140,14 +142,14 @@ computeAndPrintStuff(Context* context,
 
   int beforeCount = context->numQueriesRunThisRevision();
   const ResolvedExpression* r =
-    resolvedExpressionForAstInteractive(context, ast, inFn, scopeResolveOnly);
+    resolvedExpressionForAstInteractive(rc, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
     for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
       if (candidate) {
         auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {
-          auto fn = resolveFunction(context, sig, r->poiScope());
+          auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }
       }
@@ -156,7 +158,7 @@ computeAndPrintStuff(Context* context,
       auto sig = a.fn();
       if (sig != nullptr) {
         if (sig->untyped()->idIsFunction()) {
-          auto fn = resolveFunction(context, sig, r->poiScope());
+          auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }
       }
@@ -279,6 +281,8 @@ int main(int argc, char** argv) {
   Context context(config);
   Context* ctx = &context;
   context.setDetailedErrorOutput(!brief);
+  ResolutionContext rcval(ctx);
+  auto rc = &rcval;
 
   if (files.size() == 0) {
     usage(argc, argv);
@@ -312,7 +316,7 @@ int main(int argc, char** argv) {
         }
 
         int maxIdWidth = mod->computeMaxIdStringWidth();
-        computeAndPrintStuff(ctx, mod, nullptr, calledFns,
+        computeAndPrintStuff(rc, mod, nullptr, calledFns,
                              scopeResolveOnly, maxIdWidth, quiet);
         if (!quiet) {
           printf("\n");
@@ -342,7 +346,7 @@ int main(int argc, char** argv) {
             auto ast = idToAst(ctx, sig->id());
             auto fn = ast->toFunction();
             auto uSig = UntypedFnSignature::get(ctx, fn);
-            auto initialType = typedSignatureInitial(ctx, uSig);
+            auto initialType = typedSignatureInitial(rc, uSig);
             int maxIdWidth = 0;
             if (!quiet) {
               printf("Instantiation of ");
@@ -353,7 +357,7 @@ int main(int argc, char** argv) {
               printf("\n");
               maxIdWidth = ast->computeMaxIdStringWidth();
             }
-            computeAndPrintStuff(ctx, ast, calledFn, calledFns,
+            computeAndPrintStuff(rc, ast, calledFn, calledFns,
                                  scopeResolveOnly, maxIdWidth, quiet);
             if (!quiet) {
               printf("\n");

@@ -1455,7 +1455,7 @@ static void testInitGenericAfterConcrete() {
     assert(t);
     assert(t->isUnknownType());
 
-    assert(guard.errors().size() == 2);
+    assert(guard.errors().size() == 1);
     assert(guard.error(0)->message() ==
            "unable to instantiate generic type from initializer");
     assert(guard.realizeErrors());

@@ -115,6 +115,13 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const QualifiedType& leaderYieldType,
                                       int mask);
 
+Resolver::~Resolver() {
+  if (didPushFrame) {
+    CHPL_ASSERT(rc != &emptyResolutionContext);
+    rc->popFrame(this);
+  }
+}
+
 static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
   if (parsing::idIsParenlessFunction(context, id))
     return QualifiedType::PARENLESS_FUNCTION;
@@ -201,12 +208,15 @@ Resolver::ParenlessOverloadInfo::fromMatchingIds(Context* context,
 }
 
 Resolver
-Resolver::createForModuleStmt(Context* context, const Module* mod,
+Resolver::createForModuleStmt(ResolutionContext* rc, const Module* mod,
                               const AstNode* modStmt,
                               ResolutionResultByPostorderID& byId) {
-  auto ret = Resolver(context, mod, byId, nullptr);
+  auto ret = Resolver(rc->context(), mod, byId, nullptr);
   ret.curStmt = modStmt;
   ret.byPostorder.setupForSymbol(mod);
+  ret.rc = rc;
+  rc->pushFrame(&ret, ResolutionContext::Frame::MODULE);
+  ret.didPushFrame = true;
   return ret;
 }
 
@@ -223,15 +233,14 @@ Resolver::createForScopeResolvingModuleStmt(
 }
 
 Resolver
-Resolver::createForInitialSignature(Context* context, const Function* fn,
-                                    ResolutionResultByPostorderID& byId,
-                                    const CallerDetails* parentDetails)
-{
-  auto ret = Resolver(context, fn, byId, nullptr);
-  ret.parentDetails = parentDetails;
+Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
+                                    ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(rc->context(), fn, byId, nullptr);
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+
+  ret.rc = rc;
 
   if (fn->isMethod()) {
     fn->thisFormal()->traverse(ret);
@@ -267,17 +276,20 @@ Resolver::createForInstantiatedSignature(Context* context,
 }
 
 Resolver
-Resolver::createForFunction(Context* context,
+Resolver::createForFunction(ResolutionContext* rc,
                             const Function* fn,
                             const PoiScope* poiScope,
                             const TypedFnSignature* typedFnSignature,
-                            ResolutionResultByPostorderID& byId,
-                            const CallerDetails* parentDetails) {
-  auto ret = Resolver(context, fn, byId, poiScope);
+                            ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(rc->context(), fn, byId, poiScope);
   ret.typedSignature = typedFnSignature;
   ret.signatureOnly = false;
   ret.fnBody = fn->body();
-  ret.parentDetails = parentDetails;
+  ret.rc = rc;
+
+  // Push a 'ResolutionContext::Frame' for the function we are resolving.
+  ret.rc->pushFrame(&ret, ResolutionContext::Frame::FUNCTION);
+  ret.didPushFrame = true;
 
   CHPL_ASSERT(typedFnSignature);
   CHPL_ASSERT(typedFnSignature->untyped());
@@ -314,14 +326,14 @@ Resolver::createForFunction(Context* context,
 }
 
 Resolver
-Resolver::createForInitializer(Context* context,
+Resolver::createForInitializer(ResolutionContext* rc,
                                const uast::Function* fn,
                                const PoiScope* poiScope,
                                const TypedFnSignature* typedFnSignature,
                                ResolutionResultByPostorderID& byPostorder) {
-  auto ret = createForFunction(context, fn, poiScope, typedFnSignature,
+  auto ret = createForFunction(rc, fn, poiScope, typedFnSignature,
                                byPostorder);
-  ret.initResolver = InitResolver::create(context, ret, fn);
+  ret.initResolver = InitResolver::create(rc->context(), ret, fn);
   return ret;
 }
 
@@ -353,7 +365,8 @@ Resolver::createForScopeResolvingFunction(Context* context,
                           /* needsInstantiation */ false,
                           /* instantiatedFrom */ nullptr,
                           /* parentFn */ nullptr,
-                          /* formalsInstantiated */ Bitmap());
+                          /* formalsInstantiated */ Bitmap(),
+                          /* outerVariables */ ret.outerVariables);
 
   ret.typedSignature = sig;
   ret.signatureOnly = false;
@@ -553,8 +566,9 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
 }
 
 static bool
-isOuterVariable(Resolver& rv, const ID& target, const ID& mention) {
-  if (!target || !mention || target.isSymbolDefiningScope()) return false;
+isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
+  if (!target || !ident || target.isSymbolDefiningScope()) return false;
+  const ID& mention = ident->id();
 
   Context* context = rv.context;
   ID targetParentSymbolId = target.parentSymbolId(context);
@@ -1774,9 +1788,9 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       if (wasCallGenerated) {
         std::ignore = resolveGeneratedCall(context, call, ci, inScopes, &rejected);
       } else {
-        std::ignore = resolveCallInMethod(context, call, ci, inScopes,
-                                          receiverType, &rejected,
-                                          makeCallerDetails());
+        std::ignore = resolveCallInMethod(rc, call, ci, inScopes,
+                                          receiverType,
+                                          &rejected);
       }
 
       if (!rejected.empty()) {
@@ -3054,6 +3068,54 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
   }
 }
 
+bool Resolver::lookupOuterVariable(QualifiedType& out,
+                                   const Identifier* ident,
+                                   const ID& target) {
+  if (!isOuterVariable(*this, ident, target)) return false;
+  auto& mention = ident->id();
+
+  QualifiedType type;
+  bool isFieldAccess = parsing::idIsField(context, target);
+
+  // Use the cached result if it exists.
+  if (auto p = outerVariables.targetAndTypeOrNull(mention)) {
+    type = p->second;
+
+  } else if (isFieldAccess) {
+    // If the target ID is a field, we have to walk up parent frames
+    // until we find a method with a matching receiver, and then use it
+    // to look up the field's type.
+    for (auto f = rc->lastFrame(); f; f = f->parent(rc)) {
+      auto sig = f->signature();
+      if (!sig || !sig->isMethod()) continue;
+
+      auto t = sig->formalType(0).type();
+      auto ct = t ? t->toCompositeType() : nullptr;
+
+      // TODO: What if an ID check alone is not sufficient? If I cannot
+      // lookup using field ID alone, then I cannot cache with field ID.
+      if (ct && ct->id() == target.parentSymbolId(context)) {
+        type = lookupFieldType(*this, ct, target);
+        outerVariables.add(mention, target, type);
+        break;
+      }
+    }
+
+  // Otherwise, it's a variable, so walk up parent frames and look up
+  // the variable's type using the resolution results.
+  } else if (ID parentFn = target.parentFunctionId(context)) {
+    if (auto f = rc->findFrameWithId(target)) {
+      type = f->resolutionById()->byId(target).type();
+      outerVariables.add(mention, target, type);
+    }
+  }
+
+  // Write out the type we found (or an unset type, potentially).
+  out = type;
+
+  return true;
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
@@ -3184,59 +3246,13 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     }
 
-    // For outer variables, use their recorded type, or look them up from
-    // parent frames if we're encountering them for the first time. If
-    // no stored result or parent frame is present then the type is unknown.
-    // Still record the type in this case so that we can know what outer
-    // variables we have encountered.
-    if (isOuterVariable(*this, id, ident->id())) {
-      const ID& mention = ident->id();
-      const ID& target = id;
-      bool isFieldAccess = parsing::idIsField(context, target);
-      auto it = outerVariables.find(target);
+    // Attempt to lookup an outer variable.
+    if (!lookupOuterVariable(type, ident, id)) {
 
-      // Use the cached result if it exists.
-      if (it != outerVariables.end()) {
-        type = it->second.first;
-        it->second.second.push_back(mention);
-
-      // If the target ID is a field, we have to walk up parent frames until
-      // we find a method with a matching receiver, and then use it to look
-      // up the field's type.
-      } else if (isFieldAccess) {
-        for (auto up = parentDetails; up; up = up->parent()) {
-          auto sig = up->signature();
-          if (!sig->isMethod()) continue;
-
-          auto t = sig->formalType(0).type();
-          auto ct = t ? t->toCompositeType() : nullptr;
-
-          // TODO: What if an ID check alone is not sufficient? If I cannot
-          // lookup using field ID alone, then I cannot cache with field ID.
-          if (ct && ct->id() == target.parentSymbolId(context)) {
-            type = lookupFieldType(*this, ct, target);
-            auto p = std::make_pair(type, std::vector<ID>({ mention }));
-            outerVariables.emplace_hint(it, target, std::move(p));
-            break;
-          }
-        }
-
-      // Otherwise, it's a variable, so walk up parent frames and look up
-      // the variable's type using the resolution results.
-      } else if (ID parentFn = target.parentFunctionId(context)) {
-        if (auto details = parentDetails) {
-          if (auto frame = details->findParentOf(context, target)) {
-            type = frame->resolutionById()->byId(target).type();
-            auto p = std::make_pair(type, std::vector<ID>({ mention }));
-            outerVariables.emplace_hint(it, target, std::move(p));
-          }
-        }
-      }
-
-    // Otherwise, use the type established at declaration/initialization,
-    // but for things with generic type, use unknown.
-    } else {
-      type = typeForId(id, /*localGenericToUnknown*/ true);
+      // Otherwise, use the type established at declaration/initialization,
+      // but for things with generic type, use unknown.
+      bool localGenericToUnknown = true;
+      type = typeForId(id, localGenericToUnknown);
     }
 
     maybeEmitWarningsForId(this, type, ident, id);
@@ -3457,14 +3473,9 @@ void Resolver::exit(const NamedDecl* decl) {
     genericReceiverOverrideStack.pop_back();
   }
 
-  // We are resolving a symbol that introduces a new path component and has
-  // a postorder number of '-1' (e.g., a nested function). In most cases we
-  // just stop resolving, but we record nested functions.
+  // Stop resolving if the declaration introduces a new path component.
   auto idChild = decl->id();
   if (idChild.isSymbolDefiningScope()) {
-    if (parsing::idIsNestedFunction(context, idChild)) {
-      childFunctionIds.push_back(idChild);
-    }
     return;
   }
 
@@ -3765,6 +3776,95 @@ static const Type* getGenericType(Context* context, const Type* recv) {
   return gen;
 }
 
+// With some exceptions (see below), don't try to resolve a call that accepts:
+// EXCEPT, to handle split-init with an 'out' formal,
+// the actual argument can have unknown / generic type if it
+// refers directly to a particular variable.
+// EXCEPT, type construction can work with unknown or generic types
+// EXCEPT, tuple type construction also works with unknown/generic types
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::Call* call,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         ID moduleScopeId,
+                         const CallInfo& ci) {
+  Context* context = rv->context;
+  SkipCallResolutionReason skip = NONE;
+  auto& byPostorder = rv->byPostorder;
+
+  if (call->isTuple()) return skip;
+
+  int actualIdx = 0;
+  for (const auto& actual : ci.actuals()) {
+    ID toId; // does the actual refer directly to a particular variable?
+    const AstNode* actualAst = actualAsts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      toId = byPostorder.byAst(actualAst).toId();
+    }
+    QualifiedType qt = actual.type();
+    const Type* t = qt.type();
+
+    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+    bool isNonOutFormal = formalAst != nullptr &&
+                          formalAst->isFormal() &&
+                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
+    if (t != nullptr && t->isErroneousType()) {
+      // always skip if there is an ErroneousType
+      skip = ERRONEOUS_ACT;
+    } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.kind() != QualifiedType::PARAM &&
+               qt.kind() != QualifiedType::TYPE &&
+               qt.isRef() == false) {
+      // don't skip because it could be initialized with 'out' intent,
+      // but not for non-out formals because they can't be split-initialized.
+    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+      // don't skip for type queries in type constructors
+    } else {
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = UNKNOWN_PARAM;
+      } else if (qt.isUnknown()) {
+        skip = UNKNOWN_ACT;
+      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
+        // For initializer calls, allow generic formals using the above
+        // condition; this way, 'this.init(..)' while 'this' is generic
+        // should be fine.
+
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
+          skip = GENERIC_TYPE;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = GENERIC_VALUE;
+        }
+      }
+    }
+
+    // Don't skip for type constructors, except due to unknown params.
+    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+      skip = NONE;
+    }
+
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    if (skip == GENERIC_TYPE && call->toPrimCall()) {
+      skip = NONE;
+    }
+
+    if (skip) {
+      break;
+    }
+    actualIdx++;
+  }
+
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = OTHER_REASON;
+  }
+
+  return skip;
+}
+
 void Resolver::handleCallExpr(const uast::Call* call) {
   if (scopeResolveOnly) {
     return;
@@ -3800,83 +3900,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
-  // With some exceptions (see below), don't try to resolve a call that accepts:
-  SkipCallResolutionReason skip = NONE;
-  // EXCEPT, to handle split-init with an 'out' formal,
-  // the actual argument can have unknown / generic type if it
-  // refers directly to a particular variable.
-  // EXCEPT, type construction can work with unknown or generic types
-  // EXCEPT, tuple type construction also works with unknown/generic types
-
-  if (!call->isTuple()) {
-    int actualIdx = 0;
-    for (const auto& actual : ci.actuals()) {
-      ID toId; // does the actual refer directly to a particular variable?
-      const AstNode* actualAst = actualAsts[actualIdx];
-      if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-        toId = byPostorder.byAst(actualAst).toId();
-      }
-      QualifiedType qt = actual.type();
-      const Type* t = qt.type();
-
-      const AstNode* formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
-      bool isNonOutFormal = formalAst != nullptr &&
-                            formalAst->isFormal() &&
-                            formalAst->toFormal()->intent() != Formal::Intent::OUT;
-
-      if (t != nullptr && t->isErroneousType()) {
-        // always skip if there is an ErroneousType
-        skip = ERRONEOUS_ACT;
-      } else if (!toId.isEmpty() && !isNonOutFormal &&
-                 qt.kind() != QualifiedType::PARAM &&
-                 qt.kind() != QualifiedType::TYPE &&
-                 qt.isRef() == false) {
-        // don't skip because it could be initialized with 'out' intent,
-        // but not for non-out formals because they can't be split-initialized.
-      } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
-        // don't skip for type queries in type constructors
-      } else {
-        if (qt.isParam() && qt.param() == nullptr) {
-          skip = UNKNOWN_PARAM;
-        } else if (qt.isUnknown()) {
-          skip = UNKNOWN_ACT;
-        } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
-          // For initializer calls, allow generic formals using the above
-          // condition; this way, 'this.init(..)' while 'this' is generic
-          // should be fine.
-
-          auto g = getTypeGenericity(context, t);
-          bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                   (t->isAnyType() || t->isBuiltinType()));
-          if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
-            skip = GENERIC_TYPE;
-          } else if (!qt.isType() && g != Type::CONCRETE) {
-            skip = GENERIC_VALUE;
-          }
-        }
-      }
-
-      // Don't skip for type constructors, except due to unknown params.
-      if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
-        skip = NONE;
-      }
-
-      // Do not skip primitive calls that accept a generic type, since they
-      // may be valid.
-      if (skip == GENERIC_TYPE && call->toPrimCall()) {
-        skip = NONE;
-      }
-
-      if (skip) {
-        break;
-      }
-      actualIdx++;
-    }
-  }
-  // Don't try to resolve calls to '=' until later
-  if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = OTHER_REASON;
-  }
+  auto skip = shouldSkipCallResolution(this, call, actualAsts,
+                                       moduleScopeId,
+                                       ci);
 
   if (!skip) {
     QualifiedType receiverType = methodReceiverType();
@@ -3899,9 +3925,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     }
 
     std::vector<ApplicabilityResult>* rejected = nullptr;
-    auto c = resolveCallInMethod(context, call, ci, inScopes, receiverType,
-                                 rejected,
-                                 makeCallerDetails());
+    auto c = resolveCallInMethod(rc, call, ci, inScopes,
+                                 receiverType,
+                                 rejected);
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);

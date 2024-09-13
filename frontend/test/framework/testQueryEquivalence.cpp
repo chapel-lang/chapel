@@ -63,7 +63,8 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       /* needsInstantiation */ false,
       /* instantiatedFrom */ nullptr,
       /* parentFn */ nullptr,
-      /* instantiatedFormals */ Bitmap{});
+      /* instantiatedFormals */ Bitmap{},
+      {});
 
   auto ci = CallInfo(
       /* name */ UniqueString::get(context, "foo"),

@@ -413,7 +413,8 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
                               /* needsInstantiation */ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
-                              formalsInstantiated);
+                              formalsInstantiated,
+                              /* outerVariables */ {});
   return ret;
 }
 

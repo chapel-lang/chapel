@@ -21,6 +21,7 @@
 #define CHPL_LIB_RESOLUTION_RESOLVER_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
@@ -33,6 +34,8 @@ namespace resolution {
 struct Resolver {
   // types used below
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+  using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+  using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
 
   /**
     When looking up matches for a particular identifier, we might encounter
@@ -84,6 +87,9 @@ struct Resolver {
   bool skipTypeQueries = false;
 
   // internal variables
+  ResolutionContext emptyResolutionContext;
+  ResolutionContext* rc = &emptyResolutionContext;
+  bool didPushFrame = false;
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   std::vector<int> tagTracker;
@@ -108,12 +114,17 @@ struct Resolver {
 
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
-  std::vector<ID> childFunctionIds;
-  owned<OuterVariables> outerVars;
-  const CallerDetails* parentDetails = nullptr;
-  std::map<ID, std::pair<types::QualifiedType, std::vector<ID>>> outerVariables;
 
   // results of the resolution process
+
+  // Map from outer variable mention to type and target ID.
+  OuterVariables outerVariables;
+
+  // Storage for child functions resolved within this function. This models
+  // the generic cache implemented in the 'resolveFunctionByPois' and
+  // 'resolveFunctionByInfo' functions, but using resolver state.
+  ResolvedFunction::PoiTraceToChildMap poiTraceToChild;
+  ResolvedFunction::SigAndInfoToChildPtrMap sigAndInfoToChildPtr;
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
@@ -141,16 +152,24 @@ struct Resolver {
     : context(context),
       symbol(symbol),
       poiScope(poiScope),
+      emptyResolutionContext(context),
       byPostorder(byPostorder),
       poiInfo(makePoiInfo(poiScope)) {
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
  public:
+  // Explicitly disable the copy constructor, since a lot of state in a
+  // resolver can't/shouldn't be copied, and this will ensure that never
+  // happens.
+  Resolver(const Resolver& rhs) = delete;
+  Resolver& operator=(const Resolver& rhs) = delete;
+  Resolver(Resolver&& rhs) = default;
+ ~Resolver();
 
   // set up Resolver to resolve a Module
   static Resolver
-  createForModuleStmt(Context* context, const uast::Module* mod,
+  createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
 
@@ -163,9 +182,9 @@ struct Resolver {
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
-  createForInitialSignature(Context* context, const uast::Function* fn,
-                            ResolutionResultByPostorderID& byPostorder,
-                            const CallerDetails* parentDetails=nullptr);
+  createForInitialSignature(ResolutionContext* rc,
+                            const uast::Function* fn,
+                            ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
@@ -178,15 +197,14 @@ struct Resolver {
   // set up Resolver to resolve a Function body/return type after
   // instantiation (if any instantiation was needed)
   static Resolver
-  createForFunction(Context* context,
+  createForFunction(ResolutionContext* rc,
                    const uast::Function* fn,
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
-                   ResolutionResultByPostorderID& byPostorder,
-                   const CallerDetails* parentDetails=nullptr);
+                   ResolutionResultByPostorderID& byPostorder);
 
   static Resolver
-  createForInitializer(Context* context,
+  createForInitializer(ResolutionContext* rc,
                        const uast::Function* fn,
                        const PoiScope* poiScope,
                        const TypedFnSignature* typedFnSignature,
@@ -260,13 +278,6 @@ struct Resolver {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
-  /** The created details are empty if the resolved symbol is not a function. */
-  CallerDetails makeCallerDetails() const {
-    if (!symbol->isFunction()) return {};
-    auto csi = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
-    return { parentDetails, typedSignature, &byPostorder, std::move(csi) };
-  }
-
   /**
     During AST traversal, find the last called expression we entered.
     e.g., will return 'f' if we just entered 'f()'.
@@ -285,6 +296,15 @@ struct Resolver {
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Gather scopes for a given receiver decl and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForDeclId(Context* context,
+                                         ID aggregateDeclId);
+  /* Gather scopes for a given receiver type and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForType(Context* context,
+                                       const types::Type* thisType);
 
   /* Determine the method receiver, which is a type under
      full resolution, but only an ID under scope resolution.
@@ -562,6 +582,11 @@ struct Resolver {
                                const uast::Identifier* ident);
 
   void resolveIdentifier(const uast::Identifier* ident);
+
+  /** Returns 'true' if the lookup succeeded. */
+  bool lookupOuterVariable(types::QualifiedType& out,
+                           const uast::Identifier* ident,
+                           const ID& target);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */

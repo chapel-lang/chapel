@@ -46,33 +46,6 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-void OuterVariables::add(Context* context, ID mention, ID var) {
-  ID mentionParent = mention.parentSymbolId(context);
-  ID symbolParent = symbol_.parentSymbolId(context);
-  ID varParent = var.parentSymbolId(context);
-  const bool isReachingUse = symbolParent != varParent;
-  const bool isChildUse = mentionParent != symbol_;
-
-  CHPL_ASSERT(varParent != symbol_);
-  if (!isReachingUse) {
-    CHPL_ASSERT(mention && symbol_.contains(mention));
-  }
-
-  auto it = idToVarAndMentionIndices_.find(var);
-  if (it == idToVarAndMentionIndices_.end()) {
-    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
-    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
-    variables_.push_back(var);
-    if (isReachingUse) numReachingVariables_++;
-  }
-
-  // Don't bother storing the mention for a child use.
-  if (!isChildUse) {
-    it->second.second.push_back(mentions_.size());
-    mentions_.push_back(mention);
-  }
-}
-
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -870,11 +843,13 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
-                    Bitmap formalsInstantiated) {
+                    Bitmap formalsInstantiated,
+                    OuterVariables outerVariables) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
-              formalsInstantiated);
+              formalsInstantiated,
+              outerVariables);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
@@ -883,7 +858,8 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                                              isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
-                                             std::move(formalsInstantiated)));
+                                             std::move(formalsInstantiated),
+                                             std::move(outerVariables)));
 
   return QUERY_END(result);
 }
@@ -896,7 +872,8 @@ TypedFnSignature::get(Context* context,
                       bool needsInstantiation,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
-                      Bitmap formalsInstantiated) {
+                      Bitmap formalsInstantiated,
+                      OuterVariables outerVariables) {
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
                              whereClauseResult,
@@ -904,7 +881,8 @@ TypedFnSignature::get(Context* context,
                              /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
-                             std::move(formalsInstantiated)).get();
+                             std::move(formalsInstantiated),
+                             std::move(outerVariables)).get();
 }
 
 const TypedFnSignature*
@@ -920,7 +898,8 @@ TypedFnSignature::getInferred(
                              /* isRefinementOnly */ true,
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
-                             inferredFrom->formalsInstantiatedBitmap()).get();
+                             inferredFrom->formalsInstantiatedBitmap(),
+                             inferredFrom->outerVariables()).get();
 }
 
 
@@ -1099,12 +1078,12 @@ void MostSpecificCandidate::stringify(std::ostream& ss,
 }
 
 void
-MostSpecificCandidates::inferOutFormals(Context* context,
+MostSpecificCandidates::inferOutFormals(ResolutionContext* rc,
                                         const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
-    MostSpecificCandidate& c = candidates[i];
-    if (c) {
-      c.fn_ = chpl::resolution::inferOutFormals(context, c.fn(), instantiationPoiScope);
+    if (MostSpecificCandidate& c = candidates[i]) {
+      constexpr auto f = chpl::resolution::inferOutFormals;
+      c.fn_ = f(rc, c.fn(), instantiationPoiScope);
     }
   }
 }
@@ -1492,7 +1471,8 @@ TypedMethodLookupHelper::receiverScopes() const {
 
 bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
                                                    const ID& methodId) const {
-  const TypedFnSignature* tfs = typedSignatureInitialForId(context, methodId);
+  ResolutionContext rcval(context);
+  const TypedFnSignature* tfs = typedSignatureInitialForId(&rcval, methodId);
 
   if (tfs && tfs->isMethod()) {
     QualifiedType methodRcvType = tfs->formalType(0);
@@ -1549,8 +1529,8 @@ ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
   if (resolvingMethodId_ == methodId) {
     return methodLookupForType(context, resolvingMethodReceiverType_);
   } else {
-    const TypedFnSignature* tfs = nullptr;
-    tfs = typedSignatureInitialForId(context, methodId);
+    ResolutionContext rcval(context);
+    const TypedFnSignature* tfs = typedSignatureInitialForId(&rcval, methodId);
     if (tfs && tfs->isMethod()) {
       QualifiedType rcvType = tfs->formalType(0);
       return methodLookupForType(context, rcvType);
@@ -1560,6 +1540,64 @@ ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
   return nullptr;
 }
 
+const ID ResolutionContext::Frame::EMPTY_AST_ID = ID();
+
+const ID& ResolutionContext::Frame::id() const {
+  if (auto ast = rv_->symbol) return ast->id();
+  return EMPTY_AST_ID;
+}
+
+const TypedFnSignature* ResolutionContext::Frame::signature() const {
+  if (kind_ == ResolutionContext::Frame::FUNCTION && rv_) {
+    return rv_->typedSignature;
+  }
+  return nullptr;
+}
+
+const ResolutionResultByPostorderID*
+ResolutionContext::Frame::resolutionById() const {
+  return rv_ ? &rv_->byPostorder : nullptr;
+}
+
+const ResolutionContext::Frame* ResolutionContext::
+pushFrame(Resolver* rv, ResolutionContext::Frame::Kind kind) {
+  int64_t index = (int64_t) frames_.size();
+  frames_.push_back({rv, kind, index});
+  auto ret = lastFrame();
+  if (ret->isUnstable()) numUnstableFrames_++;
+  return ret;
+}
+
+const ResolutionContext::Frame* ResolutionContext::
+pushFrame(const ResolvedFunction* rf) {
+  int64_t index = (int64_t) frames_.size();
+  frames_.push_back({rf, index});
+  auto ret = lastFrame();
+  CHPL_ASSERT(!ret->isUnstable());
+  return ret;
+}
+
+bool ResolutionContext::Frame::isUnstable() const {
+  return rv_ != nullptr;
+}
+
+void ResolutionContext::popFrame(Resolver* rv) {
+  CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
+  CHPL_ASSERT(frames_.back().rv() == rv);
+
+  if (frames_.empty()) return;
+  if (frames_.back().isUnstable()) numUnstableFrames_--;
+  frames_.pop_back();
+}
+
+void ResolutionContext::popFrame(const ResolvedFunction* rf) {
+  CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
+  CHPL_ASSERT(frames_.back().rf() == rf);
+
+  if (frames_.empty()) return;
+  CHPL_ASSERT(!frames_.back().isUnstable());
+  frames_.pop_back();
+}
 
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);

@@ -79,4 +79,14 @@ QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
 Context::Configuration getConfigWithHome();
 
+/**
+  Returns the ResolvedFunction called by a particular
+  ResolvedExpression, if there was exactly one candidate.
+  Otherwise, it returns nullptr.
+
+  This function does not handle return intent overloading.
+ */
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                             const ResolvedExpression& r);
+
 #endif

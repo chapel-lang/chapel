@@ -20,6 +20,7 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
+#include "chpl/framework/query-impl.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/CompositeType.h"
@@ -31,13 +32,23 @@
 #include "chpl/uast/For.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/bitmap.h"
+#include "chpl/util/hash.h"
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace chpl {
+
+namespace parsing {
+  bool idIsNestedFunction(Context* context, ID id);
+}
+
 namespace resolution {
+
+class ResolutionContext;
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 /**
 
@@ -376,85 +387,44 @@ class UntypedFnSignature {
 };
 
 /**
-  This type represents the outer variables used in a function. It stores
-  the variables and all their mentions in lexical order. It presents the
-  concept of a 'reaching variable', which is a reference to an outer
-  variable that is not defined in the symbol's immediate parent.
+  This type stores the outer variables used by a function. For each mention
+  of an outer variable, it keeps track of the outer variable's ID and type.
 */
-// TODO: We can drop some of this state if we decide we don't care about
-// preserving lexical ordering or mentions at all (not 100% sure yet).
 class OuterVariables {
+ public:
+  using QualifiedType = types::QualifiedType;
+  using TargetAndType = std::pair<const ID, QualifiedType>;
+ private:
+  std::map<ID, QualifiedType> targetIdToType_;
+  std::map<ID, ID> mentionIdToTargetId_;
 
-  // Record all outer variables used in lexical order.
-  std::vector<ID> variables_;
-
-  // Record all mentions of variables in lexical order. A variable may have
-  // zero mentions if it was only ever referenced by a child function. In
-  // this case, we still record the variable so that we can know to propagate
-  // it into our parent's state.
-  std::vector<ID> mentions_;
-
-  using VarAndMentionIndices = std::pair<size_t, std::vector<size_t>>;
-  using IdToVarAndMentionIndices = std::unordered_map<ID, VarAndMentionIndices>;
-
-  // Enables lookup of variables and their mentions given just an ID. The
-  // first part of the pair is the index of the variable, and the second
-  // component is the list of mention indices.
-  IdToVarAndMentionIndices idToVarAndMentionIndices_;
-
-  // The number of outer variables that are defined in distant (not our
-  // immediate) parents. Only variables defined by a function's most
-  // immediate parents need to be recorded into its 'TypedFnSignature'.
-  int numReachingVariables_ = 0;
-
-  // The function that owns this instance.
-  ID symbol_;
-
-  // The immediate parent of 'symbol_'. So that we can detect if a variable
-  // is 'reaching' without needing the compiler context.
-  ID parent_;
-
-  template <typename T>
-  static inline bool inBounds(const std::vector<T> v, size_t idx) {
-    return 0 <= idx && idx < v.size();
-  }
-
-public:
-  OuterVariables(Context* context, ID symbol)
-      : symbol_(std::move(symbol)),
-        parent_(symbol_.parentSymbolId(context)) {
-  }
-
+ public:
+  OuterVariables() = default;
  ~OuterVariables() = default;
 
-  bool operator==(const OuterVariables& other) const {
-    return variables_ == other.variables_ &&
-           mentions_ == other.mentions_ &&
-           idToVarAndMentionIndices_ == other.idToVarAndMentionIndices_ &&
-           numReachingVariables_ == other.numReachingVariables_ &&
-           symbol_ == other.symbol_ &&
-           parent_ == other.parent_;
+  bool operator==(const OuterVariables& rhs) const {
+    return targetIdToType_ == rhs.targetIdToType_ &&
+           mentionIdToTargetId_ == rhs.mentionIdToTargetId_;
   }
 
-  bool operator!=(const OuterVariables& other) const {
-    return !(*this == other);
+  bool operator!=(const OuterVariables& rhs) const {
+    return !(*this == rhs);
   }
 
-  void swap(OuterVariables& other) {
-    std::swap(variables_, other.variables_);
-    std::swap(mentions_, other.mentions_);
-    std::swap(idToVarAndMentionIndices_, other.idToVarAndMentionIndices_);
-    std::swap(numReachingVariables_, other.numReachingVariables_);
-    std::swap(symbol_, other.symbol_);
-    std::swap(parent_, other.parent_);
+  void swap(OuterVariables& rhs) {
+    std::swap (targetIdToType_, rhs.targetIdToType_);
+    std::swap (mentionIdToTargetId_, rhs.mentionIdToTargetId_);
   }
 
   void mark(Context* context) const {
-    for (auto& v : variables_) v.mark(context);
-    for (auto& id : mentions_) id.mark(context);
-    for (auto& p : idToVarAndMentionIndices_) p.first.mark(context);
-    symbol_.mark(context);
-    parent_.mark(context);
+    for (auto& p : targetIdToType_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
+    for (auto& p : mentionIdToTargetId_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
   }
 
   static inline bool update(owned<OuterVariables>& keep,
@@ -462,89 +432,40 @@ public:
     return defaultUpdateOwned(keep, addin);
   }
 
-  // Mutating method used to build up state.
-  void add(Context* context, ID mention, ID var);
-
-  /** Returns 'true' if there are no outer variables. */
-  bool isEmpty() const { return numVariables() == 0; }
-
-  /** The total number of outer variables. */
-  int numVariables() const { return variables_.size(); }
-
-  /** The number of outer variables declared in our immediate parent. */
-  int numImmediateVariables() const {
-    return numVariables() - numReachingVariables_;
+  size_t hash() const {
+    return chpl::hash(targetIdToType_, mentionIdToTargetId_);
   }
 
-  /** The number of outer variables declared in our non-immediate parents. */
-  int numReachingVariables() const { return numReachingVariables_; }
-
-  /** The number of outer variable mentions in this symbol's body. */
-  int numMentions() const { return mentions_.size(); }
-
-  /** Get the number of mentions for 'var' in this symbol. */
-  int numMentions(const ID& var) const {
-    auto it = idToVarAndMentionIndices_.find(var);
-    return it != idToVarAndMentionIndices_.end()
-      ? it->second.second.size()
-      : 0;
-  }
-
-  /** Returns 'true' if there is at least one mention of 'var'. */
-  bool mentions(const ID& var) const { return numMentions(var) > 0; }
-
-  /** Returns 'true' if this contains an entry for 'var'. */
-  bool contains(const ID& var) const {
-    return idToVarAndMentionIndices_.find(var) !=
-           idToVarAndMentionIndices_.end();
-  }
-
-  /** Get the i'th outer variable or the empty ID if 'idx' was out of bounds. */
-  ID variable(size_t idx) const {
-    return inBounds(variables_, idx) ? variables_[idx] : ID();
-  }
-
-  /** A reaching variable is declared in a non-immediate parent(s). */
-  bool isReachingVariable(const ID& var) const {
-    auto it = idToVarAndMentionIndices_.find(var);
-    if (it != idToVarAndMentionIndices_.end()) {
-      auto& var = variables_[it->second.first];
-      return !parent_.contains(var);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    for (auto& p : targetIdToType_) {
+      p.first.stringify(ss, stringKind);
+      ss << " : ";
+      p.second.stringify(ss, stringKind);
     }
-    return false;
   }
 
-  /** A reaching variable is declared in a non-immediate parent(s). */
-  bool isReachingVariable(size_t idx) const {
-    if (auto id = variable(idx)) return isReachingVariable(id);
-    return false;
+  /** Mutating method used to build up state. If either the mention or
+      target IDs are empty then nothing happens. */
+  void add(const ID& mention, const ID& target, const QualifiedType& qt) {
+    if (!mention || !target) return;
+    auto p1 = std::make_pair(mention, target);
+    if (!mentionIdToTargetId_.insert(std::move(p1)).second) return;
+    auto p2 = std::make_pair(target, qt);
+    targetIdToType_.insert(std::move(p2));
   }
 
-  /** Get the i'th mention in this function. */
-  ID mention(size_t idx) const {
-    return inBounds(mentions_, idx) ? mentions_[idx] : ID();
+  /** For a given mention, return the target ID and type if it exists. */
+  const TargetAndType* targetAndTypeOrNull(const ID& mention) const {
+    auto it = mentionIdToTargetId_.find(mention);
+    if (it == mentionIdToTargetId_.end()) return nullptr;
+    return &*targetIdToType_.find(it->second);
   }
 
-  /** Get the i'th mention for 'var' within this function, or the empty ID. */
-  ID mention(const ID& var, size_t idx) const {
-    auto it = idToVarAndMentionIndices_.find(var);
-    if (it == idToVarAndMentionIndices_.end()) return {};
-    return inBounds(it->second.second, idx)
-      ? mentions_[it->second.second[idx]]
-      : ID();
+  bool isEmpty() const {
+    return mentionIdToTargetId_.empty();
   }
-
-  /** Get the first mention of 'var', or the empty ID. */
-  ID firstMention(const ID& var) const { return mention(var, 0); }
-
-  /** Get the ID of the symbol this instance was created for. */
-  const ID& symbol() const { return symbol_; }
-
-  /** Get the ID of the owning symbol's parent. */
-  const ID& parent() const { return parent_; }
 };
 
-/** CallInfoActual */
 class CallInfoActual {
  private:
   types::QualifiedType type_;
@@ -759,6 +680,10 @@ using PoiRecursiveCalls = std::set<std::pair<const TypedFnSignature*,
   in order to implement caching of instantiations.
  */
 class PoiInfo {
+ public:
+  using Trace = std::tuple<const TypedFnSignature*,
+                           PoiCallIdFnIds,
+                           PoiRecursiveCalls>;
  private:
   // is this PoiInfo for a function that has been resolved, or
   // for a function we are about to resolve?
@@ -786,8 +711,10 @@ class PoiInfo {
   PoiRecursiveCalls recursiveFnsUsed_;
 
  public:
-  // default construct a PoiInfo
-  PoiInfo() { }
+  PoiInfo() = default;
+  PoiInfo(const PoiInfo& rhs) = default;
+  PoiInfo(PoiInfo&& rhs) = default;
+  PoiInfo& operator=(PoiInfo&& rhs) = default;
 
   // construct a PoiInfo for a not-yet-resolved instantiation
   PoiInfo(const PoiScope* poiScope)
@@ -815,6 +742,9 @@ class PoiInfo {
     return recursiveFnsUsed_;
   }
 
+  PoiInfo::Trace createTraceFor(const TypedFnSignature* sig) const {
+    return { sig, poiFnIdsUsed_, recursiveFnsUsed_ };
+  }
 
   void addIds(ID a, ID b) {
     poiFnIdsUsed_.emplace(a, b);
@@ -939,6 +869,10 @@ class TypedFnSignature {
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
+  // What are the the types of outer variables used to construct this?
+  // TODO: Can probably flatten into a vector.
+  OuterVariables outerVariables_;
+
   TypedFnSignature(const UntypedFnSignature* untypedSignature,
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
@@ -946,7 +880,8 @@ class TypedFnSignature {
                    bool isRefinementOnly,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
-                   Bitmap formalsInstantiated)
+                   Bitmap formalsInstantiated,
+                   OuterVariables outerVariables)
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
       whereClauseResult_(whereClauseResult),
@@ -954,7 +889,8 @@ class TypedFnSignature {
       isRefinementOnly_(isRefinementOnly),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
-      formalsInstantiated_(std::move(formalsInstantiated)) { }
+      formalsInstantiated_(std::move(formalsInstantiated)),
+      outerVariables_(std::move(outerVariables)) { }
 
   static const owned<TypedFnSignature>&
   getTypedFnSignature(Context* context,
@@ -965,7 +901,8 @@ class TypedFnSignature {
                       bool isRefinementOnly,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
-                      Bitmap formalsInstantiated);
+                      Bitmap formalsInstantiated,
+                      OuterVariables outerVariables);
 
   /** If this is an iterator, set 'found' to a string representing its
       'iterKind', or "" if it is a serial iterator. Returns 'true' only
@@ -982,7 +919,8 @@ class TypedFnSignature {
                               bool needsInstantiation,
                               const TypedFnSignature* instantiatedFrom,
                               const TypedFnSignature* parentFn,
-                              Bitmap formalsInstantiated);
+                              Bitmap formalsInstantiated,
+                              OuterVariables outerVariables);
 
   /** Get the unique TypedFnSignature containing these components
       for a refinement where some types are inferred (e.g. generic 'out'
@@ -993,7 +931,6 @@ class TypedFnSignature {
                               std::vector<types::QualifiedType> formalTypes,
                               const TypedFnSignature* inferredFrom);
 
-
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
@@ -1002,7 +939,8 @@ class TypedFnSignature {
            isRefinementOnly_ == other.isRefinementOnly_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
-           formalsInstantiated_ == other.formalsInstantiated_;
+           formalsInstantiated_ == other.formalsInstantiated_ &&
+           outerVariables_ == other.outerVariables_;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
@@ -1019,6 +957,7 @@ class TypedFnSignature {
     context->markPointer(instantiatedFrom_);
     context->markPointer(parentFn_);
     (void) formalsInstantiated_; // nothing to mark
+    outerVariables_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1121,6 +1060,16 @@ class TypedFnSignature {
 
   bool isNestedFunction() const {
     return parentFn() != nullptr;
+  }
+
+  /** Return the outer variables that were used to type this signature. */
+  const OuterVariables& outerVariables() const {
+    return outerVariables_;
+  }
+
+  /** Returns true if this signature uses any outer variables. */
+  bool usesOuterVariables() const {
+    return !outerVariables_.isEmpty();
   }
 
   /** Returns the number of formals */
@@ -1752,7 +1701,8 @@ class MostSpecificCandidates {
     Adjust each candidate signature by inferring generic 'out' intent formals
     if there are any.
    */
-  void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
+  void inferOutFormals(ResolutionContext* rc,
+                       const PoiScope* instantiationPoiScope);
 
   MostSpecificCandidate const* begin() const {
     return &candidates[0];
@@ -1991,57 +1941,615 @@ class CallScopeInfo {
   const PoiScope* poiScope() const { return poiScope_; }
 };
 
-class CallerDetails {
+class ResolvedFunction;
+struct Resolver;
+
+/**
+  This class is used to manage mutable state that may be required while
+  resolving. Any resolution function that requires this state will take
+  a 'ResolutionContext*' as its first argument instead of a 'Context'.
+  In the vast majority of cases a user can call such a function using
+  the following sort of pattern:
+
+    ResolutionContext rcval(context);
+    auto crr = resolveCall(&rcval, ...);
+
+  The 'ResolutionContext' consists of a series of 'frames' that roughly
+  correspond to typical stack frames.
+*/
+class ResolutionContext {
  private:
-  const CallerDetails* parent_ = nullptr;
-  const TypedFnSignature* signature_ = nullptr;
-  const ResolutionResultByPostorderID* resolutionById_ = nullptr;
-  const CallScopeInfo callScopeInfo_;
+  // This class is used to implement a cache for stored results.
+  class StoredResultBase {
+   public:
+    StoredResultBase() = default;
+    virtual ~StoredResultBase() = default;
+    virtual void* get() { return nullptr; }
+    virtual bool operator==(const StoredResultBase& rhs) const = 0;
+    virtual size_t hash() const = 0;
+    struct OwnedKeyByValEquals {
+      bool operator()(const owned<StoredResultBase>& lhs,
+                      const owned<StoredResultBase>& rhs) const {
+        return *lhs == *rhs;
+      }
+    };
+    struct OwnedKeyByValHash {
+      size_t operator()(const owned<StoredResultBase>& x) const {
+        return x->hash();
+      }
+    };
+  };
+
+  // This class is used to implement a cache for stored results.
+  template <typename T>
+  class StoredResult final : public StoredResultBase {
+    T t_;
+   public:
+    StoredResult(T&& t) : t_(std::move(t)) {}
+    virtual ~StoredResult() = default;
+    virtual void* get() override { return &t_; }
+    virtual size_t hash() const override { return chpl::hash(t_); }
+    virtual bool operator==(const StoredResultBase& rhs) const override {
+      auto rptr = ((const StoredResult<T>*) &rhs);
+      return this->t_ == rptr->t_;
+    }
+  };
 
  public:
-  CallerDetails()
-    : parent_(nullptr), signature_(nullptr), resolutionById_(nullptr),
-      callScopeInfo_(CallScopeInfo::forNormalCall(nullptr, nullptr)) {}
-  CallerDetails(const CallerDetails* parent,
-                const TypedFnSignature* signature,
-                const ResolutionResultByPostorderID* resolutionById,
-                CallScopeInfo callScopeInfo)
-    : parent_(parent),
-      signature_(signature),
-      resolutionById_(resolutionById),
-      callScopeInfo_(std::move(callScopeInfo)) {
-    CHPL_ASSERT(!isEmpty() || (id() && id().isSymbolDefiningScope()));
+
+  /** This class represents a single 'frame' for a symbol. It is currently
+      a thin wrapper around the internal 'Resolver' type. Generally, a
+      frame is pushed every time specific resolvers are created, and popped
+      when they are destroyed. */
+  class Frame {
+   public:
+    enum Kind { FUNCTION, MODULE, UNKNOWN };
+
+   private:
+    friend class ResolutionContext;
+    using StoreSlot = owned<StoredResultBase>;
+    using StoreHash = StoredResultBase::OwnedKeyByValHash;
+    using StoreEqual = StoredResultBase::OwnedKeyByValEquals;
+    using Store = std::unordered_set<StoreSlot, StoreHash, StoreEqual>;
+    static constexpr int64_t BASE_FRAME_INDEX = -8;
+    static const ID EMPTY_AST_ID;
+
+    Resolver* rv_ = nullptr;
+    const ResolvedFunction* rf_ = nullptr;
+    int64_t index_ = BASE_FRAME_INDEX;
+    Store cachedResults_;
+    Kind kind_ = UNKNOWN;
+
+    Frame() = default;
+    Frame(Resolver* rv, Kind kind, int64_t index)
+      : rv_(rv), index_(index), kind_(kind) {
+    }
+    Frame(const ResolvedFunction* rf, int64_t index)
+      : rf_(rf), index_(index), kind_(FUNCTION) {
+    }
+
+   public:
+   ~Frame() = default;
+    Frame(const Frame& rhs) = delete;
+    Frame(Frame&& rhs) = default;
+    Frame& operator=(Frame&& rhs) = default;
+    Frame& operator=(const Frame& rhs) = delete;
+
+    const Frame* parent(const ResolutionContext* rc) const {
+      if ((index_ - 1) < 0) return nullptr;
+      return &rc->frames_[index_ - 1];
+    }
+    Frame* parent(ResolutionContext* rc) {
+      if ((index_ - 1) < 0) return nullptr;
+      return &rc->frames_[index_ - 1];
+    }
+
+    Resolver* rv() { return rv_; }
+    const ResolvedFunction* rf() { return rf_; }
+
+    bool isEmpty() { return !rv() && !rf(); }
+    const ID& id() const;
+    const TypedFnSignature* signature() const;
+    const ResolutionResultByPostorderID* resolutionById() const;
+    bool isUnstable() const;
+
+    template <typename T>
+    const T& cache(T&& t) {
+      auto v = toOwned(new StoredResult<T>(std::forward<T>(t)));
+      auto it = cachedResults_.insert(std::move(v)).first;
+      StoredResultBase* base = it->get();
+      CHPL_ASSERT(base);
+      auto ptr = static_cast<T*>(base->get());
+      return *ptr;
+    }
+  };
+
+ private:
+  friend struct Resolver;
+
+  Context* context_ = nullptr;
+  std::vector<Frame> frames_;
+  int numUnstableFrames_ = 0;
+  Frame baseFrame_;
+
+  const Frame* pushFrame(const ResolvedFunction* rf);
+  const Frame* pushFrame(Resolver* rv, Frame::Kind kind);
+  void popFrame(const ResolvedFunction* rf);
+  void popFrame(Resolver* rv);
+
+  Frame* lastFrameMutable() {
+    return frames_.empty() ? nullptr : &frames_.back();
+  }
+  Frame& lastFrameOrBaseMutable() {
+    return frames_.empty() ? baseFrame_ : frames_.back();
   }
 
- ~CallerDetails() = default;
-  explicit operator bool() const { return !isEmpty(); }
-  const CallerDetails* parent() const { return parent_; }
-  const TypedFnSignature* signature() const { return signature_; }
-  const ResolutionResultByPostorderID* resolutionById() const { return resolutionById_; }
-  const CallScopeInfo& callScopeInfo() const { return callScopeInfo_; }
-  const PoiScope* poiScope() const { return callScopeInfo_.poiScope(); }
-  const Scope* callScope() const { return callScopeInfo_.callScope(); }
-  ID id() const { return signature_ ? signature_->id() : ID(); }
-  bool contains(const ID& id) const {
-    return id && signature_ && signature_->id().contains(id);
-  }
-  bool isEmpty() const {
-    return !signature_ && !resolutionById_ && !callScope() && !poiScope();
-  }
-  const CallerDetails* findParentOf(Context* context, const ID& id) const {
-    if (ID p = id.parentFunctionId(context)) {
-      for (auto up = this; up; up = up->parent()) {
-        if (up && !up->isEmpty() && up->signature()->id() == p) return up;
-      }
+  template <typename F>
+  Frame* findFrameMatchingMutable(F predicate) {
+    for (auto f = lastFrameMutable(); f; f = f->parent(this)) {
+      if (f && predicate(*f)) return f;
     }
     return nullptr;
   }
+
+  Resolver* findParentResolverFor(const TypedFnSignature* sig) {
+    if (!sig || !sig->parentFn()) return nullptr;
+    auto fptr = findFrameMatchingMutable([=](auto& f) {
+      return !f.isEmpty() && f.isUnstable() &&
+              f.signature() == sig->parentFn() &&
+              f.rv() != nullptr;
+    });
+    return fptr ? fptr->rv() : nullptr;
+  }
+
+ public:
+  /** Create an empty 'ResolutionContext'. */
+  ResolutionContext(Context* context) : context_(context) {}
+  ResolutionContext(const ResolutionContext& rhs) = delete;
+  ResolutionContext(ResolutionContext&& rhs) = default;
+ ~ResolutionContext() = default;
+
+  /** Get the underlying compiler context. */
+  Context* context() const { return context_; }
+
+  /** If 'true', then this 'ResolutionContext' has no state available. */
+  bool isEmpty() const { return frames_.empty(); }
+
+  /** If 'true', then this contains one or more unstable frames. */
+  bool isUnstable() const { return numUnstableFrames_ != 0; }
+
+  /** Get the last frame from the frame stack. */
+  const Frame* lastFrame() const {
+    return frames_.empty() ? nullptr : &frames_.back();
+  }
+
+  /** Get the frame stack. */
+  const std::vector<Frame>& frames() const { return frames_; }
+
+  /** Get the base frame. It is not on the frame stack. */
+  const Frame& baseFrame() const { return baseFrame_; }
+
+  /** Find the first stack frame matching a predicate in LIFO order. */
+  template <typename F>
+  const Frame* findFrameMatching(F predicate) const {
+    for (auto f = lastFrame(); f; f = f->parent(this)) {
+      if (f && predicate(*f)) return f;
+    }
+    return nullptr;
+  }
+
+  /** Find the first stack frame containing _or_ matching an id. */
+  const Frame* findFrameWithId(const ID& id) const {
+    return findFrameMatching([&](auto& f) {
+      return f.id() == id || f.id().contains(id);
+    });
+  }
+
+  /** Determine if the compiler context query cache can be invoked. */
+  template <typename T>
+  bool canUseGlobalCacheConsidering(const T& t) const {
+    if (!isUnstable()) return true;
+    return ResolutionContext::canUseGlobalCache(context_, t);
+  }
+
+  /** Can the global query cache be invoked considering 't' and this? */
+  template <typename T>
+  bool canUseGlobalCacheConsidering(const T* t) const {
+    return canUseGlobalCacheConsidering(*t);
+  }
+  template <typename... Ts>
+  bool canUseGlobalCacheConsidering(const std::tuple<Ts...>& ts) {
+    return std::apply([=](auto&... x) {
+      return (canUseGlobalCacheConsidering(x) && ...);
+    }, ts);
+  }
+
+  // This overload takes at least two items to differentiate itself from
+  // the single argument overloads above (it is possible for the parameter
+  // pack to be empty).
+  template <typename T1, typename T2, typename... Ts>
+  bool canUseGlobalCacheConsidering(const T1& t1, const T2& t2,
+                                    const Ts& ...ts) {
+    if (isEmpty() || !isUnstable()) return true;
+    auto tup = std::forward_as_tuple(t1, t2, ts...);
+    return canUseGlobalCacheConsidering(tup);
+  }
+
+  /** Can the global query cache can be invoked considering only 't'?
+      By default, assume it can be. */
+  template <typename T>
+  static bool canUseGlobalCache(Context* context, const T& t) {
+    return true;
+  }
+  template <typename T>
+  static bool canUseGlobalCache(Context* context, const T*& t) {
+    if (t == nullptr) return true;
+    return canUseGlobalCache(context, *t);
+  }
+  template <typename T>
+  static bool canUseGlobalCache(Context* context, const T* const& t) {
+    if (t == nullptr) return true;
+    return canUseGlobalCache(context, *t);
+  }
+  template <typename T>
+  static bool canUseGlobalCache(Context* context, const std::vector<T>& v) {
+    for (auto& x : v) if (!canUseGlobalCache(context, x)) return false;
+    return true;
+  }
+
+  static bool
+  canUseGlobalCache(Context* context, const UntypedFnSignature& t) {
+    return canUseGlobalCache(context, t.id());
+  }
+  static bool
+  canUseGlobalCache(Context* context, const TypedFnSignature& t) {
+    return !t.isNestedFunction();
+  }
+  static bool
+  canUseGlobalCache(Context* context, const ID& t) {
+    return !parsing::idIsNestedFunction(context, t);
+  }
+  static bool
+  canUseGlobalCache(Context* context, const MatchingIdsWithName& ids) {
+    for (auto& x : ids) if (!canUseGlobalCache(context, x)) return false;
+    return true;
+  }
+
+  template <auto F, typename RetByVal, typename... ArgsByValue>
+  struct GlobalQueryWrapper;
+
+  template <auto F, typename InvokeRet, typename... InvokeArgs>
+  struct GlobalQuery;
+
+  template <auto F, typename InvokeArgsTuple>
+  struct CanUseGlobalCache;
+
+  template <auto F, typename RetByVal, typename InvokeArgsTuple>
+  struct UnstableCache;
+
+  template <auto F, typename InvokeArgsTuple>
+  struct GlobalComputeSetup;
+
+  template <auto F, typename InvokeRet, typename... InvokeArgs>
+  class Query;
+
+  /** Use to construct an instance of a 'ResolutionContext::Query'.
+      These implement the 'CHPL_RESOLUTION_QUERY...' family of
+      macros defined below. */
+  template <auto F, typename... InvokeArgs>
+  auto createQueryClass(const char* name, InvokeArgs&&... args) {
+    using InvokeRet = decltype(F(this, args...));
+    using Q = ResolutionContext::Query<F, InvokeRet, InvokeArgs...>;
+    return Q(this, name, std::forward<InvokeArgs>(args)...);
+  }
 };
 
-class ResolvedParamLoop;
+/** This struct contains a "hidden" traditional query which stores the result
+    of invoking 'query' (the instantiated static function below) into the
+    global compiler context. Instantiation of 'GlobalQueryWrapper' is
+    precisely controlled by 'GlobalQuery' in order to avoid spurious
+    instantiations. Note that the actual query (with the user's computation
+    code) is the template value 'F'. The function 'query' exists solely to
+    work with the global query cache, which requires a specific signature.
+
+    The only time 'query' should ever be called directly is when the global
+    context is recomputing queries after bumping the revision. As such,
+    it just creates an empty 'ResolutionContext' and calls into 'F'
+    directly. In this state, it should bypass any of the initial lookup.
+*/
+template <auto F, typename RetByVal, typename... ArgsByValue>
+struct ResolutionContext::GlobalQueryWrapper {
+  static const RetByVal& query(Context* context, ArgsByValue... args) {
+    ResolutionContext rcval(context);
+    return F(&rcval, std::move(args)...);
+  }
+};
+
+// TODO: Consider moving all global queries to use this implementation.
+/** This is a class-based wrapper around global context queries. */
+template <auto F, typename InvokeRet, typename... InvokeArgs>
+struct ResolutionContext::GlobalQuery {
+  #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+    static constexpr bool STOPWATCH_IS_ACTIVE = true;
+  #else
+    static constexpr bool STOPWATCH_IS_ACTIVE = false;
+  #endif
+
+  static auto getStopwatchType() {
+    // These values are invalid, but that's OK, we just need their types.
+    Context* context = nullptr;
+    querydetail::QueryMapBase* base = nullptr;
+    ArgsByValueTuple* ap = nullptr;
+    return context->makeQueryTimingStopwatch(base, *ap);
+  }
+
+  using Ret = InvokeRet;
+  using RetNoRef = typename std::remove_reference<Ret>::type;
+  using RetByVal = typename std::remove_const<RetNoRef>::type;
+  using InvokeArgsTuple = std::tuple<InvokeArgs...>;
+  using ArgsByValueTuple = std::tuple<std::decay_t<InvokeArgs>...>;
+  using Wrapper = GlobalQueryWrapper<F, RetByVal, std::decay_t<InvokeArgs>...>;
+  // Exposing the implementation details of 'QUERY_BEGIN', 'QUERY_END'.
+  using BeginMap = QueryMap<RetByVal, std::decay_t<InvokeArgs>...>;
+  using BeginRet = QueryMapResult<RetByVal, std::decay_t<InvokeArgs>...>;
+  using RecomputeMarker = Context::RecomputeMarker;
+  using Stopwatch = decltype(getStopwatchType());
+
+  static constexpr bool RETURNS_CONST = std::is_const<RetNoRef>::value;
+  static constexpr bool RETURNS_REF = std::is_reference<Ret>::value;
+  static constexpr auto QUERY = Wrapper::query;
+
+  // Assert early that the user-called function is returning by 'const&'.
+  static_assert(RETURNS_CONST, "Query needs to return by 'const'!");
+  static_assert(RETURNS_REF, "Query needs to return by '&'!");
+
+  Context* context_ = nullptr;
+  const char* name_ = nullptr;
+
+  // References to the arguments as they were passed in.
+  InvokeArgsTuple args_;
+
+  // TODO: Right now this has to copy-in by value due to limitations
+  // of the 'query...' methods. It would be nice if we could use the
+  // 'InvokeArgsTuple' tuple type instead to avoid redundant copies.
+  ArgsByValueTuple ap_ = args_;
+
+  // This state is used to mimick 'QUERY_BEGIN' and 'QUERY_END'.
+  RecomputeMarker recomputeMarker_;
+  BeginMap* beginMap_ = nullptr;
+  const BeginRet* beginRet_ = nullptr;
+  Stopwatch stopwatch_;
+  bool isInput_ = false;
+
+  GlobalQuery(Context* context, const char* name, InvokeArgs&&... args)
+        : context_(context),
+          name_(name),
+          args_({std::forward<InvokeArgs>(args)...}),
+          stopwatch_(context_->makeQueryTimingStopwatch(nullptr, ap_)) {
+    CHPL_ASSERT(context_ != nullptr);
+  }
+
+  GlobalQuery(const GlobalQuery& rhs) = delete;
+  GlobalQuery(GlobalQuery&& rhs) = default;
+
+  const InvokeArgsTuple& args() const { return args_; }
+
+  const RetByVal* begin() {
+    // Fetch/emplace the map entries, which indicates the query is running.
+    beginMap_ = context_->queryBeginGetMap(QUERY, ap_, name_, isInput_);
+    beginRet_ = context_->queryBeginGetResult(beginMap_, ap_);
+
+    // Exit early if we've found a result for this revision.
+    if (context_->queryUseSaved(QUERY, beginRet_, name_)) {
+      auto ret = &context_->queryGetSaved(beginRet_);
+      beginMap_ = nullptr;
+      beginRet_ = nullptr;
+      return ret;
+    }
+
+    // Otherwise we are computing, so set the recompute marker.
+    const bool isRecomputing = false;
+    auto activeRecomputeMarker = context_->markRecomputing(isRecomputing);
+    std::swap(recomputeMarker_, activeRecomputeMarker);
+
+    // Set the stopwatch if it is compile-time enabled.
+    if constexpr (STOPWATCH_IS_ACTIVE) {
+      context_->queryBeginTrace(name_, ap_);
+      stopwatch_ = context_->makeQueryTimingStopwatch(beginMap_, ap_);
+    }
+
+    return nullptr;
+  }
+
+  const RetByVal& end(RetByVal&& x) {
+    // Restoring the marker also clears it.
+    recomputeMarker_.restore();
+
+    // Pass in the result and indicate the query has ended.
+    auto& ret = context_->queryEnd(QUERY, beginMap_, beginRet_, ap_,
+                                   std::forward<RetByVal>(x),
+                                   name_);
+    beginMap_ = nullptr;
+    beginRet_ = nullptr;
+
+    return ret;
+  }
+
+  void inactiveStore(RetByVal&& x) {
+    context_->querySetterUpdateResult(QUERY, ap_,
+                                      std::forward<RetByVal>(x),
+                                      name_,
+                                      isInput_);
+  }
+
+  bool isRunning() {
+    return context_->isQueryRunning(QUERY, ap_);
+  }
+
+  bool hasCurrentResult() {
+    return context_->hasCurrentResultForQuery(QUERY, ap_);
+  }
+};
+
+template <auto F, typename InvokeArgsTuple>
+struct ResolutionContext::GlobalComputeSetup {
+  /** Called before the query is run, returns 'true' if prep was done. */
+  bool enter(ResolutionContext* rc, const InvokeArgsTuple& args) {
+    return false;
+  }
+  /** Called before the query returns, only if 'enter' returned 'true'. */
+  void leave(ResolutionContext* rc, const InvokeArgsTuple& args) {
+  }
+};
+
+template <auto F, typename InvokeArgsTuple>
+struct ResolutionContext::CanUseGlobalCache {
+  /** Consider 'args' and determine if the global query cache can be used. */
+  bool operator()(ResolutionContext* rc, const InvokeArgsTuple& args) {
+    return std::apply([&](auto... xs) {
+      return rc->canUseGlobalCacheConsidering(xs...);
+    }, args);
+  }
+};
+
+/** This class can be specialized to allow specific queries to behave
+    differently when the 'ResolutionContext' is unstable. */
+template <auto F, typename RetByVal, typename InvokeArgsTuple>
+struct ResolutionContext::UnstableCache {
+
+  /** If the 'ResolutionContext' is unstable and the global query cache
+      cannot be used, determine if a value stored in stack frames can be
+      reused for the given input. By default, no lookup occurs. */
+  const RetByVal*
+  fetchOrNull(ResolutionContext* rc, const InvokeArgsTuple& args) {
+    (void) rc;
+    (void) args;
+    return nullptr;
+  }
+
+  /** Implements the 'caching' of unstable query computations by storing
+      them into a 'ResolutionContext::Frame'. If no frame is suitable the
+      base frame may be used (which has a lifetime as long as the RC).
+      By default, use the closest frame. */
+  const RetByVal&
+  store(ResolutionContext* rc, RetByVal&& x, const InvokeArgsTuple& args) {
+    Frame& f = rc->lastFrameOrBaseMutable();
+    return f.cache(std::forward<RetByVal>(x));
+  }
+};
+
+/** This class represents an instance of a query created by the macro
+    'CHPL_RESOLUTION_QUERY_BEGIN...'. A resolution query is itself a
+    wrapper around a global query (cached by the 'Context*'), which is
+    represented by the 'GlobalQuery' type. */
+template <auto F, typename InvokeRet, typename... InvokeArgs>
+class ResolutionContext::Query {
+  // TODO: Refactor this into the more general notion of a "global query"
+  // (e.g., the 'GlobalQuery' defined above) that can be augmented with
+  // additional state or subclassed.
+ public:
+  using GlobalQuery = GlobalQuery<F, InvokeRet, InvokeArgs...>;
+  using RetByVal = typename GlobalQuery::RetByVal;
+  using InvokeArgsTuple = typename GlobalQuery::InvokeArgsTuple;
+  using UnstableCache = UnstableCache<F, RetByVal, InvokeArgsTuple>;
+  using CanUseGlobalCache = CanUseGlobalCache<F, InvokeArgsTuple>;
+  using GlobalComputeSetup = GlobalComputeSetup<F, InvokeArgsTuple>;
+
+ private:
+  ResolutionContext* rc_ = nullptr;
+  bool canUseGlobalCache_ = false;
+  bool didGlobalSetupOccur_ = false;
+  GlobalComputeSetup globalSetup_;
+  GlobalQuery global_;
+
+ public:
+  Query(ResolutionContext* rc, const char* name, InvokeArgs&&... args)
+      : rc_(rc), global_(rc->context(), name, args... ) {
+    CHPL_ASSERT(rc_ && context());
+    canUseGlobalCache_ = CanUseGlobalCache{}(rc, global_.args());
+  }
+  Query(const Query& rhs) = delete;
+  Query(Query&& rhs) = default;
+
+  Context* context() { return rc_->context(); }
+
+  bool canUseGlobalCache() { return canUseGlobalCache_; }
+
+  const RetByVal* begin() {
+    // TODO: Use specialization to eliminate this branch?
+    if (canUseGlobalCache()) {
+      if (auto ret = global_.begin()) return ret;
+      didGlobalSetupOccur_ = globalSetup_.enter(rc_, global_.args());
+      return nullptr;
+    } else {
+      UnstableCache uc;
+      return uc.fetchOrNull(rc_, global_.args());
+    }
+  }
+
+  const RetByVal& end(RetByVal&& x) {
+    if (canUseGlobalCache()) {
+      auto& ret = global_.end(std::forward<RetByVal>(x));
+      if (didGlobalSetupOccur_) {
+        globalSetup_.leave(rc_, global_.args());
+        didGlobalSetupOccur_ = false;
+      }
+      return ret;
+    } else {
+      UnstableCache uc;
+      return uc.store(rc_, std::forward<RetByVal>(x), global_.args());
+    }
+  }
+
+  bool isGlobalQueryRunning() {
+    return global_.isRunning();
+  }
+
+  void inactiveStore(RetByVal&& x) {
+    if (canUseGlobalCache()) {
+      global_.inactiveStore(std::forward<RetByVal>(x));
+    } else {
+      UnstableCache uc;
+      uc.store(rc_, std::forward<RetByVal>(x), global_.args());
+    }
+  }
+};
+
+/** This macro can be used like 'QUERY_BEGIN', except it prevents the results
+    of a query from being cached in the context query cache if the computed
+    result could rely on state taken from the type 'ResolutionContext'.
+
+    Queries guarded by this macro must always return by 'const&'. When a
+    result is not stored in the context query cache, it will be stored in
+    a temporary cache maintained by the youngest 'ResolutionContext::Frame'
+    instead. The lifetime of temporarily cached values is the lifetime of
+    the associated 'ResolutionContext::Frame'.
+*/
+#define CHPL_RESOLUTION_QUERY_BEGIN(fn__, rc__, ...) \
+  auto rcquery__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
+  if (auto ptr__ = rcquery__.begin()) return *ptr__;
+
+/** This macro can be used like 'QUERY_END'. It always returns a reference,
+    and in the case that the context cache is not used then the returned
+    value is stored in the cache of a 'ResolutionContext' frame. */
+#define CHPL_RESOLUTION_QUERY_END(ret__) (rcquery__.end(std::move(ret__)))
+
+/** Within a 'CHPL_RESOLUTION_QUERY...' use this to get the query handle. */
+#define CHPL_RESOLUTION_REF_TO_CURRENT_QUERY_HANDLE() (rcquery__)
+
+/** Use this to store a result for any 'CHPL_RESOLUTION_QUERY...' query. */
+#define CHPL_RESOLUTION_QUERY_STORE_RESULT(fn__, rc__, x__, ...) do { \
+    auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
+    rcq__.inactiveStore(std::move(x__)); \
+  } while (0)
+
+/** Check if the global part of a 'CHPL_RESOLUTION_QUERY...' is running. */
+#define CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(fn__, rc__, ...) ([&]() { \
+    auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
+    return rcq__.isGlobalQueryRunning(); \
+  }())
 
 /**
-
   This type represents an associated action (for use within a
   ResolvedExpression).
 
@@ -2096,6 +2604,8 @@ class AssociatedAction {
 
   static const char* kindToString(Action a);
 };
+
+class ResolvedParamLoop;
 
 /**
   This type represents a resolved expression.
@@ -2322,6 +2832,14 @@ class ResolutionResultByPostorderID {
   This type represents a resolved function.
 */
 class ResolvedFunction {
+ public:
+  using PoiTrace = PoiInfo::Trace;
+  using Child = owned<ResolvedFunction>;
+  using ChildPtr = const ResolvedFunction*;
+  using PoiTraceToChildMap = std::unordered_map<PoiTrace, Child>;
+  using SigAndInfo = std::tuple<const TypedFnSignature*, PoiInfo>;
+  using SigAndInfoToChildPtrMap = std::unordered_map<SigAndInfo, ChildPtr>;
+
  private:
   const TypedFnSignature* signature_ = nullptr;
 
@@ -2337,16 +2855,31 @@ class ResolvedFunction {
   // the return type computed for this function
   types::QualifiedType returnType_;
 
+  // If a call to a child function is made within this function, then the
+  // resulting 'ResolvedFunction' for the child is stored within this map.
+  // The primary key is the POI trace, and the secondary key is signature
+  // and initial PoiInfo. This mirrors the way functions are cached.
+  PoiTraceToChildMap poiTraceToChild_;
+  SigAndInfoToChildPtrMap sigAndInfoToChildPtr_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo,
-                   types::QualifiedType returnType)
-      : signature_(signature), returnIntent_(returnIntent),
+                   types::QualifiedType returnType,
+                   PoiTraceToChildMap poiTraceToChild,
+                   SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
+      : signature_(signature),
+        returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
         poiInfo_(std::move(poiInfo)),
-        returnType_(std::move(returnType)) {}
+        returnType_(std::move(returnType)),
+        poiTraceToChild_(std::move(poiTraceToChild)),
+        sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
+ ~ResolvedFunction() = default;
+  ResolvedFunction(const ResolvedFunction& rhs) = delete;
+  ResolvedFunction(ResolvedFunction&& rhs) = default;
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }
@@ -2367,12 +2900,32 @@ class ResolvedFunction {
   /** the set of point-of-instantiations used by the instantiation */
   const PoiInfo& poiInfo() const { return poiInfo_; }
 
+  const ResolvedFunction*
+  childBySigAndInfo(const SigAndInfo& sigAndInfo) const {
+    CHPL_ASSERT(false && "Not implemented yet!");
+    return nullptr;
+  }
+
+  const ResolvedFunction*
+  childByPoiTrace(const PoiTrace& poiTrace) const {
+    CHPL_ASSERT(false && "Not implemented yet!");
+    return nullptr;
+  }
+
+  const ResolvedFunction*
+  childBySignature(const TypedFnSignature* sig) const {
+    CHPL_ASSERT(false && "Not implemented yet!");
+    return nullptr;
+  }
+
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
-           returnType_ == other.returnType_;
+           returnType_ == other.returnType_ &&
+           poiTraceToChild_ == other.poiTraceToChild_ &&
+           sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -2383,6 +2936,8 @@ class ResolvedFunction {
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
     returnType_.swap(other.returnType_);
+    std::swap(poiTraceToChild_, other.poiTraceToChild_);
+    std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -2393,6 +2948,27 @@ class ResolvedFunction {
     resolutionById_.mark(context);
     poiInfo_.mark(context);
     returnType_.mark(context);
+    for (auto& p : poiTraceToChild_) {
+      chpl::mark<decltype(p.first)>{}(context, p.first);
+      context->markPointer(p.second);
+    }
+    for (auto& p : sigAndInfoToChildPtr_) {
+      chpl::mark<decltype(p.first)>{}(context, p.first);
+      context->markPointer(p.second);
+    }
+  }
+  size_t hash() const {
+    // TODO: Is it OK to skip the 'resolutionById' here?
+    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, returnType_);
+    for (auto& p : poiTraceToChild_) {
+      ret = hash_combine(ret, chpl::hash(p.first));
+      ret = hash_combine(ret, chpl::hash(p.second));
+    }
+    for (auto& p : sigAndInfoToChildPtr_) {
+      ret = hash_combine(ret, chpl::hash(p.first));
+      ret = hash_combine(ret, chpl::hash(p.second));
+    }
+    return ret;
   }
 
   const ResolvedExpression& byId(const ID& id) const {
@@ -2637,9 +3213,6 @@ class ResolvedParamLoop {
       return defaultUpdate(keep, addin);
     }
 };
-
-/** See the documentation for types::CompositeType::SubstitutionsMap. */
-using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 // Represents result info on either a type's copyability or assignability, from
 // ref and/or from const.
@@ -2893,85 +3466,32 @@ template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
 
 namespace std {
 
-template<> struct hash<chpl::resolution::DefaultsPolicy>
-{
-  size_t operator()(const chpl::resolution::DefaultsPolicy& key) const {
-    return (size_t) key;
+// Stamp out a bunch of 'std::hash' specializations with simple bodies.
+// The first arg is the type (without the namespace, and the second arg
+// is the expression to return.
+#define CHPL_DEFINE_STD_HASH_(T__, expr__) \
+  template<> struct hash<chpl::resolution::T__> { \
+    size_t operator()(const chpl::resolution::T__& key) const { \
+      return (expr__); \
+    } \
   }
-};
 
-template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
-{
-  size_t operator()(const chpl::resolution::UntypedFnSignature::FormalDetail& key) const {
-    return key.hash();
-  }
-};
-
-template<> struct hash<chpl::resolution::CallInfoActual>
-{
-  size_t operator()(const chpl::resolution::CallInfoActual& key) const {
-    return key.hash();
-  }
-};
-
-template<> struct hash<chpl::resolution::CallInfo>
-{
-  size_t operator()(const chpl::resolution::CallInfo& key) const {
-    return key.hash();
-  }
-};
-
-template <>
-struct hash<chpl::resolution::CandidatesAndForwardingInfo> {
-  size_t operator()(
-      const chpl::resolution::CandidatesAndForwardingInfo& key) const {
-    return key.hash();
-  }
-};
-
-template<> struct hash<chpl::resolution::PoiInfo>
-{
-  size_t operator()(const chpl::resolution::PoiInfo& key) const {
-    return key.hash();
-  }
-};
-
-template<> struct hash<chpl::resolution::TypedFnSignature::WhereClauseResult>
-{
-  size_t operator()(const chpl::resolution::TypedFnSignature::WhereClauseResult& key) const {
-    return key;
-  }
-};
-
-template<> struct hash<chpl::resolution::CandidateFailureReason>
-{
-  size_t operator()(const chpl::resolution::CandidateFailureReason& key) const {
-    return (size_t) key;
-  }
-};
-
-template<> struct hash<chpl::resolution::PassingFailureReason>
-{
-  size_t operator()(const chpl::resolution::PassingFailureReason& key) const {
-    return (size_t) key;
-  }
-};
-
-template<> struct hash<chpl::resolution::FormalActual>
-{
-  size_t operator()(const chpl::resolution::FormalActual& key) const {
-    return key.hash();
-  }
-};
-
-template<> struct hash<chpl::resolution::FormalActualMap>
-{
-  size_t operator()(const chpl::resolution::FormalActualMap& key) const {
-    return key.hash();
-  }
-};
+CHPL_DEFINE_STD_HASH_(DefaultsPolicy, ((size_t) key));
+CHPL_DEFINE_STD_HASH_(UntypedFnSignature::FormalDetail, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CallInfoActual, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CallInfo, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CandidatesAndForwardingInfo, (key.hash()));
+CHPL_DEFINE_STD_HASH_(PoiInfo, (key.hash()));
+CHPL_DEFINE_STD_HASH_(TypedFnSignature::WhereClauseResult, ((size_t) key));
+CHPL_DEFINE_STD_HASH_(CandidateFailureReason, ((size_t) key));
+CHPL_DEFINE_STD_HASH_(PassingFailureReason, ((size_t) key));
+CHPL_DEFINE_STD_HASH_(FormalActual, (key.hash()));
+CHPL_DEFINE_STD_HASH_(FormalActualMap, (key.hash()));
+CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
+#undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std
-
 
 #endif

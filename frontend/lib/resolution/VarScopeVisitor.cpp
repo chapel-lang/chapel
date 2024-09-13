@@ -46,7 +46,8 @@ bool VarFrame::addToInitedVars(ID varId) {
 void
 VarScopeVisitor::process(const uast::AstNode* symbol,
                          ResolutionResultByPostorderID& byPostorder) {
-  MutatingResolvedVisitor<VarScopeVisitor> rv(context,
+  ResolutionContext rcval(context);
+  MutatingResolvedVisitor<VarScopeVisitor> rv(&rcval,
                                               symbol,
                                               *this,
                                               byPostorder);

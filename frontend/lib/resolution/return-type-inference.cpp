@@ -230,7 +230,8 @@ struct ReturnTypeInferrer {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
-  Context* context;
+  ResolutionContext* rc;
+  Context* context = rc ? rc->context() : nullptr;
   const Function* fnAstForErr;
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
@@ -242,10 +243,10 @@ struct ReturnTypeInferrer {
   // output
   std::vector<QualifiedType> returnedTypes;
 
-  ReturnTypeInferrer(Context* context,
+  ReturnTypeInferrer(ResolutionContext* rc,
                      const Function* fn,
                      const Type* declaredReturnType)
-    : context(context),
+    : rc(rc),
       fnAstForErr(fn),
       returnIntent(fn->returnIntent()),
       functionKind(fn->kind()),
@@ -291,7 +292,7 @@ struct ReturnTypeInferrer {
 
 void ReturnTypeInferrer::process(const uast::AstNode* symbol,
                                  ResolutionResultByPostorderID& byPostorder) {
-  ResolvedVisitor<ReturnTypeInferrer> rv(context, symbol, *this, byPostorder);
+  ResolvedVisitor<ReturnTypeInferrer> rv(rc, symbol, *this, byPostorder);
   symbol->traverse(rv);
 }
 
@@ -1073,7 +1074,8 @@ static bool helpComputeReturnType(Context* context,
 
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+      ResolutionContext rc(context);
+      auto visitor = Resolver::createForFunction(&rc, fn, poiScope, sig,
                                                  resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
@@ -1135,10 +1137,12 @@ static bool helpComputeReturnType(Context* context,
   return false;
 }
 
-static QualifiedType returnTypeImpl(Context* context,
-                                    const TypedFnSignature* sig,
-                                    const PoiScope* poiScope,
-                                    const CallerDetails& caller) {
+static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
+                                            const TypedFnSignature* sig,
+                                            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
+
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
   QualifiedType result;
 
@@ -1151,44 +1155,33 @@ static QualifiedType returnTypeImpl(Context* context,
     // resolve the function body
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
-    if (auto rFn = resolveFunction(context, sig, poiScope, caller)) {
+    if (auto rFn = resolveFunction(rc, sig, poiScope)) {
       result = rFn->returnType();
     }
   }
 
-  return result;
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-static const QualifiedType& returnTypeQuery(Context* context,
-                                            const TypedFnSignature* sig,
-                                            const PoiScope* poiScope) {
-  QUERY_BEGIN(returnTypeQuery, context, sig, poiScope);
-  CallerDetails empty;
-  auto result = returnTypeImpl(context, sig, poiScope, empty);
-  return QUERY_END(result);
-}
-
-QualifiedType returnType(Context* context, const TypedFnSignature* sig,
-                         const PoiScope* poiScope,
-                         const CallerDetails& caller) {
-  auto ret = sig->isNestedFunction()
-    ? returnTypeImpl(context, sig, poiScope, caller)
-    : returnTypeQuery(context, sig, poiScope);
-  return ret;
+QualifiedType returnType(ResolutionContext* rc,
+                         const TypedFnSignature* sig,
+                         const PoiScope* poiScope) {
+  return returnTypeQuery(rc, sig, poiScope);
 }
 
 static const TypedFnSignature* const&
-inferOutFormalsQuery(Context* context,
+inferOutFormalsQuery(ResolutionContext* rc,
                      const TypedFnSignature* sig,
                      const PoiScope* instantiationPoiScope) {
-  QUERY_BEGIN(inferOutFormalsQuery, context, sig, instantiationPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(inferOutFormalsQuery, rc, sig,
+                              instantiationPoiScope);
 
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-
   std::vector<types::QualifiedType> formalTypes;
 
   // resolve the function body
-  if (auto rFn = resolveFunction(context, sig, instantiationPoiScope)) {
+  if (auto rFn = resolveFunction(rc, sig, instantiationPoiScope)) {
     const ResolutionResultByPostorderID& rr = rFn->resolutionById();
 
     int numFormals = sig->numFormals();
@@ -1207,10 +1200,10 @@ inferOutFormalsQuery(Context* context,
                                          std::move(formalTypes),
                                          sig);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-const TypedFnSignature* inferOutFormals(Context* context,
+const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* instantiationPoiScope) {
   if (sig == nullptr) {
@@ -1231,14 +1224,13 @@ const TypedFnSignature* inferOutFormals(Context* context,
   // also just return 'sig' if the function needs instantiation;
   // in that case, we can't infer the 'out' formals by resolving the body.
   if (anyGenericOutFormals && !sig->needsInstantiation()) {
-    return inferOutFormalsQuery(context, sig, instantiationPoiScope);
+    return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;
   }
 }
 
 void computeReturnType(Resolver& resolver) {
-
   QualifiedType returnType;
   bool computed = helpComputeReturnType(resolver.context,
                                         resolver.typedSignature,
@@ -1259,7 +1251,7 @@ void computeReturnType(Resolver& resolver) {
 
     // infer the return type
     if (fn->linkage() != Decl::EXTERN) {
-      auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+      auto v = ReturnTypeInferrer(resolver.rc, fn, declaredReturnType);
       v.process(fn->body(), resolver.byPostorder);
       resolver.returnType = v.returnedType();
     }

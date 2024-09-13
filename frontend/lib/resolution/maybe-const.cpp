@@ -66,7 +66,8 @@ struct AdjustMaybeRefs {
   };
 
   // inputs to the process
-  Context* context = nullptr;
+  ResolutionContext* rc = nullptr;
+  Context* context = rc ? rc->context() : nullptr;
   Resolver& resolver;
 
   // state
@@ -75,8 +76,8 @@ struct AdjustMaybeRefs {
   std::vector<ExprStackEntry> exprStack;
 
   // methods
-  AdjustMaybeRefs(Context* context, Resolver& resolver)
-    : context(context), resolver(resolver)
+  AdjustMaybeRefs(ResolutionContext* rc, Resolver& resolver)
+    : rc(rc), resolver(resolver)
   { }
 
   void process(const uast::AstNode* symbol,
@@ -105,7 +106,7 @@ struct AdjustMaybeRefs {
 
 void AdjustMaybeRefs::process(const uast::AstNode* symbol,
                               ResolutionResultByPostorderID& byPostorder) {
-  MutatingResolvedVisitor<AdjustMaybeRefs> rv(context,
+  MutatingResolvedVisitor<AdjustMaybeRefs> rv(rc,
                                               symbol,
                                               *this,
                                               byPostorder);
@@ -285,7 +286,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(context, best.fn(), resolver.poiScope));
+    re.setType(returnType(rc, best.fn(), resolver.poiScope));
   }
 
   // there should be only one candidate at this point
@@ -305,7 +306,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       }
     }
 
-    auto resolvedFn = inferRefMaybeConstFormals(context, fn, poiScope);
+    auto resolvedFn = inferRefMaybeConstFormals(rc, fn, poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
       // use the version with ref-maybe-const formals, but
@@ -384,7 +385,7 @@ void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
-  AdjustMaybeRefs uv(resolver.context, resolver);
+  AdjustMaybeRefs uv(resolver.rc, resolver);
   uv.process(resolver.symbol, resolver.byPostorder);
 }
 

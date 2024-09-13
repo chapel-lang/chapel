@@ -111,10 +111,8 @@ ID lookupEnumElementByNumericValue(Context* context,
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
-const TypedFnSignature*
-typedSignatureInitial(Context* context,
-                      const UntypedFnSignature* untypedSig,
-                      const CallerDetails& caller={});
+const TypedFnSignature* const&
+typedSignatureInitial(ResolutionContext* rc, const UntypedFnSignature* untyped);
 
 /**
   Compute a initial TypedFnSignature for an ID.
@@ -122,8 +120,7 @@ typedSignatureInitial(Context* context,
   types if the function is generic.
  */
 const TypedFnSignature*
-typedSignatureInitialForId(Context* context, ID id,
-                           const CallerDetails& caller={});
+typedSignatureInitialForId(ResolutionContext* rc, ID id);
 
 /**
   Returns a Type that represents the initial type provided by a TypeDecl
@@ -265,7 +262,7 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
    * a CallInfo describing the types at the call site, and
    * a point-of-instantiation scope representing the POI scope of the call
  */
-ApplicabilityResult instantiateSignature(Context* context,
+ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                          const TypedFnSignature* sig,
                                          const CallInfo& call,
                                          const PoiScope* poiScope);
@@ -274,31 +271,17 @@ ApplicabilityResult instantiateSignature(Context* context,
   Compute a ResolvedFunction given a TypedFnSignature.
   Checks the generic cache for potential for reuse. When reuse occurs,
   the ResolvedFunction might point to a different TypedFnSignature.
-
-  This function will resolve a nested function if it does not refer to
-  any outer variables.
  */
-const ResolvedFunction* resolveFunction(Context* context,
+const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope,
-                                        const CallerDetails& caller={});
-
-/**
-  Compute a ResolvedFunction given a TypedFnSignature for an initializer.
-  The difference between this and 'resolveFunction' is that it is
-  possible for the type of the receiver to still be generic (as the
-  initializer body must be resolved before the concrete type is known).
-*/
-const ResolvedFunction* resolveInitializer(Context* context,
-                                           const TypedFnSignature* sig,
-                                           const PoiScope* poiScope);
+                                        const PoiScope* poiScope);
 
 /**
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
-const ResolvedFunction* resolveConcreteFunction(Context* context, ID id,
-                                                const CallerDetails& caller={});
+const ResolvedFunction*
+resolveConcreteFunction(Context* context, ID id);
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature, but don't
@@ -320,15 +303,6 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
                                                       ID id);
 
 /**
-  Returns the ResolvedFunction called by a particular
-  ResolvedExpression, if there was exactly one candidate.
-  Otherwise, it returns nullptr.
-
-  This function does not handle return intent overloading.
- */
-const ResolvedFunction* resolveOnlyCandidate(Context* context,
-                                             const ResolvedExpression& r);
-/**
   Compute the return/yield type for a function.
 
   TODO: If the function returns a param, the param's value may not
@@ -336,9 +310,9 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
   the return type is explicitly declared. We probably still want to compute
   the value in such cases, though.
  */
-types::QualifiedType returnType(Context* context, const TypedFnSignature* sig,
-                                const PoiScope* poiScope,
-                                const CallerDetails& caller={});
+types::QualifiedType returnType(ResolutionContext* rc,
+                                const TypedFnSignature* sig,
+                                const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -353,7 +327,7 @@ types::QualifiedType returnType(Context* context, const TypedFnSignature* sig,
 
   The returned TypedFnSignature* will have the inferred out formal types.
  */
-const TypedFnSignature* inferOutFormals(Context* context,
+const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
@@ -364,7 +338,7 @@ const TypedFnSignature* inferOutFormals(Context* context,
   'nullptr'. In that case, the caller is responsible for attempting this
   again later once the current set of recursive functions is resolved.
  */
-const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
 
@@ -375,7 +349,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
   candidate functions from a list of visible functions.
  */
 const CandidatesAndForwardingInfo&
-filterCandidatesInitial(Context* context,
+filterCandidatesInitial(ResolutionContext* rc,
                         MatchingIdsWithName lst,
                         CallInfo call);
 
@@ -389,7 +363,7 @@ filterCandidatesInitial(Context* context,
 
  */
 void
-filterCandidatesInstantiating(Context* context,
+filterCandidatesInstantiating(ResolutionContext* rc,
                               const CandidatesAndForwardingInfo& lst,
                               const CallInfo& call,
                               const Scope* inScope,
@@ -405,16 +379,12 @@ filterCandidatesInstantiating(Context* context,
 
   'resolveCallInMethod' should be used instead when resolving a non-method call
   within a method.
-
-  The 'caller' is an opaque formal that can supply information used to resolve
-  calls to nested functions.
  */
-CallResolutionResult resolveCall(Context* context,
+CallResolutionResult resolveCall(ResolutionContext* rc,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected=nullptr,
-                                 const CallerDetails& caller={});
+                                 std::vector<ApplicabilityResult>* rejected=nullptr);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -424,13 +394,12 @@ CallResolutionResult resolveCall(Context* context,
 
   If implicitReceiver.type() == nullptr, it will be ignored.
  */
-CallResolutionResult resolveCallInMethod(Context* context,
+CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
                                          const uast::Call* call,
                                          const CallInfo& ci,
                                          const CallScopeInfo& inScopes,
                                          types::QualifiedType implicitReceiver,
-                                         std::vector<ApplicabilityResult>* rejected=nullptr,
-                                         const CallerDetails& caller={});
+                                         std::vector<ApplicabilityResult>* rejected=nullptr);
 
 /**
   Given a CallInfo representing a call, a Scope representing the

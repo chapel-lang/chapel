@@ -33,7 +33,8 @@ namespace resolution {
 
 struct Resolver;
 
-void checkThrows(Context* context, ResolutionResultByPostorderID& result,
+void checkThrows(ResolutionContext* rc,
+                 ResolutionResultByPostorderID& result,
                  const uast::AstNode* symbol);
 
 
