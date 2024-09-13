@@ -1606,7 +1606,7 @@ static void test26() {
   }
 
   {
-    // 'this' qualified, type parenless proc
+    // 'this' qualified, type parenless proc, concrete receiver
     std::string prog =
       R"""(
         class Foo {
@@ -1626,7 +1626,7 @@ static void test26() {
   }
 
   {
-    // unqualified, type parenless proc
+    // unqualified, type parenless proc, concrete receiver
     std::string prog =
       R"""(
         class Foo {
@@ -1635,6 +1635,48 @@ static void test26() {
         }
 
         var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
         var x = myFoo.doSomething(1);
       )""";
 
