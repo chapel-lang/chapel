@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/BasicClassType.h"
@@ -29,7 +31,6 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
-#include "test-resolution.h"
 
 static void test1() {
   printf("test1\n");
@@ -72,12 +73,12 @@ static void test1() {
   auto bct = it->getCompositeType()->toBasicClassType();
   assert(bct);
 
-  auto borrowedNonNil =
-      ClassType::get(context, bct, nullptr,
-                     ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
-  auto anyNonNil =
-      ClassType::get(context, bct, nullptr,
-                     ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL));
+  auto borrowedNonNil = ClassType::get(context, bct, nullptr,
+                                       ClassTypeDecorator(
+                                         ClassTypeDecorator::BORROWED_NONNIL));
+  auto anyNonNil = ClassType::get(context, bct, nullptr,
+                                  ClassTypeDecorator(
+                                    ClassTypeDecorator::GENERIC_NONNIL));
 
   assert(methodT->formalName(0) == "this");
   assert(methodT->formalType(0).kind() == QualifiedType::CONST_IN);
