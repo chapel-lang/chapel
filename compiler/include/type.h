@@ -65,7 +65,6 @@ class Symbol;
 class TypeSymbol;
 class VarSymbol;
 class IteratorInfo;
-class TemporaryConversionSymbol;
 
 class Type : public BaseAST {
 public:
@@ -530,7 +529,7 @@ class FunctionType final : public Type {
 class TemporaryConversionType final : public Type {
  public:
   chpl::types::QualifiedType qt;
-  TemporaryConversionType(chpl::types::QualifiedType qt);
+  explicit TemporaryConversionType(chpl::types::QualifiedType qt);
   void verify()                                         override;
   void accept(AstVisitor* visitor)                      override;
   DECLARE_COPY(TemporaryConversionType);
