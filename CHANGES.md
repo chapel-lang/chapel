@@ -69,6 +69,12 @@ Changes / Feature Improvements in Standard Libraries
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
+* added support for configurable compressors to the 'Zarr' module  
+  (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.writeZarrArray)
+* extended the 'Zarr' module to support single-locale IO  
+  (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.readZarrArrayLocal)
+* added the ability to read a 'Zarr' array using arbitrary target locales  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zar)
 
 Standard Layouts and Distributions
 ----------------------------------
@@ -252,6 +258,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
 * fixed a bug where `heap.createHeap()` only accepted the default comparator
+* closed a memory leak when reading with the 'Zarr' package module
 
 Bug Fixes for Tools
 -------------------
@@ -308,6 +315,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved support for initializers on classes that inherit
   - improved error messages for out-of-order field initialization
   - improved support for forwarding unmanaged class methods
+  - added support for resolving generic routines when passed tuple arguments
 
 Developer-oriented changes: GPU support
 ---------------------------------------
