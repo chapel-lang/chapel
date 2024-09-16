@@ -134,12 +134,14 @@ GPU Computing
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
+* extended co-locale support to divide GPUs between co-locales
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * enabled optimization that auto-localizes domains by default when possible  
   (use `-slocalizeConstDomains=false` to disable)
-* reduced communication overheads in `stencilArr.updateFluff()` method  
+* reduced communication overheads in 'StencilDist's `.updateFluff()` method
+* reduced overheads due to fencing when using `CHPL_COMM=ofi`
 
 Documentation Improvements
 --------------------------
@@ -162,6 +164,10 @@ Language Specification Improvements
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* fixed a bug in injection with `CHPL_COMM=ofi`
+* fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
+* fixed a bug using unsupported injection with `CHPL_COMM=ofi` and `efa`
+* fixed a bug striping the fixed heap with `CHPL_COMM=gasnet` and non-`ibv`
 
 Technical Note Improvements
 ---------------------------
@@ -294,6 +300,10 @@ Bug Fixes for Tools
 
 Bug Fixes for the Runtime
 -------------------------
+* fixed a bug with `CHPL_COMM=ofi` that led to hangs at certain scales
+* fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
+* worked around a bug with `efa` for `ofi` related to lack of injection support
+* fixed a bug striping the fixed heap for `CHPL_COMM=gasnet` over non-`ibv`
 
 Third-Party Software Changes
 ----------------------------
@@ -365,6 +375,7 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * removed the default application of the `-o` flag in the `start_test` system
 * removed unneeded `CC` env var logic in `smokeTest` that broke on some systems
+* added support for co-locale performance testing for `CHPL_COMM=gasnet`
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
