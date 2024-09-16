@@ -71,6 +71,7 @@ Changes / Feature Improvements in Standard Libraries
   (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.fileReader.lines)
 * added multi-dim support to `randomStream.[shuffle|choose|sample|permute]()`  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
+* added support for passing distributed arrays to `c_addrOf()`
 * made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html)
 * improved the error message for calling `sort()` on unsupported types
@@ -132,16 +133,22 @@ GPU Computing
 -------------
 * added support for ROCm 6  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
+* improved performance for some kernels on multi-GPU locales
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
 * added support for `ref` intents on scalars in GPU-eligible loops
 * extended co-locale support to divide GPUs between co-locales
 * extended `make check` to test a GPU-oriented example when GPUs are enabled
+* improved the error message when a vendor's SDK can't be found
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * enabled optimization that auto-localizes domains by default when possible  
   (use `-slocalizeConstDomains=false` to disable)
+* significantly improved performance when assigning between array slices
+  (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
+* extended the automatic local-access optimization to handle basic stencils
+  (e.g., `forall i in InnerA {... A[i-1] ...}` is optimized for 'StencilDist')
 * reduced communication overheads in 'StencilDist's `.updateFluff()` method
 * reduced overheads due to fencing when using `CHPL_COMM=ofi`
 
@@ -269,6 +276,9 @@ Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
 * fixed alignment for records whose fields are a mix of `extern` types and non-
+* fixed bugs in auto-[local-access|aggregation] optimizzations for local arrays
+* fixed an automatic-local-access bug for certain poorly aligned zippered loops
+* fixed a bug in which certain rank-change slices failed to compile
 * fixed support for interfaces nested within subroutines
 * fixed erroneous `--specialize` warnings when using multi-locale OS packages
 * removed a redundant library linkage specifier when using `--library-makefile`
@@ -284,12 +294,18 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug where `on someGpuVar` did not work correctly
+* fixed a bug where some `for` loops could cause inadvertent kernel launches
 * fixed support for the `--library` flag when compiling for GPUs
 * fixed code generation for ROCm 5.4.3, which was seg faulting
+* fixed a bug which prevented Chapel to be built with Clang 18 and CUDA 11
+* fixed a bug where GPU allocations on CPU data structures caused segfaults
+* fixed a bug where some kernel launch diagnostics line numbers were incorrect
 * fixed a host-to-device copy in which an incorrect function was being called
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug preventing `this` from being passed to `Reflection.getFieldRef()`
 * fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
 * fixed a bug where `heap.createHeap()` only accepted the default comparator
 * closed a memory leak when reading with the 'Zarr' package module
