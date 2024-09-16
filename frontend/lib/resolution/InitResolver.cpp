@@ -313,7 +313,7 @@ static const Type* ctFromSubs(Context* context,
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(context, basic, manager, dec);
-  } else if (auto dt = receiverType->toDomainType()) {
+  } else if (receiverType->isDomainType()) {
     // Extract domain information from _instance substitution
     // TODO: also support associative domains here; currently assumes rectangular
     QualifiedType rank;
