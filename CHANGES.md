@@ -30,7 +30,13 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* extended remote variable declarations to support multi-decls and coercions  
+  (see https://chapel-lang.org/docs/technotes/remote.html)
+* fixed remote variable declaration initializers to evaluate remotely
+* added support for declaring `enum`s within classes
 * added support for additional integer `<` comparisons generating a `param`
+* added support for using module-qualified expressions for inheritance decls  
+  (e.g., `class Child: MyMod.Parent { ... }`)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -40,6 +46,7 @@ Deprecated / Unstable / Removed Language Features
 * removed previously deprecated support for `single` variables
 * removed `clear()`, `retain()`, `release()`, `create()` on `shared`/`owned`
 * removed previously deprecated `owned`/`shared` casts
+* removed previously deprecated `assertOnGpu()` routine
 * improved the deprecation message when using `<=>` on sync variables
 
 Namespace Changes
@@ -51,6 +58,8 @@ New Standard Library Features
   (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html)
 * added a new argument to request `sort()` to be stable (w.r.t. equal keys)  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort)
+* added helper routines to convert values to and from JSON strings  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/JSON.html#JSON.fromJson)
 
 New Package Module Features
 ---------------------------
@@ -125,6 +134,12 @@ Tool Improvements
 -----------------
 * added an `--only` flag to `printchplenv` to focus on a specific variable  
   (e.g., `$CHPL_HOME/util/printchplenv --only CHPL_TARGET_COMPILER`)
+* made several changes and improvements to the `chplcheck` linter  
+  (see https://chapel-lang.org/docs/2.2/tools/chplcheck/chplcheck.html)
+  - added a new rule for `complex` literals whose `imag` precedes the `real`
+  - allowed ignoring children incorrectly indented relative to their parent
+  - added support for a `@fixit` dectorator to the Python API
+  - renamed the `RedundantParentheses` rule to `ControlFlowParentheses`
 * added the ability to document interfaces with `chpldoc`
 * updated the script for anonymizing unstable warnings  
   (https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
@@ -134,8 +149,12 @@ GPU Computing
 * added support for ROCm 6  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * improved performance for some kernels on multi-GPU locales
+* added a new `@gpu.assertElligible` attribute for compile-time GPU checks  
+  (see https://chapel-lang.org/docs/main/modules/standard/GPU.html#GPU.@gpu.assertEligible)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
+* added support for GPU attributes to compile without the GPU locale model
+* added a warning when `@assertOnGpu` is used without the GPU locale model
 * added support for `ref` intents on scalars in GPU-eligible loops
 * extended co-locale support to divide GPUs between co-locales
 * extended `make check` to test a GPU-oriented example when GPUs are enabled
@@ -158,6 +177,8 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.2/chpl-modindex.html)
 * linked the module index from the documentation landing page  
   (see https://chapel-lang.org/docs/2.2/index.html#indexes)
+* added documentation of the GPU attributes to the 'GPU' module docs  
+  (see https://chapel-lang.org/docs/main/modules/standard/GPU.html)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -214,6 +235,9 @@ Generated Code Improvements
 
 Memory Improvements
 -------------------
+* fixed memory leak when using loop expressions with empty bodies
+* fixed a memory leak when ignoring values in `try!` expressions
+* fixed a memory leak when using per-locale "static" variables  
 
 Syntax Highlighting
 -------------------
@@ -255,6 +279,7 @@ Error Messages / Semantic Checks
 * added an error when modifying `const` `sync` variables
 * improved error messages when `const` `c_array`s are passed to `c_ptr` formals
 * improved task intent errors for tuples
+* added a user error when constructing incomplete `extern` types
 * improved the error message for incorrect placement of intent keywords  
   (e.g., `proc in A.foo() { }`)
 * added an error for attempted uses of `sync nothing`, which is not supported
@@ -263,8 +288,12 @@ Error Messages / Semantic Checks
   (i.e. `begin with ref A { }`)
 * improved errors for generic anonymous functions  
   (e.g., `proc(x: []) { }`)
+* improved the error message when `sparse subdomain` is incorrectly used
 * improved error message when accidentally creating special method iterators
 * improved error when using same location for `chpldoc` output and Sphinx files
+* added a user error when `getFieldRef()` is used on a `type` field
+* updated memory management checks for non-classes to fire in more cases
+* added a warning for ignoring the result of a function capture
 
 Launchers
 ---------
@@ -285,6 +314,14 @@ Bug Fixes
 * fixed a bug with default values in Python interoperability
 * fixed an incorrect deprecation when creating a distributed array of atomics
 * fixed a crash when assigning a module-scope `var` to a `ref` in an iterator
+* fixed a bug where types of promoted expressions could be incorrectly inferred
+* fixed an incorrect error about missing constructor arguments in some cases
+* fixed "using value as type" error in certain conditional type expressions
+* allowed `ref`-intent procedures to not return anything if they halt
+* fixed an internal error when `out` is used with a default value and no type
+* fixed an internal error when returning a `ref` to a value of different type
+* fixed an internal error when using first-class fns as arguments to classes
+* fixed compilation errors due to runtime types under `--baseline`
 
 Bug Fixes for Build Issues
 --------------------------
@@ -302,6 +339,7 @@ Bug Fixes for GPU Computing
 * fixed a bug where GPU allocations on CPU data structures caused segfaults
 * fixed a bug where some kernel launch diagnostics line numbers were incorrect
 * fixed a host-to-device copy in which an incorrect function was being called
+* fixed various errors when bulk transferring GPU arrays
 
 Bug Fixes for Libraries
 -----------------------
@@ -366,7 +404,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for resolving tuple accessor calls
+  - added support for iteration over `enum` types
   - added support for casting `param` `enum` values to strings
+  - adjusted resolver to syntactically determine whether fields are generic
   - added support for type construction of generic classes
   - fixed a bug resolving constrained, dependently-typed type constructor args
   - improved support for initializers on classes that inherit
@@ -376,9 +416,11 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved support for forwarding unmanaged class methods
   - fixed resolution of methods on types that are only generic by inheritance
   - added support for resolving generic routines when passed tuple arguments
+  - implemented paren-less `type`/`param` procs on nilable types
   - fixed an incorrect ambiguity between fields and unrelated secondary methods
   - fixed an error for ambiguities btwn locals and paren-less procs in a method
   - fixed a bug causing `testInteractive --std` to not resolve std module types
+  - improved performance of `runAndTrackErrors` API function
 
 Developer-oriented changes: GPU support
 ---------------------------------------
