@@ -2448,25 +2448,26 @@ class ResolutionContext::Query {
   // (e.g., the 'GlobalQuery' defined above) that can be augmented with
   // additional state or subclassed.
  public:
-  using GlobalQuery = GlobalQuery<F, InvokeRet, InvokeArgs...>;
-  using RetByVal = typename GlobalQuery::RetByVal;
-  using InvokeArgsTuple = typename GlobalQuery::InvokeArgsTuple;
-  using UnstableCache = UnstableCache<F, RetByVal, InvokeArgsTuple>;
-  using CanUseGlobalCache = CanUseGlobalCache<F, InvokeArgsTuple>;
-  using GlobalComputeSetup = GlobalComputeSetup<F, InvokeArgsTuple>;
+  // NOTE: Use 'T' suffixes to prevent a GCC error message...
+  using GlobalQueryT = GlobalQuery<F, InvokeRet, InvokeArgs...>;
+  using RetByVal = typename GlobalQueryT::RetByVal;
+  using InvokeArgsTuple = typename GlobalQueryT::InvokeArgsTuple;
+  using UnstableCacheT = UnstableCache<F, RetByVal, InvokeArgsTuple>;
+  using CanUseGlobalCacheT = CanUseGlobalCache<F, InvokeArgsTuple>;
+  using GlobalComputeSetupT = GlobalComputeSetup<F, InvokeArgsTuple>;
 
  private:
   ResolutionContext* rc_ = nullptr;
   bool canUseGlobalCache_ = false;
   bool didGlobalSetupOccur_ = false;
-  GlobalComputeSetup globalSetup_;
-  GlobalQuery global_;
+  GlobalComputeSetupT globalSetup_;
+  GlobalQueryT global_;
 
  public:
   Query(ResolutionContext* rc, const char* name, InvokeArgs&&... args)
       : rc_(rc), global_(rc->context(), name, args... ) {
     CHPL_ASSERT(rc_ && context());
-    canUseGlobalCache_ = CanUseGlobalCache{}(rc, global_.args());
+    canUseGlobalCache_ = CanUseGlobalCacheT{}(rc, global_.args());
   }
   Query(const Query& rhs) = delete;
   Query(Query&& rhs) = default;
@@ -2482,7 +2483,7 @@ class ResolutionContext::Query {
       didGlobalSetupOccur_ = globalSetup_.enter(rc_, global_.args());
       return nullptr;
     } else {
-      UnstableCache uc;
+      UnstableCacheT uc;
       return uc.fetchOrNull(rc_, global_.args());
     }
   }
@@ -2496,7 +2497,7 @@ class ResolutionContext::Query {
       }
       return ret;
     } else {
-      UnstableCache uc;
+      UnstableCacheT uc;
       return uc.store(rc_, std::forward<RetByVal>(x), global_.args());
     }
   }
@@ -2509,7 +2510,7 @@ class ResolutionContext::Query {
     if (canUseGlobalCache()) {
       global_.inactiveStore(std::forward<RetByVal>(x));
     } else {
-      UnstableCache uc;
+      UnstableCacheT uc;
       uc.store(rc_, std::forward<RetByVal>(x), global_.args());
     }
   }
