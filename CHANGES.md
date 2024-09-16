@@ -17,9 +17,14 @@ Prerequisite Updates
 
 Syntactic / Naming Changes
 --------------------------
+* improved the orthogonality of Chapel syntax in several cases
+  (e.g., `coforall zip(a, b) { ... }` is now supported)
 
 New Language Features
 ---------------------
+* added the ability to define and use custom memory allocators with classes  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Allocators.html)
+* added the ability to apply attributes to interfaces
 
 Language Feature Improvements
 -----------------------------
@@ -30,20 +35,37 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed previously deprecated support for `single` variables
+* removed `clear()`, `retain()`, `release()`, `create()` on `shared`/`owned`
+* removed previously deprecated `owned`/`shared` casts
+* improved the deprecation message when using `<=>` on sync variables
 
 Namespace Changes
 -----------------
 
 New Standard Library Features
 -----------------------------
+* promoted the 'Sort' package module to be a stable standard module  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html)
+* added a new argument to request `sort()` to be stable (w.r.t. equal keys)  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort)
 
 New Package Module Features
 ---------------------------
+* added support for reading images to the 'Image' module  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.readImage)
+* added PNG and JPEG formats to the 'Image' module  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.imageType.png  
+   and https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.imageType.jpg)
+* added `colorToPixel()` and `pixelToColor()` routines to the 'Image' module  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.colorToPixel  
+   and https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.pixelToColor)
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html)
+* improved the error message for calling `sort()` on unsupported types
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -67,12 +89,22 @@ Deprecated / Unstable / Removed Library Features
    and https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.reverseComparator)
 * deprecated the `inPlaceAlgorithm` argument for the `Sort.sort()` procedure  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort)
+* deprecated creating custom Sort comparators in favor of using interfaces  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#comparators)
+* deprecated `list.sort()` in favor of `Sort.sort(x: list)`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/List.html#List.list.sort)
+* removed the deprecated 'VectorizingIterator' module
 
 Tool Improvements
 -----------------
+* added an `--only` flag to `printchplenv` to focus on a specific variable  
+  (e.g., `$CHPL_HOME/util/printchplenv --only CHPL_TARGET_COMPILER`)
+* added the ability to document interfaces with `chpldoc`
 
 GPU Computing
 -------------
+* added support for ROCm 6  
+  (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
 
@@ -90,6 +122,10 @@ Documentation Improvements
 
 Documentation Improvements for Tools
 ------------------------------------
+* added an 'Editor Support' page  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/editor-support.html)
+* improved the debugging best practices documentation for macOS  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/debugging.html#best-known-configuration)
 
 Language Specification Improvements
 -----------------------------------
@@ -110,6 +146,9 @@ Documentation Improvements for Libraries
    and https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
 * noted errors from `spawn`/`spawnshell` can be delayed until later calls  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.spawn)
+* clarified the compilation commands for 'LinearAlgebra' and 'LAPACK' modules  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/LAPACK.html#compiling-with-lapack  
+   and https://chapel-lang.org/docs/2.2/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
 * made numerous other docs fixes and improvements: wordings, typos, links, etc.
 
 Documentation Improvements to the 'man' Pages
@@ -136,9 +175,23 @@ Syntax Highlighting
 
 Configuration / Build Changes
 -----------------------------
+* added `CHPL_[TARGET|HOST]_JEMALLOC` to specify 'jemalloc' usage and sources  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-target-jemalloc  
+   and https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-host-jemalloc)
+* added `CHPL_COMM_OFI_OOB` to specify out-of-band launch mechanism for `ofi`  
+  (see https://chapel-lang.org/docs/2.2/platforms/libfabric.html#building-chapel-with-the-ofi-communication-layer)
+* added a warning when using `CHPL_ATOMICS=intrinsics`  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-atomics)
+* improved errors for `CHPL_TARGET_COMPILER`/`CHPL_TARGET_CC` mismatches
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* added more Linux package installations that support multiple locales  
+  (see https://chapel-lang.org/install-pkg.html)
+* changed the Fedora 40 package dependencies to use LLVM 18
+* made the default for `CHPL_ATOMICS` always be `cstdlib` for bundled LLVM
+* disallowed the use of `CHPL_ATOMICS=locks` on MacOS
+* added the ability to infer the path for `nvcc` from `CHPL_CUDA_PATH`
 
 Compiler Improvements
 ---------------------
@@ -154,8 +207,17 @@ Generated Executable Flags
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when incorrectly modifying `const [in]` or default varargs
+* added an error when modifying `const` `sync` variables
 * improved error messages when `const` `c_array`s are passed to `c_ptr` formals
+* improved task intent errors for tuples
+* improved the error message for incorrect placement of intent keywords  
+  (e.g., `proc in A.foo() { }`)
 * added an error for attempted uses of `sync nothing`, which is not supported
+* improved the error message for casting abstract enums to numeric types
+* improved the error message for incorrectly formatted `with` clauses  
+  (i.e. `begin with ref A { }`)
+* improved errors for generic anonymous functions  
+  (e.g., `proc(x: []) { }`)
 * improved error message when accidentally creating special method iterators
 * improved error when using same location for `chpldoc` output and Sphinx files
 
@@ -169,14 +231,22 @@ Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
 * fixed alignment for records whose fields are a mix of `extern` types and non-
+* fixed support for interfaces nested within subroutines
+* fixed erroneous `--specialize` warnings when using multi-locale OS packages
 * removed a redundant library linkage specifier when using `--library-makefile`
 * fixed a bug with default values in Python interoperability
+* fixed an incorrect deprecation when creating a distributed array of atomics
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed `printchplenv` and `printchplbuilds.py` output for prefix installations
+* ensured that `pycache` is fully deleted with `make clobber`
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed support for the `--library` flag when compiling for GPUs
+* fixed code generation for ROCm 5.4.3, which was seg faulting
+* fixed a host-to-device copy in which an incorrect function was being called
 
 Bug Fixes for Libraries
 -----------------------
@@ -185,15 +255,22 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed 'goto definition' for inheritance and enums in `chpl-language-server`
+* fixed how locations are reported for enum elements
+* silenced an erroneous `IncorrectIndentation` warning from `chplcheck`
+* fixed the `chapel-py` build to use the same compiler as the frontend library
 
 Bug Fixes for the Runtime
 -------------------------
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of QThreads to 1.20
+* applied a patch to address a performance regression in Qthreads 1.20
 
 Developer-oriented changes: Process
 -----------------------------------
+* added a CI check for badly formatted performance tests
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -216,9 +293,12 @@ Developer-oriented changes: Makefile / Build-time changes
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * extended `--print-commands` to include commands run with `--library-python`
+* added `--llvm-print-ir-file` to write LLVM IR to a file rather than `stdout`
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* added a missing check for `--break-on-codegen-id` on `CForLoop`
+* refactored the `always_inline` code for GETs and PUTs
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
@@ -234,6 +314,7 @@ Developer-oriented changes: GPU support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added a missing assertion for a non-null pointer
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
