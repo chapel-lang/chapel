@@ -18,7 +18,6 @@
  */
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -43,8 +42,11 @@ static QualifiedType findVarType(const Module* m,
 
 static void testArray(std::string domainType,
                       std::string eltType) {
-  Context ctx;
+  Context::Configuration config;
+  config.chplHome = getenv("CHPL_HOME");
+  Context ctx(config);
   Context* context = &ctx;
+  setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   // a different element type from the one we were given
@@ -53,11 +55,9 @@ static void testArray(std::string domainType,
     altElt = "string";
   }
 
-  std::string program = DomainModule + ArrayModule +
+  std::string program =
 R"""(
 module M {
-  use ChapelArray;
-  
   var d : )""" + domainType + R"""(;
   type eltType = )""" + eltType + R"""(;
 
@@ -94,7 +94,7 @@ module M {
   setFileText(context, path, std::move(program));
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Module* m = vec[2]; 
+  const Module* m = vec[0];
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
