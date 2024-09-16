@@ -11,6 +11,8 @@ Highlights (see subsequent sections for further details)
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* started publishing a `nightly` Docker image tag  
+  (see https://hub.docker.com/r/chapel/chapel)
 
 Prerequisite Updates
 --------------------
@@ -247,6 +249,7 @@ Bug Fixes for Build Issues
 --------------------------
 * fixed `printchplenv` and `printchplbuilds.py` output for prefix installations
 * ensured that `pycache` is fully deleted with `make clobber`
+* fixed an issue building `CHPL_COMM=gasnet` Docker images
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -304,18 +307,27 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* removed the broken features intended to support `gdb` cleanup of `tmp` dirs
 * added a missing check for `--break-on-codegen-id` on `CForLoop`
 * refactored the `always_inline` code for GETs and PUTs
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - added support for resolving tuple accessor calls
   - added support for casting `param` `enum` values to strings
   - added support for type construction of generic classes
+  - fixed a bug resolving constrained, dependently-typed type constructor args
   - improved support for initializers on classes that inherit
+  - fixed an error resolving initializers w/ generic fields following concrete
   - improved error messages for out-of-order field initialization
+  - fixed a bug passing instantiated generics to generic record formal args
   - improved support for forwarding unmanaged class methods
+  - fixed resolution of methods on types that are only generic by inheritance
   - added support for resolving generic routines when passed tuple arguments
+  - fixed an incorrect ambiguity between fields and unrelated secondary methods
+  - fixed an error for ambiguities btwn locals and paren-less procs in a method
+  - fixed a bug causing `testInteractive --std` to not resolve std module types
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -330,6 +342,7 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * removed the default application of the `-o` flag in the `start_test` system
+* removed unneeded `CC` env var logic in `smokeTest` that broke on some systems
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
