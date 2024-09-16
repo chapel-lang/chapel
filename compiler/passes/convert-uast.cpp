@@ -247,7 +247,7 @@ struct Converter {
   ModTag topLevelModTag;
 
   // which modules / submodules to convert
-  std::set<chpl::ID> convertFilterModuleIds;
+  std::unordered_set<chpl::ID> modulesToConvert;
 
   // to keep track of symbols that have been converted & fixups needed
   std::unordered_map<ID, Symbol*> syms;
@@ -295,11 +295,11 @@ struct Converter {
 
   // supporting UastConverter methods
   void clearModulesToConvert() {
-    convertFilterModuleIds.clear();
+    modulesToConvert.clear();
   }
 
   void addModuleToConvert(ID id) {
-    convertFilterModuleIds.insert(std::move(id));
+    modulesToConvert.insert(std::move(id));
   }
 
   ModuleSymbol*
@@ -1109,7 +1109,7 @@ struct Converter {
     }
 
     // skip any submodules that do not need to be converted /  are dead
-    if (convertFilterModuleIds.count(umod->id()) == 0) {
+    if (modulesToConvert.count(umod->id()) == 0) {
       return nullptr;
     }
 
@@ -3531,7 +3531,7 @@ struct Converter {
   }
   DefExpr* visit(const uast::Module* node) {
     // skip any submodules that are dead
-    if (convertFilterModuleIds.count(node->id()) == 0) {
+    if (modulesToConvert.count(node->id()) == 0) {
       return nullptr;
     }
 
