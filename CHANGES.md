@@ -41,6 +41,8 @@ New Package Module Features
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
+* made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -50,9 +52,20 @@ Standard Layouts and Distributions
 
 Name Changes in Libraries
 -------------------------
+* renamed the array arguments for `Sort.sort()` and `Sort.isSorted()`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort  
+   and https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.isSorted)
+* renamed the `a`,`b` arguments for `compare()` methods in 'Sort' to `x`, `y`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.DefaultComparator.compare  
+   and https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.ReverseComparator.compare)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the standalone comparator instances in the 'Sort' module  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.defaultComparator  
+   and https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.reverseComparator)
+* deprecated the `inPlaceAlgorithm` argument for the `Sort.sort()` procedure  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort)
 
 Tool Improvements
 -----------------
@@ -69,6 +82,8 @@ Documentation Improvements
 --------------------------
 * fixed and improved descriptions of library modules in Chapel's module index  
   (see https://chapel-lang.org/docs/2.2/chpl-modindex.html)
+* linked the module index from the documentation landing page  
+  (see https://chapel-lang.org/docs/2.2/index.html#indexes)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -84,12 +99,25 @@ Technical Note Improvements
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* corrected/extended the documentation for `atan()` and `atan2()`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Math.html#Math.atan  
+   and https://chapel-lang.org/docs/2.2/modules/standard/Math.html#Math.atan2)
+* documented which errors can be thrown from 'Subprocess' procedures  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.close  
+   and https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
+* noted errors from `spawn`/`spawnshell` can be delayed until later calls  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.spawn)
+* made numerous other docs fixes and improvements: wordings, typos, links, etc.
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
+* added cross-reference to env var docs to 'Compiler Configuration Options'  
+  (see https://chapel-lang.org/docs/main/usingchapel/man.html#man-task-tracking)
 
 Example Codes
 -------------
+* restored `examples/patterns/recordio.chpl` using 2.0-compatible features  
+  (see `$CHPL_HOME/examples/patterns/recordio.chpl`)
 
 Compilation Time Improvements
 -----------------------------
@@ -114,13 +142,18 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a `--lib-pic` flag to control `CHPL_LIB_PIC`'s value at compile time  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-lib-pic)
 
 Generated Executable Flags
 --------------------------
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error when incorrectly modifying `const [in]` or default varargs
 * added an error for attempted uses of `sync nothing`, which is not supported
+* improved error message when accidentally creating special method iterators
+* improved error when using same location for `chpldoc` output and Sphinx files
 
 Launchers
 ---------
@@ -131,6 +164,8 @@ Runtime Library Changes
 Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
+* removed a redundant library linkage specifier when using `--library-makefile`
+* fixed a bug with default values in Python interoperability
 
 Bug Fixes for Build Issues
 --------------------------
@@ -141,6 +176,7 @@ Bug Fixes for GPU Computing
 Bug Fixes for Libraries
 -----------------------
 * fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
+* fixed a bug where `heap.createHeap()` only accepted the default comparator
 
 Bug Fixes for Tools
 -------------------
@@ -156,12 +192,15 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* extended the Standard Module Style Guide to include more 2.0 decisions  
+  (see https://chapel-lang.org/docs/2.2/developer/bestPractices/StandardModuleStyle.html#best-practices-standard-module-style)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* removed queries from the argument lists of the 'Sort' routines
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -171,6 +210,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* extended `--print-commands` to include commands run with `--library-python`
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
