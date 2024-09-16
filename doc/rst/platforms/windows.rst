@@ -25,7 +25,7 @@ Microsoft Store. We recommend using Ubuntu, but others will likely work.
 
 This example shows how to install WSL and Ubuntu on Windows 10/11::
 
-    # Open PowerShell
+    # From PowerShell, run the following command to enable WSL
     wsl --install -d Ubuntu
 
 
@@ -43,12 +43,10 @@ There are two main approaches for using Chapel on WSL:
 
 For option 1, see the following example of how to install Chapel on WSL::
 
-    # Download the Chapel package
     # From the Ubuntu terminal, use the following command to download the Chapel package.
     wget https://github.com/chapel-lang/chapel/releases/download/2.1.0/chapel-2.1.0-1.ubuntu22.amd64.deb
 
-    # Verify that the package is official by checking the shasum 256 against the known good value:
-
+    # Verify the package by checking the shasum 256 against the known good value:
     echo "5928c31bb1ffe704356a86c52006b7bd3c8115190bc4a833abc6a6040c07b368 *chapel-2.1.0-1.ubuntu22.amd64.deb" | shasum -a 256 -c
 
     # Install Chapel
