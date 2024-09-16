@@ -862,7 +862,7 @@ OPTIONS
 Note that the flags in this section all have corresponding environment
 variables.  Details on those environment variables, including potential values
 for them, can be found at
-https://chapel-lang.org/docs/latest/usingchapel/chplenv.html or at
+https://chapel-lang.org/docs/usingchapel/chplenv.html or at
 doc/rst/usingchapel/chplenv.rst in your Chapel installation.
 
 .. _man-home:
