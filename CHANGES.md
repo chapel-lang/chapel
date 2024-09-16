@@ -62,9 +62,13 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* enabled optimization that auto-localizes domains by default when possible  
+  (use `-slocalizeConstDomains=false` to disable)
 
 Documentation Improvements
 --------------------------
+* fixed and improved descriptions of library modules in Chapel's module index  
+  (see https://chapel-lang.org/docs/2.2/chpl-modindex.html)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -116,6 +120,7 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error for attempted uses of `sync nothing`, which is not supported
 
 Launchers
 ---------
@@ -125,6 +130,7 @@ Runtime Library Changes
 
 Bug Fixes
 ---------
+* fixed a bug in `scan` expressions over non-`int(64)` indices
 
 Bug Fixes for Build Issues
 --------------------------
@@ -134,6 +140,7 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
 
 Bug Fixes for Tools
 -------------------
@@ -182,6 +189,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* removed the default application of the `-o` flag in the `start_test` system
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
