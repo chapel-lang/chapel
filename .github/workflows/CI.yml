@@ -105,7 +105,8 @@ jobs:
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
-  check_annotations_rt_calls:
+
+  lint_checks:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -135,3 +136,6 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+    - name: check release/examples README
+      run: |
+        ./util/buildRelease/check-release-files.bash
