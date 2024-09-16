@@ -98,6 +98,11 @@ module ChapelArray {
 
   proc chpl__buildIndexType(d: domain) type do
     return chpl__buildIndexType(d.rank, d.idxType);
+
+  // Module code needed to avoid fatal errors in resolution
+  param nullPid = -1;
+  proc _isPrivatized(value) param do return false;
+  record dmap { }
 }
 )""";
 
