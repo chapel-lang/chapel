@@ -222,6 +222,12 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - added support for casting `param` `enum` values to strings
+  - added support for type construction of generic classes
+  - improved support for initializers on classes that inherit
+  - improved error messages for out-of-order field initialization
+  - improved support for forwarding unmanaged class methods
 
 Developer-oriented changes: GPU support
 ---------------------------------------
