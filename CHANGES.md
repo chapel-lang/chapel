@@ -125,6 +125,8 @@ Tool Improvements
 * added an `--only` flag to `printchplenv` to focus on a specific variable  
   (e.g., `$CHPL_HOME/util/printchplenv --only CHPL_TARGET_COMPILER`)
 * added the ability to document interfaces with `chpldoc`
+* updated the script for anonymizing unstable warnings  
+  (https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 
 GPU Computing
 -------------
