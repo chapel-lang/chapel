@@ -23,6 +23,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* added support for additional integer `<` comparisons generating a `param`
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -72,6 +73,8 @@ Tool Improvements
 
 GPU Computing
 -------------
+* added a new `@gpu.itersPerThread` attribute to control blocking iterations  
+  (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -151,6 +154,7 @@ Generated Executable Flags
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when incorrectly modifying `const [in]` or default varargs
+* improved error messages when `const` `c_array`s are passed to `c_ptr` formals
 * added an error for attempted uses of `sync nothing`, which is not supported
 * improved error message when accidentally creating special method iterators
 * improved error when using same location for `chpldoc` output and Sphinx files
@@ -164,6 +168,7 @@ Runtime Library Changes
 Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
+* fixed alignment for records whose fields are a mix of `extern` types and non-
 * removed a redundant library linkage specifier when using `--library-makefile`
 * fixed a bug with default values in Python interoperability
 
