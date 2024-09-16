@@ -54,6 +54,8 @@ New Standard Library Features
 
 New Package Module Features
 ---------------------------
+* added new 'PrecisionSerializer' package to control numeric precision/padding  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/PrecisionSerializer.html)
 * added support for reading images to the 'Image' module  
   (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.readImage)
 * added PNG and JPEG formats to the 'Image' module  
@@ -65,12 +67,18 @@ New Package Module Features
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
+* added parallel/distributed support to the `fileReader.lines()` iterator  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.fileReader.lines)
+* added multi-dim support to `randomStream.[shuffle|choose|sample|permute]()`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
 * made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html)
 * improved the error message for calling `sort()` on unsupported types
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
+* added multi-locale support to 'ParallelIO's iterators  
+  (see https://chapel-lang.org/docs/2.2/modules/packages/ParallelIO.html#ParallelIO.readLines)
 * added support for configurable compressors to the 'Zarr' module  
   (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.writeZarrArray)
 * extended the 'Zarr' module to support single-locale IO  
@@ -92,6 +100,9 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* added a `false` default to the `locking` property of `file.[reader|writer]`  
+  (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.file.reader  
+   and https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.file.writer)
 * deprecated the standalone comparator instances in the 'Sort' module  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.defaultComparator  
    and https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.reverseComparator)
@@ -102,6 +113,12 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `list.sort()` in favor of `Sort.sort(x: list)`  
   (see https://chapel-lang.org/docs/2.2/modules/standard/List.html#List.list.sort)
 * removed the deprecated 'VectorizingIterator' module
+
+* removed deprecated `locking=true` overloads of `open[Reader|Writer]()`
+* removed deprecated `IllegalArgumentError` overloads in the 'Errors' module
+* removed deprecated `RandomStream` class
+* removed deprecated `randomStream` methods
+* removed deprecated `RandomSupport` and `PCGRandom` submodules
 
 Tool Improvements
 -----------------
@@ -120,6 +137,7 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * enabled optimization that auto-localizes domains by default when possible  
   (use `-slocalizeConstDomains=false` to disable)
+* reduced communication overheads in `stencilArr.updateFluff()` method  
 
 Documentation Improvements
 --------------------------
@@ -137,6 +155,8 @@ Documentation Improvements for Tools
 
 Language Specification Improvements
 -----------------------------------
+* added examples of distribution factory methods  
+  (see https://chapel-lang.org/docs/2.2/language/spec/domain-maps.html#distributions-for-domain-types)
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
