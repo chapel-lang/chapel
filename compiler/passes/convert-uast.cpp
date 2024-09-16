@@ -5130,7 +5130,7 @@ void Converter::postConvertApplyFixups() {
 
     Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     if (isTemporaryConversionSymbol(sym)) {
-      USR_FATAL(se, "could not find target symbol for sym fixup for %s",
+      INT_FATAL(se, "could not find target symbol for sym fixup for %s",
                 target.str().c_str());
     }
 
@@ -5158,7 +5158,7 @@ void Converter::postConvertApplyFixups() {
     Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     auto usedM = toModuleSymbol(sym);
     if (!usedM) {
-      USR_FATAL(m, "could not find target symbol for module fixup for %s",
+      INT_FATAL(m, "could not find target symbol for module fixup for %s",
                 target.str().c_str());
     }
 
@@ -5175,7 +5175,7 @@ void Converter::postConvertApplyFixups() {
 
     Symbol* sym = findConvertedFn(target, /* neverTrace */ true);
     if (!isFnSymbol(sym)) {
-      USR_FATAL(se, "could not find target function for call fixup %s",
+      INT_FATAL(se, "could not find target function for call fixup %s",
                 target->untyped()->name().c_str());
     }
     se->setSymbol(sym);
@@ -5189,7 +5189,7 @@ void Converter::postConvertApplyFixups() {
       if (auto tct = toTemporaryConversionType(fn->retType)) {
         Type* t = convertType(tct->qt);
         if (t == nullptr) {
-          USR_FATAL(sym, "could not find target type for fixup");
+          INT_FATAL(sym, "could not find target type for fixup");
           t = dtUnknown;
         }
         fn->retType = t;
@@ -5200,7 +5200,7 @@ void Converter::postConvertApplyFixups() {
     if (auto tct = toTemporaryConversionType(sym->type)) {
       Type* t = convertType(tct->qt);
       if (t == nullptr) {
-        USR_FATAL(sym, "could not find target type for fixup");
+        INT_FATAL(sym, "could not find target type for fixup");
         t = dtUnknown;
       }
       sym->type = t;
