@@ -134,7 +134,9 @@ GPU Computing
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
+* added support for `ref` intents on scalars in GPU-eligible loops
 * extended co-locale support to divide GPUs between co-locales
+* extended `make check` to test a GPU-oriented example when GPUs are enabled
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -272,6 +274,7 @@ Bug Fixes
 * removed a redundant library linkage specifier when using `--library-makefile`
 * fixed a bug with default values in Python interoperability
 * fixed an incorrect deprecation when creating a distributed array of atomics
+* fixed a crash when assigning a module-scope `var` to a `ref` in an iterator
 
 Bug Fixes for Build Issues
 --------------------------
