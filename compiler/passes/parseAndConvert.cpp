@@ -275,6 +275,42 @@ static void loadAndConvertModules(UastConverter& c) {
                                                 commandLineModules);
 
 
+  // Compute the set of functions to fully resolve when using --dyno.
+  // This allows us to avoid resolving functions that aren't called.
+  if (fDynoCompilerLibrary) {
+    chpl::resolution::CalledFnsSet calledFns;
+
+    for (const auto& id : modulesToConvert) {
+      // Workaround: only use the dyno type resolver for user modules
+      // (and code called from them)
+      bool convertModInitCallsWithTypes = false;
+
+      UniqueString path;
+      bool found = gContext->filePathForId(id, path);
+      INT_ASSERT(found);
+      if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+        convertModInitCallsWithTypes = true;
+      }
+
+      if (convertModInitCallsWithTypes) {
+        gatherTransitiveFnsCalledByModInit(gContext, id, calledFns);
+      }
+    }
+
+    // TODO: debug code
+    std::vector<std::string> v;
+    for (auto fn : calledFns) {
+      v.push_back(fn->id().symbolPath().str());
+    }
+    std::sort(v.begin(), v.end());
+    printf("These are the gathered functions:\n");
+    for (auto p : v) {
+      printf("  %s\n", p.c_str());
+    }
+
+    c.setFunctionsToConvertWithTypes(std::move(calledFns));
+  }
+
   // construct a set of modules to convert
   c.clearModulesToConvert();
   for (const auto& id : modulesToConvert) {

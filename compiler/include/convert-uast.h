@@ -27,6 +27,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
+#include "chpl/resolution/call-graph.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
@@ -44,6 +45,10 @@ class UastConverter {
   // when converting, only convert modules that were added to this set.
   void clearModulesToConvert();
   void addModuleToConvert(chpl::ID id);
+
+  // provide the set of functions that should be converted with full
+  // type information
+  void setFunctionsToConvertWithTypes(chpl::resolution::CalledFnsSet calledFns);
 
   ModuleSymbol*
   convertToplevelModule(const chpl::uast::Module* mod,
