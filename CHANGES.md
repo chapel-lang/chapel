@@ -191,6 +191,7 @@ Documentation Improvements
 * added documentation of the GPU attributes to the 'GPU' module docs  
   (see https://chapel-lang.org/docs/main/modules/standard/GPU.html)
 * searching for `init=` now finds the relevant documentation
+* clarified that the terminating null byte is optional on string/bytes buffers
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -210,6 +211,8 @@ Language Specification Improvements
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* expanded docs for using Chapel with Windows Subsystem for Linux (WSL)  
+  (see https://chapel-lang.org/docs/2.2/platforms/windows.html#using-chapel-on-wsl)
 * fixed a bug in injection with `CHPL_COMM=ofi`
 * fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
 * fixed a bug using unsupported injection with `CHPL_COMM=ofi` and `efa`
