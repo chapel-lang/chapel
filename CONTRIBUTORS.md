@@ -6,6 +6,7 @@ The following people have contributed to Chapel releases:
 Contributors to the Chapel 2.2 release
 --------------------------------------
 * Jade Abraham, [HPE]
+* [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Sarah Coghlan, [HPE]
@@ -13,6 +14,7 @@ Contributors to the Chapel 2.2 release
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
+* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
@@ -46,7 +48,6 @@ Contributors to previous releases
 * Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
-* [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * Kyle Brady, [Cray Inc.]
 * Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
@@ -81,7 +82,6 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
-* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
