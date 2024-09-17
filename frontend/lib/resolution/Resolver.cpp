@@ -2998,16 +2998,16 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
 
   // If we looked up a called identifier and found ambiguity but no method
   // results, repeat lookup for the identifier as though it wasn't called, to
-  // support implicit 'this' calls.
+  // support implicit 'this' calls on variables.
   if (resolvingCalledIdent && ids.numIds() > 1) {
-    bool anyMethod = false;
+    bool anyMethods = false;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
       if (idIt.curIdAndFlags().isMethod()) {
-        anyMethod = true;
+        anyMethods = true;
         break;
       }
     }
-    if (!anyMethod) {
+    if (!anyMethods) {
       ids = lookupIdentifier(ident, /* resolvingCalledIdent */ false,
                              parenlessInfo);
     }
