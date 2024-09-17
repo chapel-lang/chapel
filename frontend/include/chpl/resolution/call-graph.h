@@ -23,23 +23,37 @@
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/resolution-types.h"
 
-#include <set>
+#include <unordered_set>
 
 namespace chpl {
 namespace resolution {
 
 
+using CalledFnsSet = std::unordered_set<const ResolvedFunction*>;
+
 /* Gather ResolvedFunctions called directly by this function into a set.
    This function does not consider transitive calls. */
-void gatherFnsCalledByFn(const ResolvedFunction* fn,
-                         std::unordered_set<const ResolvedFunction*> &called);
+void gatherFnsCalledByFn(Context* context,
+                         const ResolvedFunction* fn,
+                         CalledFnsSet& called);
+
+/* Gather ResolvedFunctions called transitively by this function into a set. */
+void gatherTransitiveFnsCalledByFn(Context* context,
+                                   const ResolvedFunction* fn,
+                                   CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called directly by module initialization code
    for this module into a set.
    This function does not consider transitive calls. */
-void
-gatherFnsCalledByModInit(ID moduleId,
-                         std::unordered_set<const ResolvedFunction*> &called);
+void gatherFnsCalledByModInit(Context* context,
+                              ID moduleId,
+                              CalledFnsSet& called);
+
+/* Gather ResolvedFunctions called transitively by module initialization code
+   for this module into a set. */
+void gatherTransitiveFnsCalledByModInit(Context* context,
+                                        ID moduleId,
+                                        CalledFnsSet& called);
 
 
 } // end namespace resolution
