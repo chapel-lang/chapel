@@ -441,6 +441,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved support for initializers on classes that inherit
   - fixed an error resolving initializers w/ generic fields following concrete
   - improved error messages for out-of-order field initialization
+  - added initial support for resolving `zip` expressions and parallel `iter`s
   - fixed a bug passing instantiated generics to generic record formal args
   - improved support for forwarding unmanaged class methods
   - fixed resolution of methods on types that are only generic by inheritance
