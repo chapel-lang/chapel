@@ -2723,6 +2723,7 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
 
 MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
+      bool resolvingCalledIdent,
       ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
@@ -2736,7 +2737,6 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                                       IdAndFlags::createForBuiltinVar());
   }
 
-  bool resolvingCalledIdent = nearestCalledExpression() == ident;
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -2992,10 +2992,27 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   }
 
   // lookupIdentifier reports any errors that are needed
-  auto parenlessInfo = ParenlessOverloadInfo();
-  auto ids = lookupIdentifier(ident, parenlessInfo);
-
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
+  auto parenlessInfo = ParenlessOverloadInfo();
+  auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
+
+  // If we looked up a called identifier and got no method results,
+  // repeat lookup for the identifier as though it wasn't called, to support
+  // implicit 'this' calls.
+  if (resolvingCalledIdent && !ids.isEmpty()) {
+    bool anyMethod = false;
+    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+      if (idIt.curIdAndFlags().isMethod()) {
+        anyMethod = true;
+        break;
+      }
+    }
+    if (!anyMethod) {
+      ids = lookupIdentifier(ident, /* resolvingCalledIdent */ false,
+                             parenlessInfo);
+    }
+  }
+
   // TODO: these errors should be enabled for scope resolution
   // but for now, they are off, as a temporary measure to enable
   // the production compiler handle these cases. To enable this,

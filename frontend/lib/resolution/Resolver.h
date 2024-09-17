@@ -543,6 +543,7 @@ struct Resolver {
 
   MatchingIdsWithName
   lookupIdentifier(const uast::Identifier* ident,
+                   bool resolvingCalledIdent,
                    ParenlessOverloadInfo& outParenlessOverloadInfo);
 
 
