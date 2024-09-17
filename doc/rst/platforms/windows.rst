@@ -36,7 +36,7 @@ There are two main approaches for using Chapel on WSL:
    only supports shared-memory (single-locale) executions. See the list of available
    packages released on the `Chapel GitHub page <https://github.com/chapel-lang/chapel/releases>`_.
 
-2) Build Chapel from source, as with any other UN*X system. This is slightly
+2) Build Chapel from source, as with any other UNIX system. This is slightly
    more involved, but supports Chapel's full feature set. See the list of prerequisites
    for your distribution from :ref:`readme-prereqs`
 
