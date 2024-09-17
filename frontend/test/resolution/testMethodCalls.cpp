@@ -766,6 +766,32 @@ static void test15() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void test16() {
+  // Test resolving 'this' call on automatic variable that shadows field
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      class Foo {
+        var tup : 2*int;
+
+        proc init() {}
+
+        proc doSomething() {
+          const tup = this.tup;
+          return tup(0);
+        }
+      }
+
+      var f = new Foo();
+      var x = f.doSomething();
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x" });
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -783,6 +809,7 @@ int main() {
   test14();
   test14b();
   test15();
+  test16();
 
   return 0;
 }
