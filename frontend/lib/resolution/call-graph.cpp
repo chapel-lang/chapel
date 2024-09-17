@@ -23,7 +23,9 @@
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
-#include "chpl/uast/all-uast.h"
+#include "chpl/uast/Function.h"
+#include "chpl/uast/Module.h"
+#include "chpl/uast/TypeDecl.h"
 
 namespace chpl {
 namespace resolution {
@@ -109,17 +111,20 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
 
   // consider the return-intent overloads
   for (const auto& candidate : re->mostSpecific()) {
-    const TypedFnSignature* sig = candidate.fn();
-    const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-    called.insert(fn);
+    if (const TypedFnSignature* sig = candidate.fn()) {
+      const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+      called.insert(fn);
+    }
   }
 
   // consider the associated actions
   for (const auto& action : re->associatedActions()) {
-    // TODO: handle copy-init called by default copy-init, etc
-    const TypedFnSignature* sig = action.fn();
-    const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-    called.insert(fn);
+    // TODO: handle copy-init called by default copy-init, etc.
+    // Ideally, that would work by generating uAST for them.
+    if (const TypedFnSignature* sig = action.fn()) {
+      const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+      called.insert(fn);
+    }
   }
 }
 
