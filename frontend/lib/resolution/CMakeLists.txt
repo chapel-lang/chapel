@@ -21,6 +21,7 @@ target_sources(ChplFrontend-obj
                InitResolver.cpp
                Resolver.cpp
                VarScopeVisitor.cpp
+               call-graph.cpp
                call-init-deinit.cpp
                can-pass.cpp
                copy-elision.cpp
