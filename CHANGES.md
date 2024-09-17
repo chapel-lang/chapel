@@ -40,9 +40,17 @@ Language Feature Improvements
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
+* `use` and `import` are always case sensitive when finding module files  
+  (see https://chapel-lang.org/docs/language/spec/modules.html#finding-toplevel-module-files)
+* `require` statements no longer impact the determination of the main module  
+  (see https://chapel-lang.org/docs/main/language/spec/statements.html#the-require-statement  
+   and https://chapel-lang.org/docs/language/spec/modules.html#the-main-module)
+* modules brought in with `require` are no initialized if not used
+* standard library modules are now preferred in the event of a name conflict
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* user modules sharing names with a standard library module are now unstable
 * removed previously deprecated support for `single` variables
 * removed `clear()`, `retain()`, `release()`, `create()` on `shared`/`owned`
 * removed previously deprecated `owned`/`shared` casts
@@ -78,6 +86,8 @@ Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * added parallel/distributed support to the `fileReader.lines()` iterator  
   (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.fileReader.lines)
+* Added an unstable `sort()` overload accepting a region to sort  
+  (see https://chapel-lang.org/docs/main/modules/standard/Sort.html#Sort.sort)
 * added multi-dim support to `randomStream.[shuffle|choose|sample|permute]()`  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
 * added support for passing distributed arrays to `c_addrOf()`
@@ -166,6 +176,7 @@ Performance Optimizations / Improvements
   (use `-slocalizeConstDomains=false` to disable)
 * significantly improved performance when assigning between array slices
   (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
+* removed an unnecessary allocation when moving an array value to a typed var
 * extended the automatic local-access optimization to handle basic stencils
   (e.g., `forall i in InnerA {... A[i-1] ...}` is optimized for 'StencilDist')
 * reduced communication overheads in 'StencilDist's `.updateFluff()` method
@@ -179,6 +190,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.2/index.html#indexes)
 * added documentation of the GPU attributes to the 'GPU' module docs  
   (see https://chapel-lang.org/docs/main/modules/standard/GPU.html)
+* searching for `init=` now finds the relevant documentation
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -189,6 +201,10 @@ Documentation Improvements for Tools
 
 Language Specification Improvements
 -----------------------------------
+* described the process of finding module files through `use` and `import`  
+  (see https://chapel-lang.org/docs/language/spec/modules.html#finding-toplevel-module-files)
+* Added a section describing the implicit `this.` in methods  
+  (see https://chapel-lang.org/docs/language/spec/methods.html#implicit-this-in-methods)
 * added examples of distribution factory methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/domain-maps.html#distributions-for-domain-types)
 
@@ -235,6 +251,7 @@ Generated Code Improvements
 
 Memory Improvements
 -------------------
+* removed an unnecessary allocation when moving an array value to a typed var
 * fixed memory leak when using loop expressions with empty bodies
 * fixed a memory leak when ignoring values in `try!` expressions
 * fixed a memory leak when using per-locale "static" variables  
@@ -247,6 +264,8 @@ Configuration / Build Changes
 * added `CHPL_[TARGET|HOST]_JEMALLOC` to specify 'jemalloc' usage and sources  
   (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-target-jemalloc  
    and https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-host-jemalloc)
+* added `CHPL_LLVM_GCC_INSTALL_DIR` to work with a specific GCC installation  
+  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-llvm-gcc-install-dir)
 * added `CHPL_COMM_OFI_OOB` to specify out-of-band launch mechanism for `ofi`  
   (see https://chapel-lang.org/docs/2.2/platforms/libfabric.html#building-chapel-with-the-ofi-communication-layer)
 * added a warning when using `CHPL_ATOMICS=intrinsics`  
@@ -261,9 +280,11 @@ Portability / Platform-specific Improvements
 * made the default for `CHPL_ATOMICS` always be `cstdlib` for bundled LLVM
 * disallowed the use of `CHPL_ATOMICS=locks` on MacOS
 * added the ability to infer the path for `nvcc` from `CHPL_CUDA_PATH`
+* filtered out `-L/usr/lib` when linking to avoid problems on some platforms
 
 Compiler Improvements
 ---------------------
+* made the compiler remove dead modules more aggressively early in compilation
 
 Compiler Flags
 --------------
@@ -288,12 +309,14 @@ Error Messages / Semantic Checks
   (i.e. `begin with ref A { }`)
 * improved errors for generic anonymous functions  
   (e.g., `proc(x: []) { }`)
+* improved the error when creating an associative domain of `owned` classes
 * improved the error message when `sparse subdomain` is incorrectly used
 * improved error message when accidentally creating special method iterators
 * improved error when using same location for `chpldoc` output and Sphinx files
 * added a user error when `getFieldRef()` is used on a `type` field
 * updated memory management checks for non-classes to fire in more cases
 * added a warning for ignoring the result of a function capture
+* improved the surprising shadowing warning to consider enclosing module names
 
 Launchers
 ---------
@@ -322,6 +345,8 @@ Bug Fixes
 * fixed an internal error when returning a `ref` to a value of different type
 * fixed an internal error when using first-class fns as arguments to classes
 * fixed compilation errors due to runtime types under `--baseline`
+* fixed a problem importing from a parent module from an `include`d submodule
+* fixed problems resolving calls to parenless methods from within a method
 
 Bug Fixes for Build Issues
 --------------------------
@@ -402,6 +427,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* the frontend library now drives the process of deciding which files to parse
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for resolving tuple accessor calls
   - added support for iteration over `enum` types
@@ -421,6 +447,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - fixed an error for ambiguities btwn locals and paren-less procs in a method
   - fixed a bug causing `testInteractive --std` to not resolve std module types
   - improved performance of `runAndTrackErrors` API function
+* improved the performance of `--dyno-scope-bundled`
 
 Developer-oriented changes: GPU support
 ---------------------------------------
