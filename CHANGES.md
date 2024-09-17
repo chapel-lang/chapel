@@ -1,6 +1,26 @@
 Release Changes List
 ====================
 
+TODO:
+* '(http:' -> '(see http:'
+o sort items within categories
+o check placement of items into categories
+o check sorting of categories
+o check for ' vs `
+o fulfill TODOs
+o check man page for new compiler flags
+o check test/release/examples
+* check for docs/1.33/ links
+o check forced linebreaks
+o check initial '*'
+* check initial 'A-Z'
+* check 'see:'
+o check for changes put too far down in file
+o remove empty sections
+o check links
+o add highlights
+o spellcheck
+
 version 2.2
 ===========
 
@@ -86,7 +106,7 @@ Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * added parallel/distributed support to the `fileReader.lines()` iterator  
   (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.fileReader.lines)
-* Added an unstable `sort()` overload accepting a region to sort  
+* added an unstable `sort()` overload accepting a region to sort  
   (see https://chapel-lang.org/docs/main/modules/standard/Sort.html#Sort.sort)
 * added multi-dim support to `randomStream.[shuffle|choose|sample|permute]()`  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
@@ -152,7 +172,7 @@ Tool Improvements
   - renamed the `RedundantParentheses` rule to `ControlFlowParentheses`
 * added the ability to document interfaces with `chpldoc`
 * updated the script for anonymizing unstable warnings  
-  (https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
+  (see https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 
 GPU Computing
 -------------
@@ -160,7 +180,7 @@ GPU Computing
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * improved performance for some kernels on multi-GPU locales
 * added a new `@gpu.assertElligible` attribute for compile-time GPU checks  
-  (see https://chapel-lang.org/docs/main/modules/standard/GPU.html#GPU.@gpu.assertEligible)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.assertEligible)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
 * added support for GPU attributes to compile without the GPU locale model
@@ -189,7 +209,7 @@ Documentation Improvements
 * linked the module index from the documentation landing page  
   (see https://chapel-lang.org/docs/2.2/index.html#indexes)
 * added documentation of the GPU attributes to the 'GPU' module docs  
-  (see https://chapel-lang.org/docs/main/modules/standard/GPU.html)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html)
 * searching for `init=` now finds the relevant documentation
 * clarified that the terminating null byte is optional on string/bytes buffers
 
@@ -203,9 +223,9 @@ Documentation Improvements for Tools
 Language Specification Improvements
 -----------------------------------
 * described the process of finding module files through `use` and `import`  
-  (see https://chapel-lang.org/docs/language/spec/modules.html#finding-toplevel-module-files)
-* Added a section describing the implicit `this.` in methods  
-  (see https://chapel-lang.org/docs/language/spec/methods.html#implicit-this-in-methods)
+  (see https://chapel-lang.org/docs/2.2/language/spec/modules.html#finding-toplevel-module-files)
+* added a section describing the implicit `this.` in methods  
+  (see https://chapel-lang.org/docs/2.2/language/spec/methods.html#implicit-this-in-methods)
 * added examples of distribution factory methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/domain-maps.html#distributions-for-domain-types)
 
@@ -235,7 +255,7 @@ Documentation Improvements for Libraries
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
 * added cross-reference to env var docs to 'Compiler Configuration Options'  
-  (see https://chapel-lang.org/docs/main/usingchapel/man.html#man-task-tracking)
+  (see https://chapel-lang.org/docs/2.2/usingchapel/man.html#man-task-tracking)
 
 Example Codes
 -------------
@@ -264,7 +284,7 @@ Configuration / Build Changes
   (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-target-jemalloc  
    and https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-host-jemalloc)
 * added `CHPL_LLVM_GCC_INSTALL_DIR` to work with a specific GCC installation  
-  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-llvm-gcc-install-dir)
+  (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-llvm-gcc-install-dir)
 * added `CHPL_COMM_OFI_OOB` to specify out-of-band launch mechanism for `ofi`  
   (see https://chapel-lang.org/docs/2.2/platforms/libfabric.html#building-chapel-with-the-ofi-communication-layer)
 * added a warning when using `CHPL_ATOMICS=intrinsics`  
@@ -6215,7 +6235,7 @@ Documentation
 * improved the 'Modules' chapter of the language spec for `use` and `import`  
   (see https://chapel-lang.org/docs/1.23/language/spec/modules.html#access-of-module-contents)
 * updated the language specification to discuss `.type` and runtime types  
-  (see http://chapel-lang.org/docs/1.23/language/spec/types.html#querying-the-type-of-an-expression)
+  (see https://chapel-lang.org/docs/1.23/language/spec/types.html#querying-the-type-of-an-expression)
 * updated the description of initializing `sync` variables in the language spec  
   (see https://chapel-lang.org/docs/1.23/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
 * added a section on conflicts to the 'Variables' chapter of the language spec  
