@@ -43,15 +43,19 @@ There are two main approaches for using Chapel on WSL:
 
 For option 1, see the following example of how to install Chapel on WSL::
 
-    # From the Ubuntu terminal, use the following command to download the Chapel package.
-    wget https://github.com/chapel-lang/chapel/releases/download/2.1.0/chapel-2.1.0-1.ubuntu22.amd64.deb
+    # From the Ubuntu terminal, use wget to download the Chapel package,
+    # replacing <chapel_version> and <package_file_name> with the appropriate values
+    wget https://github.com/chapel-lang/chapel/releases/download/<chapel_version>/<package_file_name>
 
     # Verify the package by checking the shasum 256 against the known good value:
-    echo "5928c31bb1ffe704356a86c52006b7bd3c8115190bc4a833abc6a6040c07b368 *chapel-2.1.0-1.ubuntu22.amd64.deb" | shasum -a 256 -c
+    # see https://github.com/chapel-lang/chapel/releases for a list of packages and known good sha256 values
+    # if you get the following error:
+    # `shasum: standard input: no properly formatted SHA checksum lines found`
+    # check that you have 2 spaces between the sha256 value and the filename
 
-    # Install Chapel
+    # Install Chapel, replacing <package_file_name> with the appropriate value
     sudo apt-get update
-    sudo apt-get install ./chapel-2.1.0-1.ubuntu22.amd64.deb
+    sudo apt-get install <package_file_name>
 
     # Test that chpl is available
     chpl --version
