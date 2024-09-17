@@ -155,6 +155,8 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // detected.
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 
+void chpl_comm_free_nb(chpl_comm_nb_handle_t* h);
+
 // Returns whether or not the passed wide address is known to be in
 // a communicable memory region and known to be readable. That is,
 // GET to that address should succeed without an access violation

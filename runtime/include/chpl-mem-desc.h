@@ -67,6 +67,7 @@ extern "C" {
   m(COMM_PER_LOC_INFO,    "comm layer per-locale information",        false), \
   m(COMM_PRV_OBJ_ARRAY,   "comm layer private objects array",         false), \
   m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
+  m(COMM_NB_HANDLE,       "comm layer non-blocking handle",           false), \
   m(MEM_HEAP_SPACE,       "mem layer heap expansion space",           false), \
   m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
   m(STRING_LITERALS_BUF,  "string literals buffer",                   true ), \
