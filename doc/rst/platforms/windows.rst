@@ -22,9 +22,45 @@ variety of Linux distributions. For more information on WSL, see the
 
 To use Chapel on WSL, you will need to install a Linux distribution from the
 Microsoft Store. We recommend using Ubuntu, but others will likely work.
-Once you have installed your distribution, get the list of prerequisites
-from :ref:`readme-prereqs` and install Chapel as you would on a native Linux
-system. There are no platform-specific settings for Chapel on WSL at this time.
+
+This example shows how to install WSL and Ubuntu on Windows 10/11::
+
+    # From PowerShell, run the following command to enable WSL
+    wsl --install -d Ubuntu
+
+
+There are two main approaches for using Chapel on WSL:
+
+1) Install via a prebuilt Chapel package. This is the quickest way to get up
+   and running, but it results in a copy of Chapel without GPU support and that
+   only supports shared-memory (single-locale) executions. See the list of available
+   packages released on the `Chapel GitHub page <https://github.com/chapel-lang/chapel/releases>`_.
+
+2) Build Chapel from source, as with any other UNIX system. This is slightly
+   more involved, but supports Chapel's full feature set. See the list of prerequisites
+   for your distribution from :ref:`readme-prereqs`
+
+
+For option 1, see the following example of how to install Chapel on WSL::
+
+    # From the Ubuntu terminal, use wget to download the Chapel package,
+    # replacing <chapel_version> and <package_file_name> with the appropriate values
+    wget https://github.com/chapel-lang/chapel/releases/download/<chapel_version>/<package_file_name>
+
+    # Verify the package by checking the shasum 256 against the known good value:
+    # see https://github.com/chapel-lang/chapel/releases for a list of packages and known good sha256 values
+    # if you get the following error:
+    # `shasum: standard input: no properly formatted SHA checksum lines found`
+    # check that you have 2 spaces between the sha256 value and the filename
+
+    # Install Chapel, replacing <package_file_name> with the appropriate value
+    sudo apt-get update
+    sudo apt-get install <package_file_name>
+
+    # Test that chpl is available
+    chpl --version
+
+There are no platform-specific settings for Chapel on WSL at this time.
 
   .. note::
 
