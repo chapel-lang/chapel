@@ -592,6 +592,7 @@ static void test11() {
   assert(!guard.realizeErrors());
 
   for (auto& [name, var] : vars) {
+    std::ignore = name;
     assert(var.type());
     assert(var.type()->isIntType());
   }
