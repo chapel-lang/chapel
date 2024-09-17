@@ -213,10 +213,6 @@ Platform-Specific Documentation Improvements
 --------------------------------------------
 * expanded docs for using Chapel with Windows Subsystem for Linux (WSL)  
   (see https://chapel-lang.org/docs/2.2/platforms/windows.html#using-chapel-on-wsl)
-* fixed a bug in injection with `CHPL_COMM=ofi`
-* fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
-* fixed a bug using unsupported injection with `CHPL_COMM=ofi` and `efa`
-* fixed a bug striping the fixed heap with `CHPL_COMM=gasnet` and non-`ibv`
 
 Technical Note Improvements
 ---------------------------
@@ -324,8 +320,12 @@ Error Messages / Semantic Checks
 Launchers
 ---------
 
-Runtime Library Changes
------------------------
+Runtime Library Improvements
+----------------------------
+* fixed a bug in injection with `CHPL_COMM=ofi`
+* fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
+* fixed a bug using unsupported injection with `CHPL_COMM=ofi` and `efa`
+* fixed a bug striping the fixed heap with `CHPL_COMM=gasnet` and non-`ibv`
 
 Bug Fixes
 ---------
