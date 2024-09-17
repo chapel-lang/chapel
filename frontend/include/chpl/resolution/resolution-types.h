@@ -2054,8 +2054,8 @@ class ResolutionContext {
     bool isUnstable() const;
 
     template <typename T>
-    const T& cache(T&& t) {
-      auto v = toOwned(new StoredResult<T>(std::forward<T>(t)));
+    const T& cache(T t) {
+      auto v = toOwned(new StoredResult<T>(std::move(t)));
       auto it = cachedResults_.insert(std::move(v)).first;
       StoredResultBase* base = it->get();
       CHPL_ASSERT(base);
@@ -2361,13 +2361,13 @@ struct ResolutionContext::GlobalQuery {
     return nullptr;
   }
 
-  const RetByVal& end(RetByVal&& x) {
+  const RetByVal& end(RetByVal x) {
     // Restoring the marker also clears it.
     recomputeMarker_.restore();
 
     // Pass in the result and indicate the query has ended.
     auto& ret = context_->queryEnd(QUERY, beginMap_, beginRet_, ap_,
-                                   std::forward<RetByVal>(x),
+                                   std::move(x),
                                    name_);
     beginMap_ = nullptr;
     beginRet_ = nullptr;
@@ -2375,9 +2375,8 @@ struct ResolutionContext::GlobalQuery {
     return ret;
   }
 
-  void inactiveStore(RetByVal&& x) {
-    context_->querySetterUpdateResult(QUERY, ap_,
-                                      std::forward<RetByVal>(x),
+  void inactiveStore(RetByVal x) {
+    context_->querySetterUpdateResult(QUERY, ap_, std::move(x),
                                       name_,
                                       isInput_);
   }
@@ -2432,9 +2431,9 @@ struct ResolutionContext::UnstableCache {
       base frame may be used (which has a lifetime as long as the RC).
       By default, use the closest frame. */
   const RetByVal&
-  store(ResolutionContext* rc, RetByVal&& x, const InvokeArgsTuple& args) {
+  store(ResolutionContext* rc, RetByVal x, const InvokeArgsTuple& args) {
     Frame& f = rc->lastFrameOrBaseMutable();
-    return f.cache(std::forward<RetByVal>(x));
+    return f.cache(std::move(x));
   }
 };
 
@@ -2488,9 +2487,9 @@ class ResolutionContext::Query {
     }
   }
 
-  const RetByVal& end(RetByVal&& x) {
+  const RetByVal& end(RetByVal x) {
     if (canUseGlobalCache()) {
-      auto& ret = global_.end(std::forward<RetByVal>(x));
+      auto& ret = global_.end(std::move(x));
       if (didGlobalSetupOccur_) {
         globalSetup_.leave(rc_, global_.args());
         didGlobalSetupOccur_ = false;
@@ -2498,7 +2497,7 @@ class ResolutionContext::Query {
       return ret;
     } else {
       UnstableCacheT uc;
-      return uc.store(rc_, std::forward<RetByVal>(x), global_.args());
+      return uc.store(rc_, std::move(x), global_.args());
     }
   }
 
@@ -2506,12 +2505,12 @@ class ResolutionContext::Query {
     return global_.isRunning();
   }
 
-  void inactiveStore(RetByVal&& x) {
+  void inactiveStore(RetByVal x) {
     if (canUseGlobalCache()) {
-      global_.inactiveStore(std::forward<RetByVal>(x));
+      global_.inactiveStore(std::move(x));
     } else {
       UnstableCacheT uc;
-      uc.store(rc_, std::forward<RetByVal>(x), global_.args());
+      uc.store(rc_, std::move(x), global_.args());
     }
   }
 };

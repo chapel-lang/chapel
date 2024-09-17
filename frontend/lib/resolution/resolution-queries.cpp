@@ -2625,7 +2625,7 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
     return nullptr;
   }
 
-  const T& store(ResolutionContext* rc, T&& x, const Args& args) {
+  const T& store(ResolutionContext* rc, T x, const Args& args) {
     static_assert(std::tuple_size_v<Args> == 2);
     auto sig = std::get<0>(args);
 
@@ -2640,7 +2640,7 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
     CHPL_ASSERT(false && "Should not reach here!");
     auto& f = x != nullptr ? rc->lastFrameOrBaseMutable() : rc->baseFrame_;
-    return f.cache(std::forward<T>(x));
+    return f.cache(std::move(x));
   }
 };
 
@@ -2661,14 +2661,14 @@ ResolutionContext::UnstableCache<resolveFunctionByPoisQuery, T, Args> {
     return nullptr;
   }
 
-  const T& store(ResolutionContext* rc, T&& x, const Args& args) {
+  const T& store(ResolutionContext* rc, T x, const Args& args) {
     static_assert(std::tuple_size_v<Args> == 1);
     auto& poiTrace = std::get<0>(args);
     auto sig = std::get<0>(poiTrace);
 
     if (auto rv = rc->findParentResolverFor(sig)) {
       auto& m = rv->poiTraceToChild;
-      auto p = std::make_pair(poiTrace, std::forward<T>(x));
+      auto p = std::make_pair(poiTrace, std::move(x));
       auto check = m.insert(std::move(p));
       CHPL_ASSERT(check.second);
       return check.first->second;
@@ -2676,7 +2676,7 @@ ResolutionContext::UnstableCache<resolveFunctionByPoisQuery, T, Args> {
 
     CHPL_ASSERT(false && "Should not reach here!");
     auto& f = x != nullptr ? rc->lastFrameOrBaseMutable() : rc->baseFrame_;
-    return f.cache(std::forward<T>(x));
+    return f.cache(std::move(x));
   }
 };
 
