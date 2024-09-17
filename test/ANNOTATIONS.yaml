@@ -583,10 +583,10 @@ all:
     - text: Revert to default GASNET_SND_THREAD=0 (#25307)
       config: 16-node-apollo-hdr
   08/12/24:
-    - Update bundled qthreads to 1.20 (#25210)
+    - text: Update bundled qthreads to 1.20 (#25210)
       config: chapcs
   08/28/24:
-    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
+    - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
       config: chapcs
 
 # End all
