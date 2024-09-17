@@ -249,6 +249,9 @@ struct Converter {
   // which modules / submodules to convert
   std::unordered_set<chpl::ID> modulesToConvert;
 
+  // which functions to convert with types
+  chpl::resolution::CalledFnsSet functionsToConvertWithTypes;
+
   // to keep track of symbols that have been converted & fixups needed
   std::unordered_map<ID, Symbol*> syms;
   std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
@@ -301,6 +304,12 @@ struct Converter {
   void addModuleToConvert(ID id) {
     modulesToConvert.insert(std::move(id));
   }
+
+  void setFunctionsToConvertWithTypes(chpl::resolution::CalledFnsSet calledFns)
+  {
+    functionsToConvertWithTypes.swap(calledFns);
+  }
+
 
   ModuleSymbol*
   convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag);
@@ -5124,6 +5133,8 @@ Converter::convertToplevelModule(const chpl::uast::Module* mod,
 void Converter::postConvertApplyFixups() {
   // apply fixups that we have tracked
 
+  SET_LINENO(rootModule); // avoid "no line number available" masking other errs
+
   llvm::SmallPtrSet<SymExpr*, 4> fixedUp;
 
   // Fix up any SymExprs needing to be re-targeted
@@ -5298,6 +5309,12 @@ void UastConverter::clearModulesToConvert() {
 void UastConverter::addModuleToConvert(ID id) {
   converter_->addModuleToConvert(std::move(id));
 }
+
+void UastConverter::setFunctionsToConvertWithTypes(
+    chpl::resolution::CalledFnsSet calledFns) {
+  converter_->setFunctionsToConvertWithTypes(std::move(calledFns));
+}
+
 
 ModuleSymbol*
 UastConverter::convertToplevelModule(const chpl::uast::Module* mod,

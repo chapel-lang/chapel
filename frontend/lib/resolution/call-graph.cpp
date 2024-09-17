@@ -112,8 +112,10 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
   // consider the return-intent overloads
   for (const auto& candidate : re->mostSpecific()) {
     if (const TypedFnSignature* sig = candidate.fn()) {
-      const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-      called.insert(fn);
+      if (sig->untyped()->idIsFunction()) {
+        const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+        called.insert(fn);
+      }
     }
   }
 
@@ -122,8 +124,10 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
     // TODO: handle copy-init called by default copy-init, etc.
     // Ideally, that would work by generating uAST for them.
     if (const TypedFnSignature* sig = action.fn()) {
-      const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-      called.insert(fn);
+      if (sig->untyped()->idIsFunction()) {
+        const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+        called.insert(fn);
+      }
     }
   }
 }
