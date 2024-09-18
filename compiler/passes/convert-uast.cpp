@@ -42,6 +42,7 @@
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
+
 #include "config.h"
 #include "global-ast-vecs.h"
 #include "optimizations.h"
@@ -61,7 +62,7 @@
 #include "chpl/util/assertions.h"
 #include "stmt.h"
 
-#include "LoopAttributeInfo.h"
+#include "convert-help.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 

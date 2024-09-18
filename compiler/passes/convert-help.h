@@ -20,12 +20,14 @@
 
 /* This file is a helper for the process of converting from uAST
    to the older AST used by the rest of the compiler.
+   It contains details that can be shared by both convert-uast.cpp
+   and convert-typed-uast.cpp.
    It helps to add LLVM attributes to certain expressions to support
    GPU programming.
  */
 
-#ifndef _LOOP_ATTRIBUTE_INFO_H_
-#define _LOOP_ATTRIBUTE_INFO_H_
+#ifndef _CONVERT_HELP_H_
+#define _CONVERT_HELP_H_
 
 #include "chpl/framework/Context.h"
 #include "chpl/uast/Attribute.h"
