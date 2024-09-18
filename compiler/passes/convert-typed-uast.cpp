@@ -152,6 +152,7 @@ struct TConverter final : UastConverter {
   const ResolvedFunction* currentResolvedFunction = nullptr;
 
   // which modules / submodules to convert
+  std::vector<ID> modulesToConvertVec;
   std::unordered_set<ID> modulesToConvert;
 
   // which functions to convert with types
@@ -188,12 +189,14 @@ struct TConverter final : UastConverter {
   ~TConverter();
 
   // supporting UastConverter methods
-  void clearModulesToConvert() override {
+  void setModulesToConvert(std::vector<ID> vec) override {
     modulesToConvert.clear();
-  }
-
-  void addModuleToConvert(ID id) override {
-    modulesToConvert.insert(std::move(id));
+    // save the vector
+    modulesToConvertVec.swap(vec);
+    // add the modules to the set
+    for (const ID& id : modulesToConvert) {
+      modulesToConvert.insert(id);
+    }
   }
 
   void setFunctionsToConvertWithTypes(CalledFnsSet calledFns) override
@@ -398,7 +401,7 @@ void TConverter::postConvertApplyFixups() {
   CHPL_UNIMPL("convertToplevelModule");
 }
 
-static ModTag classifyModule(Context* context, ID modId) {
+/*static ModTag classifyModule(Context* context, ID modId) {
   UniqueString path;
   bool found = context->filePathForId(modId, path);
   INT_ASSERT(found);
@@ -417,29 +420,15 @@ static ModTag classifyModule(Context* context, ID modId) {
   }
 
   return modTag;
-}
+}*/
 
 void TConverter::setupModulesToConvert() {
-  // sort the modules to convert by internal/standard/user then by ID/name
-  // TODO: if the order matters more than this, use the module init order.
-  std::vector<std::pair<int,ID>> mods;
-  for (const ID& modId : modulesToConvert) {
-    int section = 0;
-    ModTag modTag = classifyModule(context, modId);
-    if      (modTag == MOD_INTERNAL) section = 0;
-    else if (modTag == MOD_STANDARD) section = 1;
-    else if (modTag == MOD_USER) section = 2;
-
-    mods.push_back({section, modId});
-  }
-  std::sort(mods.begin(), mods.end());
-
   // create each module now since we might add a function to it
   // the order in which this is done is not particularly
   // important since they will be filled-in in module init order
   // via calls to convertToplevelModule.
-  for (const auto& pair : mods) {
-    setupModule(pair.second);
+  for (const ID& modId : modulesToConvertVec) {
+    setupModule(modId);
   }
 }
 

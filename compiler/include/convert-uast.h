@@ -40,10 +40,11 @@ class UastConverter {
  public:
   virtual ~UastConverter();
 
-  // these help to know if submodules should be handled.
-  // when converting, only convert modules that were added to this set.
-  virtual void clearModulesToConvert() = 0;
-  virtual void addModuleToConvert(chpl::ID id) = 0;
+  // Provide a vector of modules / submodules to be converted.
+  // When converting, only convert modules listed here.
+  // It will help performance if the order of the modules in the vector
+  // matches the order in which they are converted.
+  virtual void setModulesToConvert(std::vector<chpl::ID> vec) = 0;
 
   // Provide the set of functions that should be converted with full
   // type information.
