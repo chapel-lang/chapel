@@ -406,12 +406,26 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 
   astlocMarker markAstLoc(mod->id());
 
-  CHPL_UNIMPL("convertToplevelModule");
-  return nullptr;
+  ModuleSymbol* modSym = modSyms[mod->id()];
+  if (modSym == nullptr) {
+    // this happens for PrintModuleInitOrder & any module not listed
+    // in the modulesToConvert that we convert anyway.
+    modSym = setupModule(mod->id());
+  }
+
+  if (modSym->modTag != MOD_USER) {
+    return untypedConverter->convertToplevelModule(mod, modTag);
+  }
+
+  // TODO: convert the module initializer
+
+  return modSym;
 }
 
 void TConverter::postConvertApplyFixups() {
-  CHPL_UNIMPL("postConvertApplyFixups");
+  untypedConverter->postConvertApplyFixups();
+
+  // TODO: apply fixups from this converter
 }
 
 void TConverter::setupModulesToConvert() {
@@ -480,6 +494,9 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
 
   // Save the empty module for later filling-in
   modSyms[modId] = modSym;
+
+  // also tell the untyped converter about it
+  untypedConverter->useModuleWhenConverting(modId, modSym);
 
   printf("Created module[%i] for %s\n", modSym->id, modId.str().c_str());
 
