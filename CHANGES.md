@@ -18,8 +18,8 @@ TODO:
 * check for changes put too far down in file
 o remove empty sections
 o check links
-o add highlights
-o spellcheck
+* add highlights
+* spellcheck
 
 version 2.2
 ===========
@@ -28,19 +28,15 @@ released September 26, 2024
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* we're releasing multi-locale Chapel support in several new Linux packages
+* several new Linux packages are being released containing multi-locale support
 * programmers can now define and use custom memory allocators with classes
 * remote variable declarations are greatly improved in capabilities & behavior
-* the 'Sort' module has been revamped and promoted to a standard module
-* new routines support convenient conversions between JSON strings
+* performance is significantly improved for key array programming patterns
+* added ROCm 6 support for AMD GPUs, and generally improved GPU features & perf
+* the 'Sort' module has been revised and promoted to a standard module
+* new parallel/distributed I/O iterators are available in 'IO'/'ParallelIO'
 * a new 'PrecisionSerializer' package controls numerical precision/padding
-* the 'Image' module has been extended to support new file formats and routines
-* we've introduced new parallel/distributed I/O iterators
-* the 'Zarr' package module's capabilities have been extended and improved
-* added ROCm 6 support for AMD GPUs and generally improved GPU features & perf
-* significantly improved performance for several key array programming patterns
-* closed a few previously unknown memory leaks
-* added new environment variables for specifying jemalloc/gcc/ofi options
+* the 'Image' and 'Zarr' package modules have been improved via new features
 * made many other user-driven improvements w.r.t. bugs, errors, features, tools
 
 Updates to Chapel's Release Formats
