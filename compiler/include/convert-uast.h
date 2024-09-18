@@ -65,7 +65,7 @@ class UastConverter {
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);
 
-//owned<UastConverter> createTypedConverter(chpl::Context* context);
+chpl::owned<UastConverter> createTypedConverter(chpl::Context* context);
 
 
 #endif
