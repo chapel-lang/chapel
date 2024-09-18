@@ -265,8 +265,7 @@ GPU-Related Attributes
 Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
 to control various aspects of how code is compiled or executed on the GPU.
 Currently the following GPU-specific attributes are available:
-``@assertOnGpu`` (described in `Diagnostics and Utilities`_),
-``@gpu.assertEligible``,
+``@assertOnGpu`` and ``@gpu.assertEligible`` (described in `Diagnostics and Utilities`_),
 ``@gpu.blockSize``,
 ``@gpu.itersPerThread``.
 Because
@@ -297,16 +296,30 @@ sequentially within the same GPU thread. Users must ensure that
 the arguments to the "blockSize" and "itersPerThread" attributes
 are positive and non-zero.
 
-In addition to applying GPU attributes to loops, Chapel provides (experimental)
-support for applying them to variable declarations. This is intended for use
-with variables whose initializers contain GPU-bound code. The following example
-demonstrates initializing an array ``A`` from a ``foreach`` expression:
+To apply attributes to expression-level loops such as promoted function calls
+or ``foreach`` expressions, Chapel also (experimentally) supports decorating
+variable declarations with GPU attributes. In the following example, an array
+``A`` is initialized from a ``foreach`` expression, where two GPU attributes
+are used to control the execution of the expression on the GPU:
 
 .. code-block:: chapel
 
    @gpu.blockSize(128)
    @gpu.itersPerThread(4)
    var A = foreach i in 1..1000000 do i * i;
+
+This integrates with Chapel's support for `Remote Variable Declarations <./remote.html>`_;
+the following piece of code demonstrates declaring a (GPU-allocated) array
+``A`` in code that otherwise runs on a CPU locale:
+
+.. code-block:: chapel
+
+   @assertOnGpu
+   on here.gpus[0] var A = foreach i in 1..1000000 do i * i;
+
+The ``@assertOnGpu`` attribute applies and checks the GPU eligibility of the
+``foreach`` expression. The expression is then executed on the GPU locale,
+which ensures the runtime GPU assertion is satisfied.
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -380,14 +393,20 @@ will actually run on a GPU or not) pass ``chpl`` the ``--report-gpu`` flag.
 
 Since not all Chapel loops are eligible for conversion into GPU kernels, it
 is helpful to be able to ensure that a particular loop is being executed
-on the GPU. This can be achieved by marking the loop with the ``@assertOnGpu``
-attribute. When a ``forall`` or ``foreach`` loop is marked with this attribute,
-the compiler will perform a compile-time check and produce an error if one of
-the aforementioned requirements is not met. Loops marked with the
-``@assertOnGpu`` attribute will also conduct a runtime assertion that will halt
-execution when not being performed on a GPU. This can happen when the loop
-is eligible for GPU execution, but is being executed outside of a GPU locale.
-The :mod:`GPU` module contains additional utility functions.
+on the GPU. This can be achieved by marking the loop with the
+:annotation:`~GPU.@assertOnGpu` attribute. When a ``forall`` or ``foreach``
+loop is marked with this attribute, the compiler will perform a compile-time
+check and produce an error if one of the aforementioned requirements is not met.
+Loops marked with the ``@assertOnGpu`` attribute will also conduct a runtime
+assertion that will halt execution when not being performed on a GPU. This can
+happen when the loop is eligible for GPU execution, but is being executed
+outside of a GPU locale. The :mod:`GPU` module contains additional utility
+functions.
+
+In some cases, it is desirable to write code that can execute on the GPU, but is
+not required to do so. In this case, ``@assertOnGpu``'s runtime component
+is unnecessary. The :annotation:`@gpu.assertEligible <GPU.@gpu.assertEligible>` attribute has the
+same compile-time behavior as ``@assertOnGpu``, but does not perform this check.
 
 Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
 allocations and detect memory leaks. For example, :proc:`startVerboseMem()
