@@ -24,7 +24,45 @@
 // TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-Supports standard algorithms for sorting data.
+The sort module provides functions to sort arrays and lists. It is designed to
+be flexible and efficient, allowing the user to define custom comparators to
+sort any data type, as long as the comparator implements the appropriate
+sorting interface.
+
+The simples way to sort an array is to call the :proc:`sort` function on the
+array. The sort function will use a default comparator to sort the array in
+ascending order.
+
+.. code-block:: chapel
+
+  var Array = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
+
+  sort(Array);
+
+  // This will output: 1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9
+  writeln(Array);
+
+
+The sort function can also accept a region argument to sort a subset of an
+array. This is offered as an optimization over using an array slice which may
+have performance overhead.
+
+
+.. code-block:: chapel
+
+  var Array = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
+
+  // Sort only the elemets in the range 1..5
+  // Same as sort(Array[1..5]);
+  sort(Array, region=1..5);
+
+  // This will output: 3, 1, 1, 4, 5, 9, 2, 6, 5, 3, 5
+  writeln(Array);
+
+
+The sort function can also be called on a list, be stable or unstable, and
+accept a custom comparator.
+See the :proc:`sort(x: list)<Sort.sort>` function for details.
 
 .. _comparators:
 
@@ -32,37 +70,57 @@ Comparators
 -----------
 
 Comparators allow sorting data by a mechanism other than the
-default comparison operations between array elements. To use a comparator,
-define a record or a class with an appropriate method and then pass
-an instance of it to the sort function. Examples are shown below.
+default comparison operations between array elements.
 
-Comparators need to include at least one of the following methods:
+The :proc:`sort` function can accept a comparator argument, which defines how
+the data is sorted. If no comparator is passed, the default comparator is
+used.
 
- * ``key(a)``  -- see `The .key method`_
- * ``compare(a, b)``  -- see `The .compare method`_
- * ``keyPart(a, i)`` -- see `The .keyPart method`_
+Reverse sorting is handled by the :record:`ReverseComparator`.
+See :ref:`Reverse Comparator<reverse-comparator>` for details.
 
-See the section below for discussion of each of these methods.
 
-A comparator can contain both ``compare`` and ``keyPart`` methods. In that
-event, the sort algorithm will use whichever is appropriate for the algorithm
-and expect that they have consistent results.
+To use a custom comparator, define a record or a class which implements the
+appropriate sorting interface.
+
+Comparators need to implement one, and only one, of the following interfaces
+as well as at least one of their associated methods:
+
+  * :interface:`keyComparator` -- see `The keyComparator interface`_
+  * :interface:`relativeComparator` -- see `The relativeComparator interface`_
+  * :interface:`keyPartComparator` -- see `The keyPartComparator interface`_
+
+See the section below for discussion of each of these interfaces and methods.
+
+*Future:*
+
+  Provide a unified ``sortComparator`` interface, which can represent an
+  exclusive or (XOR) of the three interfaces above.
+
+
+The keyComparator interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``keyComparator`` interface is used to sort data by a key value. Records
+implementing this interface must define a ``key`` method.
 
 It is an error for a comparator to contain a ``key`` method as well as one of
-the other methods.
+the other methods that are part of the ``relativeComparator`` or
+``keyPartComparator`` interfaces.
+
 
 The .key method
-~~~~~~~~~~~~~~~
+***************
 
-The ``key(a)`` method accepts 1 argument, which will be an element from the
+The ``key(elt)`` method accepts 1 argument, which will be an element from the
 array being sorted.
 
 The default key method would look like this:
 
 .. code-block:: chapel
 
-  proc DefaultComparator.key(a) {
-    return a;
+  proc DefaultComparator.key(elt) {
+    return elt;
   }
 
 
@@ -73,11 +131,11 @@ elements, the user can define a comparator with a key method as follows:
 
   var Array = [-1, -4, 2, 3];
 
-  // Empty record serves as comparator
-  record Comparator { }
+  // Empty record serves as comparator, implements the keyComparator interface
+  record Comparator : keyComparator { }
 
   // key method maps an element to the value to be used for comparison
-  proc Comparator.key(a) { return abs(a); }
+  proc Comparator.key(elt) { return abs(elt); }
 
   var absComparator: Comparator;
 
@@ -86,56 +144,63 @@ elements, the user can define a comparator with a key method as follows:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
-The return type of ``key(a)`` must support the ``<``
+The return type of ``key(elt)`` must support the ``<``
 operator, which is used by the base compare method of all sort routines. If the
 ``<`` operator is not defined for the return type, the user may define it
 themselves like so:
 
 .. code-block:: chapel
 
-  operator <(a: returnType, b: returnType): bool {
+  operator <(x: returnType, y: returnType): bool {
     ...
   }
 
 
-The .compare method
-~~~~~~~~~~~~~~~~~~~
+The relativeComparator interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
+The ``relativeComparator`` interface is used to sort data by comparing two
+elements directly. Records implementing this interface must define a
+``compare`` method.
+
+The .compare method
+*******************
+
+The ``compare(x, y)`` method accepts 2 arguments, which will be 2 elements from
 the array being sorted. The return value should be a numeric signed type
-indicating how a and b compare to each other. The conditions between ``a`` and
-``b`` should result in the following return values for ``compare(a, b)``:
+indicating how x and y compare to each other. The conditions between ``x`` and
+``y`` should result in the following return values for ``compare(x, y)``:
 
   ============ ==========
   Return Value Condition
   ============ ==========
-  ``> 0``      ``a > b``
-  ``0``        ``a == b``
-  ``< 0``      ``a < b``
+  ``> 0``      ``x > y``
+  ``0``        ``x == y``
+  ``< 0``      ``x < y``
   ============ ==========
 
 The default compare method for a signed integral type can look like this:
 
 .. code-block:: chapel
 
-    proc DefaultComparator.compare(a, b) {
-      return a - b;
+    proc DefaultComparator.compare(x, y) {
+      return x - y;
     }
 
 
 The absolute value comparison example from above can alternatively be
-implemented with a compare method:
+implemented with a ``relativeComparator`` as follows:
 
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record Comparator { }
+  record Comparator : relativeComparator { }
 
   // compare method defines how 2 elements are compared
-  proc Comparator.compare(a, b) {
-    return abs(a) - abs(b);
+  proc Comparator.compare(x, y) {
+    return abs(x) - abs(y);
   }
 
   var absComparator: Comparator;
@@ -145,8 +210,20 @@ implemented with a compare method:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
+
+The keyPartComparator interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The keyPartComparator interface defines how a comparator should sort parts of
+a key using the ``keyPart`` method. This is used for certain sort algorithms.
+Records implementing this interface must define a ``keyPart`` method.
+
+A comparator implementing this interface can contain both ``compare`` and
+``keyPart`` methods. In that event, the sort algorithm will use whichever is
+appropriate for the algorithm and expect that they have consistent results.
+
 The .keyPart method
-~~~~~~~~~~~~~~~~~~~
+*******************
 
 A ``keyPart(elt, i)`` method returns *parts* of key value at a time. This
 interface supports radix sorting for variable length data types, such as
@@ -220,19 +297,23 @@ To reverse the sort order of a user-defined comparator, pass the user-defined
 comparator to the initializer of the module-defined
 :record:`ReverseComparator` record, which can be passed to the sort function.
 
+For this example, we will reverse the absolute value comparison from above
+using the ``relativeComparator`` interface, although the same can be done with
+the ``keyComparator`` interface.
+
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record Comparator { }
+  record Comparator : relativeComparator{ }
 
   // compare method defines how 2 elements are compared
-  proc Comparator.compare(a, b) {
-    return abs(a) - abs(b);
+  proc Comparator.compare(x, y) {
+    return abs(x) - abs(y); // ascending order
   }
 
-  var absReverseComparator: ReverseComparator(Comparator);
+  var absReverseComparator: ReverseComparator(Comparator); // reverse order
 
   sort(Array, comparator=absReverseComparator);
 
@@ -240,6 +321,7 @@ comparator to the initializer of the module-defined
   writeln(Array);
 
  */
+
 module Sort {
 
   private use List;
@@ -637,7 +719,8 @@ The choice of sorting algorithm used is made by the implementation.
 .. note::
 
   This function currently either uses a parallel radix sort or a parallel
-  improved quick sort.  The algorithms used will change over time.
+  improved quick sort. For stable sort, it uses timsort.
+  The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
 
@@ -683,7 +766,7 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
 Sort the elements in the list ``x``. After the call, ``x`` will store elements
 in sorted order.
 
-See the :proc:`sort` declared just above for details.
+See :proc:`sort` declared above for details.
 
 .. warning::
 
@@ -765,7 +848,8 @@ The choice of sorting algorithm used is made by the implementation.
 .. note::
 
   This function currently either uses a parallel radix sort or a parallel
-  improved quick sort.  The algorithms used will change over time.
+  improved quick sort.  For stable sort, use :proc:`sort` with ``stable=true``.
+  The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
 
@@ -806,6 +890,8 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
   chpl_check_comparator(comparator, eltType);
 
   if stable {
+    // TODO: we already have a stable sort, but it is not called here
+    // maybe we should call it here, even though this one is deprecated
     // TODO: implement a stable merge sort with parallel merge
     // TODO: create an in-place merge sort for the stable+minimizeMemory case
     // TODO: create a stable variant of the radix sort
