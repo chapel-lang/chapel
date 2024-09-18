@@ -5,10 +5,16 @@
 GPU Programming
 ===============
 
-Chapel can be used to program GPUs. The `GPU Programming in Chapel series
-<https://chapel-lang.org/blog/series/gpu-programming-in-chapel/>`_ is a good
-resource for getting started with GPU programming in Chapel. This technote has
-some examples, but it is closer to a reference manual than a tutorial.
+Chapel enables developers to use parallelism at different levels: from
+intra-node multicore parallelism, to cross-node distributed parallelism, to
+GPUs. This technote serves as a reference on how to use Chapel to program GPUs.
+Specifically, it gives a quick overview of GPU programming, includes a handful
+of examples, discusses system requirements and current limitations for GPU
+support, and delves into more details on some specific GPU-related features.
+
+Readers preferring a more tutorial-like introduction to Chapel's GPU support,
+may also wish to look at our `GPU Programming in Chapel
+<https://chapel-lang.org/blog/series/gpu-programming-in-chapel/>`_ blog series.
 
 .. warning::
 
