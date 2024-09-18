@@ -163,9 +163,7 @@ The following are further requirements for GPU support:
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM.
 
-  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported. The bundled LLVM is
-    version 18 with a patch to support ROCm 6. Said patch is in LLVM 19, as such
-    we expect to support system LLVM 19+ with ROCm 6 in the upcoming releases.
+  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported.
 
 * Specifically for using the `CPU-as-Device mode`_:
 
