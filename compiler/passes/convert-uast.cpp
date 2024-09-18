@@ -108,8 +108,10 @@ struct Converter final : UastConverter {
 
   // which modules / submodules to convert
   std::unordered_set<chpl::ID> modulesToConvert;
+  std::unordered_set<chpl::ID> functionsToIgnore;
 
   // to keep track of symbols that have been converted & fixups needed
+  std::unordered_map<ID, ModuleSymbol*> modSyms;
   std::unordered_map<ID, Symbol*> syms;
   std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
 
@@ -148,7 +150,7 @@ struct Converter final : UastConverter {
   }
 
   // supporting UastConverter methods
-  void setModulesToConvert(std::vector<ID> vec) override {
+  void setModulesToConvert(const std::vector<ID>& vec) override {
     modulesToConvert.clear();
     // add them to the set
     for (const ID& id : vec) {
@@ -156,11 +158,24 @@ struct Converter final : UastConverter {
     }
   }
 
-  void setFunctionsToConvertWithTypes(chpl::resolution::CalledFnsSet calledFns) override
+  void setFunctionsToConvertWithTypes(const resolution::CalledFnsSet& calledFns) override
   {
-    // intentionally does nothing
+    // the concrete functions that are converted with types should be
+    // ignored by this converter.
+    functionsToIgnore.clear();
+    for (const auto& pair : calledFns) {
+      const resolution::ResolvedFunction* r = pair.first;
+      if (r->signature()->instantiatedFrom() == nullptr) {
+        // it's concrete, so don't convert it
+        // instead, rely on the TConverter to do it
+        functionsToIgnore.insert(r->id());
+      }
+    }
   }
 
+  void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
+    modSyms[modId] = modSym;
+  }
 
   ModuleSymbol*
   convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag) override;
@@ -2922,6 +2937,11 @@ struct Converter final : UastConverter {
   }
 
   Expr* visit(const uast::Function* node) {
+    // don't convert functions we were asked to ignore
+    if (functionsToIgnore.count(node->id()) != 0) {
+      return nullptr;
+    }
+
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;
 
@@ -3023,18 +3043,24 @@ struct Converter final : UastConverter {
     currentModuleName = name;
     auto body = createBlockWithStmts(node->stmts(), style);
 
-    ModuleSymbol* mod = buildModule(name,
-                                    tag,
-                                    body,
-                                    path,
-                                    priv,
-                                    prototype);
 
-    if (node->kind() == uast::Module::IMPLICIT) {
-      mod->addFlag(FLAG_IMPLICIT_MODULE);
+    ModuleSymbol* mod = nullptr;
+    auto it = modSyms.find(node->id());
+    if (it != modSyms.end()) {
+      mod = it->second;
+      // append the newly converted statements to the module's block
+      for_alist(expr, body->body) {
+        mod->block->insertAtTail(expr->remove());
+      }
+    } else {
+      mod = buildModule(name, tag, body, path, priv, prototype);
+
+      if (node->kind() == uast::Module::IMPLICIT) {
+        mod->addFlag(FLAG_IMPLICIT_MODULE);
+      }
+
+      attachSymbolAttributes(context, node, mod, isFromLibraryFile);
     }
-
-    attachSymbolAttributes(context, node, mod, isFromLibraryFile);
 
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);

@@ -151,6 +151,9 @@ struct TConverter final : UastConverter {
   ModTag topLevelModTag = MOD_USER;
   const ResolvedFunction* currentResolvedFunction = nullptr;
 
+  // the untyped converter (temporarily, this is used for non-user code)
+  owned<UastConverter> untypedConverter;
+
   // which modules / submodules to convert
   std::vector<ID> modulesToConvertVec;
   std::unordered_set<ID> modulesToConvert;
@@ -184,26 +187,36 @@ struct TConverter final : UastConverter {
     SET_LINENO(rootModule);
     scratchSpaceBlock = new BlockStmt();
     curBlock = scratchSpaceBlock;
+
+    untypedConverter = createUntypedConverter(context);
   }
 
   ~TConverter();
 
   // supporting UastConverter methods
-  void setModulesToConvert(std::vector<ID> vec) override {
+  void setModulesToConvert(const std::vector<ID>& vec) override {
     modulesToConvert.clear();
     // save the vector
-    modulesToConvertVec.swap(vec);
+    modulesToConvertVec = vec;
     // add the modules to the set
     for (const ID& id : modulesToConvert) {
       modulesToConvert.insert(id);
     }
+
+    // also tell the untyped converter about it
+    untypedConverter->setModulesToConvert(vec);
   }
 
-  void setFunctionsToConvertWithTypes(CalledFnsSet calledFns) override
+  void setFunctionsToConvertWithTypes(const CalledFnsSet& calledFns) override
   {
-    functionsToConvertWithTypes.swap(calledFns);
+    functionsToConvertWithTypes = calledFns;
+    untypedConverter->setFunctionsToConvertWithTypes(calledFns);
   }
 
+  void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
+    INT_FATAL("useModuleWhenConverting not expected for TConverter");
+    modSyms[modId] = modSym;
+  }
 
   Expr* convertAST(const AstNode* node) override;
 
@@ -398,29 +411,8 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 }
 
 void TConverter::postConvertApplyFixups() {
-  CHPL_UNIMPL("convertToplevelModule");
+  CHPL_UNIMPL("postConvertApplyFixups");
 }
-
-/*static ModTag classifyModule(Context* context, ID modId) {
-  UniqueString path;
-  bool found = context->filePathForId(modId, path);
-  INT_ASSERT(found);
-
-  // compute the modTag
-  ModTag modTag = MOD_USER;
-  if (chpl::parsing::filePathIsInInternalModule(context, path)) {
-    modTag = MOD_INTERNAL;
-  } else if (chpl::parsing::filePathIsInStandardModule(context, path)) {
-    modTag = MOD_STANDARD;
-  } else if (chpl::parsing::filePathIsInBundledModule(context, path)) {
-    // TODO: this considers code in modules/packages as MOD_STANDARD but
-    // we would like this to be MOD_USER.
-    // See also issue #24998.
-    modTag = MOD_STANDARD;
-  }
-
-  return modTag;
-}*/
 
 void TConverter::setupModulesToConvert() {
   // create each module now since we might add a function to it
