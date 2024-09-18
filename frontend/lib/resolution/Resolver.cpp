@@ -3057,7 +3057,6 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
       if (!redeclarations.isEmpty()) {
-        bool resolvingCalledIdent = nearestCalledExpression() == ident;
         LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
         if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
         issueAmbiguityErrorIfNeeded(ident, inScope, config);
