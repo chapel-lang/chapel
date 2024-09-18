@@ -24,13 +24,14 @@
 // TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-The sort module provides functions to sort arrays and lists. It is designed to
+This module supports standard algorithms for sorting data.
+It is designed to
 be flexible and efficient, allowing the user to define custom comparators to
 sort any data type, as long as the comparator implements the appropriate
 sorting interface.
 
-The simples way to sort an array is to call the :proc:`sort` function on the
-array. The sort function will use a default comparator to sort the array in
+The simplest way to sort an array is to call the :proc:`sort` function on the
+array. The sort function will use the default comparator to sort the array in
 ascending order.
 
 .. code-block:: chapel
@@ -132,14 +133,14 @@ elements, the user can define a comparator with a key method as follows:
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator, implements the keyComparator interface
-  record Comparator : keyComparator { }
+  record absComparator : keyComparator { }
 
   // key method maps an element to the value to be used for comparison
-  proc Comparator.key(elt) { return abs(elt); }
+  proc absComparator.key(elt) { return abs(elt); }
 
-  var absComparator: Comparator;
+  var absoluteComparator: absComparator;
 
-  sort(Array, comparator=absComparator);
+  sort(Array, comparator=absoluteComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
@@ -196,16 +197,16 @@ implemented with a ``relativeComparator`` as follows:
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record Comparator : relativeComparator { }
+  record absComparator : relativeComparator { }
 
   // compare method defines how 2 elements are compared
-  proc Comparator.compare(x, y) {
+  proc absComparator.compare(x, y) {
     return abs(x) - abs(y);
   }
 
-  var absComparator: Comparator;
+  var absoluteComparator: absComparator;
 
-  sort(Array, comparator=absComparator);
+  sort(Array, comparator=absoluteComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
@@ -218,8 +219,8 @@ The keyPartComparator interface defines how a comparator should sort parts of
 a key using the ``keyPart`` method. This is used for certain sort algorithms.
 Records implementing this interface must define a ``keyPart`` method.
 
-A comparator implementing this interface can contain both ``compare`` and
-``keyPart`` methods. In that event, the sort algorithm will use whichever is
+A comparator implementing this interface can optionally also provide a
+`compare` method. In that event, the sort algorithm will use whichever is
 appropriate for the algorithm and expect that they have consistent results.
 
 The .keyPart method
@@ -253,7 +254,7 @@ This ``keyPart`` method supports sorting tuples of 2 integers:
 
   proc keyPart(elt: 2*int, i: int) {
     if i > 1 then
-      return (-1, 0);
+      return (keyPartStatus.pre, 0); // second value is not used
 
     return (keyPartStatus.returned, elt(i));
   }
@@ -306,14 +307,14 @@ the ``keyComparator`` interface.
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record Comparator : relativeComparator{ }
+  record absComparator : relativeComparator{ }
 
   // compare method defines how 2 elements are compared
-  proc Comparator.compare(x, y) {
+  proc absComparator.compare(x, y) {
     return abs(x) - abs(y); // ascending order
   }
 
-  var absReverseComparator: ReverseComparator(Comparator); // reverse order
+  var absReverseComparator: ReverseComparator(absComparator); // reverse order
 
   sort(Array, comparator=absReverseComparator);
 
@@ -719,7 +720,7 @@ The choice of sorting algorithm used is made by the implementation.
 .. note::
 
   This function currently either uses a parallel radix sort or a parallel
-  improved quick sort. For stable sort, it uses timsort.
+  improved quick sort. For stable sort, it uses Timsort.
   The algorithms used will change over time.
 
   It currently uses parallel radix sort if the following conditions are met:
