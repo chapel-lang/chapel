@@ -105,10 +105,10 @@ The keyComparator interface
 The ``keyComparator`` interface is used to sort data by a key value. Records
 implementing this interface must define a ``key`` method.
 
-It is an error for a comparator to contain a ``key`` method as well as one of
-the other methods that are part of the ``relativeComparator`` or
-``keyPartComparator`` interfaces.
-
+Today, it is an error for a comparator implementing the ``keyComparator``
+interface to contain a ``key`` method as well as one of the other methods
+that are part of the ``relativeComparator`` or ``keyPartComparator``
+interfaces. This restriction might be lifted in future releases.
 
 The .key method
 ***************
