@@ -5337,7 +5337,7 @@ const Decl* findFieldByName(Context* context,
   const Decl* ret = nullptr;
 
   for (auto decl : ad->children()) {
-    if (auto named = decl->toNamedDecl()) {
+    if (auto named = decl->toVarLikeDecl()) {
       if (named->name() == name) {
         ret = named;
         break;
@@ -5364,8 +5364,10 @@ const Decl* findFieldByName(Context* context,
   if (ret == nullptr && ct != nullptr) {
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
-        auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
-        ret = findFieldByName(context, parentAD, parent, name);
+        if (parent->isObjectType() == false) {
+          auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
+          ret = findFieldByName(context, parentAD, parent, name);
+        }
       }
     }
   }

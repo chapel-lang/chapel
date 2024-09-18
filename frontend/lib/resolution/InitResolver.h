@@ -63,7 +63,14 @@ class InitResolver {
   std::vector<ID> thisCompleteIds_;
   bool isDescendingIntoAssignment_ = false;
   const types::Type* currentRecvType_ = initialRecvType_;
+
   const types::BasicClassType* superType_ = nullptr;
+
+  bool explicitSuperInit = false;
+
+  // Uses of parent fields before a super.init is seen.
+  // Stores field ID and ID of the uAST referencing the field.
+  std::vector<std::pair<ID, ID>> useOfSuperFields_;
 
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
@@ -99,14 +106,17 @@ class InitResolver {
   FieldInitState* fieldStateFromId(ID id);
   FieldInitState* fieldStateFromIndex(int idx);
   bool isMentionOfNodeInLhsOfAssign(const uast::AstNode* node);
-  ID fieldIdFromName(UniqueString name);
-  ID fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
+  std::pair<ID,bool> fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
   bool isFieldInitialized(ID fieldId);
 
   // handle a call to this.complete() or init this.
   void handleInitMarker(const uast::AstNode* node);
   bool handleCallToThisComplete(const uast::FnCall* node);
+
   bool handleCallToSuperInit(const uast::FnCall* node, const CallResolutionResult* c);
+  void resolveImplicitSuperInit();
+  void updateSuperType(const CallResolutionResult* c);
+
   bool handleCallToInit(const uast::FnCall* node, const CallResolutionResult* c);
   bool handleAssignmentToField(const uast::OpCall* node);
   ID solveNameConflictByIgnoringField(const MatchingIdsWithName& vec);
@@ -137,10 +147,6 @@ public:
 
   // Called in exit for dot expressions and identifiers.
   bool handleUseOfField(const uast::AstNode* node);
-
-  // Called on entry for dot expressions and identifiers.
-  bool handleResolvingFieldAccess(const uast::Identifier* node);
-  bool handleResolvingFieldAccess(const uast::Dot* node);
 
   // Called to produce the final function signature.
   const TypedFnSignature* finalize(void);

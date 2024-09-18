@@ -1124,6 +1124,39 @@ static void testAssignThenInit(void) {
   }
 }
 
+static void testUseAfterInit() {
+  std::string program = R"""(
+    operator *(const ref lhs: real, const rhs : int) : real {
+      var ret : real;
+      return ret;
+    }
+
+    operator =(ref lhs: real, const rhs: real) { __primitive("=", lhs, rhs); }
+
+    class PointDoubleX {
+      var a, b : real;
+
+      proc init(a: real, b: real) {
+        this.a = a;              // initialization
+
+        this.a = 5.0;              // assignment
+
+        var c = this.a * 2;      // use of initialized field
+
+        this.b = b;              // initialization
+      }
+    }
+
+    var x = new PointDoubleX(1.0, 2.0);
+  )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfX(context, program);
+}
+
 static void testInitEqOther(void) {
   Context context;
   Context* ctx = &context;
@@ -1295,6 +1328,79 @@ static void testInheritance() {
     std::ignore = resolveModule(context, m->id());
   }
 
+  // Allow parent field access with implicit super.init
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Parent { var x : int; }
+      class Child : Parent { var y : real; }
+
+      operator *(const lhs: int, rhs: real) : real {
+        return __primitive("*", lhs, rhs);
+      }
+      operator =(ref lhs: real, const rhs: real) : void {
+        __primitive("=", lhs, rhs);
+      }
+
+      proc Child.init() {
+        this.y = x * 42.0;
+      }
+      var a = new Child();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // Error for accessing parent field before super.init
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class Parent { var x : int; }
+      class Child : Parent { var y : real; }
+
+      operator *(const lhs: int, rhs: real) : real {
+        return __primitive("*", lhs, rhs);
+      }
+      operator =(ref lhs: real, const rhs: real) : void {
+        __primitive("=", lhs, rhs);
+      }
+
+      proc Child.init() {
+        var dummy = this.x * 0.0;
+        var other = x * 0.0;
+        super.init(0);
+        this.y = x * 42.0;
+      }
+      var a = new Child();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+
+    assert(guard.numErrors() == 2);
+    auto msg = R"""(Cannot access parent field "x" before super.init() or this.init())""";
+
+    {
+      auto& err = guard.error(0);
+      assert(err->message() == msg);
+      assert(err->toErrorMessage(context).id().str() == "input.init@3");
+    }
+    {
+      auto& err = guard.error(1);
+      assert(err->message() == msg);
+      assert(err->toErrorMessage(context).id().str() == "input.init@7");
+    }
+
+    guard.realizeErrors();
+  }
+
   // Basic generic case
   {
     Context ctx;
@@ -1407,6 +1513,67 @@ static void testInheritance() {
   }
 }
 
+static void testImplicitSuperInit() {
+  // Ensure we resolve the body of implicit super.init() calls
+  {
+    // use 'test' to ensure 'q' has the right type
+    std::string program = R"""(
+      proc test(arg: uint) {}
+
+      class A {
+        type T = string;
+        var aa : T;
+
+        proc init(type T = int) {
+          this.T = uint;
+        }
+      }
+
+      class B : A(?) {
+        var bb : real;
+
+        // implicit super.init through Dot
+        proc init() {
+          var q = this.aa;
+          test(q);
+
+          this.bb = 42.0;
+        }
+
+        // implicit super.init through Identifier
+        proc init(dummy:string) {
+          var q = aa;
+          test(q);
+
+          this.bb = 42.0;
+        }
+      }
+
+      var x = new B();
+      var y = new B("");
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+
+    auto check = [] (QualifiedType qt) {
+      auto t = qt.type();
+      assert(t);
+      assert(t->isClassType());
+
+      std::stringstream ss;
+      t->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+      assert(ss.str() == "owned B(uint(64))");
+    };
+
+    check(vars["x"]);
+    check(vars["y"]);
+  }
+}
+
 static void testInitGenericAfterConcrete() {
   // With generic var initialized properly
   {
@@ -1498,9 +1665,13 @@ int main() {
   testBadInitInBranchFromInit();
   testAssignThenInit();
 
+  testUseAfterInit();
+
   testInitEqOther();
 
   testInheritance();
+
+  testImplicitSuperInit();
 
   testInitGenericAfterConcrete();
 
