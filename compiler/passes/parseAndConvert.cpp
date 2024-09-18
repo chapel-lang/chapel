@@ -313,10 +313,7 @@ static void loadAndConvertModules(UastConverter& c) {
   }
 
   // construct a set of modules to convert
-  c.clearModulesToConvert();
-  for (const auto& id : modulesToConvert) {
-    c.addModuleToConvert(id);
-  }
+  c.setModulesToConvert(modulesToConvert);
 
   // construct a set of top-level command-line modules
   std::set<ID> commandLineModulesSet;

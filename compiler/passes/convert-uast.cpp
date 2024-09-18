@@ -148,12 +148,12 @@ struct Converter final : UastConverter {
   }
 
   // supporting UastConverter methods
-  void clearModulesToConvert() override {
+  void setModulesToConvert(std::vector<ID> vec) override {
     modulesToConvert.clear();
-  }
-
-  void addModuleToConvert(ID id) override {
-    modulesToConvert.insert(std::move(id));
+    // add them to the set
+    for (const ID& id : vec) {
+      modulesToConvert.insert(id);
+    }
   }
 
   void setFunctionsToConvertWithTypes(chpl::resolution::CalledFnsSet calledFns) override
