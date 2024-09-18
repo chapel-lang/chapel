@@ -305,7 +305,9 @@ struct TConverter final : UastConverter {
   //                          std::vector<Expr*>& inherits,
   //                          bool& inheritMarkedGeneric);
   //Expr* convertAggregateDecl(const AggregateDecl* node);
-
+  //Expr* convertTypeExpression(const AstNode* node);
+  //Expr* convertTypeExpressionOrNull(const AstNode* node);
+  //ShadowVarSymbol* convertTaskVar(const TaskVar* node);
  
   // can some of these be shared with the other Converter?
   //const char* convertLinkageNameAstr(const Decl* node);
