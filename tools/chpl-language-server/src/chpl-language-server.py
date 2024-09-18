@@ -702,9 +702,9 @@ class FileInfo:
     @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
-        # s = ScopedNodeAndRange.create(node)
-        # if s:
-        #     self.scope_segments.append(s)
+        s = ScopedNodeAndRange.create(node)
+        if s:
+            self.scope_segments.append(s)
 
     def get_visible_nodes(
         self, pos: Position
