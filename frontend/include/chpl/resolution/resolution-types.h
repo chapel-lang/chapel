@@ -2219,7 +2219,7 @@ class ResolutionContext {
   struct GlobalQueryWrapper;
 
   template <auto F, typename InvokeRet, typename... InvokeArgs>
-  struct GlobalQuery;
+  class GlobalQuery;
 
   template <auto F, typename InvokeArgsTuple>
   struct CanUseGlobalCache;
@@ -2268,13 +2268,7 @@ struct ResolutionContext::GlobalQueryWrapper {
 // TODO: Consider moving all global queries to use this implementation.
 /** This is a class-based wrapper around global context queries. */
 template <auto F, typename InvokeRet, typename... InvokeArgs>
-struct ResolutionContext::GlobalQuery {
-  #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
-    static constexpr bool STOPWATCH_IS_ACTIVE = true;
-  #else
-    static constexpr bool STOPWATCH_IS_ACTIVE = false;
-  #endif
-
+class ResolutionContext::GlobalQuery {
   static auto getStopwatchType() {
     // These values are invalid, but that's OK, we just need their types.
     Context* context = nullptr;
@@ -2283,15 +2277,26 @@ struct ResolutionContext::GlobalQuery {
     return context->makeQueryTimingStopwatch(base, *ap);
   }
 
+ public:
   using Ret = InvokeRet;
   using RetNoRef = typename std::remove_reference<Ret>::type;
   using RetByVal = typename std::remove_const<RetNoRef>::type;
+  template <typename T>
+  using Value = std::decay_t<T>;
   using InvokeArgsTuple = std::tuple<InvokeArgs...>;
-  using ArgsByValueTuple = std::tuple<std::decay_t<InvokeArgs>...>;
-  using Wrapper = GlobalQueryWrapper<F, RetByVal, std::decay_t<InvokeArgs>...>;
+  using ArgsByValueTuple = std::tuple<Value<InvokeArgs>...>;
+  using Wrapper = GlobalQueryWrapper<F, RetByVal, Value<InvokeArgs>...>;
+
+  #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+    static constexpr bool STOPWATCH_IS_ACTIVE = true;
+  #else
+    static constexpr bool STOPWATCH_IS_ACTIVE = false;
+  #endif
+
+ private:
   // Exposing the implementation details of 'QUERY_BEGIN', 'QUERY_END'.
-  using BeginMap = QueryMap<RetByVal, std::decay_t<InvokeArgs>...>;
-  using BeginRet = QueryMapResult<RetByVal, std::decay_t<InvokeArgs>...>;
+  using QueryMap = querydetail::QueryMap<RetByVal, Value<InvokeArgs>...>;
+  using QueryRet = querydetail::QueryMapResult<RetByVal, Value<InvokeArgs>...>;
   using RecomputeMarker = Context::RecomputeMarker;
   using Stopwatch = decltype(getStopwatchType());
 
@@ -2316,11 +2321,12 @@ struct ResolutionContext::GlobalQuery {
 
   // This state is used to mimick 'QUERY_BEGIN' and 'QUERY_END'.
   RecomputeMarker recomputeMarker_;
-  BeginMap* beginMap_ = nullptr;
-  const BeginRet* beginRet_ = nullptr;
+  QueryMap* beginMap_ = nullptr;
+  const QueryRet* beginRet_ = nullptr;
   Stopwatch stopwatch_;
   bool isInput_ = false;
 
+ public:
   GlobalQuery(Context* context, const char* name, InvokeArgs&&... args)
         : context_(context),
           name_(name),
@@ -2446,7 +2452,6 @@ class ResolutionContext::Query {
   // TODO: Refactor this into the more general notion of a "global query"
   // (e.g., the 'GlobalQuery' defined above) that can be augmented with
   // additional state or subclassed.
- public:
   // NOTE: Use 'T' suffixes to prevent a GCC error message...
   using GlobalQueryT = GlobalQuery<F, InvokeRet, InvokeArgs...>;
   using RetByVal = typename GlobalQueryT::RetByVal;
@@ -2455,7 +2460,6 @@ class ResolutionContext::Query {
   using CanUseGlobalCacheT = CanUseGlobalCache<F, InvokeArgsTuple>;
   using GlobalComputeSetupT = GlobalComputeSetup<F, InvokeArgsTuple>;
 
- private:
   ResolutionContext* rc_ = nullptr;
   bool canUseGlobalCache_ = false;
   bool didGlobalSetupOccur_ = false;
