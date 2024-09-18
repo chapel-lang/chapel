@@ -620,6 +620,7 @@ static void setEnv(const ArgumentDescription* desc, const char* arg) {
     // Cut off underscore prefix so we are left with variable name
     env.erase(0, 1);
     envMap[env] = strdup(arg);
+    setenv(env.c_str(), arg, 1);
 }
 
 static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
