@@ -10,7 +10,7 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * several new Linux packages are being released containing multi-locale support
 * programmers can now define and use custom memory allocators with classes
-* remote variable declarations are greatly improved in capabilities & behavior
+* remote variable declarations are complete in terms of capabilities & behavior
 * performance is significantly improved for key array programming patterns
 * added ROCm 6 support for AMD GPUs, and generally improved GPU features & perf
 * the 'Sort' module has been revised and promoted to a standard module
@@ -34,9 +34,10 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
-* extended remote variable declarations to support multi-decls and coercions  
+* remote variable declarations are now fully implemented  
   (see https://chapel-lang.org/docs/2.2/technotes/remote.html)
-* remote variable declaration initializers are now evaluated remotely
+  - initializer expressions are now evaluated on the remote locale
+  - multi-var declarations and implicit `init=` conversions are now supported
 * added support for declaring `enum`s within classes
 * added support for using module-qualified expressions in inheritance decls  
   (e.g., `class Child: MyMod.Parent { ... }`)
@@ -98,7 +99,7 @@ Changes / Feature Improvements in Standard Libraries
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
-* added multi-locale support to 'ParallelIO's iterators  
+* added multi-locale support to iterators in the 'ParallelIO' module  
   (see https://chapel-lang.org/docs/2.2/modules/packages/ParallelIO.html#ParallelIO.readLines)
 * added support for configurable compressors to the 'Zarr' module  
   (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.writeZarrArray)
@@ -247,7 +248,7 @@ Memory Improvements
 * fixed a memory leak when using loop expressions with empty bodies
 * fixed a memory leak when ignoring values in `try!` expressions
 * fixed a memory leak when using per-locale "static" variables  
-* closed a memory leak when reading with the 'Zarr' package module
+* fixed a memory leak when reading with the 'Zarr' package module
 
 Configuration / Build Changes
 -----------------------------
