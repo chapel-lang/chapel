@@ -1645,6 +1645,7 @@ static void printStuff(const char* argv0) {
     } else if ((size_t)wanted_to_write >= sizeof(buf)) {
       USR_FATAL("CHPL_HOME path name is too long");
     }
+    fflush(stdout); // make sure output is flushed before running subprocess
     int status = mysystem(buf, "running printchplenv", false);
     if (compilerSetChplLLVM) {
       printf("---\n");
