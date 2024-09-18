@@ -407,7 +407,8 @@ functions.
 In some cases, it is desirable to write code that can execute on the GPU, but is
 not required to do so. In this case, ``@assertOnGpu``'s runtime component
 is unnecessary. The :annotation:`@gpu.assertEligible <GPU.@gpu.assertEligible>` attribute has the
-same compile-time behavior as ``@assertOnGpu``, but does not perform this check.
+same compile-time behavior as ``@assertOnGpu``, but does not perform this
+execution-time check.
 
 Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
 allocations and detect memory leaks. For example, :proc:`startVerboseMem()
