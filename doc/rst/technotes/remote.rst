@@ -89,13 +89,6 @@ Should behave roughly the same as:
      }
    }
 
-.. warning::
-
-  The current implementation does not always execute the initialization
-  expression on the target locale; as a result, today, the two pieces
-  of code above are not equivalent. This is considered a bug and will
-  be fixed in a future release.
-
 Array types and promotion are supported, making the following code valid:
 
 .. code-block:: chapel
@@ -111,10 +104,10 @@ of a host array into it:
 
    on here.gpus[0] var GpuA = A[GpuPortion];
 
-If the target locale is a GPU locale, and the initialization expression
-is either a promoted expression or a loop expression, it is transformed into
-a GPU kernel as it would be in an ``on`` block. Thus, the following line of
-code generates a kernel launch:
+Since the initialization expression is executed on the target locale,
+if the array is initialized with a GPU-eligible expression, this expression
+is transformed into a GPU kernel as it would in an ``on`` block.
+Thus, the following line of code generates a kernel launch:
 
 .. code-block:: chapel
 
@@ -175,19 +168,9 @@ Remote variable declarations generally work as expected, and support a variety
 of input types. However, there are still some limitations that are considered
 future work:
 
-* As mentioned above, today the initialization expression of a remote variable is
-  executed on the current locale instead of the target locale. The only
-  exception to this rule is when the initialization expression is an array
-  promotion or a loop expression. This is inconsistent, and makes remote variables
-  behave differently from the "two nested ``on`` blocks" pattern.
 * The heap-based container for the remote variable is always created, even when
   the variable is itself a heap-allocated class. This introduces an additional
   level of indirection in certain cases.
-* Unlike regular ``on`` statements, remote variable declarations require
-  the destination to be a locale. Whereas ``on someVar {`` is used to
-  move execution to the locale on which ``someVar`` is declared, to achieve
-  the same effect with remote variable declarations, the locale must be
-  queried: ``on someVar.locale myVar = 42;``.
 * Because of the desugaring described in the :ref:`remote-variables-implementation`
   section, and because records and classes today don't support ``ref`` fields,
   remote variables cannot be used as fields of records or classes.

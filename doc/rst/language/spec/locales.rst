@@ -276,13 +276,29 @@ created in the locale where the task is running. Variables can be
 defined within an ``on-statement`` to define them on a particular locale
 such that the scope of the variables is outside the ``on-statement``.
 This is accomplished using a similar syntax but omitting the ``do``
-keyword and braces. The syntax is given by: 
+keyword and braces. The syntax is given by:
 
 .. code-block:: syntax
 
    remote-variable-declaration-statement:
      'on' expression variable-declaration-statement
 
-.. note::
+As with regular on-statements, the locale of the expression is queried
+as described in :ref:`Querying_the_Locale_of_an_Expression`. The initialization
+expression of the variable, if any, is executed on the target locale.
 
-  Support for this syntax is not yet implemented.
+   *Example*.
+
+   The code
+
+   .. code-block:: chapel
+
+     proc computeInitialValue() {
+       writeln(here.id);
+       return 42;
+     }
+
+     on Locales(1) var x: int = computeInitialValue();
+
+   results in the output ``1`` because the ``writeln`` statement is
+   executed on locale 1.
