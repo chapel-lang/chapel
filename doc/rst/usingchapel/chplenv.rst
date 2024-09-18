@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.1.0
+        export CHPL_HOME=~/chapel-2.2.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
