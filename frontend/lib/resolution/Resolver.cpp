@@ -2997,8 +2997,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
   // If we looked up a called identifier and found ambiguity but no function
-  // results, repeat lookup for the identifier as though it wasn't called, to
-  // support implicit 'this' calls on variables.
+  // results, resolve to just the innermost variable to support implicit 'this'
+  // calls.
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool anyFunctions = false;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
@@ -3008,8 +3008,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       }
     }
     if (!anyFunctions) {
-      ids = lookupIdentifier(ident, /* resolvingCalledIdent */ false,
-                             parenlessInfo);
+      ids.truncate(1);
     }
   }
 
