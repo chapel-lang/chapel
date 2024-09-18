@@ -303,7 +303,7 @@ For example, the following defines a rule that has a fixit associated with it:
 .. note::
 
     The fixit for 'NoFunctionFoo' demonstrated here is not production-ready.
-    It do not rename the uses of the function, nor does it check for conflicts
+    It does not rename the uses of the function, nor does it check for conflicts
     with other names in the file. It is intended only to demonstrate the API for
     defining fixits. The same is true for various other versions of this
     example in this section.
@@ -335,7 +335,7 @@ For example, the snippet above can be written using the decorator as follows:
        return node.name() != "foo"
 
    @driver.fixit(NoFunctionFoo)
-   def FixNoFunctionFoo(context, result):
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
        fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
        fixit.description = "Replace 'foo' with 'bar'"
        return fixit
@@ -361,7 +361,7 @@ as a field on the result object.
        return
 
    @driver.fixit(NoFunctionFoo)
-   def FixNoFunctionFoo(context, result):
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
        print(result.data)  # prints "some data"
        fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
        fixit.description = "Replace 'foo' with 'bar'"
