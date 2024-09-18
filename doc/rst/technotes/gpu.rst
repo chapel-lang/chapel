@@ -296,11 +296,12 @@ sequentially within the same GPU thread. Users must ensure that
 the arguments to the "blockSize" and "itersPerThread" attributes
 are positive and non-zero.
 
-To apply attributes to expression-level loops such as promoted function calls
-or ``foreach`` expressions, Chapel also (experimentally) supports decorating
-variable declarations with GPU attributes. In the following example, an array
-``A`` is initialized from a ``foreach`` expression, where two GPU attributes
-are used to control the execution of the expression on the GPU:
+To apply attributes to expression-level loops such as
+:ref:`promoted function calls <Promotion>` or ``foreach`` expressions, Chapel
+also (experimentally) supports decorating variable declarations with GPU
+attributes. In the following example, an array ``A`` is initialized from a
+``foreach`` expression, where two GPU attributes are used to control the
+execution of the expression on the GPU:
 
 .. code-block:: chapel
 
