@@ -5455,13 +5455,13 @@ void amCheckLiveness(void) {
 
 // OFI-specific non-blocking handle implementation 
 
-// Non-blocking operations require bound endpoints, to avoid having one thread
-// with a pending operation while the endpoint is in use by a different
-// thread. Since we assume bound endpoints are the norm, it's easiest to just
-// disallow non-bound endpoints. This allows the "completed" flag to be a
-// simple boolean. The "complete" flags for the sub-operations are booleans
-// because the lower-level code that uses them does not assume bound
-// endpoints.
+// Non-blocking operations require bound endpoints, to avoid having a handle
+// for a pending operation held by one thread, while the endpoint is in use
+// by a different thread. Bound endpoints are the norm, so it's easiest to
+// just disallow non-blocking operations on non-bound endpoints. This allows
+// the "completed" flag to be a simple boolean. The "complete" flags for the
+// sub-operations are booleans because the lower-level code that uses them
+// does not assume bound endpoints.
 
 typedef struct chpl_comm_ofi_nb_handle_t {
   chpl_bool completed;            // operation has completed
@@ -5531,32 +5531,22 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
   return NULL;
 }
 
-
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
   chpl_comm_ofi_nb_handle_t *handle = (chpl_comm_ofi_nb_handle_t *) h;
   chpl_comm_diags_incr(test_nb);
-  DBG_PRINTF(DBG_RMA, "chpl_comm_test_nb_complete %p", handle);
-  int completed = 1;
-  if (handle != NULL) {
-    completed = handle->completed;
-  }
-  DBG_PRINTF(DBG_RMA, "chpl_comm_test_nb_complete %p %s", handle,
-             completed ? "true" : "false");
-  return completed;
+  return handle != NULL ? handle->completed : 1;
 }
 
 /*
  * check_complete
  * 
- * Returns true if a new handle completion is detected, false otherwise
+ * Returns true if a new handle completion is detected, false otherwise.
  * Ignores handles that have previously completed. If blocking is true and
- * there are uncompleted handles this will not return until a new handle
- * completion is detected.
+ * there are uncompleted handles this will not return until a new completion
+ * is detected.
  */
 static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
                   chpl_bool blocking) {
-
-  DBG_PRINTF(DBG_RMA, "check_complete");
 
   chpl_bool completed = false; // at least one new completion detected
   chpl_bool pending = false;  // there is a handle with uncompleted operations
@@ -5565,7 +5555,6 @@ static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
     pending = false;
     for(size_t i = 0; i < nhandles; i++) {
       chpl_comm_ofi_nb_handle_t *handle = (chpl_comm_ofi_nb_handle_t *) h[i];
-      DBG_PRINTF(DBG_RMA, "handle[%d] %p", i, handle);
 
       // ignore handles that have already completed
       // NULL handles have by definition already completed
@@ -5588,9 +5577,6 @@ static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
         handle->completed = true;
       }
     }
-    DBG_PRINTF(DBG_RMA, "check_complete blocking %s", blocking ? "true" : "false");
-    DBG_PRINTF(DBG_RMA, "check_complete completed %s", completed ? "true" : "false");
-    DBG_PRINTF(DBG_RMA, "check_complete pending %s", pending ? "true" : "false");
     if (!blocking || completed || !pending) { 
       break;
     }
@@ -5598,22 +5584,17 @@ static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
     if (tcip == NULL) {
       CHK_TRUE((tcip = tciAlloc()) != NULL);
     }
-    DBG_PRINTF(DBG_RMA, "check_complete yielding tcip %p", tcip);
     sched_yield();
     (*tcip->ensureProgressFn)(tcip);
   }
   if (tcip) {
     tciFree(tcip);
   }
-  DBG_PRINTF(DBG_RMA, "check_complete returning %s", completed ? 
-             "true" : "false");
   return completed;
 }
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   chpl_comm_diags_incr(wait_nb);
-
-  DBG_PRINTF(DBG_RMA, "chpl_comm_wait_nb_some");
 
   (void) check_complete(h, nhandles, true /*blocking*/);
 }
@@ -5621,7 +5602,6 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   chpl_comm_diags_incr(try_nb);
 
-  DBG_PRINTF(DBG_RMA, "chpl_comm_try_nb_some");
   return check_complete(h, nhandles, false /*blocking*/);
 }
 
