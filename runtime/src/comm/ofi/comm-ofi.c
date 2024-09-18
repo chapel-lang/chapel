@@ -5453,7 +5453,15 @@ void amCheckLiveness(void) {
 // Interface: RMA
 //
 
-// OFI-specific non-blocking handle implementation
+// OFI-specific non-blocking handle implementation 
+
+// Non-blocking operations require bound endpoints, to avoid having one thread
+// with a pending operation while the endpoint is in use by a different
+// thread. Since we assume bound endpoints are the norm, it's easiest to just
+// disallow non-bound endpoints. This allows the "completed" flag to be a
+// simple boolean. The "complete" flags for the sub-operations are booleans
+// because the lower-level code that uses them does not assume bound
+// endpoints.
 
 typedef struct chpl_comm_ofi_nb_handle_t {
   chpl_bool completed;            // operation has completed
@@ -5461,6 +5469,18 @@ typedef struct chpl_comm_ofi_nb_handle_t {
   chpl_atomic_bool complete[1];   // flag for sub-operation completion
 } chpl_comm_ofi_nb_handle_t;
 
+/*
+ * chpl_comm_put_nb
+ *
+ * Non-blocking PUT. The PUT may complete after this function returns. Returns
+ * a handle that can be used to wait for and check the status of the PUT. The
+ * handle may be NULL, in which case the PUT has already completed. The
+ * memory buffer must not be modified before the PUT completes. Completion
+ * indicates that subsequent PUTs to the same memory will occur after the
+ * completed PUT; it does not mean that the results of the PUT are visible in
+ * memory (see the README.md for details). Concurrent non-blocking PUTs may
+ * occur in any order.
+ */
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
                                        int32_t commID, int ln, int32_t fn) {
@@ -5566,7 +5586,6 @@ static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
       if (handleComplete) {
         completed = true;
         handle->completed = true;
-        // break here when one handle completes instead of checking them all?
       }
     }
     DBG_PRINTF(DBG_RMA, "check_complete blocking %s", blocking ? "true" : "false");
