@@ -6,16 +6,16 @@ TODO:
 * sort items within categories
 * check placement of items into categories
 * check sorting of categories
-o check for ' vs `
-o fulfill TODOs
-o check man page for new compiler flags
-o check test/release/examples
+* check for ' vs `
+* fulfill TODOs
+* check man page for new compiler flags
+* check test/release/examples
 * check for docs/1.33/ links
-o check forced linebreaks
-o check initial '*'
+* check forced linebreaks
+* check initial '*'
 * check initial 'A-Z'
 * check 'see:'
-o check for changes put too far down in file
+* check for changes put too far down in file
 o remove empty sections
 o check links
 o add highlights
@@ -176,12 +176,12 @@ Deprecated / Unstable / Removed Library Features
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* significantly improved performance when assigning between array slices
+* significantly improved performance when assigning between array slice  s
   (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
 * enabled an optimization that auto-localizes `const` domains  when possible  
   (use `-slocalizeConstDomains=false` to disable)
 * removed an unnecessary allocation when moving an array value to a typed var
-* extended the automatic local-access optimization to handle basic stencils
+* extended the automatic local-access optimization to handle basic stencils  
   (e.g., `forall i in InnerA {... A[i-1] ...}` is optimized for 'StencilDist')
 * reduced communication overheads in 'StencilDist's `.updateFluff()` method
 * significantly reduced unnecessary fencing overheads when using `ofi`
@@ -277,8 +277,11 @@ Documentation Improvements to the 'man' Pages
 
 Example Codes
 -------------
+* added a new `examples/gpu/` directory for GPU-oriented example codes  
+  (see `$CHPL_HOME/examples/gpu/README`)
 * restored `examples/patterns/recordio.chpl` using 2.0-compatible features  
   (see `$CHPL_HOME/examples/patterns/recordio.chpl`)
+* updated example codes with respect to 'Sort' and 'Random' module changes
 
 Compilation Time Improvements
 -----------------------------
@@ -325,7 +328,12 @@ Compiler Improvements
 Compiler Flags
 --------------
 * added a `--lib-pic` flag to control `CHPL_LIB_PIC`'s value at compile time  
-  (see https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-lib-pic)
+  (see https://chapel-lang.org/docs/2.2/usingchapel/man.html#man-lib-pic  
+   and https://chapel-lang.org/docs/2.2/usingchapel/chplenv.html#chpl-lib-pic)
+* added `--[no-]array-view-elision` to control optimizations of slices/views  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/man.html#man-array-view-elision)
+* added `--[no-]offset-auto-local-access` to control stencil locality opts  
+  (see https://chapel-lang.org/docs/2.2/usingchapel/man.html#man-offset-auto-local-access)
 * extended `--print-commands` to include commands run with `--library-python`
 
 Generated Executable Flags
