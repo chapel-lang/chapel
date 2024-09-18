@@ -106,7 +106,7 @@ of a host array into it:
 
 Since the initialization expression is executed on the target locale,
 if the array is initialized with a GPU-eligible expression, this expression
-is transformed into a GPU kernel as it would in an ``on`` block.
+is transformed into a GPU kernel as it would be in an ``on`` block.
 Thus, the following line of code generates a kernel launch:
 
 .. code-block:: chapel
