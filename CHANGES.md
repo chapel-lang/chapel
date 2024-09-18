@@ -65,7 +65,7 @@ New Language Features
 Language Feature Improvements
 -----------------------------
 * extended remote variable declarations to support multi-decls and coercions  
-  (see https://chapel-lang.org/docs/technotes/remote.html)
+  (see https://chapel-lang.org/docs/2.2/technotes/remote.html)
 * remote variable declaration initializers are now evaluated remotely
 * added support for declaring `enum`s within classes
 * added support for using module-qualified expressions in inheritance decls  
@@ -77,10 +77,10 @@ Language Feature Improvements
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
 * `use` and `import` are now always case sensitive when finding module files  
-  (see https://chapel-lang.org/docs/language/spec/modules.html#finding-toplevel-module-files)
+  (see https://chapel-lang.org/docs/2.2/language/spec/modules.html#finding-toplevel-module-files)
 * `require` statements no longer impact the determination of the main module  
-  (see https://chapel-lang.org/docs/main/language/spec/statements.html#the-require-statement  
-   and https://chapel-lang.org/docs/language/spec/modules.html#the-main-module)
+  (see https://chapel-lang.org/docs/2.2/language/spec/statements.html#the-require-statement  
+   and https://chapel-lang.org/docs/2.2/language/spec/modules.html#the-main-module)
 * modules brought in with `require` are no longer initialized if not used
 * standard library modules are now preferred in the event of a name conflict
 
@@ -123,7 +123,7 @@ Changes / Feature Improvements in Standard Libraries
 * added parallel/distributed support to the `fileReader.lines()` iterator  
   (see https://chapel-lang.org/docs/2.2/modules/standard/IO.html#IO.fileReader.lines)
 * added an unstable `sort()` overload accepting a region of indices to sort  
-  (see https://chapel-lang.org/docs/main/modules/standard/Sort.html#Sort.sort)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Sort.html#Sort.sort)
 * added multi-dimensional support to several `randomStream` methods  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
 * added support for passing distributed arrays to `c_addrOf()`
@@ -176,7 +176,7 @@ Deprecated / Unstable / Removed Library Features
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* significantly improved performance when assigning between array slice  s
+* significantly improved performance when assigning between array slices  
   (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
 * enabled an optimization that auto-localizes `const` domains  when possible  
   (use `-slocalizeConstDomains=false` to disable)
@@ -228,7 +228,7 @@ Documentation Improvements for Tools
 * improved the debugging best practices documentation for macOS  
   (see https://chapel-lang.org/docs/2.2/usingchapel/debugging.html#best-known-configuration)
 * added a section discussing when to use `mason` to the Mason documentation  
-  (see https://chapel-lang.org/docs/main/2.2/mason/mason.html#when-to-leverage-mason-for-chapel-builds)
+  (see https://chapel-lang.org/docs/2.2/mason/mason.html#when-to-leverage-mason-for-chapel-builds)
 
 Language Specification Improvements
 -----------------------------------
@@ -237,8 +237,8 @@ Language Specification Improvements
 * added a section describing the implicit `this.` in methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/methods.html#implicit-this-in-methods)
 * clarified that terminating null bytes are optional on string/bytes buffers  
-  (see https://chapel-lang.org/docs/language/spec/strings.html  
-   and https://chapel-lang.org/docs/language/spec/bytes.html)
+  (see https://chapel-lang.org/docs/2.2/language/spec/strings.html  
+   and https://chapel-lang.org/docs/2.2/language/spec/bytes.html)
 * added examples of distribution factory methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/domain-maps.html#distributions-for-domain-types)
 * searching for `init=` now finds the relevant language spec documentation
@@ -378,7 +378,7 @@ Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
 * fixed alignment for records whose fields are a mix of `extern` types and non-
-* fixed a bug in which the compiler incorrectly complained about missing '(?)'
+* fixed a bug in which the compiler incorrectly complained about missing '(?)`
 * fixed bugs in auto local-access/aggregation optimizations for local arrays
 * fixed an automatic-local-access bug for certain poorly aligned zippered loops
 * fixed a bug in which certain rank-change slices failed to compile
