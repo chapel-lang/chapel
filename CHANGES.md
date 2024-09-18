@@ -112,11 +112,9 @@ New Package Module Features
 * added support for reading images to the 'Image' module  
   (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.readImage)
 * added PNG and JPEG formats to the 'Image' module  
-  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.imageType.png  
-   and https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.imageType.jpg)
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.imageType.png)
 * added `colorToPixel()` and `pixelToColor()` routines to the 'Image' module  
-  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.colorToPixel  
-   and https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.pixelToColor)
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Image.html#Image.colorToPixel)
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
@@ -128,7 +126,7 @@ Changes / Feature Improvements in Standard Libraries
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
 * added support for passing distributed arrays to `c_addrOf()`
 * made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
-  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
 * improved the error message for calling `sort()` on unsupported types
 
 Changes / Feature Improvements in Package Modules
@@ -140,7 +138,7 @@ Changes / Feature Improvements in Package Modules
 * extended the 'Zarr' module to support single-locale IO  
   (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.readZarrArrayLocal)
 * added the ability to read a 'Zarr' array using arbitrary target locales  
-  (see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zar)
+  (see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.readZarrArray)
 
 Standard Layouts and Distributions
 ----------------------------------
@@ -194,7 +192,7 @@ GPU Computing
 * added a new `@gpu.assertElligible` attribute for compile-time GPU checks  
   (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.assertEligible)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
-  (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#gpu-related-attributes)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.itersPerThread)
 * added support for GPU attributes to compile without the GPU locale model
 * added a warning when `@assertOnGpu` is used without the GPU locale model
 * added support for `ref` intents on scalars in GPU-eligible loops
@@ -228,7 +226,7 @@ Documentation Improvements for Tools
 * improved the debugging best practices documentation for macOS  
   (see https://chapel-lang.org/docs/2.2/usingchapel/debugging.html#best-known-configuration)
 * added a section discussing when to use `mason` to the Mason documentation  
-  (see https://chapel-lang.org/docs/2.2/mason/mason.html#when-to-leverage-mason-for-chapel-builds)
+  (see https://chapel-lang.org/docs/2.2/tools/mason/mason.html#when-to-leverage-mason-for-chapel-builds)
 
 Language Specification Improvements
 -----------------------------------
@@ -256,13 +254,12 @@ Documentation Improvements for Libraries
 * fixed and improved descriptions of library modules in Chapel's module index  
   (see https://chapel-lang.org/docs/2.2/chpl-modindex.html)
 * added documentation of the GPU attributes to the 'GPU' module docs  
-  (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html)
+  (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.assertEligible)
 * corrected/extended the documentation for `atan()` and `atan2()`  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Math.html#Math.atan  
    and https://chapel-lang.org/docs/2.2/modules/standard/Math.html#Math.atan2)
 * documented which errors can be thrown from 'Subprocess' procedures  
-  (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.close  
-   and https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
+  (e.g., see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.close)
 * noted errors from `spawn`/`spawnshell` may be delayed until later calls  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.spawn)
 * clarified the compilation commands for 'LinearAlgebra' and 'LAPACK' modules  
