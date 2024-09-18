@@ -1,0 +1,3 @@
+--print-chpl-settings
+--print-chpl-settings --tasks=qthreads
+--print-chpl-settings --tasks=fifo
