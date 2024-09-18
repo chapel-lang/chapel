@@ -299,6 +299,9 @@ expression of the variable, if any, is executed on the target locale.
      }
 
      on Locales(1) var x: int = computeInitialValue();
+     writeln(x.locale.id);
 
-   results in the output ``1`` because the ``writeln`` statement is
-   executed on locale 1.
+   prints ``1`` twice: once because the ``writeln`` statement inside the
+   ``computeInitialValue`` procedure is executed on locale 1, and once
+   at the end of the program because variable ``x`` is remote and resides on
+   locale 1.
