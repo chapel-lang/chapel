@@ -666,6 +666,10 @@ for more information on using Chapel with WSL.
 
 Further Information
 -------------------
+* The `GPU Programming in Chapel series
+  <https://chapel-lang.org/blog/series/gpu-programming-in-chapel/>`_ is a good
+  resource for getting started with GPU programming in Chapel.
+
 * Please refer to issues with `GPU Support label
   <https://github.com/chapel-lang/chapel/labels/area%3A%20GPU%20Support>`_ for
   other known limitations and issues.
