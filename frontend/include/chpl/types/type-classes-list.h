@@ -48,6 +48,13 @@ TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
 TYPE_NODE(CPtrType)
 
+TYPE_BEGIN_SUBCLASSES(IteratorType)
+  TYPE_NODE(LoopExprIteratorType)
+  TYPE_NODE(FnIteratorType)
+  TYPE_NODE(PromotionIteratorType)
+TYPE_END_SUBCLASSES(IteratorType)
+
+
 // TODO:
 // migrate BytesType / StringType to something backed by the modules
 // (if the modules are parsed) and also do the same for array, domain,
