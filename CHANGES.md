@@ -93,7 +93,7 @@ Changes / Feature Improvements in Standard Libraries
 * added multi-dimensional support to several `randomStream` methods  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Random.html#Random.randomStream.shuffle)
 * added support for passing distributed arrays to `c_addrOf()`
-* made 'sendPosixSignal()' throw an `IllegalArgumentError` for bad signals  
+* made `sendPosixSignal()` throw an `IllegalArgumentError` for bad signals  
   (see https://chapel-lang.org/docs/2.2/modules/standard/Subprocess.html#Subprocess.subprocess.sendPosixSignal)
 * improved the error message for calling `sort()` on unsupported types
 
@@ -135,7 +135,7 @@ Deprecated / Unstable / Removed Library Features
 * removed deprecated `locking=true` overloads of `open[Reader|Writer]()`
 * removed deprecated `IllegalArgumentError` overloads in the 'Errors' module
 * removed the deprecated `RandomStream` class and `randomStream` methods
-* removed the deprecated `RandomSupport` and `PCGRandom` submodules
+* removed the deprecated 'RandomSupport' and 'PCGRandom' submodules
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -319,7 +319,7 @@ Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
 * fixed alignment for records whose fields are a mix of `extern` types and non-
-* fixed a bug in which the compiler incorrectly complained about missing '(?)`
+* fixed a bug in which the compiler incorrectly complained about missing `(?)`
 * fixed bugs in auto local-access/aggregation optimizations for local arrays
 * fixed an automatic-local-access bug for certain poorly aligned zippered loops
 * fixed a bug in which certain rank-change slices failed to compile
