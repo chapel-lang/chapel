@@ -50,6 +50,7 @@
 #if HAVE_LLVM_VER >= 170
 #include "llvm/IR/AttributeMask.h"
 #endif
+#include "llvm/IR/Module.h"
 
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Intrinsics.h"
@@ -1139,12 +1140,17 @@ namespace {
         }
 #endif
         // Create a new GetElementPtrConstantExpr while changing the types
+#if HAVE_LLVM_VER >= 190
+        auto inRangeIdx = gepOp->getInRange();
+#else
+        auto inRangeIdx = gepOp->getInRangeIndex();
+#endif
         auto C1 = ConstantExpr::getGetElementPtr(
                      newSrcTy,
                      cast<Constant>(gepOp->getPointerOperand()),
                      idxList,
                      gepOp->isInBounds(),
-                     gepOp->getInRangeIndex());
+                     inRangeIdx);
         // Use MapValue to change the operands
         Constant* ret = MapValue(C1, VM, Flags, TypeMapper);
         if( ! ret ) ret = C1;

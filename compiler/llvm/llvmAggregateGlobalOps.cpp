@@ -61,6 +61,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/GetElementPtrTypeIterator.h"
 #include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 
 #include "llvm/Analysis/CallGraph.h"
