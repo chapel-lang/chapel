@@ -168,6 +168,7 @@ struct Converter final : UastConverter {
       if (r->signature()->instantiatedFrom() == nullptr) {
         // it's concrete, so don't convert it
         // instead, rely on the TConverter to do it
+        printf("Will ignore %s\n", r->id().str().c_str());
         functionsToIgnore.insert(r->id());
       }
     }
@@ -2939,6 +2940,7 @@ struct Converter final : UastConverter {
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
     if (functionsToIgnore.count(node->id()) != 0) {
+      printf("Ignoring %s\n", node->id().str().c_str());
       return nullptr;
     }
 
