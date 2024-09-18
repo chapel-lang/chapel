@@ -23,8 +23,6 @@
    the conversion.
  */
 
-#include <iostream>
-
 #include "convert-uast.h"
 
 #include "CForLoop.h"
@@ -38,32 +36,35 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
+#include "ResolveScope.h"
 #include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "config.h"
 #include "global-ast-vecs.h"
+#include "metadata.h"
 #include "optimizations.h"
 #include "parser.h"
 #include "resolution.h"
-#include "ResolveScope.h"
-#include "metadata.h"
+#include "stmt.h"
 
-#include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
-#include "chpl/util/string-escapes.h"
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
-#include "stmt.h"
+#include "chpl/util/string-escapes.h"
 
 #include "convert-help.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
+
+#include <iostream>
 
 using namespace chpl;
 using namespace resolution;
@@ -71,7 +72,9 @@ using namespace uast;
 
 // converts resolved uAST + types to typed AST
 struct TConverter final : UastConverter {
+
   /// Nested Types ///
+  using RV = ResolvedVisitor<TConverter>;
 
   // When converting variables etc. with @assertOnGpu or @blockSize,
   // we don't just create a DefExpr; we also create an enclosing block which
@@ -137,7 +140,12 @@ struct TConverter final : UastConverter {
 
   /// Fields ///
   Context* context = nullptr;
+
+  // When converting a statement, where should we put new nodes?
+  BlockStmt* curBlock = nullptr;
+
   bool trace = false;
+  bool haveSetupModules = false;
   bool haveConvertedFunctions = false;
   // these are updated as we are converting different things
   ModTag topLevelModTag = MOD_USER;
@@ -148,6 +156,11 @@ struct TConverter final : UastConverter {
 
   // which functions to convert with types
   CalledFnsSet functionsToConvertWithTypes;
+
+  // keeps track of which block we are currently in the process of creating
+  std::vector<BlockStmt*> blockStack;
+  // this block is where we store any result created at the top-level
+  BlockStmt* scratchSpaceBlock = nullptr;
 
   // to keep track of symbols that have been converted & fixups needed
   std::unordered_map<ID, ModuleSymbol*> modSyms;
@@ -166,8 +179,10 @@ struct TConverter final : UastConverter {
 
   /// Methods ///
 
-  TConverter(Context* context)
-    : context(context) {
+  TConverter(Context* context) : context(context) {
+    SET_LINENO(rootModule);
+    scratchSpaceBlock = new BlockStmt();
+    curBlock = scratchSpaceBlock;
   }
 
   ~TConverter();
@@ -224,6 +239,22 @@ struct TConverter final : UastConverter {
   Type* convertIntType(const types::IntType* t);
   Type* convertRealType(const types::RealType* t);
   Type* convertUintType(const types::UintType* t);
+
+  // blockStack helpers
+  BlockStmt* pushBlock() {
+    auto newBlockStmt = new BlockStmt();
+    blockStack.push_back(newBlockStmt);
+    curBlock = newBlockStmt;
+    return newBlockStmt;
+  }
+  void popBlock() {
+    CHPL_ASSERT(blockStack.size() > 0);
+    blockStack.pop_back();
+    if (blockStack.size() > 0)
+      curBlock = blockStack.back();
+    else
+      curBlock = scratchSpaceBlock;
+  }
 
   // methods to help track what has been converted & handle fixups
   void noteConvertedSym(const AstNode* ast, Symbol* sym);
@@ -308,175 +339,38 @@ struct TConverter final : UastConverter {
   //Expr* convertTypeExpression(const AstNode* node);
   //Expr* convertTypeExpressionOrNull(const AstNode* node);
   //ShadowVarSymbol* convertTaskVar(const TaskVar* node);
- 
-  // can some of these be shared with the other Converter?
-  //const char* convertLinkageNameAstr(const Decl* node);
-  //Flag convertFlagForDeclLinkage(const AstNode* node);
-  //Flag convertPragmaToFlag(PragmaTag pragma);
-  //void attachSymbolAttributes(const Decl* node, Symbol* sym);
-  //void attachSymbolVisibility(const Decl* node, Symbol* sym);
-  //UnresolvedSymExpr* reservedWordToInternalName(UniqueString name);
-  //Expr* reservedWordRemapForIdent(UniqueString name) {
-  // LLVMMetadataList extractLlvmAttributesAndRejectOthers(const Loop* node);
-  // static RetTag convertRetTag(Function::ReturnIntent returnIntent);
-  //static bool isAssignOp(UniqueString name);
-  //static const char* createAnonymousRoutineName(const Function* node);
-  //static const char*
-  //convertFunctionNameAndAstr(const Function* node);
-  //const char* constructUserString(const Function* node);
-  //const char* constructUserString(const FunctionSignature* node);
-  //static IntentTag convertFormalIntent(Formal::Intent intent);
-  //Expr* convertTypeExpression(const AstNode* node);
-  //Expr* convertTypeExpressionOrNull(const AstNode* node);
-  //ShadowVarPrefix convertTaskVarIntent(const TaskVar* node);
-  //ShadowVarSymbol* convertTaskVar(const TaskVar* node);
-  //const char* sanitizeVarName(const char* name) {
-  //void attachSymbolStorage(const Variable::Kind kind, Symbol* vs);
-  //void attachSymbolStorage(const TupleDecl::IntentOrKind iok, Symbol* vs);
-  //void attachSymbolStorage(const Qualifier kind, Symbol* vs);
-  //static bool isEnsureDomainExprCall(Expr* expr);
-  //AggregateTag convertAggregateDeclTag(const AggregateDecl* node) {
- 
+
 
   // visit functions
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
 
-  Expr* visit(const Comment* node) { return nullptr; }
-  Expr* visit(const AttributeGroup* node) { return errNotDirectly(); }
-  Expr* visit(const Attribute* node) { return errNotDirectly(); }
-  Expr* visit(const ErroneousExpression* node);
+  bool enter(const OpCall* ast, RV& rv);
+  void exit(const OpCall* ast, RV& rv);
 
-  /// SimpleBlockLikes ///
-  Expr* visit(const Begin* node);
-  BlockStmt* visit(const Block* node);
-  Expr* visit(const Defer* node);
-  Expr* visit(const Local* node);
-  Expr* visit(const Manage* node);
-  BlockStmt* visit(const On* node);
-  BlockStmt* visit(const Serial* node);
-  CondStmt* visit(const When* node);
+  bool enter(const FnCall* ast, RV& rv);
+  void exit(const FnCall* ast, RV& rv);
 
-  /// Use/Import/etc ///
-  Expr* visit(const Include* node) { return nullptr; }
-  Expr* visit(const Import* node) { return nullptr; }
-  Expr* visit(const As* node) { return nullptr; }
-  BlockStmt* visit(const Use* node) { return nullptr; }
-  Expr* visit(const VisibilityClause* node) { return nullptr; }
+  bool enter(const Return* ast, RV& rv);
+  void exit(const Return* ast, RV& rv);
 
-  /// Statements ///
-  Expr* visit(const Implements* node);
-  BlockStmt* visit(const Delete* node);
-  Expr* visit(const ExternBlock* node);
-  Expr* visit(const Require* node);
-  Expr* visit(const Init* node);
-  Expr* visit(const Let* node);
+  bool enter(const Throw* ast, RV& rv);
+  void exit(const Throw* ast, RV& rv);
 
-  /// Control Flow Statements ///
-  BlockStmt* visit(const Break* node);
-  CatchStmt* visit(const Catch* node);
-  Expr* visit(const Conditional* node);
-  BlockStmt* visit(const Continue* node);
-  Expr* visit(const Label* node);
-  CallExpr* visit(const Return* node);
-  BlockStmt* visit(const Select* node);
-  CallExpr* visit(const Throw* node);
-  CallExpr* visit(const Yield* node);
-  Expr* visit(const Try* node);
+  bool enter(const Yield* ast, RV& rv);
+  void exit(const Yield* ast, RV& rv);
 
-  /// Non-Loop Parallelism Support ///
-  Expr* visit(const Cobegin* node);
-  BlockStmt* visit(const Sync* node);
+  bool enter(const Identifier* ast, RV& rv);
+  void exit(const Identifier* ast, RV& rv);
 
-  /// Expressions ///
+  bool enter(const uast::Conditional* node, RV& rv);
+  void exit(const uast::Conditional* node, RV& rv);
 
-  Expr* visit(const Identifier* node);
-  Expr* visit(const Dot* node);
-  Expr* visit(const New* node) { return errNotDirectly(); }
-  Expr* visit(const WithClause* node) { return errNotDirectly(); }
-  DefExpr* visit(const TypeQuery* node);
+  bool enter(const uast::Select* node, RV& rv);
+  void exit(const uast::Select* node, RV& rv);
 
-  /// Loops ///
-
-  BlockStmt* visit(const DoWhile* node);
-  BlockStmt* visit(const While* node);
-
-  /// IndexableLoops ///
-
-  // Note that bracket loop statements in type expressions for variables need to
-  // be handled by a separate builder, as those are array types.
-  Expr* visit(const BracketLoop* node);
-
-  Expr* visit(const Coforall* node);
-  Expr* visit(const For* node);
-  Expr* visit(const Forall* node);
-  Expr* visit(const Foreach* node);
-
-  /// Compound Literals: Array, Domain, Range, Tuple ///
-
-  Expr* visit(const Array* node);
-  Expr* visit(const Domain* node);
-  CallExpr* visit(const Range* node);
-  Expr* visit(const Tuple* node);
-
-  /// Literals ///
-
-  Expr* visit(const BoolLiteral* node);
-
-  /// NumericLiterals ///
-
-  Expr* visit(const ImagLiteral* node);
-  Expr* visit(const IntLiteral* node);
-  Expr* visit(const RealLiteral* node);
-  Expr* visit(const UintLiteral* node);
-
-  /// StringLikeLiterals ///
-  Expr* visit(const BytesLiteral* node);
-  Expr* visit(const CStringLiteral* node);
-  Expr* visit(const StringLiteral* node);
-
-  /// Calls ///
-
-  Expr* visit(const FnCall* node);
-  Expr* visit(const OpCall* node);
-  Expr* visit(const PrimCall* node);
-  // Note that this conversion is for the reduce expression, and not for
-  // the reduce intent (see conversion for 'WithClause').
-  Expr* visit(const Reduce* node);
-  Expr* visit(const ReduceIntent* reduce) { return errNotDirectly(); }
-  Expr* visit(const Scan* node);
-  Expr* visit(const Zip* node);
-
-  /// Decls ///
-
-  Expr* visit(const MultiDecl* node);
-  BlockStmt* visit(const TupleDecl* node);
-  Expr* visit(const ForwardingDecl* node);
-
-  /// NamedDecls ///
-
-  Expr* visit(const EnumElement* node) { return errNotDirectly(); }
-  Expr* visit(const AnonFormal* node);
-  Expr* visit(const FunctionSignature* node);
-  Expr* visit(const Function* node);
-  Expr* visit(const Interface* node);
-  DefExpr* visit(const Module* node);
-
-  /// VarLikeDecls ///
-
-  DefExpr* visit(const Formal* node);
-  Expr* visit(const TaskVar* node) { return errNotDirectly(); }
-  Expr* visit(const VarArgFormal* node);
-  Expr* visit(const Variable* node);
-
-  /// TypeDecls ///
-
-  Expr* visit(const Enum* node);
-
-  /// AggregateDecls
-
-  Expr* visit(const Class* node);
-  Expr* visit(const Record* node);
-  Expr* visit(const Union* node);
-  Expr* visit(const EmptyStmt* node) { return new BlockStmt(); }
+  bool enter(const uast::AstNode* node, RV& rv);
+  void exit(const uast::AstNode* node, RV& rv);
 };
 
 TConverter::~TConverter() { }
@@ -488,6 +382,14 @@ Expr* TConverter::convertAST(const AstNode* node) {
 
 ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
                                                 ModTag modTag) {
+  if (!haveSetupModules) {
+    // create empty modules so we have somewhere to put the functions!
+    setupModulesToConvert();
+    haveSetupModules = true;
+  }
+
+  astlocMarker markAstLoc(mod->id());
+
   CHPL_UNIMPL("convertToplevelModule");
   return nullptr;
 }
@@ -496,11 +398,39 @@ void TConverter::postConvertApplyFixups() {
   CHPL_UNIMPL("convertToplevelModule");
 }
 
+static ModTag classifyModule(Context* context, ID modId) {
+  UniqueString path;
+  bool found = context->filePathForId(modId, path);
+  INT_ASSERT(found);
+
+  // compute the modTag
+  ModTag modTag = MOD_USER;
+  if (chpl::parsing::filePathIsInInternalModule(context, path)) {
+    modTag = MOD_INTERNAL;
+  } else if (chpl::parsing::filePathIsInStandardModule(context, path)) {
+    modTag = MOD_STANDARD;
+  } else if (chpl::parsing::filePathIsInBundledModule(context, path)) {
+    // TODO: this considers code in modules/packages as MOD_STANDARD but
+    // we would like this to be MOD_USER.
+    // See also issue #24998.
+    modTag = MOD_STANDARD;
+  }
+
+  return modTag;
+}
+
 void TConverter::setupModulesToConvert() {
-  // sort the modules to convert
-  std::vector<ID> mods;
+  // sort the modules to convert by internal/standard/user then by ID/name
+  // TODO: if the order matters more than this, use the module init order.
+  std::vector<std::pair<int,ID>> mods;
   for (const ID& modId : modulesToConvert) {
-    mods.push_back(modId);
+    int section = 0;
+    ModTag modTag = classifyModule(context, modId);
+    if      (modTag == MOD_INTERNAL) section = 0;
+    else if (modTag == MOD_STANDARD) section = 1;
+    else if (modTag == MOD_USER) section = 2;
+
+    mods.push_back({section, modId});
   }
   std::sort(mods.begin(), mods.end());
 
@@ -508,8 +438,8 @@ void TConverter::setupModulesToConvert() {
   // the order in which this is done is not particularly
   // important since they will be filled-in in module init order
   // via calls to convertToplevelModule.
-  for (const ID& modId : mods) {
-    setupModule(modId);
+  for (const auto& pair : mods) {
+    setupModule(pair.second);
   }
 }
 
@@ -519,6 +449,8 @@ void TConverter::convertFunctionsToConvert() {
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
+  astlocMarker markAstLoc(modId);
+
   UniqueString path;
   bool found = context->filePathForId(modId, path);
   INT_ASSERT(found);
@@ -541,8 +473,8 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
     INT_FATAL("module ID expected");
   }
   const Module* mod = ast->toModule();
-  //UniqueString unused;
-  //bool isFromLibraryFile = context->moduleIsInLibrary(modId, unused);
+  UniqueString unused;
+  bool isFromLibraryFile = context->moduleIsInLibrary(modId, unused);
 
   const char* name = astr(mod->name());
   UniqueString pathUstr;
@@ -563,10 +495,12 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
     modSym->addFlag(FLAG_IMPLICIT_MODULE);
   }
 
-  // TODO attachSymbolAttributes(mod, modSym);
+  attachSymbolAttributes(context, mod, modSym, isFromLibraryFile);
 
   // Save the empty module for later filling-in
   modSyms[modId] = modSym;
+
+  printf("Created module[%i] for %s\n", modSym->id, modId.str().c_str());
 
   return modSym;
 }
