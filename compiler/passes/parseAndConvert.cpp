@@ -299,8 +299,9 @@ static void loadAndConvertModules(UastConverter& c) {
 
     // TODO: debug code
     std::vector<std::string> v;
-    for (auto fn : calledFns) {
-      v.push_back(fn->id().symbolPath().str());
+    for (auto kv : calledFns) {
+      v.push_back(kv.first->id().symbolPath().str() +
+                  " depth=" + std::to_string(kv.second));
     }
     std::sort(v.begin(), v.end());
     printf("These are the gathered functions:\n");
@@ -1136,8 +1137,7 @@ void parseAndConvertUast() {
 
   chpl::owned<UastConverter> converter;
   if (fDynoCompilerLibrary) {
-    INT_FATAL("TODO");
-    //converter = createTypedConverter(gContext);
+    converter = createTypedConverter(gContext);
   } else {
     converter = createUntypedConverter(gContext);
   }

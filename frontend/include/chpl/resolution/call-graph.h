@@ -29,17 +29,21 @@ namespace chpl {
 namespace resolution {
 
 
-using CalledFnsSet = std::unordered_set<const ResolvedFunction*>;
+// key: a ResolvedFunction* that was called
+// value: the depth at which that ResolvedFunction was added
+using CalledFnsSet = std::unordered_map<const ResolvedFunction*, int>;
 
 /* Gather ResolvedFunctions called directly by this function into a set.
    This function does not consider transitive calls. */
 void gatherFnsCalledByFn(Context* context,
                          const ResolvedFunction* fn,
+                         int depth,
                          CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called transitively by this function into a set. */
 void gatherTransitiveFnsCalledByFn(Context* context,
                                    const ResolvedFunction* fn,
+                                   int depth,
                                    CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called directly by module initialization code

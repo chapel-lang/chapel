@@ -41,6 +41,7 @@ struct CalledFnCollector {
   Context* context;
   const AstNode* symbol = nullptr; // Module* or Function*
   const ResolvedFunction* resolvedFunction = nullptr; // set if not module
+  int depth = 0;
 
   // output
   CalledFnsSet& called;
@@ -48,11 +49,14 @@ struct CalledFnCollector {
   CalledFnCollector(Context* context,
                     const AstNode* symbol,
                     const ResolvedFunction* resolvedFunction,
+                    int depth,
                     CalledFnsSet& called)
     : context(context),
       symbol(symbol),
       resolvedFunction(resolvedFunction),
-      called(called) {
+      depth(depth),
+      called(called)
+  {
   }
 
   // helper to run the visitor on something
@@ -114,7 +118,7 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
     if (const TypedFnSignature* sig = candidate.fn()) {
       if (sig->untyped()->idIsFunction()) {
         const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-        called.insert(fn);
+        called.insert({fn, depth});
       }
     }
   }
@@ -126,7 +130,7 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
     if (const TypedFnSignature* sig = action.fn()) {
       if (sig->untyped()->idIsFunction()) {
         const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
-        called.insert(fn);
+        called.insert({fn, depth});
       }
     }
   }
@@ -134,27 +138,30 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
 
 void gatherFnsCalledByFn(Context* context,
                          const ResolvedFunction* fn,
+                         int depth,
                          CalledFnsSet& called) {
   const AstNode* symbol = parsing::idToAst(context, fn->id());
   CHPL_ASSERT(symbol && symbol->isFunction());
-  auto v = CalledFnCollector(context, symbol, fn, called);
+  auto v = CalledFnCollector(context, symbol, fn, depth, called);
   v.process();
 }
 
 void gatherTransitiveFnsCalledByFn(Context* context,
                                    const ResolvedFunction* fn,
+                                   int depth,
                                    CalledFnsSet& called) {
   CalledFnsSet directCalls;
-  gatherFnsCalledByFn(context, fn, directCalls);
+  gatherFnsCalledByFn(context, fn, depth, directCalls);
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
-  for (const ResolvedFunction* calledFn : directCalls) {
-    auto pair = called.insert(calledFn);
+  for (auto kv : directCalls) {
+    auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      gatherTransitiveFnsCalledByFn(context, calledFn, called);
+      gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+                                    /* depth */ kv.second + 1, called);
     }
   }
 }
@@ -165,7 +172,9 @@ void gatherFnsCalledByModInit(Context* context,
   const AstNode* symbol = parsing::idToAst(context, moduleId);
   CHPL_ASSERT(symbol && symbol->isModule());
   auto v = CalledFnCollector(context, symbol,
-                             /* resolvedFunction */ nullptr, called);
+                             /* resolvedFunction */ nullptr,
+                             /* depth */ 0,
+                             called);
   v.process();
 }
 
@@ -177,12 +186,13 @@ void gatherTransitiveFnsCalledByModInit(Context* context,
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
-  for (const ResolvedFunction* calledFn : directCalls) {
-    auto pair = called.insert(calledFn);
+  for (auto kv : directCalls) {
+    auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      gatherTransitiveFnsCalledByFn(context, calledFn, called);
+      gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+                                    /* depth */ kv.second + 1, called);
     }
   }
 }
