@@ -2996,18 +2996,18 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto parenlessInfo = ParenlessOverloadInfo();
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
-  // If we looked up a called identifier and found ambiguity but no method
+  // If we looked up a called identifier and found ambiguity but no function
   // results, repeat lookup for the identifier as though it wasn't called, to
   // support implicit 'this' calls on variables.
   if (resolvingCalledIdent && ids.numIds() > 1) {
-    bool anyMethods = false;
+    bool anyFunctions = false;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (idIt.curIdAndFlags().isMethod()) {
-        anyMethods = true;
+      if (parsing::idIsFunction(context, idIt.curIdAndFlags().id())) {
+        anyFunctions = true;
         break;
       }
     }
-    if (!anyMethods) {
+    if (!anyFunctions) {
       ids = lookupIdentifier(ident, /* resolvingCalledIdent */ false,
                              parenlessInfo);
     }
