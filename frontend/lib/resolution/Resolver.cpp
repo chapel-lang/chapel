@@ -2996,18 +2996,17 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto parenlessInfo = ParenlessOverloadInfo();
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
-  // If we looked up a called identifier and found ambiguity but no function
-  // results, resolve to just the innermost variable to support implicit 'this'
-  // calls.
+  // If we looked up a called identifier and found ambiguity between variables
+  // only, resolve as an implicit 'this' call on the innermost variable.
   if (resolvingCalledIdent && ids.numIds() > 1) {
-    bool anyFunctions = false;
+    bool onlyVars = true;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (parsing::idIsFunction(context, idIt.curIdAndFlags().id())) {
-        anyFunctions = true;
+      if (!parsing::idIsVariable(context, idIt.curIdAndFlags().id())) {
+        onlyVars = false;
         break;
       }
     }
-    if (!anyFunctions) {
+    if (onlyVars) {
       ids.truncate(1);
     }
   }

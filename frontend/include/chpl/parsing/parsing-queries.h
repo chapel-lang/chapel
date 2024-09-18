@@ -508,6 +508,11 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is a variable.
+ */
+bool idIsVariable(Context* context, ID id);
+
+/**
  Returns true if the ID is marked 'extern'.
  */
 bool idIsExtern(Context* context, ID id);
