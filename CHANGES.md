@@ -3,9 +3,9 @@ Release Changes List
 
 TODO:
 * '(http:' -> '(see http:'
-o sort items within categories
-o check placement of items into categories
-o check sorting of categories
+* sort items within categories
+* check placement of items into categories
+* check sorting of categories
 o check for ' vs `
 o fulfill TODOs
 o check man page for new compiler flags
@@ -50,13 +50,11 @@ Updates to Chapel's Release Formats
 * started publishing a `nightly` Docker image tag  
   (see https://hub.docker.com/r/chapel/chapel)
 
-Prerequisite Updates
---------------------
+Updates to Chapel Prerequisites
+-------------------------------
 
 Syntactic / Naming Changes
 --------------------------
-* improved the orthogonality of Chapel syntax in several cases  
-  (e.g., `coforall zip(a, b) { ... }` is now supported)
 
 New Language Features
 ---------------------
@@ -72,6 +70,8 @@ Language Feature Improvements
 * added support for declaring `enum`s within classes
 * added support for using module-qualified expressions in inheritance decls  
   (e.g., `class Child: MyMod.Parent { ... }`)
+* improved the orthogonality of Chapel syntax in several cases  
+  (e.g., `coforall zip(a, b) { ... }` is now supported)
 * added support for additional integer `<` comparisons generating a `param`
 
 Semantic Changes / Changes to the Language Definition
@@ -174,19 +174,17 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `RandomStream` class and `randomStream` methods
 * removed the deprecated `RandomSupport` and `PCGRandom` submodules
 
-Tool Improvements
------------------
-* added an `--only` flag to `printchplenv` to focus on a specific variable  
-  (e.g., `$CHPL_HOME/util/printchplenv --only CHPL_TARGET_COMPILER`)
-* made several changes and improvements to the `chplcheck` linter  
-  (see https://chapel-lang.org/docs/2.2/tools/chplcheck/chplcheck.html)
-  - added a new rule for a `complex` literal whose `imag` precedes its `real`
-  - allowed the ability to ignore incorrect indentation within a given scope
-  - added support for a `@fixit` decorator to the Python API
-  - renamed the `RedundantParentheses` rule to `ControlFlowParentheses`
-* added the ability to document interfaces with `chpldoc`
-* updated the script for anonymizing unstable warnings  
-  (see https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
+Performance Optimizations / Improvements
+----------------------------------------
+* significantly improved performance when assigning between array slices
+  (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
+* enabled an optimization that auto-localizes `const` domains  when possible  
+  (use `-slocalizeConstDomains=false` to disable)
+* removed an unnecessary allocation when moving an array value to a typed var
+* extended the automatic local-access optimization to handle basic stencils
+  (e.g., `forall i in InnerA {... A[i-1] ...}` is optimized for 'StencilDist')
+* reduced communication overheads in 'StencilDist's `.updateFluff()` method
+* significantly reduced unnecessary fencing overheads when using `ofi`
 
 GPU Computing
 -------------
@@ -204,17 +202,19 @@ GPU Computing
 * extended `make check` to test a GPU-oriented example when GPUs are enabled
 * improved the error message when a vendor's SDK can't be found
 
-Performance Optimizations / Improvements
-----------------------------------------
-* significantly improved performance when assigning between array slices
-  (e.g., `Arr1[x..y] = Arr2[a..b]` now performs up to 30x faster)
-* enabled an optimization that auto-localizes `const` domains  when possible  
-  (use `-slocalizeConstDomains=false` to disable)
-* removed an unnecessary allocation when moving an array value to a typed var
-* extended the automatic local-access optimization to handle basic stencils
-  (e.g., `forall i in InnerA {... A[i-1] ...}` is optimized for 'StencilDist')
-* reduced communication overheads in 'StencilDist's `.updateFluff()` method
-* significantly reduced unnecessary fencing overheads when using `ofi`
+Tool Improvements
+-----------------
+* added an `--only` flag to `printchplenv` to focus on a specific variable  
+  (e.g., `$CHPL_HOME/util/printchplenv --only CHPL_TARGET_COMPILER`)
+* made several changes and improvements to the `chplcheck` linter  
+  (see https://chapel-lang.org/docs/2.2/tools/chplcheck/chplcheck.html)
+  - added a new rule for a `complex` literal whose `imag` precedes its `real`
+  - allowed the ability to ignore incorrect indentation within a given scope
+  - added support for a `@fixit` decorator to the Python API
+  - renamed the `RedundantParentheses` rule to `ControlFlowParentheses`
+* added the ability to document interfaces with `chpldoc`
+* updated the script for anonymizing unstable warnings  
+  (see https://chapel-lang.org/docs/2.2/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 
 Documentation Improvements
 --------------------------
@@ -361,6 +361,11 @@ Launchers
 Runtime Library Improvements
 ----------------------------
 
+Third-Party Software Changes
+----------------------------
+* updated the bundled version of Qthreads to 1.20
+* applied a Qthreads patch to address a performance regression in version 1.20
+
 Bug Fixes
 ---------
 * fixed a bug in `scan` expressions over non-`int(64)` indices
@@ -385,12 +390,11 @@ Bug Fixes
 * fixed a problem importing from a parent module from an `include`d submodule
 * fixed problems resolving calls to parenless methods from within a method
 
-Bug Fixes for Build Issues
---------------------------
-* fixed `printchplenv` and `printchplbuilds.py` output for prefix installations
-* fixed erroneous `--specialize` warnings when using multi-locale OS packages
-* ensured that `pycache` is fully deleted with `make clobber`
-* fixed an issue building `CHPL_COMM=gasnet` Docker images
+Bug Fixes for Libraries
+-----------------------
+* fixed a bug preventing `this` from being passed to `Reflection.getFieldRef()`
+* fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
+* fixed a bug where `heap.createHeap()` only accepted the default comparator
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -404,12 +408,6 @@ Bug Fixes for GPU Computing
 * fixed a host-to-device copy in which an incorrect function was being called
 * fixed various errors when bulk transferring GPU arrays
 
-Bug Fixes for Libraries
------------------------
-* fixed a bug preventing `this` from being passed to `Reflection.getFieldRef()`
-* fixed 'RangeChunk's `chunks*()` iterators  for non-`int(64)` indices
-* fixed a bug where `heap.createHeap()` only accepted the default comparator
-
 Bug Fixes for Tools
 -------------------
 * fixed 'goto definition' for inheritance and `enum`s in `chpl-language-server`
@@ -417,17 +415,19 @@ Bug Fixes for Tools
 * silenced an erroneous `IncorrectIndentation` warning from `chplcheck`
 * fixed the `chapel-py` build to use the same compiler as the frontend library
 
+Bug Fixes for Build Issues
+--------------------------
+* fixed `printchplenv` and `printchplbuilds.py` output for prefix installations
+* fixed erroneous `--specialize` warnings when using multi-locale OS packages
+* ensured that `pycache` is fully deleted with `make clobber`
+* fixed an issue building `CHPL_COMM=gasnet` Docker images
+
 Bug Fixes for the Runtime
 -------------------------
 * fixed a bug with `CHPL_COMM=ofi` that led to hangs at certain scales
 * fixed a bug in progressing non-blocking operations with `CHPL_COMM=ofi`
 * worked around a bug with `ofi/efa` related to lack of injection support
 * fixed a bug striping the fixed heap for `CHPL_COMM=gasnet` over non-`ibv`
-
-Third-Party Software Changes
-----------------------------
-* updated the bundled version of Qthreads to 1.20
-* applied a Qthreads patch to address a performance regression in version 1.20
 
 Developer-oriented changes: Process
 -----------------------------------
