@@ -1,26 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-* check placement of items into categories
-* check sorting of categories
-* check for ' vs `
-* fulfill TODOs
-* check man page for new compiler flags
-* check test/release/examples
-* check for docs/1.33/ links
-* check forced linebreaks
-* check initial '*'
-* check initial 'A-Z'
-* check 'see:'
-* check for changes put too far down in file
-o remove empty sections
-o check links
-* add highlights
-* spellcheck
-
 version 2.2
 ===========
 
@@ -45,12 +25,6 @@ Updates to Chapel's Release Formats
   (see https://chapel-lang.org/install-pkg.html)
 * started publishing a `nightly` Docker image tag  
   (see https://hub.docker.com/r/chapel/chapel)
-
-Updates to Chapel Prerequisites
--------------------------------
-
-Syntactic / Naming Changes
---------------------------
 
 New Language Features
 ---------------------
@@ -88,9 +62,6 @@ Deprecated / Unstable / Removed Language Features
 * removed previously deprecated `owned`/`shared` casts
 * removed previously deprecated `assertOnGpu()` routine
 * improved the deprecation message when using `<=>` on sync variables
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -135,9 +106,6 @@ Changes / Feature Improvements in Package Modules
   (e.g., see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.readZarrArrayLocal)
 * added the ability to read a 'Zarr' array using arbitrary target locales  
   (see https://chapel-lang.org/docs/2.2/modules/packages/Zarr.html#Zarr.readZarrArray)
-
-Standard Layouts and Distributions
-----------------------------------
 
 Name Changes in Libraries
 -------------------------
@@ -242,9 +210,6 @@ Platform-Specific Documentation Improvements
 * expanded docs for using Chapel with Windows Subsystem for Linux (WSL)  
   (see https://chapel-lang.org/docs/2.2/platforms/windows.html#using-chapel-on-wsl)
 
-Technical Note Improvements
----------------------------
-
 Documentation Improvements for Libraries
 ----------------------------------------
 * fixed and improved descriptions of library modules in Chapel's module index  
@@ -276,12 +241,6 @@ Example Codes
   (see `$CHPL_HOME/examples/patterns/recordio.chpl`)
 * updated example codes with respect to 'Sort' and 'Random' module changes
 
-Compilation Time Improvements
------------------------------
-
-Generated Code Improvements
----------------------------
-
 Memory Improvements
 -------------------
 * removed an unnecessary allocation when moving an array value to a typed var
@@ -289,9 +248,6 @@ Memory Improvements
 * fixed a memory leak when ignoring values in `try!` expressions
 * fixed a memory leak when using per-locale "static" variables  
 * closed a memory leak when reading with the 'Zarr' package module
-
-Syntax Highlighting
--------------------
 
 Configuration / Build Changes
 -----------------------------
@@ -329,9 +285,6 @@ Compiler Flags
   (see https://chapel-lang.org/docs/2.2/usingchapel/man.html#man-offset-auto-local-access)
 * extended `--print-commands` to include commands run with `--library-python`
 
-Generated Executable Flags
---------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when incorrectly modifying `const [in]` or default varargs
@@ -355,12 +308,6 @@ Error Messages / Semantic Checks
 * updated memory management checks for non-classes to fire in more cases
 * added a warning for ignoring the result of a function capture
 * improved the surprising shadowing warning to consider enclosing module names
-
-Launchers
----------
-
-Runtime Library Improvements
-----------------------------
 
 Third-Party Software Changes
 ----------------------------
@@ -439,18 +386,9 @@ Developer-oriented changes: Documentation
 * extended the standard module style guide to include more 2.0 decisions  
   (see https://chapel-lang.org/docs/2.2/developer/bestPractices/StandardModuleStyle.html)
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * removed queries from the argument lists of the 'Sort' routines
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
-
-Developer-oriented changes: Makefile / Build-time changes
----------------------------------------------------------
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -487,25 +425,13 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved performance of `runAndTrackErrors` API function
 * improved the performance of `--dyno-scope-bundled`
 
-Developer-oriented changes: GPU support
----------------------------------------
-
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added a missing assertion for a non-null pointer
 
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * removed the default application of the `-o` flag in the `start_test` system
-
-Developer-oriented changes: Tool Improvements
----------------------------------------------
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 2.1
