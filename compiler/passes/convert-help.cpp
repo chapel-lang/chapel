@@ -18,12 +18,11 @@
  * limitations under the License.
  */
 
-/* This file supports conversion of uAST to the older AST used by
-   the rest of the compiler. It uses recursive functions to perform
-   the conversion.
+/* This file implements functionality that is shared
+   by convert-uast.cpp and convert-typed-uast.cpp.
  */
 
-#include "LoopAttributeInfo.h"
+#include "convert-help.h"
 
 #include "chpl/parsing/parsing-queries.h"
 

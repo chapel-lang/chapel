@@ -61,7 +61,7 @@
 #include "chpl/util/assertions.h"
 #include "stmt.h"
 
-#include "LoopAttributeInfo.h"
+#include "convert-help.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 

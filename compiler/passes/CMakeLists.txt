@@ -17,7 +17,6 @@
 set(SRCS
     InitErrorHandling.cpp
     InitNormalize.cpp
-    LoopAttributeInfo.cpp
     ResolveScope.cpp
     addInitGuards.cpp
     buildDefaultFunctions.cpp
@@ -25,8 +24,9 @@ set(SRCS
     checkNormalized.cpp
     checkResolved.cpp
     cleanup.cpp
-    convert-uast.cpp
     convert-typed-uast.cpp
+    convert-help.cpp
+    convert-uast.cpp
     createTaskFunctions.cpp
     denormalize.cpp
     errorHandling.cpp
