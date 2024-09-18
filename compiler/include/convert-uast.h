@@ -32,10 +32,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/util/memory.h"
 
-struct Converter;
-struct TypedConverter;
-
-// base class for Converter and TypedConverter
+// base class for Converter and TConverter (typed Converter)
 class UastConverter {
  public:
   virtual ~UastConverter();
@@ -44,13 +41,16 @@ class UastConverter {
   // When converting, only convert modules listed here.
   // It will help performance if the order of the modules in the vector
   // matches the order in which they are converted.
-  virtual void setModulesToConvert(std::vector<chpl::ID> vec) = 0;
+  virtual void setModulesToConvert(const std::vector<chpl::ID>& vec) = 0;
 
   // Provide the set of functions that should be converted with full
   // type information.
   // This doesn't do anything for the untyped Converter.
   virtual void
-  setFunctionsToConvertWithTypes(chpl::resolution::CalledFnsSet calledFns) = 0;
+  setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
+
+  // This function helps the TConverter to work with a Converter
+  virtual void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) = 0;
 
   // convert a toplevel module
   virtual ModuleSymbol*
