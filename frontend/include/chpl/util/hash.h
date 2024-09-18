@@ -27,7 +27,6 @@
 #include <set>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -149,20 +148,13 @@ inline size_t hashPair(const std::pair<T, U>& key) {
 template <typename K, typename V>
 inline size_t hashMap(const std::map<K, V>& key) {
   size_t ret = 0;
-  for (auto& p : key) {
-    ret = hash_combine(ret, hash(p.first));
-    ret = hash_combine(ret, hash(p.second));
-  }
-  return ret;
-}
 
-template <typename K, typename V>
-inline size_t hashUnorderedMap(const std::unordered_map<K, V>& key) {
-  size_t ret = 0;
-  for (auto& p : key) {
-    ret = hash_combine(ret, hash(p.first));
-    ret = hash_combine(ret, hash(p.second));
+  // Just iterate and hash, std::map is a sorted container.
+  for (auto& [k, v] : key) {
+    ret = hash_combine(ret, hash(k));
+    ret = hash_combine(ret, hash(v));
   }
+
   return ret;
 }
 
@@ -183,11 +175,6 @@ template<typename T> struct hasher<std::set<T>> {
 template<typename K, typename V> struct hasher<std::map<K, V>> {
   size_t operator()(const std::map<K, V>& key) const {
     return chpl::hashMap(key);
-  }
-};
-template<typename K, typename V> struct hasher<std::unordered_map<K, V>> {
-  size_t operator()(const std::unordered_map<K, V>& key) const {
-    return chpl::hashUnorderedMap(key);
   }
 };
 template<typename T> struct hasher<chpl::owned<T>> {
