@@ -4584,7 +4584,7 @@ resolveIterTypeWithTag(Resolver& rv,
                           parsing::locateAst(context, astForErr),
                           "resolving parallel iterators is not supported "
                           "without module code"));
-    return unknown;
+    return error;
   }
 
   // Inspect the resolution result to determine what should be done next.
@@ -5140,6 +5140,7 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* reduceOrScan,
                                          const AstNode* op,
                                          const AstNode* iterand) {
+  iterand->traverse(resolver);
   auto dt = resolveIterDetails(resolver, reduceOrScan, iterand, {},
                                IterDetails::SERIAL);
   auto idxType = dt.idxType;

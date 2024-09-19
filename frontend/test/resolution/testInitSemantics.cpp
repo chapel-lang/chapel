@@ -74,7 +74,7 @@ static void testFieldUseBeforeInit1(void) {
   // Resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  assert(guard.errors().size() == 6);
+  assert(guard.numErrors(/* countWarnings */ false) == 6);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
@@ -112,10 +112,10 @@ static void testInitReturnVoid(void) {
   // Resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  assert(guard.errors().size() == 1);
+  assert(guard.numErrors(/* countWarnings */ false) == 1);
 
-  // Check the first error to see if it lines up.
-  auto& msg = guard.errors()[0];
+  // Check the error (which comes last) to see if it lines up.
+  auto& msg = guard.errors().back();
   assert(msg->message() == "initializers can only return 'void'");
   assert(msg->location(ctx).firstLine() == 12);
   assert(guard.realizeErrors());
@@ -283,10 +283,10 @@ static void testInitInsideLoops(void) {
     // Resolve the module.
     std::ignore = resolveModule(ctx, mod->id());
 
-    assert(guard.errors().size() == 1);
+    assert(guard.numErrors(/* countWarnings */ false) == 1);
 
-    // Check the first error to see if it lines up.
-    auto& msg = guard.errors()[0];
+    // Check the error (which comes last) to see if it lines up.
+    auto& msg = guard.errors().back();
     assert(msg->message() == message);
     assert(msg->location(ctx).firstLine() == 11);
     assert(guard.realizeErrors());

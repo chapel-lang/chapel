@@ -222,7 +222,7 @@ static Collector customHelper(std::string program, ResolutionContext* rc, Module
   }
 
   if (!fail) {
-    assert(!guard.realizeErrors());
+    assert(!guard.realizeErrors(/* countWarnings */ false));
   }
 
   return pc;
