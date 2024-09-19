@@ -2998,6 +2998,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
 
   // If we looked up a called identifier and found ambiguity between variables
   // only, resolve as an implicit 'this' call on the innermost variable.
+  // TODO: replace this hacky solution with an adjustment to the scope
+  // resolution process
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
