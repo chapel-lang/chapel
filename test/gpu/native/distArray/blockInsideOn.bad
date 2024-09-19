@@ -1,4 +1,4 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-1 1 1 1 1 1 1 1 1 1
+1
 Unexpected GPU Diagnostic: observed n launches instead of m
 blockInsideOn.chpl:28: error: assert failed - GPU Diagnostics assertion failed

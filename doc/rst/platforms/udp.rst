@@ -119,11 +119,12 @@ I'm seeing login banners mixed with my program's output
 
 If you are using SSH to launch jobs, you might get a
 login banner printed out along with your program's output. We have
-found the following setting useful to disable such printing:
+found the following setting useful to disable such printing (where
+``-x`` is retained from the instructions above):
 
 .. code-block:: bash
 
-   export GASNET_SSH_OPTIONS="-o LogLevel=Error"
+   export GASNET_SSH_OPTIONS="-x -o LogLevel=Error"
 
 My console output seems to be jumbled or missing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

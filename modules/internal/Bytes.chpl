@@ -298,7 +298,7 @@ module Bytes {
     proc ref deinit() {
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -859,7 +859,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isUpper(b)) {
           result = false;
@@ -883,7 +883,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isLower(b)) {
           result = false;
@@ -907,7 +907,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isWhitespace(b)) {
           result = false;
@@ -930,7 +930,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlpha(b) {
           result = false;
@@ -953,7 +953,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isDigit(b) {
           result = false;
@@ -976,7 +976,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlnum(b) {
           result = false;
@@ -1000,7 +1000,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isPrintable(b) {
           result = false;
@@ -1024,7 +1024,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for b in this.bytes() {

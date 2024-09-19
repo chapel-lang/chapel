@@ -7,7 +7,7 @@ class C {
 
 config type T = R;
 
-proc get() throws {
+proc get() : T throws {
   var a = new T();
   return a;
 }

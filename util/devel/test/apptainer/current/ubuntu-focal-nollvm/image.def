@@ -10,7 +10,7 @@ From: ubuntu:focal
     apt-get install -y software-properties-common
     add-apt-repository universe
     apt-get update
-    /provision-scripts/apt-get-deps.sh
+    /provision-scripts/apt-get-deps-and-cmake.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

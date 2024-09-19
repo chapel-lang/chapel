@@ -734,7 +734,7 @@ module BytesStringCommon {
     // needle.buffLen is <= than x.buffLen, so go to the home locale
     var ret: int = -1;
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_none)) {
       // any value >= 0 means we have a solution
       // used because we cant break out of an on-clause early
       var localRet: int = -2;
@@ -812,7 +812,7 @@ module BytesStringCommon {
 
     var ret: bool = false;
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_none)) {
       for needle in needles {
         const needleLen = needle.buffLen;
         if needleLen == 0 {
@@ -1074,7 +1074,7 @@ module BytesStringCommon {
     if rhs.buffLen == 0 then return;
 
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_none)) {
       // resize the buffer to make room and amortize resize time for
       // repeated appends
       const newLength = resizeBufferForAppend(lhs, rhs.buffLen);
@@ -1097,7 +1097,7 @@ module BytesStringCommon {
     assertArgType(t, "doAppendSomeBytes");
 
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_none)) {
       // resize the buffer to make room and amortize resize time for
       // repeated appends
       const newLength = resizeBufferForAppend(lhs, n);
@@ -1215,7 +1215,7 @@ module BytesStringCommon {
     }
     else {
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_none)) {
         helpMe(lhs, rhs);
       }
     }
@@ -1342,7 +1342,7 @@ module BytesStringCommon {
     /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_none)) {
         ret = doEq(a, b);
       }
       return ret;
@@ -1383,7 +1383,7 @@ module BytesStringCommon {
 
     var hash: int(64);
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_none)) {
       // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
       var locHash: int(64) = 5381;
       for c in 0..#(x.numBytes) {
@@ -1405,7 +1405,7 @@ module BytesStringCommon {
   proc countNumCodepoints(x: string) {
     var ret: int;
     on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_none)) {
       ret = countNumCodepoints(x.buff, x.buffLen);
     }
     return ret;

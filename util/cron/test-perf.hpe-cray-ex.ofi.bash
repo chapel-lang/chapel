@@ -19,7 +19,7 @@ export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE=16g
 
 nightly_args="${nightly_args} -no-buildcheck"
-perf_args="-performance -numtrials 1"
-perf_hpe_cray_ex_args="-startdate 06/25/24"
+perf_args="-performance -perflabel ml- -numtrials 1"
+perf_hpe_cray_ex_args="-startdate 09/10/24"
 
 $CWD/nightly -cron ${perf_args} ${perf_hpe_cray_ex_args} ${nightly_args}

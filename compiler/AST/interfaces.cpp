@@ -290,6 +290,13 @@ void IfcConstraint::prettyPrint(std::ostream* o) {
 
 Symbol* gDummyWitness = NULL;
 
+ImplementsStmt* ImplementsStmt::build(InterfaceSymbol* isym, CallExpr* actuals,
+                                      BlockStmt* body) {
+ if (body == NULL) body = new BlockStmt();
+ IfcConstraint* icon = IfcConstraint::build(isym, actuals);
+ return new ImplementsStmt(icon, body);
+}
+
 ImplementsStmt* ImplementsStmt::build(const char* name, CallExpr* actuals,
                                       BlockStmt* body) {
  if (body == NULL) body = new BlockStmt();

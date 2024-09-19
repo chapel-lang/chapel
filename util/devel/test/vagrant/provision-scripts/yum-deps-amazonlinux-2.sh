@@ -3,7 +3,7 @@
 alias unsudo="sudo -u bin"
 alias hide=eval
 
-yum -y install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
+yum -y install git gcc gcc-c++ m4 perl python tcsh bash perl python python-devel python-setuptools bash make gawk python3 which
 
 yum -y install wget tar openssl-devel
 
