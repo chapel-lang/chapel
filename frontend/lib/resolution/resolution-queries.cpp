@@ -555,7 +555,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // attempt to call 'typedSignatureInitial' on the parent. This will give
   // up if any parent is generic or if any parent contains outer variables.
   const TypedFnSignature* parentSignature = nullptr;
-  if (ID parentFnId = fn->id().parentFunctionId(context)) {
+  if (ID parentFnId = parsing::idToParentFunctionId(context, fn->id())) {
     if (auto frame = rc->findFrameWithId(parentFnId)) {
       if (auto sig = frame->signature()) {
         CHPL_ASSERT(sig->id() && sig->id().contains(fn->id()));

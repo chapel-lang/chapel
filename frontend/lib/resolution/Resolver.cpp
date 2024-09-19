@@ -3103,7 +3103,7 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
 
   // Otherwise, it's a variable, so walk up parent frames and look up
   // the variable's type using the resolution results.
-  } else if (ID parentFn = target.parentFunctionId(context)) {
+  } else if (ID parentFn = parsing::idToParentFunctionId(context, target)) {
     if (auto f = rc->findFrameWithId(target)) {
       type = f->resolutionById()->byId(target).type();
       outerVariables.add(mention, target, type);

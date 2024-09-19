@@ -145,15 +145,6 @@ ID ID::parentSymbolId(Context* context) const {
   return ID(parentSymPath, -1, 0);
 }
 
-ID ID::parentFunctionId(Context* context) const {
-  ID parentSymId = this->parentSymbolId(context);
-  auto parentScope = resolution::scopeForId(context, parentSymId);
-  for (auto s = parentScope; s != nullptr; s = s->parentScope()) {
-    if (s->tag() == uast::asttags::Function) return s->id();
-  }
-  return ID();
-}
-
 UniqueString ID::symbolName(Context* context) const {
   return ID::innermostSymbolName(context, symbolPath_);
 }

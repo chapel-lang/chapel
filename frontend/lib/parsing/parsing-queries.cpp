@@ -1454,6 +1454,15 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+ID idToParentFunctionId(Context* context, ID id) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    if (parsing::idIsFunction(context, up)) return up;
+  }
+  return {};
+}
+
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
   if (node == nullptr) return nullptr;
   auto parentId = idToParentId(context, node->id());

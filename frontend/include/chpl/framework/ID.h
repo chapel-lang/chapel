@@ -195,9 +195,6 @@ class ID final {
    */
   ID parentSymbolId(Context* context) const;
 
-  /** Returns the parent function ID, or the empty ID if there is none. */
-  ID parentFunctionId(Context* context) const;
-
   /**
     If the ID represents a symbol, return the name of that symbol.
     Otherwise, return the name of the symbol that contains the ID.
