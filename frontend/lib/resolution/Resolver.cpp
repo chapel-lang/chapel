@@ -4445,8 +4445,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
                                       int mask) {
-  iterand->traverse(rv);
-  if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
+  if (rv.scopeResolveOnly) {
     return {};
   }
 
@@ -4722,35 +4721,6 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return false;
 }
 
-static void
-backpatchArrayTypeSpecifier(Resolver& rv, const IndexableLoop* loop) {
-  if (rv.scopeResolveOnly || !loop->isBracketLoop()) return;
-  Context* context = rv.context;
-
-  // Check if this is an array
-  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
-  if (!iterandType.isUnknown() && iterandType.type()->isDomainType()) {
-    QualifiedType eltType;
-
-    CHPL_ASSERT(loop->isExpressionLevel() && loop->numStmts() <= 1);
-    if (loop->numStmts() == 1) {
-      eltType = rv.byPostorder.byAst(loop->stmt(0)).type();
-    } else if (loop->numStmts() == 0) {
-      eltType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-    }
-
-    // TODO: resolve array types when the iterand is something other than
-    // a domain.
-    if (eltType.isType() || eltType.kind() == QualifiedType::TYPE_QUERY) {
-      eltType = QualifiedType(QualifiedType::TYPE, eltType.type());
-      auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
-
-      auto& re = rv.byPostorder.byAst(loop);
-      re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
-    }
-  }
-}
-
 static QualifiedType
 resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
@@ -4826,6 +4796,77 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   return ret;
 }
 
+static bool handleArrayTypeExpr(Resolver& rv,
+                                const IndexableLoop* loop,
+                                bool& outBodyResolved) {
+  outBodyResolved = false;
+
+  // 'forall' expressions are not arrays, only [] ... expressions could be.
+  if (!loop->isBracketLoop() || !loop->isExpressionLevel()) return false;
+
+  // If there's an 'in' or 'with' clause, it's not an array
+  if (loop->index() != nullptr || loop->withClause() != nullptr) return false;
+
+  // If there's a 'zip', it's not an array
+  if (loop->iterand()->isZip()) return false;
+
+    // If there's more than one statement, it's not an array
+  if (loop->numStmts() > 1) return false;
+
+  // Now, we have some expression in the iterand, which may or may not
+  // be a domain, and we have no index variables and no with clause. The only
+  // way to know if this is a type now is to resolve the body of the loop and
+  // see if it's a type.
+
+  outBodyResolved = true;
+
+  rv.enterScope(loop);
+  loop->body()->traverse(rv);
+  // Scope is exited in exit(IndexableLoop)
+
+  auto bodyType = QualifiedType();
+  if (loop->numStmts() == 1) {
+    bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
+  } else {
+    bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
+  }
+
+  // The body wasn't a type, so this isn't an array type epxression
+  // Make an exception for unknown or erroneous bodies, since the user may
+  // have been trying to define a type but made a mistake (or we may be
+  // in a partially-instantiated situation and the type is not yet known).
+  if (!bodyType.isUnknownOrErroneous() &&
+      !bodyType.isType() &&
+      bodyType.kind() != QualifiedType::TYPE_QUERY) {
+    return false;
+  }
+
+  // It is an array. Time to build the array type.
+
+  auto domainType = QualifiedType();
+  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+  if (!iterandType.isUnknownOrErroneous()) {
+    if (iterandType.type()->isDomainType()) {
+      domainType = iterandType;
+    } else {
+      // TODO: convert range into domain
+    }
+  }
+
+  if (domainType.isUnknown()) {
+    // TODO: emit an error here
+    return true;
+  }
+
+  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
+  auto arrayType = ArrayType::getArrayType(rv.context, domainType, eltType);
+
+  auto& re = rv.byPostorder.byAst(loop);
+  re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
+
+  return true;
+}
+
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
@@ -4840,11 +4881,20 @@ bool Resolver::enter(const IndexableLoop* loop) {
   if (isParamForLoop) return resolveParamForLoop(*this, loop->toFor());
 
   auto iterand = loop->iterand();
-  QualifiedType idxType;
+  iterand->traverse(*this);
 
+  // Array expressions and bracket loops can look very similar. Check
+  // if it's an array expression first, and if it is, we're done.
+  bool bodyResolved = false;
+  if (handleArrayTypeExpr(*this, loop, bodyResolved)) {
+    return false;
+  }
+
+  // Not an array expression. In this case, depending on the loop type,
+  // we need to resolve various iterators.
+  QualifiedType idxType;
   if (iterand->isZip()) {
     idxType = resolveZipExpression(*this, loop, iterand->toZip());
-
   } else {
     bool loopRequiresParallel = loop->isForall();
     bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
@@ -4870,11 +4920,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
     with->traverse(*this);
   }
 
-  loop->body()->traverse(*this);
-
-  // TODO: Resolve the loop body first when it looks like an array type,
-  // and if the body is a type, then skip resolving iterators to save time.
-  backpatchArrayTypeSpecifier(*this, loop);
+  if (!bodyResolved) {
+    loop->body()->traverse(*this);
+  }
 
   return false;
 }
@@ -5270,6 +5318,11 @@ bool Resolver::enter(const Import* node) {
 }
 
 void Resolver::exit(const Import* node) {}
+
+bool Resolver::enter(const uast::Zip* zip) {
+  return true;
+}
+void Resolver::exit(const uast::Zip* zip) {}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
