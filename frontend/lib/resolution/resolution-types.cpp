@@ -1540,65 +1540,6 @@ ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
   return nullptr;
 }
 
-const ID ResolutionContext::Frame::EMPTY_AST_ID = ID();
-
-const ID& ResolutionContext::Frame::id() const {
-  if (auto ast = rv_->symbol) return ast->id();
-  return EMPTY_AST_ID;
-}
-
-const TypedFnSignature* ResolutionContext::Frame::signature() const {
-  if (kind_ == ResolutionContext::Frame::FUNCTION && rv_) {
-    return rv_->typedSignature;
-  }
-  return nullptr;
-}
-
-const ResolutionResultByPostorderID*
-ResolutionContext::Frame::resolutionById() const {
-  return rv_ ? &rv_->byPostorder : nullptr;
-}
-
-const ResolutionContext::Frame* ResolutionContext::
-pushFrame(Resolver* rv, ResolutionContext::Frame::Kind kind) {
-  int64_t index = (int64_t) frames_.size();
-  frames_.push_back({rv, kind, index});
-  auto ret = lastFrame();
-  if (ret->isUnstable()) numUnstableFrames_++;
-  return ret;
-}
-
-const ResolutionContext::Frame* ResolutionContext::
-pushFrame(const ResolvedFunction* rf) {
-  int64_t index = (int64_t) frames_.size();
-  frames_.push_back({rf, index});
-  auto ret = lastFrame();
-  CHPL_ASSERT(!ret->isUnstable());
-  return ret;
-}
-
-bool ResolutionContext::Frame::isUnstable() const {
-  return rv_ != nullptr;
-}
-
-void ResolutionContext::popFrame(Resolver* rv) {
-  CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
-  CHPL_ASSERT(frames_.back().rv() == rv);
-
-  if (frames_.empty()) return;
-  if (frames_.back().isUnstable()) numUnstableFrames_--;
-  frames_.pop_back();
-}
-
-void ResolutionContext::popFrame(const ResolvedFunction* rf) {
-  CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
-  CHPL_ASSERT(frames_.back().rf() == rf);
-
-  if (frames_.empty()) return;
-  CHPL_ASSERT(!frames_.back().isUnstable());
-  frames_.pop_back();
-}
-
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);
 IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
