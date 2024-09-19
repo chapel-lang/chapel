@@ -210,6 +210,7 @@ struct TConverter final : UastConverter {
   void setFunctionsToConvertWithTypes(const CalledFnsSet& calledFns) override
   {
     functionsToConvertWithTypes = calledFns;
+    // also tell the untyped converter about them so it can ignore them!
     untypedConverter->setFunctionsToConvertWithTypes(calledFns);
   }
 
@@ -295,10 +296,6 @@ struct TConverter final : UastConverter {
   bool shouldConvertWithoutTypes(const ResolvedFunction* r) {
     return functionsToConvertWithTypes.count(r) == 0;
   }
-  bool shouldConvertModInitWithoutTypes(const Module* mod) {
-    // TODO: remove this constraint
-    return topLevelModTag != MOD_USER;
-  }
 
   Expr* convertExprOrNull(const AstNode* node) {
     if (node == nullptr)
@@ -309,6 +306,7 @@ struct TConverter final : UastConverter {
     return ret;
   }
 
+  // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
   //BlockStmt* convertExplicitBlock(AstListIteratorPair<AstNode> stmts,
   //                                bool flattenTopLevelScopelessBlocks);
@@ -404,6 +402,12 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
     haveSetupModules = true;
   }
 
+  if (!haveConvertedFunctions) {
+    // convert the functions!
+    convertFunctionsToConvert();
+    haveConvertedFunctions = true;
+  }
+
   astlocMarker markAstLoc(mod->id());
 
   ModuleSymbol* modSym = modSyms[mod->id()];
@@ -413,6 +417,7 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
     modSym = setupModule(mod->id());
   }
 
+  // TODO: remove this block once the resolver is fully operational
   if (modSym->modTag != MOD_USER) {
     return untypedConverter->convertToplevelModule(mod, modTag);
   }
@@ -438,9 +443,34 @@ void TConverter::setupModulesToConvert() {
   }
 }
 
+struct SortCalledFnsDeeperFirst {
+  bool operator()(const std::pair<const ResolvedFunction*, int>& a,
+                  const std::pair<const ResolvedFunction*, int>& b) {
+    // reverse sort by depth
+    if (a.second > b.second) return true;
+    if (a.second < b.second) return false;
+
+    // regular sort by ResolvedFunction
+    return *a.first < *b.first;
+  }
+};
 
 void TConverter::convertFunctionsToConvert() {
-  // remember to sort them by depth!
+  // Sort the called functions
+  // 1. in descending order by depth (higher depths first)
+  // 2. by ID
+
+  auto v = std::vector<std::pair<const ResolvedFunction*, int>>(
+                                       functionsToConvertWithTypes.begin(),
+                                       functionsToConvertWithTypes.end());
+
+  std::sort(v.begin(), v.end(), SortCalledFnsDeeperFirst());
+
+
+  printf("Will convert functions in this order:\n");
+  for (auto pair : v) {
+    printf("  %s depth=%i\n", pair.first->id().str().c_str(), pair.second);
+  }
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
