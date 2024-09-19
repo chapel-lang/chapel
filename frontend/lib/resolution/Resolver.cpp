@@ -3003,7 +3003,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (!parsing::idIsVariable(context, idIt.curIdAndFlags().id())) {
+      if (!parsing::idToAst(context, idIt.curIdAndFlags().id())
+               ->isVarLikeDecl()) {
         onlyVars = false;
         break;
       }

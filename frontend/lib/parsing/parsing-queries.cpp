@@ -1315,11 +1315,6 @@ bool idIsFunction(Context* context, ID id) {
   return asttags::isFunction(tag);
 }
 
-bool idIsVariable(Context* context, ID id) {
-  AstTag tag = idToTag(context, id);
-  return asttags::isVariable(tag);
-}
-
 static bool
 checkLinkage(Context* context, ID id, uast::Decl::Linkage linkage) {
   if (id.isEmpty()) return false;

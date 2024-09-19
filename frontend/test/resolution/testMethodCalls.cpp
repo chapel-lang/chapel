@@ -767,29 +767,59 @@ static void test15() {
 }
 
 static void test16() {
-  // Test resolving 'this' call on automatic variable that shadows field
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
+  // Test resolving 'this' call on variable that shadows field
 
-  std::string program = R"""(
-      class Foo {
-        var tup : 2*int;
+  {
+    // For automatic variable
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-        proc init() {}
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
 
-        proc doSomething() {
-          const tup = this.tup;
-          return tup(0);
+          proc init() {}
+
+          proc doSomething() {
+            const tup = this.tup;
+            return tup(0);
+          }
         }
-      }
 
-      var f = new Foo();
-      var x = f.doSomething();
-      )""";
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "x" });
-  assert(guard.realizeErrors() == 0);
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    // For formal
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
+
+          proc init() {}
+
+          proc doSomething(tup) {
+            return tup(0);
+          }
+        }
+
+        var f = new Foo();
+        var anotherTup : 2*int;
+        var x = f.doSomething(anotherTup);
+        )""";
+
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
 }
 
 int main() {
