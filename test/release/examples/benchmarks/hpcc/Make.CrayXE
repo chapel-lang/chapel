@@ -1,0 +1,369 @@
+#  
+#  -- High Performance Computing Linpack Benchmark (HPL)                
+#     HPL - 2.0 - September 10, 2008                          
+#     Antoine P. Petitet                                                
+#     University of Tennessee, Knoxville                                
+#     Innovative Computing Laboratory                                 
+#     (C) Copyright 2000-2008 All Rights Reserved                       
+#                                                                       
+#  -- Copyright notice and Licensing terms:                             
+#                                                                       
+#  Redistribution  and  use in  source and binary forms, with or without
+#  modification, are  permitted provided  that the following  conditions
+#  are met:                                                             
+#                                                                       
+#  1. Redistributions  of  source  code  must retain the above copyright
+#  notice, this list of conditions and the following disclaimer.        
+#                                                                       
+#  2. Redistributions in binary form must reproduce  the above copyright
+#  notice, this list of conditions,  and the following disclaimer in the
+#  documentation and/or other materials provided with the distribution. 
+#                                                                       
+#  3. All  advertising  materials  mentioning  features  or  use of this
+#  software must display the following acknowledgement:                 
+#  This  product  includes  software  developed  at  the  University  of
+#  Tennessee, Knoxville, Innovative Computing Laboratory.             
+#                                                                       
+#  4. The name of the  University,  the name of the  Laboratory,  or the
+#  names  of  its  contributors  may  not  be used to endorse or promote
+#  products  derived   from   this  software  without  specific  written
+#  permission.                                                          
+#                                                                       
+#  -- Disclaimer:                                                       
+#                                                                       
+#  THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
+#  OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
+#  SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# ######################################################################
+#  
+# ----------------------------------------------------------------------
+# - shell --------------------------------------------------------------
+# ----------------------------------------------------------------------
+#
+SHELL        = /bin/sh
+#
+CD           = cd
+CP           = cp
+LN_S         = ln -s
+MKDIR        = mkdir
+RM           = /bin/rm -f
+TOUCH        = touch
+#
+# ----------------------------------------------------------------------
+# - Platform identifier ------------------------------------------------
+# ----------------------------------------------------------------------
+#
+ARCH         = $(arch)
+#
+# ----------------------------------------------------------------------
+# - HPL Directory Structure / HPL library ------------------------------
+# ----------------------------------------------------------------------
+#
+TOPdir       = ../../..
+INCdir       = $(TOPdir)/include
+BINdir       = $(TOPdir)/bin/$(ARCH)
+LIBdir       = $(TOPdir)/lib/$(ARCH)
+#
+HPLlib       = $(LIBdir)/libhpl.a 
+#
+# ----------------------------------------------------------------------
+# - Compile environment setup ------------------------------------------
+# ----------------------------------------------------------------------
+#
+ifndef COMPILER
+  COMPILER = cray
+endif
+ifndef STREAM_COMPILER
+  STREAM_COMPILER = $(COMPILER)
+endif
+ifndef USE_THREADS
+  USE_THREADS = no
+endif
+#
+# ----------------------------------------------------------------------
+# - Message Passing library (MPI) --------------------------------------
+# ----------------------------------------------------------------------
+# MPinc tells the  C  compiler where to find the Message Passing library
+# header files,  MPlib  is defined  to be the name of  the library to be 
+# used. The variable MPdir is only used for defining MPinc and MPlib.
+#
+MPdir        =
+MPinc        =
+MPlib        =
+#
+# ----------------------------------------------------------------------
+# - Linear Algebra library (BLAS or VSIPL) -----------------------------
+# ----------------------------------------------------------------------
+# LAinc tells the  C  compiler where to find the Linear Algebra  library
+# header files,  LAlib  is defined  to be the name of  the library to be 
+# used. The variable LAdir is only used for defining LAinc and LAlib.
+#
+ifeq ($(USE_MKL),true)
+  ifeq ($(USE_FFTW3),true)
+    $(error USE_MKL=true conflicts with USE_FFTW3=true)
+  endif
+  MKLFFTWdir = $(TOPdir)/../mkl
+  MKLdir     = ${INTEL_PATH}/mkl
+  LAinc      = -I $(MKLdir)/include/fftw
+  ifeq ($(USE_THREADS),true)
+    LAlib += -L $(MKLdir)/lib/intel64 -L $(MKLFFTWdir)/lib/intel64 \
+             -lmkl_solver_lp64 \
+             -Wl,--start-group -lfftw2xc_intel \
+             -lmkl_intel_lp64 -lmkl_$(COMPILER)_thread \
+             -lmkl_core -lmkl_blacs_intelmpi_lp64 \
+             -lfftw2x_cdft_DOUBLE_ilp64 -lfftw2xc_intel \
+             -lmkl_cdft_core -Wl,--end-group \
+             -lpthread -Wl,-yfftw_mpi,-yfftw_malloc,-yfftw_free
+  else
+    LAlib += -L $(MKLdir)/lib/intel64 -L $(MKLFFTWdir)/lib/intel64 \
+             -lmkl_solver_lp64_sequential \
+             -Wl,--start-group -lfftw2xc_intel \
+             -lmkl_intel_lp64 -lmkl_sequential \
+             -lmkl_core -lmkl_blacs_intelmpi_lp64 \
+             -lfftw2x_cdft_DOUBLE_ilp64 -lfftw2xc_intel \
+             -lmkl_cdft_core -Wl,--end-group \
+             -lpthread -Wl,-yfftw_mpi,-yfftw_malloc,-yfftw_free
+  endif
+endif
+#
+# ----------------------------------------------------------------------
+# - F77 / C interface --------------------------------------------------
+# ----------------------------------------------------------------------
+# You can skip this section  if and only if  you are not planning to use
+# a  BLAS  library featuring a Fortran 77 interface.  Otherwise,  it  is
+# necessary  to  fill out the  F2CDEFS  variable  with  the  appropriate
+# options.  **One and only one**  option should be chosen in **each** of
+# the 3 following categories:
+#
+# 1) name space (How C calls a Fortran 77 routine)
+#
+# -DAdd_              : all lower case and a suffixed underscore  (Suns,
+#                       Intel, ...),                           [default]
+# -DNoChange          : all lower case (IBM RS6000),
+# -DUpCase            : all upper case (Cray),
+# -DAdd__             : the FORTRAN compiler in use is f2c.
+#
+# 2) C and Fortran 77 integer mapping
+#
+# -DF77_INTEGER=int   : Fortran 77 INTEGER is a C int,         [default]
+# -DF77_INTEGER=long  : Fortran 77 INTEGER is a C long,
+# -DF77_INTEGER=short : Fortran 77 INTEGER is a C short.
+#
+# 3) Fortran 77 string handling
+#
+# -DStringSunStyle    : The string address is passed at the string loca-
+#                       tion on the stack, and the string length is then
+#                       passed as  an  F77_INTEGER  after  all  explicit
+#                       stack arguments,                       [default]
+# -DStringStructPtr   : The address  of  a  structure  is  passed  by  a
+#                       Fortran 77  string,  and the structure is of the
+#                       form: struct {char *cp; F77_INTEGER len;},
+# -DStringStructVal   : A structure is passed by value for each  Fortran
+#                       77 string,  and  the  structure is  of the form:
+#                       struct {char *cp; F77_INTEGER len;},
+# -DStringCrayStyle   : Special option for  Cray  machines,  which  uses
+#                       Cray  fcd  (fortran  character  descriptor)  for
+#                       interoperation.
+#
+F2CDEFS      = -DAdd_ -DF77_INTEGER=int -DStringSunStyle
+#
+# ----------------------------------------------------------------------
+# - Extra libs
+# ----------------------------------------------------------------------
+#
+ifeq ($(STREAM_COMPILER),pgi)
+  ifneq ($(COMPILER),pgi)
+    PGF90LIBS = -L ${PGI}/linux86-64/default/lib -lpgc
+  endif
+endif
+#
+# ----------------------------------------------------------------------
+# - HPL includes / libraries / specifics -------------------------------
+# ----------------------------------------------------------------------
+#
+HPL_INCLUDES = -I$(INCdir) -I$(INCdir)/$(ARCH) $(LAinc) $(MPinc)
+HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib) $(PGF90LIBS) #-lcray_gfft
+#
+# - Compile time options -----------------------------------------------
+#
+# -DHPL_COPY_L           force the copy of the panel L before bcast;
+# -DHPL_CALL_CBLAS       call the cblas interface;
+# -DHPL_CALL_VSIPL       call the vsip  library;
+# -DHPL_DETAILED_TIMING  enable detailed timers;
+#
+# By default HPL will:
+#    *) not copy L before broadcast,
+#    *) call the BLAS Fortran 77 interface,
+#    *) not display detailed timing information.
+#
+HPL_OPTS     = -DHPL_LOG_PROGRESS -DHPL_PANEL_PROGRESS_GFLOPS_INTERVAL=100
+# 
+# ----------------------------------------------------------------------
+#
+HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES) #-DRA_SANDIA_OPT2
+#
+ifeq ($(USE_FFTW),true)
+  ifeq ($(USE_FFTW3),true)
+    $(error USE_FFTW=true conflicts with USE_FFTW3=true)
+  endif
+  # despite the above warning, scilib uses fftw3 under the covers
+  HPL_DEFS += -DUSING_FFTW
+endif
+#
+ifeq ($(USE_FFTW3),true)
+  HPL_DEFS += -DUSING_FFTW3
+  HPL_LIBS += -lfftw3_mpi
+  ifeq ($(USE_THREADS),true)
+    HPL_DEFS += -DFFTW3_THREADS
+    HPL_LIBS += -lfftw3_threads
+  endif
+endif
+#
+#HPL_LIBS += -L /cray/css/users/howardp/intel_rc_hack_libs -lmpich -Wl,-yMPI_Init
+#
+# ----------------------------------------------------------------------
+# - Compilers / linkers - Optimization flags ---------------------------
+# ----------------------------------------------------------------------
+#
+ifeq ($(COMPILER),pgi)
+  ARCHIVER   = ar
+  FTN        = ftn
+  CC         = cc
+  CCNOOPT    = $(HPL_DEFS) -DLONG_IS_64BITS
+  CCFLAGS    = $(HPL_DEFS) -fast -Minfo=loop -Mneginfo=loop \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  ifeq ($(USE_THREADS),true)
+    CCFLAGS += -mp
+  endif
+  CCFLAGS_RA = $(CCFLAGS)
+  CCFLAGS_MPIFFT = $(CCFLAGS)
+  CCFLAGS_FFT235 = $(CCFLAGS_MPIFFT)
+  CCFLAGS_driver = $(CCFLAGS)
+else ifeq ($(COMPILER),cray)
+  ARCHIVER   = ar
+  FTN        = ftn
+  CC         = cc
+  CCNOOPT    = $(HPL_DEFS) -O0 \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  CCFLAGS    = $(HPL_DEFS) -h list=a \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  ifneq ($(USE_THREADS),true)
+    CCNOOPT += -h noomp
+    CCFLAGS += -h noomp
+    #LDFLAGS += -lsci_cray
+  endif
+  CCFLAGS_RA = $(CCFLAGS)
+  CCFLAGS_MPIFFT = $(CCFLAGS)
+  CCFLAGS_FFT = $(CCFLAGS_MPIFFT)
+  CCFLAGS_driver = $(CCFLAGS)
+  #LDFLAGS += -h system_alloc
+else ifeq ($(COMPILER),intel)
+  ARCHIVER   = xiar
+  FTN        = ftn
+  CC         = cc
+  CCNOOPT    = $(HPL_DEFS) -O0 -ipo \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  CCFLAGS    = $(HPL_DEFS) -fast \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  CCFLAGS_RA = $(CCFLAGS)
+  ifeq ($(USE_MKL),true)
+    CCFLAGS += -mkl
+    LDFLAGS += -mkl
+  endif
+  CCFLAGS_MPIFFT = $(CCFLAGS)
+  ifeq ($(USE_THREADS),true)
+    CCNOOPT += -openmp
+    CCFLAGS += -openmp
+  endif
+  CCFLAGS_FFT    = $(CCFLAGS_MPIFFT)
+  CCFLAGS_FFT235 = $(CCFLAGS_MPIFFT)
+  CCFLAGS_driver = $(CCFLAGS)
+else ifeq ($(COMPILER),gnu)
+  ARCHIVER   = ar
+  FTN        = ftn
+  CC         = cc
+  CCNOOPT    = $(HPL_DEFS) -O0 \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  CCFLAGS    = $(HPL_DEFS) -O3 -ffast-math -funroll-loops -fprefetch-loop-arrays \
+               -DLONG_IS_64BITS -DFFTE_NP=4
+  CCFLAGS_RA = $(CCFLAGS)
+  CCFLAGS_FFT = $(CCFLAGS)
+  CCFLAGS_MPIFFT := $(CCFLAGS_FFT)
+  ifeq ($(USE_THREADS),true)
+    CCNOOPT += -fopenmp
+    CCFLAGS += -fopenmp
+  endif
+  CCFLAGS_driver = $(CCFLAGS)
+else
+  $(error Unknown COMPILER)
+endif
+#
+ifeq ($(USE_MKL),true)
+  CCFLAGS_MPIFFT = -DUSING_FFTW -DMKL_INT=long $(CCFLAGS)
+  ifeq ($(USE_THREADS),true)#
+    HPL_DEFS += -DMKL_THREADS
+  endif
+endif
+#
+ifeq ($(STREAM_COMPILER),pgi)
+  ifeq ($(COMPILER),pgi)
+    CC_STREAM = $(CC)
+  else ifeq ($(COMPILER),cray)
+    CC_STREAM = . /opt/modules/default/init/sh ; \
+                module swap PrgEnv-cray PrgEnv-pgi ; \
+                cc
+  else
+    $(error STREAM_COMPILER=pgi requires COMPILER=pgi or COMPILER=cray)
+  endif
+  CCFLAGS_STREAM = $(HPL_DEFS) -Mnontemporal \
+                   -Msafeptr -fastsse \
+                   -Minfo=loop -Mneginfo=loop -DLONG_IS_64BITS
+  ifeq ($(USE_THREADS),true)
+    CCFLAGS_STREAM += -mp
+  endif
+else ifeq ($(STREAM_COMPILER),cray)
+  ifeq ($(COMPILER),cray)
+    CC_STREAM = $(CC)
+    CCFLAGS_STREAM = $(CCFLAGS) -h restrict=a -h loop_trips=huge
+  else
+    $(error STREAM_COMPILER=cray requires COMPILER=cray)
+  endif
+else ifeq ($(STREAM_COMPILER),intel)
+  ifeq ($(COMPILER),intel)
+    CC_STREAM = $(CC)
+    CCFLAGS_STREAM = $(CCFLAGS) -opt-streaming-stores always
+    ifeq ($(USE_THREADS),true)
+      CCFLAGS_STREAM += -openmp
+    endif
+  else
+    $(error STREAM_COMPILER=intel requires COMPILER=intel)
+  endif
+else ifeq ($(STREAM_COMPILER),gnu)
+  ifeq ($(COMPILER),gnu)
+    CC_STREAM = $(CC)
+    CCFLAGS_STREAM = $(CCFLAGS)
+    ifeq ($(USE_THREADS),true)
+      CCFLAGS_STREAM += -fopenmp
+    endif
+  else
+    $(error STREAM_COMPILER=gnu requires COMPILER=gnu)
+  endif
+endif
+#
+LINKER       = $(CC)
+LINKFLAGS    = $(CCFLAGS) $(LDFLAGS) -Wl,-ydgemm_,-ydaxpy_
+#
+ARFLAGS      = r
+RANLIB       = echo
+
+CCFLAGS += -DCRAY_CHAPEL=1
+#
+# ----------------------------------------------------------------------

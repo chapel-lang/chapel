@@ -1,0 +1,446 @@
+#!/bin/bash
+
+# -----------------------------------------------------------------------------
+# Utilities for managing log directories
+# -----------------------------------------------------------------------------
+
+function next_backup_dir_num() {
+  local maxSoFar=-1
+  for d in $(ls logs/backup/); do
+
+    if [[ $d =~ ^[0-9]+$ ]]; then
+      if [ $d -gt $maxSoFar ]; then
+        maxSoFar=$d
+      fi
+    fi
+  done
+  maxSoFar=$(echo $maxSoFar | sed 's/^0*//')  # strip leading 0s
+  local nextDir=$((maxSoFar+1))
+  local nextDirStr=$(printf "%03d" $nextDir)
+  echo "$nextDirStr"
+}
+
+backupLogDir=""
+function backup_old_logs() {
+  if [[ -d "logs" ]]; then
+    # if logs dir is empty do nothing
+    local numFiles=$(find logs -maxdepth 1 \( ! -type d \) | wc -l)
+    if [[ "$numFiles" == 0 ]]; then
+      return
+    fi
+
+    mkdir -p "logs/backup"
+    local bakDir=$(next_backup_dir_num)
+    backupLogDir="logs/backup/$bakDir"
+    mkdir -p "$backupLogDir"
+    find logs -maxdepth 1 \( ! -type d \) -exec sh -c - 'mv "$@" logs/backup/'"$bakDir"'/' _ {} \;
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Parse command line arguments.
+# -----------------------------------------------------------------------------
+
+usage () {
+  >&2 echo "usage: chplExperiment [flags] [experiments...]"
+  >&2 echo ""
+  >&2 echo "Flags may be the following:"
+  >&2 echo "  --skip-if-config-error"
+  >&2 echo "             skip experiment (without erroring) if printchplenv errors"
+  >&2 echo "  --paint-with  cmd     "
+  >&2 echo "             run cmd after finishing all experiments"
+  >&2 echo ""
+  >&2 echo "Experiments take the form:  name feats [--skip-if-errs cmd] [--no-build-chpl] [--prebuild cmd] [--var x=y]* cmd"
+  >&2 echo ""
+  >&2 echo "  name                name of experiment (used to name log and dat files)"
+  >&2 echo "  feats               colon separated list of features to pass to chplSetupEnv"
+  >&2 echo "  --skip-if-errs cmd  if running cmd (after environment configuration) results in"
+  >&2 echo "                      a non-zero return code skip the experiment"
+  >&2 echo "  --no-build-chpl     no need to build Chapel before running this experiment"
+  >&2 echo "  --prebuild cmd      run specified command before building Chapel"
+  >&2 echo "  --var x=y           set environment variable 'x' to value 'y' before running the script"
+  >&2 echo "  cmd                 comman to run after configuration and build"
+}
+
+# TODO: Currently command line argument parsing is a hackfest. We should redo
+# this using getopts or some better argument parser.
+if [[ ! -v CHPL_HOME ]]; then
+  >&2 echo '$CHPL_HOME must be set before using chplExperiment'
+fi
+
+# Read flags
+while [[ $1 == --* ]]; do
+  if [[ $1 == --skip-if-config-error ]]; then
+    CHPL_EXP_SKIP_IF_CONFIG_ERROR=y
+  elif [[ $1 == --paint-with ]]; then
+    shift
+    CHPL_EXP_PAINT_WITH="$1"
+  else
+    >&2 echo "Unknown argument $1"
+    usage
+    exit 1
+  fi
+  shift
+done
+
+# Read experiments
+experiment_name=()
+experiment_feats=()
+experiment_skipIfErrsCmd=()
+experiment_shouldBuildChpl=()
+experiment_shouldSkipIfColocalesUnsupported=()
+experiment_prebuildCmd=()
+experiment_vars=()
+experiment_cmd=()
+while (( "$#" > 0 )); do
+  if [[ $# -lt 3 ]]; then
+    usage
+    exit 1
+  fi
+
+  name=$1
+  shift
+  feats=$1
+  shift
+
+  vars=""
+  skipIfErrsCmd=""
+  prebuildCmd=""
+  shouldBuildChpl="y"
+  shouldSkipIfColocalesUnsupported="n"
+  while [[ "$1" == --* ]]; do
+    if [[ "$1" == "--skip-if-errs" ]]; then
+      shift
+      skipIfErrsCmd="$1"
+      shift
+    elif [[ "$1" == "--no-build-chpl" ]]; then
+      shift
+      shouldBuildChpl="n"
+    elif [[ "$1" == "--skip-if-colocales-unsupported" ]]; then
+      shift
+      shouldSkipIfColocalesUnsupported="y"
+    elif [[ "$1" == "--prebuild" ]]; then
+      shift
+      prebuildCmd="$1"
+      shift
+    elif [[ "$1" == "--var" ]]; then
+      shift
+      vars+="$1 "
+      shift
+    else
+      >&2 echo "Unknown argument $1"
+      usage
+      exit 1
+    fi
+  done
+
+  cmd=$1
+  shift
+
+  experiment_name[${#experiment_name[@]}]="$name"
+  experiment_feats[${#experiment_feats[@]}]="$feats"
+  experiment_skipIfErrsCmd[${#experiment_skipIfErrsCmd[@]}]="$skipIfErrsCmd"
+  experiment_shouldBuildChpl[${#experiment_shouldBuildChpl[@]}]="$shouldBuildChpl"
+  experiment_prebuildCmd[${#experiment_prebuildCmd[@]}]="$prebuildCmd"
+  experiment_shouldSkipIfColocalesUnsupported[${#experiment_shouldSkipIfColocalesUnsupported[@]}]="$shouldSkipIfColocalesUnsupported"
+  experiment_cmd[${#experiment_cmd[@]}]="$cmd"
+  experiment_vars[${#experiment_vars[@]}]="$vars"
+done
+
+# -----------------------------------------------------------------------------
+# Run some checks looking for problems before we start experimentin'
+# -----------------------------------------------------------------------------
+
+if [[ -n "$CHPL_EXP_PAINT_WITH" ]]; then
+  if [[ -z "$CHPL_EXP_SKIP_PYTHON_DEP_CHECK" ]]; then
+    if ! "$CHPL_HOME/util/test/chplExperimentGatherUtils/checks/checkPythonDeps.py"; then
+      exit 1
+    fi
+  fi
+fi
+
+for i in "${!experiment_name[@]}"; do
+  nameOpt=""
+  name="${experiment_name[i]}"
+  feats="${experiment_feats[i]}"
+  skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
+  shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  prebuildCmd="${experiment_prebuildCmd[i]}"
+  cmd="${experiment_cmd[i]}"
+
+  if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
+    nameOpt="${BASH_REMATCH[1]}"
+    name="${BASH_REMATCH[2]}"
+  fi
+
+  if [[ "$nameOpt" = "skip" ]]; then
+    continue
+  fi
+
+  if [[ ! -x "$cmd" ]]; then
+    >&2 echo "-- [ERROR] --"
+    >&2 echo "$cmd (used by $name experiment) is not an executable file"
+    exit 1
+  fi
+
+  if ! "$CHPL_HOME/util/test/chplExperimentGatherUtils/checks/checkScriptHasPrelude.py" "$cmd"; then
+    exit 1
+  fi
+done
+
+# -----------------------------------------------------------------------------
+# Start logging
+# -----------------------------------------------------------------------------
+
+backup_old_logs
+logDir="$(pwd)/logs"
+mkdir -p $logDir
+logFile=$logDir/log.txt
+exec > >(tee $logFile) 2>&1
+
+echo "Log file: $logFile"
+echo "Old log files were backed up to: $backup_old_logs"
+
+# -----------------------------------------------------------------------------
+# Print some useful things for logging purposes
+# -----------------------------------------------------------------------------
+
+echo "> pushd $CHPL_HOME"
+pushd $CHPL_HOME
+echo "> date"
+date
+echo "> hostname"
+hostname
+echo "> git rev-parse HEAD"
+git rev-parse HEAD
+echo "> git status"
+git status
+echo "> popd"
+popd
+
+# -----------------------------------------------------------------------------
+# Run experiments
+# -----------------------------------------------------------------------------
+
+ranExperiment=""
+for i in "${!experiment_name[@]}"; do
+  nameOpt=""
+  name="${experiment_name[i]}"
+  feats="${experiment_feats[i]}"
+  skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
+  shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  shouldSkipIfColocalesUnsupported="${experiment_shouldSkipIfColocalesUnsupported[i]}"
+  prebuildCmd="${experiment_prebuildCmd[i]}"
+  vars="${experiment_vars[i]}"
+  cmd="${experiment_cmd[i]}"
+  if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
+    nameOpt="${BASH_REMATCH[1]}"
+    name="${BASH_REMATCH[2]}"
+  fi
+
+  echo -e "\n================================================================================\nEXPERIMENT [$(($i+1))/${#experiment_name[@]}]: $name \n================================================================================"
+  echo "feats=$feats"
+  echo "shouldBuildChpl=$shouldBuildChpl"
+  echo "prebuildCmd=$prebuildCmd"
+  echo "cmd=$cmd"
+
+  if [[ "$nameOpt" = "skip" ]]; then
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO __skip__ PREFIX  * * * * * * * * *"
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    continue
+  fi
+
+  # If experiment name has __reuse__ prefix copy previous results (.dat) file
+  # if it exists (otherwise we'll continue on and repeat the experiment).
+  if [[ "$nameOpt" = "reuse" ]]; then
+    if [[ -e "$backupLogDir/$name.dat" ]]; then
+      echo "Since experiment name was prefixed with __reuse__ rather than rerunning the"
+      echo "experiment we will copy its previous results into the log directrory."
+      echo ">cp \"$backupLogDir/$name.dat\" \"$logDir\""
+      cp "$backupLogDir/$name.dat" "$logDir"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO __reuse__ PREFIX * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      continue
+    fi
+  fi
+
+  echo -e "\n--------------------------------------------------------------------------------"
+  echo -e "($name) Configure step"
+  echo -e "--------------------------------------------------------------------------------"
+
+  echo -e "> source $CHPL_HOME/util/test/chplSetupEnv.bash $feats"
+  source "$CHPL_HOME/util/test/chplSetupEnv.bash" $feats --dry-run
+  echo -e "\n># ----------------------------------------------------------------------------\n"
+  source "$CHPL_HOME/util/test/chplSetupEnv.bash" $feats
+
+  # Because chplSetupEnv was sourced, it may have overwritten these variables
+  # so we reassign them at this point
+  name="${experiment_name[i]}"
+  feats="${experiment_feats[i]}"
+  skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
+  shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  shouldSkipIfColocalesUnsupported="${experiment_shouldSkipIfColocalesUnsupported[i]}"
+
+  if [[ "$CHPLEXP_CHPL_SETUP_FAILED" == "1" ]]; then
+    if [[ "$CHPL_EXP_SKIP_IF_CONFIG_ERROR"=="y" ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO CONFIG FAILURE * * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      continue
+    else
+      exit 1
+    fi
+  fi
+
+  prebuildCmd="${experiment_prebuildCmd[i]}"
+  vars="${experiment_vars[i]}"
+  cmd="${experiment_cmd[i]}"
+  if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
+    nameOpt="${BASH_REMATCH[1]}"
+    name="${BASH_REMATCH[2]}"
+  fi
+
+  echo "> pushd $CHPLHOME"
+  pushd $CHPL_HOME
+
+  if [[ ! -z "$skipIfErrsCmd" ]]; then
+    echo "#> If the following command fails we will skip the experiment:"
+    echo "> $skipIfErrsCmd"
+    eval "$skipIfErrsCmd"
+    if [[ ! "$?" -eq "0" ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * *  SKIPPING EXPERIMENT DUE TO --skip-if-errs COMMAND ERRORING * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "> popd"; popd
+      continue
+    fi
+  fi
+ 
+  if [[ "$shouldSkipIfColocalesUnsupported" == 'y' ]]; then
+    if [[ $CHPL_COMM == 'ugni' ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * *  SKIPPING EXPERIMENT DUE TO --skip-if-colocales-unsupported COMMAND ERRORING  * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "> popd"; popd
+      continue
+    fi
+  fi
+
+  set -e
+  echo "PREBUILD CMD: $prebuildCmd"
+  if [[ ! -z "$prebuildCmd" ]]; then
+    echo "> $prebuildCmd"
+    eval "$prebuildCmd"
+  fi
+  set +e
+
+  echo "VARS: ${vars}"
+  set -e
+  if [[ ! -z "$vars" ]]; then
+    for assignment in ${vars}; do
+      varName=$(echo "$assignment" | cut -d "=" -f 1)
+      varVal=$(echo "$assignment" | cut -d "=" -f 2)
+      echo "> export $varName=$varVal"
+      export $varName=$varVal
+    done
+  fi
+  set +e
+
+  echo "> printchplenv --all"
+  printchplenv --all
+  if [[ ! "$?" -eq "0" ]]; then
+    if [[ "$CHPL_EXP_SKIP_IF_CONFIG_ERROR"=="y" ]]; then
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * * SKIPPING EXPERIMENT DUE TO PRINTCHPLENV * * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "> popd"; popd
+      continue
+    fi
+  fi
+
+  # print modules as a logging courtesy
+  if command -v module &> /dev/null; then
+    echo "> module list"
+    module list
+  fi
+
+  echo -e "\n--------------------------------------------------------------------------------"
+  echo -e "($name) Build step"
+  echo -e "--------------------------------------------------------------------------------"
+
+  if [[ "$shouldBuildChpl" == "y" ]]; then
+    echo "> nice make -j16"
+    nice make -j16
+  else
+    echo "># Skipping build step since --no-build-chpl was passed"
+  fi
+
+  echo "> popd"; popd
+
+  echo -e "\n--------------------------------------------------------------------------------"
+  echo -e "($name) Experiment step"
+  echo -e "--------------------------------------------------------------------------------"
+
+  source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "preExperiment"
+
+  echo "> which chpl"
+  which chpl
+
+  # Save the following state, which we'll add as comments into the .dat file later on
+  GATHER_PRINTCHPLENV=$(printchplenv --all --anonymize)
+  GATHER_GIT_REV_PARSE=$(git rev-parse HEAD)
+  GATHER_GIT_STATUS=$(git status)
+
+  # Run the experiment
+  set -e
+  echo "> $cmd \"$logDir/$name.dat\" \"$logDir\" \"$name\""
+  eval $cmd "$logDir/$name.dat" "$logDir" "$name"
+  set +e
+  ranExperiment="YES"
+
+  source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "postExperiment"
+
+  # Append other information to generated dat file
+  datFile="$logDir/$name.dat"
+  if [[ -f "$datFile" ]]; then
+    echo -e "\n## -- printchplenv --anonymize --" >> $datFile
+    echo -e "$GATHER_PRINTCHPLENV" | sed 's/^/##    /' >> $datFile
+    echo -e "\n## -- git rev-parse HEAD --" >> $datFile
+    echo -e "$GATHER_GIT_REV_PARSE" | sed 's/^/##    /' >> $datFile
+    echo -e "\n## -- git status --" >> $datFile
+    echo -e "$GATHER_GIT_STATUS" | sed 's/^/##    /' >> $datFile
+  fi
+
+  echo -e "\n--------------------------------------------------------------------------------"
+  echo -e "($name) Resulting .dat file"
+  echo -e "--------------------------------------------------------------------------------"
+  echo "> cat $datFile"
+  cat "$datFile"
+
+  # Unset variables set for the experiment
+  set -e
+  if [[ ! -z "$vars" ]]; then
+    for assignment in ${vars}; do
+      varName=$(echo "$assignment" | cut -d "=" -f 1)
+      varVal=$(echo "$assignment" | cut -d "=" -f 2)
+      unset $varName
+    done
+  fi
+  set +e
+done
+
+# Run paint script if one was specified
+if [[ -n "$CHPL_EXP_PAINT_WITH" ]]; then
+  if [[ -z "$ranExperiment" ]]; then
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    echo "* * * * * * * * * SKIPPING PAINTING BECAUSE NO EXPERIMENTS RAN  * * * * * * * *"
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+  else
+    source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "paintExperiment"
+    eval "$CHPL_EXP_PAINT_WITH"
+  fi
+fi
+
+echo -e "\n================================================================================\n================================================================================"
