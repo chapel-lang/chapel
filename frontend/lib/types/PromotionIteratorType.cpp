@@ -25,6 +25,7 @@ namespace chpl {
 namespace types {
 
 void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
+  yieldType_.mark(context);
   scalarFn_->mark(context);
   for (const auto& pair : promotedFormals_) {
     pair.second.mark(context);
@@ -34,17 +35,19 @@ void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
 const owned<PromotionIteratorType>&
 PromotionIteratorType::getPromotionIteratorType(Context* context,
                                                 const resolution::TypedFnSignature* scalarFn,
-                                                resolution::SubstitutionsMap promotedFormals) {
-  QUERY_BEGIN(getPromotionIteratorType, context, scalarFn, promotedFormals);
-  auto result = toOwned(new PromotionIteratorType(scalarFn, std::move(promotedFormals)));
+                                                resolution::SubstitutionsMap promotedFormals,
+                                                QualifiedType yieldType) {
+  QUERY_BEGIN(getPromotionIteratorType, context, scalarFn, promotedFormals, yieldType);
+  auto result = toOwned(new PromotionIteratorType(scalarFn, std::move(promotedFormals), std::move(yieldType)));
   return QUERY_END(result);
 }
 
 const PromotionIteratorType*
 PromotionIteratorType::get(Context* context,
                            const resolution::TypedFnSignature* scalarFn,
-                           resolution::SubstitutionsMap promotedFormals) {
-  return getPromotionIteratorType(context, scalarFn, std::move(promotedFormals)).get();
+                           resolution::SubstitutionsMap promotedFormals,
+                           QualifiedType yieldType) {
+  return getPromotionIteratorType(context, scalarFn, std::move(promotedFormals), std::move(yieldType)).get();
 }
 
 }  // end namespace types

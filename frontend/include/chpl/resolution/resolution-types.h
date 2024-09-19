@@ -1105,6 +1105,13 @@ class TypedFnSignature {
     return fetchIterKindStr(context, str) && str == USTR("follower");
   }
 
+  /** Returns 'true' if this signature is for a parallel iterator. */
+  bool isParallelIterator(Context* context) const {
+    return isParallelStandaloneIterator(context) ||
+           isParallelLeaderIterator(context) ||
+           isParallelFollowerIterator(context);
+  }
+
   /** Returns 'true' if this signature is for a serial iterator. */
   bool isSerialIterator(Context* context) const {
     UniqueString str;

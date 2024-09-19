@@ -32,23 +32,27 @@ class FnIteratorType final : public IteratorType {
  private:
   const resolution::TypedFnSignature* iteratorFn_;
 
-  FnIteratorType(const resolution::TypedFnSignature* iteratorFn)
-    : IteratorType(typetags::FnIteratorType), iteratorFn_(iteratorFn) {}
+  FnIteratorType(const resolution::TypedFnSignature* iteratorFn,
+                 QualifiedType yieldType)
+    : IteratorType(typetags::FnIteratorType, std::move(yieldType)), iteratorFn_(iteratorFn) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (FnIteratorType*) other;
-    return this->iteratorFn_ == rhs->iteratorFn_;
+    return this->yieldType_ == rhs->yieldType_ &&
+           this->iteratorFn_ == rhs->iteratorFn_;
   }
 
   void markUniqueStringsInner(Context* context) const override;
 
   static const owned <FnIteratorType>&
   getFnIteratorType(Context* context,
-                    const resolution::TypedFnSignature* iteratorFn);
+                    const resolution::TypedFnSignature* iteratorFn,
+                    QualifiedType yieldType);
 
  public:
-  const FnIteratorType* get(Context* context,
-                            const resolution::TypedFnSignature* iteratorFn);
+  static const FnIteratorType* get(Context* context,
+                                   const resolution::TypedFnSignature* iteratorFn,
+                                   QualifiedType yieldType);
 
   const resolution::TypedFnSignature* iteratorFn() const {
     return iteratorFn_;

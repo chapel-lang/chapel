@@ -28,10 +28,18 @@ namespace types {
 
 class IteratorType : public Type {
  protected:
-  IteratorType(typetags::TypeTag tag) : Type(tag) {}
+  QualifiedType yieldType_;
+
+  IteratorType(typetags::TypeTag tag, QualifiedType yieldType)
+    : Type(tag), yieldType_(std::move(yieldType)) {}
 
   Genericity genericity() const override {
     return CONCRETE;
+  }
+
+ public:
+  const QualifiedType& yieldType() const {
+    return yieldType_;
   }
 };
 

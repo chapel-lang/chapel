@@ -1160,6 +1160,11 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
     }
   }
 
+  if (sig->isIterator()) {
+    result = QualifiedType(result.kind(),
+                           FnIteratorType::get(context, sig, result));
+  }
+
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 

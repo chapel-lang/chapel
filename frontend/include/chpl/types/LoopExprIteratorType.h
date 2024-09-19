@@ -35,8 +35,9 @@ class LoopExprIteratorType final : public IteratorType {
 
   LoopExprIteratorType(bool isZippered,
                        QualifiedType iterand,
-                       ID sourceLocation)
-    : IteratorType(typetags::LoopExprIteratorType),
+                       ID sourceLocation,
+                       QualifiedType yieldType)
+    : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType)),
       isZippered_(isZippered), iterand_(std::move(iterand)),
       sourceLocation_(std::move(sourceLocation)) {
     if (isZippered_) {
@@ -46,12 +47,14 @@ class LoopExprIteratorType final : public IteratorType {
 
   bool contentsMatchInner(const Type* other) const {
     auto rhs = (LoopExprIteratorType*) other;
-    return isZippered_ == rhs->isZippered_ &&
+    return yieldType_ == rhs->yieldType_ &&
+           isZippered_ == rhs->isZippered_ &&
            iterand_ == rhs->iterand_ &&
            sourceLocation_ == rhs->sourceLocation_;
   }
 
   void markUniqueStringsInner(Context* context) const {
+    yieldType_.mark(context);
     iterand_.mark(context);
     sourceLocation_.mark(context);
   }
@@ -60,13 +63,15 @@ class LoopExprIteratorType final : public IteratorType {
   getLoopExprIteratorType(Context* context,
                           bool isZippered,
                           QualifiedType iterand,
-                          ID sourceLocation);
+                          ID sourceLocation,
+                          QualifiedType yieldType);
 
  public:
   static const LoopExprIteratorType* get(Context* context,
                                          bool isZippered,
                                          QualifiedType iterand,
-                                         ID sourceLocation);
+                                         ID sourceLocation,
+                                         QualifiedType yieldType);
 
   bool isZippered() const {
     return isZippered_;

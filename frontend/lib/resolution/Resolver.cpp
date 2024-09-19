@@ -70,9 +70,7 @@ namespace {
 
     // When an iter is resolved these pieces of the process will be stored.
     struct Pieces {
-      bool wasCallInjected = false;
-      CallResolutionResult crr;
-      const TypedFnSignature* sig = crr.mostSpecific().only().fn();
+      const IteratorType* iterType = nullptr;
     };
     Pieces standalone;
     Pieces leader;
@@ -101,6 +99,7 @@ getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant);
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
+                       const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
                        UniqueString iterKindStr,
@@ -4371,6 +4370,7 @@ void Resolver::exit(const New* node) {
 
 static const QualifiedType&
 getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
+
   QUERY_BEGIN(getIterKindConstantOrUnknownQuery, context, constant);
 
   QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
@@ -4389,7 +4389,7 @@ getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
 // This helper resolves by priority order as described in 'IterDetails'.
 static IterDetails
 resolveIterDetailsInPriorityOrder(Resolver& rv,
-                                  bool& outWasIterSigResolved,
+                                  const IteratorType* iteratingOver,
                                   const AstNode* astForErr,
                                   const AstNode* iterand,
                                   const QualifiedType& leaderYieldType,
@@ -4397,9 +4397,8 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   IterDetails ret;
   bool computedLeaderYieldType = false;
   if (mask & IterDetails::STANDALONE) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
+    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, iteratingOver, astForErr,
                                          iterand, USTR("standalone"), {});
-    outWasIterSigResolved = (ret.standalone.sig != nullptr);
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -4407,7 +4406,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   }
 
   if (mask & IterDetails::LEADER_FOLLOWER) {
-    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
+    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, iteratingOver, astForErr,
                                                  iterand, USTR("leader"),
                                                  {});
     computedLeaderYieldType = true;
@@ -4418,10 +4417,9 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   if (mask & IterDetails::LEADER_FOLLOWER ||
       mask & IterDetails::FOLLOWER) {
     if (!ret.leaderYieldType.isUnknownOrErroneous()) {
-      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, astForErr,
+      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, iteratingOver, astForErr,
                                            iterand, USTR("follower"),
                                            ret.leaderYieldType);
-      outWasIterSigResolved = (ret.follower.sig != nullptr);
       if (!ret.idxType.isUnknownOrErroneous()) {
         ret.succeededAt = computedLeaderYieldType
             ? IterDetails::LEADER_FOLLOWER
@@ -4432,9 +4430,8 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   }
 
   if (mask & IterDetails::SERIAL) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, astForErr,
+    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, iteratingOver, astForErr,
                                          iterand, {}, {});
-    outWasIterSigResolved = (ret.serial.sig != nullptr);
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::SERIAL;
     }
@@ -4448,25 +4445,24 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
                                       int mask) {
-  Context* context = rv.context;
-
+  iterand->traverse(rv);
   if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
-    // Resolve the iterand as much as possible even if there is nothing to do.
-    iterand->traverse(rv);
     return {};
   }
 
-  // Resolve the iterand but suppress errors for now. We'll reissue them
-  // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
-  // our injected call is successful.
-  auto runResult = context->runAndTrackErrors([&](Context* context) {
-    iterand->traverse(rv);
-    return nullptr;
-  });
+  auto iterandRe = rv.byPostorder.byAst(iterand);
+  const IteratorType* iteratingOver = nullptr;
+  if (!iterandRe.type().isUnknownOrErroneous()) {
+    iteratingOver = iterandRe.type().type()->toIteratorType();
+  } else {
+    // The thing-to-be-iterated is not an iterator, but it might be iterable
+    // using its 'these()' method. Don't resolve it now, since we haven't
+    // decided on which overloads we need; resolveIterTypeWithTag will do that
+    // on finding that toIterate is null.
+  }
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
-  bool wasIterSigResolved = false;
-  auto ret = resolveIterDetailsInPriorityOrder(rv, wasIterSigResolved,
+  auto ret = resolveIterDetailsInPriorityOrder(rv, iteratingOver,
                                                astForErr, iterand,
                                                leaderYieldType,
                                                mask);
@@ -4474,33 +4470,103 @@ static IterDetails resolveIterDetails(Resolver& rv,
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
   // approriate error for us already.
-  bool skipNoCandidatesError = true;
-  if (!wasIterSigResolved) {
+  if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
-      ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+      ret.idxType = CHPL_TYPE_ERROR(rv.context, NonIterable, astForErr, iterand,
                                     iterandRE.type());
-    } else {
-      skipNoCandidatesError = false;
     }
-  }
-
-  // Reissue the errors.
-  for (auto& e : runResult.errors()) {
-    if (e->type() == NoMatchingCandidates) {
-      auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
-      auto& f = std::get<0>(nmc->info());
-      if (skipNoCandidatesError && f == iterand) continue;
-    }
-    context->report(std::move(e));
   }
 
   return ret;
 }
 
+static CallInfo setupTaggedCallInfoForIteratorType(Resolver& rv,
+                                                   const IteratorType* iterType,
+                                                   bool needsSerial,
+                                                   const QualifiedType& tagType,
+                                                   const QualifiedType& followThisType) {
+  CHPL_ASSERT(iterType->isFnIteratorType());
+  auto fnIterType = iterType->toFnIteratorType();
+  std::vector<CallInfoActual> actuals;
+
+  auto iterKindType = EnumType::getIterKindType(rv.context);
+
+  // We have a call to an iterator signature, but it may not be the right
+  // overload. So, construct a call with the same name and actuals, with
+  // possibly a different tag or followThis.
+  auto typedSig = fnIterType->iteratorFn();
+  auto untypedSig = typedSig->untyped();
+  for (int i = 0; i < typedSig->numFormals(); i++) {
+    auto formalQt = typedSig->formalType(i);
+
+    // We explicitly insert the tag below.
+    if (formalQt.type() == iterKindType) continue;
+
+    actuals.emplace_back(formalQt, untypedSig->formalName(i));
+  }
+
+  if (!tagType.isUnknown()) {
+    actuals.emplace_back(tagType, USTR("tag"));
+  }
+
+  if (!followThisType.isUnknown()) {
+    actuals.emplace_back(followThisType, USTR("followThis"));
+  }
+
+  auto receiverType =
+    untypedSig->isMethod() ?
+    typedSig->formalType(0) :
+    QualifiedType();
+
+  return CallInfo(untypedSig->name(),
+                  receiverType,
+                  /* isMethodCall */ typedSig->isMethod(),
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  std::move(actuals));
+}
+
+static QualifiedType resolveTheseMethod(Resolver& rv,
+                                        const AstNode* iterand,
+                                        const QualifiedType& iterandType,
+                                        const QualifiedType& tagType,
+                                        const QualifiedType& followThisType) {
+  auto& iterandRe = rv.byPostorder.byAst(iterand);
+  std::vector<CallInfoActual> actuals;
+
+  actuals.push_back(CallInfoActual(iterandType, USTR("this")));
+
+  if (!tagType.isUnknown()) {
+    actuals.emplace_back(tagType, USTR("tag"));
+  }
+
+  if (!followThisType.isUnknown()) {
+    actuals.emplace_back(followThisType, USTR("followThis"));
+  }
+
+  auto ci = CallInfo(USTR("these"),
+                     iterandType,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(actuals));
+
+  auto inScope = rv.scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
+  auto c = resolveGeneratedCall(rv.context, iterand, ci, inScopes);
+
+  rv.handleResolvedCallWithoutError(iterandRe, iterand, ci, c,
+      { { AssociatedAction::ITERATE,
+      iterand->id() } });
+
+  return c.exprType();
+}
+
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
+                       const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
                        UniqueString iterKindStr,
@@ -4510,111 +4576,85 @@ resolveIterTypeWithTag(Resolver& rv,
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
   auto iterKindFormal = getIterKindConstantOrUnknownQuery(context, iterKindStr);
-  bool needStandalone = iterKindStr == USTR("standalone");
-  bool needLeader = iterKindStr == USTR("leader");
-  bool needFollower = iterKindStr == USTR("follower");
   bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
-  if (!needSerial && iterKindFormal.isUnknown()) return error;
-
-  auto iterKindType = EnumType::getIterKindType(context);
-  CHPL_ASSERT(needSerial || (iterKindFormal.type() == iterKindType &&
-                             iterKindFormal.hasParamPtr()));
+  if (!needSerial && iterKindFormal.isUnknown()) {
+    context->report(
+        GeneralError::get(ErrorBase::WARNING,
+                          parsing::locateAst(context, astForErr),
+                          "resolving parallel iterators is not supported "
+                          "without module code"));
+    return unknown;
+  }
 
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
+
+  // If the user explicitly provided a tag, this is an error: tags
+  // are automatically provided by the compiler. Report an error.
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
-  bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
-  bool wasIterResolved = fn && fn->isIterator();
-  bool wasMatchingIterResolved = wasIterResolved &&
-    ((fn->isParallelStandaloneIterator(context) && needStandalone) ||
-     (fn->isParallelLeaderIterator(context) && needLeader) ||
-     (fn->isParallelFollowerIterator(context) && needFollower) ||
-     (fn->isSerialIterator(context) && needSerial));
-
-  QualifiedType ret = error;
-
-  // We resolved the iterator we need right off the bat, so use it.
-  if (wasMatchingIterResolved) {
-    ret = iterandRE.type();
-    outIterPieces = { false, {}, fn };
-
-  // We cannot inject e.g., the 'tag' actual in this case, so error out.
-  } else if (needSerial && wasIterResolved) {
+  if (fn && fn->isParallelIterator(context)) {
+    context->error(astForErr,
+                   "explicitly invoking parallel iterators is not allowed -- "
+                   "they are invoked implicitly by the compiler.");
     return error;
+  }
+
+  bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
+  bool wasMatchingIterResolved = fn && fn->isSerialIterator(context) && needSerial;
+
+  // The iterand was a call to a serial iterator, and we need a serial iterator.
+  if (wasMatchingIterResolved && wasIterandTypeResolved) {
+    CHPL_ASSERT(iterandRE.type().type()->isIteratorType() &&
+                iterandRE.type().type() == iteratingOver &&
+                "an iterator was resolved, expecting an iterator type");
+    outIterPieces = { iteratingOver };
+    return iteratingOver->yieldType();
 
   // There's nothing to do in this case, so error out.
   } else if (needSerial && !wasIterandTypeResolved) {
     return error;
 
-  // In this branch we prepare a generated iterator call. It could be a call
-  // to 'these()' on the iterand type, or it could be a redirect of the
-  // existing call with 'iterKind' and (optionally) 'followThis' arguments
-  // tacked onto the end.
-  } else {
-    bool shouldCreateTheseCall = !wasIterResolved && wasIterandTypeResolved;
+  // The iterand is not an iterator in itself, but it could be a type with
+  // a 'these()' method. Resolve that method and try finding the iterator.
+  } else if (!iteratingOver) {
+    auto qt = resolveTheseMethod(rv, iterand, iterandRE.type(), iterKindFormal, followThisFormal);
+    if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
+      // These produced a valid iterator. We already configured the call
+      // with the desired tag, so that's sufficient.
 
-    // We need to fill in the following pieces to construct a 'CallInfo'.
-    UniqueString callName;
-    types::QualifiedType callCalledType;
-    bool callIsMethodCall = false;
-    bool callHasQuestionArg = false;
-    bool callIsParenless = false;
-    std::vector<CallInfoActual> callActuals;
-
-    // If we are constructing a new 'these()' call then add a receiver.
-    if (shouldCreateTheseCall) {
-      callName = USTR("these");
-      callCalledType = iterandRE.type();
-      callIsMethodCall = true;
-      callActuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
-
-    // The iterand is an unresolved call, or it is a resolved iterator but
-    // not the one that we need. Regather existing actuals and reuse the
-    // receiver if it is present.
-    } else if (auto call = iterand->toCall()) {
-
-      bool raiseErrors = false;
-      auto tmp = CallInfo::create(context, call, rv.byPostorder, raiseErrors);
-
-      callName = tmp.name();
-      callCalledType = tmp.calledType();
-      callIsMethodCall = tmp.isMethodCall();
-      callIsParenless = tmp.isParenless();
-      for (auto& a : tmp.actuals()) callActuals.push_back(a);
-    } else {
-      CHPL_UNIMPL("unknown iterand");
-      return error;
+      iteratingOver = qt.type()->toIteratorType();
+      outIterPieces = { iteratingOver };
+      return iteratingOver->yieldType();
     }
+    return qt;
+  }
 
-    if (!needSerial) {
-      callActuals.push_back(CallInfoActual(iterKindFormal, USTR("tag")));
-    }
+  // At this point, we know that the iterand is an iterator, but it is not
+  // (obviously) the one that we need. We need to resolve a new call with
+  // a specific tag. Configure the call below.
 
-    if (needFollower) {
-      auto x = CallInfoActual(followThisFormal, USTR("followThis"));
-      callActuals.push_back(std::move(x));
-    }
+  auto ci = setupTaggedCallInfoForIteratorType(rv, iteratingOver, needSerial,
+                                               iterKindFormal, followThisFormal);
+  auto inScope = rv.scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
+  auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
 
-    auto ci = CallInfo(std::move(callName),
-                       std::move(callCalledType),
-                       std::move(callIsMethodCall),
-                       std::move(callHasQuestionArg),
-                       std::move(callIsParenless),
-                       std::move(callActuals));
-    auto inScope = rv.scopeStack.back();
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-    auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
+  QualifiedType ret = error;
+  const IteratorType* newIteratingOver = nullptr;
+  auto iteratorQt = c.exprType();
+  if (!iteratorQt.isUnknownOrErroneous() && iteratorQt.type()->isIteratorType()) {
+    newIteratingOver = iteratorQt.type()->toIteratorType();
+    ret = newIteratingOver->yieldType();
+  }
 
-    outIterPieces = { true, c, c.mostSpecific().only().fn() };
-    ret = c.exprType();
+  outIterPieces = { newIteratingOver };
 
-    if (!ret.isUnknownOrErroneous()) {
-      rv.handleResolvedCall(iterandRE, astForErr, ci, c,
-                            { { AssociatedAction::ITERATE, iterand->id() } });
-    }
+  if (!ret.isUnknownOrErroneous()) {
+    rv.handleResolvedCall(iterandRE, astForErr, ci, c,
+                          { { AssociatedAction::ITERATE, iterand->id() } });
   }
 
   return ret;

@@ -37,14 +37,16 @@ class PromotionIteratorType final : public IteratorType {
   const resolution::SubstitutionsMap promotedFormals_;
 
   PromotionIteratorType(const resolution::TypedFnSignature* scalarFn,
-                        resolution::SubstitutionsMap promotedFormals)
-    : IteratorType(typetags::PromotionIteratorType),
+                        resolution::SubstitutionsMap promotedFormals,
+                        QualifiedType yieldType)
+    : IteratorType(typetags::PromotionIteratorType, std::move(yieldType)),
       scalarFn_(scalarFn),
       promotedFormals_(std::move(promotedFormals)) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (PromotionIteratorType*) other;
-    return this->scalarFn_ == rhs->scalarFn_ &&
+    return this->yieldType_ == rhs->yieldType_ &&
+           this->scalarFn_ == rhs->scalarFn_ &&
            this->promotedFormals_ == rhs->promotedFormals_;
   }
 
@@ -53,12 +55,14 @@ class PromotionIteratorType final : public IteratorType {
   static const owned<PromotionIteratorType>&
   getPromotionIteratorType(Context* context,
                            const resolution::TypedFnSignature* scalarFn,
-                           resolution::SubstitutionsMap promotedFormals);
+                           resolution::SubstitutionsMap promotedFormals,
+                           QualifiedType yieldType);
 
  public:
-  const PromotionIteratorType* get(Context* context,
-                                   const resolution::TypedFnSignature* scalarFn,
-                                   resolution::SubstitutionsMap promotedFormals);
+  static const PromotionIteratorType* get(Context* context,
+                                          const resolution::TypedFnSignature* scalarFn,
+                                          resolution::SubstitutionsMap promotedFormals,
+                                          QualifiedType yieldType);
 
   const resolution::TypedFnSignature* scalarFn() const {
     return scalarFn_;
