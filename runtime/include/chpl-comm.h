@@ -156,7 +156,7 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 
 // Free a handle returned by chpl_comm_*_nb.
-void chpl_comm_free_nb(chpl_comm_nb_handle_t* h);
+void chpl_comm_free_nb(chpl_comm_nb_handle_t h);
 
 // Returns whether or not the passed wide address is known to be in
 // a communicable memory region and known to be readable. That is,

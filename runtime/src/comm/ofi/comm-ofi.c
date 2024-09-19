@@ -359,6 +359,19 @@ static const char* mcmModeNames[] = { "undefined",
 
 static bool cxiHybridMRMode = false;
 
+
+//
+// Non-blocking handle
+//
+typedef struct nb_handle {
+  chpl_taskID_t id;          // task that created the handle
+  chpl_bool reported;        // operation has been reported as complete
+  chpl_atomic_bool complete; // operation has completed
+  struct nb_handle *next;
+} nb_handle;
+
+typedef nb_handle* nb_handle_t;
+
 ////////////////////////////////////////
 //
 // Forward decls
@@ -369,8 +382,8 @@ static struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static void tciFree(struct perTxCtxInfo_t*);
 static void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
-static chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t, void*, size_t,
-                                     chpl_bool);
+static void ofi_put(const void*, c_nodeid_t, void*, size_t);
+static nb_handle_t ofi_put_nb(nb_handle_t, const void*, c_nodeid_t, void*, size_t);
 static void ofi_put_lowLevel(const void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
@@ -379,6 +392,8 @@ static chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
 static void ofi_get_lowLevel(void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
+static chpl_bool check_complete(nb_handle_t*, size_t, chpl_bool);
+
 static void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                   enum fi_op, enum fi_datatype);
@@ -3322,7 +3337,7 @@ void chpl_comm_broadcast_private(int id, size_t size) {
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
       (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
-                     chplPrivBcastTabMap[i][id], size, true /*blocking*/);
+                     chplPrivBcastTabMap[i][id], size);
     }
   }
 }
@@ -4170,7 +4185,7 @@ static void am_debugPrep(amRequest_t*);
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
-static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t, chpl_bool);
+static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t);
 static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
@@ -4317,14 +4332,11 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 /*
  * amRequestRmaPut
  * 
- * Performs a PUT by sending an active message to the remote node that
- * causes it to perform GET. This is currently a blocking operation
- * so the "blocking" argument is unused. When this operation returns
- * the data have been successfully transmitted to the remote node.
+ * Performs a PUT by sending an active message to the remote node that causes
+ * it to perform a GET. This operation returns when the GET has completed.
  */
 static inline
-void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size,
-                     chpl_bool blocking /* unused */) {
+void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size) {
   assert(!isAmHandler);
 
   retireDelayedAmDone(false /*taskIsEnding*/);
@@ -5288,8 +5300,7 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) rma));
 
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size));
-  (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size,
-                 true /*blocking*/);
+  (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   //
   // Note: the RMA bytes must be visible in target memory before the
@@ -5455,6 +5466,8 @@ void amCheckLiveness(void) {
 
 // OFI-specific non-blocking handle implementation 
 
+// XXX update
+
 // Non-blocking operations require bound endpoints, to avoid having a handle
 // for a pending operation held by one thread, while the endpoint is in use
 // by a different thread. Bound endpoints are the norm, so it's easiest to
@@ -5463,11 +5476,61 @@ void amCheckLiveness(void) {
 // sub-operations are booleans because the lower-level code that uses them
 // does not assume bound endpoints.
 
-typedef struct chpl_comm_ofi_nb_handle_t {
-  chpl_bool completed;            // operation has completed
-  size_t count;                   // number of sub-operations
-  chpl_atomic_bool complete[1];   // flag for sub-operation completion
-} chpl_comm_ofi_nb_handle_t;
+static inline 
+void nb_handle_init(nb_handle_t h) {
+  h->id = chpl_task_getId();
+  h->reported = false;
+  atomic_init_bool(&h->complete, false);
+  h->next = NULL;
+}
+
+static inline 
+void nb_handle_destroy(nb_handle_t h) {
+  atomic_destroy_bool(&h->complete);
+}
+
+/*
+ * put_prologue
+ *
+ * Common prologue operations for chpl_comm_put and chpl_comm_put_nb. Returns
+ * true if the PUT should proceed, false if it was handled in this function.
+ */
+static inline
+chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
+                       int32_t commID, int ln, int32_t fn) {
+
+  chpl_bool proceed = false;
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
+  //
+  // Sanity checks, self-communication.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+
+  if (size == 0) {
+    goto done;
+  }
+
+  if (node == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    goto done;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
+  chpl_comm_diags_incr(put);
+  proceed = true;
+done:
+  return proceed;
+}
 
 /*
  * chpl_comm_put_nb
@@ -5488,41 +5551,12 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
 
-  retireDelayedAmDone(false /*taskIsEnding*/);
-
-  chpl_comm_ofi_nb_handle_t *handle = NULL;
-
-  //
-  // Sanity checks, self-communication.
-  //
-  CHK_TRUE(addr != NULL);
-  CHK_TRUE(raddr != NULL);
-
-  if (size == 0) {
-    goto done;
+  nb_handle_t handle = NULL; 
+  if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
+    handle = ofi_put_nb(handle, addr, node, raddr, size);
   }
-
-  if (node == chpl_nodeID) {
-    memmove(raddr, addr, size);
-    goto done;
-  }
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, commID, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
-  chpl_comm_diags_incr(put);
-
-  handle = ofi_put(addr, node, raddr, size, false /*blocking*/);
-done:
-  return handle;
+  return (chpl_comm_nb_handle_t) handle;
 }
-
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
@@ -5531,50 +5565,77 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
   return NULL;
 }
 
+
+static inline
+int test_nb_complete(nb_handle_t handle) {
+  return handle != NULL ? handle->reported : 1;
+}
+
+static inline
+void wait_nb_some(nb_handle_t *handles, size_t nhandles) {
+  (void) check_complete(handles, nhandles, true /*blocking*/);
+}
+
+static inline
+int try_nb_some(nb_handle_t *handles, size_t nhandles) {
+  return check_complete(handles, nhandles, false /*blocking*/);
+}
+
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
-  chpl_comm_ofi_nb_handle_t *handle = (chpl_comm_ofi_nb_handle_t *) h;
   chpl_comm_diags_incr(test_nb);
-  return handle != NULL ? handle->completed : 1;
+  return test_nb_complete((nb_handle_t) h);
 }
 
 /*
  * check_complete
  * 
  * Returns true if a new handle completion is detected, false otherwise.
- * Ignores handles that have previously completed. If blocking is true and
- * there are uncompleted handles this will not return until a new completion
- * is detected.
+ * Ignores handles that have previously completed (h->reported == true). If
+ * blocking is true and there are uncompleted handles this will not return
+ * until a new completion is detected.
  */
-static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
+static
+chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
                   chpl_bool blocking) {
 
   chpl_bool completed = false; // at least one new completion detected
-  chpl_bool pending = false;  // there is a handle with uncompleted operations
+  chpl_bool pending = false;  // there is an uncompleted handle
+  if ((handles == NULL) || (nhandles == 0)) {
+    goto done;
+  }
   struct perTxCtxInfo_t* tcip = NULL;
   while (true) {
     pending = false;
     for(size_t i = 0; i < nhandles; i++) {
-      chpl_comm_ofi_nb_handle_t *handle = (chpl_comm_ofi_nb_handle_t *) h[i];
-
+      nb_handle_t handle = handles[i];
       // ignore handles that have already completed
       // NULL handles have by definition already completed
-      if ((handle == NULL) || handle->completed) {
+      if ((handle == NULL) || handle->reported) {
         continue;
       }
+      if (handle->id != chpl_task_getId()) {
+        char msg[128];
+        char task1[32];
+        char task2[32];
+        snprintf(msg, sizeof(msg),
+             "Task %s did not create non-blocking handle (created by %s)",
+            chpl_task_idToString(task1, sizeof(task1), chpl_task_getId()),
+            chpl_task_idToString(task2, sizeof(task2), handle->id));
+      }
       pending = true;
-      // determine if this handle is now complete by checking the status
-      // of its individual operations
-      chpl_bool handleComplete = true;
-      for (size_t j = 0; j < handle->count; j++) {
-        if(!atomic_load_explicit_bool(&handle->complete[j],
+      // determine if this handle is now complete by checking the completion
+      // status of its operations
+      chpl_bool allComplete = true;
+      for (nb_handle_t p = handle; p != NULL; p = p->next) {
+        if(!atomic_load_explicit_bool(&p->complete,
                                       chpl_memory_order_acquire)) {
-          handleComplete = false;
+          allComplete = false;
           break;
         }
       }
-      if (handleComplete) {
+      if (allComplete) {
         completed = true;
-        handle->completed = true;
+        handle->reported = true;
       }
     }
     if (!blocking || completed || !pending) { 
@@ -5590,24 +5651,27 @@ static chpl_bool check_complete(chpl_comm_nb_handle_t* h, size_t nhandles,
   if (tcip) {
     tciFree(tcip);
   }
+done:
   return completed;
 }
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   chpl_comm_diags_incr(wait_nb);
-
-  (void) check_complete(h, nhandles, true /*blocking*/);
+  wait_nb_some((nb_handle_t *) h, nhandles);
 }
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   chpl_comm_diags_incr(try_nb);
-
-  return check_complete(h, nhandles, false /*blocking*/);
+  return try_nb_some((nb_handle_t *) h, nhandles);
 }
 
-void chpl_comm_free_nb(chpl_comm_nb_handle_t* h) {
-  if (h != NULL) {
-    chpl_mem_free(h, 0, 0);
+void chpl_comm_free_nb(chpl_comm_nb_handle_t h) {
+  nb_handle_t handle = (nb_handle_t) h;
+  nb_handle_t next;
+  for (; handle != NULL; handle = next) {
+    next = handle->next;
+    nb_handle_destroy(handle);
+    chpl_mem_free(handle, 0, 0);
   }
 }
 
@@ -5617,37 +5681,10 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
 
-  retireDelayedAmDone(false /*taskIsEnding*/);
-
-  //
-  // Sanity checks, self-communication.
-  //
-  CHK_TRUE(addr != NULL);
-  CHK_TRUE(raddr != NULL);
-
-  if (size == 0) {
-    return;
+  if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
+    ofi_put(addr, node, raddr, size);
   }
-
-  if (node == chpl_nodeID) {
-    memmove(raddr, addr, size);
-    return;
-  }
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, commID, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
-  chpl_comm_diags_incr(put);
-
-  (void) ofi_put(addr, node, raddr, size, true /*blocking*/);
 }
-
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
@@ -6000,6 +6037,7 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
   //
   if (!tcip->bound) {
     DBG_PRINTF(DBG_TCIPS, "free tciTab[%td]", tcip - tciTab);
+    forceMemFxVisAllNodes(true, true, -1, tcip);
     atomic_store_bool(&tcip->allocated, false);
   }
 }
@@ -6019,30 +6057,54 @@ void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
   }
 }
 
-typedef void (rmaPutFn_t)(void* myAddr, void* mrDesc,
+typedef void (rmaPutFn_t)(nb_handle_t handle, void* myAddr, void* mrDesc,
                           c_nodeid_t node,
                           uint64_t mrRaddr, uint64_t mrKey,
                           size_t size,
-                          chpl_bool blocking,
-                          chpl_atomic_bool *done,
                           struct perTxCtxInfo_t* tcip);
 
 static rmaPutFn_t rmaPutFn_selector;
 
+/*
+ * ofi_put
+ *
+ * Blocking PUT. Implemented by initiating a non-blocking PUT and waiting for
+ * it to complete.
+ */
+
 static inline
-chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
-                              void* raddr, size_t size, chpl_bool blocking) {
+void ofi_put(const void* addr, c_nodeid_t node, void* raddr, size_t size) {
+  
+  // Allocate the handle on the stack to avoid malloc overhead
+  nb_handle handle_struct;
+  nb_handle_t handle = &handle_struct;
+  nb_handle_init(handle);
+
+  handle = ofi_put_nb(handle, addr, node, raddr, size);
+  do {
+    wait_nb_some(&handle, 1);
+  } while(!test_nb_complete(handle));
+  nb_handle_destroy(handle);
+}
+
+/*
+ * ofi_put_nb
+ *
+ * Non-blocking PUT. Returns a handle that can be used to test the completion
+ * status of the PUT and wait for it to complete. If the PUT is too large
+ * for the fabric it is broken into multiple PUTs.
+ *
+ */
+static
+nb_handle_t ofi_put_nb(nb_handle_t handle, const void* addr, c_nodeid_t node,
+                              void* raddr, size_t size) {
   
   char *src = (char *) addr;
   char *dest = (char *) raddr;
-  chpl_comm_ofi_nb_handle_t *handle = NULL;
+  nb_handle_t prev = NULL;
+  nb_handle_t first = NULL;
  
-  // Determine how many operations the PUT requires based on the provider's
-  // maximum message size
-
-  int ops = (size + ofi_info->ep_attr->max_msg_size - 1) /
-             ofi_info->ep_attr->max_msg_size;
-  if (ops > 1) {
+  if (size > ofi_info->ep_attr->max_msg_size) {
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
                "splitting large PUT %d:%p <= %p, size %zd",
                (int) node, raddr, addr, size);
@@ -6050,38 +6112,34 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
   struct perTxCtxInfo_t* tcip = NULL;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
-  if (!blocking && !tcip->bound) {
-    // Non-blocking operations require bound endpoints
-    blocking = true;
-  }
-
-  if (!blocking) {
-    // Allocate a handle large enough to hold one "done" flags per op
-    int handleSize = sizeof(chpl_comm_ofi_nb_handle_t) +
-                     ((ops - 1) * sizeof(chpl_atomic_bool));
-    handle = chpl_mem_alloc(handleSize, CHPL_RT_MD_COMM_NB_HANDLE, 0, 0);
-
-    handle->count = ops;
-    handle->completed = false;
-    for (size_t i = 0; i < ops; i++) {
-      atomic_init_bool(&handle->complete[i], false);
-    }
-  }
 
   size_t chunkSize = ofi_info->ep_attr->max_msg_size;
   size_t offset = 0;
-  for (int i = 0; i < ops; i++) {
+  while (offset < size) {
     if (chunkSize > size - offset) {
       chunkSize = size - offset;
     }
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "PUT %d:%p <= %p, size %zd, %s",
-               (int) node, dest, src, chunkSize,
-               blocking ? "blocking" : "non-blocking");
+               "PUT %d:%p <= %p, size %zd",
+               (int) node, dest, src, chunkSize);
+
+    if (handle == NULL) {
+      handle = chpl_mem_alloc(sizeof(*handle),
+                              CHPL_RT_MD_COMM_NB_HANDLE, 0, 0);
+      nb_handle_init(handle);
+    }
+    // Make a linked-list of handles
+    if (prev != NULL) {
+      prev->next = handle;
+    }
+    // Keep track of the first handle so we can return it.
+    if (first == NULL) {
+      first = handle;
+    }
 
     //
-    // If the remote address is directly accessible do an RMA from this
-    // side; otherwise do the opposite RMA from the other side.
+    // If the remote address is directly accessible do a PUT RMA from this
+    // side; otherwise do a GET from the other side.
     //
     uint64_t mrKey;
     uint64_t mrRaddr;
@@ -6095,27 +6153,24 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       void* myAddr = mrLocalizeSource(&mrDesc, (const void *) src,
                                       chunkSize, "PUT src");
 
-      chpl_atomic_bool *done = blocking ? NULL : &handle->complete[i];
-      rmaPutFn_selector(myAddr, mrDesc, node, mrRaddr, mrKey, chunkSize,
-                        blocking, done, tcip);
+      rmaPutFn_selector(handle, myAddr, mrDesc, node, mrRaddr,
+                        mrKey, chunkSize, tcip);
 
       mrUnLocalizeSource(myAddr, src);
     } else {
-      amRequestRmaPut(node, (void *) src, (void *) dest, size, blocking);
-      // amRequestRmaPut is currently a blocking operation, so mark
-      // the operation as complete
-      if (!blocking) {
-        atomic_init_bool(&(handle->complete[i]), true);
-      }
+      amRequestRmaPut(node, (void *) src, (void *) dest, size);
+      atomic_store_bool(&handle->complete, true);
     }
     offset += chunkSize;
     src += chunkSize;
     dest += chunkSize;
+    prev = handle;
+    handle = NULL;
   }
   tciFree(tcip);
   DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "PUT %d:%p <= %p, handle %p", handle);
-  return handle;
+               "PUT %d:%p <= %p, handle %p", first);
+  return first;
 }
 
 
@@ -6124,26 +6179,24 @@ static rmaPutFn_t rmaPutFn_msgOrd;
 static rmaPutFn_t rmaPutFn_dlvrCmplt;
 
 static inline
-void rmaPutFn_selector(void* myAddr, void* mrDesc,
+void rmaPutFn_selector(nb_handle_t handle, void* myAddr, void* mrDesc,
                        c_nodeid_t node,
                        uint64_t mrRaddr, uint64_t mrKey,
                        size_t size,
-                       chpl_bool blocking,
-                       chpl_atomic_bool *done, 
                        struct perTxCtxInfo_t* tcip) {
 
   switch (mcmMode) {
     case mcmm_msgOrdFence:
-      rmaPutFn_msgOrdFence(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                                 blocking, done, tcip);
+      rmaPutFn_msgOrdFence(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                           tcip);
       break;
     case mcmm_msgOrd:
-      rmaPutFn_msgOrd(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                            blocking, done, tcip);
+      rmaPutFn_msgOrd(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                      tcip);
       break;
     case mcmm_dlvrCmplt:
-      rmaPutFn_dlvrCmplt(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                               blocking, done, tcip);
+      rmaPutFn_dlvrCmplt(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                         tcip);
       break;
     default:
       INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
@@ -6166,26 +6219,22 @@ static ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
 
 
 //
-// Implements ofi_put() when MCM mode is message ordering with fences.
+// Implements ofi_put_nb() when MCM mode is message ordering with fences.
 //
 static
-void rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
+void rmaPutFn_msgOrdFence(nb_handle_t handle, void* myAddr, void* mrDesc,
                           c_nodeid_t node,
                           uint64_t mrRaddr, uint64_t mrKey,
                           size_t size,
-                          chpl_bool blocking,
-                          chpl_atomic_bool *done,
                           struct perTxCtxInfo_t* tcip) {
-  uint64_t    flags = 0;
-  chpl_atomic_bool txnDone;
-  void        *ctx;
+  uint64_t flags = 0;
 
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && !blocking && envInjectRMA) {
+      && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use it if
-    // this PUT is non-blocking, its size doesn't exceed the injection size
+    // this PUT  doesn't exceed the injection size
     // limit, and we have a bound tx context so we can delay forcing the
     // memory visibility until later.
     //
@@ -6195,110 +6244,69 @@ void rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     //
     // Special case: If our last operation was an AMO then we need to do a
     // fenced PUT to force the AMO to be visible before this PUT.
+    // TODO: this logic is a bit screwed-up. FI_FENCE by itself doesn't 
+    // force the AMO to be visible, it just ensures that the PUT cannot pass
+    // the AMO. We need to do something to make it visible, and we need
+    // to clear the bitmap so that we don't keep fencing PUTs until something
+    // else makes it visible.
     //
     flags |= FI_FENCE;
   }
-  if (done == NULL) {
-    done = &txnDone;
-  }
-  ctx = txCtxInit(tcip, __LINE__, done);
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
   (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                               ctx, flags, tcip);
-  if (blocking) {
-    waitForTxnComplete(tcip, ctx);
-    txCtxCleanup(ctx);
-  }
-
   //
   // When using message ordering we have to do something after the PUT
   // to force it into visibility, and on the same tx context as the PUT
   // itself because libfabric message ordering is specific to endpoint
-  // pairs.  With a bound tx context we can do it later, when needed.
-  // Otherwise we have to do it here, before we release the tx context.
+  // pairs.  Indicate that there is dangling PUT to the remote node.
   //
-  if (tcip->bound) {
-    bitmapSet(tcip->putVisBitmap, node);
-  } else {
-    mcmReleaseOneNode(node, tcip, "PUT");
-  }
+  bitmapSet(tcip->putVisBitmap, node);
 }
 
 
 //
-// Implements ofi_put() when MCM mode is message ordering.
+// Implements ofi_put_nb() when MCM mode is message ordering.
 // TODO: see comment for rmaPutFn_msgOrdFence.
 static
-void rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
+void rmaPutFn_msgOrd(nb_handle_t handle, void* myAddr, void* mrDesc,
                      c_nodeid_t node,
                      uint64_t mrRaddr, uint64_t mrKey,
                      size_t size,
-                     chpl_bool blocking,
-                     chpl_atomic_bool *done,
                      struct perTxCtxInfo_t* tcip) {
 
   uint64_t    flags = 0;
-  chpl_atomic_bool txnDone;
-  void        *ctx;
-  //
-  // When using message ordering we have to do something after the PUT
-  // to force it into visibility, and on the same tx context as the PUT
-  // itself because libfabric message ordering is specific to endpoint
-  // pairs.  With a bound tx context we can do it later, when needed.
-  // Otherwise we have to do it here, before we release the tx context.
-  //
 
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && !blocking && envInjectRMA) {
+      && envInjectRMA) {
     //
+    // XXX update this
     // Special case: write injection has the least latency.  We can use
     // that if this PUT's size doesn't exceed the injection size limit
     // and we have a bound tx context so we can delay forcing the
     // memory visibility until later.
     flags = FI_INJECT;
   }
-  if (done == NULL) {
-    done = &txnDone;
-  }
-  ctx = TX_CTX_INIT(tcip, blocking, done);
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
   (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                           ctx, flags, tcip);
-
-  if (blocking) {
-    waitForTxnComplete(tcip, ctx);
-    txCtxCleanup(ctx);
-  }
-
-  if (tcip->bound) {
-    bitmapSet(tcip->putVisBitmap, node);
-  } else {
-    mcmReleaseOneNode(node, tcip, "PUT");
-  }
+  bitmapSet(tcip->putVisBitmap, node);
 }
 
 
 //
-// Implements ofi_put() when MCM mode is delivery complete.
+// Implements ofi_put_nb() when MCM mode is delivery complete.
 //
 static
-void rmaPutFn_dlvrCmplt(void* myAddr, void* mrDesc,
+void rmaPutFn_dlvrCmplt(nb_handle_t handle, void* myAddr, void* mrDesc,
                         c_nodeid_t node,
                         uint64_t mrRaddr, uint64_t mrKey,
                         size_t size,
-                        chpl_bool blocking,
-                        chpl_atomic_bool *done,
                         struct perTxCtxInfo_t* tcip) {
-  chpl_atomic_bool txnDone;
-  if (done == NULL) {
-    done = &txnDone;
-  }
-  void *ctx = TX_CTX_INIT(tcip, blocking, done);
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
   (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey,
                        size, ctx, tcip);
-  if (blocking) {
-    waitForTxnComplete(tcip, ctx);
-    txCtxCleanup(ctx);
-  }
 }
 
 
@@ -6454,7 +6462,7 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   if (size > MAX_UNORDERED_TRANS_SZ
       || !mrGetKey(&mrKey, &mrRaddr, node, raddr, size)
       || (info = task_local_buff_acquire(put_buff)) == NULL) {
-    (void) ofi_put(addr, node, raddr, size, true /*blocking*/);
+    (void) ofi_put(addr, node, raddr, size);
     return;
   }
 
@@ -8300,7 +8308,7 @@ void chpl_comm_impl_barrier(const char *msg) {
     DBG_PRINTF(DBG_BARRIER, "BAR notify parent %d", (int) bar_parent);
     ofi_put(&one, bar_parent,
             (void*) &bar_infoMap[bar_parent]->child_notify[parChild],
-            sizeof(one), true /*blocking*/);
+            sizeof(one));
 
     //
     // Wait for our parent locale to release us from the barrier.
@@ -8327,7 +8335,7 @@ void chpl_comm_impl_barrier(const char *msg) {
       DBG_PRINTF(DBG_BARRIER, "BAR release child %d", (int) child);
       ofi_put(&one, child,
               (void*) &bar_infoMap[child]->parent_release,
-              sizeof(one), true /*blocking*/);
+              sizeof(one));
     }
   }
 
