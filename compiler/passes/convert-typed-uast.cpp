@@ -141,6 +141,9 @@ struct TConverter final : UastConverter {
   /// Fields ///
   Context* context = nullptr;
 
+  // What is the module / function we are converting?
+  const AstNode* symbol = nullptr; // Module* or Function*
+
   // When converting a statement, where should we put new nodes?
   BlockStmt* curBlock = nullptr;
 
@@ -232,8 +235,9 @@ struct TConverter final : UastConverter {
   void convertFunctionsToConvert();
 
   ModuleSymbol* setupModule(ID modId);
-  ModuleSymbol* convertModule(const Module* mod);
-  FnSymbol* convertFunction(const ResolvedFunction* r);
+  ModuleSymbol* findOrSetupModule(ID modId);
+  void convertModuleInit(const Module* mod, ModuleSymbol* modSym);
+  void convertFunction(const ResolvedFunction* r);
 
   // general functions for converting
   Type* convertType(const types::Type* t);
@@ -258,11 +262,16 @@ struct TConverter final : UastConverter {
   Type* convertUintType(const types::UintType* t);
 
   // blockStack helpers
-  BlockStmt* pushBlock() {
+  BlockStmt* pushNewBlock() {
     auto newBlockStmt = new BlockStmt();
     blockStack.push_back(newBlockStmt);
     curBlock = newBlockStmt;
-    return newBlockStmt;
+    return curBlock;
+  }
+  BlockStmt* pushBlock(BlockStmt* block) {
+    blockStack.push_back(block);
+    curBlock = block;
+    return curBlock;
   }
   void popBlock() {
     CHPL_ASSERT(blockStack.size() > 0);
@@ -356,7 +365,7 @@ struct TConverter final : UastConverter {
 
 
   // visit functions
-  bool enter(const NamedDecl* ast, RV& rv);
+  /*bool enter(const NamedDecl* ast, RV& rv);
   void exit(const NamedDecl* ast, RV& rv);
 
   bool enter(const OpCall* ast, RV& rv);
@@ -377,14 +386,47 @@ struct TConverter final : UastConverter {
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);
 
-  bool enter(const uast::Conditional* node, RV& rv);
-  void exit(const uast::Conditional* node, RV& rv);
+  bool enter(const Conditional* node, RV& rv);
+  void exit(const Conditional* node, RV& rv);
 
-  bool enter(const uast::Select* node, RV& rv);
-  void exit(const uast::Select* node, RV& rv);
+  bool enter(const Select* node, RV& rv);
+  void exit(const Select* node, RV& rv);
+  */
 
-  bool enter(const uast::AstNode* node, RV& rv);
-  void exit(const uast::AstNode* node, RV& rv);
+  // traversal cases to do nothing
+  bool enter(const TypeDecl* ast, RV& rv) { return false; }
+  void exit(const TypeDecl* ast, RV& rv) { }
+  bool enter(const Function* ast, RV& rv) { return false; }
+  void exit(const Function* ast, RV& rv) { }
+  bool enter(const Use* ast, RV& rv) { return false; }
+  void exit(const Use* ast, RV& rv) { }
+  bool enter(const Import* ast, RV& rv) { return false; }
+  void exit(const Import* ast, RV& rv) { }
+  bool enter(const Require* ast, RV& rv) { return false; }
+  void exit(const Require* ast, RV& rv) { }
+  bool enter(const ExternBlock* ast, RV& rv) { return false; }
+  void exit(const ExternBlock* ast, RV& rv) { }
+  bool enter(const Implements* ast, RV& rv) { return false; }
+  void exit(const Implements* ast, RV& rv) { }
+  bool enter(const VisibilityClause* ast, RV& rv) { return false; }
+  void exit(const VisibilityClause* ast, RV& rv) { }
+  bool enter(const As* ast, RV& rv) { return false; }
+  void exit(const As* ast, RV& rv) { }
+  bool enter(const Attribute* ast, RV& rv) { return false; }
+  void exit(const Attribute* ast, RV& rv) { }
+  bool enter(const AttributeGroup* ast, RV& rv) { return false; }
+  void exit(const AttributeGroup* ast, RV& rv) { }
+  bool enter(const ErroneousExpression* ast, RV& rv) { return false; }
+  void exit(const ErroneousExpression* ast, RV& rv) { }
+  bool enter(const EmptyStmt* ast, RV& rv) { return false; }
+  void exit(const EmptyStmt* ast, RV& rv) { }
+
+  // traversal cases to do something
+  bool enter(const Module* node, RV& rv);
+  void exit(const Module* node, RV& rv);
+
+  bool enter(const AstNode* node, RV& rv);
+  void exit(const AstNode* node, RV& rv);
 };
 
 TConverter::~TConverter() { }
@@ -410,19 +452,15 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 
   astlocMarker markAstLoc(mod->id());
 
-  ModuleSymbol* modSym = modSyms[mod->id()];
-  if (modSym == nullptr) {
-    // this happens for PrintModuleInitOrder & any module not listed
-    // in the modulesToConvert that we convert anyway.
-    modSym = setupModule(mod->id());
-  }
+  ModuleSymbol* modSym = findOrSetupModule(mod->id());
 
   // TODO: remove this block once the resolver is fully operational
   if (modSym->modTag != MOD_USER) {
     return untypedConverter->convertToplevelModule(mod, modTag);
   }
 
-  // TODO: convert the module initializer
+  topLevelModTag = modTag;
+  convertModuleInit(mod, modSym);
 
   return modSym;
 }
@@ -439,7 +477,7 @@ void TConverter::setupModulesToConvert() {
   // important since they will be filled-in in module init order
   // via calls to convertToplevelModule.
   for (const ID& modId : modulesToConvertVec) {
-    setupModule(modId);
+    findOrSetupModule(modId);
   }
 }
 
@@ -471,6 +509,8 @@ void TConverter::convertFunctionsToConvert() {
   for (auto pair : v) {
     printf("  %s depth=%i\n", pair.first->id().str().c_str(), pair.second);
   }
+
+
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
@@ -505,9 +545,9 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
   UniqueString pathUstr;
   UniqueString ignoredParentSymPath;
 
-  bool priv = (mod->visibility() == uast::Decl::PRIVATE);
-  bool prototype = (mod->kind() == uast::Module::PROTOTYPE ||
-                    mod->kind() == uast::Module::IMPLICIT);
+  bool priv = (mod->visibility() == Decl::PRIVATE);
+  bool prototype = (mod->kind() == Module::PROTOTYPE ||
+                    mod->kind() == Module::IMPLICIT);
 
   ModuleSymbol* modSym = buildModule(name,
                                      modTag,
@@ -516,7 +556,7 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
                                      priv,
                                      prototype);
 
-  if (mod->kind() == uast::Module::IMPLICIT) {
+  if (mod->kind() == Module::IMPLICIT) {
     modSym->addFlag(FLAG_IMPLICIT_MODULE);
   }
 
@@ -528,9 +568,127 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
   // also tell the untyped converter about it
   untypedConverter->useModuleWhenConverting(modId, modSym);
 
-  printf("Created module[%i] for %s\n", modSym->id, modId.str().c_str());
+  // This code does not add a DefExpr for the new module
+  // * for toplevel modules, that happens in the code calling
+  //   convertToplevelModule
+  // * for submodules, that happens in the visit function for a Module.
+  //
+  printf("Created module %s[%i]\n", modId.str().c_str(), modSym->id);
 
   return modSym;
+}
+
+ModuleSymbol* TConverter::findOrSetupModule(ID modId) {
+  ModuleSymbol* modSym = modSyms[modId];
+  if (modSym == nullptr) {
+    // It can happen that it wasn't in modulesToConvert but we need to
+    // convert it anyway. E.g. with PrintModuleInitOrder.
+    modSym = setupModule(modId);
+  }
+
+  return modSym;
+}
+
+void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
+  printf("Converting module init for %s[%i]\n",
+         mod->id().str().c_str(), modSym->id);
+
+  // create the module init function
+  modSym->initFn = new FnSymbol(astr("chpl__init_", modSym->name));
+  modSym->initFn->retType = dtVoid;
+
+  modSym->initFn->addFlag(FLAG_MODULE_INIT);
+  modSym->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+
+  // add the init function to the module
+  modSym->block->insertAtHead(new DefExpr(modSym->initFn));
+
+  // TODO: handle module deinit functions
+
+  // convert module-level statements into module's init function
+
+  // prepare to traverse
+  ID id = mod->id();
+  const ResolutionResultByPostorderID& resolved = resolveModule(context, id);
+  pushBlock(modSym->initFn->body);
+  const AstNode* oldSymbol = symbol;
+  symbol = mod;
+
+  // traverse
+  ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
+  symbol->traverse(rv);
+
+  // tidy up after traversal
+  symbol = oldSymbol;
+  popBlock();
+}
+
+void TConverter::convertFunction(const ResolvedFunction* r) {
+  printf("Converting function %s\n", r->id().str().c_str());
+  // figure out, in which block should we put the DefExpr for the new FnSymbol?
+
+  // here we flatten all functions, so we just need to find the appropriate
+  // module.
+  ID parentModule = parsing::idToParentModule(context, r->id());
+  ModuleSymbol* modSym = findOrSetupModule(parentModule);
+
+  // prepare to visit
+  const ResolutionResultByPostorderID& resolved = r->resolutionById();
+  const AstNode* ast = parsing::idToAst(context, r->id());
+  if (!ast || !ast->isFunction()) {
+    CHPL_ASSERT(false && "expected Function");
+    return;
+  }
+  const Function* fn = ast->toFunction();
+  pushBlock(modSym->block);
+  const AstNode* oldSymbol = symbol;
+  symbol = fn;
+
+  // traverse
+  ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
+  symbol->traverse(rv);
+
+  // tidy up after traversal
+  symbol = oldSymbol;
+  popBlock();
+}
+
+bool TConverter::enter(const Module* node, RV& rv) {
+  if (modulesToConvert.count(node->id()) == 0) {
+    // this module should not be converted.
+    return false;
+  }
+
+  if (node == symbol) {
+    // we are visiting it to convert the module initialization function
+    // so proceed with the traversal
+    return true;
+  } else {
+    // it is a submodule.
+    // Set up to convert the submodule's module init function
+    // with a separate call to traverse.
+    ModuleSymbol* modSym = findOrSetupModule(node->id());
+    convertModuleInit(node, modSym);
+
+    // add the DefExpr now (to match the untyped Converter)
+    ID parentModuleId = parsing::idToParentModule(context, node->id());
+    ModuleSymbol* parentModule = findOrSetupModule(parentModuleId);
+    parentModule->block->insertAtHead(new DefExpr(modSym));
+
+    return false;
+  }
+
+  return true;
+}
+void TConverter::exit(const Module* node, RV& rv) {
+}
+
+bool TConverter::enter(const AstNode* node, RV& rv) {
+  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  return true;
+}
+void TConverter::exit(const AstNode* node, RV& rv) {
+  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
