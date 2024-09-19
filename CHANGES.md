@@ -154,7 +154,7 @@ GPU Computing
 * added support for ROCm 6  
   (see https://chapel-lang.org/docs/2.2/technotes/gpu.html#requirements)
 * improved performance for certain kernels on multi-GPU locales
-* added a new `@gpu.assertElligible` attribute for compile-time GPU checks  
+* added a new `@gpu.assertEligible` attribute for compile-time GPU checks  
   (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.assertEligible)
 * added a new `@gpu.itersPerThread` attribute to control blocking iterations  
   (see https://chapel-lang.org/docs/2.2/modules/standard/GPU.html#GPU.@gpu.itersPerThread)
@@ -200,8 +200,7 @@ Language Specification Improvements
 * added a section describing the implicit `this.` in methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/methods.html#implicit-this-in-methods)
 * clarified that terminating null bytes are optional on string/bytes buffers  
-  (see https://chapel-lang.org/docs/2.2/language/spec/strings.html  
-   and https://chapel-lang.org/docs/2.2/language/spec/bytes.html)
+  (e.g., see https://chapel-lang.org/docs/2.2/language/spec/strings.html#String.string.createAdoptingBuffer)
 * added examples of distribution factory methods  
   (see https://chapel-lang.org/docs/2.2/language/spec/domain-maps.html#distributions-for-domain-types)
 * searching for `init=` now finds the relevant language spec documentation
