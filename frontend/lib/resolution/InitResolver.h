@@ -55,6 +55,7 @@ class InitResolver {
   Resolver& initResolver_;
   const uast::Function* fn_;
   const types::Type* initialRecvType_;
+  const uast::AggregateDecl* aggregateDecl_;
 
   std::map<ID, FieldInitState> fieldToInitState_;
   std::vector<ID> fieldIdsByOrdinal_;
@@ -79,6 +80,8 @@ class InitResolver {
         initResolver_(visitor),
         fn_(fn),
         initialRecvType_(recvType) {
+    auto typeID = initialRecvType_->getCompositeType()->id();
+    aggregateDecl_ = parsing::idToAst(ctx_, typeID)->toAggregateDecl();
     return;
   }
 

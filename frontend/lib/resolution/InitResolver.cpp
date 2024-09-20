@@ -139,7 +139,7 @@ void InitResolver::doSetupInitialState(void) {
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  std::ignore = setupFromType(currentRecvType_);
+  std::ignore = setupFromType(initialRecvType_);
 }
 
 void InitResolver::markComplete() {
@@ -542,10 +542,9 @@ std::pair<ID,bool> InitResolver::fieldIdFromPossibleMentionOfField(const AstNode
       if (dot->field() != "init" &&
           (ident->name() == "this" || ident->name() == "super")) {
         auto ct = currentRecvType_->getCompositeType();
-        auto ad = parsing::idToAst(ctx_, ct->id())->toAggregateDecl();
 
-        if (auto decl = findFieldByName(ctx_, ad, ct, dot->field())) {
-          return {decl->id(), !ad->id().contains(decl->id())};
+        if (auto decl = findFieldByName(ctx_, aggregateDecl_, ct, dot->field())) {
+          return {decl->id(), !aggregateDecl_->id().contains(decl->id())};
         }
       }
     }
@@ -556,9 +555,7 @@ std::pair<ID,bool> InitResolver::fieldIdFromPossibleMentionOfField(const AstNode
     // Note: Assumes an Identifier resolving to a field is a reliable
     // indication that the field belongs to the type being initialized.
     if (!fieldID.isEmpty() && parsing::idIsField(ctx_, fieldID)) {
-      auto ct = currentRecvType_->getCompositeType();
-      auto ad = parsing::idToAst(ctx_, ct->id())->toAggregateDecl();
-      return {fieldID, !ad->id().contains(fieldID)};
+      return {fieldID, !aggregateDecl_->id().contains(fieldID)};
     }
   }
 
