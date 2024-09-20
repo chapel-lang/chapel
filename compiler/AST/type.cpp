@@ -1024,6 +1024,15 @@ TemporaryConversionType::TemporaryConversionType(chpl::types::QualifiedType qt)
   gTemporaryConversionTypes.add(this);
 }
 
+TemporaryConversionType::TemporaryConversionType(const chpl::types::Type* t)
+  : Type(E_TemporaryConversionType, nullptr),
+    qt(chpl::types::QualifiedType(chpl::types::QualifiedType::TYPE, t))
+{
+  this->symbol = dtUnknown->symbol;
+  gTemporaryConversionTypes.add(this);
+}
+
+
 TemporaryConversionType*
 TemporaryConversionType::copyInner(SymbolMap* map) {
   INT_FATAL(this, "unexpected call to TemporaryConversionType::copyInner");
