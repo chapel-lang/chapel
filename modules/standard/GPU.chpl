@@ -1275,7 +1275,7 @@ module GPU
       this.gpuId = 0; // TODO: Should be loc.gpuId
     }
 
-    proc name : string { 
+    proc name : string {
       extern proc chpl_gpu_name(dev : c_int, ref result : c_ptrConst(c_char));
       var ret : string;
       var tmp : c_ptrConst(c_char);
