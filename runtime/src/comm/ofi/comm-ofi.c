@@ -7511,15 +7511,11 @@ void forceMemFxVisAllNodes(chpl_bool checkPuts, chpl_bool checkAmos,
                            struct perTxCtxInfo_t* tcip) {
   //
   // Enforce MCM: make sure the memory effects of all the operations
-  // we've done so far, to any node, are actually visible.  This is only
-  // needed if we have a bound tx context.  Otherwise, we would have
-  // forced visibility at the time of the operation.
+  // we've done so far, to any node, are actually visible.  
   //
-  if (tcip->bound) {
-    mcmReleaseAllNodes(checkPuts ? tcip->putVisBitmap : NULL,
-                       checkAmos ? tcip->amoVisBitmap : NULL,
-                       skipNode, tcip, "PUT and/or AMO");
-  }
+  mcmReleaseAllNodes(checkPuts ? tcip->putVisBitmap : NULL,
+                     checkAmos ? tcip->amoVisBitmap : NULL,
+                     skipNode, tcip, "PUT and/or AMO");
 }
 
 
