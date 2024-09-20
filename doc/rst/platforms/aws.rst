@@ -245,6 +245,7 @@ using the AWS session manager.
 Getting Chapel
 --------------
 
+Once connected to the instance via ssh, you need to install Chapel.
 If you are using an OS that has a pre-built libfabric+slurm binary for Chapel,
 you can download and install it using the system package manager.
 For example, to install Chapel 2.2 on Ubuntu 22.04:
@@ -257,9 +258,9 @@ For example, to install Chapel 2.2 on Ubuntu 22.04:
 If there is no pre-built binary for your OS, you can build Chapel from source.
 
 Building Chapel from Source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+***************************
 
-Once connected to the instance via ssh, do the following:
+To build Chapel from source for use on the cluster, follow these steps:
 
 * Install the dependencies as shown on the :ref:`readme-prereqs-installation` page.
 
@@ -297,7 +298,8 @@ Running Chapel Programs
 
 A few final steps are left to configure the environment to run Chapel programs.
 These are required regardless of whether Chapel was installed from a package or
-built from source. This can be done by adding the following to your ``.bashrc``:
+built from source. These environment variables should be set before running any
+Chapel code. Users may wish to add this to their ``.bashrc``:
 
 .. code-block:: bash
 
