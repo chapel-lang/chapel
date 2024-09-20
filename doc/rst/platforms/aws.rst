@@ -245,8 +245,8 @@ using the AWS session manager.
 Getting Chapel
 --------------
 
-If you are using an OS that has a pre-built binary for Chapel, you can download
-and install it using the system package manager.
+If you are using an OS that has a pre-built libfabric+slurm binary for Chapel,
+you can download and install it using the system package manager.
 For example, to install Chapel 2.2 on Ubuntu 22.04:
 
 .. code-block:: bash
