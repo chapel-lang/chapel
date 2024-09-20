@@ -623,19 +623,12 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
 
 void InitResolver::updateSuperType(const CallResolutionResult* c) {
   auto& msc = c->mostSpecific().only();
-  auto superThis = msc.formalActualMap().byFormalIdx(0).formalType();
+  auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
 
-  const BasicClassType* superType = nullptr;
-  if (auto ct = superThis.type()->toClassType()) {
-    superType = ct->basicClassType();
-  } else {
-    superType = superThis.type()->toBasicClassType();
-  }
-
-  this->superType_ = superType;
+  this->superType_ = superThis->getCompositeType()->toBasicClassType();
 
   // Only update the current receiver if the parent was generic.
-  if (superType->instantiatedFromCompositeType() != nullptr) {
+  if (superType_->instantiatedFromCompositeType() != nullptr) {
     updateResolverVisibleReceiverType();
   }
 
