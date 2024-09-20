@@ -4867,6 +4867,56 @@ static bool handleArrayTypeExpr(Resolver& rv,
   return true;
 }
 
+static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
+  if (!loop->isExpressionLevel()) return;
+
+  CHPL_ASSERT(loop->numStmts() == 1);
+  auto bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
+
+  auto loopType = QualifiedType();
+  if (!bodyType.isUnknownOrErroneous()) {
+    // Loop expressions keep the types of their iterands (effectively)
+    // because they need to preserve them for resolving leaders and followers
+    // later.
+
+    QualifiedType iterandType;
+    bool isZippered = false;
+    if (auto zip = loop->iterand()->toZip()) {
+      isZippered = true;
+      bool allChildrenResolved = true;
+      std::vector<QualifiedType> iterandTypes;
+
+      for (auto child : zip->children()) {
+        auto childType = rv.byPostorder.byAst(child).type();
+        if (childType.isUnknownOrErroneous()) {
+          allChildrenResolved = false;
+          break;
+        }
+        iterandTypes.push_back(childType);
+      }
+
+      if (allChildrenResolved) {
+        iterandType =
+          QualifiedType(QualifiedType::TYPE,
+                        TupleType::getQualifiedTuple(rv.context,
+                                                     std::move(iterandTypes)));
+      }
+    } else {
+      iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+    }
+
+    if (!iterandType.isUnknownOrErroneous()) {
+      auto loopExprType =
+        LoopExprIteratorType::get(rv.context, isZippered,
+                                  iterandType, loop->id(), bodyType);
+      loopType = QualifiedType(QualifiedType::CONST_VAR, loopExprType);
+    }
+  }
+
+  auto& re = rv.byPostorder.byAst(loop);
+  re.setType(loopType);
+}
+
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
@@ -4923,6 +4973,8 @@ bool Resolver::enter(const IndexableLoop* loop) {
   if (!bodyResolved) {
     loop->body()->traverse(*this);
   }
+
+  noteLoopExprType(*this, loop);
 
   return false;
 }
