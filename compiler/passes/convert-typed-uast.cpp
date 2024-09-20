@@ -396,8 +396,6 @@ struct TConverter final : UastConverter {
   // traversal cases to do nothing
   bool enter(const TypeDecl* ast, RV& rv) { return false; }
   void exit(const TypeDecl* ast, RV& rv) { }
-  bool enter(const Function* ast, RV& rv) { return false; }
-  void exit(const Function* ast, RV& rv) { }
   bool enter(const Use* ast, RV& rv) { return false; }
   void exit(const Use* ast, RV& rv) { }
   bool enter(const Import* ast, RV& rv) { return false; }
@@ -424,6 +422,9 @@ struct TConverter final : UastConverter {
   // traversal cases to do something
   bool enter(const Module* node, RV& rv);
   void exit(const Module* node, RV& rv);
+
+  bool enter(const Function* ast, RV& rv);
+  void exit(const Function* ast, RV& rv);
 
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
@@ -510,7 +511,9 @@ void TConverter::convertFunctionsToConvert() {
     printf("  %s depth=%i\n", pair.first->id().str().c_str(), pair.second);
   }
 
-
+  for (auto pair : v) {
+    convertFunction(pair.first);
+  }
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
@@ -573,7 +576,6 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
   //   convertToplevelModule
   // * for submodules, that happens in the visit function for a Module.
   //
-  printf("Created module %s[%i]\n", modId.str().c_str(), modSym->id);
 
   return modSym;
 }
@@ -654,6 +656,8 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
 }
 
 bool TConverter::enter(const Module* node, RV& rv) {
+  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
   if (modulesToConvert.count(node->id()) == 0) {
     // this module should not be converted.
     return false;
@@ -681,6 +685,21 @@ bool TConverter::enter(const Module* node, RV& rv) {
   return true;
 }
 void TConverter::exit(const Module* node, RV& rv) {
+  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
+bool TConverter::enter(const Function* node, RV& rv) {
+  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  if (node == symbol) {
+    // we are visiting it to convert it, so proceed with the traversal
+    return true;
+  }
+
+  return false;
+}
+void TConverter::exit(const Function* node, RV& rv) {
+  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
