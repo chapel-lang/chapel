@@ -4480,52 +4480,6 @@ static IterDetails resolveIterDetails(Resolver& rv,
   return ret;
 }
 
-static CallInfo setupTaggedCallInfoForIteratorType(Resolver& rv,
-                                                   const IteratorType* iterType,
-                                                   bool needsSerial,
-                                                   const QualifiedType& tagType,
-                                                   const QualifiedType& followThisType) {
-  CHPL_ASSERT(iterType->isFnIteratorType());
-  auto fnIterType = iterType->toFnIteratorType();
-  std::vector<CallInfoActual> actuals;
-
-  auto iterKindType = EnumType::getIterKindType(rv.context);
-
-  // We have a call to an iterator signature, but it may not be the right
-  // overload. So, construct a call with the same name and actuals, with
-  // possibly a different tag or followThis.
-  auto typedSig = fnIterType->iteratorFn();
-  auto untypedSig = typedSig->untyped();
-  for (int i = 0; i < typedSig->numFormals(); i++) {
-    auto formalQt = typedSig->formalType(i);
-
-    // We explicitly insert the tag below.
-    if (formalQt.type() == iterKindType) continue;
-
-    actuals.emplace_back(formalQt, untypedSig->formalName(i));
-  }
-
-  if (!tagType.isUnknown()) {
-    actuals.emplace_back(tagType, USTR("tag"));
-  }
-
-  if (!followThisType.isUnknown()) {
-    actuals.emplace_back(followThisType, USTR("followThis"));
-  }
-
-  auto receiverType =
-    untypedSig->isMethod() ?
-    typedSig->formalType(0) :
-    QualifiedType();
-
-  return CallInfo(untypedSig->name(),
-                  receiverType,
-                  /* isMethodCall */ typedSig->isMethod(),
-                  /* hasQuestionArg */ false,
-                  /* isParenless */ false,
-                  std::move(actuals));
-}
-
 static QualifiedType resolveTheseMethod(Resolver& rv,
                                         const AstNode* iterand,
                                         const QualifiedType& iterandType,
@@ -4589,6 +4543,7 @@ resolveIterTypeWithTag(Resolver& rv,
 
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
+  auto iterandType = iterandRE.type();
 
   // If the user explicitly provided a tag, this is an error: tags
   // are automatically provided by the compiler. Report an error.
@@ -4601,13 +4556,17 @@ resolveIterTypeWithTag(Resolver& rv,
     return error;
   }
 
-  bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
-  bool wasMatchingIterResolved = fn && fn->isSerialIterator(context) && needSerial;
+  bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
+  bool wasMatchingIterResolved =
+    // Call to a serial iterator overload, and we are looking for a serial iterator.
+    (fn && fn->isSerialIterator(context) && needSerial) ||
+    // Loop expressions (which we just resolved) and we are looking for a serial iterator.
+    (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
 
   // The iterand was a call to a serial iterator, and we need a serial iterator.
   if (wasMatchingIterResolved && wasIterandTypeResolved) {
-    CHPL_ASSERT(iterandRE.type().type()->isIteratorType() &&
-                iterandRE.type().type() == iteratingOver &&
+    CHPL_ASSERT(iterandType.type()->isIteratorType() &&
+                iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
     outIterPieces = { iteratingOver };
     return iteratingOver->yieldType();
@@ -4615,48 +4574,22 @@ resolveIterTypeWithTag(Resolver& rv,
   // There's nothing to do in this case, so error out.
   } else if (needSerial && !wasIterandTypeResolved) {
     return error;
-
-  // The iterand is not an iterator in itself, but it could be a type with
-  // a 'these()' method. Resolve that method and try finding the iterator.
-  } else if (!iteratingOver) {
-    auto qt = resolveTheseMethod(rv, iterand, iterandRE.type(), iterKindFormal, followThisFormal);
-    if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
-      // These produced a valid iterator. We already configured the call
-      // with the desired tag, so that's sufficient.
-
-      iteratingOver = qt.type()->toIteratorType();
-      outIterPieces = { iteratingOver };
-      return iteratingOver->yieldType();
-    }
-    return qt;
   }
 
-  // At this point, we know that the iterand is an iterator, but it is not
-  // (obviously) the one that we need. We need to resolve a new call with
-  // a specific tag. Configure the call below.
+  // The iterand is either not an iterator (but could have a 'these' method)
+  // or an iterator. The latter have compiler-generated 'these' methods
+  // which implement the dispatch logic like rewriting an iterator from `iter foo()`
+  // to `iter foo(tag)`. So just resolve the 'these' method.
+  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindFormal, followThisFormal);
+  if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
+    // These produced a valid iterator. We already configured the call
+    // with the desired tag, so that's sufficient.
 
-  auto ci = setupTaggedCallInfoForIteratorType(rv, iteratingOver, needSerial,
-                                               iterKindFormal, followThisFormal);
-  auto inScope = rv.scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-  auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
-
-  QualifiedType ret = error;
-  const IteratorType* newIteratingOver = nullptr;
-  auto iteratorQt = c.exprType();
-  if (!iteratorQt.isUnknownOrErroneous() && iteratorQt.type()->isIteratorType()) {
-    newIteratingOver = iteratorQt.type()->toIteratorType();
-    ret = newIteratingOver->yieldType();
+    iteratingOver = qt.type()->toIteratorType();
+    outIterPieces = { iteratingOver };
+    return iteratingOver->yieldType();
   }
-
-  outIterPieces = { newIteratingOver };
-
-  if (!ret.isUnknownOrErroneous()) {
-    rv.handleResolvedCall(iterandRE, astForErr, ci, c,
-                          { { AssociatedAction::ITERATE, iterand->id() } });
-  }
-
-  return ret;
+  return qt;
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {

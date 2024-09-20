@@ -3614,6 +3614,71 @@ bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
   return true;
 }
 
+static optional<CallResolutionResult>
+resolveIteratorTheseCall(Context* context,
+                         const AstNode* astForErr,
+                         const CallInfo& ci,
+                         const CallScopeInfo& inScopes) {
+  if (ci.name() != USTR("these") || !ci.isMethodCall()) return empty;
+  auto receiver = ci.actual(0).type();
+  auto it = receiver.type() ? receiver.type()->toIteratorType() : nullptr;
+
+  if (!it) return empty;
+
+  // When it's an iterator created from a function, we need to set up
+  // a call with the same name and actuals as the function originally had,
+  // but in the current scope and with potential 'tag' and 'followThis' calls
+  if (auto fnIt = it->toFnIteratorType()) {
+    std::vector<CallInfoActual> actuals;
+
+    auto iterKindType = EnumType::getIterKindType(context);
+
+    // We have a call to an iterator signature, but it may not be the right
+    // overload. So, construct a call with the same name and actuals, with
+    // possibly a different tag or followThis.
+    auto typedSig = fnIt->iteratorFn();
+    auto untypedSig = typedSig->untyped();
+    for (int i = 0; i < typedSig->numFormals(); i++) {
+      auto formalQt = typedSig->formalType(i);
+
+      // We explicitly insert the tag below.
+      if (formalQt.type() == iterKindType) continue;
+
+      actuals.emplace_back(formalQt, untypedSig->formalName(i));
+    }
+
+    // Forward the tag and followThis arguments.
+    //
+    // Performance: if we were sure that FnIterators can only be constructed
+    // without tags, and if we don't find a tag/followThis argument here,
+    // that would mean we are constructing a call info for the same function
+    // that just produced this FnIteratorType, so we could avoid the call
+    // resolution below.
+    for (const auto& actual : ci.actuals()) {
+      if (actual.byName() == USTR("tag") ||
+          actual.byName() == USTR("followThis")) {
+        actuals.push_back(actual);
+      }
+    }
+
+    auto receiverType =
+      untypedSig->isMethod() ?
+      typedSig->formalType(0) :
+      QualifiedType();
+
+    auto genCi = CallInfo(untypedSig->name(),
+                          receiverType,
+                          /* isMethodCall */ typedSig->isMethod(),
+                          /* hasQuestionArg */ false,
+                          /* isParenless */ false,
+                          std::move(actuals));
+
+    auto c = resolveGeneratedCall(context, astForErr, genCi, inScopes);
+    return c;
+  }
+  return empty;
+}
+
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
@@ -4858,9 +4923,15 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected) {
-  // see if the call is handled directly by the compiler
   QualifiedType tmpRetType;
-  if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
+
+  // Resolving 'these' is a bit trickier than other compiler-generated calls,
+  // so it's separately handled here instead of inside resolveFnCallSpecial.
+  if (auto cr = resolveIteratorTheseCall(context, astForErr, ci, inScopes)) {
+    return *cr;
+
+  // see if the call is handled directly by the compiler
+  } else if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
