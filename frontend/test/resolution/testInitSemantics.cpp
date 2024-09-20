@@ -1368,11 +1368,11 @@ static void testInheritance() {
       operator *(const lhs: int, rhs: real) : real {
         return __primitive("*", lhs, rhs);
       }
-      operator =(ref lhs: real, const rhs: real) : void {
-        __primitive("=", lhs, rhs);
-      }
+      operator =(ref lhs: real, const rhs: real) : void {}
+      operator =(ref lhs: int, const rhs: int) : void {}
 
       proc Child.init() {
+        this.x = 42;
         var dummy = this.x * 0.0;
         var other = x * 0.0;
         super.init(0);
@@ -1384,19 +1384,17 @@ static void testInheritance() {
     auto m = parseModule(context, std::move(program));
     std::ignore = resolveModule(context, m->id());
 
-    assert(guard.numErrors() == 2);
-    auto msg = R"""(Cannot access parent field "x" before super.init() or this.init())""";
+    assert(guard.numErrors() == 3);
 
-    {
-      auto& err = guard.error(0);
+    auto check = [&context] (const owned<ErrorBase>& err, std::string pid) {
+      auto msg = R"""(Cannot access parent field "x" before super.init() or this.init())""";
       assert(err->message() == msg);
-      assert(err->toErrorMessage(context).id().str() == "input.init@3");
-    }
-    {
-      auto& err = guard.error(1);
-      assert(err->message() == msg);
-      assert(err->toErrorMessage(context).id().str() == "input.init@7");
-    }
+      assert(err->toErrorMessage(context).id().str() == pid);
+    };
+
+    check(guard.error(0), "input.init@3");
+    check(guard.error(1), "input.init@7");
+    check(guard.error(2), "input.init@11");
 
     guard.realizeErrors();
   }

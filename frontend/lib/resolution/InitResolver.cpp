@@ -734,7 +734,9 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
   // TODO: Is 'field' or 'this.field' too strict of a pattern?
   auto [fieldId, isSuperField] = fieldIdFromPossibleMentionOfField(lhs);
-  if (fieldId.isEmpty()) return false;
+
+  // parent fields already evaluated by 'handleUseOfField'
+  if (fieldId.isEmpty() || isSuperField) return false;
 
   auto state = fieldStateFromId(fieldId);
   CHPL_ASSERT(state);
