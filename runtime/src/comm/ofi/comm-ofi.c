@@ -1717,7 +1717,7 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
 
   // Set the maximum number of endpoints if specified
 
-  epCount = chpl_env_rt_get_int("COMM_OFI_MAX_ENDPOINTS", epCount);
+  epCount = chpl_env_rt_get_int("COMM_OFI_EP_CNT", epCount);
 
   size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
@@ -5583,16 +5583,6 @@ int test_nb_complete(nb_handle_t handle) {
   return handle != NULL ? handle->reported : 1;
 }
 
-static inline
-void wait_nb_some(nb_handle_t *handles, size_t nhandles) {
-  (void) check_complete(handles, nhandles, true /*blocking*/);
-}
-
-static inline
-int try_nb_some(nb_handle_t *handles, size_t nhandles) {
-  return check_complete(handles, nhandles, false /*blocking*/);
-}
-
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
   chpl_comm_diags_incr(test_nb);
   return test_nb_complete((nb_handle_t) h);
@@ -5667,9 +5657,19 @@ done:
   return completed;
 }
 
+static inline
+void wait_nb_some(nb_handle_t *handles, size_t nhandles) {
+  (void) check_complete(handles, nhandles, true /*blocking*/);
+}
+
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   chpl_comm_diags_incr(wait_nb);
   wait_nb_some((nb_handle_t *) h, nhandles);
+}
+
+static inline
+int try_nb_some(nb_handle_t *handles, size_t nhandles) {
+  return check_complete(handles, nhandles, false /*blocking*/);
 }
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
@@ -5677,7 +5677,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   return try_nb_some((nb_handle_t *) h, nhandles);
 }
 
-void chpl_comm_free_nb(chpl_comm_nb_handle_t h) {
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) {
   nb_handle_t handle = (nb_handle_t) h;
   nb_handle_t next;
   for (; handle != NULL; handle = next) {
@@ -6096,6 +6096,10 @@ void ofi_put(const void* addr, c_nodeid_t node, void* raddr, size_t size) {
   do {
     wait_nb_some(&handle, 1);
   } while(!test_nb_complete(handle));
+  if (handle->next != NULL) {
+    // free any handles for sub-operations
+    chpl_comm_free_nb_handle(handle->next);
+  }
   nb_handle_destroy(handle);
 }
 

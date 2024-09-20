@@ -1967,7 +1967,7 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
     // Whether we waited above or not, if the first entry's event
     // is already complete, then remove it from the queue.
     if (chpl_comm_test_nb_complete(cache->pending[index])) {
-      chpl_comm_free_nb(cache->pending[index]);
+      chpl_comm_free_nb_handle(cache->pending[index]);
       fifo_circleb_pop(&cache->pending_first_entry,
                        &cache->pending_last_entry,
                        cache->pending_len);
