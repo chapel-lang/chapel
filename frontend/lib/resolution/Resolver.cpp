@@ -574,81 +574,80 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
   ID targetParentSymbolId = target.parentSymbolId(context);
   ID mentionParentSymbolId = mention.parentSymbolId(context);
 
-  if (targetParentSymbolId && mentionParentSymbolId) {
+  // Need both mention and target parent IDs to make a decision.
+  if (!targetParentSymbolId || !mentionParentSymbolId) return false;
 
-    // No match if the target's parent symbol is what we're resolving.
-    if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
+  // No match if the target's parent symbol is what we're resolving.
+  if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
 
-    // Ditto for the mention.
-    if (mentionParentSymbolId == targetParentSymbolId) return false;
+  // Ditto for the mention.
+  if (mentionParentSymbolId == targetParentSymbolId) return false;
 
-    switch (parsing::idToTag(context, targetParentSymbolId)) {
-      case asttags::Function: return true;
+  auto tag = parsing::idToTag(context, targetParentSymbolId);
 
-      // Module-scope variables are not considered outer-variables. However,
-      // variables declared in a module initializer statement can be, e.g.,
-      /**
-        module M {
-          if someCondition {
-            var someVar = 42;
-            proc f() { writeln(someVar); }
-            f();
-          }
+  if (tag == asttags::Function) return true;
+
+  if (tag == asttags::Module) {
+    // Module-scope variables are not considered outer-variables. However,
+    // variables declared in a module initializer statement can be, e.g.,
+    /**
+      module M {
+        // Nested block within a module.
+        {
+          var someVar = 42;
+          proc f() { writeln(someVar); }
+          f();
         }
-      */
-      case asttags::Module: {
-        // Check to see if the module is not the most immediate parent AST.
-        auto targetParentAstId = parsing::idToParentId(context, target);
-        return targetParentSymbolId != targetParentAstId;
-      } break;
+      }
+    */
+    // Check to see if the module is not the most immediate parent AST.
+    auto targetParentAstId = parsing::idToParentId(context, target);
+    return targetParentSymbolId != targetParentAstId;
+  }
 
-      // In this case the mention is of a field. It could possibly be an
-      // outer variable, because we could be reading a field value from a
-      // non-local receiver. E.g.,
-      /*
-        record r {
-          type T;
-          var x: T;
-          proc foo() {
-            // Here 'T' is read from the implicit receiver of 'foo'.
-            proc bar(f: T) {}
-            bar(x);
-          }
+  if (tag == asttags::Class || tag == asttags::Record ||
+      tag == asttags::Union) {
+    // In this case the mention is of a field. It could possibly be an
+    // outer variable, because we could be reading a field value from a
+    // non-local receiver. E.g.,
+    /*
+      record r {
+        type T;
+        var x: T;
+        proc foo() {
+          // Here 'T' is read from the implicit receiver of 'foo'.
+          proc bar(f: T) {}
+          bar(x);
         }
-      */
-      case asttags::Class:
-      case asttags::Record:
-      case asttags::Union: {
-        ID& sym = mentionParentSymbolId;
-        bool isMentionInNested = parsing::idIsNestedFunction(context, sym);
-        bool isMentionInMethod = parsing::idIsMethod(context, sym);
-        bool isTargetField = parsing::idIsField(context, target);
+      }
+    */
+    ID& sym = mentionParentSymbolId;
+    bool isMentionInNested = parsing::idIsNestedFunction(context, sym);
+    bool isMentionInMethod = parsing::idIsMethod(context, sym);
+    bool isTargetField = parsing::idIsField(context, target);
 
-        // Not sure what else it could be in this case...
-        CHPL_ASSERT(isTargetField);
+    // Not sure what else it could be in this case...
+    CHPL_ASSERT(isTargetField);
 
-        if (isTargetField) {
+    if (isTargetField) {
 
-          // The obvious case: we are a nested non-method function.
-          if (isMentionInNested && !isMentionInMethod) {
-            return true;
+      // The obvious case: we are a nested non-method function.
+      if (isMentionInNested && !isMentionInMethod) {
+        return true;
 
-          } else if (isMentionInNested) {
-            // TODO: Is an ID check alone sufficient? Do we need to e.g.,
-            // get some outermost instantiated type using 'CallerDetails'?
-            if (auto t = rv.methodReceiverType().type()) {
-              if (auto ct = t->toCompositeType()) {
-                return ct->id() != targetParentSymbolId;
-              }
-            } else {
-              CHPL_UNIMPL("detecting if field use in nested method is outer "
-                          "variable without 'methodReceiverType()'");
-              return false;
-            }
+      } else if (isMentionInNested) {
+        // TODO: Is an ID check alone sufficient? Do we need to e.g.,
+        // get some outermost instantiated type using 'CallerDetails'?
+        if (auto t = rv.methodReceiverType().type()) {
+          if (auto ct = t->toCompositeType()) {
+            return ct->id() != targetParentSymbolId;
           }
+        } else {
+          CHPL_UNIMPL("detecting if field use in nested method is outer "
+                      "variable without 'methodReceiverType()'");
+          return false;
         }
-      } break;
-      default: break;
+      }
     }
   }
 

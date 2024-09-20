@@ -149,7 +149,7 @@ template <typename K, typename V>
 inline size_t hashMap(const std::map<K, V>& key) {
   size_t ret = 0;
 
-  // Just iterate and hash, std::map is a sorted container.
+  // Just iterate and hash, relying on std::map being a sorted container.
   for (auto& [k, v] : key) {
     ret = hash_combine(ret, hash(k));
     ret = hash_combine(ret, hash(v));

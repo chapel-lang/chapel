@@ -2216,6 +2216,12 @@ class ResolutionResultByPostorderID {
 
 /**
   This type represents a resolved function.
+
+  When a function 'F' is resolved, any child functions that were resolved
+  as a result of resolving the body of F will be stored in this type as
+  well. For a generic child 'NF' of F, this does not mean that _all_
+  instantiations of NF will be stored here (only instantiations made
+  for interior calls issued within F).
 */
 class ResolvedFunction {
  public:
@@ -2241,10 +2247,11 @@ class ResolvedFunction {
   // the return type computed for this function
   types::QualifiedType returnType_;
 
-  // If a call to a child function is made within this function, then the
-  // resulting 'ResolvedFunction' for the child is stored within this map.
-  // The primary key is the POI trace, and the secondary key is signature
-  // and initial PoiInfo. This mirrors the way functions are cached.
+  // These two maps attempt to mimick what is done to cache generic
+  // instantiations in the queries 'resolveFunctionByInfo' and
+  // 'resolveFunctionByPois'. The maps take the place of the query cache
+  // (since it cannot be used to store the results of resolving a nested
+  // function).
   PoiTraceToChildMap poiTraceToChild_;
   SigAndInfoToChildPtrMap sigAndInfoToChildPtr_;
 
@@ -2286,24 +2293,6 @@ class ResolvedFunction {
   /** the set of point-of-instantiations used by the instantiation */
   const PoiInfo& poiInfo() const { return poiInfo_; }
 
-  const ResolvedFunction*
-  childBySigAndInfo(const SigAndInfo& sigAndInfo) const {
-    CHPL_ASSERT(false && "Not implemented yet!");
-    return nullptr;
-  }
-
-  const ResolvedFunction*
-  childByPoiTrace(const PoiTrace& poiTrace) const {
-    CHPL_ASSERT(false && "Not implemented yet!");
-    return nullptr;
-  }
-
-  const ResolvedFunction*
-  childBySignature(const TypedFnSignature* sig) const {
-    CHPL_ASSERT(false && "Not implemented yet!");
-    return nullptr;
-  }
-
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
@@ -2344,7 +2333,7 @@ class ResolvedFunction {
     }
   }
   size_t hash() const {
-    // TODO: Ok to skip this here?
+    // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
     size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, returnType_);
     for (auto& p : poiTraceToChild_) {

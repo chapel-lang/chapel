@@ -23,19 +23,17 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 
 #include <cstdint>
 #include <unordered_set>
 #include <vector>
 
 namespace chpl {
-
-namespace parsing {
-  bool idIsNestedFunction(Context* context, ID id);
-}
-
 namespace resolution {
 
+// Forward declare some types we reference but can't include yet, as their
+// declarations may depend on this file.
 struct Resolver;
 class ResolutionResultByPostorderID;
 class ResolvedFunction;
@@ -44,17 +42,30 @@ class UntypedFnSignature;
 class MatchingIdsWithName;
 
 /**
-  This class is used to manage mutable state that may be required while
-  resolving. Any resolution function that requires this state will take
-  a 'ResolutionContext*' as its first argument instead of a 'Context'.
-  In the vast majority of cases a user can call such a function using
-  the following sort of pattern:
+  This class is used to manage stack frames that may be necessary while
+  resolving. Any resolution function that may require stack frames will
+  take a 'ResolutionContext*' as its first argument instead of 'Context*'.
+
+  In the vast majority of cases an end-user of the API can call such a
+  function using the following sort of pattern:
 
     ResolutionContext rcval(context);
     auto crr = resolveCall(&rcval, ...);
 
   The 'ResolutionContext' consists of a series of 'frames' that roughly
-  correspond to typical stack frames.
+  correspond to typical stack frames. There are two types of frame,
+  _stable_ frames and _unstable_ frames. Unstable frames are generally
+  created to wrap around a mutable 'Resolver*' instance. Stable frames
+  wrap around immutable query results such as 'const ResolvedFunction*'.
+
+  At any point in time, a 'ResolutionContext*' is either stable or unstable.
+  It is unstable if it has one or more unstable frames.
+
+  When the 'ResolutionContext*' is unstable, any 'CHPL_RESOUTION_QUERY...'
+  will consult the passed in query arguments in order to determine if the
+  'Context*' query cache can be used. If the arguments may refer to a
+  nested function, then the computed result is not cached in the global
+  query cache.
 */
 class ResolutionContext {
  private:
@@ -110,7 +121,7 @@ class ResolutionContext {
     using StoreHash = StoredResultBase::OwnedKeyByValHash;
     using StoreEqual = StoredResultBase::OwnedKeyByValEquals;
     using Store = std::unordered_set<StoreSlot, StoreHash, StoreEqual>;
-    static constexpr int64_t BASE_FRAME_INDEX = -8;
+    static constexpr int64_t BASE_FRAME_INDEX = -1;
     static const ID EMPTY_AST_ID;
 
     Resolver* rv_ = nullptr;
@@ -195,7 +206,7 @@ class ResolutionContext {
 
  public:
   /** Create an empty 'ResolutionContext'. */
-  ResolutionContext(Context* context) : context_(context) {}
+  explicit ResolutionContext(Context* context) : context_(context) {}
   ResolutionContext(const ResolutionContext& rhs) = delete;
   ResolutionContext(ResolutionContext&& rhs) = default;
  ~ResolutionContext() = default;
@@ -236,14 +247,17 @@ class ResolutionContext {
     });
   }
 
-  /** Determine if the compiler context query cache can be invoked. */
+  /** Determine if the global query cache stored in the 'Context*' can
+      be used. If this 'ResolutionContext*' is not unstable, then the
+      global query cache can always be used.
+
+      If not, then consider 't'. In general, if 't' is a type that
+      refers to a nested function, conservatively return 'false'. */
   template <typename T>
   bool canUseGlobalCacheConsidering(const T& t) const {
     if (!isUnstable()) return true;
     return ResolutionContext::canUseGlobalCache(context_, t);
   }
-
-  /** Can the global query cache be invoked considering 't' and this? */
   template <typename T>
   bool canUseGlobalCacheConsidering(const T* t) const {
     return canUseGlobalCacheConsidering(*t);
@@ -288,6 +302,7 @@ class ResolutionContext {
     return true;
   }
 
+  // Concrete overloads for types commonly encountered in resolution queries.
   static bool
   canUseGlobalCache(Context* context, const UntypedFnSignature& t);
   static bool
@@ -296,6 +311,11 @@ class ResolutionContext {
   canUseGlobalCache(Context* context, const ID& t);
   static bool
   canUseGlobalCache(Context* context, const MatchingIdsWithName& ids);
+
+  //
+  // Forward declare nested structs that are used to implement query classes.
+  // These are defined later in the file.
+  // ---
 
   template <auto F, typename RetByVal, typename... ArgsByValue>
   struct GlobalQueryWrapper;
@@ -315,7 +335,7 @@ class ResolutionContext {
   template <auto F, typename InvokeRet, typename... InvokeArgs>
   class Query;
 
-  /** Use to construct an instance of a 'ResolutionContext::Query'.
+  /** Called to construct an instance of a 'ResolutionContext::Query'.
       These implement the 'CHPL_RESOLUTION_QUERY...' family of
       macros defined below. */
   template <auto F, typename... InvokeArgs>
@@ -326,18 +346,16 @@ class ResolutionContext {
   }
 };
 
-/** This struct contains a "hidden" traditional query which stores the result
-    of invoking 'query' (the instantiated static function below) into the
-    global compiler context. Instantiation of 'GlobalQueryWrapper' is
-    precisely controlled by 'GlobalQuery' in order to avoid spurious
-    instantiations. Note that the actual query (with the user's computation
-    code) is the template value 'F'. The function 'query' exists solely to
-    work with the global query cache, which requires a specific signature.
+/** This struct forms an adapter between queries that work with the
+    'ResolutionContext*' and traditional queries that work with the
+    'Context*' (the global query cache).
 
-    The only time 'query' should ever be called directly is when the global
-    context is recomputing queries after bumping the revision. As such,
-    it just creates an empty 'ResolutionContext' and calls into 'F'
-    directly. In this state, it should bypass any of the initial lookup.
+    The function that contains the user's query code is the template
+    value 'F'. The function stored in the global query cache is
+    'query', defined below. The only time 'query' should be called is
+    when the 'Context*' is recomputing queries after bumping the
+    revision. In that case, 'query' creates an empty 'ResolutionContext'
+    and uses it to call into 'F'.
 */
 template <auto F, typename RetByVal, typename... ArgsByValue>
 struct ResolutionContext::GlobalQueryWrapper {
@@ -396,9 +414,9 @@ class ResolutionContext::GlobalQuery {
   // References to the arguments as they were passed in.
   InvokeArgsTuple args_;
 
-  // TODO: Right now this has to copy-in by value due to limitations
-  // of the 'query...' methods. It would be nice if we could use the
-  // 'InvokeArgsTuple' tuple type instead to avoid redundant copies.
+  // TODO: Right now we need to copy in 'args_' by value to pass them
+  // to the 'context->query...' methods. Can this pack be removed in
+  // the future?
   ArgsByValueTuple ap_ = args_;
 
   // This state is used to mimick 'QUERY_BEGIN' and 'QUERY_END'.
@@ -499,8 +517,8 @@ struct ResolutionContext::CanUseGlobalCache {
   }
 };
 
-/** This class can be specialized to allow specific queries to behave
-    differently when the 'ResolutionContext' is unstable. */
+/** This struct can be specialized to allow queries to specify how computed
+    results are cached when the 'ResolutionContext*' is unstable. */
 template <auto F, typename RetByVal, typename InvokeArgsTuple>
 struct ResolutionContext::UnstableCache {
 
@@ -534,7 +552,8 @@ class ResolutionContext::Query {
   // TODO: Refactor this into the more general notion of a "global query"
   // (e.g., the 'GlobalQuery' defined above) that can be augmented with
   // additional state or subclassed.
-  // NOTE: Use 'T' suffixes to prevent a GCC error message...
+  //
+  // NOTE: The 'T' suffixes to prevent a GCC error message.
   using GlobalQueryT = GlobalQuery<F, InvokeRet, InvokeArgs...>;
   using RetByVal = typename GlobalQueryT::RetByVal;
   using InvokeArgsTuple = typename GlobalQueryT::InvokeArgsTuple;
@@ -607,7 +626,7 @@ class ResolutionContext::Query {
 
     Queries guarded by this macro must always return by 'const&'. When a
     result is not stored in the context query cache, it will be stored in
-    a temporary cache maintained by the youngest 'ResolutionContext::Frame'
+    a temporary cache maintained by the innermost 'ResolutionContext::Frame'
     instead. The lifetime of temporarily cached values is the lifetime of
     the associated 'ResolutionContext::Frame'.
 */

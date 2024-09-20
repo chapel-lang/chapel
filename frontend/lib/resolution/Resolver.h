@@ -20,6 +20,7 @@
 #ifndef CHPL_LIB_RESOLUTION_RESOLVER_H
 #define CHPL_LIB_RESOLUTION_RESOLVER_H
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"

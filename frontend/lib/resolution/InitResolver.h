@@ -20,6 +20,7 @@
 #ifndef CHPL_LIB_RESOLUTION_INIT_RESOLVER_H
 #define CHPL_LIB_RESOLUTION_INIT_RESOLVER_H
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"

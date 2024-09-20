@@ -1458,6 +1458,7 @@ ID idToParentFunctionId(Context* context, ID id) {
   if (id.isEmpty()) return {};
   for (auto up = id; up; up = up.parentSymbolId(context)) {
     if (up == id) continue;
+    // Get the first parent function (a parent could be a record/class/etc).
     if (parsing::idIsFunction(context, up)) return up;
   }
   return {};

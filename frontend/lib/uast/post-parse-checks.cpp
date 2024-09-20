@@ -20,6 +20,7 @@
 #include "chpl/uast/post-parse-checks.h"
 
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parser-error.h"

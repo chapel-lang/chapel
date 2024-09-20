@@ -18,8 +18,10 @@
  */
 #include "chpl/types/EnumType.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/Enum.h"
+#include "chpl/uast/EnumElement.h"
 
 namespace chpl {
 namespace types {
