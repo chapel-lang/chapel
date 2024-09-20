@@ -943,6 +943,13 @@ def filter_llvm_config_flags(flags):
             flag == '-std=c++14'):
             continue # filter out these flags
 
+        # change -I flags to -isystem flags
+        # this avoids warnings inside of LLVM headers
+        if flag.startswith('-I'):
+            ret.append('-isystem')
+            ret.append(flag[2:])
+            continue
+
         if flag.startswith('-W'):
             if flag.startswith('-Wno-'):
                 ret.append(flag) # include -Wno- flags
