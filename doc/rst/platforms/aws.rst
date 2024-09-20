@@ -258,7 +258,7 @@ For example, to install Chapel 2.2 on Ubuntu 22.04:
 If there is no pre-built binary for your OS, you can build Chapel from source.
 
 Building Chapel from Source
-***************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build Chapel from source for use on the cluster, follow these steps:
 
