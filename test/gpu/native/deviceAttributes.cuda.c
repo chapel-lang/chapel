@@ -1,4 +1,6 @@
+#include "deviceAttributes.h"
 #include <cuda.h>
+#include <stdio.h>
 
 CUdevice device;
 
@@ -60,5 +62,3 @@ void runBaselineVersion(void) {
   reportAttribute("pageableMemoryAccessUsesHostPageTables", CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES);
   reportAttribute("directManagedMemAccessFromHost", CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST);
 }
-
-
