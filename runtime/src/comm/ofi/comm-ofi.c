@@ -74,6 +74,7 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+
 #include <sys/mman.h>
 #ifndef MAP_HUGETLB
 // MAP_HUGETLB is not defined on all systems (e.g. MacOS)
@@ -377,7 +378,8 @@ typedef nb_handle* nb_handle_t;
 // Forward decls
 //
 
-static struct perTxCtxInfo_t* tciAlloc(void);
+static struct perTxCtxInfo_t* tciAllocFunc(const char *, int);
+#define tciAlloc() tciAllocFunc(__FILE__, __LINE__)
 static struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static void tciFree(struct perTxCtxInfo_t*);
@@ -5947,10 +5949,10 @@ static __thread struct perTxCtxInfo_t* _ttcip;
 
 
 static inline
-struct perTxCtxInfo_t* tciAlloc(void) {
+struct perTxCtxInfo_t* tciAllocFunc(const char *file, int line) {
+  DBG_PRINTF(DBG_TCIPS, "tciAlloc %s:%d]", file, line);
   return tciAllocCommon(false /*bindToAmHandler*/);
 }
-
 
 static inline
 struct perTxCtxInfo_t* tciAllocForAmHandler(void) {
