@@ -5966,6 +5966,8 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
   if (bindToAmHandler
       || (tciTabBindTxCtxs && chpl_task_isFixedThread())) {
     _ttcip->bound = true;
+  }
+  if (mcmMode != mcmm_dlvrCmplt) {
     _ttcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
     if ((ofi_info->caps & FI_ATOMIC) != 0) {
       _ttcip->amoVisBitmap = bitmapAlloc(chpl_numNodes);
