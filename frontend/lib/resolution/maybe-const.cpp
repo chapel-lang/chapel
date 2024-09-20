@@ -297,14 +297,9 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     auto fn = msc.fn();
 
     // Recompute the instantiation scope that was used when resolving the call.
-    const PoiScope* poiScope = nullptr;
-    for (auto sig = fn; sig; sig = sig->parentFn()) {
-      if (sig->instantiatedFrom()) {
-        auto scope = scopeForId(context, ast->id());
-        poiScope = pointOfInstantiationScope(context, scope, resolver.poiScope);
-        break;
-      }
-    }
+    auto inScope = scopeForId(context, ast->id());
+    auto inPoiScope = resolver.poiScope;
+    auto poiScope = Resolver::poiScopeOrNull(context, fn, inScope, inPoiScope);
 
     auto resolvedFn = inferRefMaybeConstFormals(rc, fn, poiScope);
     if (resolvedFn) {

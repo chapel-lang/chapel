@@ -122,6 +122,21 @@ Resolver::~Resolver() {
   }
 }
 
+const PoiScope*
+Resolver::poiScopeOrNull(Context* context,
+                         const TypedFnSignature* sig,
+                         const Scope* inScope,
+                         const PoiScope* inPoiScope) {
+  const PoiScope* ret = nullptr;
+  for (auto up = sig; up; up = up->parentFn()) {
+    if (up->instantiatedFrom()) {
+      ret = pointOfInstantiationScope(context, inScope, inPoiScope);
+      break;
+    }
+  }
+  return ret;
+}
+
 static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
   if (parsing::idIsParenlessFunction(context, id))
     return QualifiedType::PARENLESS_FUNCTION;
@@ -613,10 +628,10 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
     /*
       record r {
         type T;
-        var x: T;
         proc foo() {
           // Here 'T' is read from the implicit receiver of 'foo'.
           proc bar(f: T) {}
+          var x: T;
           bar(x);
         }
       }
@@ -636,8 +651,9 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
         return true;
 
       } else if (isMentionInNested) {
-        // TODO: Is an ID check alone sufficient? Do we need to e.g.,
-        // get some outermost instantiated type using 'CallerDetails'?
+        // TODO: Is an ID check alone sufficient? Do we need to do a
+        // more sophisticated check in the case of e.g., recursion or
+        // overlapping instantiations?
         if (auto t = rv.methodReceiverType().type()) {
           if (auto ct = t->toCompositeType()) {
             return ct->id() != targetParentSymbolId;
@@ -3775,12 +3791,6 @@ static const Type* getGenericType(Context* context, const Type* recv) {
   return gen;
 }
 
-// With some exceptions (see below), don't try to resolve a call that accepts:
-// EXCEPT, to handle split-init with an 'out' formal,
-// the actual argument can have unknown / generic type if it
-// refers directly to a particular variable.
-// EXCEPT, type construction can work with unknown or generic types
-// EXCEPT, tuple type construction also works with unknown/generic types
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::Call* call,
                          std::vector<const uast::AstNode*> actualAsts,

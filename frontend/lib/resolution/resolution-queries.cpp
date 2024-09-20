@@ -2598,6 +2598,9 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
 // resolve an exterior call to a nested function. Right now it is not
 // clear if that will ever be possible outside of the API, so it remains
 // unimplemented (but this specialization will stay as a reminder).
+//
+// Right now, this specialization just performs the default behavior.
+//
 template <typename Args> struct
 ResolutionContext::GlobalComputeSetup<resolveFunctionByInfoQuery, Args> {
   bool enter(ResolutionContext* rc, const Args& args) {
@@ -2607,6 +2610,8 @@ ResolutionContext::GlobalComputeSetup<resolveFunctionByInfoQuery, Args> {
   void leave(ResolutionContext* rc, const Args& args) {}
 };
 
+// Implement unstable caching for 'resolveFunctionByInfoQuery' by looking
+// for an appropriate PoiInfo/function stored within the parent's Resolver.
 template <typename T, typename Args> struct
 ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
@@ -2644,6 +2649,8 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
   }
 };
 
+// Implement unstable caching for 'resolveFunctionByPoisQuery' by looking
+// for an appropriate POI trace/function within the parent's Resolver.
 template <typename T, typename Args> struct
 ResolutionContext::UnstableCache<resolveFunctionByPoisQuery, T, Args> {
 
@@ -2688,6 +2695,10 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
   if (rcq.canUseGlobalCache()) {
     // We should not have made it this far if we can recall from the global
     // context query cache. The query guard should have returned early.
+    //
+    // The actual value is set in 'resolveFunctionByInfoQuery' after it is
+    // computed, because resolving the function's body generates the POI
+    // trace, which is the key for this query.
     CHPL_ASSERT(false && "Should be set in 'resolveFunctionByInfoQuery'!");
   }
 
@@ -4632,32 +4643,19 @@ resolveFnCall(ResolutionContext* rc,
 
   // figure out the poiScope to use
   const PoiScope* instantiationPoiScope = nullptr;
-  bool anyInstantiated = false;
-
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate && candidate.fn()) {
-      // If any parent function is instantiated, then the child should also
-      // be considered "instantiated".
-      // TODO: This needs to be consistent with code in 'AdjustMaybeRefs'
-      // for inferring ref-maybe-const on calls (whatever this does to compute
-      // the poiScope, that code also needs to do).
-      // TODO: How does this work now that we are using a new caching system
-      // and don't cache in the global context query cache?
-      for (auto sig = candidate.fn(); sig; sig = sig->parentFn()) {
-        if (sig->instantiatedFrom()) {
-          anyInstantiated = true;
-          break;
-        }
-      }
+      instantiationPoiScope =
+          Resolver::poiScopeOrNull(context, candidate.fn(),
+                                   inScopes.callScope(),
+                                   inScopes.poiScope());
+      if (instantiationPoiScope) break;
     }
-    if (anyInstantiated) break;
+    if (instantiationPoiScope) break;
   }
 
-  if (anyInstantiated) {
-    instantiationPoiScope =
-      pointOfInstantiationScope(context, inScopes.callScope(), inScopes.poiScope());
+  if (instantiationPoiScope) {
     poiInfo.setPoiScope(instantiationPoiScope);
-
     for (const MostSpecificCandidate& candidate : mostSpecific) {
       if (candidate) {
         if (candidate.fn()->untyped()->idIsFunction()) {

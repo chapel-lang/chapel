@@ -279,6 +279,12 @@ struct Resolver {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
+  static const PoiScope*
+  poiScopeOrNull(Context* context,
+                 const TypedFnSignature* sig,
+                 const Scope* inScope,
+                 const PoiScope* inPoiScope);
+
   /**
     During AST traversal, find the last called expression we entered.
     e.g., will return 'f' if we just entered 'f()'.
@@ -297,15 +303,6 @@ struct Resolver {
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
-
-  /* Gather scopes for a given receiver decl and all its parents */
-  static ReceiverScopesVec
-  gatherReceiverAndParentScopesForDeclId(Context* context,
-                                         ID aggregateDeclId);
-  /* Gather scopes for a given receiver type and all its parents */
-  static ReceiverScopesVec
-  gatherReceiverAndParentScopesForType(Context* context,
-                                       const types::Type* thisType);
 
   /* Determine the method receiver, which is a type under
      full resolution, but only an ID under scope resolution.
@@ -584,7 +581,7 @@ struct Resolver {
 
   void resolveIdentifier(const uast::Identifier* ident);
 
-  /** Returns 'true' if the lookup succeeded. */
+  /** Returns 'true' and sets 'out' if an outer var was found for 'target'. */
   bool lookupOuterVariable(types::QualifiedType& out,
                            const uast::Identifier* ident,
                            const ID& target);

@@ -261,7 +261,8 @@ static void test4(void) {
   assert(x3.type() && x3.type()->isErroneousType());
 }
 
-// This is private issue #6022.
+// This is private issue #6022. It tests a case where a nested function uses
+// a field accessible through a outer method's receiver.
 static void test5(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
@@ -292,6 +293,7 @@ static void test5(void) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
+// Same as test5 but with a nested method instead of a nested function.
 static void test6(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
@@ -356,6 +358,9 @@ static void test7(void) {
 }
 */
 
+// TODO: It is illegal to use 'x' in the definition of 'S.y', but should
+// this program still type as though it would work? Right now it can't
+// be typed because the lookup fails.
 /*
 static void test8(void) {
   Context context;
