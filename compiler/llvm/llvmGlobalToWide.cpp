@@ -158,32 +158,24 @@ namespace {
 
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
-  void removeInvalidRetAttrs(BaseTy* F, AttributeMask mask) {
+  void removeInvalidRetAttrs(BaseTy* V, Type* type) {
+    auto mask = AttributeFuncs::typeIncompatible(type);
 #if HAVE_LLVM_VER >= 140
-    F->removeRetAttrs(mask);
+    V->removeRetAttrs(mask);
 #else
-    F->removeAttributes(AttributeList::ReturnIndex, mask);
+    V->removeAttributes(AttributeList::ReturnIndex, mask);
 #endif
-  }
-  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
-                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
-  void removeInvalidRetAttrs(BaseTy* F, Type* type) {
-    removeInvalidRetAttrs(F, AttributeFuncs::typeIncompatible(type));
   }
 
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
-  void removeInvalidParamAttrs(BaseTy* F, size_t idx, AttributeMask mask) {
+  void removeInvalidParamAttrs(BaseTy* V, size_t idx, Type* type) {
+    auto mask = AttributeFuncs::typeIncompatible(type);
 #if HAVE_LLVM_VER >= 140
-    F->removeParamAttrs(idx, mask);
+    V->removeParamAttrs(idx, mask);
 #else
-    F->removeAttributes(idx+1, mask);
+    V->removeAttributes(idx+1, mask);
 #endif
-  }
-  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
-                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
-  void removeInvalidParamAttrs(BaseTy* F, size_t idx, Type* type) {
-    removeInvalidParamAttrs(F, idx, AttributeFuncs::typeIncompatible(type));
   }
 
   // Like the version in BasicBlockUtils but assumes New is already
