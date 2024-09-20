@@ -3947,6 +3947,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     // To resolve this problem, manually compute the fully-generic type that
     // is being initialized and reset the receiver.
     //
+    // Note: erroneous field accesses will be handled by invoking
+    // ``InitResolver::handleResolvedCall`` below.
+    //
     // TODO: Move this logic into InitResolver.cpp - but where?
     if (initResolver && ci.name() == USTR("init")) {
       auto gt = ci.isMethodCall() ? ci.calledType() : receiverType;
