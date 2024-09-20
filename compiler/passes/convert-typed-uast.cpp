@@ -76,6 +76,13 @@ struct TConverter final : UastConverter {
   /// Nested Types ///
   using RV = ResolvedVisitor<TConverter>;
 
+
+  // helper for keeping track of converted functions
+  struct ConvertedFunction {
+    FnSymbol* fn;
+    std::unordered_map<ID, Symbol*> vars;
+  };
+
   // When converting variables etc. with @assertOnGpu or @blockSize,
   // we don't just create a DefExpr; we also create an enclosing block which
   // contains calls to primitives that implement @assertOnGpu and @blockSize.
@@ -152,6 +159,7 @@ struct TConverter final : UastConverter {
   bool haveConvertedFunctions = false;
   // these are updated as we are converting different things
   ModTag topLevelModTag = MOD_USER;
+  bool moduleFromLibraryFile = false;
   const ResolvedFunction* currentResolvedFunction = nullptr;
 
   // the untyped converter (temporarily, this is used for non-user code)
@@ -171,8 +179,8 @@ struct TConverter final : UastConverter {
 
   // to keep track of symbols that have been converted & fixups needed
   std::unordered_map<ID, ModuleSymbol*> modSyms;
-  std::unordered_map<ID, Symbol*> syms;
-  std::unordered_map<const ResolvedFunction*, FnSymbol*> fns;
+  std::unordered_map<const ResolvedFunction*, ConvertedFunction> fns;
+  std::unordered_map<ID, Symbol*> moduleScopeVars;
 
   std::vector<std::pair<SymExpr*, ID>> identFixups;
   std::vector<std::pair<SymExpr*, const ResolvedFunction*>> callFixups;
@@ -236,12 +244,9 @@ struct TConverter final : UastConverter {
 
   ModuleSymbol* setupModule(ID modId);
   ModuleSymbol* findOrSetupModule(ID modId);
+
   void convertModuleInit(const Module* mod, ModuleSymbol* modSym);
   void convertFunction(const ResolvedFunction* r);
-
-  // general functions for converting
-  Type* convertType(const types::Type* t);
-  Symbol* convertParam(types::QualifiedType qt);
 
   // type conversion helpers
   Type* helpConvertType(const types::Type* t);
@@ -260,6 +265,11 @@ struct TConverter final : UastConverter {
   Type* convertIntType(const types::IntType* t);
   Type* convertRealType(const types::RealType* t);
   Type* convertUintType(const types::UintType* t);
+
+  // general functions for converting types/params
+  Type* convertType(const types::Type* t);
+  Symbol* convertParam(types::QualifiedType qt);
+
 
   // blockStack helpers
   BlockStmt* pushNewBlock() {
@@ -283,10 +293,7 @@ struct TConverter final : UastConverter {
   }
 
   // methods to help track what has been converted & handle fixups
-  void noteConvertedSym(const AstNode* ast, Symbol* sym);
-  void noteConvertedFn(const ResolvedFunction* r, FnSymbol* fn);
-  Symbol* findConvertedSym(ID id, bool neverTrace=false);
-  Symbol* findConvertedFn(const ResolvedFunction* r, bool neverTrace=false);
+  void noteConvertedVariable(const uast::AstNode* ast, Symbol* sym);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteCallFixupNeeded(SymExpr* se, const ResolvedFunction* r);
   void noteTypeFixupNeeded(Symbol* sym);
@@ -314,6 +321,10 @@ struct TConverter final : UastConverter {
     INT_ASSERT(ret);
     return ret;
   }
+
+  // helpers
+  Expr* convertLifetimeClause(const AstNode* node);
+  CallExpr* convertLifetimeIdent(const Identifier* node);
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -345,8 +356,6 @@ struct TConverter final : UastConverter {
   //Expr* convertRegularBinaryOrUnaryOp(const OpCall* node,
   //                                    const char* name=nullptr);
   //BlockStmt* convertTupleDeclComponents(const TupleDecl* node);
-  //Expr* convertLifetimeClause(const AstNode* node);
-  //CallExpr* convertLifetimeIdent(const Identifier* node);
   //FnSymbol* convertFunction(const Function* node);
   //FnSymbol* convertFunctionSignature(const FunctionSignature* node);
   //CallExpr* convertArrayType(const BracketLoop* node);
@@ -362,36 +371,6 @@ struct TConverter final : UastConverter {
   //Expr* convertTypeExpression(const AstNode* node);
   //Expr* convertTypeExpressionOrNull(const AstNode* node);
   //ShadowVarSymbol* convertTaskVar(const TaskVar* node);
-
-
-  // visit functions
-  /*bool enter(const NamedDecl* ast, RV& rv);
-  void exit(const NamedDecl* ast, RV& rv);
-
-  bool enter(const OpCall* ast, RV& rv);
-  void exit(const OpCall* ast, RV& rv);
-
-  bool enter(const FnCall* ast, RV& rv);
-  void exit(const FnCall* ast, RV& rv);
-
-  bool enter(const Return* ast, RV& rv);
-  void exit(const Return* ast, RV& rv);
-
-  bool enter(const Throw* ast, RV& rv);
-  void exit(const Throw* ast, RV& rv);
-
-  bool enter(const Yield* ast, RV& rv);
-  void exit(const Yield* ast, RV& rv);
-
-  bool enter(const Identifier* ast, RV& rv);
-  void exit(const Identifier* ast, RV& rv);
-
-  bool enter(const Conditional* node, RV& rv);
-  void exit(const Conditional* node, RV& rv);
-
-  bool enter(const Select* node, RV& rv);
-  void exit(const Select* node, RV& rv);
-  */
 
   // traversal cases to do nothing
   bool enter(const TypeDecl* ast, RV& rv) { return false; }
@@ -615,6 +594,8 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   pushBlock(modSym->initFn->body);
   const AstNode* oldSymbol = symbol;
   symbol = mod;
+  moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
+  currentResolvedFunction = nullptr;
 
   // traverse
   ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
@@ -644,7 +625,10 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   const Function* fn = ast->toFunction();
   pushBlock(modSym->block);
   const AstNode* oldSymbol = symbol;
+  const ResolvedFunction* oldFn = currentResolvedFunction;
   symbol = fn;
+  currentResolvedFunction = r;
+  moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
 
   // traverse
   ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
@@ -652,7 +636,415 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
 
   // tidy up after traversal
   symbol = oldSymbol;
+  currentResolvedFunction = oldFn;
   popBlock();
+}
+
+Type* TConverter::helpConvertType(const types::Type* t) {
+  using namespace types;
+
+  if (t == nullptr)
+    return dtUnknown;
+
+  switch (t->tag()) {
+    // builtin types with their own classes
+    case typetags::AnyType:       return dtAny;
+    case typetags::CStringType:   return dtStringC;
+    case typetags::ErroneousType: return dtUnknown; // a lie
+    case typetags::NilType:       return dtNil;
+    case typetags::NothingType:   return dtNothing;
+    case typetags::UnknownType:   return dtUnknown;
+    case typetags::VoidType:      return dtVoid;
+
+    // subclasses of BuiltinType
+
+    // concrete builtin types
+    case typetags::CFnPtrType:    return dtCFnPtr;
+    case typetags::CVoidPtrType:  return dtCVoidPtr;
+    case typetags::OpaqueType:    return dtOpaque;
+    case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::TaskIdType:    return dtTaskID;
+
+    // generic builtin types
+    case typetags::AnyComplexType:               return dtAnyComplex;
+    case typetags::AnyEnumType:                  return dtAnyEnumerated;
+    case typetags::AnyImagType:                  return dtAnyImag;
+    case typetags::AnyIntType:                   return dtIntegral; // a lie
+    case typetags::AnyIntegralType:              return dtIntegral;
+    case typetags::AnyIteratorClassType:         return dtIteratorClass;
+    case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
+    case typetags::AnyNumericType:               return dtNumeric;
+    case typetags::AnyOwnedType:                 return dtOwned;
+    case typetags::AnyPodType:                   return dtAnyPOD;
+    case typetags::AnyRealType:                  return dtAnyReal;
+    case typetags::AnyRecordType:                return dtAnyRecord;
+    case typetags::AnySharedType:                return dtShared;
+    case typetags::AnyUintType:                  return dtIntegral; // a lie
+    case typetags::AnyUninstantiatedType:        return dtUninstantiated;
+    case typetags::AnyUnionType:                 return dtUnknown; // a lie
+    // declared types
+    case typetags::ClassType:   return convertClassType(t->toClassType());
+    case typetags::EnumType:    return convertEnumType(t->toEnumType());
+    case typetags::ExternType:  return convertExternType(t->toExternType());
+    case typetags::FunctionType:return convertFunctionType(t->toFunctionType());
+
+    case typetags::ArrayType:
+       CHPL_UNIMPL("convert array type");
+       return dtUnknown; // TODO
+    case typetags::DomainType:
+       CHPL_UNIMPL("convert domain type");
+      return dtUnknown; // TODO
+
+    case typetags::BasicClassType:
+      return convertBasicClassType(t->toBasicClassType());
+
+    case typetags::AnyClassType:    return dtAnyManagementNonNilable;
+    case typetags::RecordType:      return convertRecordType(t->toRecordType());
+    case typetags::TupleType:       return convertTupleType(t->toTupleType());
+    case typetags::UnionType:       return convertUnionType(t->toUnionType());
+
+    // primitive types
+    case typetags::BoolType:     return convertBoolType(t->toBoolType());
+    case typetags::ComplexType:  return convertComplexType(t->toComplexType());
+    case typetags::ImagType:     return convertImagType(t->toImagType());
+    case typetags::IntType:      return convertIntType(t->toIntType());
+    case typetags::RealType:     return convertRealType(t->toRealType());
+    case typetags::UintType:     return convertUintType(t->toUintType());
+    case typetags::CPtrType:     return convertCPtrType(t->toCPtrType());
+
+    // implementation detail tags (should not be reachable)
+    case typetags::START_ManageableType:
+    case typetags::END_ManageableType:
+    case typetags::START_BuiltinType:
+    case typetags::END_BuiltinType:
+    case typetags::START_DeclaredType:
+    case typetags::END_DeclaredType:
+    case typetags::START_CompositeType:
+    case typetags::END_CompositeType:
+    case typetags::START_PrimitiveType:
+    case typetags::END_PrimitiveType:
+    case typetags::NUM_TYPE_TAGS:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
+
+    // intentionally no default --
+    // want a C++ compiler error if a case is missing in the above
+  }
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* TConverter::convertClassType(const types::ClassType* t) {
+  if (auto mt = t->manageableType()) {
+    if (mt->isAnyClassType()) {
+      // The production compiler represents these as special builtins
+      auto dec = t->decorator();
+      if (dec.isUnmanaged()) {
+        if (dec.isNilable()) return dtUnmanagedNilable;
+        if (dec.isNonNilable()) return dtUnmanagedNonNilable;
+        return dtUnmanaged;
+      } else if (dec.isBorrowed()) {
+        if (dec.isNilable()) return dtBorrowedNilable;
+        if (dec.isNonNilable()) return dtBorrowedNonNilable;
+        return dtBorrowed;
+      } else if (dec.isUnknownManagement()) {
+        if (dec.isNilable()) return dtAnyManagementNilable;
+        if (dec.isNonNilable()) return dtAnyManagementNonNilable;
+        return dtAnyManagementAnyNilable;
+      } else {
+        // fall through
+      }
+    }
+  }
+
+  CHPL_UNIMPL("Unhandled class type");
+  return nullptr;
+}
+
+Type* TConverter::convertCPtrType(const types::CPtrType* t) {
+  // find the C pointer type to instantiate
+  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+
+  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  if (t->eltType() == nullptr) {
+    return base;
+  }
+
+  auto qt = types::QualifiedType(types::QualifiedType::TYPE, t);
+
+  if (base->numFields() == 0) {
+    // the proper AST for CPointer hasn't been created yet,
+    // and we need it to proceed, so return a temporary conversion symbol.
+    return new TemporaryConversionType(qt);
+  }
+
+  // otherwise, convert the element type
+  Type* convertedEltT = convertType(t->eltType());
+  if (isTemporaryConversionType(convertedEltT)) {
+    // return a temporary conversion symbol since something is missing
+    return new TemporaryConversionType(t);
+  }
+
+  // instantiate it with the element type
+  // note: getInstantiation should re-use existing instantiations
+  int index = 1;
+  Expr* insnPoint = nullptr; // TODO: set this to something?
+  AggregateType* ret =
+    base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+  return ret;
+}
+
+Type* TConverter::convertEnumType(const types::EnumType* t) {
+  CHPL_UNIMPL("convertEnumType");
+  return nullptr;
+}
+
+Type* TConverter::convertExternType(const types::ExternType* t) {
+  CHPL_UNIMPL("convertExternType");
+  return nullptr;
+}
+
+Type* TConverter::convertFunctionType(const types::FunctionType* t) {
+  CHPL_UNIMPL("convertExternType");
+  return nullptr;
+}
+
+Type* TConverter::convertBasicClassType(const types::BasicClassType* t) {
+  CHPL_UNIMPL("convertExternType");
+  return nullptr;
+}
+
+Type* TConverter::convertRecordType(const types::RecordType* t) {
+  if (t->isStringType()) {
+    return dtString;
+  } else if (t->isBytesType()) {
+    return dtBytes;
+  }
+
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
+  return nullptr;
+}
+
+Type* TConverter::convertTupleType(const types::TupleType* t) {
+  CHPL_UNIMPL("convertTupleType");
+  return nullptr;
+}
+
+Type* TConverter::convertUnionType(const types::UnionType* t) {
+  CHPL_UNIMPL("convertUnionType");
+  return nullptr;
+}
+
+Type* TConverter::convertBoolType(const types::BoolType* t) {
+  return dtBool;
+}
+
+static IF1_complex_type getComplexSize(const types::ComplexType* t) {
+  if (t->isDefaultWidth())
+    return COMPLEX_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 64)  return COMPLEX_SIZE_64;
+  else if (width == 128) return COMPLEX_SIZE_128;
+
+  INT_FATAL("should not be reached");
+  return COMPLEX_SIZE_DEFAULT;
+}
+
+Type* TConverter::convertComplexType(const types::ComplexType* t) {
+  return dtComplex[getComplexSize(t)];
+}
+
+static IF1_float_type getImagSize(const types::ImagType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+Type* TConverter::convertImagType(const types::ImagType* t) {
+  return dtImag[getImagSize(t)];
+}
+
+static IF1_int_type getIntSize(const types::IntType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+Type* TConverter::convertIntType(const types::IntType* t) {
+  return dtInt[getIntSize(t)];
+}
+
+static IF1_float_type getRealSize(const types::RealType* t) {
+  if (t->isDefaultWidth())
+    return FLOAT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 32) return FLOAT_SIZE_32;
+  else if (width == 64) return FLOAT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return FLOAT_SIZE_DEFAULT;
+}
+
+Type* TConverter::convertRealType(const types::RealType* t) {
+  return dtReal[getRealSize(t)];
+}
+
+static IF1_int_type getUintSize(const types::UintType* t) {
+  if (t->isDefaultWidth())
+    return INT_SIZE_DEFAULT;
+
+  int width = t->bitwidth();
+  if      (width == 8)  return INT_SIZE_8;
+  else if (width == 16) return INT_SIZE_16;
+  else if (width == 32) return INT_SIZE_32;
+  else if (width == 64) return INT_SIZE_64;
+
+  INT_FATAL("should not be reached");
+  return INT_SIZE_DEFAULT;
+}
+
+Type* TConverter::convertUintType(const types::UintType* t) {
+  return dtUInt[getUintSize(t)];
+}
+
+Type* TConverter::convertType(const types::Type* t) {
+  if (t == nullptr)
+    return dtUnknown;
+
+  // reuse one from the map if we have already converted it
+  {
+    auto it = convertedTypes.find(t);
+    if (it != convertedTypes.end()) {
+      return it->second;
+    }
+  }
+
+  // convert the type
+  Type* ret = helpConvertType(t);
+
+  // save the result to the map
+  convertedTypes[t] = ret;
+
+  return ret;
+}
+
+Symbol* TConverter::convertParam(types::QualifiedType qt) {
+  const types::Param* p = qt.param();
+  const types::Type* t = qt.type();
+  INT_ASSERT(p && t);
+
+  if (auto bp = p->toBoolParam()) {
+    return new_BoolSymbol(bp->value());
+  } else if (auto cp = p->toComplexParam()) {
+    const types::ComplexType* ct = t->toComplexType();
+    types::Param::ComplexDouble tmp = cp->value();
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a+%ai", tmp.re, tmp.im);
+    return new_ComplexSymbol(buf, tmp.re, tmp.im, getComplexSize(ct));
+  } else if (auto ip = p->toIntParam()) {
+    const types::IntType* it = t->toIntType();
+    return new_IntSymbol(ip->value(), getIntSize(it));
+  } else if (p->isNoneParam()) {
+    return gNone;
+  } else if (auto rp = p->toRealParam()) {
+    char buf[64];
+    // compute the hexadecimal string form for the number
+    snprintf(buf, sizeof(buf), "%a", rp->value());
+
+    if (auto rt = t->toRealType()) {
+      return new_RealSymbol(buf, getRealSize(rt));
+    } else if (auto it = t->toImagType()) {
+      return new_ImagSymbol(buf, getImagSize(it));
+    }
+  } else if (auto sp = p->toStringParam()) {
+    if (t->isStringType()) {
+      return new_StringSymbol(sp->value().c_str());
+    } else if (t->isCStringType()) {
+      return new_CStringSymbol(sp->value().c_str());
+    } else if (t->isBytesType()) {
+      return new_BytesSymbol(sp->value().c_str());
+    }
+  } else if (auto up = p->toUintParam()) {
+    const types::UintType* t = qt.type()->toUintType();
+    return new_UIntSymbol(up->value(), getUintSize(t));
+  }
+
+  INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+
+
+
+void TConverter::noteConvertedVariable(const uast::AstNode* ast, Symbol* sym) {
+
+  if (currentResolvedFunction == nullptr) {
+    moduleScopeVars[ast->id()] = sym;
+  } else {
+    fns[currentResolvedFunction].vars[ast->id()] = sym;
+  }
+}
+
+Expr* TConverter::convertLifetimeClause(const uast::AstNode* node) {
+  astlocMarker markAstLoc(node->id());
+
+  INT_ASSERT(node->isOpCall() || node->isReturn());
+  if (auto opCall = node->toOpCall()) {
+    INT_ASSERT(opCall->numActuals()==2);
+    auto lhsIdent = opCall->actual(0)->toIdentifier();
+    auto rhsIdent = opCall->actual(1)->toIdentifier();
+    INT_ASSERT(lhsIdent && rhsIdent);
+    INT_ASSERT(opCall->op() == USTR("=") ||
+               opCall->op() == USTR("<") ||
+               opCall->op() == USTR(">") ||
+               opCall->op() == USTR("==")||
+               opCall->op() == USTR("<=")||
+               opCall->op() == USTR(">="));
+    Expr* lhs = convertLifetimeIdent(lhsIdent);
+    Expr* rhs = convertLifetimeIdent(rhsIdent);
+    return new CallExpr(opCall->op().c_str(), lhs, rhs);
+  } else if (auto ret = node->toReturn()) {
+    INT_ASSERT(ret->value() && ret->value()->isIdentifier());
+    auto ident = ret->value()->toIdentifier();
+
+    Expr* val = convertLifetimeIdent(ident);
+    return new CallExpr(PRIM_RETURN, val);
+
+  } else {
+    // should not arrive here, or else we missed something
+    CHPL_UNIMPL("Unhandled lifetime clause");
+    return nullptr;
+  }
+}
+
+CallExpr* TConverter::convertLifetimeIdent(const uast::Identifier* node) {
+  astlocMarker markAstLoc(node->id());
+
+  auto ident = node->toIdentifier();
+  INT_ASSERT(ident);
+  CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF, convertExprOrNull(node));
+  return callExpr;
 }
 
 bool TConverter::enter(const Module* node, RV& rv) {
@@ -691,15 +1083,224 @@ void TConverter::exit(const Module* node, RV& rv) {
 bool TConverter::enter(const Function* node, RV& rv) {
   printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  if (node == symbol) {
-    // we are visiting it to convert it, so proceed with the traversal
-    return true;
+
+  if (node != symbol) {
+    // It's a function, but not the one we are working on.
+    // Stop the traversal. This Function will be handled when
+    // convertFunction is called.
+    return false;
+  }
+
+  printf("Really converting Function\n");
+
+  astlocMarker markAstLoc(node->id());
+
+  CHPL_ASSERT(currentResolvedFunction != nullptr);
+
+  FnSymbol* fn = new FnSymbol("_");
+  curBlock->insertAtTail(new DefExpr(fn));
+
+  // note the correspondence between the ResolvedFunction & what it converts to
+  // (for calls, including recursive calls)
+  fns[currentResolvedFunction].fn = fn;
+
+  fn->userString = constructUserString(node);
+
+  attachSymbolAttributes(context, node, fn, moduleFromLibraryFile);
+  attachSymbolVisibility(node, fn);
+
+  if (node->isInline()) {
+    fn->addFlag(FLAG_INLINE);
+  }
+
+  if (node->isOverride()) {
+    fn->addFlag(FLAG_OVERRIDE);
+  }
+
+  if (node->isParenless()) {
+    fn->addFlag(FLAG_NO_PARENS);
+  }
+
+  if (node->isMethod()) {
+    fn->addFlag(FLAG_METHOD);
+    if (node->isPrimaryMethod()) {
+      fn->addFlag(FLAG_METHOD_PRIMARY);
+    }
+  }
+
+  fn->addFlag(FLAG_RESOLVED);
+  if (currentResolvedFunction->signature()->instantiatedFrom() != nullptr) {
+    // generic instantiations are "invisible"
+    fn->addFlag(FLAG_INVISIBLE_FN);
+  }
+
+  IntentTag thisTag = INTENT_BLANK;
+  ArgSymbol* convertedReceiver = nullptr;
+
+  // Add the formals
+  if (node->numFormals() > 0) {
+    for (auto decl : node->formals()) {
+      DefExpr* conv = nullptr;
+
+      // A "normal" formal.
+      if (auto formal = decl->toFormal()) {
+        conv = toDefExpr(convertAST(formal));
+        INT_ASSERT(conv);
+
+        // Special handling for implicit receiver formal.
+        if (formal->name() == USTR("this")) {
+          INT_ASSERT(convertedReceiver == nullptr);
+
+          thisTag = convertFormalIntent(formal->intent());
+
+          convertedReceiver = toArgSymbol(conv->sym);
+          INT_ASSERT(convertedReceiver);
+
+          conv->sym->addFlag(FLAG_ARG_THIS);
+
+          if (thisTag == INTENT_TYPE) {
+            setupTypeIntentArg(convertedReceiver);
+          }
+        }
+
+      // A varargs formal.
+      } else if (auto formal = decl->toVarArgFormal()) {
+        INT_ASSERT(formal->name() != USTR("this"));
+        conv = toDefExpr(convertAST(formal));
+        INT_ASSERT(conv);
+
+      // A tuple decl, where components are formals or tuple decls.
+      /*} else if (auto formal = decl->toTupleDecl()) {
+        auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
+        IntentTag tag = convertFormalIntent(castIntent);
+        BlockStmt* tuple = convertTupleDeclComponents(formal);
+        INT_ASSERT(tuple);
+
+        Expr* type = convertExprOrNull(formal->typeExpression());
+        Expr* init = convertExprOrNull(formal->initExpression());
+
+        // TODO: Move this specialization into visitor? We can just
+        // detect if components are formals.
+        conv = buildTupleArgDefExpr(tag, tuple, type, init);
+        INT_ASSERT(conv);
+      */
+      } else {
+        CHPL_UNIMPL("Unhandled formal");
+      }
+
+      // Attaches def to function's formal list.
+      if (conv) {
+        buildFunctionFormal(fn, conv);
+        // Note the formal is converted so we can wire up SymExprs later
+        noteConvertedVariable(decl, conv->sym);
+      }
+    }
+  }
+
+  const char* convName = convertFunctionNameAndAstr(node);
+
+  // used to be buildFunctionSymbol
+  fn->cname = fn->name = astr(convName);
+
+  if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE &&
+      // ignore things like chpl_taskAddCoStmt
+      !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
+    CHPL_ASSERT(node->id().postOrderId() == -1);
+    fn->cname = astr(node->id().symbolPath());
+  }
+
+  if (convertedReceiver) {
+    fn->thisTag = thisTag;
+    fn->_this = convertedReceiver;
+    fn->setMethod(true);
+    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+    fn->insertFormalAtHead(new DefExpr(mt));
+    if (node->isPrimaryMethod()) {
+      fn->addFlag(FLAG_METHOD_PRIMARY);
+    }
+  }
+
+  if (fn->name == astrDeinit)
+    fn->addFlag(FLAG_DESTRUCTOR);
+
+  if (isAssignOp(node->name())) {
+    fn->addFlag(FLAG_ASSIGNOP);
+  }
+
+  RetTag retTag = convertRetTag(node->returnIntent());
+
+  if (node->kind() == uast::Function::ITER) {
+    fn->addFlag(FLAG_ITERATOR_FN);
+
+  } else if (node->kind() == uast::Function::OPERATOR) {
+    fn->addFlag(FLAG_OPERATOR);
+    if (fn->_this != NULL) {
+      updateOpThisTagOrErr(fn);
+      setupTypeIntentArg(toArgSymbol(fn->_this));
+    }
+
+  } else if (node->isAnonymous()) {
+    fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+    fn->addFlag(FLAG_ANONYMOUS_FN);
+    if (node->kind() == uast::Function::LAMBDA) {
+      fn->addFlag(FLAG_LEGACY_LAMBDA);
+    }
+  }
+  Expr* retType = nullptr;
+  Expr* whereClause = nullptr;
+
+  // TODO: handle runtime types for return type
+
+  Expr* lifetimeConstraints = nullptr;
+  if (node->numLifetimeClauses() > 0) {
+    for (auto clause : node->lifetimeClauses()) {
+      Expr* convertedClause = convertLifetimeClause(clause);
+      INT_ASSERT(convertedClause);
+
+      if (lifetimeConstraints == nullptr) {
+        lifetimeConstraints = convertedClause;
+      } else {
+        lifetimeConstraints =
+          new CallExpr(",", lifetimeConstraints, convertedClause);
+      }
+    }
+    INT_ASSERT(lifetimeConstraints);
+  }
+
+  BlockStmt* body = nullptr;
+  if (node->body()) {
+    body = new BlockStmt();
+  }
+
+  setupFunctionDecl(fn, retTag, retType, node->throws(),
+                    whereClause,
+                    lifetimeConstraints,
+                    body);
+
+  if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
+    Flag linkageFlag = convertFlagForDeclLinkage(node);
+    Expr* linkageExpr = convertExprOrNull(node->linkageName());
+
+    // This thing sets the 'cname' if it's a string literal, attaches
+    // some flags, sets the return type to 'void' if no type is
+    // specified, and attaches a dummy formal for the C name (?).
+    setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
+  }
+
+  fn->retType = convertType(currentResolvedFunction->returnType().type());
+
+  // visit the body to convert
+  if (body) {
+    pushBlock(body);
+    node->body()->traverse(rv);
   }
 
   return false;
 }
 void TConverter::exit(const Function* node, RV& rv) {
   printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  popBlock();
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {

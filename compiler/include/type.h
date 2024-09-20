@@ -529,6 +529,7 @@ class FunctionType final : public Type {
 class TemporaryConversionType final : public Type {
  public:
   chpl::types::QualifiedType qt;
+  explicit TemporaryConversionType(const chpl::types::Type* t);
   explicit TemporaryConversionType(chpl::types::QualifiedType qt);
   void verify()                                         override;
   void accept(AstVisitor* visitor)                      override;
