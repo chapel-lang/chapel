@@ -156,6 +156,36 @@ namespace {
 #endif
   }
 
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidRetAttrs(BaseTy* F, AttributeMask mask) {
+#if HAVE_LLVM_VER >= 140
+    F->removeRetAttrs(mask);
+#else
+    F->removeAttributes(AttributeList::ReturnIndex, mask);
+#endif
+  }
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidRetAttrs(BaseTy* F, Type* type) {
+    removeInvalidRetAttrs(F, AttributeFuncs::typeIncompatible(type));
+  }
+
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidParamAttrs(BaseTy* F, size_t idx, AttributeMask mask) {
+#if HAVE_LLVM_VER >= 140
+    F->removeParamAttrs(idx, mask);
+#else
+    F->removeAttributes(idx+1, mask);
+#endif
+  }
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidParamAttrs(BaseTy* F, size_t idx, Type* type) {
+    removeInvalidParamAttrs(F, idx, AttributeFuncs::typeIncompatible(type));
+  }
+
   // Like the version in BasicBlockUtils but assumes New is already
   // in the block.
   void myReplaceInstWithInst(Instruction* Old, Instruction* New)
@@ -1563,22 +1593,11 @@ bool GlobalToWide::run(Module &M) {
 
         if (update_return) {
           // if it's no longer a pointer, remove pointer-based attributes
-#if HAVE_LLVM_VER >= 140
-          NF->removeRetAttrs(AttributeFuncs::typeIncompatible(RetTy));
-#else
-          NF->removeAttributes(AttributeList::ReturnIndex,
-                               AttributeFuncs::typeIncompatible(RetTy));
-#endif
+          removeInvalidRetAttrs(NF, RetTy);
         }
         if (update_parameters) {
           for (size_t i = 0; i < Params.size(); i++ ) {
-#if HAVE_LLVM_VER >= 140
-            NF->removeParamAttrs(i,
-                                 AttributeFuncs::typeIncompatible(Params[i]));
-#else
-            NF->removeAttributes(i+1,
-                                 AttributeFuncs::typeIncompatible(Params[i]));
-#endif
+            removeInvalidParamAttrs(NF, i, Params[i]);
           }
         }
 
@@ -1626,11 +1645,19 @@ bool GlobalToWide::run(Module &M) {
               trackLLVMValue(New);
               cast<InvokeInst>(New)->setCallingConv(CB->getCallingConv());
               cast<InvokeInst>(New)->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < cast<InvokeInst>(New)->arg_size(); i++) {
+                auto argTy = cast<InvokeInst>(New)->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(cast<InvokeInst>(New), i, argTy);
+              }
             } else {
               New = CallInst::Create(NF, Args, "", Call);
               trackLLVMValue(New);
               cast<CallInst>(New)->setCallingConv(CB->getCallingConv());
               cast<CallInst>(New)->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < cast<CallInst>(New)->arg_size(); i++) {
+                auto argTy = cast<CallInst>(New)->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(cast<CallInst>(New), i, argTy);
+              }
               if (cast<CallInst>(Call)->isTailCall())
                 cast<CallInst>(New)->setTailCall();
             }
