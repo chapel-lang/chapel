@@ -5971,8 +5971,8 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
       _ttcip->amoVisBitmap = bitmapAlloc(chpl_numNodes);
     }
   }
-  DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
-             _ttcip->bound ? " bound" : "", _ttcip - tciTab);
+  DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td] %p",
+             _ttcip->bound ? " bound" : "", _ttcip - tciTab, _ttcip);
   return _ttcip;
 }
 
@@ -6048,7 +6048,7 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
   // Bound contexts stay bound.  We only release non-bound ones.
   //
   if (!tcip->bound) {
-    DBG_PRINTF(DBG_TCIPS, "free tciTab[%td]", tcip - tciTab);
+    DBG_PRINTF(DBG_TCIPS, "free tciTab[%td] %p", tcip - tciTab, tcip);
     forceMemFxVisAllNodes(true, true, -1, tcip);
     atomic_store_bool(&tcip->allocated, false);
   }
