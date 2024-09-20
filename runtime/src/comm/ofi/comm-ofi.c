@@ -1588,6 +1588,13 @@ struct fi_info* findProvInList(struct fi_info* info,
   if (best && (isInProvider("efa", best))) {
     best->tx_attr->inject_size = 0;
   }
+
+  // Set the maximum message size if specified
+
+  best->ep_attr->max_msg_size =
+    chpl_env_rt_get_int("COMM_OFI_MAX_MSG_SIZE",
+                        best->ep_attr->max_msg_size);
+
   return (best == NULL) ? NULL : fi_dupinfo(best);
 }
 
@@ -1707,6 +1714,11 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // endpoints. Until that is fixed, assume it can create as many endpoints
   // as we need.
   size_t epCount = isInProvider("cxi", info) ? SIZE_MAX : dom_attr->ep_cnt;
+
+  // Set the maximum number of endpoints if specified
+
+  epCount = chpl_env_rt_get_int("COMM_OFI_MAX_ENDPOINTS", epCount);
+
   size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
