@@ -1722,12 +1722,13 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
-                         : epCount)
-                        - 1
-                        - numAmHandlers;
+                         : epCount) - 1 - numAmHandlers;
+
   if (envCommConcurrency > 0 && envCommConcurrency < numWorkerTxCtxs) {
     numWorkerTxCtxs = envCommConcurrency;
   }
+
+  numTxCtxs = numWorkerTxCtxs + 1 + numAmHandlers;
 
   return fixedNumThreads <= numWorkerTxCtxs;
 }
@@ -2526,12 +2527,30 @@ void init_ofiEp(void) {
   //
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
+  // 
+  // The logic here is a bit convoluted and can probably be cleaned up. See
+  // the tciTab comment above for more details. For non-scalable endpoints,
+  // we would like to have one transmit context (and therefore one endpoint)
+  // per worker thread, one per AM handler, and one for the process in
+  // general. That will allow us to bind worker threads and AM handlers to
+  // transmit contexts. If we can't get that many endpoints then transmit
+  // contexts will not be bound, which signficantly reduces performance. 
   //
+  // For scalable endpoints we only need one transmit endpoint with enough
+  // transmit contexts to bind them as described above. If max_ep_tx_ctx for
+  // the provider is less than that, then we won't use a scalable endpoint.
+  // If we are using a scalable endpoint we have to set tx_ctx_cnt to tell
+  // the provider how many transmit contexts we want per endpoint.
+  //
+  int desiredTxCtxs;
   tciTabBindTxCtxs = canBindTxCtxs(ofi_info);
   if (tciTabBindTxCtxs) {
-    numTxCtxs = chpl_task_getFixedNumThreads() + numAmHandlers + 1;
+    desiredTxCtxs = chpl_task_getFixedNumThreads() + numAmHandlers + 1;
   } else {
-    numTxCtxs = chpl_task_getMaxPar() + numAmHandlers + 1;
+    desiredTxCtxs = chpl_task_getMaxPar() + numAmHandlers + 1;
+  }
+  if (desiredTxCtxs < numTxCtxs) {
+    numTxCtxs = desiredTxCtxs;
   }
   DBG_PRINTF(DBG_CFG,"tciTabBindTxCtxs %s numTxCtxs %d numAmHandlers %d",
              tciTabBindTxCtxs ? "true" : "false", numTxCtxs, numAmHandlers);
