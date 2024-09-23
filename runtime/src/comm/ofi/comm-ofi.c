@@ -187,8 +187,8 @@ static chpl_bool envInjectAM;           // env: inject AM messages
 static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
 static const char* envExpectedProvider; // env: provider we should select
 
-static int numTxCtxs;
-static int numRxCtxs;
+static size_t numTxCtxs;
+static size_t numRxCtxs;
 
 struct perTxCtxInfo_t {
   chpl_atomic_bool allocated;        // true: in use; false: available
@@ -1231,15 +1231,15 @@ void init_ofi(void) {
              (tciTab[tciTabLen - 1].txCntr == NULL) ? "CQ" : "counter");
   if (ofi_txEpScal != NULL) {
     DBG_PRINTF(DBG_CFG,
-               "per node config: 1 scalable tx ep + %d tx ctx%s (%d bound), "
-               "%d rx ctx%s",
+               "per node config: 1 scalable tx ep + %zu tx ctx%s (%d bound), "
+               "%zu rx ctx%s",
                numTxCtxs, (numTxCtxs == 1) ? "" : "s",
                tciTabBindTxCtxs ? chpl_task_getFixedNumThreads() : 0,
                numRxCtxs, (numRxCtxs == 1) ? "" : "s");
   } else {
     DBG_PRINTF(DBG_CFG,
-               "per node config: %d regular tx ep+ctx%s (%d bound), "
-               "%d rx ctx%s",
+               "per node config: %zu regular tx ep+ctx%s (%d bound), "
+               "%zu rx ctx%s",
                numTxCtxs, (numTxCtxs == 1) ? "" : "s",
                tciTabBindTxCtxs ? chpl_task_getFixedNumThreads() : 0,
                numRxCtxs, (numRxCtxs == 1) ? "" : "s");
