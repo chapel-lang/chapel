@@ -503,7 +503,6 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.declStack = parent.declStack;
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
   ret.typedSignature = parent.typedSignature;
-  ret.allowReceiverScopes = parent.allowReceiverScopes;
 
   return ret;
 }
@@ -650,15 +649,15 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
 }
 
 const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
+  auto fn = symbol->toFunction();
+  if (!fn && parentResolver)
+    return parentResolver->getMethodReceiverScopeHelper();
+
   if (!allowReceiverScopes) {
     // can't use receiver scopes yet
     // (e.g. we are computing the type of 'this' & otherwise that would recurse)
     return nullptr;
   }
-
-  auto fn = symbol->toFunction();
-  if (!fn && parentResolver)
-    return parentResolver->getMethodReceiverScopeHelper();
 
   if (!receiverScopesComputed) {
     receiverScopeHelper = nullptr;
