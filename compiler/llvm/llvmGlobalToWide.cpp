@@ -156,6 +156,10 @@ namespace {
 #endif
   }
 
+  // removeInvalidRetAttrs and removeInvalidParamAttrs are
+  // templated to add overloads for `Function*` and `CallBase*`.
+  // this template will only be active for `Function`, `CallBase`, and
+  // their child classes.
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidRetAttrs(BaseTy* V, Type* type) {
@@ -166,7 +170,6 @@ namespace {
     V->removeAttributes(AttributeList::ReturnIndex, mask);
 #endif
   }
-
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidParamAttrs(BaseTy* V, size_t idx, Type* type) {
@@ -1635,23 +1638,25 @@ bool GlobalToWide::run(Module &M) {
               New = InvokeInst::Create(NF, II->getNormalDest(), II->getUnwindDest(),
                                        Args, "", Call);
               trackLLVMValue(New);
-              cast<InvokeInst>(New)->setCallingConv(CB->getCallingConv());
-              cast<InvokeInst>(New)->setAttributes(CB->getAttributes());
-              for(size_t i = 0; i < cast<InvokeInst>(New)->arg_size(); i++) {
-                auto argTy = cast<InvokeInst>(New)->getArgOperand(i)->getType();
-                removeInvalidParamAttrs(cast<InvokeInst>(New), i, argTy);
+              auto NewII = cast<InvokeInst>(New);
+              NewII->setCallingConv(CB->getCallingConv());
+              NewII->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < NewII->arg_size(); i++) {
+                auto argTy = NewII->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(NewII, i, argTy);
               }
             } else {
               New = CallInst::Create(NF, Args, "", Call);
               trackLLVMValue(New);
-              cast<CallInst>(New)->setCallingConv(CB->getCallingConv());
-              cast<CallInst>(New)->setAttributes(CB->getAttributes());
-              for(size_t i = 0; i < cast<CallInst>(New)->arg_size(); i++) {
-                auto argTy = cast<CallInst>(New)->getArgOperand(i)->getType();
-                removeInvalidParamAttrs(cast<CallInst>(New), i, argTy);
+              auto NewCI = cast<CallInst>(New);
+              NewCI->setCallingConv(CB->getCallingConv());
+              NewCI->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < NewCI->arg_size(); i++) {
+                auto argTy = NewCI->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(NewCI, i, argTy);
               }
               if (cast<CallInst>(Call)->isTailCall())
-                cast<CallInst>(New)->setTailCall();
+                NewCI->setTailCall();
             }
 
             // replace_with wideToGlobal if needed on result
