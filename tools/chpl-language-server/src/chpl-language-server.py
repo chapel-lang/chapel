@@ -355,8 +355,7 @@ class PositionList(Generic[EltT]):
     sort_by_end: bool = False
 
     def sort(self):
-        sort_by = "end" if self.sort_by_end else "start"
-        self.elts.sort(key=lambda x: getattr(self.get_range(x), sort_by))
+        self.elts.sort(key=lambda x: self.get_range(x).start)
 
     def reverse(self):
         self.elts.reverse()
@@ -385,20 +384,11 @@ class PositionList(Generic[EltT]):
         self.elts.clear()
 
     def find(self, pos: Position) -> Optional[EltT]:
-        bisect = bisect_left if self.sort_by_end else bisect_right
-        sort_by = "end" if self.sort_by_end else "start"
-        check_by = "start" if self.sort_by_end else "end"
-        idx = bisect(
-            self.elts, pos, key=lambda x: getattr(self.get_range(x), sort_by)
+        idx = bisect_right(
+            self.elts, pos, key=lambda x: self.get_range(x).start
         )
         idx -= 1
-
-        def cmp(x, y):
-            return x < y if self.sort_by_end else x > y
-
-        if idx < 0 or cmp(
-            pos, getattr(self.get_range(self.elts[idx]), check_by)
-        ):
+        if idx < 0 or pos > self.get_range(self.elts[idx]).end:
             return None
         return self.elts[idx]
 
@@ -677,6 +667,18 @@ class FileInfo:
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
 
+    def _note_scope(self, node: chapel.AstNode):
+        if not node.creates_scope():
+            return
+        s = ScopedNodeAndRange.create(node)
+        if not s:
+            return
+        self.scope_segments.append(s)
+
+    @enter
+    def _enter_AstNode(self, node: chapel.AstNode):
+        self._note_scope(node)
+
     @enter
     def _enter_Identifier(self, node: chapel.Identifier):
         self._note_reference(node)
@@ -691,6 +693,7 @@ class FileInfo:
         _ = node.scope_resolve()
 
         self.def_segments.append(NodeAndRange(node))
+        self._note_scope(node)
 
     @enter
     def _enter_Function(self, node: chapel.Function):
@@ -698,18 +701,17 @@ class FileInfo:
         _ = node.scope_resolve()
 
         self.def_segments.append(NodeAndRange(node))
+        self._note_scope(node)
 
     @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
-        s = ScopedNodeAndRange.create(node)
-        if s:
-            self.scope_segments.append(s)
+        self._note_scope(node)
 
     def get_visible_nodes(
         self, pos: Position
     ) -> List[Tuple[str, chapel.AstNode, int]]:
-        segment = self.scope_segments.find(pos)
+        segment = self.scope_at_position(pos)
         if not segment:
             return []
 
@@ -836,7 +838,6 @@ class FileInfo:
         log(f"Rebuilt index for {self.uri} in {end_time - start_time} seconds")
         self.use_segments.sort()
         self.def_segments.sort()
-        self.scope_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
         # self._collect_possibly_visible_decls(asts)
@@ -927,6 +928,15 @@ class FileInfo:
                 return segment
 
         return None
+
+    def scope_at_position(self, position: Position) -> Optional[ScopedNodeAndRange]:
+        """
+        Given a position, return the scope that contains it.
+        """
+        for s in self.scope_segments.elts:
+            if s.rng.start <= position <= s.rng.end:
+                return s
+
 
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
