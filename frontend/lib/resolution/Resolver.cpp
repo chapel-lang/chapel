@@ -503,13 +503,7 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.declStack = parent.declStack;
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
   ret.typedSignature = parent.typedSignature;
-
-  // Copy method receiver information
   ret.allowReceiverScopes = parent.allowReceiverScopes;
-  ret.receiverScopesComputed = parent.receiverScopesComputed;
-  ret.methodHelperComputed = parent.methodHelperComputed;
-  ret.receiverScopeHelper = parent.receiverScopeHelper;
-  ret.methodLookupHelper = parent.methodLookupHelper;
 
   return ret;
 }
@@ -666,6 +660,7 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     receiverScopeHelper = nullptr;
 
     auto fn = symbol->toFunction();
+    if (!fn && parentResolver) fn = parentResolver->symbol->toFunction();
     if (fn && fn->isMethod()) {
       if (!scopeResolveOnly) {
         if (typedSignature != nullptr) {
