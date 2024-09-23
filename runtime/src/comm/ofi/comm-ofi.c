@@ -361,9 +361,22 @@ static const char* mcmModeNames[] = { "undefined",
 static bool cxiHybridMRMode = false;
 
 
-//
-// Non-blocking handle
-//
+// OFI-specific non-blocking handle implementation 
+
+// This is defined here because it is used in the forward declarations below.
+// The rountines to initialize and destroy handles, nb_handle_init and
+// nb_handle_destroy appear in the RMA section later. The "id" is used to
+// verify that the only the task that created the handle uses it -- this
+// prevents multiple threads from simultaneously accessing the same transmit
+// context if they are not bound to threads. The semantics of
+// chpl_comm_test_nb_complete, chpl_comm_wait_nb_some, and chpl_comm_try_nb
+// some require distinguishing newly-completed handles from those that that
+// have previously commited. The "reported" field is used to distinguish
+// between the two. The "complete" field is set when the operation completes.
+// It is an atomic because the lower-level functions that set it require it.
+// Operations that are too large for the underlying fabric are represented by
+// a linked-list of handles.
+
 typedef struct nb_handle {
   chpl_taskID_t id;          // task that created the handle
   chpl_bool reported;        // operation has been reported as complete
@@ -5497,18 +5510,6 @@ void amCheckLiveness(void) {
 // Interface: RMA
 //
 
-// OFI-specific non-blocking handle implementation 
-
-// XXX update
-
-// Non-blocking operations require bound endpoints, to avoid having a handle
-// for a pending operation held by one thread, while the endpoint is in use
-// by a different thread. Bound endpoints are the norm, so it's easiest to
-// just disallow non-blocking operations on non-bound endpoints. This allows
-// the "completed" flag to be a simple boolean. The "complete" flags for the
-// sub-operations are booleans because the lower-level code that uses them
-// does not assume bound endpoints.
-
 static inline 
 void nb_handle_init(nb_handle_t h) {
   h->id = chpl_task_getId();
@@ -6320,7 +6321,6 @@ void rmaPutFn_msgOrd(nb_handle_t handle, void* myAddr, void* mrDesc,
       && size <= ofi_info->tx_attr->inject_size
       && envInjectRMA) {
     //
-    // XXX update this
     // Special case: write injection has the least latency.  We can use
     // that if this PUT's size doesn't exceed the injection size limit
     // and we have a bound tx context so we can delay forcing the
