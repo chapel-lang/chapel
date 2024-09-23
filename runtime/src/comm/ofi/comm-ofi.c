@@ -5745,6 +5745,7 @@ void chpl_comm_ensure_progress(void) {
     // to begin with.
     CHK_TRUE((tcip = tciAlloc()) != NULL);
     (*tcip->ensureProgressFn)(tcip);
+    tciFree(tcip);
   }
 }
 
