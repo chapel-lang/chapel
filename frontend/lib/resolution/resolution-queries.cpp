@@ -3675,6 +3675,81 @@ resolveIteratorTheseCall(Context* context,
 
     auto c = resolveGeneratedCall(context, astForErr, genCi, inScopes);
     return c;
+  } else if (auto loopIt = it->toLoopExprIteratorType()) {
+    // When resolving the leader iterator of a zippered loop expression,
+    // we only resolve the leader of its first iterand. On the other hand,
+    // we resolve all follower iterators of the loop expression.
+
+    static int counter = 0;
+    counter++;
+    if (counter > 10) debuggerBreakHere();
+
+    bool leaderOnly = false;
+    std::vector<QualifiedType> receiverTypes;
+    if (loopIt->isZippered()) {
+      auto receiverQt = loopIt->iterand();
+      CHPL_ASSERT(receiverQt.type()->toTupleType());
+      auto tupleType = receiverQt.type()->toTupleType();
+
+      for (int i = 0; i < tupleType->numElements(); i++) {
+        receiverTypes.push_back(tupleType->elementType(i));
+      }
+    } else {
+      receiverTypes.push_back(loopIt->iterand());
+    }
+
+    for (auto actual : ci.actuals()) {
+      if (actual.byName() == USTR("tag")) {
+        if (auto paramValue = actual.type().param()) {
+          if (auto enumValue = paramValue->toEnumParam()) {
+            leaderOnly = enumValue->value().str == "leader";
+          }
+        }
+        break;
+      }
+    }
+
+    bool succeeded = true;
+    std::vector<QualifiedType> yieldedTypes;
+    for (auto receiverType : receiverTypes) {
+      std::vector<CallInfoActual> actuals;
+      actuals.emplace_back(receiverType, USTR("this"));
+      for (int i = 1; i < ci.numActuals(); i++) {
+        actuals.push_back(ci.actual(i));
+      }
+
+      auto genCi = CallInfo(USTR("these"),
+                            receiverType,
+                            /* isMethodCall */ true,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ false,
+                            std::move(actuals));
+
+      auto c = resolveGeneratedCall(context, astForErr, genCi, inScopes);
+
+      if (c.exprType().isUnknownOrErroneous() ||
+          !c.exprType().type()->isIteratorType()) {
+        succeeded = false;
+        break;
+      }
+
+      if (leaderOnly) return c;
+
+      yieldedTypes.push_back(c.exprType().type()->toIteratorType()->yieldType());
+    }
+
+    if (!succeeded) {
+      return empty;
+    }
+
+    auto yieldedTuple = TupleType::getQualifiedTuple(context, yieldedTypes);
+    auto iteratorType =
+      LoopExprIteratorType::get(context,
+                                loopIt->isZippered(),
+                                loopIt->iterand(),
+                                loopIt->sourceLocation(),
+                                QualifiedType(QualifiedType::VAR, yieldedTuple));
+    return CallResolutionResult(QualifiedType(QualifiedType::VAR, iteratorType));
   }
   return empty;
 }
