@@ -656,11 +656,13 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     return nullptr;
   }
 
+  auto fn = symbol->toFunction();
+  if (!fn && parentResolver)
+    return parentResolver->getMethodReceiverScopeHelper();
+
   if (!receiverScopesComputed) {
     receiverScopeHelper = nullptr;
 
-    auto fn = symbol->toFunction();
-    if (!fn && parentResolver) fn = parentResolver->symbol->toFunction();
     if (fn && fn->isMethod()) {
       if (!scopeResolveOnly) {
         if (typedSignature != nullptr) {
