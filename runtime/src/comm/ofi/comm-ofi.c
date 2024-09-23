@@ -8430,7 +8430,7 @@ void ofiErrReport(const char* exprStr, int retVal, const char* errStr) {
       "OFI error: %s: %s:\n"
       "  The program has reached the limit on the number of files it can\n"
       "  have open at once.  This may be because the product of the number\n"
-      "  of locales (%d) and the communication concurrency (roughly %d) is\n"
+      "  of locales (%d) and the communication concurrency (roughly %zu) is\n"
       "  a significant fraction of the open-file limit (%ld).  If so,\n"
       "  either setting CHPL_RT_COMM_CONCURRENCY to decrease communication\n"
       "  concurrency or running on fewer locales may allow the program to\n"
