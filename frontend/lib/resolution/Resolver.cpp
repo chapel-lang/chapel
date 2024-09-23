@@ -504,6 +504,13 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
   ret.typedSignature = parent.typedSignature;
 
+  // Copy method receiver information
+  ret.allowReceiverScopes = parent.allowReceiverScopes;
+  ret.receiverScopesComputed = parent.receiverScopesComputed;
+  ret.methodHelperComputed = parent.methodHelperComputed;
+  ret.receiverScopeHelper = parent.receiverScopeHelper;
+  ret.methodLookupHelper = parent.methodLookupHelper;
+
   return ret;
 }
 
