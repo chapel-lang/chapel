@@ -711,10 +711,6 @@ class FileInfo:
     def get_visible_nodes(
         self, pos: Position
     ) -> List[Tuple[str, chapel.AstNode, int]]:
-        segment = self.scope_at_position(pos)
-        if not segment:
-            return []
-
         def visible_nodes_for_scope(
             name: str, nodes: List[chapel.AstNode], in_bundled_module: bool
         ) -> Optional[Tuple[str, chapel.AstNode]]:
@@ -760,23 +756,40 @@ class FileInfo:
             # overloaded functions.
             return name, documented_nodes[0]
 
-        visible_nodes = []
-        file = segment.node.location().path()
-        in_bundled_module = self.context.context.is_bundled_path(file)
-        for depth, scope in enumerate(segment.scopes):
-            for name, nodes in scope.visible_nodes():
-                visible_node = visible_nodes_for_scope(
-                    name, nodes, in_bundled_module
-                )
-                if visible_node:
-                    d = depth
-                    visible_path = visible_node[1].location().path()
-                    # if from a bundled path, increase the depth by 1
-                    d += int(self.context.context.is_bundled_path(visible_path))
-                    # if from another file, increase the depth by 1
-                    d += int(visible_path != file)
+        def visible_nodes_for_scopes(node: chapel.AstNode, scopes: List[chapel.Scope]):
+            visible_nodes = []
+            file = node.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(file)
+            for depth, scope in enumerate(scopes):
+                for name, nodes in scope.visible_nodes():
+                    visible_node = visible_nodes_for_scope(
+                        name, nodes, in_bundled_module
+                    )
+                    if visible_node:
+                        d = depth
+                        visible_path = visible_node[1].location().path()
+                        # if from a bundled path, increase the depth by 1
+                        d += int(self.context.context.is_bundled_path(visible_path))
+                        # if from another file, increase the depth by 1
+                        d += int(visible_path != file)
 
-                    visible_nodes.append((visible_node[0], visible_node[1], d))
+                        visible_nodes.append((visible_node[0], visible_node[1], d))
+            return visible_nodes
+
+        visible_nodes = []
+        segment = self.scope_at_position(pos)
+
+        # node_and_scopes: List[Tuple[chapel.AstNode, List[chapel.Scope]]] = []
+        if segment:
+            visible_nodes.extend(visible_nodes_for_scopes(segment.node, segment.scopes))
+        else:
+            # no segment found, use the top level nodes
+            for a in self.get_asts():
+                if isinstance(a, chapel.Comment):
+                    continue
+                s = a.scope()
+                if s:
+                    visible_nodes.extend(visible_nodes_for_scopes(a, [s]))
 
         return visible_nodes
 
@@ -1809,6 +1822,7 @@ def run_lsp():
         import time
         start_time = time.time()
         for name, node, depth in fi.get_visible_nodes(params.position):
+            # log(node)
             if not isinstance(node, chapel.NamedDecl):
                 continue
             # if name is already suggested, skip it
