@@ -2723,6 +2723,7 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
 
 MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
+      bool resolvingCalledIdent,
       ParenlessOverloadInfo& outParenlessOverloadInfo) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
@@ -2736,7 +2737,6 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                                       IdAndFlags::createForBuiltinVar());
   }
 
-  bool resolvingCalledIdent = nearestCalledExpression() == ident;
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -2992,10 +2992,28 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   }
 
   // lookupIdentifier reports any errors that are needed
-  auto parenlessInfo = ParenlessOverloadInfo();
-  auto ids = lookupIdentifier(ident, parenlessInfo);
-
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
+  auto parenlessInfo = ParenlessOverloadInfo();
+  auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
+
+  // If we looked up a called identifier and found ambiguity between variables
+  // only, resolve as an implicit 'this' call on the innermost variable.
+  // TODO: replace this hacky solution with an adjustment to the scope
+  // resolution process
+  if (resolvingCalledIdent && ids.numIds() > 1) {
+    bool onlyVars = true;
+    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
+      if (!parsing::idToAst(context, idIt.curIdAndFlags().id())
+               ->isVarLikeDecl()) {
+        onlyVars = false;
+        break;
+      }
+    }
+    if (onlyVars) {
+      ids.truncate(1);
+    }
+  }
+
   // TODO: these errors should be enabled for scope resolution
   // but for now, they are off, as a temporary measure to enable
   // the production compiler handle these cases. To enable this,
@@ -3042,7 +3060,6 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
       if (!redeclarations.isEmpty()) {
-        bool resolvingCalledIdent = nearestCalledExpression() == ident;
         LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
         if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
         issueAmbiguityErrorIfNeeded(ident, inScope, config);
