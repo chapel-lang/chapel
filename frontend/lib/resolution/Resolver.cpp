@@ -658,7 +658,7 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
           if (auto ct = t->toCompositeType()) {
             return ct->id() != targetParentSymbolId;
           }
-        } else {
+        } else if (!rv.scopeResolveOnly) {
           CHPL_UNIMPL("detecting if field use in nested method is outer "
                       "variable without 'methodReceiverType()'");
           return false;
