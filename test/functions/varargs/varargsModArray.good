@@ -1,0 +1,4 @@
+varargsModArray.chpl:2: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'args'
+args.type     = ([domain(1,int(64),one)] int(64),real(64),string)
+args (before) = (1 2 3, 2.3, four)
+args (after) = (10 2 3, 2.3, four)
