@@ -2847,75 +2847,86 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   return m;
 }
 
-static void
-checkForErrorModuleAsVariable(Context* context, const ID& idNode, const ID& toId) {
-  auto idTag = parsing::idToTag(context, toId);
+static bool
+checkForErrorModuleAsVariable(Context* context, const AstNode* node,
+                              const ID& target) {
+  auto targetTag = parsing::idToTag(context, target);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
-  if (asttags::isModule(idTag)) {
-    auto parentId = parsing::idToParentId(context, idNode);
-    if (!parentId.isEmpty()) {
-      auto parentTag = parsing::idToTag(context, parentId);
-      if (asttags::isUse(parentTag) || asttags::isImport(parentTag) ||
-          asttags::isAs(parentTag) || asttags::isVisibilityClause(parentTag) ||
-          asttags::isDot(parentTag)) {
+  if (asttags::isModule(targetTag)) {
+    if (auto nodeParentId = parsing::idToParentId(context, node->id())) {
+      auto nodeParentTag = parsing::idToTag(context, nodeParentId);
+      if (asttags::isUse(nodeParentTag) ||
+          asttags::isImport(nodeParentTag) ||
+          asttags::isAs(nodeParentTag) ||
+          asttags::isVisibilityClause(nodeParentTag) ||
+          asttags::isDot(nodeParentTag)) {
         // OK
       } else {
-        auto toAst = parsing::idToAst(context, toId);
-        auto mod = toAst->toModule();
-        auto parentAst = parsing::idToAst(context, parentId);
-        auto node = parsing::idToAst(context, toId);
-        CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
+        auto targetAst = parsing::idToAst(context, target);
+        auto mod = targetAst->toModule();
+        auto nodeParentAst = parsing::idToAst(context, nodeParentId);
+        CHPL_REPORT(context, ModuleAsVariable, node, nodeParentAst, mod);
+        return true;
       }
     }
   }
+  return false;
 }
 
-static void
-checkForErrorNestedClassFieldRef(Context* context, const ID& idNode,
-                                 const ID& toId) {
-  auto idTag = parsing::idToTag(context, toId);
+static bool
+checkForErrorNestedClassFieldRef(Context* context, const AstNode* node,
+                                 const ID& target) {
+  auto targetTag = parsing::idToTag(context, target);
 
   // If we're in a nested class, it shouldn't refer to an outer class' field.
-  auto parentId =
-    Builder::astTagIndicatesNewIdScope(idTag) ? toId : toId.parentSymbolId(context);
-  auto parentTag = parsing::idToTag(context, parentId);
-  if (asttags::isAggregateDecl(parentTag) &&
-      parentId.contains(idNode) &&
-      parentId != toId /* It's okay to refer to the record itself */) {
+  auto targetParentId = !Builder::astTagIndicatesNewIdScope(targetTag)
+          ? target.parentSymbolId(context)
+          : target;
+  auto targetParentTag = parsing::idToTag(context, targetParentId);
+
+  if (asttags::isAggregateDecl(targetParentTag) &&
+      targetParentId.contains(node->id()) &&
+      /* It's okay to refer to the record itself */
+      targetParentId != target) {
+
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
-    auto searchId = idNode.parentSymbolId(context);
-    while (!searchId.isEmpty()) {
-      if (searchId == parentId) {
+    auto searchId = node->id().parentSymbolId(context);
+    while (searchId) {
+      if (searchId == targetParentId) {
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
       } else if (asttags::isTypeDecl(parsing::idToTag(context, searchId))) {
-        auto parentAst = parsing::idToAst(context, parentId);
+        auto targetParentAst = parsing::idToAst(context, targetParentId);
         auto searchAst = parsing::idToAst(context, searchId);
         auto searchAD = searchAst->toTypeDecl();
-        auto node = parsing::idToAst(context, idNode);
         // It's an error!
-        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toTypeDecl(),
-                    searchAD, node, toId);
-        return;
+        CHPL_REPORT(context, NestedClassFieldRef,
+                    targetParentAst->toTypeDecl(),
+                    searchAD, node, target);
+        return true;
       }
 
       // Move on to the surrounding ID.
       searchId = searchId.parentSymbolId(context);
     }
   }
+  return false;
 }
 
 static const bool&
-checkForIdentifierTargetErrorsQuery(Context* context, ID idNode, ID toId) {
-  QUERY_BEGIN(checkForIdentifierTargetErrorsQuery, context, idNode, toId);
+checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
+  QUERY_BEGIN(checkForIdentifierTargetErrorsQuery, context, nodeId, targetId);
   bool ret = false;
 
-  checkForErrorModuleAsVariable(context, idNode, toId);
-  checkForErrorNestedClassFieldRef(context, idNode, toId);
+  auto nodeAst = parsing::idToAst(context, nodeId);
+
+  // Use bitwise-OR here to avoid short-circuiting.
+  ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
+  ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
 
   return QUERY_END(ret);
 }
@@ -2924,9 +2935,10 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const AstNode* node,
                                   const ID& toId) {
   r.setToId(toId);
-  if (toId.isEmpty()) return;
-  if (toId.isFabricatedId()) return;
-  checkForIdentifierTargetErrorsQuery(context, node->id(), toId);
+  if (!toId || toId.isFabricatedId()) return;
+  auto error = checkForIdentifierTargetErrorsQuery(context, node->id(), toId);
+  // If there was an error, clear the target to prevent false lookups.
+  if (error) r.setToId(ID());
 }
 
 void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
