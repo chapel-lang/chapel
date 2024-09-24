@@ -15,7 +15,7 @@ build_image() {
   # Remove any existing image with the tag before building docker image
   docker image rm --force $imageName
 
-  docker build --push . -t $imageName
+  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $imageName
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
