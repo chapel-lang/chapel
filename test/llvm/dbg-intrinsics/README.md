@@ -1,4 +1,4 @@
-# dbg-records tests
+# dbg-intrinsics tests
 
 Starting with LLVM 19, debug information is represented using a new format
 called debug records. This replaces the previous debug intrinsics. This makes
