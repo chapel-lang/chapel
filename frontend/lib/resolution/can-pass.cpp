@@ -877,6 +877,18 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     return instantiate();
   }
 
+  // TODO: Should we move this to the section below and have it call canPassSubtypeOrBorrowing?
+  // TODO: There may be cases for nilType that are not covered
+  // this is to allow instantiating 'class?' type with nil
+  if (auto cls = formalT->toClassType()) {
+    if (auto mt = cls->manageableType()) {
+      if (mt->isAnyClassType()) {
+        if (cls->decorator().isNilable() && actualT->isNilType())
+          return instantiate();
+      }
+    }
+  }
+
   // TODO: check for constrained generic types
 
   if (auto actualCt = actualT->toClassType()) {
