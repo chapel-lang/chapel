@@ -4952,10 +4952,6 @@ inline proc fileWriter.unlock() {
   }
 }
 
-@chpldoc.nodoc
-@deprecated("'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release")
-config param fileOffsetWithoutLocking = false;
-
 /*
    Return the current offset of a :record:`fileReader`.
 

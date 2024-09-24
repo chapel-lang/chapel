@@ -1,2 +1,0 @@
-warning: 'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release
-note: 'fileOffsetWithoutLocking' was set via a compiler flag
