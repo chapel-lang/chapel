@@ -823,30 +823,61 @@ static void test16() {
 }
 
 static void test17() {
-  // Test resolving parenless calls from within param for loop.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
+  // Test resolving method calls from within param for loop.
 
-  std::string program = R"""(
-      class Foo {
-        proc asdf do return 3;
+  // Parenful
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-        proc doSomething() {
-          for param i in 0..2 do
-            return asdf;
+    std::string program = R"""(
+        class Foo {
+          proc asdf() do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf();
+          }
         }
-      }
 
-      var f = new Foo();
-      var x = f.doSomething();
-      )""";
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
 
-  QualifiedType initType = resolveTypeOfXInit(context, program);
-  assert(initType.type());
-  assert(initType.type()->isIntType());
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
 
-  assert(guard.realizeErrors() == 0);
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Parenless
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf;
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
 }
 
 int main() {
