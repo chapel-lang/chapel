@@ -159,12 +159,12 @@ module EpochManager {
         do {
           var oldHead = _head.readABA();
           _node.next = oldHead.getObject();
-        } while(!_head.compareAndSwapABA(oldHead, _node));
+        } while !_head.compareAndSwapABA(oldHead, _node);
       }
 
       iter these() : objType {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           yield ptr!.val!;
           ptr = ptr!.next;
         }
@@ -172,7 +172,7 @@ module EpochManager {
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var next = ptr!.next;
           delete ptr;
           ptr = next;
@@ -228,11 +228,11 @@ module EpochManager {
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
-          if (n == nil) {
+          if n == nil {
             return new unmanaged Node(objType);
           }
           var newTop = n!.freeListNext;
-        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
+        } while !_freeListHead.compareAndSwapABA(oldTop, newTop);
         n!.next.write(nil);
         n!.freeListNext = nil;
         return n!;
@@ -243,16 +243,16 @@ module EpochManager {
         n.val = newObj;
 
         // Now enqueue
-        while (true) {
+        while true {
           var tail = _tail.readABA();
           var next = tail.next.readABA();
           var next_node = next.getObject();
           var curr_tail = _tail.readABA();
 
           // Check if tail and next are consistent
-          if (tail == curr_tail) {
-            if (next_node == nil) {
-              if (curr_tail.next.compareAndSwapABA(next, n)) {
+          if tail == curr_tail {
+            if next_node == nil {
+              if curr_tail.next.compareAndSwapABA(next, n) {
 
                 // Enqueue is done. Try to swing Tail to the inserted node
                 _tail.compareAndSwapABA(curr_tail, n);
@@ -267,7 +267,7 @@ module EpochManager {
       }
 
       proc dequeue() : objType? {
-        while (true) {
+        while true {
           var head = _head.readABA();
           var head_node = head.getObject();
           var curr_tail = _tail.readABA();
@@ -276,15 +276,15 @@ module EpochManager {
           var next_node = next.getObject();
           var curr_head = _head.readABA();
 
-          if (head == curr_head) {
-            if (head_node == tail_node) {
-              if (next_node == nil) then
+          if head == curr_head {
+            if head_node == tail_node {
+              if next_node == nil then
                 return nil;
               _tail.compareAndSwapABA(curr_tail, next_node);
             }
             else {
               var ret_val = next_node!.val;
-              if (_head.compareAndSwapABA(curr_head, next_node)) {
+              if _head.compareAndSwapABA(curr_head, next_node) {
                 retireNode(head_node!);
                 return ret_val;
               }
@@ -314,14 +314,14 @@ module EpochManager {
 
       proc peek() : objType {
         var actual_head = _head.read().next.read();
-        if (actual_head != nil) then
+        if actual_head != nil then
           return actual_head.val;
         return nil;
       }
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var tmp = ptr!.next.read();
           if delete_val then delete ptr!.val;
           delete ptr;
@@ -329,7 +329,7 @@ module EpochManager {
         }
 
         ptr = _freeListHead.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var head = ptr!.freeListNext;
           delete ptr;
           ptr = head;
@@ -374,11 +374,11 @@ module EpochManager {
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
-          if (n == nil) {
+          if n == nil {
             return new unmanaged Node(obj);
           }
           var newTop = n!.next;
-        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
+        } while !_freeListHead.compareAndSwapABA(oldTop, newTop);
         n!.val = obj;
         return n!;
       }
@@ -388,7 +388,7 @@ module EpochManager {
         do {
           var oldTop = _freeListHead.readABA();
           nextObj.next = oldTop.getObject();
-        } while (!_freeListHead.compareAndSwapABA(oldTop, nextObj));
+        } while !_freeListHead.compareAndSwapABA(oldTop, nextObj);
       }
 
       proc pop() {
@@ -397,7 +397,14 @@ module EpochManager {
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
+          var next = ptr!.next;
+          delete ptr!.val;
+          delete ptr;
+          ptr = next;
+        }
+        ptr = _freeListHead.read();
+        while ptr != nil {
           var next = ptr!.next;
           delete ptr!.val;
           delete ptr;
@@ -700,6 +707,7 @@ module EpochManager {
       Reclaim all objects
     */
     proc deinit() {
+      [tok in allocated_list] delete tok;
       delete allocated_list;
       delete free_list;
       delete limbo_list;
@@ -904,6 +912,7 @@ module EpochManager {
       // Delete locale-private data
       delete limbo_list;
       delete free_list;
+      [tok in allocated_list] delete tok;
       delete allocated_list;
       delete objsToDelete;
 
@@ -1049,7 +1058,7 @@ module EpochManager {
           var head = limbo.pop();
 
           // Prepare work to be scattered by locale it is intended for.
-          while (head != nil) {
+          while head != nil {
             var obj = head!.val;
             var next = head!.next;
             _this.objsToDelete[obj.locale.id].append(obj!);
