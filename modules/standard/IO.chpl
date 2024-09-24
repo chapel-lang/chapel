@@ -7171,6 +7171,8 @@ iter fileReader.lines(
       const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
       coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
         const locBounds = byteOffsets[lid]..byteOffsets[lid+1];
+
+        // if byteOffsets looks like [0, 10, 10, 14, 21], then don't try to read 10..10 (locale 1)
         if locBounds.size > 1 {
           const locFile = try! open(fpath, ioMode.r),
                 nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
