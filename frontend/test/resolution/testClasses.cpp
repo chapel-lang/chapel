@@ -155,11 +155,44 @@ static void test3() {
   assert(qt.type()->toIntType()->bitwidth() == 64);
 }
 
+// Test resolving dependently-typed field usage in method body
+static void test4() {
+  printf("test4\n");
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class Bar {
+      param rank : int;
+      var myTup : rank*int;
+
+      proc getSomething() {
+        return myTup;
+      }
+    }
+
+    var b = new Bar(2);
+    var x = b.getSomething();
+    )""";
+
+  auto m = parseModule(context, program);
+  auto r = resolveModule(context, m->id());
+
+  auto x = findVariable(m, "x");
+  auto qt = r.byAst(x).type();
+  assert(qt.type()->isTupleType());
+  assert(qt.type()->toTupleType()->numElements() == 2);
+  assert(qt.type()->toTupleType()->starType().type());
+  assert(qt.type()->toTupleType()->starType().type()->isIntType());
+}
 
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

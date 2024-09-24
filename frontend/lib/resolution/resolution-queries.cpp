@@ -1637,15 +1637,12 @@ QualifiedType getInstantiationType(Context* context,
 
       // which BasicClassType to use?
       const BasicClassType* bct;
-      if (auto formalBct = formalCt->basicClassType()) {
+      auto formalBct = formalCt->basicClassType();
+      if (formalBct && getTypeGenericity(context, formalBct) == Type::CONCRETE) {
         bct = formalBct;
       } else {
         CHPL_ASSERT(formalCt->manageableType()->toManageableType());
         bct = actualCt->basicClassType();
-      }
-      auto g = getTypeGenericity(context, bct);
-      if (g != Type::CONCRETE) {
-        CHPL_UNIMPL("instantiate generic class formal");
       }
 
       // now construct the ClassType
