@@ -49,7 +49,7 @@ the image, and writes it back out to a new JPG file.
    var arr = readImage("input.png", imageType.png);
    const fmt = (rgbColor.red, rgbColor.green, rgbColor.blue);
    var colors = pixelToColor(arr, format=fmt);
-   [x in colors] c(1) = 0;
+   [c in colors] c(1) = 0;
    arr = colorToPixel(colors, format=fmt);
    writeImage("output.jpg", imageType.jpg, arr);
 
