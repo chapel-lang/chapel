@@ -81,7 +81,7 @@ int API_FUNC qthread_queue_join(qthread_queue_t q)
 {
     assert(q);
     qthread_t *me = qthread_internal_self();
-    me->thread_state           = QTHREAD_STATE_QUEUE;
+    atomic_store_explicit(&me->thread_state, QTHREAD_STATE_QUEUE, memory_order_relaxed);
     me->rdata->blockedon.queue = q;
     qthread_back_to_master(me);
     return QTHREAD_SUCCESS;
@@ -114,8 +114,8 @@ static void qthread_queue_internal_launch(qthread_t          *t,
 {
     assert(t);
     assert(cur_shep);
-    t->thread_state = QTHREAD_STATE_RUNNING;
-    if ((t->flags & QTHREAD_UNSTEALABLE) && (t->rdata->shepherd_ptr != cur_shep)) {
+    atomic_store_explicit(&t->thread_state, QTHREAD_STATE_RUNNING, memory_order_relaxed);
+    if ((atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_UNSTEALABLE) && (t->rdata->shepherd_ptr != cur_shep)) {
         qthread_debug(FEB_DETAILS, "qthread(%p:%i) enqueueing in target_shep's ready queue (%p:%i)\n", t, (int)t->thread_id, t->rdata->shepherd_ptr, (int)t->rdata->shepherd_ptr->shepherd_id);
         qt_threadqueue_enqueue(t->rdata->shepherd_ptr->ready, t);
     } else

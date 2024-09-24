@@ -25,14 +25,24 @@
   constructed from another sortedMap, the new sortedMap will inherit
   the parallel safety mode of its originating sortedMap.
 
-  SortedSet supports searching for a certain key, insertion and deletion in O(logN).
+  SortedMap supports searching for a certain key, insertion and deletion in O(logN).
 */
 module SortedMap {
   import ChapelLocks;
   private use HaltWrappers;
   private use SortedSet;
   private use IO;
-  public use Sort only defaultComparator;
+  import Sort.{relativeComparator};
+  public use Sort only DefaultComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only defaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
 
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc
@@ -96,7 +106,7 @@ module SortedMap {
     param parSafe = false;
 
     /* The comparator used to compare keys */
-    var comparator: record = defaultComparator;
+    var comparator: record = new DefaultComparator();
 
     // TODO: Maybe we want something like record optional for this?
     @chpldoc.nodoc
@@ -124,7 +134,7 @@ module SortedMap {
     }
 
     @chpldoc.nodoc
-    record _keyComparator {
+    record _keyComparator: relativeComparator {
       var comparator: record;
       proc compare(a, b) {
         return comparator.compare(a[0], b[0]);
@@ -141,7 +151,7 @@ module SortedMap {
       :arg comparator: The comparator used to compare keys.
     */
     proc init(type keyType, type valType, param parSafe = false,
-              comparator: record = defaultComparator) {
+              comparator: record = new DefaultComparator()) {
       _checkKeyType(keyType);
       _checkValType(valType);
 

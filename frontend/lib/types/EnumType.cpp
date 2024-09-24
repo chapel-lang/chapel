@@ -64,6 +64,38 @@ const EnumType* EnumType::getBoundKindType(Context* context) {
   return EnumType::get(context, id, name);
 }
 
+const EnumType* EnumType::getIterKindType(Context* context) {
+  auto name = UniqueString::get(context, "iterKind");
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelBase", "iterKind");
+  return EnumType::get(context, id, name);
+}
+
+static const std::map<UniqueString, QualifiedType>&
+getParamConstantsMapQuery(Context* context, const EnumType* et) {
+  QUERY_BEGIN(getParamConstantsMapQuery, context, et);
+  std::map<UniqueString, QualifiedType> ret;
+
+  auto ast = parsing::idToAst(context, et->id());
+  if (auto e = ast->toEnum()) {
+    for (auto elem : e->enumElements()) {
+      auto param = Param::getEnumParam(context, elem->id());
+      auto k = UniqueString::get(context, elem->name().str());
+      QualifiedType v(QualifiedType::PARAM, et, param);
+      ret.insert({std::move(k), std::move(v)});
+    }
+  }
+
+  return QUERY_END(ret);
+}
+
+const std::map<UniqueString, QualifiedType>*
+EnumType::getParamConstantsMapOrNull(Context* context, const EnumType* et) {
+  if (!et || !et->id()) return nullptr;
+  auto ast = parsing::idToAst(context, et->id());
+  if (!ast || !ast->isEnum()) return nullptr;
+  return &getParamConstantsMapQuery(context, et);
+}
+
 void EnumType::stringify(std::ostream& ss, StringifyKind stringKind) const {
   name().stringify(ss, stringKind);
 }

@@ -308,7 +308,7 @@ module BigInteger {
         ret = mpz_sizeinbase(this.mpz, base_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = mpz_sizeinbase(this.mpz, base_);
@@ -333,7 +333,7 @@ module BigInteger {
         ret = this.mpz[0];
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = this.mpz[0];
@@ -378,7 +378,7 @@ module BigInteger {
         exp = tmp;
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmp: c_long;
@@ -401,7 +401,7 @@ module BigInteger {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
           try! ret = string.createAdoptingBuffer(tmpvar);
@@ -480,7 +480,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_si(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_si(x.mpz);
@@ -504,7 +504,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_ui(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_ui(x.mpz);
@@ -533,7 +533,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_d(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_d(x.mpz);
@@ -787,7 +787,7 @@ module BigInteger {
         mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
 
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
@@ -1135,8 +1135,8 @@ module BigInteger {
       mpz_set(b.mpz, t.mpz);
 
     } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_none);
+      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_none);
 
       const aTmp = a;
 
@@ -1302,7 +1302,7 @@ module BigInteger {
       const denom_ = denom;
       mpz_divexact(result.mpz, numer_.mpz, denom_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -1527,7 +1527,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm(result.mpz, base_.mpz, exp_.mpz, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const exp_ = exp;
@@ -1564,7 +1564,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm_ui(result.mpz, base_.mpz, exp, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const mod_  = mod;
@@ -1624,7 +1624,7 @@ module BigInteger {
         const base_ = base;
         powNegativeExpHelper(result, base_, exp);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const base_ = base;
           powNegativeExpHelper(result, base_, exp);
@@ -1642,7 +1642,7 @@ module BigInteger {
       const base_ = base;
       mpz_pow_ui(result.mpz, base_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         mpz_pow_ui(result.mpz, base_.mpz, exp_);
@@ -1675,7 +1675,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_ui_pow_ui(result.mpz, base_, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_ui_pow_ui(result.mpz, base_, exp_);
       }
@@ -1706,7 +1706,7 @@ module BigInteger {
       const x_ = x;
       ret = mpz_root(result.mpz, x_.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         ret = mpz_root(result.mpz, x_.mpz, n_);
@@ -1742,7 +1742,7 @@ module BigInteger {
       mpz_rootrem(result.mpz, remain_.mpz, x_.mpz, n_);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_: bigint;
         const x_ = x;
@@ -1771,7 +1771,7 @@ module BigInteger {
       const x_ = x;
       mpz_sqrt(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sqrt(result.mpz, x_.mpz);
@@ -1806,7 +1806,7 @@ module BigInteger {
       mpz_sqrtrem(result.mpz, remain_.mpz, x_.mpz);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_ : bigint;
         const x_ = x;
@@ -1951,7 +1951,7 @@ module BigInteger {
       const x_ = x;
       mpz_nextprime(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_nextprime(result.mpz, x_.mpz);
@@ -1981,7 +1981,7 @@ module BigInteger {
       const b_ = b;
       mpz_gcd(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -2011,7 +2011,7 @@ module BigInteger {
       const a_ = a;
       mpz_gcd_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_gcd_ui(result.mpz, a_.mpz, b_);
@@ -2056,7 +2056,7 @@ module BigInteger {
       s = s_;
       t = t_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var s_ : bigint;
         var t_ : bigint;
@@ -2091,7 +2091,7 @@ module BigInteger {
       const b_ = b;
       mpz_lcm(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -2120,7 +2120,7 @@ module BigInteger {
       const a_ = a;
       mpz_lcm_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_lcm_ui(result.mpz, a_.mpz, b_);
@@ -2166,7 +2166,7 @@ module BigInteger {
       const y_ = y;
       ret = mpz_invert(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2215,7 +2215,7 @@ module BigInteger {
           const fac_ = fac;
           ret = mpz_remove(result.mpz, x_.mpz, fac_.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           const fac_ = fac;
@@ -2248,7 +2248,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_fac_ui(result.mpz, a_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fac_ui(result.mpz, a_);
       }
@@ -2278,7 +2278,7 @@ module BigInteger {
       const n_ = n;
       mpz_bin_ui(result.mpz, n_.mpz, k_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const n_ = n;
         mpz_bin_ui(result.mpz, n_.mpz, k_);
@@ -2296,7 +2296,7 @@ module BigInteger {
       if compiledForSingleLocale() || result.localeId == chpl_nodeID {
         mpz_bin_uiui(result.mpz, n_, k_);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           mpz_bin_uiui(result.mpz, n_, k_);
         }
@@ -2325,7 +2325,7 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_fib_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fib_ui(result.mpz, n_);
       }
@@ -2360,7 +2360,7 @@ module BigInteger {
       mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2387,7 +2387,7 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_lucnum_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_lucnum_ui(result.mpz, n_);
       }
@@ -2422,7 +2422,7 @@ module BigInteger {
       mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2544,7 +2544,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_setbit(this.mpz, bi_);
@@ -2568,7 +2568,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_clrbit(this.mpz, bi_);
@@ -2593,7 +2593,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_combit(this.mpz, bi_);
@@ -2726,7 +2726,7 @@ module BigInteger {
       const y_ = y;
       mpz_add(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2751,7 +2751,7 @@ module BigInteger {
         mpz_sub_ui(result.mpz, x_.mpz, y_);
       }
       else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -2771,7 +2771,7 @@ module BigInteger {
       mpz_add_ui(result.mpz, x_.mpz, y_);
     }
     else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_add_ui(result.mpz, x_.mpz, y_);
@@ -2802,7 +2802,7 @@ module BigInteger {
       const y_ = y;
       mpz_sub(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2830,7 +2830,7 @@ module BigInteger {
       const x_ = x;
       mpz_sub_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -2853,7 +2853,7 @@ module BigInteger {
         mpz_add_ui(result.mpz, y_.mpz, x_);
         mpz_neg(result.mpz, result.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const y_ = y;
           mpz_add_ui(result.mpz, y_.mpz, x_);
@@ -2873,7 +2873,7 @@ module BigInteger {
       const y_ = y;
       mpz_ui_sub(result.mpz, x_, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const y_ = y;
         mpz_ui_sub(result.mpz, x_, y_.mpz);
@@ -2905,7 +2905,7 @@ module BigInteger {
       const y_ = y;
       mpz_mul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2924,7 +2924,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_si(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_si(result.mpz, x_.mpz, y_);
@@ -2942,7 +2942,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_ui(result.mpz, x_.mpz, y_);
@@ -2974,7 +2974,7 @@ module BigInteger {
       const y_ = y;
       mpz_addmul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3000,7 +3000,7 @@ module BigInteger {
       const x_ = x;
       mpz_addmul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_addmul_ui(result.mpz, x_.mpz, y_);
@@ -3032,7 +3032,7 @@ module BigInteger {
       const y_ = y;
       mpz_submul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3058,7 +3058,7 @@ module BigInteger {
       const x_ = x;
       mpz_submul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_submul_ui(result.mpz, x_.mpz, y_);
@@ -3092,7 +3092,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_2exp(result.mpz, x_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_2exp(result.mpz, x_.mpz, exp_);
@@ -3119,7 +3119,7 @@ module BigInteger {
       const x_ = x;
       mpz_neg(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_neg(result.mpz, x_.mpz);
@@ -3146,7 +3146,7 @@ module BigInteger {
       const x_ = x;
       mpz_abs(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_abs(result.mpz, x_.mpz);
@@ -3200,7 +3200,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3267,7 +3267,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3343,7 +3343,7 @@ module BigInteger {
       helper(result, remain_, numer_, denom_, rounding);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var   remain_ : bigint;
         const numer_ = numer;
@@ -3407,7 +3407,7 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
@@ -3457,7 +3457,7 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
@@ -3540,7 +3540,7 @@ module BigInteger {
         const x_ = x;
         rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
@@ -3718,7 +3718,7 @@ module BigInteger {
       const y_ = y;
       mpz_and(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3750,7 +3750,7 @@ module BigInteger {
       const y_ = y;
       mpz_ior(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3782,7 +3782,7 @@ module BigInteger {
       const y_ = y;
       mpz_xor(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3810,7 +3810,7 @@ module BigInteger {
       const x_ = x;
       mpz_com(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_com(result.mpz, x_.mpz);
@@ -3838,7 +3838,7 @@ module BigInteger {
       chpl_gmp_get_mpz(this.mpz, x.localeId, x.mpz[0]);
     }
     else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         if x.localeId == chpl_nodeID {
@@ -3859,7 +3859,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_si(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_si(this.mpz, x_);
@@ -3874,7 +3874,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_ui(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_ui(this.mpz, x_);
@@ -3889,7 +3889,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_d(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_d(this.mpz, x_);
@@ -3904,7 +3904,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_str(this.mpz, x.localize().c_str(), base_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_str(this.mpz, x.localize().c_str(), base_);
@@ -3927,7 +3927,7 @@ module BigInteger {
       (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_swap(this.mpz, x.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         var tmp = new bigint(x);
@@ -4000,7 +4000,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       hashHelper();
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         hashHelper();

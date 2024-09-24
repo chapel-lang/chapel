@@ -10,7 +10,7 @@ It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 ``chplcheck`` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following image demonstrates its' use in
+part of your favorite editor. The following image demonstrates its use in
 Neovim:
 
 .. image:: neovim.png
@@ -137,77 +137,10 @@ Setting Up In Your Editor
 -------------------------
 
 ``chplcheck`` uses the Language Server Protocol (LSP) to integrate with compatible
-clients. Thus, if your editor supports LSP, you can configure it to display
-linting warnings via ``chplcheck``. The following sections describe how to set
-up ``chplcheck`` in various editors, and will be updated as the Chapel team
-tests more editors. If your preferred editor is not listed, consider opening an
-`issue <https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
-<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
-
-Neovim
-~~~~~~
-
-The built-in LSP API can be used to configure ``chplcheck`` as follows:
-
-.. code-block:: lua
-
-   local lspconfig = require 'lspconfig'
-   local configs = require 'lspconfig.configs'
-   local util = require 'lspconfig.util'
-
-   configs.chplcheck = {
-     default_config = {
-       cmd = {"chplcheck", "--lsp"},
-       filetypes = {'chpl'},
-       autostart = true,
-       single_file_support = true,
-       root_dir = util.find_git_ancestor,
-       settings = {},
-     },
-   }
-
-   lspconfig.chplcheck.setup{}
-   vim.cmd("autocmd BufRead,BufNewFile *.chpl set filetype=chpl")
-
-VSCode
-~~~~~~
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
-Emacs
-~~~~~
-
-With Emacs 29.1, support has been added for language server protocols via `Eglot
-<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
-
-To utilize the linter via Eglot, add the following to your ``.emacs`` file (note
-that this assumes you have already followed the instructions in
-``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel syntax highlighting
-in Emacs):
-
-.. code-block:: lisp
-
-   (with-eval-after-load 'eglot
-     (add-to-list 'eglot-server-programs
-                  '(chpl-mode . ("chplcheck" "--lsp"))))
-
-This will enable using the linter with a particular ``.chpl`` file by calling
-``M-x eglot``.
-
-To automatically use Eglot and the linter with every ``.chpl`` file,
-additionally add the following to your ``.emacs`` file:
-
-.. code-block:: lisp
-
-   (add-hook 'chpl-mode-hook 'eglot-ensure)
-
-.. note::
-
-   There is currently a limitation with Eglot that only one language server can
-   be registered per language. To use ``chplcheck`` and ``chapel-language-server``
-   at the same time, see the
-   :ref:`Emacs documentation for chapel-language-server <chpl-language-server-emacs>`.
+clients. If your editor supports LSP, you can configure it to display
+linting warnings via ``chplcheck``. See the
+:ref:`Editor Support page <readme-editor-support>` for details on a specific
+editor.
 
 Writing New Rules
 -----------------
@@ -342,10 +275,11 @@ Since loop indices can't have attributes applied to them directly, the rule abov
 Fixits
 ~~~~~~
 
-Rules can have fixits associated with them. To define a fixit, the rule should
-construct a ``Fixit`` object and add it to the ``fixits`` field of
-``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
-respectively.
+Rules can have fixits associated with them, which allow ``chplcheck`` to
+automatically resolve issues it encounters. To define a fixit, the rule should
+construct a ``Fixit`` object and associate it with its result
+(``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
+respectively). This can be done in two ways (see below).
 
 A ``Fixit`` contains a list of ``Edit`` objects to apply to the code and an
 optional description, which is shown to the user when the fixit is applied.
@@ -365,6 +299,73 @@ For example, the following defines a rule that has a fixit associated with it:
            fixit.description = "Replace 'foo' with 'bar'"
            return BasicRuleResult(node, fixits=[fixit])
        return True
+
+.. note::
+
+    The fixit for 'NoFunctionFoo' demonstrated here is not production-ready.
+    It does not rename the uses of the function, nor does it check for conflicts
+    with other names in the file. It is intended only to demonstrate the API for
+    defining fixits. The same is true for various other versions of this
+    example in this section.
+
+
+The above code snippet directly uses a ``fixits=`` argument to the
+``BasicRuleResult`` constructor. This is one of two ways to associate fixits with
+rules. Both advanced and basic rule results support this constructor argument.
+
+Constructing the ``Edit`` objects can become relatively complicated for more
+powerful auto-fixes. In practice, ``chplcheck`` developers have observed
+that the code to construct the necessary edits can be longer than the code
+implementing the rule. To provide a separation of concerns between
+"what should be warned about" and "how to fix the warning", ``chplcheck``
+provides a second mechanism to attach fixits to rules: the ``@driver.fixit``
+decorator.
+
+This decorator accepts the rule-to-be-fixed as an argument, and wraps a function
+that accepts the result of the rule. The wrapped function should use
+the information returned by the rule to construct a ``Fixit`` object or a list of
+``Fixit`` objects.
+
+For example, the snippet above can be written using the decorator as follows:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       return node.name() != "foo"
+
+   @driver.fixit(NoFunctionFoo)
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
+       fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
+       fixit.description = "Replace 'foo' with 'bar'"
+       return fixit
+
+Multiple fixits can be attached to a rule by using the ``@driver.fixit`` decorator
+several times.
+
+Particularly complicated rules can do a number of AST traversals and computations
+to determine whether a warning should be emitted. The information gathered
+in the process of these computations may be required to issue a fixit. When
+using the ``@driver.fixit`` decorator, it appears as though this information
+is lost. To address this, both ``BasicRuleResult`` and ``AdvancedRuleResult``
+accept an additional ``data`` argument. This argument can be of any type.
+When decorator-based fixit functions are invoked, this ``data`` can be accessed
+as a field on the result object.
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       if node.name() == "foo":
+           return BasicRuleResult(node, data="some data")
+       return
+
+   @driver.fixit(NoFunctionFoo)
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
+       print(result.data)  # prints "some data"
+       fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
+       fixit.description = "Replace 'foo' with 'bar'"
+       return fixit
 
 .. note::
 

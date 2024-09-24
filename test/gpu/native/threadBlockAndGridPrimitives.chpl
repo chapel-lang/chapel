@@ -57,7 +57,8 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
                         /*blk_dims*/ bdimX, bdimY, bdimZ,
                         /*args*/1,
                         /*pids*/0,
-                        /*reductions*/0);
+                        /*reductions*/0,
+                        /*hostRegVars*/0);
 
 
   // 1 is an enum value that says: "pass the address of this to the

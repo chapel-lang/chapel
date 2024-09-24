@@ -58,6 +58,20 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
 
+    # 'else if' statements do not have proper locations
+    #
+    # https://github.com/chapel-lang/chapel/issues/25256
+    elif isinstance(node, Conditional):
+        parent = node.parent()
+        grandparent = parent.parent() if parent else None
+        if (
+            isinstance(parent, Block)
+            and parent.block_style() == "implicit"
+            and grandparent
+            and isinstance(grandparent, Conditional)
+        ):
+            return True
+
     return False
 
 
@@ -201,36 +215,43 @@ def register_rules(driver: LintDriver):
 
         check = node.block_style() != "unnecessary"
         if not check:
-            lines = chapel.get_file_lines(context, node)
-
-            if isinstance(node, Loop):
-                header_loc = node.header_location()
-                if isinstance(node, IndexableLoop) and node.with_clause():
-                    with_ = node.with_clause()
-                    assert with_ is not None
-                    header_loc = header_loc + with_.location()
-            else:
-                header_loc = node.block_header()
-            body_loc = node.curly_braces_location()
-            if header_loc is None or body_loc is None:
-                return check
-
-            header_text = range_to_text(header_loc, lines)
-            body_text = range_to_text(body_loc, lines)
-
-            sep = " "
-            if header_loc.end()[0] != body_loc.start()[0]:
-                indent = " " * (body_loc.start()[1] - 1)
-                sep = "\n" + indent
-
-            new_text = header_text + sep + body_text
-            fixit = Fixit.build(Edit.build(node.location(), new_text))
-            return BasicRuleResult(node, ignorable=True, fixits=[fixit])
-
+            return BasicRuleResult(node, ignorable=True)
         return check
 
+    @driver.fixit(DoKeywordAndBlock)
+    def RemoveUnnecessaryDo(context: Context, result: BasicRuleResult):
+        """
+        Remove the redundant 'do' keyword before a curly brace '{'.
+        """
+        node = result.node
+        lines = chapel.get_file_lines(context, node)
+
+        if isinstance(node, Loop):
+            header_loc = node.header_location()
+            if isinstance(node, IndexableLoop) and node.with_clause():
+                with_ = node.with_clause()
+                assert with_ is not None
+                header_loc = header_loc + with_.location()
+        else:
+            header_loc = node.block_header()
+        body_loc = node.curly_braces_location()
+        if header_loc is None or body_loc is None:
+            return None
+
+        header_text = range_to_text(header_loc, lines)
+        body_text = range_to_text(body_loc, lines)
+
+        sep = " "
+        if header_loc.end()[0] != body_loc.start()[0]:
+            indent = " " * (body_loc.start()[1] - 1)
+            sep = "\n" + indent
+
+        new_text = header_text + sep + body_text
+        fixit = Fixit.build(Edit.build(node.location(), new_text))
+        return fixit
+
     @driver.basic_rule(set((Loop, Conditional)))
-    def RedundantParentheses(
+    def ControlFlowParentheses(
         context: Context, node: typing.Union[Loop, Conditional]
     ):
         """
@@ -256,16 +277,26 @@ def register_rules(driver: LintDriver):
         if paren_loc is None:
             return True
 
+        # Now, we should warn: there's a node in a conditional or
+        # if/else, it has parentheses at the top level, but it doesn't need them.
+        return BasicRuleResult(node, data=subject)
+
+    @driver.fixit(ControlFlowParentheses)
+    def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
+        # Since we're here, these should already be non-None.
+        subject = result.data
+        assert subject
+        paren_loc = subject.parenth_location()
+        assert paren_loc
+
         # If parentheeses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
         end_line, end_col = paren_loc.end()
         if start_line != end_line:
-            return BasicRuleResult(node, ignorable=False)
+            return []
 
-        # Now, we should warn: there's a node in a conditional or
-        # if/else, it has parentheses at the top level, but it doesn't need them.
-        lines = chapel.get_file_lines(context, node)
+        lines = chapel.get_file_lines(context, result.node)
         new_text = range_to_text(paren_loc, lines)[1:-1]
 
         start_line_str = lines[start_line - 1]
@@ -280,8 +311,7 @@ def register_rules(driver: LintDriver):
         ):
             new_text += " "
 
-        fixit = Fixit.build(Edit.build(paren_loc, new_text))
-        return BasicRuleResult(node, ignorable=False, fixits=[fixit])
+        return [Fixit.build(Edit.build(paren_loc, new_text))]
 
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
@@ -297,11 +327,24 @@ def register_rules(driver: LintDriver):
         return True
 
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
-    def BoolLitInCondStmt(context: Context, node: Conditional):
+    def BoolLitInCondStmt(_: Context, node: Conditional):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
+        return BasicRuleResult(node)
 
+    # TODO: at some point, we should support a fixit that removes the
+    # conditions and the braces, but the way locations work right now makes
+    # that difficult. Blocks get built and rebuilt in the parser, making it
+    # hard to tag the resulting block with curky braces locations.
+    @driver.fixit(BoolLitInCondStmt)
+    def FixBoolLitInCondStmt_KeepBraces(
+        context: Context, result: BasicRuleResult
+    ):
+        """
+        Remove the unused branch of a conditional statement, keeping the braces.
+        """
+        node = result.node
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -319,9 +362,7 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(
-            node, fixits=Fixit.build(Edit.build(node.location(), text))
-        )
+        return Fixit.build(Edit.build(node.location(), text))
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
@@ -376,6 +417,24 @@ def register_rules(driver: LintDriver):
                 return BasicRuleResult(node, fixits=fixit)
             return False
         return True
+
+    @driver.basic_rule(OpCall)
+    def ComplexLiteralOrder(context: Context, node: OpCall):
+        """
+        Warn for complex literals that are not in a consistent order.
+        """
+
+        complex_lit = chapel.is_complex_literal(node)
+        if not complex_lit:
+            return True
+
+        # If the first element is not the imaginary literal, then we have
+        # 10+2i, which is the correct order.
+        if not isinstance(complex_lit[0], ImagLiteral):
+            return True
+
+        # Eventually, auto-fixit will go here. For now, just warn.
+        return False
 
     # Five things have to match between consecutive decls for this to warn:
     # 1. same type
@@ -476,7 +535,6 @@ def register_rules(driver: LintDriver):
         """
         if isinstance(root, Comment):
             return
-        lines = chapel.get_file_lines(context, root)
 
         prev, prevloop = None, None
         for child in root:
@@ -489,23 +547,8 @@ def register_rules(driver: LintDriver):
             if prev is not None:
                 loc = child.location()
                 prev_loc = prev.location()
-                prevloop_loc = prevloop.location()
                 if loc.start()[1] == prev_loc.start()[1]:
-                    fixit = None
-                    # only apply the fixit when the fix is to indent `child`
-                    # and `child ` is a single line
-                    if (
-                        loc.start()[1] != prevloop_loc.start()[1]
-                        and loc.start()[0] == loc.end()[0]
-                    ):
-                        line_start = (loc.start()[0], 1)
-                        parent_indent = max(prevloop_loc.start()[1] - 1, 0)
-                        text = " " * parent_indent + range_to_text(loc, lines)
-                        fixit = Fixit.build(
-                            Edit(loc.path(), line_start, loc.end(), text)
-                        )
-                    fixits = [fixit] if fixit else []
-                    yield AdvancedRuleResult(child, prevloop, fixits=fixits)
+                    yield AdvancedRuleResult(child, prevloop)
 
             prev, prevloop = None, None
             if isinstance(child, Loop) and child.block_style() == "implicit":
@@ -519,6 +562,29 @@ def register_rules(driver: LintDriver):
                     prev = blockchild
                     prevloop = child
                     break
+
+    @driver.fixit(MisleadingIndentation)
+    def FixMisleadingIndentation(context: Context, result: AdvancedRuleResult):
+        """
+        Align second statement to be outside of the loop.
+        """
+        assert isinstance(result.anchor, AstNode)
+        prevloop_loc = result.anchor.location()
+        loc = result.node.location()
+        lines = chapel.get_file_lines(context, result.node)
+
+        fixit = None
+        # only apply the fixit when the fix is to indent `child`
+        # and `child ` is a single line
+        if (
+            loc.start()[1] != prevloop_loc.start()[1]
+            and loc.start()[0] == loc.end()[0]
+        ):
+            line_start = (loc.start()[0], 1)
+            parent_indent = max(prevloop_loc.start()[1] - 1, 0)
+            text = " " * parent_indent + range_to_text(loc, lines)
+            fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
+        return [fixit] if fixit else []
 
     @driver.advanced_rule(default=False)
     def UnusedFormal(context: Context, root: AstNode):
@@ -580,7 +646,6 @@ def register_rules(driver: LintDriver):
         lines = chapel.get_file_lines(context, root)
         for unused in indices.keys() - uses:
             node, loop = indices[unused]
-            fixit = None
             fixit = fixit_remove_unused_node(node, lines)
             fixits = [fixit] if fixit else []
             yield AdvancedRuleResult(node, loop, fixits=fixits)
@@ -762,7 +827,13 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                yield child
+                # conditionals do not support attributes
+                anchor = (
+                    parent_for_indentation
+                    if not isinstance(parent_for_indentation, Conditional)
+                    else None
+                )
+                yield AdvancedRuleResult(child, anchor=anchor)
 
             prev_depth = depth
             prev = child

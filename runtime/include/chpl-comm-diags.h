@@ -90,7 +90,7 @@ void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
 // Private
 //
 typedef struct _chpl_atomic_commDiagnostics {
-#define _COMM_DIAGS_DECL_ATOMIC(cdv) atomic_uint_least64_t cdv;
+#define _COMM_DIAGS_DECL_ATOMIC(cdv) chpl_atomic_uint_least64_t cdv;
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL_ATOMIC)
 #undef _COMM_DIAGS_DECL_ATOMIC
 } chpl_atomic_commDiagnostics;
@@ -174,9 +174,9 @@ extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
   do {                                                                       \
     if (chpl_comm_diagnostics &&                                             \
         !chpl_task_getCommDiagsTemporarilyDisabled()) {                      \
-      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
+      chpl_atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
       (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
-                                                      memory_order_relaxed); \
+                                                      chpl_memory_order_relaxed); \
     }                                                                        \
   } while(0)
 

@@ -1,0 +1,83 @@
+
+Start analyzing forall (unsupportedCases.chpl:14)
+| Found loop domain (unsupportedCases.chpl:6)
+| Will attempt static and dynamic optimizations (unsupportedCases.chpl:14)
+|
+|  Start analyzing call (unsupportedCases.chpl:15)
+|   Found the domain of the access base (unsupportedCases.chpl:5)
+|  This call is a dynamic optimization candidate (unsupportedCases.chpl:15)
+|
+|  Start analyzing call (unsupportedCases.chpl:16)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:16)
+End analyzing forall (unsupportedCases.chpl:14)
+
+
+Start analyzing forall (unsupportedCases.chpl:23)
+| Found loop domain (unsupportedCases.chpl:6)
+| Will attempt static and dynamic optimizations (unsupportedCases.chpl:23)
+|
+|  Start analyzing call (unsupportedCases.chpl:24)
+|   Found the domain of the access base (unsupportedCases.chpl:5)
+|  This call is a dynamic optimization candidate (unsupportedCases.chpl:24)
+|
+|  Start analyzing call (unsupportedCases.chpl:25)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:25)
+End analyzing forall (unsupportedCases.chpl:23)
+
+
+Start analyzing forall (unsupportedCases.chpl:32)
+| Found loop domain (unsupportedCases.chpl:6)
+| Will attempt static and dynamic optimizations (unsupportedCases.chpl:32)
+|
+|  Start analyzing call (unsupportedCases.chpl:34)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:34)
+|  Start analyzing call (unsupportedCases.chpl:33)
+|   Found the domain of the access base (unsupportedCases.chpl:5)
+|  This call is a dynamic optimization candidate (unsupportedCases.chpl:33)
+|
+|  Start analyzing call (unsupportedCases.chpl:34)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:34)
+|  Start analyzing call (unsupportedCases.chpl:34)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:34)
+End analyzing forall (unsupportedCases.chpl:32)
+
+
+Start analyzing forall (unsupportedCases.chpl:40)
+| Found loop domain (unsupportedCases.chpl:6)
+| Will attempt static and dynamic optimizations (unsupportedCases.chpl:40)
+|
+|  Start analyzing call (unsupportedCases.chpl:41)
+|   Found the domain of the access base (unsupportedCases.chpl:5)
+|  This call is a dynamic optimization candidate (unsupportedCases.chpl:41)
+|
+|  Start analyzing call (unsupportedCases.chpl:42)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:42)
+End analyzing forall (unsupportedCases.chpl:40)
+
+
+Start analyzing forall (unsupportedCases.chpl:48)
+| Found loop domain (unsupportedCases.chpl:6)
+| Will attempt static and dynamic optimizations (unsupportedCases.chpl:48)
+|
+|  Start analyzing call (unsupportedCases.chpl:49)
+|   Found the domain of the access base (unsupportedCases.chpl:5)
+|  This call is a dynamic optimization candidate (unsupportedCases.chpl:49)
+|
+|  Start analyzing call (unsupportedCases.chpl:50)
+|   Cannot optimize: call arguments don't match loop indices cleanly (unsupportedCases.chpl:50)
+End analyzing forall (unsupportedCases.chpl:48)
+
+Static check successful. Using localAccess with dynamic check (unsupportedCases.chpl:15)
+Static check successful. Using localAccess with dynamic check (unsupportedCases.chpl:24)
+Static check successful. Using localAccess with dynamic check (unsupportedCases.chpl:33)
+Static check successful. Using localAccess with dynamic check (unsupportedCases.chpl:41)
+Static check successful. Using localAccess with dynamic check (unsupportedCases.chpl:49)
+0 0 1 1 1 1 1 1 0 0
+0 0 1 1 1 1 1 1 0 0
+0 0 1 1 1 1 1 1 0 0
+0 0 1 1 1 1 1 1 0 0
+0 0 1 1 1 1 1 1 0 0
+
+Numbers collected by prediff:
+	localAccess was called 30 times
+	this was called 30 times

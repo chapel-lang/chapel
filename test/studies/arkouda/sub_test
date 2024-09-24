@@ -37,8 +37,8 @@ else
   if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
     log_fatal_error "installing dependencies"
   fi
-  export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
 fi
+export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
 
 # CHPL_TEST_ARKOUDA_DISABLE_MODULES is a colon separated list of modules to
 # disable.  Disable these modules by commenting them out in ServerModules.cfg
@@ -50,6 +50,9 @@ if [ -n "${CHPL_TEST_ARKOUDA_DISABLE_MODULES}" ] ; then
   done
   unset IFS
 fi
+
+# install frontend python bindings
+(cd $CHPL_HOME && make chapel-py-venv)
 
 # Compile Arkouda
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
@@ -97,14 +100,6 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     log_success "make test-python output"
   else
     log_error "running make test-python"
-  fi
-  test_end
-
-  test_start "make test-proto"
-  if make test-proto ; then
-    log_success "make test-proto output"
-  else
-    log_error "running make test-proto"
   fi
   test_end
 

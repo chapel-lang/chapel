@@ -1326,6 +1326,7 @@ private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+private extern proc qio_channel_start_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
@@ -2311,6 +2312,14 @@ private proc defaultSerializeType(param writing : bool) type {
   else return defaultDeserializer;
 }
 
+@chpldoc.nodoc
+proc isDefaultSerializerType(type t) param : bool {
+  import PrecisionSerializer;
+  // the precisionSerializer should receive the same special-casing as the
+  // defaultSerializer throughout the standard modules (e.g., dsiSerialWrite for assoc. domains)
+  return t == defaultSerializer || t == PrecisionSerializer.precisionSerializer;
+}
+
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
 
@@ -2551,7 +2560,6 @@ record defaultSerializer {
     }
   }
 
-  // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
     Start serializing a class by writing the character ``{``.
 
@@ -2559,7 +2567,7 @@ record defaultSerializer {
     :arg name: The name of the class type.
     :arg size: The number of fields in the class.
 
-    :returns: A new :type:`AggregateSerializer`
+    :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
     writer.writeLiteral("{");
@@ -5116,6 +5124,40 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 }
 
 /*
+  Read until a newline is found, leaving the :record:`fileReader` offset just
+  after it.
+
+  If a newline cannot be found, the ``fileReader`` offset is left at EOF and
+  an ``UnexpectedEofError`` is thrown.
+
+  :throws EofError: If the ``fileReader`` offset was already at EOF.
+  :throws UnexpectedEofError: A newline couldn't be found before the end of the
+                              file.
+  :throws SystemError: If data could not be read from the ``file``.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
+*/
+proc fileReader.advanceThroughNewline() throws {
+  on this._home {
+    param nl = "\n".toByte():c_int;
+
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    err = qio_channel_advance_past_byte(false, this._channel_internal, nl, max(int(64)), true);
+    if err {
+      if err == EEOF {
+        try this._ch_ioerror(err, "in advanceThroughNewline)");
+      } else if err == ESHORT {
+        throw new UnexpectedEofError("newline not found in advanceThroughNewline");
+      } else {
+        try this._ch_ioerror(err, "in advanceThroughNewline");
+      }
+    }
+  }
+}
+
+/*
    Read until a separator is found, leaving the :record:`fileReader` offset just
    before it.
 
@@ -5577,12 +5619,7 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
 // case, since we only will have one reference, will be right after we close
 // this fileReader presumably).
 
-/*
-  Controls the default value of the ``locking`` parameter for :proc:`openReader`.
-
-  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
-  When ``false``, the new default value of ``false`` will be used.
-*/
+@deprecated("OpenReaderLockingDefault is deprecated and no longer controls openReader's behavior")
 config param OpenReaderLockingDefault = true;
 
 /*
@@ -5595,7 +5632,7 @@ This function is equivalent to calling :proc:`open` and then
 :arg locking: compile-time argument to determine whether or not the
               fileReader should use locking; sets the
               corresponding parameter of the :record:`fileReader` type.
-              Defaults to ``true`` (*default deprecated, see warning below*).
+              Defaults to ``false``
 :arg region: zero-based byte offset indicating where in the file the
             fileReader should start and stop reading. Defaults to
             ``0..``, meaning from the start of the file to no specified end
@@ -5605,19 +5642,14 @@ This function is equivalent to calling :proc:`open` and then
 :arg deserializer: deserializer to use when reading.
 :returns: an open fileReader to the requested resource.
 
+.. Note::
+
+  ``locking=true`` should only be used when a fileReader will be used by
+  multiple tasks concurrently.
+
 .. warning::
 
    The region argument will ignore any specified stride other than 1.
-
-.. warning::
-
-   The default value for ``locking`` will change from ``true`` to ``false``
-   in an upcoming release. To avoid the warning, specify the value
-   of ``locking`` explicitly, or compile with ``-sOpenReaderLockingDefault=false``
-   to use the new default.
-
-   Note that ``locking=true`` should only be used when a fileReader will be
-   used by multiple tasks concurrently.
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5628,35 +5660,10 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: If trying to read explicitly prior to byte
                               0.
  */
-proc openReader(path:string, param locking /* = false (post deprecation) */,
+proc openReader(path:string, param locking = false,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
     : fileReader(locking, dt) throws {
-  return openReaderHelper(path, locking, region, hints, deserializer=deserializer);
-}
-
-// TODO: remove this overload after the locking-default-change deprecation
-pragma "last resort"
-@chpldoc.nodoc
-proc openReader(path:string,
-                region: range(?) = 0.., hints=ioHintSet.empty,
-                in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(OpenReaderLockingDefault, dt) throws {
-  if OpenReaderLockingDefault then
-    compilerWarning("the default value of 'locking' for 'openReader' will change ",
-                    "from true to false in a future release; ",
-                    "please specify the value of 'locking' explicitly, or compile",
-                    "with '-sOpenReaderLockingDefault=false' to use the new default");
-
-  return openReaderHelper(path, OpenReaderLockingDefault, region, hints, deserializer=deserializer);
-}
-
-private proc openReaderHelper(path:string,
-                              param locking=true,
-                              region: range(?) = 0..,
-                              hints=ioHintSet.empty,
-                              in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(locking, region, hints, defaultIOStyleInternal(),
@@ -5729,12 +5736,7 @@ proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(
   return fr;
 }
 
-/*
-  Controls the default value of the ``locking`` parameter for :proc:`openWriter`.
-
-  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
-  When ``false``, the new default value of ``false`` will be used.
-*/
+@deprecated("OpenWriterLockingDefault is deprecated and no longer controls openWriter's behavior")
 config param OpenWriterLockingDefault = true;
 
 /*
@@ -5747,22 +5749,16 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :arg locking: compile-time argument to determine whether or not the
               fileWriter should use locking; sets the
               corresponding parameter of the :record:`fileWriter` type.
-              Defaults to ``true`` (*default deprecated, see warning below*).
+              Defaults to ``false``
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :arg serializer: serializer to use when writing.
 :returns: an open fileWriter to the requested resource.
 
-.. warning::
+.. Note::
 
-   The default value for ``locking`` will change from ``true`` to ``false``
-   in an upcoming release. To avoid the warning, specify the value
-   of ``locking`` explicitly, or compile with ``-sOpenWriterLockingDefault=false``
-   to use the new default.
-
-   Note that ``locking=true`` should only be used when a fileWriter will be
-   used by multiple tasks concurrently.
-
+  ``locking=true`` should only be used when a fileWriter will be used by
+  multiple tasks concurrently.
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5773,38 +5769,13 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: If trying to write explicitly prior to byte
                               0.
 */
-proc openWriter(path:string, param locking /* = false (post deprecation) */,
+proc openWriter(path:string, param locking = false,
                 hints = ioHintSet.empty,
                 in serializer: ?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
-  return openWriterHelper(path, locking, hints=hints, serializer=serializer);
-}
-
-// TODO: remove this overload after the locking-default-change deprecation
-pragma "last resort"
-@chpldoc.nodoc
-proc openWriter(path:string,
-                hints = ioHintSet.empty,
-                in serializer: ?st = defaultSerializeVal(true))
-    : fileWriter(OpenWriterLockingDefault, st) throws {
-  if OpenWriterLockingDefault then
-    compilerWarning("the default value of 'locking' for 'openWriter' will change ",
-                    "from true to false in a future release; ",
-                    "please specify the value of 'locking' explicitly, or compile",
-                    "with '-sOpenWriterLockingDefault=false' to use the new default");
-
-  return openWriterHelper(path, OpenWriterLockingDefault, hints=hints, serializer=serializer);
-}
-
-private proc openWriterHelper(path:string,
-                              param locking=true,
-                              start:int(64) = 0, end:int(64) = max(int(64)),
-                              hints = ioHintSet.empty,
-                              in serializer: ?st = defaultSerializeVal(true))
-  : fileWriter(locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
-  return try fl.writerHelper(locking, start..end, hints, defaultIOStyleInternal(),
+  return try fl.writerHelper(locking, 0..max(int(64)), hints, defaultIOStyleInternal(),
                              serializer=serializer);
 }
 
@@ -5854,23 +5825,11 @@ private proc openWriterHelper(path:string,
    :throws IllegalArgumentError: If trying to read explicitly prior to
                                  byte 0.
  */
-proc file.reader(param locking,
+proc file.reader(param locking = false,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
   : fileReader(locking, dt) throws {
   return this.readerHelper(locking, region, hints,
-                           deserializer=deserializer);
-}
-
-@chpldoc.nodoc
-proc file.reader(region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(true, dt) throws {
-  compilerWarning("in a future release, the default value for 'locking' will be ",
-                  "removed from 'file.reader' and this warning will become an error; ",
-                  "please specify the value explicitly (e.g., 'f.reader(locking=false)').");
-
-  return this.readerHelper(true, region, hints,
                            deserializer=deserializer);
 }
 
@@ -5970,7 +5929,7 @@ proc file.readerHelper(param locking=true,
    :throws IllegalArgumentError: If trying to write explicitly prior to
                                  byte 0.
  */
-proc file.writer(param locking,
+proc file.writer(param locking = false,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
@@ -5978,18 +5937,7 @@ proc file.writer(param locking,
 }
 
 @chpldoc.nodoc
-proc file.writer(region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true))
-    : fileWriter(true, st) throws {
-  compilerWarning("in a future release, the default value for 'locking' will be ",
-                  "removed from 'file.writer' and this warning will become an error; ",
-                  "please specify the value explicitly (e.g., 'f.writer(locking=false)').");
-
-  return this.writerHelper(true, region, hints, serializer=serializer);
-}
-
-@chpldoc.nodoc
-proc file.writerHelper(param locking=true,
+proc file.writerHelper(param locking=false,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        in serializer:?st = defaultSerializeVal(true)):
@@ -7025,23 +6973,112 @@ proc fileWriter.styleElement(element:int):int {
   Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
-  Only serial iteration is supported. This iterator will halt on internal
-  system errors.
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines() with (+ reduce sum) {
+      sum += line:int
+    }
 
   .. warning::
 
-    This iterator executes on the current locale. This may impact multilocale
-    performance if the current locale is not the same locale on which the
-    fileReader was created.
+    This iterator executes on the current locale. This may impact performance if
+    the current locale is not the same locale on which the fileReader was created.
 
-  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. Defaults to false
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
   :yields: lines from the fileReader, by default with a trailing ``\n``
 
- */
-iter fileReader.lines(stripNewline = false) {
-
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
 
+/*
+  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` using
+  multiple locales - the fileReader lock will be held while iterating over the lines.
+
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
+      sum += line:int
+    }
+
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    This procedure does not support reading from a memory-file (e.g.,
+    files opened with :proc:`openMemFile`)
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg targetLocales: The locales on which to read the lines (parallel
+                      iteration only)
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
+  :yields: lines from the fileReader, by default with a trailing ``\n``
+
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string,
+  targetLocales: [] locale
+): t
+  where t == string || t == bytes
+{
+  try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
+
+@chpldoc.nodoc
+iter fileReader._lines_serial(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   // Save iostyleInternal
   const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
@@ -7054,7 +7091,7 @@ iter fileReader.lines(stripNewline = false) {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, locking, deserializerType, this);
+  var itemReader = new itemReaderInternal(t, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -7067,8 +7104,145 @@ iter fileReader.lines(stripNewline = false) {
 
   // Set the iostyle back to original state
   this._set_styleInternal(saved_style);
+}
 
-  this.unlock();
+// single locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..<min(myEnd, try! f.size),
+          nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                              else here.maxTaskPar;
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'nTasks' chunks
+      const byteOffsets = findFileChunks(f, nTasks, myBounds);
+
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! f.reader(region=taskBounds);
+
+        var line: t;
+        while (try! r.readLine(line, stripNewline=stripNewline)) do
+          yield line;
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+// multi-locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string,
+  targetLocales: [?tld] locale
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..<min(myEnd, try! f.size),
+          fpath = try! f.path;
+
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'targetLocales.size' chunks
+      const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
+
+      coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
+        const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
+              locFile = try! open(fpath, ioMode.r),
+              nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                  else here.maxTaskPar;
+
+        try {
+          // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
+          const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
+          coforall tid in 0..<nTasks {
+            const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                  r = try! locFile.reader(region=taskBounds);
+
+            if taskBounds.size > 0 {
+              var line: t;
+              while (try! r.readLine(line, stripNewline=stripNewline)) do
+                yield line;
+            }
+          }
+        } catch {
+          // fall back to serial iteration for this locale if 'findFileChunks' fails
+          for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
+        }
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+/*
+  Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+  roughly equally sized chunks, where each byte offset comes immidiately after
+  a newline.
+
+  :arg f: the file to search
+  :arg n: the number of chunks to find
+  :arg bounds: a range of byte offsets to break into chunks
+
+  :returns: a length ``n+1`` array of byte offsets (the first offset is
+            ``bounds.low`` and the last is ``bounds.high``)
+
+  :throws: if a valid byte offset cannot be found for one or more chunks
+*/
+@chpldoc.nodoc
+private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
+  const nDataBytes = bounds.high - bounds.low,
+        approxBytesPerChunk = nDataBytes / n;
+
+  var chunkOffsets: [0..n] int;
+  chunkOffsets[0] = bounds.low;
+  chunkOffsets[n] = bounds.high;
+
+  forall i in 1..<n with (ref chunkOffsets) {
+    const estOffset = bounds.low + i * approxBytesPerChunk,
+          r = f.reader(region=estOffset..);
+
+    try {
+      r.advanceThroughNewline(); // advance past the next newline
+    } catch e {
+      // there wasn't an offset in this chunk
+      throw new Error(
+        "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+        ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+      );
+    }
+    chunkOffsets[i] = r.offset(); // record the offset for this chunk
+  }
+
+  return chunkOffsets;
 }
 
 public use ChapelIOStringifyHelper;
@@ -9526,6 +9700,7 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
+
 /*
    Write values to a :record:`fileWriter`. The output will be produced
    atomically - the ``fileWriter`` lock will be held while writing all of the
@@ -11382,7 +11557,7 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 @chpldoc.nodoc
-proc fileWriter._writefOne(fmtStr, ref arg, i: int,
+proc fileWriter._writefOne(fmtStr, const ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,

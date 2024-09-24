@@ -23,6 +23,7 @@ _chpl ()
       # developer options
       local devel_opts="\
 --allow-noinit-array-not-pod \
+--array-view-elision \
 --atomics \
 --auto-aggregation \
 --auto-local-access \
@@ -74,6 +75,7 @@ _chpl ()
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
+--dyno-timing \
 --dyno-verify-serialization \
 --early-deinit \
 --exit-leaks \
@@ -127,6 +129,7 @@ _chpl ()
 --launcher \
 --ldflags \
 --lib-linkage \
+--lib-pic \
 --lib-search-path \
 --library \
 --library-cmakelists \
@@ -143,6 +146,7 @@ _chpl ()
 --live-analysis \
 --lldb \
 --llvm-print-ir \
+--llvm-print-ir-file \
 --llvm-print-ir-stage \
 --llvm-print-passes \
 --llvm-remarks \
@@ -174,6 +178,7 @@ _chpl ()
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
+--no-array-view-elision \
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
@@ -248,6 +253,7 @@ _chpl ()
 --no-munge-user-idents \
 --no-munge-with-ids \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -277,6 +283,7 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-array-view-elision \
 --no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
@@ -309,6 +316,7 @@ _chpl ()
 --no-warn-unstable-internal \
 --no-warn-unstable-standard \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \
@@ -356,6 +364,7 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-array-view-elision \
 --report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
@@ -428,6 +437,7 @@ _chpl ()
 
       # user options
       local nodevel_opts="\
+--array-view-elision \
 --atomics \
 --auto-aggregation \
 --auto-local-access \
@@ -477,6 +487,7 @@ _chpl ()
 --launcher \
 --ldflags \
 --lib-linkage \
+--lib-pic \
 --lib-search-path \
 --license \
 --live-analysis \
@@ -494,6 +505,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-array-view-elision \
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
@@ -526,6 +538,7 @@ _chpl ()
 --no-loop-invariant-code-motion \
 --no-munge-user-idents \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -561,6 +574,7 @@ _chpl ()
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \

@@ -1,1 +1,1 @@
-This test should produce either just 'w' or a Chapel compiler error message.
+undefined-backslash-combos-in-strings-1.chpl:1: syntax error: unexpected string escape: '\w'

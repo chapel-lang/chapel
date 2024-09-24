@@ -1,4 +1,1 @@
-blockSize-int32.chpl:8: In function 'fooFn':
-blockSize-int32.chpl:12: warning: the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.
-1 1 1 1 1 1 1 1 1 1
 1 1 1 1 1 1 1 1 1 1

@@ -48,7 +48,7 @@ extern "C" {
 #define CHPL_COMM_UNKNOWN_ID -1
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
@@ -112,7 +112,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 }
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {

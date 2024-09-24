@@ -22,4 +22,5 @@ stop();
 writeln(A[1]);
 writeln(A[n]);
 
-report(maxGets=5, maxOns=1);
+// LLVM backend generates 3 gets, C generates 4
+report(maxGets=4, maxOns=1, maxGetsToAdjust=3);

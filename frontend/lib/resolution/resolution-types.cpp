@@ -26,6 +26,7 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -34,6 +35,10 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+
+#include "Resolver.h"
+
+#include <iomanip>
 
 namespace chpl {
 namespace resolution {
@@ -78,16 +83,18 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           asttags::AstTag idTag,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const AstNode* whereClause) {
+                                          const AstNode* whereClause,
+                                          ID compilerGeneratedOrigin) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, isTypeConstructor, isCompilerGenerated,
-               throws, idTag, kind, formals, whereClause);
+               throws, idTag, kind, formals, whereClause, compilerGeneratedOrigin);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name,
                                    isMethod, isTypeConstructor,
                                    isCompilerGenerated, throws, idTag, kind,
-                                   std::move(formals), whereClause));
+                                   std::move(formals), whereClause,
+                                   compilerGeneratedOrigin));
 
   return QUERY_END(result);
 }
@@ -102,11 +109,13 @@ UntypedFnSignature::get(Context* context, ID id,
                         asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::AstNode* whereClause) {
+                        const uast::AstNode* whereClause,
+                        ID compilerGeneratedOrigin) {
   return getUntypedFnSignature(context, id, name,
                                isMethod, isTypeConstructor,
                                isCompilerGenerated, throws, idTag, kind,
-                               std::move(formals), whereClause).get();
+                               std::move(formals), whereClause,
+                               compilerGeneratedOrigin).get();
 }
 
 static const UntypedFnSignature*
@@ -734,7 +743,84 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-void ResolvedFields::finalizeFields(Context* context) {
+static bool
+syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
+                                           const CompositeType* ct,
+                                           ID fieldId) {
+  if (auto bct = ct->toBasicClassType()) {
+    if (auto parentCt = bct->parentClassType()) {
+      if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, parentCt, fieldId)) {
+        return false;
+      }
+    }
+  }
+
+  // Compute the fields without types so that we can iterate the fields.
+  auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+                                           /* syntaxOnly */ true);
+  for (int i = 0; i < fieldsForOrder.numFields(); i++) {
+    auto ithField = fieldsForOrder.fieldDeclId(i);
+    if (ithField == fieldId) {
+      // We haven't found a generic field without a sub, so we can stop.
+      return true;
+    }
+
+    // Skip over concrete types, since they don't need substitutions.
+    if (!isFieldSyntacticallyGeneric(context, ithField, nullptr))
+      continue;
+
+    // Found a generic type without a substitution.
+    if (ct->substitutions().find(ithField) == ct->substitutions().end()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+void ResolvedFields::validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const {
+  // Check if all fields preceding the current field have substitutions.
+  // We do this in case this ResolvedFields is computed for a particular
+  // (multi)decl, and thus its first field is not actually the first in the
+  // fieldsOfType.
+  //
+  // We want to skip checking for genericity if some preceding generic fields
+  // haven't been instantiated, since this means the type may be a partial
+  // instantiation.
+
+  if (fields_.empty()) {
+    return;
+  }
+
+  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, fieldsOfType,
+                                                  fields_[0].declId)) {
+    return;
+  }
+
+  for (auto& field : fields_) {
+    auto isGeneric = isFieldSyntacticallyGeneric(context, field.declId, nullptr);
+    if (!isGeneric) {
+      // Check if the type is actually concrete according to the type we have stored.
+      std::set<const Type*> ignore = {fieldsOfType};
+      auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+      if (g != Type::CONCRETE) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        CHPL_REPORT(context, SyntacticGenericityMismatch, ast, g, Type::CONCRETE, field.type);
+      }
+    } else {
+      // Type is syntactically generic. If it doesn't have a substitution,
+      // the type may be partially instantiated, so the remaining fields,
+      // which may eventually be concrete, might not be at this time, and that's
+      // not an error.
+      if (fieldsOfType->substitutions().find(field.declId) == fieldsOfType->substitutions().end()) {
+        break;
+      }
+    }
+  }
+}
+
+void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
   bool anyGeneric = false ;
   bool allGenHaveDefault = true; // all generic fields have default init
                                  // -- vacuously true if there are no generic
@@ -744,7 +830,25 @@ void ResolvedFields::finalizeFields(Context* context) {
 
   // look at the fields and compute the summary information
   for (const auto& field : fields_) {
-    auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+    Type::Genericity g;
+
+    if (syntaxOnly) {
+      if (!isFieldSyntacticallyGeneric(context, field.declId, nullptr)) {
+        g = Type::CONCRETE;
+      } else {
+        // In syntaxOnly mode, the field type is only set from substitutions;
+        // if there are none, it's left unknown, which, if the field is
+        // syntactically generic, means it's generic.
+        if (field.type.isUnknownKindOrType()) {
+          g = Type::GENERIC;
+        } else {
+          g = getTypeGenericityIgnoring(context, field.type, ignore);
+        }
+      }
+    } else {
+      g = getTypeGenericityIgnoring(context, field.type, ignore);
+    }
+
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
         allGenHaveDefault = false;
@@ -841,6 +945,48 @@ void TypedFnSignature::stringify(std::ostream& ss,
     formalType(i).stringify(ss, stringKind);
   }
   ss << ")";
+}
+
+bool TypedFnSignature::
+fetchIterKindStr(Context* context, UniqueString& outIterKindStr) const {
+  if (!isIterator()) return false;
+
+  // Has to just be a serial iterator.
+  if (numFormals() == 0 || (isMethod() && numFormals() == 1)) return true;
+
+  auto ik = types::EnumType::getIterKindType(context);
+  auto m = types::EnumType::getParamConstantsMapOrNull(context, ik);
+  if (m == nullptr) return false;
+
+  QualifiedType tagFormalType;
+  bool foundTagFormal = false;
+  UniqueString iterKindStr;
+
+  // Loop over the formals since they could be in any position.
+  for (int i = 0; i < numFormals(); i++) {
+    if (formalName(i) == USTR("tag")) {
+      foundTagFormal = true;
+      tagFormalType = formalType(i);
+      if (m != nullptr) {
+        for (auto& p : *m) {
+          if (formalType(i) != p.second) continue;
+          iterKindStr = p.first;
+          break;
+        }
+      }
+    }
+    if (foundTagFormal) break;
+  }
+
+  bool tagFormalMatches = tagFormalType.type() == ik &&
+                          tagFormalType.param();
+  if (tagFormalMatches) {
+    CHPL_ASSERT(!iterKindStr.isEmpty());
+    outIterKindStr = iterKindStr;
+  }
+
+  bool ret = !foundTagFormal || tagFormalMatches;
+  return ret;
 }
 
 void CandidatesAndForwardingInfo::stringify(
@@ -1062,15 +1208,374 @@ void ResolvedExpression::stringify(std::ostream& ss,
   }
 }
 
+void
+ResolutionResultByPostorderID::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  std::vector<int> keys;
+  for (const auto& pair : map) {
+    keys.push_back(pair.first);
+  }
+
+  std::sort(keys.begin(), keys.end());
+
+  size_t maxIdWidth = 0;
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+    if (id.str().size() > maxIdWidth)
+      maxIdWidth = id.str().size();
+  }
+
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+
+    // output the ID
+    std::cout << std::setw(maxIdWidth) << std::left << id.str();
+    // restore format to default
+    std::cout.copyfmt(std::ios(NULL));
+
+    if (const ResolvedExpression* re = byIdOrNull(id)) {
+      re->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+    }
+    std::cout << "\n";
+  }
+}
+
+
+/**
+  Find method receiver aggregate decl ID (for use when scope resolving).
+  This function does not support certain patterns; it should be viewed
+  as an approximation that should be replaced by full resolution.
+  */
+static const ID& methodReceiverTypeIdForMethodId(Context* context,
+                                                 ID methodId) {
+  QUERY_BEGIN(methodReceiverTypeIdForMethodId, context, methodId);
+
+  ID result;
+
+  if (auto ast = parsing::idToAst(context, methodId)) {
+    if (auto fn = ast->toFunction()) {
+      if (fn->isMethod()) {
+        if (fn->isPrimaryMethod()) {
+          // Find the containing aggregate ID
+          result = parsing::idToParentId(context, methodId);
+        } else {
+          // Resolve the method receiver to an ID
+          ResolutionResultByPostorderID r;
+          owned<OuterVariables> outerVars =
+            toOwned(new OuterVariables(context, methodId));
+          auto visitor =
+            Resolver::createForScopeResolvingFunction(context, fn, r,
+                                                      std::move(outerVars));
+
+          const AstNode* typeExpr = nullptr;
+          if (auto thisFormal = fn->thisFormal()) {
+            typeExpr = thisFormal->typeExpression();
+          }
+
+          if (typeExpr) {
+            fn->thisFormal()->traverse(visitor);
+            ResolvedExpression& re = r.byAst(typeExpr);
+            result = re.toId();
+          }
+
+          // result might not have been set but that is OK;
+          // we want to ignore errors here while just scope resolving.
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+/**
+  Find scopes for superclasses of a class.  The passed ID should refer to a
+  Class declaration node.  If not, this function will return an empty vector.
+
+  This function is temporary and should only be used in scopeResolveOnly mode.
+  */
+static const std::vector<const Scope*>&
+gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
+  QUERY_BEGIN(gatherParentClassScopesForScopeResolving, context, classDeclId);
+
+  std::vector<const Scope*> result;
+
+  bool encounteredError = false;
+  auto ast = parsing::idToAst(context, classDeclId);
+  if (!ast) return QUERY_END(result);
+
+  auto c = ast->toClass();
+  if (!c || c->numInheritExprs() == 0) return QUERY_END(result);
+
+  const uast::AstNode* lastParentClass = nullptr;
+  ID parentClassDeclId;
+  for (auto inheritExpr : c->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClassScopeResolve(context, c, r);
+    // Parsing excludes non-identifiers as parent class expressions.
+    //
+    // Intended to avoid calling methodReceiverScopes() recursively.
+    // Uses the empty 'savecReceiverScopes' because the class expression
+    // can't be a method anyways.
+    bool ignoredMarkedGeneric = false;
+    auto inherit = Class::getUnwrappedInheritExpr(inheritExpr,
+                                                ignoredMarkedGeneric);
+    inherit->traverse(visitor);
+
+
+    ResolvedExpression& re = r.byAst(inherit);
+    if (re.toId().isEmpty()) {
+      context->error(inheritExpr, "invalid parent class expression");
+      encounteredError = true;
+      break;
+    } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface)
+    {
+      // this is an interface; ignore it for the purposes of parent scopes.
+    } else {
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+        encounteredError = true;
+        break;
+      }
+      lastParentClass = inheritExpr;
+
+      result.push_back(scopeForId(context, re.toId()));
+      parentClassDeclId = re.toId();
+      // keep going through the list of parent expressions. hitting
+      // another parent expression that's a class after this point
+      // will result in an error. When we're done with other parent
+      // expressions, the loop will continue to searching for the
+      // parent classes of this parent class.
+    }
+  }
+
+  if (!encounteredError && !parentClassDeclId.isEmpty()) {
+    const auto& parentScopes =
+      gatherParentClassScopesForScopeResolving(context, parentClassDeclId);
+    result.insert(result.end(), parentScopes.begin(), parentScopes.end());
+  }
+
+  return QUERY_END(result);
+}
+
+/* Gather scopes for a given receiver decl and all its parents
+   (without using Types; for use when scope resolving) */
+static SimpleMethodLookupHelper::ReceiverScopesVec
+gatherReceiverAndParentScopesForDeclId(Context* context, ID aggregateDeclId) {
+  SimpleMethodLookupHelper::ReceiverScopesVec scopes;
+
+  if (aggregateDeclId.isEmpty()) {
+    return scopes;
+  }
+
+  // use temporary code to scope resolve the parent class Identifiers
+  scopes.push_back(scopeForId(context, aggregateDeclId));
+  // if it's a class type, also gather the parent class scopes
+  auto tag = parsing::idToTag(context, aggregateDeclId);
+  if (asttags::isClass(tag)) {
+    const std::vector<const Scope*>& v =
+      gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
+
+    scopes.append(v.begin(), v.end());
+  }
+
+  return scopes;
+}
+
+static const SimpleMethodLookupHelper&
+simpleMethodLookupQuery(Context* context, ID typeId) {
+  QUERY_BEGIN(simpleMethodLookupQuery, context, typeId);
+
+  auto vec = gatherReceiverAndParentScopesForDeclId(context, typeId);
+  auto result = SimpleMethodLookupHelper(typeId, std::move(vec));
+
+  return QUERY_END(result);
+}
+
+/* Gather scopes for a given receiver type and all its parents */
+static TypedMethodLookupHelper::ReceiverScopesVec
+gatherReceiverAndParentScopesForType(Context* context,
+                                     const types::Type* thisType) {
+  TypedMethodLookupHelper::ReceiverScopesVec scopes;
+
+  if (thisType != nullptr) {
+    if (const CompositeType* ct = thisType->getCompositeType()) {
+      // add the scope declaring the type
+      scopes.push_back(scopeForId(context, ct->id()));
+
+      if (auto bct = ct->toBasicClassType()) {
+        // also add scopes for all superclass types
+        auto cur = bct->parentClassType();
+        while (cur != nullptr) {
+          scopes.push_back(scopeForId(context, cur->id()));
+          cur = cur->parentClassType();
+        }
+      }
+    } else if (auto cptr = thisType->toCPtrType()) {
+      scopes.push_back(scopeForId(context, cptr->id(context)));
+    } else if (const ExternType* et = thisType->toExternType()) {
+      scopes.push_back(scopeForId(context, et->id()));
+    }
+  }
+
+  return scopes;
+}
+
+static const TypedMethodLookupHelper&
+typedMethodLookupQuery(Context* context, QualifiedType receiverType) {
+  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType);
+
+  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type());
+  auto result = TypedMethodLookupHelper(receiverType, std::move(vec));
+
+  return QUERY_END(result);
+}
+
+
+llvm::ArrayRef<const Scope*>
+SimpleMethodLookupHelper::receiverScopes() const {
+  return scopes_;
+}
+
+bool SimpleMethodLookupHelper::isReceiverApplicable(Context* context,
+                                                    const ID& methodId) const {
+  const ID& methodReceiverId =
+    methodReceiverTypeIdForMethodId(context, methodId);
+  if (methodReceiverId.isEmpty() || receiverTypeId_.isEmpty()) {
+    return false; // empty IDs here mean something wasn't handled
+  }
+
+  return methodReceiverId == receiverTypeId_;
+}
+
+void SimpleMethodLookupHelper::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  ss << "SimpleMethodLookupHelper ";
+  receiverTypeId_.stringify(ss, stringKind);
+  ss << " [";
+  for (auto p : scopes_) {
+    ss << " ";
+    p->stringify(ss, stringKind);
+  }
+  ss << "]";
+}
+
+const SimpleMethodLookupHelper*
+ReceiverScopeSimpleHelper::methodLookupForTypeId(Context* context,
+                                                 const ID& typeId) const {
+  const SimpleMethodLookupHelper& got =
+    simpleMethodLookupQuery(context, typeId);
+  if (!got.isEmpty())
+    return &got;
+
+  return nullptr;
+}
+
+const SimpleMethodLookupHelper*
+ReceiverScopeSimpleHelper::methodLookupForMethodId(Context* context,
+                                                   const ID& methodId) const {
+  const ID& typeId = methodReceiverTypeIdForMethodId(context, methodId);
+  if (typeId.isEmpty()) {
+    return nullptr;
+  }
+
+  const SimpleMethodLookupHelper& got =
+    simpleMethodLookupQuery(context, typeId);
+  if (!got.isEmpty())
+    return &got;
+
+  return nullptr;
+}
+
+llvm::ArrayRef<const Scope*>
+TypedMethodLookupHelper::receiverScopes() const {
+  return scopes_;
+}
+
+bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
+                                                   const ID& methodId) const {
+  const TypedFnSignature* tfs = typedSignatureInitialForId(context, methodId);
+
+  if (tfs && tfs->isMethod()) {
+    QualifiedType methodRcvType = tfs->formalType(0);
+    auto p = canPass(context,
+                     /* actual */ receiverType_, /* formal */ methodRcvType);
+    return p.passes();
+  }
+
+  return false;
+}
+
+void TypedMethodLookupHelper::stringify(std::ostream& ss,
+                                        chpl::StringifyKind stringKind) const {
+  ss << "TypedMethodLookupHelper ";
+  receiverType_.stringify(ss, stringKind);
+  ss << " [";
+  for (auto p : scopes_) {
+    ss << " ";
+    p->stringify(ss, stringKind);
+  }
+  ss << "]";
+}
+
+
+const TypedMethodLookupHelper*
+ReceiverScopeTypedHelper::methodLookupForType(Context* context,
+                                              QualifiedType type) const {
+  if (const Type* typePtr = type.type()) {
+    if (typePtr->getCompositeType() ||
+        typePtr->isCPtrType() ||
+        typePtr->isExternType()) {
+      // OK, it's a type that we need to gather receiver scopes for
+
+      // normalize the kind of the type: always use one of VAR PARAM TYPE
+      QualifiedType::Kind kind = type.kind();
+      if (kind != QualifiedType::PARAM && kind != QualifiedType::TYPE) {
+        kind = QualifiedType::VAR;
+      }
+      const TypedMethodLookupHelper& got =
+        typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+
+      if (!got.isEmpty())
+        return &got;
+    }
+  }
+
+  return nullptr;
+}
+
+const TypedMethodLookupHelper*
+ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
+                                                  const ID& methodId) const {
+
+  if (resolvingMethodId_ == methodId) {
+    return methodLookupForType(context, resolvingMethodReceiverType_);
+  } else {
+    const TypedFnSignature* tfs = nullptr;
+    tfs = typedSignatureInitialForId(context, methodId);
+    if (tfs && tfs->isMethod()) {
+      QualifiedType rcvType = tfs->formalType(0);
+      return methodLookupForType(context, rcvType);
+    }
+  }
+
+  return nullptr;
+}
+
+
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);
 IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
 IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
+IMPLEMENT_DUMP(ResolutionResultByPostorderID);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);
 IMPLEMENT_DUMP(CallResolutionResult);
+IMPLEMENT_DUMP(SimpleMethodLookupHelper);
+IMPLEMENT_DUMP(TypedMethodLookupHelper);
 
 } // end namespace resolution
 } // end namespace chpl

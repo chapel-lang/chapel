@@ -70,7 +70,9 @@ module Bytes {
     :arg x: `c_ptr` to borrow as a buffer
     :type x: `c_ptr(int(8))` or `c_ptr(uint(8))`
 
-    :arg length: Length of `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :arg length: Length of `x`, excluding the optional terminating null byte.
+                 Defaults to the number of bytes in `x` before the terminating
+                 null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -90,7 +92,9 @@ module Bytes {
     :arg x: `c_ptrConst` to borrow as a buffer
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :arg length: Length of `x`, excluding the optional terminating null byte.
+                 Defaults to the number of bytes in `x` before the terminating
+                 null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -128,7 +132,8 @@ module Bytes {
      :arg x: Buffer to borrow
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `x`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the optional terminating
+                  null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
@@ -153,7 +158,9 @@ module Bytes {
     :arg x: The `c_ptr` to take ownership of
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -181,7 +188,9 @@ module Bytes {
     :arg x: The `c_ptrConst` to take ownership of
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x`'s buffer, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -200,7 +209,8 @@ module Bytes {
      :arg x: The buffer to take ownership of
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `x`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the optional terminating
+                  null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
@@ -223,7 +233,9 @@ module Bytes {
     :arg x: The :class:`~CTypes.c_ptrConst` to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -249,7 +261,9 @@ module Bytes {
      :arg x: The buffer to copy
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+     :arg length: Length of buffer `x`, excluding the optional terminating null
+                  byte. Defaults to the number of bytes in `x` before the
+                  terminating null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
@@ -284,7 +298,7 @@ module Bytes {
     proc ref deinit() {
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -845,7 +859,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isUpper(b)) {
           result = false;
@@ -869,7 +883,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isLower(b)) {
           result = false;
@@ -893,7 +907,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isWhitespace(b)) {
           result = false;
@@ -916,7 +930,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlpha(b) {
           result = false;
@@ -939,7 +953,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isDigit(b) {
           result = false;
@@ -962,7 +976,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlnum(b) {
           result = false;
@@ -986,7 +1000,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isPrintable(b) {
           result = false;
@@ -1010,7 +1024,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for b in this.bytes() {

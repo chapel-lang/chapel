@@ -324,7 +324,7 @@ record LinkedList : serializable {
   }
 
   proc serialize(writer, ref serializer) throws {
-    if writer.serializerType == IO.defaultSerializer {
+    if isDefaultSerializerType(writer.serializerType) {
       _defaultWriteHelper(writer);
     } else {
       var ser = serializer.startList(writer, size);

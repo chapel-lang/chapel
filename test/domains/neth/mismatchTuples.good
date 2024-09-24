@@ -1,0 +1,1 @@
+mismatchTuples.chpl:1: error: Domains defined using tuple bounds must use tuples of the same length, but got '2*int(64)' and '3*int(64)'

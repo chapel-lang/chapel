@@ -23,8 +23,10 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "baseAST.h"
 #include "passes.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "build.h"
 #include "DecoratedClassType.h"
@@ -40,6 +42,7 @@
 #include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "thunks.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
@@ -169,6 +172,8 @@ void normalize() {
   preNormalizeHandleStaticVars();
 
   insertModuleInit();
+
+  arrayViewElision();
 
   doPreNormalizeArrayOptimizations();
 
@@ -358,6 +363,7 @@ static void preNormalizeHandleStaticVars() {
                                               wrapperVar, initVarTemp));
       wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
 
+      bool needsCleanup = false;
       if (call->numActuals() > 0) {
         // The actual specifies the sharing kind.
         auto sharingKind = toSymExpr(call->get(1));
@@ -376,10 +382,53 @@ static void preNormalizeHandleStaticVars() {
           // Do nothing, that's the default behavior.
         } else if (sharingKind->symbol()->name == astr("computePerLocale")) {
           wrapperVar->addFlag(FLAG_LOCALE_PRIVATE);
+          needsCleanup = true;
         } else {
           USR_FATAL(call, "invalid argument to @functionStatic attribute");
         }
       }
+
+      // If we're a per-locale variable, we'll need to clean it up
+      // on every locale, since LOCALE_PRIVATE does not do this for us.
+      // Build the cleanup function now, so that it's resolved
+      // as normal as part of the resolution process.
+      //
+      // { scopeless
+      //   proc cleanupStaticWrapper() {}
+      // }
+      // myStaticVar.reset();
+      // { scopeless
+      //   chpl__executeStaticWrapperCleanupEverywhere(cleanupStaticWrapper);
+      // }
+      //
+      // Don't put the reset call into the function body right away because
+      // at this time, myStaticVar is a non-global variable, so the function
+      // is capturing it. We use the function as an FCF argument to
+      // 'executeStaticWraperCleanup', and capturing FCFs do not work. The
+      // relocation of the reset call will happen after the static variable has
+      // been hoisted to the module level.
+      //
+      // The proc def is wrapped in a block because creating an FCF introduces
+      // a whole bunch of additional functions into the same scope as the
+      // original function, and we need an easy way to get a handle on all
+      // of that.
+      //
+      // The 'executeStaticWrapperCleanup' call is wrapped in a block for a
+      // similar reason, but the things we want to relocate are call temps etc.
+      if (needsCleanup) {
+        auto cleanupBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupFnBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupCallBlock = new BlockStmt(BLOCK_SCOPELESS);
+        auto cleanupFn = new FnSymbol("chpl__cleanupStaticWrapper");
+        cleanupFnBlock->insertAtTail(new DefExpr(cleanupFn));
+        cleanupBlock->insertAtTail(cleanupFnBlock);
+        cleanupBlock->insertAtTail(
+            new CallExpr(new CallExpr(".", wrapperVar, new_CStringSymbol("reset"))));
+        cleanupCallBlock->insertAtTail(new CallExpr("chpl__executeStaticWrapperCleanupEverywhere", cleanupFn));
+        cleanupBlock->insertAtTail(cleanupCallBlock);
+        wrapperBlock->insertAtTail(cleanupBlock);
+      }
+
 
       anchor->insertBefore(initVarBlock);
       anchor->insertBefore(wrapperBlock);
@@ -694,6 +743,7 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -780,10 +830,11 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
     }
   }
 
+  lowerThunkPrims(base);
+
   lowerIfExprs(base);
 
   lowerLoopExprs(base);
-
 
   //
   // Phase 4
@@ -1713,7 +1764,16 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
       Expr* root = nullptr;
-      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (call->isPrimitive(PRIM_RESOLVES) ||
+
+          // Static resolution calls are not normalizeable so that they
+          // don't "spill" their call temps outside of the primitive call.
+          // If they are "spilled", replacing the primitive with its result
+          // will still leave behind the temps; normally these would be
+          // cleaned up (via dead code elimination), but under --baseline
+          // or --no-dead-code-elimination they would not be.
+          call->isPrimitive(PRIM_STATIC_TYPEOF) ||
+          call->isPrimitive(PRIM_STATIC_FIELD_TYPE)) root = call;
       if (root) return root;
     }
   }
@@ -1835,6 +1895,7 @@ static void normalizeReturns(FnSymbol* fn) {
   size_t                 numVoidReturns = 0;
   CallExpr*              theRet         = NULL;
   bool                   isIterator     = fn->isIterator();
+  bool                   isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
 
   collectMyCallExprs(fn, calls, fn);
 
@@ -1871,7 +1932,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 &&
+  if (isIterator == false && isThunkBuilder == false && rets.size() == 0 &&
       (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
@@ -2220,7 +2281,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 static void fixPrimNew(CallExpr* primNewToFix);
 
 static bool isCallToConstructor(CallExpr* call) {
-  return call->isPrimitive(PRIM_NEW);
+  return isNewLike(call);
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
@@ -2704,7 +2765,11 @@ static bool shouldInsertCallTemps(CallExpr* call) {
       call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
       call->isPrimitive(PRIM_IF_VAR)                     ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
-      (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+
+      // Avoid normalizing the type expression in a new call, because
+      // this gets handled later by fixPrimNew.
+      (parentCall && isNewLike(parentCall)
+                  && parentCall->get(1) == call) )
     return false;
 
   // Don't normalize lifetime constraint clauses

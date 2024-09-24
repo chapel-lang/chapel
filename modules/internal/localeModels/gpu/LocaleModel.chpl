@@ -32,6 +32,10 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
 
+  use ChapelBase;
+  use ChapelIOSerialize;
+  use ChapelLocale;
+  use ChapelNumLocales;
   use IO, CTypes;
 
   private inline
@@ -148,9 +152,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to realloc a GPU pointer outside a GPU sublocale");
-      }
       return chpl_gpu_mem_realloc(ptr, size.safeCast(c_size_t), md + chpl_memhook_md_num());
     }
     else {
@@ -183,9 +184,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_free(ptr:c_ptr(void)) : void;
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to free a GPU pointer outside a GPU sublocale");
-      }
       chpl_gpu_mem_free(ptr);
     }
     else {
@@ -431,7 +429,7 @@ module LocaleModel {
     override proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
+      if (subloc == c_sublocid_none) || (subloc == c_sublocid_none) then
         return (myLocales[node:int]):locale;
       else
         return (myLocales[node:int]._getChild(subloc:int)):locale;

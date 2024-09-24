@@ -1,2 +1,4 @@
+warning: OpenWriterLockingDefault is deprecated and no longer controls openWriter's behavior
+note: 'OpenWriterLockingDefault' was set via a compiler flag
 Hello, World!
 Hello, World!

@@ -1,0 +1,1 @@
+blockSizeNotEnough.chpl:3: error: '@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size

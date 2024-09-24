@@ -68,6 +68,8 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
+	standard/Allocators.chpl \
+	standard/AutoGpu.chpl \
 	standard/AutoMath.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
@@ -99,10 +101,10 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
+	standard/Sort.chpl \
 	standard/Subprocess.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	standard/VectorizingIterator.chpl \
 	standard/Version.chpl \
 	standard/WeakPointer.chpl \
 
@@ -142,12 +144,12 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
+	packages/PrecisionSerializer.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Socket.chpl \
-	packages/Sort.chpl \
 	packages/SortedMap.chpl \
 	packages/SortedSet.chpl \
 	packages/TOML.chpl \

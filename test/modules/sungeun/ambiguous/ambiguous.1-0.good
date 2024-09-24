@@ -1,15 +1,16 @@
 module search dirs:
-  .
-  modules/d1
-  modules/d2
+  $CHPL_HOME/modules/internal
   $CHPL_HOME/modules/standard/gen/...
   $CHPL_HOME/modules/standard
   $CHPL_HOME/modules/packages
   $CHPL_HOME/modules/layouts
   $CHPL_HOME/modules/dists
   $CHPL_HOME/modules/dists/dims
+  .
+  modules/d1
+  modules/d2
 end of module search dirs
-warning: Ambiguous module source file -- using modules/d1/b.chpl over modules/d2/b.chpl
+<command line>: warning: ambiguous module source file -- using modules/d1/b.chpl over modules/d2/b.chpl
 In d1/a
 In d1/b
 In main

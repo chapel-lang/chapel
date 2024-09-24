@@ -312,10 +312,8 @@ class ErrorWriterBase {
   }
 
   /**
-    Write a note about the error. Unlike messages, notes are printed
-    even in brief mode. Thus, notes can be used to provide information
-    that is useful "in all cases" (e.g., the location of a duplicate
-    definition).
+    Write a message about the error. Messages provide additional
+    context or flow to detailed error output. They are ignored in brief mode.
 
     The variable arguments given to this function are automatically converted
     to strings.

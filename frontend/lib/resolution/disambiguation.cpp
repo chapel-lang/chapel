@@ -704,13 +704,12 @@ static bool
 isDefinedInBlock(Context* context, const Scope* scope,
                  const TypedFnSignature* fn) {
   LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
-  auto decls = lookupNameInScope(context, scope,
-                                 /* receiver scopes */ {},
-                                 fn->untyped()->name(), onlyDecls);
-  for (const auto& borrowedIds : decls) {
-    for (const auto& id : borrowedIds) {
-      if (id == fn->id()) return true;
-    }
+  auto ids = lookupNameInScope(context, scope,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
+                               fn->untyped()->name(), onlyDecls);
+  for (const auto& id : ids) {
+    if (id == fn->id()) return true;
   }
   return false;
 }
@@ -729,13 +728,12 @@ isDefinedInUseImport(Context* context, const Scope* scope,
     importAndUse |= LOOKUP_SKIP_PRIVATE_USE_IMPORT;
   }
 
-  auto decls = lookupNameInScope(context, scope,
-                                 /* receiver scopes */ {},
-                                 fn->untyped()->name(), importAndUse);
-  for (const auto& borrowedIds : decls) {
-    for (const auto& id : borrowedIds) {
-      if (id == fn->id()) return true;
-    }
+  auto ids = lookupNameInScope(context, scope,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
+                               fn->untyped()->name(), importAndUse);
+  for (const auto& id : ids) {
+    if (id == fn->id()) return true;
   }
   return false;
 }

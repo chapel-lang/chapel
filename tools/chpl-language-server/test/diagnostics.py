@@ -53,11 +53,22 @@ async def test_incorrect_cross_file_diagnostics(client: LanguageClient):
     async with source_files(client, A=fileA, B=fileB) as docs:
         await save_file(client, docs("B"), docs("A"))
         assert len(client.diagnostics[docs("A").uri]) == 0
-        assert len(client.diagnostics[docs("B").uri]) == 1
-        assert (
-            "an implicit module named 'B' is being introduced to contain file-scope code"
-            in client.diagnostics[docs("B").uri][0].message
-        )
+        assert len(client.diagnostics[docs("B").uri]) == 2
+
+        # check if the expected warnings are present
+        foundImplicitModule = False
+        foundSameName = False
+        for d in client.diagnostics[docs("B").uri]:
+            if "ImplicitFileModule" in d.message:
+                # Warning: [ImplicitFileModule]: an implicit module named 'B'
+                # is being introduced to contain file-scope code
+                foundImplicitModule = True
+            if "ImplicitModuleSameName" in d.message:
+                # Warning: [ImplicitModuleSameName]: module 'B' has
+                # the same name as the implicit file module
+                foundSameName = True
+
+        assert foundImplicitModule and foundSameName
 
 
 @pytest.mark.asyncio

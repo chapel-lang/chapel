@@ -392,7 +392,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -417,7 +417,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -466,7 +466,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
@@ -506,7 +506,7 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -540,7 +540,7 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -565,7 +565,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
@@ -595,7 +595,7 @@ module String {
     :arg x: The buffer to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x` in bytes, excluding the terminating null byte.
+    :arg length: Length of `x` in bytes, excluding the optional terminating null byte.
     :type length: `int`
 
     :arg policy: - `decodePolicy.strict` raises an error
@@ -627,7 +627,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes. This argument is
@@ -764,7 +764,7 @@ module String {
       // a null-terminator.
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -1001,7 +1001,7 @@ module String {
       // pattern.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
@@ -1818,7 +1818,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isLower(cp) {
@@ -1845,7 +1845,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isUpper(cp) {
@@ -1872,7 +1872,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isWhitespace(cp)) {
           result = false;
@@ -1894,7 +1894,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isAlpha(cp) {
           result = false;
@@ -1916,7 +1916,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isDigit(cp) {
           result = false;
@@ -1938,7 +1938,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
           result = false;
@@ -1960,7 +1960,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isPrintable(cp) {
           result = false;
@@ -1983,7 +1983,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for cp in this.codepoints() {
@@ -2323,7 +2323,7 @@ module String {
     /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_none)) {
         ret = doEq(a, b);
       }
       return ret;

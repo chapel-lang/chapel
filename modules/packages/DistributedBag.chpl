@@ -76,8 +76,8 @@
 */
 
 /*
-  Implements a highly parallel segmented multi-pool specialized for depth-first
-  search (DFS), sometimes referenced as ``DistBag_DFS``.
+  Implements a parallel segmented multi-pool for depth-first tree-search.
+  The data structure is sometimes referred to as ``DistBag_DFS``.
 
   Summary
   _______
@@ -1016,7 +1016,7 @@ module DistributedBag
       Perform simultaneously two compareAndSwap operations. This ensures that
       both atomic variables are accessed at the same time.
     */
-    inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
+    inline proc ref simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
       desA: int, desB: int): bool
     {
       var casA, casB: bool;

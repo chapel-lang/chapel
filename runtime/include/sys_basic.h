@@ -59,6 +59,22 @@
 #define _DEFAULT_SOURCE
 #endif
 
+// define `___always_inline`, this should be used sparingly, prefer `inline`
+#if defined __has_attribute
+  #if __has_attribute (always_inline)
+    #define ___always_inline inline __attribute__ ((always_inline))
+  #endif
+  #ifndef ___always_inline
+    #if __has_attribute (__always_inline__)
+      #define ___always_inline inline __attribute__ ((__always_inline__))
+    #endif
+  #endif
+#endif
+#ifndef ___always_inline
+  // always_inline is not supported, just use inline
+  #define ___always_inline inline
+#endif
+
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS

@@ -148,6 +148,7 @@ public:
 };
 
 CallExpr* callChplHereAlloc(Type* type, VarSymbol* md = NULL);
+CallExpr* callChplHereAllocWithAllocator(Type* type, Expr* allocator, VarSymbol* md = NULL);
 
 void      insertChplHereAlloc(Expr*      call,
                               bool       insertAfter,

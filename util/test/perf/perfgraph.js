@@ -167,8 +167,11 @@ var branchInfo = [
                     "releaseDate": "2024-03-21",
                     "branchDate" : "2024-03-15",
                     "revision": -1},
+                  { "release": "2.1.0",
+                    "releaseDate": "2024-06-27",
+                    "branchDate" : "2024-06-24",
+                    "revision": -1},
                   ];
-
 
 var indexMap = {};
 

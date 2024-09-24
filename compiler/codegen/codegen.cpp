@@ -306,8 +306,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 static void
 genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(
-                                          info->module->getContext()), 1);
+  llvm::Type* voidPtrTy = getPointerType(info->module->getContext(), 1);
   llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
@@ -1922,7 +1921,7 @@ static void codegen_header(std::set<const char*> & cnames,
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->getLLVMType()) {
+          typeSymbol->hasLLVMType()) {
         typeSymbol->codegenMetadata();
       }
     }
@@ -3225,10 +3224,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
-
-
 }
 
 void codegen() {
@@ -3350,9 +3345,11 @@ GenInfo::GenInfo()
              globalToWideInfo()
 #endif
 {
-#ifdef LLVM_NO_OPAQUE_POINTERS
 #if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
-  llvmContext.setOpaquePointers(false);
+#ifdef LLVM_NO_OPAQUE_POINTERS
+  gContext->llvmContext().setOpaquePointers(false);
+#else
+  gContext->llvmContext().setOpaquePointers(true);
 #endif
 #endif
 }

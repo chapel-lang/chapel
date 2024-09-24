@@ -6,12 +6,24 @@ config const replace = false;
 var rs = new randomStream(StreamType, seed=12345);
 const ranges = (1..10, 1..10 by 2, 1..10 by 2 align 2);
 
+
 for r in ranges {
   const d = {r};
   const a = [i in d] i;
 
   for n in 1..(if replace then 2*r.size else r.size) do {
     writeln(rs.sample(r, n, replace));
+    writeln(rs.sample(d, n, replace));
+    writeln(rs.sample(a, n, replace));
+  }
+}
+
+const domains = ({1..10, 0..5}, {1..10, 0..5 by 2}, {1..10, 0..5 by 2 align 2});
+
+for d in domains {
+  const a = [idx in d] idx[0]:real + idx[1]:real / 10.0;
+
+  for n in 1..(if replace then 2*d.size else d.size) do {
     writeln(rs.sample(d, n, replace));
     writeln(rs.sample(a, n, replace));
   }

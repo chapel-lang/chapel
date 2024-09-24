@@ -98,6 +98,23 @@ static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
+std::string llvmPrintIrFileName;
+bool shouldLlvmPrintIrToFile() {
+  return !llvmPrintIrFileName.empty();
+}
+chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile = nullptr;
+llvm::raw_fd_ostream* getLlvmPrintIrFile() {
+  if (!llvmPrintIrFile && shouldLlvmPrintIrToFile()) {
+    std::error_code error;
+    llvmPrintIrFile =
+      std::make_unique<llvm::raw_fd_ostream>(llvmPrintIrFileName, error);
+    if (!llvmPrintIrFile) {
+      USR_FATAL("Could not open file '%s'", llvmPrintIrFileName.c_str());
+    }
+  }
+
+  return shouldLlvmPrintIrToFile() ? llvmPrintIrFile.get() : &llvm::outs();
+}
 
 const char* llvmStageName[llvmStageNum::LAST] = {
   "", //llvmStageNum::NOPRINT
@@ -191,9 +208,11 @@ static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
 
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    std::cout << "; " << "LLVM IR representation of " << name
+    auto fd = getLlvmPrintIrFile();
+    *fd << "; " << "LLVM IR representation of " << name
               << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-              << " optimization stage\n" << std::flush;
+              << " optimization stage\n";
+    fd->flush();
     if (!(numStage == llvmStageNum::BASIC ||
           numStage == llvmStageNum::FULL)) {
       // Basic and full can happen module-at-a-time due to current
@@ -944,8 +963,8 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
             cname);
       trackLLVMValue(gVar);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
-
       gVar->setDSOLocal(true);
+      setValueAlignment(gVar, type, this);
 
       if(debug_info){
         debug_info->get_global_variable(this);
@@ -1016,15 +1035,8 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
-    llvm::MaybeAlign alignment = getAlignment(type);
-    llvm::Type *varType = type->codegen().type;
-    llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
-
-    // Update the alignment if necessary
-    if (alignment) {
-      varAlloca->setAlignment(*alignment);
-    }
-
+    llvm::Type *varType = type->getLLVMType();
+    llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -1474,6 +1486,26 @@ void TypeSymbol::codegenDef() {
   if (!hasFlag(FLAG_EXTERN)) {
     type->codegenDef();
   }
+  else if (info->cfile) {
+    // no action required.
+  } else {
+#ifdef HAVE_LLVM
+    if (this->hasLLVMType()) {
+      // extern type, already codegenned
+      INT_ASSERT(this->hasFlag(FLAG_CODEGENNED));
+      if (fVerify) {
+        // verify that we already have all the pieces
+        if (isCTypeUnion(cname)) INT_ASSERT(this->hasFlag(FLAG_EXTERN_UNION));
+        llvm::Type *type = info->lvt->getType(cname);
+        INT_ASSERT(type != nullptr && type == this->llvmImplType);
+        INT_ASSERT(this->llvmAlignment ==
+                   llvmAlignmentOrDefer(getCTypeAlignment(this->type), type));
+      }
+      return;
+    }
+#endif
+  }
+
 
   this->addFlag(FLAG_CODEGENNED);
 
@@ -1495,7 +1527,24 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    if (llvmImplType == nullptr) llvmImplType = type;
+    if (hasFlag(FLAG_EXTERN)) {
+      INT_ASSERT(!llvmImplType); // we have not set these before
+      INT_ASSERT(llvmAlignment == ALIGNMENT_UNINIT);
+      llvmImplType = type;
+      llvmAlignment = getCTypeAlignment(this->type);
+      llvmAlignment = llvmAlignmentOrDefer(llvmAlignment, type);
+    } else {
+      llvm::Type* chkTy = type; // for an assertion
+      if (AggregateType* ag = toAggregateType(this->type)) {
+        if (ag->isClass()) {
+          chkTy = info->lvt->getType(ag->classStructName(true));
+          if (chkTy == nullptr) // c_ptr, _ddata, _ref
+            chkTy = type;
+        }
+      }
+      INT_ASSERT(getLLVMStructureType() == chkTy); // set in type->codegenDef()
+    }
+
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
@@ -1535,7 +1584,7 @@ void TypeSymbol::codegenMetadata() {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
   } else {
     llvm::Type *ty = NULL;
-    if (getLLVMType()) {
+    if (hasLLVMType()) {
       ty = getLLVMType();
     } else if (hasFlag(FLAG_EXTERN)) {
       ty = info->lvt->getType(cname);
@@ -1823,13 +1872,39 @@ void TypeSymbol::codegenAggMetadata() {
 }
 
 #ifdef HAVE_LLVM
-// get structure type for class
+
+// Returns 'alignment' if it is is greater than the ABI alignment of 'type'.
+// Otherwise returns ALIGNMENT_DEFER.
+int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
+  if (isDeferredAlignment(alignment))
+      return ALIGNMENT_DEFER;
+  llvm::Align abiAlignment =
+      gGenInfo->module->getDataLayout().getABITypeAlign(type);
+  if (alignment <= (int)abiAlignment.value())
+      return ALIGNMENT_DEFER;
+  return alignment;
+}
+
+static inline void ensureCodegenned(TypeSymbol* ts) {
+  // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
+  // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
+  if (! ts->hasLLVMType())
+    ts->codegenDef();
+}
+
+// for a class type, get its structure type
 llvm::Type* TypeSymbol::getLLVMStructureType() {
+  ensureCodegenned(this);
+
+  INT_ASSERT(llvmImplType != nullptr);
   return llvmImplType;
 }
 
-// get pointer to structure type for class
+// for a class type, get its pointer type
 llvm::Type* TypeSymbol::getLLVMType() {
+  ensureCodegenned(this);
+
+  // llvmImplType for c_ptr and _ddata is 'ptr', not a struct
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
@@ -1838,7 +1913,37 @@ llvm::Type* TypeSymbol::getLLVMType() {
     }
   }
 
+  INT_ASSERT(llvmImplType != nullptr);
   return llvmImplType;
+}
+
+// for a class type, get its structure alignment
+// must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
+int TypeSymbol::getLLVMStructureAlignment() {
+  // If we switch the representation of llvmAlignment to llvm::MaybeAlign,
+  // we will lose this assert.
+  INT_ASSERT(llvmAlignment != ALIGNMENT_UNINIT);
+
+  return llvmAlignment;
+}
+
+// for a class type, get its pointer alignment; otherwise:
+// must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
+int TypeSymbol::getLLVMAlignment() {
+  if (isClass(this->type))
+    return ALIGNMENT_DEFER; // pointer alignment from LLVM
+  else
+    return getLLVMStructureAlignment();
+}
+
+// return the alignment stored in 'this' or,
+// if it is "defer", return the ABI alignment of 'llvmType'
+int TypeSymbol::getABIAlignment(llvm::Type* llvmType) {
+  int result = this->getLLVMAlignment();
+  if (isDeferredAlignment(result))
+   result = (int)
+     gGenInfo->module->getDataLayout().getABITypeAlign(llvmType).value();
+  return result;
 }
 #endif
 
@@ -1860,14 +1965,9 @@ GenRet TypeSymbol::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if( ! getLLVMType() ) {
-      // If we don't have an LLVM type yet, the type hasn't been
-      // code generated, so code generate it now. This can get called
-      // when adding types partway through code generation.
-      codegenDef();
-      // codegenMetadata(); //TODO -- enable TBAA generation in the future.
-    }
+    // getLLVMType() ensures that the LLVM type has been generated
     ret.type = getLLVMType();
+    // codegenMetadata(); //TODO -- enable TBAA generation in the future.
 #endif
   }
 
@@ -2862,12 +2962,14 @@ void FnSymbol::codegenDef() {
 
           if (needTempForExportInIntent(arg)) {
             GenRet tempVar = createTempVarForFormal(arg, val);
+            setValueAlignment(tempVar.val, arg->type, arg);
 
             info->lvt->addValue(arg->cname, tempVar.val,
                                 tempVar.isLVPtr, tempVar.isUnsigned);
           }
           else {
             info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+            setValueAlignment(val, arg->type, arg);
           }
         } else {
           // handle a more complex direct argument
@@ -2881,7 +2983,7 @@ void FnSymbol::codegenDef() {
             // handle a complex direct argument with multiple registers
 
             // Create a temp variable to store into
-            GenRet tmp = createTempVar(arg->typeInfo());
+            GenRet tmp = createTempVar(argType);
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
             llvm::Type* i8PtrTy = getPointerType(irBuilder);
@@ -2909,6 +3011,7 @@ void FnSymbol::codegenDef() {
               trackLLVMValue(storeAdr);
             } else {
               storeAdr = createAllocaInFunctionEntry(irBuilder, sTy, "coerce");
+              setValueAlignment(storeAdr, argType, arg);
             }
 
             unsigned nElts = sTy->getNumElements();

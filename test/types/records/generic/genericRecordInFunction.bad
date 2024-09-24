@@ -1,0 +1,1 @@
+genericRecordInFunction.chpl:3: error: could not determine the concrete type for the generic return type '<any type>'

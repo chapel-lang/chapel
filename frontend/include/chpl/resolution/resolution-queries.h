@@ -116,6 +116,13 @@ typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig);
 
 /**
+  Compute a initial TypedFnSignature for an ID.
+  The TypedFnSignature will represent generic and potentially unknown
+  types if the function is generic.
+ */
+const TypedFnSignature* typedSignatureInitialForId(Context* context, ID id);
+
+/**
   Returns a Type that represents the initial type provided by a TypeDecl
   (e.g. Class, Record, etc). This type does not store the fields.
   */
@@ -128,14 +135,18 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   The result will not have summary information computed.
   fieldsForTypeDecl should be used instead unless there
   is a reason that one-at-a-time resolution is important.
+
+  If syntaxOnly is set, computes basic information (field order, IDs)
+  but does not compute types.
  */
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const types::CompositeType* ct,
                                        ID fieldId,
-                                       DefaultsPolicy defaultsPolicy);
+                                       DefaultsPolicy defaultsPolicy,
+                                       bool syntaxOnly = false);
 
 /**
-  Compute the types of the fields for a CompositeType
+  Compute the fields and their types for a CompositeType
   (such as one returned by initialTypeForTypeDecl).
 
   If useGenericFormalDefaults is true, a generic field like
@@ -149,10 +160,14 @@ const ResolvedFields& resolveFieldDecl(Context* context,
   the field already has a substitution in the CompositeType.
 
   The returned fields do not include any parent class fields.
+
+  If syntaxOnly is set, computes basic information (field order, IDs)
+  but does not compute types.
  */
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const types::CompositeType* ct,
-                                        DefaultsPolicy defaultsPolicy);
+                                        DefaultsPolicy defaultsPolicy,
+                                        bool syntaxOnly = false);
 
 /**
   If 'name' is the name of a field for type 't', returns a non-null pointer;
@@ -216,6 +231,10 @@ types::Type::Genericity getTypeGenericity(Context* context,
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
+
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& field,
+                                 types::QualifiedType* formalType = nullptr);
 
 /**
   Returns true if the field should be included in the type constructor.
@@ -295,6 +314,12 @@ const OuterVariables* computeOuterVariables(Context* context, ID id);
 const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
                                                           ID id);
 
+/*
+ * Scope-resolve an EnumDecl's constants
+ */
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
+                                                      ID id);
+
 /**
   Returns the ResolvedFunction called by a particular
   ResolvedExpression, if there was exactly one candidate.
@@ -352,7 +377,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
  */
 const CandidatesAndForwardingInfo&
 filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
+                        MatchingIdsWithName lst,
                         CallInfo call);
 
 /**
@@ -486,6 +511,15 @@ reportInvalidMultipleInheritance(Context* context,
   been collected.
  */
 const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
+
+/**
+  Returns the field in 'ad' (or its parent) that matches 'name'.
+*/
+const uast::Decl* findFieldByName(Context* context,
+                                  const uast::AggregateDecl* ad,
+                                  const types::CompositeType* ct,
+                                  UniqueString name);
+
 
 
 } // end namespace resolution

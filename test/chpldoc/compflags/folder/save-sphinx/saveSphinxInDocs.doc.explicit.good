@@ -1,0 +1,6 @@
+error: using same directory for '--save-sphinx' and '--output-dir' causes issues, please use a different location for one of these flags
+cat: docs/source/modules/saveSphinxInDocs.doc.rst: No such file or directory
+cat: docs/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory
+cat: someOtherFolder/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory
+cat: someOtherFolder/source/modules/saveSphinxInDocs.doc.rst: No such file or directory
+cat: anotherGoodFolder/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory

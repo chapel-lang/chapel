@@ -273,7 +273,8 @@ module DefaultSparse {
         }
       }
 
-      bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique,
+                          new Sort.DefaultComparator());
 
       if _nnz == 0 {
 

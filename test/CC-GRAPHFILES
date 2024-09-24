@@ -29,4 +29,4 @@ performance/array/distCreate-arrays-init.cc-perf.graph
 performance/array/distCreate-domains-deinit.cc-perf.graph
 performance/array/distCreate-domains-init.cc-perf.graph
 # suite: Sort
-library/packages/Sort/performance/dist-performance.cc.graph
+library/standard/Sort/performance/dist-performance.cc.graph

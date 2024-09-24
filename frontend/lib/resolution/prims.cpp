@@ -340,6 +340,18 @@ static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
   return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
 }
 
+// currently this is a copy of primGpuSetBlockSize
+static QualifiedType primGpuSetItersPerThread(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isIntegralType()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+}
+
 static QualifiedType primAssertOnGpu(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -1606,6 +1618,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
+    case PRIM_NEW_WITH_ALLOCATOR:
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
@@ -1631,8 +1644,16 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primGpuSetBlockSize(context, ci);
       break;
 
+    case PRIM_GPU_SET_ITERS_PER_THREAD:
+      type = primGpuSetItersPerThread(context, ci);
+      break;
+
     case PRIM_ASSERT_ON_GPU:
       type = primAssertOnGpu(context, ci);
+      break;
+
+    case PRIM_ASSERT_GPU_ELIGIBLE:
+      type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       break;
 
     case PRIM_GPU_INIT_KERNEL_CFG:
@@ -1696,6 +1717,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
+    case PRIM_PROTO_SLICE_ASSIGN:
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
     case PRIM_BLOCK_DOWHILE_LOOP:
@@ -1730,6 +1752,10 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
+    case PRIM_CREATE_THUNK:
+    case PRIM_THUNK_RESULT:
+    case PRIM_FORCE_THUNK:
+    case PRIM_THUNK_RESULT_TYPE:
       CHPL_UNIMPL("misc primitives");
       break;
 

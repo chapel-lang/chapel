@@ -256,3 +256,13 @@ file=CTypes.rst
 replace "class:: c_ptr" "type:: c_ptr" $file # also gets c_ptrConst
 replace "record:: c_array" "type:: c_array" $file
 ## End of CTypes ##
+
+
+# TODO Remove this after Chapel 2.3 when doc/rst/meta/modules/packages/Sort.rst is removed
+## Sort ##
+file=Sort.rst
+echo ".. _std-sort:" >> $file.tmp
+echo "" >> $file.tmp
+cat $file >> $file.tmp
+mv $file.tmp $file
+## End of Sort ##

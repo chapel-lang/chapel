@@ -1,4 +1,4 @@
 init
 parseAndConvertUast
-checkUast
+checkGeneratedAst
 driverCleanup

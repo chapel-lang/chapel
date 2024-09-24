@@ -26,6 +26,7 @@
 
 #include "baseAST.h"
 #include "chpl/framework/Context.h"
+#include "chpl/util/string-utils.h"
 #include "driver.h"
 #include "map.h"
 #include "misc.h"
@@ -403,5 +404,5 @@ void removeTrailingNewlines(std::string& str) {
 }
 
 bool startsWith(const char* str, const char* prefix) {
-  return (0 == strncmp(str, prefix, strlen(prefix)));
+  return chpl::startsWith(str, prefix);
 }

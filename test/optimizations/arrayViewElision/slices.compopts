@@ -1,0 +1,16 @@
+--report-array-view-elision -sdist='"default"' -sdebugShortArrayTransfer=true -srank=1 -suseDomain=false # slices-1d-range
+--report-array-view-elision -sdist='"default"' -sdebugShortArrayTransfer=true -srank=2 -suseDomain=false # slices-2d-range
+--report-array-view-elision -sdist='"default"' -sdebugShortArrayTransfer=true -srank=1 -suseDomain=true # slices-1d-domain
+--report-array-view-elision -sdist='"default"' -sdebugShortArrayTransfer=true -srank=2 -suseDomain=true # slices-2d-domain
+--report-array-view-elision -sdist='"block"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=false # slices-1d-range-no-sat
+--report-array-view-elision -sdist='"block"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=false # slices-2d-range-no-sat
+--report-array-view-elision -sdist='"block"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=true # slices-1d-domain-no-sat
+--report-array-view-elision -sdist='"block"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=true # slices-2d-domain-no-sat
+--report-array-view-elision -sdist='"stencil"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=false # slices-1d-range-no-sat
+--report-array-view-elision -sdist='"stencil"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=false # slices-2d-range-no-sat
+--report-array-view-elision -sdist='"stencil"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=true # slices-1d-domain-no-sat
+--report-array-view-elision -sdist='"stencil"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=true # slices-2d-domain-no-sat
+--report-array-view-elision -sdist='"cyclic"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=false # slices-1d-range-no-sat
+--report-array-view-elision -sdist='"cyclic"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=false # slices-2d-range-no-sat
+--report-array-view-elision -sdist='"cyclic"' -sdebugShortArrayTransfer=false -srank=1 -suseDomain=true # slices-1d-domain-no-sat
+--report-array-view-elision -sdist='"cyclic"' -sdebugShortArrayTransfer=false -srank=2 -suseDomain=true # slices-2d-domain-no-sat

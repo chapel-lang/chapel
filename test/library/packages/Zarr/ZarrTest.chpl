@@ -4,41 +4,6 @@ use FileSystem;
 use BlockDist;
 use Random;
 
-proc testGetLocalChunks() {
-  var D: domain(1) dmapped new blockDist({0..20}) = {0..20};
-  var local1 = {0..10};
-  var local2 = {11..20};
-  var chunks1 = getLocalChunks(D, local1, (7,));
-  var chunks2 = getLocalChunks(D, local2, (7,));
-
-  assert(chunks1 == {0..1}, "failed for local1 chunks: %?".format(chunks1));
-  assert(chunks2 == {1..2}, "failed for local2 chunks: %?".format(chunks2));
-
-  var D2: domain(2) = {0..20,0..20};
-  var local3 = {0..20,0..20};
-  var chunks3 = getLocalChunks(D2, local3, (7,7));
-  assert(chunks3 == {0..2,0..2}, "failed for local3 chunks: %?".format(chunks3));
-  var local4 = {0..0,0..0};
-  var chunks4 = getLocalChunks(D2, local4, (7,7));
-  assert(chunks4 == {0..0,0..0}, "failed for local4 chunks: %?".format(chunks4));
-}
-
-proc testUndistributedArray() {
-  const N = 100;
-  const D: domain(1) = {0..<N};
-  var A: [D] int;
-  for i in D do A[i] = i;
-  if (exists("Test1D")) then rmTree("Test1D");
-  writeZarrArray("Test1D", A, (7,));
-
-  var B = readZarrArray("Test1D", int, 1);
-  
-  assert(A.domain == B.domain, "Domain mismatch: %? %?".format(A.domain, B.domain));
-  forall i in A.domain do 
-    assert(A[i] == B[i], "Mismatch for 1D int data on indices: %?.\nWritten: %?\nRead: %?".format(i, A[i], B[i]));
-  rmTree("Test1D");
-}
-
 proc smallTest(type dtype) {
   {
     const N1 = 100;
@@ -104,11 +69,8 @@ proc reindexTest(type dtype) {
   
 }
 
-
 proc main() {
-  testGetLocalChunks();
-  testUndistributedArray();
-  const typeTuple = (0:int(32), 0:int(64), 0:real(32), 0:real(64));
+  const typeTuple = (0:int(64), 0:int(32), 0:real(64), 0:real(32));
   for param i in 0..<typeTuple.size {
     type dtype = typeTuple[i].type;
     writeln("Testing ", dtype:string);

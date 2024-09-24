@@ -1,3 +1,0 @@
-badblocksize.chpl:6: warning: the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.
-badblocksize.chpl:6: error: 'setBlockSize' can only be used in bodies of GPU-eligible loops
-badblocksize.chpl:7: note: if you meant to set the block size of this GPU loop, move the 'setBlockSize' call into the loop body

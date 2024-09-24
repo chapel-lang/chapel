@@ -5,8 +5,8 @@
 
 #include "qt_debug.h"
 
-static void shuffle_sheps(qthread_shepherd_id_t *s,
-                          size_t                 len)
+extern inline INTERNAL void shuffle_sheps(qthread_shepherd_id_t *s,
+                                          size_t                 len)
 {   /*{{{*/
     for (size_t i = 0; i < len; ++i) {
         qthread_shepherd_id_t tmp;
@@ -17,9 +17,9 @@ static void shuffle_sheps(qthread_shepherd_id_t *s,
     }
 } /*}}}*/
 
-static void sort_sheps(unsigned int *restrict          dists,
-                       qthread_shepherd_id_t *restrict s,
-                       size_t                          num)
+extern inline INTERNAL void sort_sheps(unsigned int *restrict          dists,
+                                       qthread_shepherd_id_t *restrict s,
+                                       size_t                          num)
 {   /*{{{*/
     assert(num > 1);
     size_t                 s_max    = num - 1;

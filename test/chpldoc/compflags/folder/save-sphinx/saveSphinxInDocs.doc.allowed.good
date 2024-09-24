@@ -1,0 +1,68 @@
+Running Sphinx vN.N.N
+building [mo]: targets for 0 po files that are out of date
+building [html]: targets for 2 source files that are out of date
+updating environment: [new config] 2 added, 0 changed, 0 removed
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... done
+preparing documents... done
+copying assets... copying static files... done
+copying extra files... done
+done
+generating indices... genindex chpl-modindex done
+writing additional pages... search done
+dumping search index in English (code: en)... done
+dumping object inventory... done
+build succeeded.
+
+The HTML pages are in anotherGoodFolder.
+HTML files are at: anotherGoodFolder
+.. default-domain:: chpl
+
+.. module:: saveSphinxInDocs.doc
+
+saveSphinxInDocs.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use saveSphinxInDocs.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import saveSphinxInDocs.doc;
+
+.. function:: proc foo()
+
+   This is a routine called foo() 
+
+cat: docs/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory
+cat: someOtherFolder/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory
+cat: someOtherFolder/source/modules/saveSphinxInDocs.doc.rst: No such file or directory
+.. default-domain:: chpl
+
+.. module:: saveSphinxInDocs.doc
+
+saveSphinxInDocs.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use saveSphinxInDocs.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import saveSphinxInDocs.doc;
+
+.. function:: proc foo()
+
+   This is a routine called foo() 
+

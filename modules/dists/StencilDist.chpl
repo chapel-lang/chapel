@@ -33,6 +33,8 @@
 // mapped to by the distribution.
 //
 
+/* Draft support for stencil computations using a Block-style distribution. */
+
 @unstable("StencilDist is unstable and may change in the future")
 prototype module StencilDist {
 
@@ -58,6 +60,7 @@ config param debugStencilDistBulkTransfer = false;
 config param stencilDistAllowPackedUpdateFluff = true;
 
 config param disableStencilDistBulkTransfer = false;
+config param disableStencilDistArrayViewElision = false;
 
 private config param allowDuplicateTargetLocales = false;
 // Instructs the _packedUpdate method to only perform the optimized buffer
@@ -874,10 +877,35 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
-    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
+}
+
+iter StencilImpl.activeTargetLocales(const space : range(?)) {
+  compilerAssert(rank==1);
+  const dims = targetLocsIdx(space.first)..targetLocsIdx(space.last);
+
+  // In case 'space' is a strided domain we need to check that the locales
+  // in 'dims' actually contain indices in 'locSpace'.
+  //
+  // Note that we cannot use a simple stride here because it is not guaranteed
+  // that each locale contains the same number of indices. For example, the
+  // domain {1..10} over four locales will split like:
+  //   L0: -max(int)..3
+  //   L1: 4..5
+  //   L2: 6..8
+  //   L3: 9..max(int)
+  //
+  // The subset {1..10 by 4} will involve locales 0, 1, and 3.
+  foreach i in dims {
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
+    if space[chunk[0]].sizeAs(int) > 0 then
+      yield i;
+  }
+
 }
 
 // create a domain over an existing Stencil Distribution
@@ -916,6 +944,7 @@ proc type stencilDist.createDomain(rng: range(?)...) {
 }
 
 // create an array over a Stencil Distribution, default initialized
+pragma "no copy return"
 proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
@@ -929,6 +958,7 @@ proc type stencilDist.createArray(
 }
 
 // create an array over a Stencil Distribution, initialized with the given value or iterator
+pragma "no copy return"
 proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
@@ -945,6 +975,7 @@ proc type stencilDist.createArray(
 }
 
 // create an array over a Stencil Distribution, initialized from the given array
+pragma "no copy return"
 proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
@@ -964,6 +995,7 @@ proc type stencilDist.createArray(
 }
 
 // create an array over a Stencil Distribution constructed from a series of ranges, default initialized
+pragma "no copy return"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -974,17 +1006,21 @@ proc type stencilDist.createArray(
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
 }
 
+
+pragma "no copy return"
 proc type stencilDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType, fluff = makeZero(rng.size, rng[0].idxType));
 }
 
 // create an array over a Stencil Distribution constructed from a series of ranges, initialized with the given value or iterator
+pragma "no copy return"
 proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, fluff = makeZero(rng.size, rng[0].idxType));
 }
 
+pragma "no copy return"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -997,6 +1033,7 @@ proc type stencilDist.createArray(
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
+pragma "no copy return"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1006,6 +1043,7 @@ proc type stencilDist.createArray(
   return createArray({(...rng)}, eltType, initExpr);
 }
 
+pragma "no copy return"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1973,17 +2011,16 @@ proc StencilArr.naiveUpdateFluff() {
 //    c) Copy elements from the local buffer into the cache
 //
 proc StencilArr._packedUpdate() {
+  const mypid = this.pid;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      var myLocDom = locArr[i].locDom;
+      const privArr = if _privatization then chpl_getPrivatizedCopy(this.type, mypid) else this;
+      var myLocDom = privArr.locArr[i].locDom;
 
       proc translateIdx(idx) {
         return -1 * chpl__tuplify(idx);
       }
 
-      // BHARSH TODO: can we fuse these two foralls? My current concern is that
-      // by waiting we might prevent another iteration running and possibly
-      // find ourselves in a deadlock.
       forall (D, S, recvIdx, sendBufIdx) in zip(myLocDom.sendDest, myLocDom.sendSrc,
                                                 myLocDom.Neighs,
                                                 myLocDom.NeighDom) {
@@ -1995,19 +2032,18 @@ proc StencilArr._packedUpdate() {
             const recvBufIdx = translateIdx(sendBufIdx);
 
             // Pack the buffer
-            //
-            // TODO: Should we have a serialization helper for N-dimensional
-            // DefaultRectangulars into 1-dimension arrays?
-            ref src = locArr[i].myElems[S];
-            ref buf = locArr[i].sendBufs[sendBufIdx];
+            ref src = privArr.locArr[i].myElems[S];
+            ref buf = privArr.locArr[i].sendBufs[sendBufIdx];
+
+            // TODO: parallelize for larger buffers? Other forms for this loop?
             local do for (s, i) in zip(src, buf.domain.first..#src.sizeAs(int)) do buf[i] = s;
 
             if debugStencilDist then
               writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
-            locArr[recvIdx].sendRecvFlag[recvBufIdx].write(true);
+            privArr.locArr[recvIdx].sendRecvFlag[recvBufIdx].write(true);
           } else {
             // 'naive' update
-            locArr[recvIdx].myElems[D] = locArr[i].myElems[S];
+            privArr.locArr[recvIdx].myElems[D] = privArr.locArr[i].myElems[S];
           }
         }
       }
@@ -2023,13 +2059,16 @@ proc StencilArr._packedUpdate() {
           const srcBufIdx = translateIdx(recvBufIdx);
           if debugStencilDist then
             writeln(here, "::", recvBufIdx, " WAITING");
-          locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
-          locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
 
-          locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
+          privArr.locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
+          privArr.locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
 
-          ref dest = locArr[i].myElems[D];
-          ref buf = locArr[i].recvBufs[recvBufIdx];
+          privArr.locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = privArr.locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
+
+          // unpack buffer
+          ref dest = privArr.locArr[i].myElems[D];
+          ref buf = privArr.locArr[i].recvBufs[recvBufIdx];
+
           local do for (d, i) in zip(dest, buf.domain.first..#dest.sizeAs(int)) do d = buf[i];
         }
       }
@@ -2100,6 +2139,21 @@ inline proc LocStencilArr.this(i) ref {
 }
 
 override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
+override proc StencilDom.dsiSupportsOffsetAutoLocalAccess() param {
+  return true;
+}
+// offsets is always a tuple
+override proc StencilDom.dsiAutoLocalAccessOffsetCheck(offsets) {
+  var ret = true;
+  for param i in 0..<rank {
+    ret &&= fluff[i] >= abs(offsets[i]);
+  }
+  return ret;
+}
+
+override proc StencilDom.dsiSupportsArrayViewElision() param {
+  return !disableStencilDistArrayViewElision;
+}
 
 //
 // Privatization
@@ -2281,8 +2335,12 @@ proc StencilArr.dsiLocalSubdomain(loc: locale) {
 proc StencilDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
-    return whole[(...inds)];
+    if loc == here {
+      return locDoms[locid].myBlock;
+    } else {
+      var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+      return whole[(...inds)];
+    }
   } else {
     var d: domain(rank, idxType, strides);
     return d;

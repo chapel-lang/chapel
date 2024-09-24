@@ -1,4 +1,4 @@
-FROM fedora:38 as build
+FROM fedora:38 AS build
 
 @@{ARGUMENTS}
 

@@ -27,8 +27,11 @@
 module ChapelLocale {
 
   public use LocaleModel as _; // let LocaleModel refer to the class
+  use ChapelIOSerialize;
   import HaltWrappers;
   use CTypes;
+  use ChapelBase;
+  use ChapelNumLocales;
 
   compilerAssert(!(!localeModelHasSublocales &&
    localeModelPartitionsIterationOnSublocales),
@@ -44,13 +47,11 @@ module ChapelLocale {
   @chpldoc.nodoc
   extern const c_sublocid_none: chpl_sublocID_t;
   @chpldoc.nodoc
-  extern const c_sublocid_any: chpl_sublocID_t;
-  @chpldoc.nodoc
   extern const c_sublocid_all: chpl_sublocID_t;
 
   inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t) do
     return (subloc != c_sublocid_none
-            && subloc != c_sublocid_any
+            && subloc != c_sublocid_none
             && subloc != c_sublocid_all);
 
   /*
@@ -594,7 +595,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
         }
@@ -602,7 +603,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales  {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
           chpl_singletonCurrentLocaleInitPrivate(locIdx);
@@ -727,7 +728,7 @@ module ChapelLocale {
     if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
-      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_none);
   }
 
   // Returns a wide pointer to the locale with the given id.

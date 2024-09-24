@@ -423,7 +423,7 @@ static inline void chpl_comm_barrier(const char *msg) {
     return;
   }
 
-  chpl_rmem_consist_fence(memory_order_seq_cst, 0, 0);
+  chpl_rmem_consist_fence(chpl_memory_order_seq_cst, 0, 0);
   chpl_comm_impl_barrier(msg);
 }
 
@@ -546,6 +546,12 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
                                chpl_comm_on_bundle_t *arg, size_t arg_size,
                                int ln, int32_t fn);
+
+//
+// Ensure that the communication layer makes progress if there are any
+// outstanding non-blocking operations.
+//
+void chpl_comm_ensure_progress(void);
 
 //
 // Hook to ensure remote memory consistency after unordered operations.

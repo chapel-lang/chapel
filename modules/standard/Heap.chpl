@@ -28,14 +28,13 @@
   * Querying the top element is O(1).
   * Initialization from an array is O(N).
 
-  The heap accepts a :ref:`comparator <comparators>` to determine how
-  elements are compared. The default comparator is `defaultComparator` and makes
-  a max-heap. In this case, ``top`` will return the greatest element in the
-  heap.
+  The heap accepts a :ref:`comparator <comparators>` to determine how elements
+  are compared. The default comparator is an instance of
+  :record:`~Sort.DefaultComparator` and makes a max-heap. In this case, ``top``
+  will return the greatest element in the heap.
 
   If a ``reverseComparator`` is passed to ``init``,
   ``top`` will return the minimal element.
-
 */
 @unstable("The 'Heap' module is unstable")
 module Heap {
@@ -44,8 +43,16 @@ module Heap {
   private use List;
   private use IO;
 
-  public use Sort only defaultComparator, DefaultComparator,
-                       reverseComparator, ReverseComparator;
+  public use Sort only DefaultComparator, ReverseComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only defaultComparator, reverseComparator;
+  }
+
+  public use HideDeprecatedReexport;
   private use Sort;
 
   // The locker is borrowed from List.chpl
@@ -137,7 +144,8 @@ module Heap {
 
       :arg comparator: The comparator to use
     */
-    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false,
+              comparator: record = new DefaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -408,7 +416,8 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(const ref x: list(?t), param parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: list(?t), param parSafe: bool = false,
+                  comparator: ? = new DefaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
@@ -427,7 +436,8 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false,
+                  comparator: ? = new DefaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;

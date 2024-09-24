@@ -52,6 +52,7 @@ namespace chpl {
   class Context;
 
   class ErrorBase;
+  class IdOrLocation;
 
 namespace uast {
   class AstNode;
@@ -833,6 +834,20 @@ class Context {
   /**
     Note an error for the currently running query.
     This is a convenience overload.
+    This version takes in an IdOrLocation and a printf-style format string.
+   */
+  void error(const IdOrLocation& loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
     This version takes in an AST node and a printf-style format string.
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
@@ -1001,11 +1016,18 @@ class Context {
    */
   void queryTimingReport(std::ostream& os);
 
+  void finishQueryStopwatch(querydetail::QueryMapBase* base,
+                            size_t depth,
+                            const std::string& args,
+                            querydetail::QueryTimingDuration elapsed);
+
   // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
   // timing if we are enabled. And then on scope exit we conditionally stop the
   // timing and add it to the total or log it.
   // Semi-public method because we only expect it to be used in the macro
-  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base) {
+  template<typename... ArgTs>
+  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base,
+                                const std::tuple<ArgTs...>& tupleOfArgs) {
     size_t depth = queryStack.size();
     bool enabled = enableQueryTiming || enableQueryTimingTrace;
 
@@ -1013,19 +1035,12 @@ class Context {
         enabled,
         // This lambda gets called when the stopwatch object (which lives on the
         // stack of the query function) is destructed
-        [this, base, depth, enabled](auto& stopwatch) {
-          querydetail::QueryTimingDuration elapsed;
+        [this, base, depth, enabled, &tupleOfArgs](auto& stopwatch) {
           if (enabled) {
-            elapsed = stopwatch.elapsed();
-          }
-          if (enableQueryTiming) {
-            base->timings.query.update(elapsed);
-          }
-          if (enableQueryTimingTrace) {
-            auto ticks = elapsed.count();
-            auto os = queryTimingTraceOutput.get();
-            CHPL_ASSERT(os != nullptr);
-            *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
+            auto elapsed = stopwatch.elapsed();
+            std::ostringstream oss;
+            querydetail::queryArgsPrint(oss, tupleOfArgs);
+            finishQueryStopwatch(base, depth, oss.str(), elapsed);
           }
         });
   }

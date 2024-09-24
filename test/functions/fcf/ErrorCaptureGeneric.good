@@ -1,5 +1,10 @@
 ErrorCaptureGeneric.chpl:28: error: the proc 'f1' is generic and cannot be captured
+ErrorCaptureGeneric.chpl:28: note: the formal 'x' is generic
 ErrorCaptureGeneric.chpl:29: error: the proc 'f2' is generic and cannot be captured
+ErrorCaptureGeneric.chpl:29: note: the formal 'x' is generic
 ErrorCaptureGeneric.chpl:30: error: the proc 'f3' is generic and cannot be captured
+ErrorCaptureGeneric.chpl:30: note: the formal 'x' is generic
 ErrorCaptureGeneric.chpl:31: error: the proc 'f4' is generic and cannot be captured
+ErrorCaptureGeneric.chpl:31: note: the formal 'A' is generic
+ErrorCaptureGeneric.chpl:31: note: the formal 'B' is generic
 ErrorCaptureGeneric.chpl:33: error: illegal access of procedure

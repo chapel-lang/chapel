@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/update-functions.h"
+#include "chpl/framework/mark-functions.h"
 #include "chpl/types/TypeTag.h"
 #include "chpl/uast/Pragma.h"
 
@@ -371,6 +372,23 @@ namespace detail {
 
 } // end namespace types
 
+/// \cond DO_NOT_DOCUMENT
+
+template<> struct update<types::Type::Genericity> {
+  bool operator()(types::Type::Genericity& keep,
+                  types::Type::Genericity& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
+template<> struct mark<types::Type::Genericity> {
+  void operator()(Context* context,
+                  const types::Type::Genericity& keep) const {
+    // nothing to do for enum
+  }
+};
+
+/// \endcond DO_NOT_DOCUMENT
 
 } // end namespace chpl
 

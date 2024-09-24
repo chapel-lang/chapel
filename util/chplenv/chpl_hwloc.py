@@ -4,6 +4,7 @@ import os
 
 import optparse
 import chpl_locale_model, chpl_tasks, chpl_platform, overrides, third_party_utils
+import chpl_hwloc_pci
 from utils import error, memoize, warning, try_run_command, run_command
 
 
@@ -22,8 +23,8 @@ def get():
 
 @memoize
 def get_uniq_cfg_path():
-    return '{0}-{1}'.format(third_party_utils.default_uniq_cfg_path(),
-                            chpl_locale_model.get())
+    return '{0}-{1}-{2}'.format(third_party_utils.default_uniq_cfg_path(),
+                            chpl_locale_model.get(), chpl_hwloc_pci.get())
 
 
 # returns 2-tuple of lists
@@ -61,7 +62,13 @@ def get_link_args():
             if exists and retcode != 0:
                 error("CHPL_HWLOC=system requires hwloc >= 2.1", ValueError)
 
-            return third_party_utils.pkgconfig_get_system_link_args('hwloc')
+            _, pclibs = third_party_utils.pkgconfig_get_system_link_args('hwloc', static=False)
+            libs = []
+            for pcl in pclibs:
+                libs.append(pcl)
+                if pcl.startswith('-L'):
+                    libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
+            return ([ ], libs)
         else:
             third_party_utils.could_not_find_pkgconfig_pkg("hwloc", "CHPL_HWLOC")
 

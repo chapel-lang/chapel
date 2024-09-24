@@ -87,6 +87,11 @@ Many paren-ful methods take some notable action. Try to make these
 methods method names be a verb. In particular, a method that modifies an
 argument in-place should be a verb.
 
+When possible, functions and methods that return should declare their return
+type explicitly.  When not possible, such functions and methods should use the
+``:returns:`` documentation field (as described in
+:ref:`chpldoc-arg-return-yield-types`).
+
 Factory Functions and Methods
 +++++++++++++++++++++++++++++
 
@@ -130,7 +135,56 @@ Accessor methods will avoid using "get" in their name.  E.g., instead of
 
 Methods that are not accessors are still allowed to use "get" in their name.
 
+Formals
++++++++
+
+Formal names should be camelCase or PascalCase.  Descriptive names are
+recommended, within reason.  Encoding the type name into a formal name is
+generally avoided when multiple types are supported, as doing so makes it harder
+to support generic functions.
+
+Some commonly used names are:
+
+- ``idx`` for an index
+
+- ``x`` and ``y`` for general pairs of formals
+
+- ``src`` and ``dst``/``dest`` (source and destination) for directional pairs of
+  formals
+
+  - ``lhs`` and ``rhs`` (left hand side and right hand side) may also be used
+
+- ``eltType`` for the type of elements stored in a collection (also used as a
+  field name)
+
+- ``obj`` for a general object instance (as opposed to formals that can also be
+  primitive types)
+
 Other Identifiers
 -----------------
 
-Variables, fields, and argument names should be camelCase or PascalCase.
+Variables and fields should be camelCase or PascalCase.
+
+Handling Failure
+----------------
+
+In general, when code in a library encounters erroneous behavior, an appropriate
+:class:`~Errors.Error` should be thrown (see the :ref:`spec description
+<Chapter-Error_Handling>` for error handling in general).  This will enable
+users of the library to potentially recover from the bad behavior without having
+to restart their program.
+
+There are some known exceptions to this recommendation:
+
+- When division by zero is encountered, libraries will halt (unless the check
+  for division by zero has been disabled, see the flag's
+  :ref:`man page entry <man-div-by-zero-checks>`).
+
+- When accesses are made outside of the known bounds of a container type,
+  libraries will halt (unless bounds checking has been disabled, see the flag's
+  :ref:`man page entry <man-bounds-checks>`).
+
+- Other checks controlled by flags that are listed when running ``chpl -h``.
+
+- When the program runs out of memory and the function in question does not
+  already throw other types of errors, the library will halt.

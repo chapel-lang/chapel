@@ -21,6 +21,8 @@
 #include "chpl/util/break.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
+#include "symbol.h"
+#include "llvm/Support/Format.h"
 
 #include <cstdio>
 #include <cassert>
@@ -507,6 +509,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
         useTy = curType;
 
       tmp_alloc = createAllocaInFunctionEntry(irBuilder, useTy, "");
+      // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
       llvm::Type* curPtrType = curType->getPointerTo();
@@ -582,6 +585,24 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
+static void printfLLVMHelper(const char* fmt) {
+  auto fd = getLlvmPrintIrFile();
+  *fd << fmt;
+}
+
+#if TRACK_LLVM_VALUES
+// these are only used for TRACK_LLVM_VALUES
+static void flushLLVMHelper() {
+  auto fd = getLlvmPrintIrFile();
+  fd->flush();
+}
+
+static void printIDLLVMHelper(int id, const char* suffix) {
+  auto fd = getLlvmPrintIrFile();
+  *fd << "[" << llvm::format_decimal(id, 4) << "]" << suffix;
+}
+#endif
+
 // list_view() below do the same as print_llvm() above,
 // except list_view() are consistent with other list_views in view.cpp:
 //  - naming, for use with our debugger aliases nview, lview
@@ -591,21 +612,30 @@ void print_llvm(llvm::Module* m)
 // except when TRACK_LLVM_VALUES=1 they also display LLVM IDs when available
 
 void list_view(const llvm::Type* arg) {
-  if (arg == NULL) printf("<NULL>");
-  else arg->print(llvm::outs(), true);
-  printf("\n");
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, true);
+  }
+  printfLLVMHelper("\n");
 }
 
 void list_view(const llvm::Value* arg) {
-  if (arg == NULL) printf("<NULL>");
-  else arg->print(llvm::outs(), true);
-  printf("\n");
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, true);
+  }
+  printfLLVMHelper("\n");
 }
 
 void list_view(const llvm::Module* arg) {
-  if (arg == NULL) printf("<NULL>");
-  else arg->print(llvm::outs(), nullptr, true, true);
-  printf("\n");
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, nullptr, true, true);
+  }
+  printfLLVMHelper("\n");
 }
 
 ////////////////////
@@ -621,17 +651,17 @@ static int nextTrackId = 1;
 
 static void printLlvmId(const llvm::Value* val) {
   auto search = trackValIds.find(val);
-  if (search != trackValIds.end())  printf("[%4d] ", search->second);
-  else                              printf("[%4s] ", "");
-  fflush(stdout);
+  if (search != trackValIds.end())  printIDLLVMHelper(search->second, " ");
+  else                              printfLLVMHelper("[    ] ");
+  flushLLVMHelper();
 }
 
 // do not print anything if 'val' does not have an associated ID
 static void printLlvmIdIfFound(const llvm::Value* val, const char* msg) {
   auto search = trackValIds.find(val);
   if (search == trackValIds.end()) return;
-  printf("[%4d]%s", search->second, msg);
-  fflush(stdout);
+  printIDLLVMHelper(search->second, msg);
+  flushLLVMHelper();
 }
 
 static int addLlvmValue(const llvm::Value* val) {
@@ -698,33 +728,40 @@ public:
 static LLVMValueTracker llvmValueTracker;
 
 void nprint_view(const llvm::Value* arg) {
-  if (arg == NULL) {
-    printf("<NULL>");
-  }
+  printfLLVMHelper("<NULL>");
   else if (const llvm::Function* f = llvm::dyn_cast<llvm::Function>(arg)) {
-    f->print(llvm::outs(), &llvmValueTracker, true, true);
+    auto fd = getLlvmPrintIrFile();
+    f->print(*fd, &llvmValueTracker, true, true);
   }
   else if (const llvm::BasicBlock* bb = llvm::dyn_cast<llvm::BasicBlock>(arg)) {
-    bb->print(llvm::outs(), &llvmValueTracker, true, true);
+    auto fd = getLlvmPrintIrFile();
+    bb->print(*fd, &llvmValueTracker, true, true);
   }
   else {
     printLlvmId(arg);
     // LLVM currently does not print Value* w/ AssemblyAnnotationWriter
-    arg->print(llvm::outs(), true);
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, true);
   }
-  printf("\n");
+  printfLLVMHelper("\n");
 }
 
 void nprint_view(const llvm::Type* arg) {
-  if (arg == NULL) printf("<NULL>");
-  else arg->print(llvm::outs(), true); // no tracking currently
-  printf("\n");
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, true); // no tracking currently
+  }
+  printfLLVMHelper("\n");
 }
 
 void nprint_view(const llvm::Module* arg) {
-  if (arg == NULL) printf("<NULL>");
-  else arg->print(llvm::outs(), &llvmValueTracker, true, true);
-  printf("\n");
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, &llvmValueTracker, true, true);
+  }
+  printfLLVMHelper("\n");
 }
 
 #else // if TRACK_LLVM_VALUES

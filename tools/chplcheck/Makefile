@@ -37,7 +37,7 @@ chplcheck-venv:
 
 chplcheck: chplcheck-venv
 
-clean:
+clean: clean-pycache
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
 	rm -f $(link)
@@ -47,6 +47,9 @@ endif
 cleanall: clean
 
 clobber: clean
+
+clean-pycache:
+	find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +
 
 $(link): clean
 	@echo "Installing chplcheck symbolic link..."

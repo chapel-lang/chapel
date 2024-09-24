@@ -119,6 +119,17 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   return toOwned(b);
 }
 
+owned<Builder> Builder::createForGeneratedCode(Context* context,
+                                               const char* filepath,
+                                               ID generatedFrom,
+                                               UniqueString parentSymbolPath) {
+  auto uniqueFilename = UniqueString::get(context, filepath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                       /* LibraryFile */ nullptr,
+                       generatedFrom);
+  return toOwned(b);
+}
+
 owned<Builder> Builder::createForLibraryFileModule(
                                         Context* context,
                                         UniqueString filePath,
@@ -193,6 +204,14 @@ void Builder::deleteAdditionalLocation(AstLocMap& m, const AstNode* ast) {
   }
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
+
+void Builder::deleteAllLocations(const AstNode* ast) {
+  notedLocations_.erase(ast);
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).erase(ast);
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
 
 void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
   symbolTableVec_ = std::move(vec);
@@ -470,7 +489,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, -1, numContainedIds));
+    int postOrderId = this->isGenerated() ? -3 : -1;
+    ast->setID(ID(newSymbolPath, postOrderId, numContainedIds));
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -491,7 +511,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = afterChildID;
+    int myID = this->isGenerated() ? -4 - afterChildID : afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
     ast->setID(ID(symbolPath, myID, numContainedIDs));

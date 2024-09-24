@@ -136,9 +136,17 @@ function cleanup_tmp_dir()
 }
 trap cleanup_tmp_dir EXIT
 
+# Compute python interperet to use for helpers
+chpl_py="$($CHPL_HOME/util/config/find-python.sh)"
+
+# Collect comm protocol environment variables (lowercase to avoid conflicts)
+chpl_comm="$($chpl_py $CHPL_HOME/util/chplenv/chpl_comm.py)"
+chpl_launcher="$($chpl_py $CHPL_HOME/util/chplenv/chpl_launcher.py)"
+chpl_compiler="$($chpl_py $CHPL_HOME/util/chplenv/chpl_compiler.py --target)"
+chpl_locale_model="$($chpl_py $CHPL_HOME/util/chplenv/chpl_locale_model.py)"
+
 # Location of test job
 if [ -d ${CHPL_HOME}/test/release/examples ] ; then
-    # Install from source repo.
     TEST_DIR=${CHPL_HOME}/test/release/examples
     REL_TEST_DIR=test/release/examples
 elif [ -d ${CHPL_HOME}/examples ] ; then
@@ -151,19 +159,20 @@ else
 fi
 
 TEST_JOB=${TEST_JOB_BASENAME}
+if [ "${chpl_locale_model}" == "gpu" ]; then
+  TEST_DIR="${TEST_DIR}/gpu"
+  REL_TEST_DIR="${REL_TEST_DIR}/gpu"
+  TEST_JOB="hello-gpu"
+fi
 
 if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
     log_debug "printchplenv, because \$CHPL_CHECK_DEBUG == 1"
     $CHPL_HOME/util/printchplenv --all --no-tidy
 fi
 
-# Compute python interperet to use for helpers
-chpl_py="$($CHPL_HOME/util/config/find-python.sh)"
-
-# Collect comm protocol environment variables (lowercase to avoid conflicts)
-chpl_comm="$($chpl_py $CHPL_HOME/util/chplenv/chpl_comm.py)"
-chpl_launcher="$($chpl_py $CHPL_HOME/util/chplenv/chpl_launcher.py)"
-chpl_compiler="$($chpl_py $CHPL_HOME/util/chplenv/chpl_compiler.py --target)"
+if [[ -e ${TEST_DIR}/${TEST_JOB}.compopts ]]; then
+  COMP_FLAGS="$(cat ${TEST_DIR}/${TEST_JOB}.compopts)"
+fi
 
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
@@ -231,7 +240,9 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 (
     cd ${TMP_TEST_DIR} || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
-    EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
+    if [[ -e ${TEST_DIR}/${TEST_JOB}.execopts ]]; then
+      EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
+    fi
 
     log_info "Running test job."
     ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}

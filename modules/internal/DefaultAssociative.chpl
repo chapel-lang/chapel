@@ -40,7 +40,7 @@ module DefaultAssociative {
   }
 
   private proc _isDefaultDeser(f) param : bool {
-    if f._writing then return f.serializerType == IO.defaultSerializer;
+    if f._writing then return isDefaultSerializerType(f.serializerType);
     else return f.deserializerType == IO.defaultDeserializer;
   }
 
@@ -99,6 +99,10 @@ module DefaultAssociative {
       // set the rehash helpers
       this.table.rehashHelpers =
         new DefaultAssociativeDomRehashHelper(this:unmanaged);
+
+      if isOwnedClassType(idxType) {
+        compilerError("Associative domains do not currently work with 'owned' classes as the index type");
+      }
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here

@@ -1,5 +1,3 @@
-$CHPL_HOME/modules/standard/List.chpl:nnnn: In initializer:
-$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: creating a list with element type C
-$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: which is a class type with generic management
-$CHPL_HOME/modules/standard/List.chpl:nnnn: error: list element type cannot currently be generic
-  listInitGenericError.chpl:nnnn: called as list.init(type eltType = C)
+listInitGenericError.chpl:7: warning: creating a list with element type C
+listInitGenericError.chpl:7: warning: which is a class type with generic management
+listInitGenericError.chpl:7: error: list element type cannot currently be generic

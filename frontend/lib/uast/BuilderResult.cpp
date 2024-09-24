@@ -44,8 +44,9 @@ BuilderResult::BuilderResult()
 
 
 BuilderResult::BuilderResult(UniqueString filePath,
-                             const libraries::LibraryFile* lib)
-  : filePath_(filePath), libraryFile_(lib)
+                             const libraries::LibraryFile* lib,
+                             ID generatedFrom)
+  : filePath_(filePath), libraryFile_(lib), generatedFrom_(generatedFrom)
 {
 }
 
@@ -98,6 +99,7 @@ void BuilderResult::swap(BuilderResult& other) {
 
   std::swap(libraryFile_, other.libraryFile_);
   libraryFileSymbols_.swap(other.libraryFileSymbols_);
+  generatedFrom_.swap(other.generatedFrom_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -118,6 +120,11 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
     computeIdMaps(ast.get(), nullptr, newIdToAst, newIdToParent);
   }
 
+  if (!addin.generatedFrom_.isEmpty()) {
+    // Assumption: single top-level expression that is a module
+    newIdToParent[keep.topLevelExpression(0)->id()] = addin.generatedFrom_;
+  }
+
   // now update the ID and Locations maps in keep
   changed |= defaultUpdate(keep.idToAst_, newIdToAst);
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
@@ -136,6 +143,7 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
                            addin.commentIdToLocation_);
   changed |= defaultUpdateBasic(keep.libraryFile_, addin.libraryFile_);
   changed |= defaultUpdate(keep.libraryFileSymbols_, addin.libraryFileSymbols_);
+  changed |= defaultUpdate(keep.generatedFrom_, addin.generatedFrom_);
 
   return changed;
 }
@@ -185,8 +193,15 @@ void BuilderResult::mark(Context* context) const {
   // libraryFileSymbols_ only has IDs that should have been marked above
   (void) libraryFileSymbols_;
 
+  generatedFrom_.mark(context);
+
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
+}
+
+void BuilderResult::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
+  ss << "BuilderResult(...)";
 }
 
 void BuilderResult::updateFilePaths(Context* context,

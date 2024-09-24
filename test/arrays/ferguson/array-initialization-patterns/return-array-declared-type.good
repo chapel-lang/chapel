@@ -1,0 +1,4 @@
+alloc int test begins
+*** DR alloc int(64) 100000
+*** DR calling postalloc int(64) 100000
+alloc int test ends

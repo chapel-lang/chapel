@@ -1,0 +1,483 @@
+Distributions:
+
+Block
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+BlockDom(2,int(64),one,unmanaged DefaultDist)
+
+Block
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+BlockDom(2,int(64),one,unmanaged DefaultDist)
+
+Block opts
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+BlockDom(2,int(64),one,unmanaged DefaultDist)
+
+Block opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+BlockDom(2,int(64),one,unmanaged DefaultDist)
+
+Stencil:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+StencilDom(2,int(64),one,false)
+
+Stencil:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+StencilDom(2,int(64),one,false)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+StencilDom(2,int(64),one,false)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+StencilDom(2,int(64),one,false)
+
+Cyclic:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+CyclicDom(2,int(64),one)
+
+Cyclic:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+CyclicDom(2,int(64),one)
+
+Cyclic opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+CyclicDom(2,int(64),one)
+
+Cyclic opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+CyclicDom(2,int(64),one)
+
+Arrays:
+
+Block:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Block array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] atomic int(64)
+
+Stencil:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Stencil array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] atomic int(64)
+
+Cyclic:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+5 6 7 8 9 10
+6 7 8 9 10 11
+7 8 9 10 11 12
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)
+
+Cyclic array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] atomic int(64)

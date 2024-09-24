@@ -88,6 +88,10 @@ ChapelSyncvar
   from print-module-resolution.ChapelStandard.ChapelSyncvar
 ChapelTaskDataHelp
   from print-module-resolution.ChapelStandard.ChapelTaskDataHelp
+ChapelIOSerialize
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelIOSerialize
+ChapelNumLocales
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale.ChapelNumLocales
 ChapelLocale
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale
 ArrayViewSlice
@@ -98,8 +102,12 @@ ArrayViewReindex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
 ChapelPrivatization
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelPrivatization
+ChapelArrayViewElision
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelArrayViewElision
 ChapelIO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.ChapelIO
+PrecisionSerializer
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.PrecisionSerializer
 Types
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.Types
 IO
@@ -132,8 +140,12 @@ InsertionSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort.InsertionSort
 QuickSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort
+TimSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.TimSort
 Sort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort
+ChapelShortArrayTransfer
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelShortArrayTransfer
 ChapelArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
 ChapelHashtable
@@ -142,6 +154,8 @@ ChapelDistribution
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution
 RangeChunk
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.RangeChunk
+HideDeprecatedReexport
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search.HideDeprecatedReexport
 Search
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search
 DefaultSparse
@@ -154,14 +168,14 @@ ExternalArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ExternalArray
 DefaultRectangular
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular
-ChapelNumLocales
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelNumLocales
 LocaleModelHelpSetup
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup
 LocaleModelHelpRuntime
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpRuntime
 LocaleModelHelpFlat
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat
+Allocators
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem.Allocators
 LocaleModelHelpMem
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem
 LocaleModel
@@ -170,8 +184,6 @@ LocalesArray
   from print-module-resolution.ChapelStandard.LocalesArray
 ChapelAutoLocalAccess
   from print-module-resolution.ChapelStandard.ChapelAutoLocalAccess
-ChapelIOSerialize
-  from print-module-resolution.ChapelStandard.ChapelIOSerialize
 ChapelTaskID
   from print-module-resolution.ChapelStandard.ChapelTaskID
 ChapelTaskTable
@@ -198,6 +210,8 @@ ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
 ChapelRemoteVars
   from print-module-resolution.ChapelStandard.ChapelRemoteVars
+AutoGpu
+  from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

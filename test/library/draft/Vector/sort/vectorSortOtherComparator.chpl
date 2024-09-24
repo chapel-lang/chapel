@@ -13,7 +13,7 @@ vec1.clear();
 
 // Try sorting the vector in reverse.
 var vec2: vector(int) = [8, 7, 6, 5, 1, 2, 3, 4];
-vec2.sort(Sort.reverseComparator);
+vec2.sort(new Sort.ReverseComparator());
 writeln(vec2);
 vec2.clear();
 
@@ -22,6 +22,7 @@ vec2.clear();
 // comparator (this is just absval).
 //
 record myComparator {}
+myComparator implements relativeComparator;
 proc myComparator.compare(a, b) {
   return abs(a) - abs(b);
 }

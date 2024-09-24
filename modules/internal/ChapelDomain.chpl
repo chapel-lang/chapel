@@ -25,6 +25,7 @@ module ChapelDomain {
   public use ChapelBase;
   use ArrayViewRankChange, ChapelTuple;
 
+  private use ChapelRange only chpl_isValidRangeIdxType;
   /*
      Fractional value that specifies how full this domain can be
      before requesting additional memory. The default value of
@@ -45,6 +46,9 @@ module ChapelDomain {
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
+  @chpldoc.nodoc
+  config param noSortedWarnings = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -55,6 +59,27 @@ module ChapelDomain {
       return new _domain(value.pid, value, _unowned=true);
     else
       return new _domain(nullPid, value, _unowned=true);
+  }
+
+  @chpldoc.nodoc
+  proc tupleOfRangesSlice(base, slice) where chpl__isTupleOfRanges(base) &&
+                                             chpl__isTupleOfRanges(slice) {
+
+    if base.size != slice.size then
+      compilerError("tuple size mismatch in tupleOfRangesSlice");
+
+    param rank = base.size;
+
+    proc resultStrides(param dim = 0) param do return
+      if dim == rank-1 then ( base(dim)[slice(dim)] ).strides
+      else chpl_strideUnion( ( base(dim)[slice(dim)] ).strides,
+                                    resultStrides(dim+1) );
+
+    var r: rank*range(base[0].idxType, boundKind.both, resultStrides());
+    for param i in 0..rank-1 {
+      r(i) = base(i)[slice(i)];
+    }
+    return r;
   }
 
   // Run-time type support
@@ -175,6 +200,7 @@ module ChapelDomain {
   //
 
   proc chpl__isTupleOfRanges(tup) param {
+    if !isTuple(tup) then return false;
     for param i in 0..tup.size-1 {
       if !isRangeType(tup(i).type) then
         return false;
@@ -1317,17 +1343,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc this(ranges...rank)
     where chpl__isTupleOfRanges(ranges) {
-      const myDims = dims();
-
-      proc resultStrides(param dim = 0) param do return
-        if dim == rank-1 then ( myDims(dim)[ranges(dim)] ).strides
-        else chpl_strideUnion( ( myDims(dim)[ranges(dim)] ).strides,
-                                      resultStrides(dim+1) );
-
-      var r: rank*range(_value.idxType, boundKind.both, resultStrides());
-      for param i in 0..rank-1 {
-        r(i) = myDims(i)[ranges(i)];
-      }
+      const r = tupleOfRangesSlice(dims(), ranges);
       return new _domain(distribution, rank, _value.idxType, r(0).strides, r);
     }
 
@@ -1555,7 +1571,10 @@ module ChapelDomain {
 
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
-        compilerError("array element type cannot be void");
+        compilerError("array element type cannot be 'void'");
+      }
+      if eltType == nothing {
+        compilerError("array element type cannot be 'nothing'");
       }
       if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
@@ -1711,12 +1730,13 @@ module ChapelDomain {
     }
 
     // assumes that data is already initialized
+    // this function is used in Fortran interop
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-      if eltType == void {
-        compilerError("array element type cannot be void");
-      }
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
       var x = _value.dsiBuildArrayWith(eltType, data, allocSize);
       pragma "dont disable remote value forwarding"
       proc help() {
@@ -1727,6 +1747,31 @@ module ChapelDomain {
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
+    }
+
+    // assumes that the caller has checked:
+    //  * that 'from' and the receiver domain match & have compatible types
+    //  * that the distributions match as well
+    //  * that the 'from array is not unowned
+    //  * that the domain/array implementation supports doiBuildArrayMoving
+    pragma "no copy return"
+    @chpldoc.nodoc
+    proc buildArrayMoving(from) {
+      var x = _value.doiBuildArrayMoving(from);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+
+      // note: 'from' will be deinited here, normally leading to
+      // deleting the array instance. The array implementation needs
+      // to have set anything stolen to 'nil' in doiBuildArrayMoving
+      // and then to take no action on it when deleting.
     }
 
     /*
@@ -2775,11 +2820,23 @@ module ChapelDomain {
     }
 
     // associative array interface
-    /* Yields the domain indices in sorted order. */
+    /*
+      Yields the domain indices in sorted order. This method is only supported
+      on associative domains.
+
+      .. warning::
+
+         It is recommended to use :proc:`Sort.sorted` instead of this method.
+
+    */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      for i in _value.dsiSorted(comparator) {
-        yield i;
-      }
+      if !this.isAssociative() then
+        compilerError("'.sorted()' is only supported on associative domains");
+      if !noSortedWarnings then
+        compilerWarning(
+          "It is recommended to use 'Sort.sorted' instead of this method. ",
+          "Compile with '-snoSortedWarnings' to suppress this warning.");
+      for x in this._value.dsiSorted(comparator) do yield x;
     }
 
     @chpldoc.nodoc
@@ -2839,6 +2896,26 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc supportsAutoLocalAccess() param {
       return _value.dsiSupportsAutoLocalAccess();
+    }
+
+    @chpldoc.nodoc
+    proc supportsOffsetAutoLocalAccess() param {
+      return _value.dsiSupportsOffsetAutoLocalAccess();
+    }
+
+    @chpldoc.nodoc
+    proc autoLocalAccessOffsetCheck(offsets) {
+      return _value.dsiAutoLocalAccessOffsetCheck(offsets);
+    }
+
+    @chpldoc.nodoc
+    proc supportsArrayViewElision() param {
+      return _value.dsiSupportsArrayViewElision();
+    }
+
+    @chpldoc.nodoc
+    proc supportsShortArrayTransfer() param {
+      return _value.dsiSupportsShortArrayTransfer();
     }
 
     @chpldoc.nodoc
@@ -2973,4 +3050,107 @@ module ChapelDomain {
 
   }  // record _domain
 
+  //
+  // Support for creating domains using tuples of bounds
+  //
+
+  /* Creates a rectangular domain with bounds defined by the scalar values `low`
+      and `high`. If `inclusive` is true, the domain includes the `high` value.
+      Otherwise, the domain excludes the `high` value.
+   */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where chpl_isValidRangeIdxType(t1) && chpl_isValidRangeIdxType(t2)
+  {
+    return if inclusive then {low..high} else {low..<high};
+  }
+
+  /* Creates a multidimensional rectangular domain with bounds defined by the
+     pairwise elements of `low` and `high`. If `inclusive` is true, the domain
+     includes the `high` values. Otherwise, the domain excludes the `high`
+     values. For example, `makeRectangularDomain((1, 2), (10,11))` is
+     equivalent to `{1..10, 2..11}`.
+   */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size &&
+          (isCoercible(low(0).type, high(0).type) ||
+           isCoercible(high(0).type, low(0).type))
+  {
+    param size = low.size;
+    type eltType;
+    if (low(0).type == high(0).type) {
+      eltType = low(0).type;
+    } else {
+      eltType = (low(0) + high(0)).type;
+    }
+    var ranges:  size*range(eltType);
+    for param i in 0..<size {
+        if inclusive then
+          ranges[i] = low[i]..high[i];
+        else
+          ranges[i] = low[i]..<high[i];
+    }
+    const d: domain(size, eltType) = ranges;
+    return d;
+  }
+
+  /* Creates a rectangular domain with bounds defined by one tuple and one
+     scalar value. The scalar argument is used in each dimension of the domain,
+     while the 'n'-th tuple element is used to define the 'n'-th dimension of
+     the domain. If `inclusive` is true, the domain includes the `high` value.
+     Otherwise, the domain excludes the `high` value. For example,
+     `makeRectangularDomain((1, 2), 10)` is equivalent to `{1..10, 2..10}`
+     and `makeRectangularDomain(1, (10, 11), inclusive=false)` is equivalent
+     to `{1..<10, 1..<11}`.
+    */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) != isTuple(high) {
+      param size = if isTuple(low) then low.size else high.size;
+      type eltType = if isTuple(low) then
+                       (if low(0).type == high.type then low(0).type else (low(0) + high).type)
+                     else
+                       (if high(0).type == low.type then high(0).type else (low + high(0)).type);
+      var ranges: size*range(eltType);
+      if isTuple(low) {
+        if !isHomogeneousTuple(low) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + low.type:string + "'");
+        for param i in 0..<size {
+          if inclusive then
+            ranges[i] = low[i]..high;
+          else
+            ranges[i] = low[i]..<high;
+        }
+      } else {
+        if !isHomogeneousTuple(high) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + high.type:string + "'");
+        for param i in 0..<size {
+          if inclusive then
+            ranges[i] = low..high[i];
+          else
+            ranges[i] = low..<high[i];
+        }
+      }
+      const d: domain(size, eltType) = ranges;
+      return d;
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high)
+  {
+    if !isHomogeneousTuple(low) || !isHomogeneousTuple(high) then
+      compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+                    low.type:string + "' and '" + high.type:string + "'");
+    else if low.size != high.size then
+      compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
+                    "but got '" + low.type:string + "' and '" + high.type:string + "'");
+    else if !(isCoercible(low(0).type, high(0).type) ||
+              isCoercible(high(0).type, low(0).type)) then
+      compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
+                    "Cannot coerce between '" + low(0).type:string + "' and '" +
+                    high(0).type:string + "'");
+  }
 }

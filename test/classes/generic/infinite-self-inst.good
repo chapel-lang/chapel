@@ -1,0 +1,3 @@
+infinite-self-inst.chpl:3: warning: please use '?' when declaring a variable with generic type
+infinite-self-inst.chpl:3: note: for example with 'Foo(?)'
+infinite-self-inst.chpl:3: error: could not determine the concrete type for the generic return type 'owned Foo'

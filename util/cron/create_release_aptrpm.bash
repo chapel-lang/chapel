@@ -31,13 +31,26 @@ source $CWD/functions.bash
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
+# if any errors occur, this script should fail
+set -e
+
 source $CHPL_HOME/util/packaging/common/build_helpers.sh
 
 # if using a local tarball, copy it to the expected location
 if [ -n "$CHPL_TARBALL" ]; then
   log_info "Using local tarball: $CHPL_TARBALL"
-  cp $CHPL_TARBALL $CHPL_HOME/util/packaging/common/chapel-${CHPL_VERSION}.tar.gz
+  mkdir -p $CHPL_HOME/util/packaging/tarballs
+  cp $CHPL_TARBALL $CHPL_HOME/util/packaging/tarballs/chapel-${CHPL_VERSION}.tar.gz
 fi
 
-log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
-__build_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $PARALLEL
+# if BUILD_CROSS_PLATFORM is set, build the cross-platform package
+if [ -n "$BUILD_CROSS_PLATFORM" ]; then
+  log_info "Building cross-platform $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
+  __build_all_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $PARALLEL
+else
+  log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
+  __build_native_package $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $PARALLEL
+fi
+
+log_info "Testing $PACKAGE_NAME"
+__test_all_packages

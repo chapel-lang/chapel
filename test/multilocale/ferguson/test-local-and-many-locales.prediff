@@ -1,0 +1,5 @@
+#! /bin/bash -norc
+#
+# Ignore signal warnings from GASNet.
+#
+grep -v 'Caught a signal' < $2 > $2.tmp && mv $2.tmp $2

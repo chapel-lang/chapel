@@ -233,9 +233,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtSyncVarAuxFields->symbol);
   extend(gSyncVarAuxFields);
 
-  extend(dtSingleVarAuxFields->symbol);
-  extend(gSingleVarAuxFields);
-
   extend(dtAny->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
@@ -248,6 +245,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtThunkRecord->symbol);
   extend(dtBorrowed->symbol);
   extend(dtBorrowedNonNilable->symbol);
   extend(dtBorrowedNilable->symbol);

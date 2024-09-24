@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+/* Distributed associative arrays. */
 @unstable("HashedDist is unstable and may change in the future")
 prototype module HashedDist {
 
@@ -1009,7 +1010,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    if f.serializerType == IO.defaultSerializer {
+    if isDefaultSerializerType(f.serializerType) {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
       ser.startDim(dom.dsiNumIndices);
 

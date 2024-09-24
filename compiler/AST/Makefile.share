@@ -45,6 +45,7 @@ AST_SRCS =                                          \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \
+           thunks.cpp                               \
            TryStmt.cpp                              \
            type.cpp                                 \
            UseStmt.cpp                              \

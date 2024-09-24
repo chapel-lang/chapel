@@ -176,6 +176,11 @@ returnInfoFirst(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoSecond(CallExpr* call) {
+  return call->get(2)->qualType();
+}
+
+static QualifiedType
 returnInfoFirstAsValue(CallExpr* call) {
   return QualifiedType(Qualifier::QUAL_CONST_VAL, call->get(1)->qualType().type());
 }
@@ -213,6 +218,17 @@ returnInfoScalarPromotionType(CallExpr* call) {
     type = type->scalarPromotionType;
 
   return QualifiedType(type, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoThunkResultType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  AggregateType* type = toAggregateType(tmp.type()->getValType());
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->thunkInvoke);
+
+  return QualifiedType(type->thunkInvoke->retType, QUAL_VAL);
 }
 
 static QualifiedType
@@ -730,6 +746,11 @@ initPrimitive() {
   prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
 
+  prim_def(PRIM_CREATE_THUNK, "create thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT, "thunk result", returnInfoFirst);
+  prim_def(PRIM_FORCE_THUNK, "force thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT_TYPE, "thunk result type", returnInfoThunkResultType);
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   // dst, src. PRIM_MOVE can set a reference.
@@ -855,6 +876,7 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
+  prim_def(PRIM_NEW_WITH_ALLOCATOR, "new with allocator", returnInfoSecond);
   // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   // given a complex value, produce a reference to the imag component
@@ -916,8 +938,8 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
-  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true);
-  prim_def(PRIM_GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d", returnInfoCVoidPtr, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d", returnInfoCVoidPtr, true, true);
   prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
   prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
   prim_def(PRIM_GPU_PID_OFFLOAD, "gpu pid offload", returnInfoVoid, true);
@@ -948,8 +970,13 @@ initPrimitive() {
   // for that loop launches.
   prim_def(PRIM_GPU_SET_BLOCKSIZE, "gpu set blockSize", returnInfoVoid, true);
 
+  // If embedded inside a gpuizable loop, perform this many loop iterations
+  // within a single thread of the kernel.
+  prim_def(PRIM_GPU_SET_ITERS_PER_THREAD, "gpu set itersPerThread", returnInfoVoid, true);
+
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+  prim_def(PRIM_ASSERT_GPU_ELIGIBLE, "assert gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_REDUCE_WRAPPER, "gpu reduce wrapper", returnInfoVoid, true);
 
@@ -1053,6 +1080,8 @@ initPrimitive() {
   prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
   prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
   prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
+
+  prim_def(PRIM_PROTO_SLICE_ASSIGN, "assign proto slices", returnInfoVoid);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);

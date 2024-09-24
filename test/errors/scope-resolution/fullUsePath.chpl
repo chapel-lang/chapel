@@ -11,4 +11,8 @@ module M1 {
             }
         }
     }
+    proc main() {
+      // import M4 so that it is checked
+      import this.M2.M3.M4;
+    }
 }

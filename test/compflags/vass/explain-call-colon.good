@@ -1,0 +1,5 @@
+explain-call-colon.chpl:7: note: call: :(explain, type string)
+explain-call-colon.chpl:4: note: visible functions are: :(x: explain, type t: string)
+explain-call-colon.chpl:4: note: candidates are: :(x: explain, type t: string)
+explain-call-colon.chpl:4: note: best candidate is: :(x: explain, type t: string)
+(explain)

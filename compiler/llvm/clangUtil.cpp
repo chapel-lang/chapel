@@ -2895,6 +2895,13 @@ static void helpComputeClangArgs(std::string& clangCC,
     clangCCArgs.push_back(clangRequiredWarningFlags[i]);
   }
 
+  if (usingGpuLocaleModel() &&
+      getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+    // this is necessary for CUB 11. Once we drop CUDA 11 support, we can
+    // probably remove this
+    clangCCArgs.push_back("-Wno-deprecated-builtins");
+  }
+
   // Add debug flags
   if (debugCCode) {
     clangCCArgs.push_back("-g");
@@ -3498,8 +3505,7 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isU
   store.u.type = type;
   store.isUnsigned = isUnsigned;
   /*fprintf(stderr, "Adding global type %s ", name.str().c_str());
-  type->dump();
-  fprintf(stderr, "\n");
+  print_llvm(type);
   */
   (layers.back())[name] = store;
 }
@@ -4089,14 +4095,8 @@ getSingleCGArgInfo(::Type* type) {
   return argInfo;
 }
 
-static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  INT_ASSERT(clangInfo);
-
-  unsigned alignInBits = clangInfo->Ctx->getTypeAlignIfKnown(qType);
-
+int getCTypeAlignment(const clang::QualType& qType) {
+  unsigned alignInBits = gGenInfo->clangInfo->Ctx->getTypeAlignIfKnown(qType);
   unsigned alignInBytes = alignInBits / 8;
   // round it up to a power of 2
   unsigned rounded = 1;
@@ -4105,49 +4105,30 @@ static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
   return rounded;
 }
 
-static unsigned helpGetCTypeAlignment(const clang::TypeDecl* td) {
-  QualType qType;
+int getCTypeAlignment(::Type* type) {
+  // find the TypeDecl
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cVal = NULL;
+  gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
+  const clang::TypeDecl* td = cType;
 
+  // find the QualType
+  QualType qType;
   if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
   } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
+    if (def == nullptr)
+      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+      return ALIGNMENT_DEFER;
     qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
 
-  return helpGetCTypeAlignment(qType);
-}
-static unsigned helpGetAlignment(::Type* type) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-
-  if (type->symbol->hasFlag(FLAG_EXTERN)) {
-    clang::TypeDecl* cType = NULL;
-    clang::ValueDecl* cVal = NULL;
-    info->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
-    if (cType) {
-      return helpGetCTypeAlignment(cType);
-    }
-  }
-
-  // use the maximum alignment of all the fields
-  unsigned maxAlign = 1;
-
-  if (isRecord(type) || isUnion(type)) {
-    AggregateType* at = toAggregateType(type);
-    for_fields(field, at) {
-      unsigned fieldAlign = helpGetAlignment(field->type);
-      if (maxAlign < fieldAlign)
-        maxAlign = fieldAlign;
-    }
-  }
-
-  return maxAlign;
+  return getCTypeAlignment(qType);
 }
 
 bool isCTypeUnion(const char* name) {
@@ -4172,45 +4153,24 @@ bool isCTypeUnion(const char* name) {
   return false;
 }
 
-llvm::MaybeAlign getPointerAlign(int addrSpace) {
+// pointer alignment from clang, in the default address space
+// unless given explicitly
+#if HAVE_LLVM_VER >= 160
+llvm::MaybeAlign getPointerAlign(clang::LangAS AS)
+#else
+llvm::MaybeAlign getPointerAlign(int AS)
+#endif
+{
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-#if HAVE_LLVM_VER >= 160
-  auto AS = LangAS::Default;
-#else
-  auto AS = 0;
-#endif
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(AS);
   return llvm::MaybeAlign(align);
 }
-llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td) {
-  unsigned rounded = helpGetCTypeAlignment(td);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
-llvm::MaybeAlign getCTypeAlignment(const clang::QualType& qt) {
-  unsigned rounded = helpGetCTypeAlignment(qt);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
-llvm::MaybeAlign getAlignment(::Type* type) {
-  unsigned rounded = helpGetAlignment(type);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
 
+// Can we invoke 'cname' when it does not have a declaration?
 bool isBuiltinExternCFunction(const char* cname)
 {
   if( 0 == strcmp(cname, "sizeof") ) return true;
@@ -4430,6 +4390,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
                                  gContext->llvmContext());
+  if (!bcLib) {
+    USR_FATAL("IR parsing failed on '%s': %s",
+              bitCodeFilePath,
+              err.getMessage().str().c_str());
+  }
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
@@ -4756,9 +4721,21 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 
 }
 
+static void setPATH(const std::string& PATH) {
+  setenv("PATH", PATH.c_str(), /*override*/ 1);
+}
+static std::string addToPATH(const std::string& newPathElm) {
+  std::string curPath = std::getenv("PATH");
+  std::string adjPath = curPath + std::string(":") + newPathElm;
+  setPATH(adjPath);
+  return curPath;
+}
+
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                                   const std::string& gpuObjectFilenamePrefix,
                                   const std::string& fatbinFilename) {
+  // make sure CHPL_CUDA_PATH is in PATH
+  addToPATH(gGpuSdkPath + std::string("/bin"));
   if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
     USR_FATAL("Command 'ptxas' not found\n");
   }
@@ -5043,7 +5020,8 @@ void makeBinaryLLVM(void) {
     if (fMultiLocaleInterop) {
       std::string cmd = std::string(CHPL_HOME);
       cmd += "/util/config/compileline --multilocale-lib-deps";
-      std::string libs = runCommand(cmd);
+      std::string libs = runCommand(cmd,
+                                    "Get multilocale-specific dependencies");
       // Erase trailing newline.
       libs.erase(libs.size() - 1);
       clangLDArgs.push_back(libs);
@@ -5073,11 +5051,7 @@ void makeBinaryLLVM(void) {
         gpuArgs += " -Wno-unknown-cuda-version";
       }
       else if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-        curPath = std::getenv("PATH");
-        std::string adjPath = curPath + std::string(":") + gGpuSdkPath +
-                              std::string("/llvm/bin");
-
-        setenv("PATH", adjPath.c_str(), /*override*/ 1);
+        curPath = addToPATH(gGpuSdkPath + std::string("/llvm/bin"));
       }
     }
 
@@ -5097,7 +5071,7 @@ void makeBinaryLLVM(void) {
 
     if (usingGpuLocaleModel() &&
         getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-      setenv("PATH", curPath.c_str(), /*override*/ 1);
+      setPATH(curPath);
     }
 
     // Note: we used to start 'options' with 'cargs' so that
@@ -5485,6 +5459,12 @@ static void llvmRunOptimizations(void) {
 static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
+    // TODO: llvm-print-ir-file is not handled here, since 'llvm-objdump' does't
+    // have a --output flag, that would require some fd management in `mysystem`
+    if (shouldLlvmPrintIrToFile()) {
+      USR_WARN("'--llvm-print-ir-file' is not supported for 'asm' output");
+    }
+
 
     std::string llvmObjDump = findSiblingClangToolPath("llvm-objdump");
 

@@ -38,6 +38,10 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_LLVM
+namespace llvm { class Type; }
+#endif
+
 /*
   Things which must be changed if instance variables are added
   to Types:
@@ -71,6 +75,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return this; }
   void           verify()    override;
 
   virtual void           codegenDef();
@@ -123,6 +128,10 @@ public:
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
+#ifdef HAVE_LLVM
+  llvm::Type* getLLVMType();
+  int getLLVMAlignment();
+#endif
 
 protected:
   Type(AstTag astTag, Symbol* init_defaultVal);
@@ -530,6 +539,7 @@ TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
 TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtThunkRecord;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
@@ -563,7 +573,6 @@ TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtOpaque;
 TYPE_EXTERN PrimitiveType*    dtTaskID;
 TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
-TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
 // TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
@@ -631,11 +640,9 @@ bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
 AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
-bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
 
 bool isOrContainsSyncType(Type* t, bool checkRefs = true);
-bool isOrContainsSingleType(Type* t, bool checkRefs = true);
 bool isOrContainsAtomicType(Type* t, bool checkRefs = true);
 
 bool isRefIterType(Type* t);
@@ -687,6 +694,9 @@ void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 GenRet codegenImmediate(Immediate* i);
 
 const Immediate& getDefaultImmediate(Type* t);
+
+// Returns strings explaining why a type is generic
+llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

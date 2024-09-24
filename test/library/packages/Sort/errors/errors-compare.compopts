@@ -1,3 +1,0 @@
--scomparator=boolean # errors-compare.boolean.good
--scomparator=rec     # errors-compare.rec.good
--scomparator=str     # errors-compare.str.good

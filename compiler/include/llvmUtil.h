@@ -40,11 +40,13 @@ struct PromotedPair {
 
 bool isArrayVecOrStruct(llvm::Type* t);
 
-// 0 means undefined alignment
+// align=0 means undefined alignment; this does not follow 'AlignmentStatus'
 // creates an alloca instruction and inserts it before insertBefore
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
 // creates an alloca instruction at the top of the function
+// must be followed by setValueAlignment()
+// todo: add Type* and Symbol* args to createAllocaInFunctionEntry instead
 llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
 
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);

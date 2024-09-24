@@ -54,18 +54,18 @@
 
 int main(int argc, char** argv)
 {
-  atomic_bool flag;
+  chpl_atomic_bool flag;
 
   atomic_init_bool(&flag, true);
   atomic_store_bool(&flag, false);
   assert( false == atomic_exchange_bool(&flag, true) );
   assert( true == atomic_exchange_bool(&flag, true) );
 
-  chpl_atomic_thread_fence(memory_order_seq_cst);
-  chpl_atomic_signal_fence(memory_order_seq_cst);
+  chpl_atomic_thread_fence(chpl_memory_order_seq_cst);
+  chpl_atomic_signal_fence(chpl_memory_order_seq_cst);
 
   {
-    atomic_uint_least8_t tmp;
+    chpl_atomic_uint_least8_t tmp;
     atomic_load_uint_least8_t(&tmp);
   }
 

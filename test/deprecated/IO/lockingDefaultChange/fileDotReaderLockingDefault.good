@@ -1,3 +1,0 @@
-fileDotReaderLockingDefault.chpl:5: warning: in a future release, the default value for 'locking' will be removed from 'file.reader' and this warning will become an error; please specify the value explicitly (e.g., 'f.reader(locking=false)').
-use IO;
-use IO;

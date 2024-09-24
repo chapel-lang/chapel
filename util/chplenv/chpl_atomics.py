@@ -4,7 +4,7 @@ import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
-from utils import error, memoize
+from utils import error, memoize, warning
 
 
 @memoize
@@ -19,6 +19,8 @@ def get(flag='target'):
                 atomics_val = 'none'
     elif flag == 'target':
         atomics_val = overrides.get('CHPL_ATOMICS')
+        is_user_specified = atomics_val is not None
+        is_intel = False
         if not atomics_val:
             compiler_val = chpl_compiler.get('target')
             platform_val = chpl_platform.get('target')
@@ -42,6 +44,8 @@ def get(flag='target'):
             #
             # For pgi or 32-bit platforms with an older gcc, we fall back to
             # locks
+
+            is_intel = compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel'
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
                 version = get_compiler_version(flag)
                 if version >= CompVersion('5.0'):
@@ -50,14 +54,17 @@ def get(flag='target'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
                     atomics_val = 'intrinsics'
-            elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
+            elif is_intel:
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
                 atomics_val = 'cstdlib'
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
-                if has_std_atomics():
+                # if using bundled LLVM, we can use cstdlib atomics
+                import chpl_llvm
+                has_llvm = chpl_llvm.get()
+                if has_llvm == "bundled" or has_std_atomics():
                     atomics_val = 'cstdlib'
                 else:
                     atomics_val = 'intrinsics'
@@ -69,6 +76,20 @@ def get(flag='target'):
                 atomics_val = 'locks'
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
+
+    if flag == 'target' and atomics_val == 'intrinsics':
+        msg = "Using CHPL_ATOMICS=intrinsics is a known performance issue"
+        if is_intel:
+            msg += " but is required for portability with Intel compilers for the time being"
+        elif is_user_specified:
+            msg += ": please consider using CHPL_ATOMICS=cstdlib"
+        warning(msg)
+
+    if flag == 'target' and atomics_val == 'locks':
+        platform_val = chpl_platform.get('target')
+        if platform_val == 'darwin':
+            error("CHPL_ATOMICS=locks is not supported on MacOS")
+
     return atomics_val
 
 

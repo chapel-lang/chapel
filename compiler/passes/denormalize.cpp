@@ -118,8 +118,7 @@ void denormalize(void) {
       } while(deferredSyms.size() > 0);
     }
 
-    if (!fReturnByRef)
-      collapseTrivialMoves();
+    collapseTrivialMoves();
   }
 }
 

@@ -398,7 +398,7 @@ module ChapelRange {
           " compile with -snewRangeLiteralType.");
     return oldRule;
   }
-  private proc isValidRangeIdxType(type t) param {
+  proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
   }
 
@@ -435,7 +435,7 @@ module ChapelRange {
     return new range(bool, low=low, high=high);
 
   proc chpl_build_bounded_range(low, high)
-  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
+  where !(chpl_isValidRangeIdxType(low.type) && chpl_isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
@@ -463,7 +463,7 @@ module ChapelRange {
   proc chpl_build_low_bounded_range(low: bool) do
     return new range(low=low);
   proc chpl_build_low_bounded_range(low)
-  where !isValidRangeIdxType(low.type) {
+  where !chpl_isValidRangeIdxType(low.type) {
     compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
   }
 
@@ -475,7 +475,7 @@ module ChapelRange {
   proc chpl_build_high_bounded_range(high: bool) do
     return new range(high=high);
   proc chpl_build_high_bounded_range(high)
-  where !isValidRangeIdxType(high.type) {
+  where !chpl_isValidRangeIdxType(high.type) {
     compilerError("Ranges defined using bounds of type '" + high.type:string + "' are not currently supported");
   }
 
@@ -526,7 +526,7 @@ module ChapelRange {
   }
 
   proc chpl_compute_low_param_loop_bound(param low, param high) param
-  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
+  where !(chpl_isValidRangeIdxType(low.type) && chpl_isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("param for-loops defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
@@ -3002,7 +3002,7 @@ private proc isBCPindex(type t) param do
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high)
-  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
+  where !(chpl_isValidRangeIdxType(low.type) && chpl_isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -3190,7 +3190,7 @@ private proc isBCPindex(type t) param do
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_strided_range_iter(low, high, stride)
-  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
+  where !(chpl_isValidRangeIdxType(low.type) && chpl_isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -3236,7 +3236,7 @@ private proc isBCPindex(type t) param do
   }
 
   iter chpl_direct_counted_range_iter(low, count)
-  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(count.type)) {
+  where !(chpl_isValidRangeIdxType(low.type) && chpl_isValidRangeIdxType(count.type)) {
     chpl_build_low_bounded_range(low);  // generate normal error, if possible
     // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",

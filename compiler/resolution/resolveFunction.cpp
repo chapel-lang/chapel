@@ -46,6 +46,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TemporaryConversionThunk.h"
+#include "thunks.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
@@ -516,6 +517,14 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
+void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
+  fn->retType = retType;
+  Symbol* retSym = fn->getReturnSymbol();
+  INT_ASSERT(retSym);
+  retSym->type = retType;
+  fn->retTag = RET_VALUE;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -585,6 +594,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
+      }
+
+      if (fn->hasFlag(FLAG_THUNK_BUILDER) == true) {
+        protoThunkRecord(fn);
       }
 
       if (fn->isMethod() == true && fn->_this != NULL) {
@@ -1673,6 +1686,7 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1716,13 +1730,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   iRecord->iteratorInfo = ii;
   fn->iteratorInfo      = ii;
 
-  fn->retType           = iRecord;
-  // Also adjust the type of the return symbol
-  Symbol* retSym = fn->getReturnSymbol();
-  INT_ASSERT(retSym);
-  retSym->type = iRecord;
-
-  fn->retTag            = RET_VALUE;
+  setReturnAndReturnSymbolType(fn, iRecord);
 
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
   fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
@@ -2893,23 +2901,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
 
       // for sync/single, getCopyTypeDuringResolution returns the valType.
-      if (isSyncType(fromValType) || isSingleType(fromValType)) {
+      if (isSyncType(fromValType)) {
         Type* valType = getCopyTypeDuringResolution(fromValType);
 
         VarSymbol* tmp = newTemp("_cast_tmp_", valType);
         insertBefore->insertBefore(new DefExpr(tmp));
 
         CallExpr* readCall = NULL;
-        if (isSyncType(fromValType)) {
-          readCall = new CallExpr("readFE", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a sync is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        } else {
-          INT_ASSERT(isSingleType(fromValType));
-          readCall = new CallExpr("readFF", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a single is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        }
+        INT_ASSERT(isSyncType(fromValType));
+        readCall = new CallExpr("readFE", gMethodToken, from);
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                      "apply a 'read\?\?()' method to the actual");
 
         newCalls.push_back(readCall);
         CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);

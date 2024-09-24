@@ -30,6 +30,10 @@
 
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
+
+  .. include:: AutoGpu.rst
+     :start-line: 7
+     :start-after: Automatically included GPU symbols
 */
 @unstable("The GPU module is unstable and its interface is subject to change in the future.")
 module GPU
@@ -134,18 +138,6 @@ module GPU
   }
 
   /*
-    Will halt execution at runtime if called from outside a GPU.  If used on
-    first line in ``foreach`` or ``forall`` loop will also do a compile time
-    check that the loop is eligible for execution on a GPU.
-  */
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
-  inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu", false);
-  }
-
-  /*
     Returns value of a per-multiprocessor counter that increments every clock cycle.
     This function is meant to be called to time sections of code within a GPU
     enabled loop.
@@ -227,7 +219,7 @@ module GPU
     pragma "codegen for GPU"
     extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     chpl_syncWarp(mask);
   }
 
@@ -265,14 +257,6 @@ module GPU
     var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
     var arrayPtr = voidPtr : c_ptr(theType);
     return arrayPtr.deref();
-  }
-
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
   }
 
   @chpldoc.nodoc
@@ -385,7 +369,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -396,7 +380,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
@@ -501,10 +485,13 @@ module GPU
         res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        // I want to do on here.parent but that doesn't work
+        // I want to do on here.parent but that doesn't work. Note that this
+        // caused some issues with `--gpu-specialization`.
+        // test/gpu/native/reduction/basic.skipif is a skipif that's added
+        // because of this hack.
         extern proc chpl_task_getRequestedSubloc(): int(32);
         const curSubloc = chpl_task_getRequestedSubloc();
-        chpl_task_setSubloc(-2);
+        chpl_task_setSubloc(c_sublocid_none);
         var HostArr = A;
         res = doCpuReduceHelp(op, HostArr): res.type;
         chpl_task_setSubloc(curSubloc);
@@ -820,7 +807,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private inline proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
+  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan

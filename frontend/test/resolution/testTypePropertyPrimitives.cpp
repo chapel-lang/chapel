@@ -594,7 +594,7 @@ static void test12() {
             record r9 { type T; var x: T; }
             class c1 { var x: int; }
             record r10 { var x: owned c1?; }
-            record r11 { var x: r9; }
+            record r11 { var x: r9(?); }
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_POD,
     /* calls */ {

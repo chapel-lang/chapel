@@ -81,6 +81,48 @@ void      addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
                                        std::vector<Expr*>* delayedRemoval);
 BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
                                                   CallExpr* yield);
+
+/*
+ At lowering time, now that we have localized yield symbols, the return symbol
+ and the PRIM_RETURN CallExpr are not needed and would cause trouble;
+ this function removes them.
+ */
+void removeRetSymbolAndUses(FnSymbol* fn);
+/*
+ Creates (and returns) a field to add to an iterator class.
+ 'type' is used if local==NULL.
+ */
+Symbol* createICField(int& i, Symbol* local, Type* type,
+                      bool isValueField, FnSymbol* fn);
+/*
+ When converting an iterator that captures outer variables or has state
+ between yields, replace the uses of outer variables (captured in formals)
+ and state (via local variables) with references to a fields in the given
+ class or record.
+ */
+void replaceLocalUseOrDefWithFieldRef(SymExpr* se,
+                                      Symbol* classOrRecord,
+                                      std::vector<BaseAST*>& asts,
+                                      SymbolMap& local2field,
+                                      Vec<SymExpr*>& defSet,
+                                      Vec<SymExpr*>& useSet);
+/*
+ Inserts code to return a value from a function. If the function uses
+ an "out parameter" / return arg, uses that, otherwise inserts a real
+ return statement.
+ */
+void insertReturn(FnSymbol* fn, Symbol* toReturn);
+/*
+ Given a record that contains fields for outer variables captured as
+ formals of the builder function, initializes the fields with the corresponding
+ formals' values. The outer variable symbols are assumed to be a subset
+ of the locals vector.
+ */
+void initializeRecordFieldWithArgLocals(FnSymbol* fn,
+                                        Symbol* rec,
+                                        Vec<Symbol*>& locals,
+                                        SymbolMap& local2field);
+
 void gatherPrimIRFieldValByFormal();
 void cleanupPrimIRFieldValByFormal();
 

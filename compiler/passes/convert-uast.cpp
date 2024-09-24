@@ -59,6 +59,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
+#include "stmt.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 
@@ -67,6 +68,10 @@
 #define ATTACH_QUALIFIED_TYPES_EARLY 0
 
 using namespace chpl;
+
+// TODO: replace this global by adjusting things to convert one module
+// at a time
+std::set<chpl::ID> gConvertFilterModuleIds;
 
 namespace {
 
@@ -121,8 +126,13 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.assertEligible attribute, which asserts GPU eligibility,
+  // if one is provided by the user.
+  const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
+  // The @gpu.itersPerThread attribute, if one is provided by the user.
+  const uast::Attribute* itersPerThreadAttr = nullptr;
 
  private:
   LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
@@ -202,7 +212,9 @@ struct LoopAttributeInfo {
 
   void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+    this->itersPerThreadAttr = attrs->getAttributeNamed(USTR("gpu.itersPerThread"));
   }
 
  public:
@@ -233,6 +245,8 @@ struct LoopAttributeInfo {
   bool empty() const {
     return llvmMetadata.size() == 0 &&
            assertOnGpuAttr == nullptr &&
+           assertEligibleAttr == nullptr &&
+           itersPerThreadAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
@@ -242,6 +256,7 @@ struct LoopAttributeInfo {
 
   bool insertGpuEligibilityAssertion(BlockStmt* body);
   bool insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  bool insertItersPerThreadCall(Converter& converter, BlockStmt* body);
   BlockStmt* createPrimitivesBlock(Converter& converter);
   void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
@@ -289,6 +304,7 @@ struct Converter {
   int delegateCounter = 0;
 
   ModTag topLevelModTag;
+
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
@@ -310,9 +326,11 @@ struct Converter {
   std::vector<BlockStmt*> blockStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag)
+  Converter(chpl::Context* context,
+            ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag) { }
+      topLevelModTag(topLevelModTag)
+  { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -385,8 +403,7 @@ struct Converter {
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
-      return fDynoScopeBundled ||
-             !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return fDynoScopeBundled || topLevelModTag == MOD_USER;
     }
 
     return false;
@@ -400,7 +417,7 @@ struct Converter {
   }
   bool shouldResolve(ID symbolId) {
     if (fDynoCompilerLibrary) {
-      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return topLevelModTag == MOD_USER;
     } else {
       return shouldResolve(symbolId.symbolPath());
     }
@@ -441,23 +458,8 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  static bool isBlockComment(const uast::Comment* node) {
-    const auto& str = node->str();
-    if (str.size() < 4) return false;
-    if (str[0] != '/' || str[1] != '*') return false;
-    INT_ASSERT(str[str.size()-1] == '/');
-    INT_ASSERT(str[str.size()-2] == '*');
-    return true;
-  }
-
   Expr* visit(const uast::Comment* node) {
     return nullptr;
-  }
-
-  void readNativeGpuAttributes(LoopAttributeInfo& into,
-                               const uast::AttributeGroup* attrs) {
-    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -561,7 +563,6 @@ struct Converter {
       { USTR("owned"), "_owned" },
       { USTR("shared"), "_shared" },
       { USTR("sync"), "_syncvar" },
-      { USTR("single"), "_singlevar" },
       { USTR("domain"), "_domain" },
       { USTR("align"), "chpl_align" },
       { USTR("by"), "chpl_by" },
@@ -765,12 +766,6 @@ struct Converter {
         return remap;
       }
     } else {
-      if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-      }
-
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -975,7 +970,7 @@ struct Converter {
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
-    auto ret = buildManageStmt(managers, block);
+    auto ret = buildManageStmt(managers, block, topLevelModTag);
     INT_ASSERT(ret);
 
     return ret;
@@ -1131,6 +1126,11 @@ struct Converter {
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());
     if (umod == nullptr) {
+      return nullptr;
+    }
+
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(umod->id()) == 0) {
       return nullptr;
     }
 
@@ -1752,8 +1752,11 @@ struct Converter {
   LLVMMetadataList extractLlvmAttributesAndRejectOthers(const uast::Loop* node) {
     auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
     if (loopAttributes.assertOnGpuAttr != nullptr) {
-      CHPL_REPORT(context, InvalidGpuAssertion, node,
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
                   loopAttributes.assertOnGpuAttr);
+    } else if (loopAttributes.assertEligibleAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAttribute, node,
+                  loopAttributes.assertEligibleAttr);
     }
     return std::move(loopAttributes.llvmMetadata);
   }
@@ -2253,11 +2256,6 @@ struct Converter {
 
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
-          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
-        }
-        ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == USTR("sync")) {
@@ -2623,7 +2621,27 @@ struct Converter {
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-    for (auto decl : node->decls()) {
+
+    MultiDeclState desugaringState;
+    if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
+
+    // Field multi-decl desugaring happens later in build.cpp and produces
+    // different code; don't do redundant work here.
+    bool isField = parsing::idIsField(context, node->id());
+    if (!isField) {
+      // post-parse checks should rule this out
+      CHPL_ASSERT(!node->destination());
+    }
+
+    // Iterate in reverse just in case this is a remote variable declaration
+    // and we need to mimic the desugaring of multi-decls.
+    //
+    // We need to mimic this here because remote variables are desugared early.
+    for (int i = node->numDeclOrComments() - 1; i >= 0; i--) {
+      auto child = node->declOrComment(i);
+      auto decl = child->toDecl();
+      if (!decl) continue;
+
       INT_ASSERT(decl->linkage() == node->linkage());
 
       Expr* conv = nullptr;
@@ -2631,20 +2649,36 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName).entireExpr;
+        auto convAll = convertVariable(var, useLinkageName,
+                                       isField ? nullptr : &desugaringState);
+        conv = convAll.entireExpr;
 
-        DefExpr* defExpr = toDefExpr(conv);
+        DefExpr* defExpr = convAll.variableDef;
         INT_ASSERT(defExpr);
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
 
       // Otherwise convert in a generic fashion.
       } else {
+        // post-parse checks should rule this out
+        INT_ASSERT(!desugaringState.localeTemp);
+
+        // tuple decls between variable decls interrupt multi-decl desugaring:
+        //
+        //    var x, (y,z) = ..., w: int;
+        //
+        // the 'x' does not get type 'int'.
+        desugaringState.reset();
         conv = convertAST(decl);
       }
 
       INT_ASSERT(conv);
-      ret->insertAtTail(conv);
+      ret->insertAtHead(conv);
+    }
+
+    if (auto dest = node->destination()) {
+      auto destExpr = convertAST(dest);
+      ret->insertAtHead(new DefExpr(desugaringState.localeTemp, destExpr));
     }
 
     INT_ASSERT(!inTupleDecl);
@@ -3517,6 +3551,11 @@ struct Converter {
     return mod;
   }
   DefExpr* visit(const uast::Module* node) {
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(node->id()) == 0) {
+      return nullptr;
+    }
+
     ModuleSymbol* mod = convertModule(node);
     return new DefExpr(mod);
   }
@@ -3825,9 +3864,53 @@ struct Converter {
     }
   };
 
+  // State required to mimic the desugaring of multi-declarations into
+  // regular ones.
+  struct MultiDeclState {
+    // The result of computing the target locale, stored in a temp, used
+    // for remote variables.
+    Symbol* localeTemp = nullptr;
+
+    Symbol* typeTemp = nullptr;
+    Symbol* prev = nullptr;
+    Expr* prevTypeExpr = nullptr;
+    Expr* prevInitExpr = nullptr;
+
+    void reset() {
+      typeTemp = nullptr;
+      prev = nullptr;
+      prevTypeExpr = nullptr;
+      prevInitExpr = nullptr;
+    }
+
+    // For remote variables, these helpers don't modify the def point, since
+    // def point is quite different (it's an invocation of a remote variable
+    // wrapper builder with extra arguments).
+
+    void replaceTypeExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevTypeExpr->replace(newExpr);
+      } else {
+        prev->defPoint->exprType = newExpr;
+      }
+      prevTypeExpr = nullptr;
+    }
+
+    void replaceInitExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevInitExpr->replace(newExpr);
+      } else {
+        prev->defPoint->init = newExpr;
+      }
+    }
+  };
+
   // Returns a DefExpr that has not yet been inserted into the tree.
+  // For children of remote multi-decls, parentDestination is the destination
+  // of the outer multiDecl.
   VariableDefInfo convertVariable(const uast::Variable* node,
-                           bool useLinkageName) {
+                           bool useLinkageName,
+                           MultiDeclState* multiState = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
@@ -3847,11 +3930,9 @@ struct Converter {
       }
     }
 
-    bool isRemote = node->destination() != nullptr;
-    if (isRemote) {
-      // post-parse checks rule this out.
-      CHPL_ASSERT(node->initExpression() || node->typeExpression());
-    }
+    bool isRemote = node->destination() != nullptr ||
+                    (multiState != nullptr && multiState->localeTemp != nullptr);
+    auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -3960,27 +4041,85 @@ struct Converter {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
+    if ((!typeExpr && !initExpr) && multiState) {
+      // Need to draw type expr and init expr from previous variable.
+      CHPL_ASSERT(block);
+
+      if (!multiState->typeTemp && multiState->prevTypeExpr) {
+        auto newTypeTemp = newTemp("type_tmp");
+        newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        multiState->typeTemp = newTypeTemp;
+
+        auto prevTypeExpr = multiState->prevTypeExpr;
+        multiState->replaceTypeExpr(new SymExpr(newTypeTemp));
+
+        // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
+        std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
+      }
+      if (auto typeTemp = multiState->typeTemp) {
+        // Once we create the type temp we clear the type expressions so that
+        // there's no risk of copying it.
+        CHPL_ASSERT(multiState->prevTypeExpr == nullptr);
+
+        // If the type symbol was defined by a previously-visited variable,
+        // and since we visit in reverse, its current definition will be
+        // after us, which is not good. Move it up to before this symbol.
+        auto typeDefPoint = typeTemp->defPoint;
+        if (typeDefPoint->list) typeDefPoint->remove();
+        block->insertAtHead(typeDefPoint);
+
+        typeExpr = new SymExpr(typeTemp);
+      }
+      if (auto prevInitExpr = multiState->prevInitExpr) {
+        Expr* replaceWith;
+        if (prevInitExpr->isNoInitExpr()) {
+          replaceWith = prevInitExpr->copy();
+        } else if (typeExpr) {
+          replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
+        } else {
+          replaceWith = new SymExpr(varSym);
+        }
+        multiState->replaceInitExpr(replaceWith);
+        initExpr = prevInitExpr;
+      }
+
+      multiState->prev = varSym;
+    } else if (multiState) {
+      CHPL_ASSERT(block);
+      multiState->prevTypeExpr = typeExpr;
+      multiState->prevInitExpr = initExpr;
+      multiState->typeTemp = nullptr;
+      multiState->prev = varSym;
+    }
+
     DefExpr* def = nullptr;
     VariableDefInfo ret;
     if (isRemote) {
+      CHPL_ASSERT(block);
       auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
-      wrapperCall->insertAtTail(destinationExpr);
+      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
+
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(initExpr);
+      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
       def = new DefExpr(varSym, new CallExpr(wrapperGet));
       varSym->addFlag(FLAG_REMOTE_VARIABLE);
 
-      auto block = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(wrapperDef);
       block->insertAtTail(def);
       ret = VariableDefInfo { def, block };
     } else {
       def = new DefExpr(varSym, initExpr, typeExpr);
-      ret = VariableDefInfo { def, /* entireExpr */ def };
+      Expr* entireExpr = def;
+      if (block) {
+        entireExpr = block;
+        block->insertAtTail(def);
+      }
+
+      ret = VariableDefInfo { def, entireExpr };
     }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
@@ -4065,6 +4204,12 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveEnum(context, node->id());
+    }
+    pushToSymStack(node, resolved);
+
     auto enumType = new EnumType();
 
     for (auto elem : node->enumElements()) {
@@ -4090,6 +4235,8 @@ struct Converter {
     // Note the enum type is converted so we can wire up SymExprs later
     noteConvertedSym(node, enumTypeSym);
 
+    popFromSymStack(node, enumTypeSym);
+
     return ret;
   }
 
@@ -4112,12 +4259,35 @@ struct Converter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
-      if (auto converted = convertExprOrNull(ident)) {
+      auto* ident =
+        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+
+      // Always convert the taraget expression so that we note used modules
+      // as needed. We won't necessarily use the resulting expression;
+      // see the comment below.
+      auto converted = convertExprOrNull(ident);
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+
+      // Don't convert the expression literally if we have a `toId`.
+      // The production scope resolver doesnt't support M.C as a class
+      // inheritance expression, but we already know what it refers to.
+      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
+      if (auto results = currentResolutionResult()) {
+        if (auto result = results->byAstOrNull(ident)) {
+          auto toId = result->toId();
+          if (!toId.isEmpty()) {
+            if (auto converted = findConvertedSym(toId)) {
+              inherits.push_back(new SymExpr(converted));
+              continue;
+            }
+          }
+        }
+      }
+
+      // Couldn't find the target, so translate it literally.
+      if (converted) {
         inherits.push_back(converted);
       }
-      inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
   }
 
@@ -4156,7 +4326,8 @@ struct Converter {
     auto ret = buildClassDefExpr(name, cname, tag,
                                  inherits,
                                  decls,
-                                 externFlag);
+                                 externFlag,
+                                 topLevelModTag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
@@ -4192,15 +4363,22 @@ struct Converter {
 };
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  bool inserted = false;
   if (assertOnGpuAttr) {
-    body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                    new SymExpr(gTrue)));
-    return true;
+    body->insertAtTail(new CallExpr("chpl__assertOnGpuAttr"));
+    inserted = true;
   }
-  return false;
+  if (assertEligibleAttr) {
+    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
+    inserted = true;
+  }
+  return inserted;
 }
 
-bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+static bool convertAttributeCall(Converter& converter,
+                                 BlockStmt* body,
+                                 const uast::Attribute* blockSizeAttr,
+                                 const char* supportFn) {
   // In cases like compound promotion (A + 1 + 1), we might end up inserting
   // the GPU blockSize attribute several times, even though there's only
   // one place in the code where the attribute was created. To work around this,
@@ -4210,19 +4388,24 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   static int counter = 0;
 
   if (blockSizeAttr) {
-    if (blockSizeAttr->numActuals() != 1) {
-      USR_FATAL(blockSizeAttr->id(),
-                "'@gpu.blockSize' attribute must have exactly one argument: "
-                "the block size");
+    auto newCall = new CallExpr(supportFn, new_IntSymbol(++counter));
+    for (auto actual : blockSizeAttr->actuals()) {
+      newCall->insertAtTail(converter.convertAST(actual));
     }
-
-    Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
-                                    blockSize,
-                                    new_IntSymbol(counter++)));
+    body->insertAtTail(newCall);
     return true;
   }
   return false;
+}
+
+bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                              blockSizeAttr, "chpl__gpuBlockSizeAttr");
+}
+
+bool LoopAttributeInfo::insertItersPerThreadCall(Converter& converter, BlockStmt* body) {
+  return convertAttributeCall(converter, body,
+                           itersPerThreadAttr, "chpl__gpuItersPerThreadAttr");
 }
 
 BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
@@ -4232,6 +4415,7 @@ BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
   bool insertedAny = false;
   insertedAny |= insertGpuEligibilityAssertion(primBlock);
   insertedAny |= insertBlockSizeCall(converter, primBlock);
+  insertedAny |= insertItersPerThreadCall(converter, primBlock);
 
   return insertedAny ? primBlock : nullptr;
 }
@@ -4345,7 +4529,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
-    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
@@ -4356,6 +4539,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;

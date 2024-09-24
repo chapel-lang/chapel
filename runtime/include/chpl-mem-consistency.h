@@ -21,7 +21,7 @@
 #ifndef _chpl_mem_consistency_h_
 #define _chpl_mem_consistency_h_
 
-#include "chpl-atomics.h" // for memory_order
+#include "chpl-atomics.h" // for chpl_memory_order
 
 #include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
 
@@ -92,9 +92,9 @@ void chpl_rmem_consist_acquire(int ln, int32_t fn)
 // operations/fences.
 
 static inline
-//void chpl_atomic_rmem_fence_pre(memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_maybe_release(memory_order order, int ln, int32_t fn) {
-  if(order==memory_order_acquire || order==memory_order_relaxed) {
+//void chpl_atomic_rmem_fence_pre(chpl_memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_maybe_release(chpl_memory_order order, int ln, int32_t fn) {
+  if(order==chpl_memory_order_acquire || order==chpl_memory_order_relaxed) {
     // do nothing
   } else {
     // for release or sequentially consistent, flush pending writes
@@ -102,9 +102,9 @@ void chpl_rmem_consist_maybe_release(memory_order order, int ln, int32_t fn) {
   }
 }
 static inline
-//void chpl_atomic_rmem_fence_post(memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, int32_t fn) {
-  if(order==memory_order_release || order==memory_order_relaxed) {
+//void chpl_atomic_rmem_fence_post(chpl_memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_maybe_acquire(chpl_memory_order order, int ln, int32_t fn) {
+  if(order==chpl_memory_order_release || order==chpl_memory_order_relaxed) {
     // do nothing
   } else {
     // for acquire or sequentially consistent, do not reuse any cached values
@@ -113,14 +113,14 @@ void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, int32_t fn) {
 }
 
 static inline
-//void chpl_atomic_rmem_fence(memory_order order, int ln, int32_t fn) {
-void chpl_rmem_consist_fence(memory_order order, int ln, int32_t fn) {
-  if(order==memory_order_relaxed) {
+//void chpl_atomic_rmem_fence(chpl_memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_fence(chpl_memory_order order, int ln, int32_t fn) {
+  if(order==chpl_memory_order_relaxed) {
     // do nothing
   } else {
     int acquire = 1;
     int release = 1;
-    if( order == memory_order_acquire ) {
+    if( order == chpl_memory_order_acquire ) {
       release = 0;
     } else if( order == memory_order_release ) {
       acquire = 0;

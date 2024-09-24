@@ -85,9 +85,10 @@
    matter.
  */
 module CopyAggregation {
-  use ChplConfig;
-  use CTypes;
   use AggregationPrimitives;
+  use CTypes;
+  use ChapelNumLocales;
+  use ChplConfig;
 
   private config param verboseAggregation = false;
 
@@ -356,6 +357,7 @@ module CopyAggregation {
 @chpldoc.nodoc
 module AggregationPrimitives {
   use CTypes;
+  use ChapelNumLocales;
   use Communication;
   public import Communication.get as GET;
   public import Communication.put as PUT;

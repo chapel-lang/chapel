@@ -120,6 +120,12 @@ module ChapelIteratorSupport {
       chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
   }
 
+  proc thunkToReturnType(type t:_thunkRecord) type {
+    // Todo: chpl__unref() may be unnecessary; see iteratorToArrayElementType.
+    return chpl__unref(
+      chpl_buildStandInRTT(__primitive("thunk result type", t)) );
+  }
+
   // A helper to handle #16027 ex. test/reductions/reduceLoopOfPromoted.chpl
   //
   // This function IS executed at runtime - and 'x' is advanced once -

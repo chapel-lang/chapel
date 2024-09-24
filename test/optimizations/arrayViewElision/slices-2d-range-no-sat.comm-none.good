@@ -1,0 +1,293 @@
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+	rhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+	rhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+	rhsIndexingExprs: 
+		range(int(64),high,one)
+		range(int(64),high,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+	rhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+	rhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+	rhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+	rhsIndexingExprs: 
+		range(int(64),low,one)
+		range(int(64),low,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+	rhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+	rhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+
+ArrayViewElision supported slices.chpl:26
+	lhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+	rhsIndexingExprs: 
+		range(int(64),neither,one)
+		range(int(64),neither,one)
+
+Set first two:
+Test 1
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 2
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 3
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 4
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 5
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 6
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 7
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+Test 8
+2 2 1 1 1
+2 2 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+
+-----------------
+Set last two:
+Test 9
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 10
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 11
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 12
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 13
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 14
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 15
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+Test 16
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 2 2
+1 1 1 2 2
+
+-----------------
+Set all:
+Test 17
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 18
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 19
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 20
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 21
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 22
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 23
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 24
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+Test 25
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+
+-----------------

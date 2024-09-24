@@ -460,12 +460,26 @@ OPTIONS
     duplication that increases executable size and compilation time. There
     may also be execution time overheads independent of loop domain size.
 
+.. _man-offset-auto-local-access:
+
+**\--[no-]offset-auto-local-access**
+
+    Enable [disable] automatic local access optimization for array accesses with
+    simple offsets like `A[i+1]`. This optimization only applies to
+    stencil-distributed arrays.
+
 .. _man-auto-aggregation:
 
 **\--[no-]auto-aggregation**
 
     Enable [disable] optimization of the last statement in forall statements to
     use aggregated communication. This optimization is disabled by default.
+
+.. _man-array-view-elision:
+
+**\--[no-]array-view-elision**
+
+    Enable [disable] an optimization eliding array views in some statements.
 
 *Run-time Semantic Check Options*
 
@@ -845,6 +859,12 @@ OPTIONS
 
 *Compiler Configuration Options*
 
+Note that the flags in this section all have corresponding environment
+variables.  Details on those environment variables, including potential values
+for them, can be found at
+https://chapel-lang.org/docs/usingchapel/chplenv.html or at
+doc/rst/usingchapel/chplenv.rst in your Chapel installation.
+
 .. _man-home:
 
 **\--home <path>**
@@ -929,6 +949,17 @@ OPTIONS
     corresponds with and overrides the $CHPL\_LAUNCHER environment variable
     (defaults to a best guess based on $CHPL\_COMM and
     $CHPL\_TARGET\_PLATFORM).
+
+.. _man-lib-pic:
+
+**\--lib-pic <pic>**
+
+    Specify whether to use position-dependent or position-independent code.
+    Position-independent code is suitable for shared libraries and this flag is
+    intended to be used when calling Chapel code from other languages,
+    especially Python or when building with '--dynamic'.  This flag corresponds
+    with and overrides the $CHPL\_LIB\_PIC environment variable (defaults to
+    'none').
 
 .. _man-locale-model:
 

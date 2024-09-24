@@ -212,10 +212,10 @@ optional<Immediate> paramToImmediate(Context* context,
 
         if (ep) {
           auto numericValueOpt =
-            computeNumericValueOfEnumElement(context, ep->value());
+            computeNumericValueOfEnumElement(context, ep->value().id);
 
           if (!numericValueOpt) {
-            auto eltAst = parsing::idToAst(context, ep->value())->toEnumElement();
+            auto eltAst = parsing::idToAst(context, ep->value().id)->toEnumElement();
             auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
 
             // In order to be able to compose multiple calls to this function,
@@ -482,7 +482,7 @@ static QualifiedType enumParamFromNumericValue(Context* context,
     if (elemId) {
       return QualifiedType(QualifiedType::PARAM,
                            enumType,
-                           EnumParam::get(context, elemId));
+                           Param::getEnumParam(context, elemId));
     } else {
       return CHPL_TYPE_ERROR(context, NoMatchingEnumValue,
                              astForErr, enumType, numericValue);
@@ -946,6 +946,12 @@ IMPLEMENT_DUMP(Param);
 // clear the macros
 #undef PARAM_NODE
 
+const EnumParam* Param::getEnumParam(Context* context, ID id) {
+  auto ast = parsing::idToAst(context, id)->toEnumElement();
+  CHPL_ASSERT(ast && "expecting EnumElement");
+  auto value = EnumValue(id, ast->name().str());
+  return EnumParam::get(context, value);
+}
 
 } // end namespace types
 } // end namespace chpl

@@ -54,6 +54,7 @@ module ChapelStandard {
   public use ChapelLocale;
   public use ChapelPrivatization;
   public use DefaultRectangular;
+  public use ChapelNumLocales;
   public use LocalesArray;
   public use ChapelArray;
   public use ChapelDistribution;
@@ -76,10 +77,12 @@ module ChapelStandard {
   public use ChapelContext;
   public use ChapelStaticVars;
   public use ChapelRemoteVars;
+  public use ChapelArrayViewElision;
 
   // Standard modules.
   public use Types as Types;
   public use AutoMath as AutoMath;
+  public use AutoGpu as AutoGpu;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

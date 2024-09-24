@@ -1,0 +1,94 @@
+
+Start analyzing forall (nonParamOffset.chpl:18)
+| Found loop domain (nonParamOffset.chpl:6)
+| Will attempt static and dynamic optimizations (nonParamOffset.chpl:18)
+|
+|  Start analyzing call (nonParamOffset.chpl:19)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:19)
+|
+|  Start analyzing call (nonParamOffset.chpl:20)
+|   Call has offset(s), this will require dynamic check (nonParamOffset.chpl:20)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:20)
+|
+|  Start analyzing call (nonParamOffset.chpl:21)
+|   Call has offset(s), this will require dynamic check (nonParamOffset.chpl:21)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:21)
+|
+End analyzing forall (nonParamOffset.chpl:18)
+
+
+Start analyzing forall (nonParamOffset.chpl:31)
+| Found loop domain (nonParamOffset.chpl:6)
+| Will attempt static and dynamic optimizations (nonParamOffset.chpl:31)
+|
+|  Start analyzing call (nonParamOffset.chpl:32)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:32)
+|
+|  Start analyzing call (nonParamOffset.chpl:33)
+|   Call has offset(s), this will require dynamic check (nonParamOffset.chpl:33)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:33)
+|
+|  Start analyzing call (nonParamOffset.chpl:34)
+|   Call has offset(s), this will require dynamic check (nonParamOffset.chpl:34)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:34)
+|
+End analyzing forall (nonParamOffset.chpl:31)
+
+
+Start analyzing forall (nonParamOffset.chpl:45)
+| Found loop domain (nonParamOffset.chpl:6)
+| Will attempt static and dynamic optimizations (nonParamOffset.chpl:45)
+|
+|  Start analyzing call (nonParamOffset.chpl:47)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:47)
+|
+|  Start analyzing call (nonParamOffset.chpl:48)
+|   Cannot optimize: call arguments don't match loop indices cleanly (nonParamOffset.chpl:48)
+End analyzing forall (nonParamOffset.chpl:45)
+
+
+Start analyzing forall (nonParamOffset.chpl:61)
+| Found loop domain (nonParamOffset.chpl:6)
+| Will attempt static and dynamic optimizations (nonParamOffset.chpl:61)
+|
+|  Start analyzing call (nonParamOffset.chpl:63)
+|   Found the domain of the access base (nonParamOffset.chpl:5)
+|  This call is a dynamic optimization candidate (nonParamOffset.chpl:63)
+|
+|  Start analyzing call (nonParamOffset.chpl:64)
+|   Cannot optimize: call arguments don't match loop indices cleanly (nonParamOffset.chpl:64)
+End analyzing forall (nonParamOffset.chpl:61)
+
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:19)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:20)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:21)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:32)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:33)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:34)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:47)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:63)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:63)
+Static check successful. Using localAccess with dynamic check (nonParamOffset.chpl:63)
+Starting loop 1, expecting all local accesses (total 18)
+0 0 2 2 2 2 2 2 0 0
+End first loop
+Starting loop 2, expecting all local accesses (total 18)
+0 0 2 2 2 2 2 2 0 0
+End second loop
+Starting loop 3, expecting local access for output (total 18) and default accesses for input (total 18)
+0 0 3 3 3 3 3 3 0 0
+End third loop
+Starting loop 4, expecting local access for output (total 18) and default accesses for input (total 18)
+0 0 3 3 3 3 3 3 0 0
+End fourth loop
+
+Numbers collected by prediff:
+	localAccess was called 72 times
+	this was called 36 times

@@ -1,3 +1,4 @@
+import Sort;
 use HashedDist;
 
 config const verbose = false;
@@ -20,7 +21,7 @@ D += 8.8;
 D -= 3.5;
 
 writeln("D is:");
-for d in D.sorted() {
+for d in Sort.sorted(D) {
   writeln(d);
 }
 
@@ -40,7 +41,7 @@ A(7.7) = "seven point seven";
 A(8.8) = "eight point eight";
 
 writeln("A is:");
-for d in D.sorted() {
+for d in Sort.sorted(D) {
   writeln(d, ": ", A[d]);
   if verbose then
     writeln(A[d], " on locale ", A[d].locale);
@@ -49,7 +50,7 @@ writeln();
 
 D += 9.9;
 writeln("after adding 9.9 to D, A is:");
-for d in D.sorted() {
+for d in Sort.sorted(D) {
   writeln(d, ": ", A[d]);
   if verbose then
     writeln(A[d], " on locale ", A[d].locale);
@@ -61,7 +62,7 @@ D.clear();
 
 assert(!D.contains(9.9));
 writeln("after D.clear, A is:");
-for d in D.sorted() {
+for d in Sort.sorted(D) {
   writeln(A[d]);
   if verbose then
     writeln(A[d], " on locale ", A[d].locale);

@@ -158,6 +158,10 @@ class QualifiedType final {
     return isUnknown() || (genericity() != Type::CONCRETE);
   }
 
+  bool isUnknownOrErroneous() const {
+    return isUnknown() || isErroneousType();
+  }
+
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }
 
@@ -265,6 +269,13 @@ struct stringify<types::QualifiedType::Kind> {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
+
+template <>
+struct mark<types::QualifiedType::Kind> {
+  void operator()(Context* context, types::QualifiedType::Kind t) {
+    // No need to mark enums
+  }
+};
 
 
 /// \endcond

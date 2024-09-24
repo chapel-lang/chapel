@@ -10,7 +10,7 @@ config const printStats = true,
              verify = true;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then NPBRandom.oddTimeSeed() else 314159265;
+             seed = if useRandomSeed then (new randomStream(int(32))).seed else 314159265;
 
 enum Mode {ordered, unordered, aggregated}
 config const mode = Mode.ordered;

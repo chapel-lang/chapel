@@ -2,6 +2,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -34,13 +35,11 @@ static float taylor_exponential_core(int n, float x)
 static aligned_t taylor_exponential(void *arg)
 {
   struct parts* te = (struct parts*) arg;
-  float exp = te->exp;
-  float length = te->length;
   te->ans = taylor_exponential_core(te->length, te->exp);
   return 0;
 }
 
-static void checkFloat()
+static void checkFloat(void)
 {
   struct parts teParts = {250,9.0f,0.0f};
   int ret = -1;
@@ -56,7 +55,10 @@ static void checkFloat()
 int main(void)
 {
   float ans = taylor_exponential_core(250, 9.0);
-  assert(ans == 8103.083984f);
+  float expected = 8103.083984f;
+  float rel_error = fabsf(ans - expected) / fabsf(expected);
+  float threshold = 1E-7f;
+  assert(rel_error < threshold);
 
   int status = qthread_initialize();
   assert(status == QTHREAD_SUCCESS);

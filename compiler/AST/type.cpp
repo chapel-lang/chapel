@@ -1067,7 +1067,9 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
+  dtVoid->symbol->addFlag(FLAG_NO_CODEGEN);
   dtNothing                            = createInternalType ("nothing",  "nothing");
+  dtNothing->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
@@ -1081,27 +1083,6 @@ void initPrimitiveTypes() {
   // TODO: a better solution than renaming c_string to avoid the collision would be preferred
   dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
-
-  dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
-
-  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
-  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
-
-  dtString                             = new AggregateType(AGGREGATE_RECORD);
-  dtString->symbol                     = new TypeSymbol("string", dtString);
-
-  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
-  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
-
-  dtRange                              = new AggregateType(AGGREGATE_RECORD);
-  dtRange->symbol                      = new TypeSymbol("range", dtRange);
-
-  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
-  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
-
-  dtShared                             = new AggregateType(AGGREGATE_RECORD);
-  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
 
@@ -1219,11 +1200,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = astr("NULL");
 
-  dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
-
-  CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = astr("NULL");
-
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
@@ -1255,6 +1231,9 @@ void initPrimitiveTypes() {
 
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
+  dtThunkRecord = createInternalType("_thunkRecord", "_thunkRecord");
+  dtThunkRecord->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
@@ -1303,6 +1282,12 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
   gUninstantiated->addFlag(FLAG_PARAM);
+
+  CREATE_DEFAULT_SYMBOL(dtVoid, gIgnoredPromotionToken, "_ignoredPromotionToken");
+
+  // set up the well-known types, including setting up dummy types
+  // for dtString / _string and a few others
+  initializeWellKnown();
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -1625,10 +1610,10 @@ bool isBuiltinGenericType(Type* t) {
          t == dtAnyEnumerated ||
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtThunkRecord ||
          t == dtAnyPOD ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||
-         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
          t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
 }
 
@@ -1693,7 +1678,6 @@ bool isUserRecord(Type* t) {
       t->symbol->hasFlag(FLAG_RANGE) ||
       t->symbol->hasFlag(FLAG_TUPLE) ||
       t->symbol->hasFlag(FLAG_SYNC) ||
-      t->symbol->hasFlag(FLAG_SINGLE) ||
       t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
       t->symbol->hasFlag(FLAG_MANAGED_POINTER))
     return false;
@@ -1842,10 +1826,6 @@ bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isSingleType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_SINGLE);
-}
-
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
@@ -1880,9 +1860,6 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
 }
 bool isOrContainsSyncType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_SYNC, checkRefs);
-}
-bool isOrContainsSingleType(Type* t, bool checkRefs) {
-  return isOrContains(t, FLAG_SINGLE, checkRefs);
 }
 bool isOrContainsAtomicType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
@@ -2036,7 +2013,6 @@ bool needsCapture(Type* t) {
     // Ensure we have covered all types.
     INT_ASSERT(isRecordWrappedType(t) ||
                isSyncType(t)          ||
-               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }
@@ -2311,6 +2287,33 @@ const Immediate& getDefaultImmediate(Type* t) {
     INT_FATAL(t->symbol, "does not have a default of the same type");
 
   return *defaultVar->immediate;
+}
+
+llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
+  if (auto clsType = toDecoratedClassType(t)) {
+    if (isDecoratorUnknownManagement(clsType->getDecorator())) {
+      return {"'" + std::string(t->name()) + "' is a class with unknown management"};
+    }
+  }
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
+    return {"it is an array with runtime type information"};
+  }
+  if (auto at = toAggregateType(t)) {
+    if (at->isGeneric()) {
+    llvm::SmallVector<std::string, 2> reasons;
+      for (auto i = 1; i <= at->numFields(); i++) {
+        auto fieldType = at->getField(i)->type;
+        if (fieldType->symbol && fieldType->symbol->hasFlag(FLAG_GENERIC)) {
+          auto moreReasons = explainGeneric(fieldType);
+          reasons.append(moreReasons.begin(), moreReasons.end());
+        }
+      }
+      if (!reasons.empty()) {
+        return reasons;
+      }
+    }
+  }
+  return {};
 }
 
 // Returns 'true' for types that are the type of numeric literals.

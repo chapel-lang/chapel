@@ -3,7 +3,9 @@ use GpuDiagnostics;
 config const n = 10;
 
 proc foo(n) {
+  stopVerboseGpu(); // we're not focusing on this array's kernels
   var A: [0..n] real;
+  startVerboseGpu();
 
   foreach i in 0..n { // this foreach prevents `foo` to be called from inside
                       // GPU kernels, but if `foo` is called directly from a
@@ -19,7 +21,9 @@ const host = here;
 
 startVerboseGpu();
 on here.gpus[0] {
+  stopVerboseGpu(); // we're not focusing on this array's kernels
   var A: [0..#n] real;
+  startVerboseGpu();
 
   foreach i in 0..#n {  // This is not a kernel, `foo` is too complicated
     A[i] = foo(i);      // This will cause n kernel launches from `foo`

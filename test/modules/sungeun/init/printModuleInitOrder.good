@@ -18,6 +18,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        ChapelNumLocales
        DefaultRectangular
         ChapelArray
          ChapelPrivatization
@@ -38,11 +39,13 @@ Initializing Modules:
            TwoArrayPartitioning
           QuickSort
            InsertionSort
+          TimSort
         ChapelDistribution
          ChapelHashtable
         ExternalArray
         RangeChunk
-       ChapelNumLocales
+        Search
+         HideDeprecatedReexport
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray

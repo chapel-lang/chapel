@@ -1,0 +1,1 @@
+../testClear.chpl

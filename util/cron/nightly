@@ -24,7 +24,6 @@ use nightlysubs;
 use nightly_email;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
 $valgrind = 0;
@@ -189,6 +188,12 @@ while (@ARGV) {
     }
 }
 
+# If we're being told to not do anything, just exit. This is useful for
+# "dry-running" test configurations that figure out some environment
+# variables then exit.
+if (exists($ENV{"CHPL_NIGHTLY_DO_NOTHING"})) {
+  exit 0;
+}
 
 print localtime() . "  host: " . hostname . "\n";
 
@@ -325,9 +330,9 @@ if ($perfConfigName eq "") {
 
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/cray/css/users/chapelu/NightlyPerformance/$perfConfigName";
+        $cronlogdir = "/hpcdc/project/chapel/NightlyPerformance/$perfConfigName";
     } else {
-        $cronlogdir = "/cray/css/users/chapelu/Nightly";
+        $cronlogdir = "/hpcdc/project/chapel/Nightly";
     }
 }
 
@@ -364,7 +369,7 @@ if ($memleakslog ne "") {
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
     } elsif ($memleaksdir eq "") {
-        $memleaksdir = "/cray/css/users/chapelu/NightlyMemLeaks";
+        $memleaksdir = "/hpcdc/project/chapel/NightlyMemLeaks";
     }
 
     unless(-d $memleaksdir) {
@@ -442,6 +447,8 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 $mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
+ensureMysystemlogExists($mysystemlog); # empty (vs nonexistent) file is easier to compare against
+$prevmysystemlog = "$cronlogdir/last-mysystemerrs-$config_name.txt";
 
 #
 # directory variables
@@ -867,7 +874,7 @@ if ($runtests == 0) {
 # FIXME: Pass correct args here!
      # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
      # Write the test results to the summary log.
-     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mysystemlog", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
+     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mysystemlog", "$prevmysystemlog", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
 #
 # analyze memory leaks tests
 #

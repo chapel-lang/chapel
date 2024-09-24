@@ -307,7 +307,7 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   // where we might take the reference of a sync on the stack, and that stack
   // is about to go away.
   //
-  if (isSyncType(baseType) || isSingleType(baseType)) {
+  if (isSyncType(baseType)) {
     return true;
   }
 
@@ -954,7 +954,6 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&
-            !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             !(def->sym->type == dtString && def->sym->isImmediate())))) {

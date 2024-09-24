@@ -13,17 +13,38 @@ that be to create a library to contribute to the community, use an
 existing package, or just to help with the process of building your
 Chapel programs.
 
-.. note::
+When to Leverage Mason for Chapel Builds
+----------------------------------------
 
-   **Pardon Our Dust**
+Mason simplifies the build process for Chapel applications. Here's a
+breakdown of when Mason shines and when alternative approaches might
+be better suited.
 
-   This mason guide is a work-in-progress as mason development itself
-   is still a work-in-progress.  If you're not already using the `main
-   branch <https://chapel-lang.org/docs/main/mason-packages/>`_ of the
-   documentation (which tracks real-time GitHub development), you may
-   find that it contains a more complete set of sections.  We welcome
-   feedback and requests on the guide as we go.
+**Ideal Use Cases for Mason:**
 
+1. Pure Chapel Projects: Mason excels at managing the build process for
+   applications written entirely in Chapel. If your program relies solely
+   on Chapel dependencies and compiles directly from Chapel modules, Mason
+   is the perfect tool.
+2. External Dependencies with `Spack` or `pkg-config`: Mason integrates
+   seamlessly with external dependencies managed by `Spack` or
+   `pkg-config`. If your project uses such dependencies, Mason can handle
+   them efficiently.
+
+**Considering Alternatives:**
+
+1. Complex Compilation Needs Beyond `chpl`: For Chapel programs requiring
+   compilation steps beyond what the Chapel compiler offers, Mason might not
+   be the most suitable choice. Consider alternatives like `Make` for greater
+   flexibility in crafting intricate build commands. As an example, the
+   Arkouda project, a prominent open-source Chapel application, uses
+   `Make` to run preparatory Python scripts before the final binary compilation.
+
+**Combining Mason with Make:**
+
+Mason and Make can co-exist effectively. You can leverage Mason for its dependency
+management capabilities while employing Make for broader build commands requiring
+more control.
 
 Quick Start Instructions
 ------------------------

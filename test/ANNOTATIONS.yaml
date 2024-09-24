@@ -552,6 +552,9 @@ all:
   06/01/23:
     - text: Remove calls to codegenInvariantStart (#22439)
       config: chapcs
+  07/31/23:
+    - text: Changed nightly testing machine used for 16-node-xc
+      config: 16-node-xc
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
@@ -572,6 +575,18 @@ all:
       config: chapcs
   06/03/24:
     - text: Stop setting CHPL_TARGET_CPU (#25161)
+      config: chapcs
+  06/12/24:
+    - text: Add support for GASNet PSHM and send progress thread (#25140)
+      config: 16-node-apollo-hdr
+  06/17/24:
+    - text: Revert to default GASNET_SND_THREAD=0 (#25307)
+      config: 16-node-apollo-hdr
+  08/12/24:
+    - text: Update bundled qthreads to 1.20 (#25210)
+      config: chapcs
+  08/28/24:
+    - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
       config: chapcs
 
 # End all
@@ -892,7 +907,6 @@ empty-chpl-barrier.ml-time:
   06/26/21:
     - Optimize allLocalesBarrier by reducing communication (#17978)
 
-
 exchange:
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
@@ -900,6 +914,8 @@ exchange:
     - Fix some issues with constant domain optimization (#16397)
   09/29/20:
     - Remove an unneeded assignment from array view slice initializer (#16477)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
 
 fannkuch-redux:
   07/22/14:
@@ -989,6 +1005,8 @@ ft-a:
 heat_2d_dist.ml-time:
   08/31/23:
     - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
 
 hpl:
   12/11/15:
@@ -1563,6 +1581,8 @@ mg: &mg-base
 
 mg-b:
   <<: *mg-base
+  08/19/24:
+    - Stencil Distribution performance improvments (#25701)
 
 mg.ml-time:
   05/11/17:
@@ -1597,6 +1617,9 @@ miniMD:
     - Enable bulk-transfer for BlockDist by default (#12797)
   03/13/20:
     -  Reallocate 1D arrays in place, when possible (#15177)
+  07/08/24:
+    - Implement array view elision (#24390)
+
 
 miniMD.ml-time:
   09/14/17:
@@ -1835,6 +1858,9 @@ return-array-8: &return-array-base
     - remove unnecessary return from array-return tests (#5486)
   05/01/18:
     - Enable variables declared with generic type (#9355)
+  09/10/24:
+    - Avoid array allocation for moving to equal domain (#25896)
+
 return-array-20000000:
   <<: *return-array-base
 return-array-40000000:
@@ -2146,10 +2172,6 @@ distAdaptativeWSv2:
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
 
-getNextPerf:
-  05/16/19:
-    - Improve the speed of parallel safe random streams (#13013)
-
 guided:
   02/28/17:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
@@ -2455,6 +2477,16 @@ arkouda: &arkouda-base
     - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
   05/14/24:
     - Dataframe Indexing (Bears-R-Us/arkouda#3109)
+  06/14/24:
+    - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
+  6/25/24:
+    - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
+  6/27/24:
+    - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
+  8/19/24:
+    - Array transfer perf fix (Bears-R-Us/arkouda#3671)
+  8/27/24:
+    - Fix performance regression in to_ndarray (Bears-R-Us/arkouda#3697)
 
 arkouda-string:
   <<: *arkouda-base

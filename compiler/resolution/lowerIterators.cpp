@@ -36,6 +36,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "thunks.h"
 #include "view.h"
 #include "wellknown.h"
 
@@ -271,8 +272,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     hazard = true;
   } else if (thisTypeSymbol != NULL &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
-              thisTypeSymbol->hasFlag(FLAG_SYNC) ||
-              thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
+              thisTypeSymbol->hasFlag(FLAG_SYNC))) {
     // methods on synchronization constructs do synchronization!
     hazard = true;
   } else {
@@ -1516,7 +1516,8 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
 
   for_vector(CallExpr, call, callExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
-      if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+      LoopStmt* loop = LoopStmt::findEnclosingLoop(call);
+      while (loop) {
         if (loop->isCoforallLoop() == false) {
           // If the for loop is not order independent, neither
           // should be the one we are replacing it with.
@@ -1531,6 +1532,9 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
 
           loop->setAdditionalLLVMMetadata(llvmAttrs);
         }
+        loop = LoopStmt::findEnclosingLoop(loop->prev);
+        if (loop && !ibody->contains(loop))
+          loop = nullptr;
       }
     }
   }
@@ -1649,9 +1653,24 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         }break;
 
       case TFI_IN_PARENT:
+        map->put(svar, svar->outerVarSym());
+        continue;
+
       case TFI_REF:
       case TFI_CONST_REF:
-        map->put(svar, svar->outerVarSym());
+        if(svar->outerVarSym()->isRef()) {
+          map->put(svar, svar->outerVarSym());
+        } else {
+          VarSymbol* refVar = new VarSymbol(
+            astr("ref_", svar->name), svar->type->getRefType());
+          refVar->addFlag(FLAG_EXEMPT_REF_PROPAGATION);
+          refVar->addFlag(FLAG_REF_VAR);
+          forLoop->insertBefore(new DefExpr(refVar));
+          forLoop->insertBefore(new CallExpr(
+            PRIM_MOVE, refVar, new CallExpr(
+              PRIM_ADDR_OF, svar->outerVarSym())));
+          map->put(svar, refVar);
+        }
         continue;
 
      case TFI_REDUCE_OP:
@@ -3244,6 +3263,8 @@ void lowerIterators() {
       // advance() into zip[1-4]
       fn->collapseBlocks();
       lowerIterator(fn);
+    } else if (fn->hasFlag(FLAG_THUNK_BUILDER)) {
+      lowerThunk(fn);
     }
   }
 

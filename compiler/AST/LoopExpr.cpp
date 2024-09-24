@@ -305,6 +305,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   // removed
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
+  isArrayTypeFn->addFlag(FLAG_COMPILER_GENERATED);
   isArrayTypeFn->addFlag(FLAG_INLINE);
   isArrayTypeFn->setGeneric(false);
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
@@ -404,6 +405,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
   sifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  sifn->addFlag(FLAG_COMPILER_GENERATED);
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -453,6 +455,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  lifn->addFlag(FLAG_COMPILER_GENERATED);
   lifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gLeaderTag);
@@ -489,6 +492,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
   fifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  fifn->addFlag(FLAG_COMPILER_GENERATED);
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -623,7 +627,7 @@ static void findOuterVars(LoopExpr* loopExpr,
   }
 }
 
-static ArgSymbol* newOuterVarArg(Symbol* ovar) {
+ArgSymbol* newOuterVarArg(Symbol* ovar) {
   Type* argType = ovar->type;
   if (argType == dtUnknown)
     argType = dtAny;
@@ -715,9 +719,8 @@ static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
     forLoop->insertAtHead(expr->remove());
 }*/
 
-static void scopeResolveAndNormalize(FnSymbol* fn) {
+void normalizeGeneratedLoweringFn(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
-  addToSymbolTable(fn);
   fn->accept(&vis);
   resolveUnresolvedSymExprs(fn);
   normalize(fn);
@@ -887,20 +890,20 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       fn->insertAtHead(new DefExpr(fifn));
     }
 
-    scopeResolveAndNormalize(fn);
+    normalizeGeneratedLoweringFn(fn);
   } else {
     fn->defPoint->insertBefore(new DefExpr(sifn));
-    scopeResolveAndNormalize(sifn);
+    normalizeGeneratedLoweringFn(sifn);
 
     if (forall) {
       fn->defPoint->insertBefore(new DefExpr(lifn));
-      scopeResolveAndNormalize(lifn);
+      normalizeGeneratedLoweringFn(lifn);
 
       fn->defPoint->insertBefore(new DefExpr(fifn));
-      scopeResolveAndNormalize(fifn);
+      normalizeGeneratedLoweringFn(fifn);
     }
 
-    scopeResolveAndNormalize(fn);
+    normalizeGeneratedLoweringFn(fn);
   }
 
 

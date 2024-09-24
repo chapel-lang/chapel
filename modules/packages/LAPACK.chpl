@@ -91,9 +91,9 @@ Once the details are worked out, compiling is quite simple and nearly identical 
 
 .. code-block:: sh
 
-  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
-       -L$PATH_TO_LIBGFORTRAN -lgfortran \
-       -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
+  chpl -I/path/to/lapack/header/file \
+       -L/path/to/gfortran/library/file -lgfortran \
+       -L/path/to/lapack/library/files  -llapacke -llapack -lrefblas \
        source.chpl
 
 As an example,

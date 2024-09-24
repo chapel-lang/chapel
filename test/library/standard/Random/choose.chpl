@@ -13,3 +13,12 @@ for r in ranges {
   writeln(rs.choose(d));
   writeln(rs.choose(a));
 }
+
+const domains = ({1..10, 0..5}, {1..10, 0..5 by 2}, {1..10, 0..5 by 2 align 2});
+
+for d in domains {
+  const a = [idx in d] idx[0]:real + idx[1]:real / 10.0;
+
+  writeln(rs.choose(d));
+  writeln(rs.choose(a));
+}

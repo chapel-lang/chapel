@@ -20,11 +20,17 @@
 
 module ChapelAutoLocalAccess {
   use ChapelLocale;
+  use ChapelArray;
 
   // note that the compiler can pass an iterator to `loopDomain` argument. Make
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
-  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
+  proc chpl__ala_staticCheck(accessBase: [], loopDomain: domain,
+                             myIterand: domain, param hasOffsets=false) param {
+    if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
+      return false;
+    }
+
     if accessBase.domain.type == loopDomain.type {
       if chpl__isArrayViewWithDifferentDist(accessBase) {
         return false;
@@ -36,30 +42,22 @@ module ChapelAutoLocalAccess {
 
     // support forall i in a.domain.localSubdomain() do .... a[i] ....
     if loopDomain._value.type.isDefaultRectangular() {
-      return accessBase.domain.supportsAutoLocalAccess();
+      return accessBase.domain.supportsAutoLocalAccess() &&
+             accessBase.rank == loopDomain.rank;
     }
 
     return false;
   }
 
-  proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
-    return false;
+  proc chpl__ala_staticCheck(accessBase: [], loopDomain: [],
+                             myIterand: domain, param hasOffsets=false) param {
+    return chpl__ala_staticCheck(accessBase, loopDomain.domain, myIterand,
+                                 hasOffsets);
   }
 
-  // these type overloads are for degenerate cases where the optimization can
-  // break a meaningful error message without these
-  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain) param {
-    return false;
-  }
-  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain) param {
-    return false;
-  }
-  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
-    return false;
-  }
-
-  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
-    if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
+  proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
+                              myIterand: domain, param hasOffsets=false) {
+    if chpl__ala_staticCheck(accessBase, loopDomain, myIterand, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
          accessBase.domain == loopDomain                    &&
@@ -75,9 +73,9 @@ module ChapelAutoLocalAccess {
       //
       // Be also aware that `subset` call below can be expensive if we are not
       // calling on default rectangular
-      if loopDomain._value.type.isDefaultRectangular() {
-        if loopDomain.locale == here {
-          if accessBase.localSubdomain().contains(loopDomain) {
+      if myIterand._value.type.isDefaultRectangular() {
+        if myIterand.locale == here {
+          if accessBase.localSubdomain().contains(myIterand) {
             return true;
           }
         }
@@ -87,15 +85,18 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  // these type overloads are for degenerate cases where the optimization can
-  // break a meaningful error message without these
-  proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain) {
-    return false;
+  inline proc chpl__ala_offsetCheck(accessBase: [], offsets:integral...) {
+    if (offsets.size != accessBase.rank) {
+      compilerError("Automatic local access optimization failure: ",
+                    "Number of offsets doesn't match rank");
+    }
+    return accessBase.domain.autoLocalAccessOffsetCheck(offsets);
   }
-  proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain) {
-    return false;
-  }
-  proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
+
+  // what if the user had `MyArr[i+"1"]` in their code? We don't want to see
+  // resolution errors coming from this function. That code should error out
+  // later in compilation with a proper error message
+  inline proc chpl__ala_offsetCheck(accessBase, offsets...) {
     return false;
   }
 
@@ -112,4 +113,24 @@ module ChapelAutoLocalAccess {
     }
 
   }
+
+  // these type overloads are for degenerate cases where the optimization can
+  // break a meaningful error message without these
+  proc chpl__ala_staticCheck(type a, type l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a, type l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a,      l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(type a,      l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a, type l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a, type l,      m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a,      l, type m, param h=false) param do return false;
+  proc chpl__ala_staticCheck(     a,      l,      m, param h=false) param do return false;
+  proc chpl__ala_dynamicCheck(type a, type l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a, type l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a,      l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(type a,      l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a, type l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a, type l,      m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a,      l, type m, param h=false) do return false;
+  proc chpl__ala_dynamicCheck(     a,      l,      m, param h=false) do return false;
+
 }

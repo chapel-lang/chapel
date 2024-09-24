@@ -103,12 +103,12 @@ def get_llvm_config_version(llvm_config):
 # Returns the full output of clang --version for the passed clang command.
 # Returns None if something went wrong.
 @memoize
-def get_clang_version(clang_command):
+def get_clang_version(clang_command, short=False):
     got_version = None
 
     if clang_command != 'none' and clang_command != None:
-        exists, returncode, got_out, got_err = try_run_command([clang_command,
-                                                                '--version'])
+        version = '--version' if not short else '-dumpversion'
+        exists, returncode, got_out, _ = try_run_command([clang_command, version])
 
         if exists and returncode == 0:
             got_version = got_out
@@ -398,7 +398,7 @@ def validate_llvm_config():
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
 
         def print_clang_version_error(clang, name="clang"):
-            clang_version = get_clang_version(clang)
+            clang_version = get_clang_version(clang, short=True)
             llvm_version = str(get_llvm_config_version(llvm_config)).strip()
             if clang_version is None:
                 error(
@@ -476,27 +476,51 @@ def get_overriden_llvm_clang(lang):
     # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
     # These use split in order to separate the command out from
     # any arguments passed to it.
-    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+
+    # The proper check here is `chpl_compiler.get('target') == 'llvm'`.
+    # However, that will not work when trying to infer `CHPL_LLVM`, because
+    # `chpl_compiler.get('target')` will call this code and infinite recursion
+    # will occur.
+    # Instead we will check the target compiler solely based on the
+    # values of `CHPL_TARGET_COMPILER` and `CHPL_LLVM`
+    llvm_val = overrides.get('CHPL_LLVM', 'unset')
+    tgt_llvm = (
+        overrides.get("CHPL_TARGET_COMPILER", "llvm") == "llvm"
+        and llvm_val != "unset"
+        and llvm_val != "none"
+    )
+    res = None
     if lang_upper == 'C':
         llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
         if llvm_clang_c:
-            return llvm_clang_c.split()
-        if tgt_llvm:
+            res = llvm_clang_c.split()
+        elif tgt_llvm:
             target_cc = overrides.get('CHPL_TARGET_CC')
             if target_cc:
-                return target_cc.split()
+                res = target_cc.split()
     elif lang_upper == 'CXX':
         llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX')
         if llvm_clang_cxx:
-            return llvm_clang_cxx.split()
-        if tgt_llvm:
+            res = llvm_clang_cxx.split()
+        elif tgt_llvm:
             target_cc = overrides.get('CHPL_TARGET_CXX')
             if target_cc:
-                return target_cc.split()
+                res = target_cc.split()
     else:
         error('unknown lang value {}'.format(lang))
 
-    return None
+    if res is not None:
+        # validate that the command is clang by checking a preprocessor macro
+        macro = "__clang_major__"
+        exists, returncode, out, _ = try_run_command([res[0], "-E", "-x", "c", "-"], macro)
+        if exists and returncode == 0 and out:
+            # check that the preprocess output does not contains the macro
+            if macro in out:
+                error("'{}' is not clang and cannot be used with LLVM".format(res[0]))
+        else:
+            warning("unable to execute '{}' to validate it".format(res[0]))
+
+    return res
 
 # given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
 # to use. Checks that the clang version matches the version of llvm-config in
@@ -625,7 +649,7 @@ def llvm_enabled():
     return False
 
 @memoize
-def get_gcc_prefix():
+def get_gcc_prefix_dir():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
     # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
@@ -685,6 +709,20 @@ def get_gcc_prefix():
             gcc_prefix = ''
 
     return gcc_prefix
+
+@memoize
+def get_gcc_install_dir():
+    gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
+
+    if gcc_dir:
+        llvm_version = get_llvm_version()
+        if llvm_version in ('11', '12', '13', '14', '15'):
+            warning("This LLVM / clang version {0} is too old to use "
+                    "CHPL_LLVM_GCC_INSTALL_DIR -- "
+                    "it will be ignored".format(llvm_version))
+            return ''
+
+    return gcc_dir
 
 
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
@@ -784,9 +822,13 @@ def get_system_llvm_built_sdkroot():
 def get_clang_basic_args():
     clang_args = [ ]
 
-    gcc_prefix = get_gcc_prefix()
-    if gcc_prefix:
-        clang_args.append('--gcc-toolchain=' + gcc_prefix)
+    gcc_install_dir = get_gcc_install_dir();
+    if gcc_install_dir:
+        clang_args.append('--gcc-install-dir=' + gcc_install_dir)
+    else:
+        gcc_prefix = get_gcc_prefix_dir()
+        if gcc_prefix:
+            clang_args.append('--gcc-toolchain=' + gcc_prefix)
 
     sysroot_args = get_sysroot_resource_dir_args()
     if sysroot_args:
@@ -837,11 +879,11 @@ def gather_pe_chpl_pkgconfig_libs():
 
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
-        if 'lustre' in auxfs:
-            exists, returncode, out, err = try_run_command(
-                ['pkg-config', '--exists', 'cray-lustre-api-devel'])
-            if exists and returncode == 0:
-                ret = 'cray-lustre-api-devel:' + ret
+        if "lustre" in auxfs:
+            import third_party_utils
+            pkg = "cray-lustre-api-devel"
+            if third_party_utils.pkgconfig_system_has_package(pkg):
+                ret = pkg + ":" + ret
 
     return ret
 

@@ -1,3 +1,2 @@
-openWriterLockingDefault.chpl:2: warning: the default value of 'locking' for 'openWriter' will change from true to false in a future release; please specify the value of 'locking' explicitly, or compilewith '-sOpenWriterLockingDefault=false' to use the new default
 Hello, World!
 Hello, World!

@@ -26,6 +26,7 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
+#include <algorithm>
 #include <cstdarg>
 
 #define TEST_NAME(ctx__)\
@@ -68,6 +69,46 @@ checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
 
     i++;
   }
+}
+
+static void testModulesNamedInUseOrImport(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M1 {
+
+    }
+    module M2 {
+      enum someEnum { red, green, blue }
+    }
+    module M3 {
+      use M1;
+      use M2;
+      use someEnum;
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 3);
+  auto M3 = br.topLevelExpression(2)->toModule();
+  auto scope = scopeForId(ctx, M3->id());
+  auto visStmts = resolveVisibilityStmts(ctx, scope);
+
+  std::vector<ID> modulesMentioned;
+  auto modulesMentionedIt = visStmts->modulesNamedInUseOrImport();
+  std::copy(modulesMentionedIt.begin(), modulesMentionedIt.end(),
+            std::back_inserter(modulesMentioned));
+  assert(modulesMentioned.size() == 2);
+  assert(modulesMentioned[0].str() == "M1");
+  assert(modulesMentioned[1].str() == "M2");
 }
 
 
@@ -249,6 +290,45 @@ static void testFindMention(void) {
   std::cout << std::endl;
 }
 
+static void testFindMentionInherit(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M1 {
+      class Child : Sub1.Sub2.Parent {}
+      module Sub1 {
+        module Sub2 {
+          class Parent {}
+        }
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"Sub1", "Sub2"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
 static void testFindMentionFields(void) {
   Context::Configuration config;
   config.chplHome = chplHome();
@@ -338,6 +418,93 @@ static void testFindMentionNotFields(void) {
 
   // check that we find the correct list of mentioned modules
   checkMentionedModules(ctx, m1->id(), {"M"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindImportSubmoduleIncluded(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::cout << "testFindImportSubmoduleIncluded\n";
+
+  setFileText(ctx, "TestMultipleModules.chpl",
+    R""""(
+      module TestMultipleModules {
+        import MultipleModules;
+        import MultipleModules.SubModule;
+      }
+    )"""");;
+
+  setFileText(ctx, "MultipleModules.chpl",
+    R""""(
+      module MultipleModules {
+        include module SubModule;
+      }
+    )"""");;
+
+  setFileText(ctx, "MultipleModules/SubModule.chpl",
+    R""""(
+      module SubModule { }
+    )"""");
+
+  setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "TestMultipleModules.chpl"));
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"MultipleModules", "SubModule"});
+
+  std::cout << "---" << std::endl;
+
+  assert(!guard.realizeErrors());
+  std::cout << std::endl;
+}
+
+static void testFindMentionSubmoduleIncluded(void) {
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::cout << "testFindMentionSubmoduleIncluded\n";
+
+  setFileText(ctx, "OuterModule.chpl",
+    R""""(
+      module OuterModule {
+        include module SubModule;
+        SubModule.foo();
+      }
+    )"""");;
+
+  setFileText(ctx, "OuterModule/SubModule.chpl",
+    R""""(
+      module SubModule{
+        proc foo() { }
+      }
+    )"""");
+
+  setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "OuterModule.chpl"));
+  assert(br.numTopLevelExpressions() == 1);
+  auto m1 = br.topLevelExpression(0)->toModule();
+  assert(m1);
+
+  // check that we find the correct list of mentioned modules
+  checkMentionedModules(ctx, m1->id(), {"SubModule"});
 
   std::cout << "---" << std::endl;
 
@@ -732,12 +899,18 @@ static void testBundled(void) {
 
 
 int main() {
+  // test of the lower-level modulesNamedInUseOrImport
+  testModulesNamedInUseOrImport();
+
   // tests of findMentionedModules
   testFindUse();
   testFindImport();
   testFindMention();
+  testFindMentionInherit();
   testFindMentionFields();
   testFindMentionNotFields();
+  testFindImportSubmoduleIncluded();
+  testFindMentionSubmoduleIncluded();
 
   // tests of moduleInitializationOrder
   testSpec();

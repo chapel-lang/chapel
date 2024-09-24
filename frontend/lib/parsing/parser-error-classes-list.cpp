@@ -190,7 +190,7 @@ void ErrorNonAssociativeComparison::write(ErrorWriterBase& wr) const {
   // or
   //     x != y && y != z && x != z
   // It's best not to guess there.
-  int types = 0; 
+  int types = 0;
   for (auto op : ops) {
     if (op->op() == "<" || op->op() == "<=") {
       types |= 0b1;
@@ -511,11 +511,12 @@ void ErrorInvalidThrowaway::write(ErrorWriterBase& wr) const {
   }
 }
 
-static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
-                                            const uast::AstNode* node,
-                                            const uast::Attribute* attr,
-                                            ErrorBase::Kind kind,
-                                            ErrorType type) {
+void ErrorInvalidGpuAttribute::write(ErrorWriterBase& wr) const {
+  const uast::AstNode*   node = std::get<const uast::AstNode*>(info_);
+  const uast::Attribute* attr = std::get<const uast::Attribute*>(info_);
+  ErrorBase::Kind        kind = kind_;
+  ErrorType              type = type_;
+
   const char* loopTypes = nullptr;
   if (node->isFor()) {
     loopTypes = "for";
@@ -550,20 +551,6 @@ static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
 
   wr.message("The affected ", whatIsAffected, " is here:");
   wr.codeForLocation(node);
-}
-
-void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
-}
-
-void ErrorInvalidBlockSize::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
 }
 
 void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {
@@ -652,5 +639,95 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
 }
 
 /* end post-parse-checks errors */
+
+
+// main module / command line invocation errors
+void ErrorAmbiguousSourceFile::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& found = std::get<1>(info_);
+  auto& other = std::get<2>(info_);
+  auto& warnUnstable = std::get<3>(info_);
+  wr.heading(kind_, type_, loc,
+             "ambiguous module source file -- using ",
+             found,
+             " over ",
+             other);
+  if (warnUnstable) {
+    wr.note(loc, "which module is chosen in this case is unstable");
+  }
+}
+
+void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& mainFns = std::get<std::vector<const uast::Function*>>(info_);
+  auto& modIds = std::get<std::vector<ID>>(info_);
+  auto& modNames = std::get<std::vector<UniqueString>>(info_);
+
+  bool allSameModule = true;
+  ID firstModuleId;
+  if (modIds.size() > 0) firstModuleId = modIds[0];
+  for (auto modId : modIds) {
+    if (modId != firstModuleId) {
+      allSameModule = false;
+    }
+  }
+
+  if (allSameModule) {
+    const char* moduleName = "<unknown>";
+    if (modNames.size() > 0)
+      moduleName = modNames[0].c_str();
+
+    wr.heading(kind_, type_, loc,
+               "multiple 'main' procedures in module '", moduleName, "'");
+    wr.message("");
+    for (auto fn : mainFns) {
+      wr.note(locationOnly(fn), "found 'proc main' here");
+      wr.codeForDef(fn);
+    }
+  } else {
+    wr.heading(kind_, type_, loc,
+               "unknown main module due to multiple 'main' procedures");
+    wr.note(loc, "please use '--main-module' to disambiguate");
+    wr.message("");
+    size_t i = 0;
+    for (auto fn : mainFns) {
+      const char* moduleName = "<unknown>";
+      if (i < modNames.size())
+        moduleName = modNames[i].c_str();
+      wr.note(locationOnly(fn),
+              "found 'proc main' in module '", moduleName, "'");
+      wr.codeForDef(fn);
+      i++;
+    }
+  }
+}
+void ErrorAmbiguousMainModule::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& modules = std::get<std::vector<const uast::Module*>>(info_);
+  wr.heading(kind_, type_, loc,
+             "unknown main module due to multiple command line modules");
+  wr.note(loc, "add a 'proc main' or use '--main-module'");
+  wr.message("");
+  for (auto mod : modules) {
+    wr.note(locationOnly(mod), "'module ", mod->name(), "' could be the main module");
+    wr.codeForDef(mod);
+  }
+}
+void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
+  auto& loc = std::get<IdOrLocation>(info_);
+  auto& name = std::get<UniqueString>(info_);
+  wr.heading(kind_, type_, loc,
+             "cannot find module named '", name, "' for '--main-module'");
+}
+
+void ErrorImplicitModuleSameName::write(ErrorWriterBase& wr) const {
+  auto mod = std::get<const uast::Module*>(info_);
+  wr.heading(kind_, type_, locationOnly(mod),
+             "module '", mod->name(), "' "
+             "has the same name as the implicit file module");
+  wr.note(locationOnly(mod),
+          "did you mean to include all statements in the module declaration?");
+}
+
 
 }

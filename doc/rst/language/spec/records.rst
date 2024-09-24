@@ -454,6 +454,8 @@ Common Operations
 
 .. index::
    pair: records; copy initialization
+   single: init=
+
 .. _Copy_Initialization_of_Records:
 
 Copy Initialization of Records

@@ -180,7 +180,7 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
 static
 void describeAmbiguousMatch(ErrorWriterBase& wr,
                             const uast::Identifier* ident,
-                            const resolution::BorrowedIdsWithName& match,
+                            const resolution::MatchingIdsWithName& match,
                             const resolution::ResultVisibilityTrace& trace,
                             bool oneOnly,
                             const char* intro) {
@@ -220,7 +220,7 @@ void describeAmbiguousMatch(ErrorWriterBase& wr,
 void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info_);
   auto moreMentions = std::get<bool>(info_);
-  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto matches = std::get<resolution::MatchingIdsWithName>(info_);
   auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   wr.heading(kind_, type_, ident,
@@ -229,17 +229,9 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 
   wr.code(ident, { ident });
 
-  CHPL_ASSERT(matches.size() > 0);
-  if (matches[0].numIds() > 1) {
-    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
-                           /* one only */ false, /* intro */ "");
-  } else {
-    CHPL_ASSERT(matches.size() > 1);
-    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
-                           /* one only */ true, /* intro */ "first, ");
-    describeAmbiguousMatch(wr, ident, matches[1], trace[1],
-                           /* one only */ true, /* intro */ "additionally, ");
-  }
+  CHPL_ASSERT(matches.numIds() > 0);
+  describeAmbiguousMatch(wr, ident, matches, trace[0],
+                         /* one only */ false, /* intro */ "");
 
   return;
 }
@@ -247,7 +239,7 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
   auto name = std::get<UniqueString>(info_);
   auto mentionId = std::get<ID>(info_);
-  auto potentialTargetIds = std::get<std::vector<ID>>(info_);
+  auto potentialTargetIds = std::get<resolution::MatchingIdsWithName>(info_);
 
   wr.heading(kind_, type_, mentionId,
              "'", name, "' is ambiguous");
@@ -741,6 +733,39 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
+void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
+  auto call = std::get<0>(info_);
+  auto& genericFormals = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "call does not provide enough type information for a complete instantiation.");
+  wr.code(call, {call});
+  for (auto& formal : genericFormals) {
+    auto decl = std::get<0>(formal);
+    auto qt = std::get<1>(formal);
+
+    std::string formalName = "formal";
+    if (auto fieldDecl = decl->toVariable(); fieldDecl && fieldDecl->isField()) {
+      formalName = std::string("field '") + fieldDecl->name().c_str() + "'";
+    } else if (auto formalDecl = decl->toNamedDecl()) {
+      formalName = formalName + " '" + formalDecl->name().c_str() + "'";
+    }
+
+    wr.note(decl, formalName, " has generic type '", qt.type(), "', but is expected to have a concrete type.");
+    wr.codeForDef(decl);
+
+    if (qt.type()) {
+      if (auto ct = qt.type()->toClassType()) {
+        if (ct->decorator().isUnknownManagement() && ct->basicClassType()) {
+          wr.note(decl, "one reason that ", formalName, " is generic is that it doesn't have a specified memory management strategy like 'owned', 'shared' or 'unmanaged'.");
+          wr.message("Consider explicitly specifying a memory management strategy, or adding a new type parameter to explicitly make the formal generic.");
+        }
+      }
+    }
+
+    wr.message("");
+  }
+}
+
 void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
   auto node = std::get<0>(info_);
   auto parent = std::get<1>(info_);
@@ -810,8 +835,24 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   auto reference = std::get<2>(info_);
   auto id = std::get<3>(info_);
 
-  const char* outerName = outerDecl->isClass() ? "class" : "record";
-  const char* innerName = innerDecl->isClass() ? "class" : "record";
+  auto getType = [](const uast::TypeDecl* typeDecl) {
+    if (typeDecl->isEnum()) {
+      return "enum";
+    } else if (typeDecl->isClass()) {
+      return "class";
+    } else {
+      return "record";
+    }
+  };
+
+  auto getName = [](const uast::TypeDecl* typeDecl) {
+    if (auto enumDecl = typeDecl->toEnum()) return enumDecl->name();
+    CHPL_ASSERT(typeDecl->isAggregateDecl());
+    return typeDecl->toAggregateDecl()->name();
+  };
+
+  const char* outerName = getType(outerDecl);
+  const char* innerName = getType(innerDecl);
   // Shouldn't even be possible to trigger this with unions.
   CHPL_ASSERT(!outerDecl->isUnion());
   CHPL_ASSERT(!innerDecl->isUnion());
@@ -825,10 +866,10 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   }
   wr.code(reference, { reference });
   wr.note(innerDecl, "the identifier is used within ", innerName, " '",
-          innerDecl->name(), "', declared here:");
+          getName(innerDecl), "', declared here:");
   wr.codeForLocation(innerDecl);
   wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
-          outerName, " '", outerDecl->name(), "', declared here:");
+          outerName, " '", getName(outerDecl), "', declared here:");
   wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
   wr.codeForDef(id);
@@ -1083,13 +1124,13 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
              "potentially surprising shadowing for '", name.c_str(), "'");
   wr.code<ID,ID>(id, { id });
   // only print out two matches
-  if (result.size() > 0 && shadowed.size() > 0) {
+  if (result.numIds() > 0 && shadowed.numIds() > 0) {
     const char* intro = "it refers to a symbol found ";
     bool encounteredAutoModule = false;
     UniqueString from;
     bool needsIntroText = true;
 
-    ID firstId = result[0].firstId();
+    ID firstId = result.firstId();
 
     describeSymbolTrace(wr, id, name,
                         traceResult[0], /* start */ 0, intro,
@@ -1107,7 +1148,7 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
                         traceShadowed[0], /* start */ 0, intro2,
                         encounteredAutoModule, from, needsIntroText);
 
-    ID otherId = shadowed[0].firstId();
+    ID otherId = shadowed.firstId();
     if (needsIntroText) {
       wr.note(locationOnly(otherId), "but, there is a shadowed symbol '", from, "' defined here:");
     } else {
@@ -1161,17 +1202,17 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
 // find the first ID not from use/import, returns true and sets result
 // if one is found.
 static bool firstIdFromDecls(
-    const std::vector<resolution::BorrowedIdsWithName>& matches,
+    const resolution::MatchingIdsWithName& matches,
     const std::vector<resolution::ResultVisibilityTrace>& trace,
     ID& result) {
-  int n = matches.size();
+  int n = matches.numIds();
   for (int i = 0; i < n; i++) {
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithName
+      // To do that, would use flags in MatchingIdsWithName
       // to filter Ids.
-      result = matches[i].firstId();
+      result = matches.id(i);
       return true;
     }
   }
@@ -1251,7 +1292,7 @@ void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto scopeId = std::get<ID>(info_);
   auto name = std::get<UniqueString>(info_);
-  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto& matches = std::get<resolution::MatchingIdsWithName>(info_);
   auto& trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   // compute the anchor ID for the error message
@@ -1268,48 +1309,49 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, id, "'", name, "' has multiple definitions in this scope.");
   }
 
-  bool firstGroup = true;
-  int n = matches.size();
+  int n = matches.numIds();
+  int lastTracePrinted = -1;
   for (int i = 0; i < n; i++) {
     bool encounteredAutoModule = false;
     UniqueString from;
-    bool needsIntroText = true;
+    bool needsIntroText = false;
     std::string intro;
-    if (firstGroup) {
+    if (i == 0) {
       intro = "it was first defined ";
-      firstGroup = false;
     } else {
       intro = "redefined ";
     }
-    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
-                        encounteredAutoModule, from, needsIntroText);
-    bool printedUseTrace = !needsIntroText;
+    if (i == 0 || trace[i] != trace[i-1]) {
+      needsIntroText = true;
+      describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
+                          encounteredAutoModule, from, needsIntroText);
+      if (!needsIntroText) {
+        lastTracePrinted = i;
+      }
+    }
 
     // print out the other IDs
-    bool firstDef = true;
-    for (const auto& matchId : matches[i]) {
-      if (needsIntroText) {
-        if (anchorToDef) {
-          wr.message("It was first defined here:");
-        } else {
-          wr.note(locationOnly(matches[i].firstId()), intro + "here:");
-        }
-        needsIntroText = false;
+    const ID& matchId = matches.id(i);
+    if (needsIntroText) {
+      if (anchorToDef) {
+        wr.message("It was first defined here:");
       } else {
-        if (printedUseTrace) {
-          if (firstDef) {
-            wr.note(locationOnly(matchId), "leading to the definition here:");
-            firstDef = false;
-          } else {
-            wr.note(locationOnly(matchId), "and to the definition here:");
-          }
-        } else {
-          wr.note(locationOnly(matchId), "redefined here:");
-        }
+        wr.note(locationOnly(matchId), intro + "here:");
       }
-
-      wr.codeForDef(matchId);
+      needsIntroText = false;
+    } else {
+      if (lastTracePrinted != -1) {
+        if (lastTracePrinted == i) {
+          wr.note(locationOnly(matchId), "leading to the definition here:");
+        } else {
+          wr.note(locationOnly(matchId), "and to the definition here:");
+        }
+      } else {
+        wr.note(locationOnly(matchId), "redefined here:");
+      }
     }
+
+    wr.codeForDef(matchId);
   }
 }
 
@@ -1393,7 +1435,7 @@ void ErrorSplitInitMismatchedConditionalTypes::write(
     wr.heading(kind_, type_, var,
              "mismatched types for split-initialization of '", var->name(),
              "' in select branches.");
-    
+
     wr.note(branch1, "Initialized with ", thenType,
             " in one branch");
     wr.note(branch2, "Initialized with ", elseType,
@@ -1417,6 +1459,37 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
   wr.codeForLocation(mod);
+}
+
+static const char* genericityToString(types::Type::Genericity genericity) {
+  switch (genericity) {
+    case types::Type::GENERIC:
+      return "generic";
+    case types::Type::GENERIC_WITH_DEFAULTS:
+      return "generic with defaults";
+    case types::Type::MAYBE_GENERIC:
+      return "maybe generic";
+    case types::Type::CONCRETE:
+      return "concrete";
+    default:
+      CHPL_ASSERT(false && "shouldn't happen");
+      return "";
+  }
+}
+
+void ErrorSyntacticGenericityMismatch::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::Decl*>(info_);
+  auto actualGenericity = std::get<1>(info_);
+  auto syntacticGenericity = std::get<2>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  CHPL_ASSERT(decl->isVarLikeDecl());
+  auto var = decl->toVarLikeDecl();
+
+  wr.heading(kind_, type_, decl, "field '", var->name(), "' appears to be ",
+             genericityToString(syntacticGenericity), " in the program's syntax, but it has been inferred to be ",
+             type, ", which is ", genericityToString(actualGenericity), ".");
+  wr.codeForLocation(decl);
 }
 
 void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {

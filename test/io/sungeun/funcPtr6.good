@@ -1,1 +1,2 @@
 funcPtr6.chpl:5: error: the proc 'foo' is generic and cannot be captured
+funcPtr6.chpl:5: note: the formal 'x' is generic

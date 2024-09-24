@@ -5,4 +5,4 @@ $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'ref
 plusassign_error.chpl:3: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +=(ref lhs: int(16), rhs: int(16))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +=(ref lhs: int(32), rhs: int(32))
-note: and 24 other candidates, use --print-all-candidates to see them
+note: and 23 other candidates, use --print-all-candidates to see them

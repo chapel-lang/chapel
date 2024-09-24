@@ -147,9 +147,9 @@ void* get_ptr_from_args(gasnet_handlerarg_t a0, gasnet_handlerarg_t a1 )
 // of an AM handler.)
 //
 typedef struct {
-  atomic_uint_least32_t count;
-  uint_least32_t        target;
-  volatile int          flag;
+  chpl_atomic_uint_least32_t count;
+  uint_least32_t             target;
+  volatile int               flag;
 } done_t;
 
 //
@@ -501,7 +501,7 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -511,7 +511,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -728,7 +728,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired = false;
-static atomic_spinlock_t pollingLock;
+static chpl_atomic_spinlock_t pollingLock;
 static chpl_bool pshmInUse = false;
 static chpl_bool haveSendThread = false;
 static chpl_bool haveReceiveThread = false;
@@ -884,8 +884,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // For configurations that register a fixed heap at startup use a gasnet hook
   // to allow us to fault and interleave in the memory in parallel for faster
   // startup and better NUMA affinity.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
+#if defined(GASNET_CONDUIT_IBV)
 #if defined(GASNET_SEGMENT_FAST)
+  gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
+#endif
+#elif defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
 #endif
 #endif
@@ -1697,3 +1701,5 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                       /*fast*/ true, /*blocking*/ true);
   }
 }
+
+void chpl_comm_ensure_progress(void) { }

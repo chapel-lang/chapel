@@ -1,0 +1,5 @@
+perfkeys: Chapel Time:, nvcc Time:, clang Time:
+files: mathKernels_tanhf.dat, mathKernels_tanhf.dat, mathKernels_tanhf.dat
+graphkeys: Chapel, nvcc, clang
+ylabel: Time (ms)
+graphtitle: GPU Math Functions (tanhf)

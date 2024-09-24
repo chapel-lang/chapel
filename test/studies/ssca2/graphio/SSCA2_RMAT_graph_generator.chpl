@@ -25,7 +25,7 @@
 // +=========================================================================+
 
 use SSCA2_compilation_config_params;
-private use IO;
+private use IO, Sort;
 
 record directed_vertex_pair {
   var start = 1: int;
@@ -450,7 +450,7 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     if dEdge then writeln(dstyle, " vertex ", u);
     writeNum(sta, startIx);
 
-    for v in G.Neighbors(u).sorted() {
+    for v in sorted(G.Neighbors(u)) {
       const w = G.Row(u).Weight(v);
       if dRow then write((v, w));
       if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);

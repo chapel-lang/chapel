@@ -1,1 +1,1 @@
---stop-after-pass checkUast
+--stop-after-pass checkGeneratedAst

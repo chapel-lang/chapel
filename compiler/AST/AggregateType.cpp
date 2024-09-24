@@ -44,14 +44,6 @@
 
 #include <queue>
 
-AggregateType* dtObject = NULL;
-AggregateType* dtBytes  = NULL;
-AggregateType* dtString = NULL;
-AggregateType* dtLocale = NULL;
-AggregateType* dtRange  = NULL;
-AggregateType* dtOwned  = NULL;
-AggregateType* dtShared = NULL;
-
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
@@ -63,6 +55,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   builtReaderInit     = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
+  thunkInvoke         = NULL;
   doc                 = NULL;
 
   instantiatedFrom    = NULL;
@@ -993,6 +986,22 @@ AggregateType* AggregateType::generateType(CallExpr* call,
 
   INT_ASSERT(notNamed.size() == 0);
 
+  // Don't even allow creating an instantiation of something like
+  // 'owned' with a non-class.
+  bool isManagedPtrType = symbol->hasFlag(FLAG_MANAGED_POINTER);
+  if (isManagedPtrType && genericFields.size() > 0) {
+    // Assume first generic field is the underlying type.
+    auto field = genericFields[0];
+
+    if (auto sub = toTypeSymbol(map.get(field))) {
+      if (!isClassLike(sub->typeInfo())) {
+        USR_FATAL(call, "cannot use non-class type '%s' with memory management specifiers",
+                  sub->name);
+      }
+    }
+  }
+
+
   ret = ret->generateType(map, call, callString, evalDefaults, getInstantiationPoint(call));
 
   if (ret != this) {
@@ -1645,9 +1654,6 @@ void AggregateType::renameInstantiation() {
     name = toString(this, false);
   } else if (!developer && symbol->hasFlag(FLAG_SYNC)) {
     name = "sync ";
-    buildFieldNames(this, name, false);
-  } else if (!developer && symbol->hasFlag(FLAG_SINGLE)) {
-    name = "single ";
     buildFieldNames(this, name, false);
   } else if (!developer && symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
     name = "atomic ";
@@ -2894,6 +2900,21 @@ void AggregateType::addClassToHierarchy() {
   addClassToHierarchy(localSeen);
 }
 
+static BlockStmt* getEnclosingBlockForImplements(Symbol* sym) {
+  auto parentSym = sym->defPoint->parentSymbol;
+  if (auto fn = toFnSymbol(parentSym)) {
+    return fn->body;
+  } else if (auto mod = toModuleSymbol(parentSym)) {
+    return mod->block;
+  } else if( auto ty = toTypeSymbol(parentSym)) {
+    return getEnclosingBlockForImplements(ty);
+  } else {
+    // Fallback, this shouldn't happen but if it does, we'll just return the
+    // module's block
+    return sym->getModule()->block;
+  }
+}
+
 void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
   // classes already in hierarchy
   static std::set<AggregateType*> globalSeen;
@@ -2934,8 +2955,8 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       }
 
       auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
-      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
-      this->symbol->getModule()->block->insertAtTail(istmt);
+      auto istmt = ImplementsStmt::build(isym, ifcActuals, nullptr);
+      getEnclosingBlockForImplements(this->symbol)->insertAtTail(istmt);
 
       expr->remove();
       continue;
@@ -3046,9 +3067,17 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
     USR_FATAL(storesName, "Illegal super class");
   }
 
-  ts->maybeGenerateDeprecationWarning(storesName);
+  // When Dyno is handling the conversion, it automatically inserts
+  // 'anymanaged' into class references. What we want for inheritance is
+  // not 'anymanaged C' but 'C', so use `canonicalClassType`.
+  Type* ct = canonicalClassType(ts->type);
+  bool dynoWasUsed = (ct != ts->type);
+  AggregateType* pt = toAggregateType(ct);
 
-  AggregateType* pt = toAggregateType(ts->type);
+  // Dyno would already have issued the deprecation warning
+  if (!dynoWasUsed) {
+    ts->maybeGenerateDeprecationWarning(storesName);
+  }
 
   if (pt == NULL) {
     USR_FATAL(storesName, "Illegal super class %s", ts->name);

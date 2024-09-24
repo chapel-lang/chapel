@@ -46,21 +46,18 @@ const char* ErrorBase::getTypeName(ErrorType type) {
 }
 
 std::string ErrorBase::message() const {
-  std::ostringstream oss;
   CompatibilityWriter ew(/* context */ nullptr);
   write(ew);
   return ew.message();
 }
 
 Location ErrorBase::location(Context* context) const {
-  std::ostringstream oss;
   CompatibilityWriter ew(context);
   write(ew);
   return ew.computedLocation();
 }
 
 ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
-  std::ostringstream oss;
   CompatibilityWriter ew(context);
   write(ew);
   ErrorMessage::Kind kind = ErrorMessage::NOTE;
@@ -108,6 +105,11 @@ owned<GeneralError> GeneralError::vbuild(Kind kind, ID id, const char* fmt, va_l
 }
 
 owned<GeneralError> GeneralError::vbuild(Kind kind, Location loc, const char* fmt, va_list vl) {
+  auto message = vprintToString(fmt, vl);
+  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
+}
+
+owned<GeneralError> GeneralError::vbuild(Kind kind, IdOrLocation loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
   return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
 }

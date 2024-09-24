@@ -21,7 +21,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 2.0 source release, see
+1) If you don't already have the Chapel 2.2 source release, see
    https://chapel-lang.org/download.html.
 
 
@@ -31,14 +31,14 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
       .. code-block:: bash
 
-         tar xzf chapel-2.0.0.tar.gz
+         tar xzf chapel-2.2.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-2.0.0
+         cd chapel-2.2.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
@@ -211,7 +211,7 @@ Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
 Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
 Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
 Performance:                 https://chapel-lang.org/performance.html
-Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
+Chapel Editor Support:       :ref:`editor-support.rst <readme-editor-support>`
 Chapel's file/dir structure: ``$CHPL_HOME/README.files``
 Changes since last release:  ``$CHPL_HOME/CHANGES.md``
 ============================ ==================================================

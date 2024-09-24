@@ -44,11 +44,14 @@ test-chpl-language-server: chpl-language-server chpl-language-server-test-venv
 	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
 		python3 -m pytest test/*.py
 
-clean: clean-link clean-link-shim
+clean: clean-link clean-link-shim clean-pycache
 
 cleanall: clean
 
 clobber: clean
+
+clean-pycache:
+	find $(CHPL_MAKE_HOME)/tools/chpl-language-server -type d -name __pycache__ -exec rm -rf {} +
 
 clean-link:
 ifneq ($(wildcard $(link)),)

@@ -77,6 +77,8 @@ class Builder final {
   // These are removed in the astToLocation_ map.
   AstLocMap notedLocations_;
 
+  ID generatedFrom_;
+
   // These map AST to additional locations while the builder is building.
   // This is an equivalent to notedLocations for the additional locations.
   // The key type is just 'AstNode' so that we can use generic functions.
@@ -89,10 +91,12 @@ class Builder final {
 
   Builder(Context* context, UniqueString filePath,
           UniqueString startingSymbolPath,
-          const libraries::LibraryFile* lib)
+          const libraries::LibraryFile* lib,
+          ID generatedFrom = ID())
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib)
+      br(filePath, lib, generatedFrom),
+      generatedFrom_(generatedFrom)
   {
   }
 
@@ -107,6 +111,8 @@ class Builder final {
   void copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
   void deleteAdditionalLocation(AstLocMap& m, const AstNode* ast);
 
+  bool isGenerated() { return !generatedFrom_.isEmpty(); }
+
  public:
   /** Construct a Builder for parsing a top-level module */
   static owned<Builder> createForTopLevelModule(Context* context,
@@ -119,6 +125,11 @@ class Builder final {
   static owned<Builder> createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
+
+  static owned<Builder> createForGeneratedCode(Context* context,
+                                               const char* filepath,
+                                               ID generatedFrom,
+                                               UniqueString parentSymbolPath);
 
   /** Construct a Builder for use when reading uAST from a library file. */
   static owned<Builder> createForLibraryFileModule(
@@ -150,6 +161,12 @@ class Builder final {
     void delete##location__##Location(const ast__* ast);
   #include "all-location-maps.h"
   #undef LOCATION_MAP
+
+  /** Delete all the locations storedfor the current AST. This is useful if the
+      AST is being deallocated, which means future uses of this pointer
+      (the memory could be re-used) must not have locations out of the box.
+    */
+  void deleteAllLocations(const AstNode* ast);
 
   /** Note the symbol table symbols so that the resulting
       BuilderResult will have a working 'isSymbolTableSymbol' function. */

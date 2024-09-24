@@ -1,1 +1,2 @@
 assertOnGpuNoLoops.chpl:3: error: Found GPU attributes on a variable declaration, but no subexpression to apply them to
+assertOnGpuNoLoops.chpl:3: note: GPU attributes on variable declarations are applied to loop expressions and promoted function calls in the variable's initializer

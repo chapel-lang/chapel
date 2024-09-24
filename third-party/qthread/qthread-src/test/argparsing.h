@@ -1,6 +1,17 @@
 #ifndef TEST_ARGPARSING_H
 #define TEST_ARGPARSING_H
 
+#if defined(__cplusplus) && __cplusplus < 202302L
+#include <atomic>
+#define ARGP_Atomic(T) std::atomic<T>
+using std::atomic_load_explicit;
+using std::atomic_store_explicit;
+using std::memory_order_relaxed;
+#else
+#include <stdatomic.h>
+#define ARGP_Atomic(T) _Atomic(T)
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -9,9 +20,9 @@
 #define CHECK_VERBOSE() do {                                         \
         const char *v = getenv("VERBOSE");                           \
         if (v == NULL) {                                             \
-            verbose = !(getenv("MAKEFLAGS") && getenv("MAKELEVEL")); \
+            atomic_store_explicit(&verbose, (int)!(getenv("MAKEFLAGS") && getenv("MAKELEVEL")), memory_order_relaxed);\
         } else {                                                     \
-            verbose = strncmp(v, "0", 2);                            \
+            atomic_store_explicit(&verbose, (int)strncmp(v, "0", 2), memory_order_relaxed);\
         }                                                            \
 } while (0)
 
@@ -75,7 +86,7 @@
         iprintf("]\n");                                                          \
 } while (0)
 
-static int verbose = 0;
+static ARGP_Atomic(int) verbose;
 
 #if defined(SILENT_ARGPARSING)
 # warning Silencing iprintf() output.
@@ -86,7 +97,7 @@ static int verbose = 0;
 static void iprintf(const char *restrict format,
                     ...)
 {
-    if (verbose != 0) {
+    if (atomic_load_explicit(&verbose, memory_order_relaxed)) {
         va_list ap;
 
         va_start(ap, format);

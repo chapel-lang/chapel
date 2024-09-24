@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/* Draft support for distributing arrays to locales in a block-cyclic manner. */
+
 @unstable("BlockCycDist is unstable and may change in the future")
 prototype module BlockCycDist {
 //

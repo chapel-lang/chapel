@@ -8,4 +8,5 @@ module Lib2 {
 
 module T1 {
   public import Lib1.a, Lib2.a;
+  proc main() { }
 }

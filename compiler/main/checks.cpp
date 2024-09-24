@@ -78,7 +78,7 @@ void check_parseAndConvertUast()
   check_afterEveryPass();
 }
 
-void check_checkUast()
+void check_checkGeneratedAst()
 {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
@@ -638,6 +638,8 @@ static void check_afterInlineFunctions() {
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+         // "_interim" args added in gpuTransforms.cpp have ref types
+         if (! def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
           INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
         }
       }
@@ -649,7 +651,7 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      // Violations should have caused USR_FATAL_CONT in checkUast().
+      // Violations should have caused USR_FATAL_CONT in checkGeneratedAst().
       INT_ASSERT(fn && fn->isIterator());
     }
   }
@@ -962,10 +964,10 @@ checkRetTypeMatchesRetVarType() {
     // The return value type is the type of the index the iterator returns.
     if (fn->isIterator()) continue;
 
-    // auto ii functions break this rule, but only during the time that
+    // auto ii and thunk invoke functions break this rule, but only during the time that
     // they are prototypes.  After the body is filled in, they should obey it.
     // But, for some of them, the body is never filled in.
-    if (fn->hasFlag(FLAG_AUTO_II)) continue;
+    if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) continue;
 
     // No body, so no return symbol.
     if (fn->hasFlag(FLAG_NO_FN_BODY)) continue;

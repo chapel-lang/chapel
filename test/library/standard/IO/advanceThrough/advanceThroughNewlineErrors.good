@@ -1,0 +1,2 @@
+UnexpectedEofError: short read or write (newline not found in advanceThroughNewline)
+EofError: end of file (in advanceThroughNewline) with path "advanceThroughNewlineErrors.txt" offset 33)

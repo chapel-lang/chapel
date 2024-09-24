@@ -2,8 +2,8 @@ use SortedMap;
 
 
 
-var m1 = new sortedMap(int, int, false, defaultComparator),
-    m2 = new sortedMap(int, int, false, defaultComparator);
+var m1 = new sortedMap(int, int, false, new DefaultComparator()),
+    m2 = new sortedMap(int, int, false, new DefaultComparator());
 
 for i in 1..10 {
   m1[i] = -i;

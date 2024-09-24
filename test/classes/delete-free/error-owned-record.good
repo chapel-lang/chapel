@@ -1,1 +1,1 @@
-error-owned-record.chpl:4: error: owned only works with classes
+error-owned-record.chpl:4: error: cannot use non-class type 'R' with memory management specifiers

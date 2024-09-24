@@ -37,6 +37,9 @@ chplvars = [
              'CHPL_GPU_MEM_STRATEGY',
              'CHPL_CUDA_PATH',
              'CHPL_ROCM_PATH',
+             'CHPL_ROCM_BITCODE_PATH',
+             'CHPL_ROCM_INCLUDE_PATH',
+             'CHPL_ROCM_RUNTIME_PATH'
              'CHPL_GPU_ARCH',
 
              'CHPL_COMM',
@@ -44,6 +47,7 @@ chplvars = [
              'CHPL_GASNET_SEGMENT',
              'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
+             'CHPL_COMM_OFI_OOB',
 
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
@@ -62,6 +66,7 @@ chplvars = [
 
              'CHPL_GMP',
              'CHPL_HWLOC',
+             'CHPL_HWLOC_PCI',
              'CHPL_RE2',
 
              'CHPL_LLVM',

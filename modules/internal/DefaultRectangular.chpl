@@ -33,7 +33,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil;
-  public use ChapelArray;
+  use ChapelArray;
   use ChapelDistribution, ChapelRange, OS, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
@@ -56,7 +56,7 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
-  config param defaultRectangularSupportsAutoLocalAccess = true;
+  config param defaultRectangularSupportsAutoLocalAccess = false;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
@@ -717,9 +717,23 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-
-      var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
       return new unmanaged DefaultRectangularArr(eltType=eltType,
+                                       rank=rank,
+                                       idxType=idxType,
+                                       strides=strides,
+                                       dom=_to_unmanaged(this),
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
+                                       data=data);
+    }
+
+    proc doiBuildArrayMoving(from: DefaultRectangularArr(?)) {
+      var movedData = from.data;
+      from.data = nil; // so that it won't be freed when 'from' is deleted
+      return new unmanaged DefaultRectangularArr(
+                                       eltType=from.eltType,
                                        rank=rank,
                                        idxType=idxType,
                                        strides=strides,
@@ -728,9 +742,8 @@ module DefaultRectangular {
                                        // but the array should deinit them
                                        deinitElts=true,
                                        dom=_to_unmanaged(this),
-                                       data=data);
+                                       data=movedData);
     }
-
 
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
@@ -1137,6 +1150,11 @@ module DefaultRectangular {
     }
 
     override proc dsiDestroyArr(deinitElts:bool) {
+      // give up early if the array's data has already been stolen
+      if data == nil {
+        return;
+      }
+
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }
@@ -1622,6 +1640,55 @@ module DefaultRectangular {
     }
   }
 
+  // This is specialized to avoid overheads of calling dsiAccess()
+  iter chpl__serialViewIter1D(arr, viewRange) ref
+      where chpl__isDROrDRView(arr) {
+
+    param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
+    var info = if useCache then arr.indexCache
+               else if arr.isSliceArrayView() then arr.arr
+               else arr;
+
+    if viewRange.hasUnitStride() {
+      // Ideally we would like to be able to do something like
+      // "for i in first..last by step". However, right now that would
+      // result in a strided iterator which isn't as optimized. It would
+      // also add a range initializer, which in tight loops is pretty
+      // expensive. Instead we use a direct range iterator that is
+      // optimized for positively strided ranges. It should be just as fast
+      // as directly using a "c for loop", but it contains code check for
+      // overflow and invalid strides as well as the ability to use a less
+      // optimized iteration method if users are concerned about range
+      // overflow.
+
+      const first  = info.getDataIndex(viewRange.low);
+      const second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, chpl__idxToInt(viewRange.low)+1));
+      const step   = (second-first);
+      const last   = first + (viewRange.size:step.type-1) * step;
+      foreach i in chpl_direct_pos_stride_range_iter(first, last, step)
+          with (ref info) {
+        yield info.theData(i);
+      }
+    } else {
+      type vdIntIdxType = chpl__idxTypeToIntIdxType(viewRange.idxType);
+      const stride = viewRange.stride: vdIntIdxType,
+            start  = viewRange.first,
+            second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, viewRange.firstAsInt + stride));
+
+      var   first  = info.getDataIndex(start);
+      const step   = (second-first).safeCast(int);
+      var   last   = first + (viewRange.sizeAs(int)-1) * step;
+
+      if step < 0 then
+        last <=> first;
+
+      var data = info.theData;
+      foreach i in first..last by step do
+        yield data(i);
+    }
+
+  }
+
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1629,44 +1696,8 @@ module DefaultRectangular {
                else if arr.isSliceArrayView() then arr.arr
                else arr;
     if arr.rank == 1 {
-      // This is specialized to avoid overheads of calling dsiAccess()
-      if viewDom.hasUnitStride() {
-        // Ideally we would like to be able to do something like
-        // "for i in first..last by step". However, right now that would
-        // result in a strided iterator which isn't as optimized. It would
-        // also add a range initializer, which in tight loops is pretty
-        // expensive. Instead we use a direct range iterator that is
-        // optimized for positively strided ranges. It should be just as fast
-        // as directly using a "c for loop", but it contains code check for
-        // overflow and invalid strides as well as the ability to use a less
-        // optimized iteration method if users are concerned about range
-        // overflow.
-
-        const first  = info.getDataIndex(viewDom.dsiLow);
-        const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
-        const step   = (second-first);
-        const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) with (ref info) {
-          yield info.theData(i);
-        }
-      } else {
-        type vdIntIdxType = chpl__idxTypeToIntIdxType(viewDom.idxType);
-        const viewDomDim = viewDom.dsiDim(0),
-              stride = viewDomDim.stride: vdIntIdxType,
-              start  = viewDomDim.first,
-              second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, viewDomDim.firstAsInt + stride));
-
-        var   first  = info.getDataIndex(start);
-        const step   = (second-first).safeCast(int);
-        var   last   = first + (viewDomDim.sizeAs(int)-1) * step;
-
-        if step < 0 then
-          last <=> first;
-
-        var data = info.theData;
-        foreach i in first..last by step do
-          yield data(i);
-      }
+      foreach elem in chpl__serialViewIter1D(arr, viewDom.dsiDim[0]) do
+        yield elem;
     } else if useCache {
       foreach i in viewDom {
         const dataIdx = info.getDataIndex(i);
@@ -1678,6 +1709,10 @@ module DefaultRectangular {
   }
 
   iter chpl__serialViewIter(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
+  iter chpl__serialViewIter1D(arr, viewDom) ref {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
@@ -1709,7 +1744,7 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialWrite(f) throws
-  where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+  where _supportsSerializers(f) && !isDefaultSerializerType(f.serializerType) {
     if chpl_warnUnstable then
       compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
     var ser = f.serializer.startList(f, rank);
@@ -1745,6 +1780,14 @@ module DefaultRectangular {
 
   override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
     return defaultRectangularSupportsAutoLocalAccess;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsArrayViewElision() param {
+    return true;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsShortArrayTransfer() param {
+    return true;
   }
 
   // Why can the following two functions not be collapsed into one
@@ -1978,6 +2021,25 @@ module DefaultRectangular {
     dsiSerialReadWrite(f);
   }
 
+  inline proc DefaultRectangularArr.isDataContiguous(dom: domain) {
+    return isDataContiguous(dom._value);
+  }
+
+  // This is very conservative.
+  inline proc DefaultRectangularArr.isDataContiguous(dom: range) {
+    if rank != 1 then return false;
+
+    if debugDefaultDistBulkTransfer then
+      chpl_debug_writeln("isDataContiguous(): off=", off, " blk=", blk);
+
+    if blk(rank-1) != 1 then return false;
+
+    if debugDefaultDistBulkTransfer then
+      chpl_debug_writeln("\tYES!");
+
+    return true;
+  }
+
   // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous(dom) {
     if debugDefaultDistBulkTransfer then
@@ -1998,7 +2060,7 @@ module DefaultRectangular {
   }
 
   private proc _canDoSimpleTransfer(A, aView, B, bView) {
-    if !A.isDataContiguous(aView._value) || !B.isDataContiguous(bView._value) {
+    if !A.isDataContiguous(aView) || !B.isDataContiguous(bView) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("isDataContiguous return False");
       return false;
@@ -2043,21 +2105,63 @@ module DefaultRectangular {
     return true;
   }
 
+  /**
+    Check if the given locale and sublocale are the same as the current locale.
+    This is relevant for figuring out what sort of communication to do;
+    if the source is on the current locale, we can perform a 'put' call
+    (transferring data to the destination). On the other hand, if the
+    destination is on the current locale, we can perform a 'get' call
+    (receiving data from the source).
+
+    To decide on communication, we need to know that both the locale and
+    sublocale matches. Sublocales are only in play with the GPU locale model,
+    so avoid the check if we're using a different locale model.
+   */
+  private inline proc _isLocSublocSameAsHere(locid, sublocid) {
+    use ChplConfig;
+
+    if locid != here.id then
+        return false;
+
+    if CHPL_LOCALE_MODEL != "gpu" then
+        return true;
+
+    const heresublocid = chpl_task_getRequestedSubloc();
+
+    // for the time being, consider all sublocale IDs less than zero to refer to
+    // the parent locale (e.g. host).
+    return (sublocid < 0 && heresublocid < 0) || sublocid == heresublocid;
+  }
+
   private proc _simpleTransfer(A, aView, B, bView) {
     use ChplConfig;
 
     param rank     = A.rank;
     type idxType   = A.idxType;
 
-    const Adims = aView.dims();
     var Alo: rank*aView.idxType;
-    for param i in 0..rank-1 do
-      Alo(i) = Adims(i).first;
 
-    const Bdims = bView.dims();
+    if isDomain(aView) {
+      const Adims = aView.dims();
+      for param i in 0..rank-1 do
+        Alo(i) = Adims(i).first;
+    }
+    else if isRange(aView) {
+      Alo(0) = aView.first;
+    }
+    else {
+      compilerError("Unexpected type");
+    }
+
     var Blo: rank*B.idxType;
+    if isDomain(bView) {
+    const Bdims = bView.dims();
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
+    }
+    else if isRange(bView) {
+      Blo(0) = bView.first;
+    }
 
     const len = aView.sizeAs(aView.chpl_integralIdxType).safeCast(c_size_t);
 
@@ -2075,12 +2179,12 @@ module DefaultRectangular {
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Alocid = Adata.locale.id;
-    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Adata.locale.chpl_localeid());
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     const Blocid = Bdata.locale.id;
-    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Bdata.locale.chpl_localeid());
 
     type t = A.eltType;
@@ -2097,10 +2201,10 @@ module DefaultRectangular {
 
     if enableParallelGetsInAssignment || enableParallelPutsInAssignment {
       if isSizeAboveThreshold && !isFullyLocal {
-        if enableParallelPutsInAssignment && Blocid == here.id {
+        if enableParallelPutsInAssignment && _isLocSublocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
-        else if enableParallelGetsInAssignment && Blocid != here.id {
+        else if enableParallelGetsInAssignment && !_isLocSublocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
       }
@@ -2147,13 +2251,13 @@ module DefaultRectangular {
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
-    if Alocid==here.id {
+    if _isLocSublocSameAsHere(Alocid, Asublocid) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid);
 
       __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
                   srcRef, len);
-    } else if Blocid==here.id {
+    } else if _isLocSublocSameAsHere(Blocid, Bsublocid) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
 
@@ -2191,20 +2295,29 @@ module DefaultRectangular {
   TODO: Pull simple runtime implementation up into module code
   */
   private proc complexTransfer(A, aView, B, bView) {
-    if (A.data.locale.id != here.id &&
-        B.data.locale.id != here.id) {
+    use ChplConfig;
+
+    const Alocid = A.data.locale.id;
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
+                          chpl_sublocFromLocaleID(A.data.locale.chpl_localeid());
+    const Blocid = B.data.locale.id;
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
+                          chpl_sublocFromLocaleID(B.data.locale.chpl_localeid());
+
+    if !_isLocSublocSameAsHere(Alocid, Asublocid) &&
+       !_isLocSublocSameAsHere(Blocid, Bsublocid) {
       if debugDefaultDistBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", A.data.locale.id);
       }
       on A.data do
-        complexTransferCore(A, aView, B, bView);
+        complexTransferCore(A, Alocid, Asublocid, aView, B, Blocid, Bsublocid, bView);
     } else {
-      complexTransferCore(A, aView, B, bView);
+      complexTransferCore(A, Alocid, Asublocid, aView, B, Blocid, Bsublocid, bView);
     }
   }
 
 
-  private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
+  private proc complexTransferCore(LHS, LHSlocid, LHSsublocid, LViewDom, RHS, RHSlocid, RHSsublocid, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
     type  chpl_integralIdxType = LHS.chpl_integralIdxType;
@@ -2214,8 +2327,10 @@ module DefaultRectangular {
       writeln("Original domains   :", LHS.dom.dsiDims(), " <-- ", RHS.dom.dsiDims());
     }
 
-    const LeftDims  = LViewDom.dims();
-    const RightDims = RViewDom.dims();
+    const LeftDims  = if isDomain(LViewDom) then LViewDom.dims()
+                                            else (LViewDom,);
+    const RightDims = if isDomain(RViewDom) then RViewDom.dims()
+                                            else (RViewDom, );
 
     const (LeftActives, RightActives, inferredRank) = bulkCommComputeActiveDims(LeftDims, RightDims);
 
@@ -2325,14 +2440,14 @@ module DefaultRectangular {
     const LFirst = getFirstIdx(LeftDims);
     const RFirst = getFirstIdx(RightDims);
 
-    complexTransferComm(LHS, RHS, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
+    complexTransferComm(LHS, LHSlocid, LHSsublocid, RHS, RHSlocid, RHSsublocid, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
   }
 
   //
   // Invoke the primitives chpl_comm_get_strd/puts, depending on what locale we
   // are on vs. where the source and destination are.
   //
-  private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
+  private proc complexTransferComm(A, Alocid, Asublocid, B, Blocid, Bsublocid, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     use ChplConfig;
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("BulkTransferStride with values:\n",
@@ -2353,10 +2468,9 @@ module DefaultRectangular {
     const srcstr = srcStride._value.data;
     const cnt    = count._value.data;
 
-    if dest.locale.id == here.id {
-      const srclocale = src.locale.id;
-      const src_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
-                         chpl_sublocFromLocaleID(src.locale.chpl_localeid());
+    if _isLocSublocSameAsHere(Alocid, Asublocid) {
+      const srclocale = Blocid;
+      const src_subloc = Bsublocid;
 
       if debugBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: On LHS - GET from ", srclocale);
@@ -2373,9 +2487,8 @@ module DefaultRectangular {
                   stridelevels);
     }
     else {
-      const destlocale = dest.locale.id;
-      const dest_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
-                          chpl_sublocFromLocaleID(dest.locale.chpl_localeid());
+      const destlocale = Alocid;
+      const dest_subloc = Asublocid;
 
       if debugDefaultDistBulkTransfer {
         assert(src.locale.id == here.id,

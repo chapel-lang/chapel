@@ -53,5 +53,6 @@ use IO;
 
 // function to test if this was the ChapelIO that got used
 proc testchapelio() {
+  compilerWarning("test warning", errorDepth=0);
   writeln("In my ChapelIO!");
 }

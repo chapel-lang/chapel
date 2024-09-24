@@ -330,7 +330,7 @@ Runtime Representation of Array Values
 The runtime representation of an array in memory is controlled by its
 domain’s distribution. Through this mechanism, users can reason about and
 control the runtime representation of an array’s elements. See
- :ref:`Chapter-Domain_Maps` for more details.
+:ref:`Chapter-Domain_Maps` for more details.
 
 .. index::
    pair: arrays; indexing

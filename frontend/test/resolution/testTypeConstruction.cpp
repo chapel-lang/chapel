@@ -1283,6 +1283,272 @@ static void test42() {
   assert(fields->fieldType(0).param() == IntParam::get(context, 1));
 }
 
+static void testRecursiveTypeConstructor() {
+  printf("testRecursiveTypeConstructor\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class Node {
+        type eltType = int;
+        var data: eltType;
+        var next: unmanaged Node(eltType)?;
+      }
+      var x = new unmanaged Node(real, 3.14);
+      )""");
+
+  auto ct = p.first->toClassType();
+  assert(ct);
+  assert(ct->basicClassType());
+  assert(ct->basicClassType()->instantiatedFrom());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 3);
+  assert(fields->fieldName(0) == "eltType");
+  assert(fields->fieldHasDefaultValue(0) == true);
+  assert(fields->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fields->fieldType(0).type() == RealType::get(context, 0));
+  assert(fields->fieldName(1) == "data");
+  assert(fields->fieldHasDefaultValue(1) == false);
+  assert(fields->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(1).type() == RealType::get(context, 0));
+  assert(fields->fieldName(2) == "next");
+  assert(fields->fieldHasDefaultValue(2) == false);
+  assert(fields->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(2).type()->toClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+}
+
+static void testRecursiveTypeConstructorAlias() {
+  printf("testRecursiveTypeConstructorAlias\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class Node {
+          type eltType = int;
+          var data: eltType;
+          var next: UnmanagedIntNode;
+      }
+      proc UnmanagedIntNode type do return unmanaged Node(int)?;
+      var x = new unmanaged Node(int, 314);
+      )""");
+
+  auto ct = p.first->toClassType();
+  assert(ct);
+  assert(ct->basicClassType());
+  assert(ct->basicClassType()->instantiatedFrom());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 3);
+  assert(fields->fieldName(0) == "eltType");
+  assert(fields->fieldHasDefaultValue(0) == true);
+  assert(fields->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fields->fieldType(0).type() == IntType::get(context, 0));
+  assert(fields->fieldName(1) == "data");
+  assert(fields->fieldHasDefaultValue(1) == false);
+  assert(fields->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(1).type() == IntType::get(context, 0));
+  assert(fields->fieldName(2) == "next");
+  assert(fields->fieldHasDefaultValue(2) == false);
+  assert(fields->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(2).type()->toClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+}
+
+static void testRecursiveTypeConstructorGeneric() {
+  printf("testRecursiveTypeConstructorGeneric\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+      R"""(
+      class Node {
+          type eltType = int;
+          var data: eltType;
+          var next: Node(eltType)?;
+      }
+      var x = new unmanaged Node(int, 314);
+      )""", /* requireTypeKnown */ false);
+
+  bool foundError = false;
+  for (auto& err : guard.errors()) {
+    if (err->type() == ErrorType::MissingFormalInstantiation) {
+      foundError = true;
+      break;
+    }
+  }
+  assert(foundError);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testRecursiveTypeConstructorMutual() {
+  printf("testRecursiveTypeConstructor\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class MutA {
+        type eltType;
+        var data: eltType;
+        var next: owned MutB(eltType)?;
+      }
+
+      class MutB {
+        type eltType;
+        var data: eltType;
+        var next: owned MutA(eltType)?;
+      }
+
+      var x = new MutA(real, 3.14, new MutB(real, 2.71));
+      )""");
+
+  auto ctA = p.first->toClassType();
+  assert(ctA);
+  assert(ctA->basicClassType());
+  assert(ctA->basicClassType()->instantiatedFrom());
+
+  auto fieldsA = p.second;
+  assert(fieldsA);
+  assert(fieldsA->numFields() == 3);
+  assert(fieldsA->fieldName(0) == "eltType");
+  assert(fieldsA->fieldHasDefaultValue(0) == false);
+  assert(fieldsA->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsA->fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(1) == "data");
+  assert(fieldsA->fieldHasDefaultValue(1) == false);
+  assert(fieldsA->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(2) == "next");
+  assert(fieldsA->fieldHasDefaultValue(2) == false);
+  assert(fieldsA->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(2).type()->toClassType());
+
+  auto ctB = fieldsA->fieldType(2).type()->toClassType();
+  assert(ctB);
+  assert(ctB->basicClassType());
+  assert(ctB->basicClassType()->instantiatedFrom());
+
+  auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& fieldsB = fieldsForTypeDecl(context, ctB->basicClassType(),
+                                                    defaultsPolicy);
+
+  assert(fieldsB.numFields() == 3);
+  assert(fieldsB.fieldName(0) == "eltType");
+  assert(fieldsB.fieldHasDefaultValue(0) == false);
+  assert(fieldsB.fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsB.fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(1) == "data");
+  assert(fieldsB.fieldHasDefaultValue(1) == false);
+  assert(fieldsB.fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(2) == "next");
+  assert(fieldsB.fieldHasDefaultValue(2) == false);
+  assert(fieldsB.fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(2).type()->toClassType());
+  assert(fieldsB.fieldType(2).type()->toClassType()->basicClassType() == ctA->basicClassType());
+}
+
+static void test43() {
+  printf("test43\n");
+  Context ctx;
+  Context* context = &ctx;
+  auto p = parseTypeAndFieldsOfX(context,
+                        R""""(
+                        class A {
+                          type TX;
+                          var x : TX;
+                        }
+
+                        class B : A {
+                          type TY;
+                          var y : TY;
+                        }
+
+                        var x : unmanaged B(int, real)?;
+                        )"""");
+
+  auto rt = p.first->toClassType();
+  assert(rt);
+  assert(rt->decorator().isUnmanaged());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldType(0).type()->isRealType());
+
+  auto parent = rt->basicClassType()->parentClassType();
+  auto pf = parent->substitutions();
+  assert(pf.size() == 1);
+  assert(pf.begin()->second.type()->isIntType());
+}
+
+static void test44() {
+  printf("test44\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // Test that symbols referred to in type constructors are visible, including:
+  // - types declared as a sibling to the type being constructed
+  // - types visible through a 'private use'
+  std::string program = R"""(
+  module M {
+    module Other {
+      enum color {red, green, blue}
+
+      class Parent {
+        param col : color;
+      }
+    }
+
+    private use Other;
+
+    enum coords {x, y};
+
+    class Child : Parent {
+      type T;
+      param p : coords;
+    }
+
+    // Type constructor should be able to see 'coords' and 'foobar'
+    var x : unmanaged Child(color.red, int, coords.x)?;
+    }
+    )""";
+
+  auto p = parseTypeAndFieldsOfX(context, program.c_str());
+
+  auto xt = p.first->toClassType();
+  assert(xt->decorator().isUnmanaged());
+  assert(xt->decorator().isNilable());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldType(0).type()->isIntType());
+
+  auto pt = fields->fieldType(1);
+  assert(pt.type()->isEnumType());
+  assert(pt.param()->isEnumParam());
+  auto param = pt.param()->toEnumParam();
+  assert(param->value().str == "x");
+
+
+  auto parent = xt->basicClassType()->parentClassType();
+  auto pf = parent->substitutions();
+  assert(pf.size() == 1);
+  assert(pf.begin()->second.type()->isEnumType());
+  assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
+}
 
 int main() {
   test1();
@@ -1330,6 +1596,12 @@ int main() {
   test40();
   test41();
   test42();
+  testRecursiveTypeConstructor();
+  testRecursiveTypeConstructorAlias();
+  testRecursiveTypeConstructorGeneric();
+  testRecursiveTypeConstructorMutual();
+  test43();
+  test44();
 
   return 0;
 }

@@ -2,7 +2,7 @@
  *  Check correctness of search functions
  */
 
-use Search;
+use Search; use Sort only relativeComparator, keyComparator;
 
 proc main() {
 
@@ -56,7 +56,7 @@ proc main() {
 
   /* Comparators */
 
-  result = search(revA, 2, comparator=reverseComparator, sorted=true);
+  result = search(revA, 2, comparator=new ReverseComparator(), sorted=true);
   checkSearch(result, (true, 1), revA, 'search');
 
   result = search(absA, 2, comparator=absKey, sorted=true);
@@ -92,7 +92,8 @@ proc main() {
 
 
 /* Checks array and resets values -- any output results in failure */
-proc checkSearch(result, expected, arr, searchProc:string, cmp=defaultComparator) {
+proc checkSearch(result, expected, arr, searchProc:string,
+                 cmp = new DefaultComparator()) {
   if result != expected {
     writeln(searchProc, '() function failed');
     writeln('eltType:    ', arr.eltType:string);
@@ -116,19 +117,19 @@ proc ReverseComparator.name() { return 'ReverseComparator';}
 
 
 /* Key Sort by absolute value */
-record AbsKeyCmp {
+record AbsKeyCmp: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
 
 
 /* Compare Sort by absolute value */
-record AbsCompCmp {
+record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
 
-
+// unused
 /* Key method should take priority over compare method */
 record AbsKeyCompCmp {
   proc key(a) { return abs(a); }
@@ -136,7 +137,7 @@ record AbsKeyCompCmp {
   proc name() { return 'AbsKeyCompCmp'; }
 }
 
-
+// unused
 /* Key method can return a non-numerical/string type, such as tuple */
 record TupleCmp {
   proc key(a) { return (a, a); }

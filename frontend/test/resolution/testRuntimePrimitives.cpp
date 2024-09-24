@@ -235,6 +235,10 @@ static void test22() {
   primTypeHelper<VoidType>("gpu set blockSize", {"128"});
   primTypeHelper<VoidType>("gpu set blockSize", {"v"}, "var v = 128;");
   primTypeHelper<ErroneousType>("gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
+
+  primTypeHelper<VoidType>("gpu set itersPerThread", {"128"});
+  primTypeHelper<VoidType>("gpu set itersPerThread", {"v"}, "var v = 128;");
+  primTypeHelper<ErroneousType>("gpu set itersPerThread", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
 }
 
 static void test23() {

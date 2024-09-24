@@ -20,7 +20,7 @@ int main() {
   int datalen = strlen(data);
   int fd;
   ssize_t got;
-  err_t err;
+  qio_err_t err;
 
   buf = malloc(buflen);
   assert(buf);
@@ -30,7 +30,7 @@ int main() {
   // open file
   fd = open("tmp.data", O_RDWR | O_CREAT, S_IRWXU);
   assert(fd>=0);
-  
+
   // copy data to buf
   memset(buf, 0, buflen);
   memcpy(buf, data, datalen);
@@ -41,7 +41,7 @@ int main() {
   //got = pwrite(fd, buf, datalen, 0);
   assert(!err);
   assert(got == datalen);
- 
+
   // clear buf
   memset(buf, 0, buflen);
   // read data
@@ -53,7 +53,7 @@ int main() {
   assert(got == datalen);
   // check data
   assert(0 == memcmp(data, buf, datalen));
- 
+
   close(fd);
   unlink("tmp.data");
 

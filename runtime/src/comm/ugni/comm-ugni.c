@@ -129,7 +129,7 @@ static chpl_bool debug_exiting = false;
 static pthread_t proc_thread_id;
 
 static __thread uint32_t thread_idx      = ~(uint32_t) 0;
-static atomic_uint_least32_t next_thread_idx;
+static chpl_atomic_uint_least32_t next_thread_idx;
 #define _DBG_NEXT_THREAD_IDX() \
         atomic_fetch_add_uint_least32_t(&next_thread_idx, 1)
 
@@ -347,7 +347,7 @@ chpl_comm_pstats_t chpl_comm_pstats;
 #define PERFSTATS_LD(cnt)         _PSV_LD_FUNC(&_PSV_VAR(cnt))
 #define PERFSTATS_ST(cnt, val)    _PSV_ST_FUNC(&_PSV_VAR(cnt), val)
 #define PERFSTATS_STZ(cnt)        PERFSTATS_ST(cnt, 0)
-#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC_E(&_PSV_VAR(cnt), val, memory_order_relaxed)
+#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC_E(&_PSV_VAR(cnt), val, chpl_memory_order_relaxed)
 #define PERFSTATS_INC(cnt)        PERFSTATS_ADD(cnt, 1)
 
 #include <time.h>
@@ -570,7 +570,7 @@ static int max_mem_regions;
 static size_t mem_regions_size;
 
 static mem_region_table_t* mem_regions;
-static atomic_int_least32_t mreg_free_cnt;
+static chpl_atomic_int_least32_t mreg_free_cnt;
 static uint32_t mreg_cnt_max;
 
 static mem_region_table_t* mem_regions_all;
@@ -638,7 +638,7 @@ static mem_region_t* gnr_mreg_map;
 // fault-in failures, and reporting out-of-memory in response.
 //
 static struct sigaction previous_SIGBUS_sigact;
-static atomic_bool SIGBUS_gate;
+static chpl_atomic_bool SIGBUS_gate;
 
 struct mregs_supp {
   chpl_mem_descInt_t desc;
@@ -714,7 +714,7 @@ mpool_idx_base_t mpool_idx_finc(mpool_idx_t* pvar) {
 #define CD_ACTIVE_TRANS_MAX 128     // Max transactions in flight, per cd
 
 typedef uint32_t cq_cnt_t;
-typedef atomic_uint_least32_t cq_cnt_atomic_t;
+typedef chpl_atomic_uint_least32_t cq_cnt_atomic_t;
 
 #define CQ_CNT_INIT(cd, val) \
         atomic_init_uint_least32_t(&(cd)->cq_cnt_curr, val)
@@ -743,13 +743,13 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 // is the only one with cheap atomic reads.)
 
 typedef struct {
-  atomic_spinlock_t  busy CACHE_LINE_ALIGN;
-  cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
-  chpl_bool          firmly_bound;
-  gni_nic_handle_t   nih;
-  gni_ep_handle_t*   remote_eps;
-  gni_cq_handle_t    cqh;
-  cq_cnt_t           cq_cnt_max;
+  chpl_atomic_spinlock_t  busy CACHE_LINE_ALIGN;
+  cq_cnt_atomic_t         cq_cnt_curr CACHE_LINE_ALIGN;
+  chpl_bool               firmly_bound;
+  gni_nic_handle_t        nih;
+  gni_ep_handle_t*        remote_eps;
+  gni_cq_handle_t         cqh;
+  cq_cnt_t                cq_cnt_max;
 #ifdef DEBUG_STATS
   uint64_t           acqs;
   uint64_t           acqs_looks;
@@ -768,7 +768,7 @@ static uint32_t     comm_dom_cnt_max;
 
 static comm_dom_t*  comm_doms;
 
-static atomic_int_least32_t global_init_cdi;
+static chpl_atomic_int_least32_t global_init_cdi;
 static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
@@ -834,7 +834,7 @@ static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 
 typedef struct {
   gni_post_descriptor_t post_desc;  // POST descriptor for an NB transaction
-  atomic_bool done;                 // transaction has completed?
+  chpl_atomic_bool done;                 // transaction has completed?
   int cdi;                          // index of comm domain used for post
   mpool_idx_base_t next;            // free list index
 } nb_desc_t;
@@ -886,7 +886,7 @@ typedef mpool_idx_base_t rf_done_pool_t;
 
 static rf_done_pool_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
 static mpool_idx_t rf_done_pool_head[RF_DONE_NUM_POOLS];
-static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
+static chpl_atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
 
 static mpool_idx_t rf_done_pool_i;
 
@@ -1231,7 +1231,7 @@ static gni_fma_cmd_type_t nic_amos_ari[]        // Aries, non-fetching
         static const int gbp_##size##_num_per_pool = nPerPool;          \
         static int64_t* gbp_##size;                                     \
         static mpool_idx_t gbp_##size##_head[nPools];                   \
-        static atomic_bool gbp_##size##_lock[nPools];                   \
+        static chpl_atomic_bool gbp_##size##_lock[nPools];                   \
         static mpool_idx_t gbp_##size##_pool_i;                         \
         static inline                                                   \
         mpool_idx_base_t gbp_##size##_next_pool_i(void)                 \
@@ -1285,7 +1285,7 @@ static const int gbp_max_size = 4096;
 
 static fork_amo_data_t (*amo_res_pool)[AMO_RES_NUM_PER_POOL];
 static mpool_idx_t amo_res_pool_head[AMO_RES_NUM_POOLS];
-static atomic_bool amo_res_pool_lock[AMO_RES_NUM_POOLS];
+static chpl_atomic_bool amo_res_pool_lock[AMO_RES_NUM_POOLS];
 
 static mpool_idx_t amo_res_pool_i;
 
@@ -1550,7 +1550,7 @@ static const char* fork_op_name(fork_op_t op)
 }
 
 
-static atomic_uint_least64_t dbg_fork_seq;
+static chpl_atomic_uint_least64_t dbg_fork_seq;
 #define DBG_SET_SEQ(s) (s = atomic_fetch_add_uint_least64_t(&dbg_fork_seq, 1))
 
 
@@ -2643,7 +2643,7 @@ void register_memory(void)
   }
 
   can_register_memory = true;
-  chpl_atomic_thread_fence(memory_order_release);
+  chpl_atomic_thread_fence(chpl_memory_order_release);
 }
 
 
@@ -3247,7 +3247,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
       // Only say this once per node.
       //
       while (atomic_exchange_explicit_bool(&SIGBUS_gate, true,
-                                           memory_order_acquire)) {
+                                           chpl_memory_order_acquire)) {
         sleep(1); // listed as safe in a handler (sched_yield() isn't)
       }
 
@@ -4248,7 +4248,7 @@ void rf_handler(gni_cq_entry_t* ev)
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
                                &bundle, sizeof(bundle),
-                               c_sublocid_any, chpl_nullTaskID);
+                               c_sublocid_none, chpl_nullTaskID);
     }
     break;
 
@@ -4372,12 +4372,12 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
 #define CPU_INT_ARITH_AMO(_o, _t)                                       \
         do {                                                            \
           if (res == NULL) {                                            \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
+            (void) atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,         \
                                             *(_t*) opnd1);              \
           }                                                             \
           else {                                                        \
             _t my_res;                                                  \
-            my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,       \
+            my_res = atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,       \
                                               *(_t*) opnd1);            \
             memcpy(res, &my_res, sizeof(my_res));                       \
             res_size = sizeof(my_res);                                  \
@@ -4391,19 +4391,19 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   //
   switch (cmd) {
   case put_32:
-    atomic_store_int_least32_t((atomic_int_least32_t*) obj,
+    atomic_store_int_least32_t((chpl_atomic_int_least32_t*) obj,
                                *(int_least32_t*) opnd1);
     break;
 
   case put_64:
-    atomic_store_int_least64_t((atomic_int_least64_t*) obj,
+    atomic_store_int_least64_t((chpl_atomic_int_least64_t*) obj,
                                *(int_least64_t*) opnd1);
     break;
 
   case get_32:
     {
       int_least32_t my_res;
-      my_res = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
+      my_res = atomic_load_int_least32_t((chpl_atomic_int_least32_t*) obj);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
@@ -4412,7 +4412,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   case get_64:
     {
       int_least64_t my_res;
-      my_res = atomic_load_int_least64_t((atomic_int_least64_t*) obj);
+      my_res = atomic_load_int_least64_t((chpl_atomic_int_least64_t*) obj);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
@@ -4421,7 +4421,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   case swap_32:
     {
       int_least32_t my_res;
-      my_res = atomic_exchange_int_least32_t((atomic_int_least32_t*) obj,
+      my_res = atomic_exchange_int_least32_t((chpl_atomic_int_least32_t*) obj,
                                              *(int_least32_t*) opnd1);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
@@ -4431,7 +4431,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   case swap_64:
     {
       int_least64_t my_res;
-      my_res = atomic_exchange_int_least64_t((atomic_int_least64_t*) obj,
+      my_res = atomic_exchange_int_least64_t((chpl_atomic_int_least64_t*) obj,
                                              *(int_least64_t*) opnd1);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
@@ -4442,7 +4442,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       int_least32_t opnd1Val = *(int_least32_t*) opnd1;
       (void) atomic_compare_exchange_strong_int_least32_t
-               ((atomic_int_least32_t*) obj,
+               ((chpl_atomic_int_least32_t*) obj,
                 &opnd1Val,
                 *(int_least32_t*) opnd2);
       memcpy(res, &opnd1Val, sizeof(opnd1Val));
@@ -4454,7 +4454,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       int_least64_t opnd1Val = *(int_least64_t*) opnd1;
       (void) atomic_compare_exchange_strong_int_least64_t
-               ((atomic_int_least64_t*) obj,
+               ((chpl_atomic_int_least64_t*) obj,
                 &opnd1Val,
                 *(int_least64_t*) opnd2);
       memcpy(res, &opnd1Val, sizeof(opnd1Val));
@@ -4508,7 +4508,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     {
       mem_region_t* mr;
 
-      if ((mr = mreg_for_local_addr(obj, sizeof(atomic__real64))) == NULL) {
+      if ((mr = mreg_for_local_addr(obj, sizeof(chpl_atomic__real64))) == NULL) {
         CPU_INT_ARITH_AMO(add, _real64);
       } else {
         int_least64_t expected;
@@ -4817,7 +4817,7 @@ void get_buf_pre_init(void)
 static
 inline
 void get_buf_N_init(int size, int nPools, int nPerPool, int64_t **gbp,
-                    mpool_idx_t gbp_head[], atomic_bool gbp_lock[],
+                    mpool_idx_t gbp_head[], chpl_atomic_bool gbp_lock[],
                     mpool_idx_t *p_gbp_pool_i)
 {
   const int pElemSize = size / sizeof(**gbp);
@@ -4861,7 +4861,7 @@ void get_buf_init(void)
 static
 inline
 void* get_buf_N_alloc(int size, int nPools, int nPerPool, int64_t gbp[],
-                      mpool_idx_t gbp_head[], atomic_bool gbp_lock[],
+                      mpool_idx_t gbp_head[], chpl_atomic_bool gbp_lock[],
                       mpool_idx_base_t gbp_next_pool_i)
 {
   const int pElemSize = size / sizeof(gbp[0]);
@@ -4923,7 +4923,7 @@ static
 inline
 chpl_bool get_buf_N_free(int64_t* p,
                          int size, int nPools, int nPerPool, int64_t gbp[],
-                         mpool_idx_t gbp_head[], atomic_bool gbp_lock[])
+                         mpool_idx_t gbp_head[], chpl_atomic_bool gbp_lock[])
 {
   const int pElemSize = size / sizeof(gbp[0]);
 
@@ -5080,7 +5080,7 @@ void consume_all_outstanding_cq_events(int cdi)
         // post_id is the pointer to the "done" flag the initiating task
         // is waiting on.
         //
-        atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
+        atomic_store_bool((chpl_atomic_bool*) (intptr_t) post_desc->post_id, true);
       }
       CQ_CNT_DEC(cd);
     }
@@ -6266,7 +6266,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         void chpl_comm_atomic_write_##_f(void* val,                     \
                                        int32_t loc,                     \
                                        void* obj,                       \
-                                       memory_order order,              \
+                                       chpl_memory_order order,         \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6311,7 +6311,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
         void chpl_comm_atomic_read_##_f(void* res,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
-                                       memory_order order,              \
+                                       chpl_memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6360,7 +6360,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         int32_t loc,                    \
                                         void* obj,                      \
                                         void* res,                      \
-                                        memory_order order,             \
+                                        chpl_memory_order order,             \
                                         int ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6407,8 +6407,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
-                                           memory_order succ,           \
-                                           memory_order fail,           \
+                                           chpl_memory_order succ,           \
+                                           chpl_memory_order fail,           \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6461,7 +6461,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
                                           int32_t loc,                  \
                                           void* obj,                    \
-                                          memory_order order,           \
+                                          chpl_memory_order order,           \
                                           int ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6515,7 +6515,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                 int32_t loc,            \
                                                 void* obj,              \
                                                 void* res,              \
-                                                memory_order order,     \
+                                                chpl_memory_order order,     \
                                                 int ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6577,7 +6577,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
-                                       memory_order order,              \
+                                       chpl_memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6631,7 +6631,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
-                                             memory_order order,        \
+                                             chpl_memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6671,7 +6671,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
         void chpl_comm_atomic_sub_##_f(void* opnd,                      \
                                        int32_t loc,                     \
                                        void* obj,                       \
-                                       memory_order order,              \
+                                       chpl_memory_order order,              \
                                        int ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -6705,7 +6705,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
                                              int32_t loc,               \
                                              void* obj,                 \
                                              void* res,                 \
-                                             memory_order order,        \
+                                             chpl_memory_order order,        \
                                              int ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
@@ -7294,7 +7294,7 @@ void do_fork_post(c_nodeid_t locale,
       *p_rf_done_addr = rf_done_alloc();
     }
     **p_rf_done_addr = 0;
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
 
     stack_post_desc = (gni_post_descriptor_t) { 0 };
     post_desc_p = &stack_post_desc;
@@ -7411,10 +7411,10 @@ void do_fork_post(c_nodeid_t locale,
 
           nb_desc = &nb_fork[i].nb_desc;
 
-          done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+          done = atomic_load_explicit_bool(&nb_desc->done, chpl_memory_order_acquire);
           if (!done) {
             consume_all_outstanding_cq_events(nb_desc->cdi);
-            done = atomic_load_explicit_bool(&nb_desc->done, memory_order_acquire);
+            done = atomic_load_explicit_bool(&nb_desc->done, chpl_memory_order_acquire);
           }
           if (done) {
             retired_any = true;
@@ -7681,7 +7681,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
                        chpl_bool do_yield)
 {
   int cdi;
-  atomic_bool post_done;
+  chpl_atomic_bool post_done;
   uint64_t iters = 0;
 
   do_yield = should_yield_during_comm(do_yield);
@@ -7704,7 +7704,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
     }
     consume_all_outstanding_cq_events(cdi);
     iters++;
-  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
+  } while (!atomic_load_explicit_bool(&post_done, chpl_memory_order_acquire));
 }
 
 #if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
@@ -7762,7 +7762,7 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
                           gni_post_descriptor_t* post_desc)
 {
   int cdi;
-  atomic_bool post_done;
+  chpl_atomic_bool post_done;
 
   chpl_bool do_yield = should_yield_during_comm(true);
 
@@ -7781,7 +7781,7 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
       local_yield();
     }
     consume_all_outstanding_cq_events(cdi);
-  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
+  } while (!atomic_load_explicit_bool(&post_done, chpl_memory_order_acquire));
 }
 
 #endif
@@ -7813,7 +7813,7 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
                         chpl_bool do_yield)
 {
   int cdi;
-  atomic_bool post_done;
+  chpl_atomic_bool post_done;
 
   do_yield = should_yield_during_comm(do_yield);
 
@@ -7832,7 +7832,7 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
       local_yield();
     }
     consume_all_outstanding_cq_events(cdi);
-  } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
+  } while (!atomic_load_explicit_bool(&post_done, chpl_memory_order_acquire));
 }
 
 
@@ -7947,3 +7947,5 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 #undef _PSV_PRINT
 }
 #endif
+
+void chpl_comm_ensure_progress(void) { }
