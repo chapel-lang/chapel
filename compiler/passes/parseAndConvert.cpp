@@ -136,8 +136,10 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 static bool dynoRealizeErrors(void);
 static bool dynoRealizeDeferredErrors(void);
 
-static void dynoConvertInternalModule(const char* moduleName);
-static ModuleSymbol* dynoConvertFile(const char* fileName,
+static void dynoConvertInternalModule(UastConverter& c,
+                                      const char* moduleName);
+static ModuleSymbol* dynoConvertFile(UastConverter& c,
+                                     const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine);
 
@@ -221,7 +223,7 @@ static void checkCanLoadCommandLineFile(const char* path) {
   }
 }
 
-static void loadAndConvertModules() {
+static void loadAndConvertModules(UastConverter& c) {
 
   // check that some key internal modules are available
   checkCanLoadBundledModules();
@@ -274,9 +276,9 @@ static void loadAndConvertModules() {
 
 
   // construct a set of modules to convert
-  gConvertFilterModuleIds.clear();
+  c.clearModulesToConvert();
   for (const auto& id : modulesToConvert) {
-    gConvertFilterModuleIds.insert(id);
+    c.addModuleToConvert(id);
   }
 
   // construct a set of top-level command-line modules
@@ -310,7 +312,7 @@ static void loadAndConvertModules() {
 
       // convert it from uAST to AST
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;
-      dynoConvertFile(path.c_str(), modTag, namedOnCommandLine);
+      dynoConvertFile(c, path.c_str(), modTag, namedOnCommandLine);
     } else {
       // ignore a submodule
     }
@@ -318,9 +320,9 @@ static void loadAndConvertModules() {
 
 
   // also handle some modules that get magically included
-  dynoConvertInternalModule("PrintModuleInitOrder");
+  dynoConvertInternalModule(c, "PrintModuleInitOrder");
   if (fLibraryFortran) {
-    dynoConvertInternalModule("ISO_Fortran_binding");
+    dynoConvertInternalModule(c, "ISO_Fortran_binding");
   }
 }
 
@@ -932,7 +934,8 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
 }
 
 
-static void dynoConvertInternalModule(const char* moduleName) {
+static void dynoConvertInternalModule(UastConverter& c,
+                                      const char* moduleName) {
   UniqueString uname = UniqueString::get(gContext, moduleName);
   auto mod = chpl::parsing::getToplevelModule(gContext, uname);
   if (mod == nullptr) {
@@ -943,11 +946,12 @@ static void dynoConvertInternalModule(const char* moduleName) {
   bool found = gContext->filePathForId(mod->id(), path);
   INT_ASSERT(found);
 
-  dynoConvertFile(path.c_str(), MOD_INTERNAL, false);
+  dynoConvertFile(c, path.c_str(), MOD_INTERNAL, false);
 }
 
 
-static ModuleSymbol* dynoConvertFile(const char* fileName,
+static ModuleSymbol* dynoConvertFile(UastConverter& c,
+                                     const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine) {
   ModuleSymbol* ret = nullptr;
@@ -1009,7 +1013,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
     yyfilename = nullptr;
 
     // Only converts the module, does not add to done list.
-    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag);
+    ModuleSymbol* got = c.convertToplevelModule(mod, modTag);
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
@@ -1096,6 +1100,8 @@ void parseAndConvertUast() {
 
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
+  auto converter = UastConverter(gContext);
+
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
   if (printSearchDirs) {
@@ -1104,7 +1110,7 @@ void parseAndConvertUast() {
 
   addDynoLibFiles();
 
-  loadAndConvertModules();
+  loadAndConvertModules(converter);
 
   setupDynoLibFileGeneration();
 
@@ -1121,7 +1127,7 @@ void parseAndConvertUast() {
 
   checkConfigs();
 
-  postConvertApplyFixups(gContext);
+  converter.postConvertApplyFixups();
 
   // One last catchall for errors.
   if (dynoRealizeErrors()) USR_STOP();
