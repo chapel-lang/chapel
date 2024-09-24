@@ -1,1 +1,1 @@
-../bigTransfer.execopts
+--doGET=false --xferMB=2048
