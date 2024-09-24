@@ -586,7 +586,7 @@ def register_rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
-    @driver.advanced_rule(default=False)
+    @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
         Warn for unused formals in functions.
