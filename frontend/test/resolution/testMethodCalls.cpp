@@ -822,6 +822,64 @@ static void test16() {
   }
 }
 
+static void test17() {
+  // Test resolving method calls from within param for loop.
+
+  // Parenful
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf() do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf();
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Parenless
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf;
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -840,6 +898,7 @@ int main() {
   test14b();
   test15();
   test16();
+  test17();
 
   return 0;
 }
