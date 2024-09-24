@@ -1807,6 +1807,10 @@ def run_lsp():
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=segment.get_location().range)
 
+    # TODO: can we make use of 'trigger_character' to provide completions?
+    # since we can't parse 'foo.', can we use the presence of a trigger '.' to
+    # read a identifier from the file buffer, lookup the scope for that name,
+    # and provide completions based on that scope?
     @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
     async def complete(ls: ChapelLanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
