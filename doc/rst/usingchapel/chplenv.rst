@@ -1080,15 +1080,22 @@ Chapel configuration file is found, the definitions of that file are used.
     The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
     directory - not the full path including ``chplconfig`` itself.
 
+.. note::
+
+   In a prefix install, a ``chplconfig`` file is installed in ``$CHPL_HOME``.
+   See :ref:`readme-installing`.
+
 Variable Priority
 ~~~~~~~~~~~~~~~~~
 
 Variable precedence goes in the following order:
 
-1. Explicit compiler flags: ``chpl --env=value``
-2. Environment variables: ``CHPL_ENV=value``
-3. Chapel configuration file: ``~/.chplconfig``
-4. Inferred environment variables: ``printchplenv``
+1. Explicit compiler flags specified as ``chpl --env=value```
+2. Environment variables set by the user (``export CHPL_ENV=value`` or
+   ``CHPL_ENV=value chpl ...``)
+3. Chapel configuration file settings from a ``chplconfig`` file, as described
+   above
+4. Inferred environment variables from ``printchplenv``
 
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN
