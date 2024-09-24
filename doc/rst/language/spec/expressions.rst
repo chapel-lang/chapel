@@ -498,18 +498,10 @@ precedence than those listed later.
    favor of the C approach, we would likely reverse this decision in
    order to more closely match C.
 
-   We were tempted to diverge from the C precedence rules for the binary
-   bitwise operators to make them bind less tightly than comparisons.
-   This would allow us to interpret:
-
-   ============== == ================
-   ``a | b == 0`` as ``(a | b) == 0``
-   ============== == ================
-
-   However, given that no other popular modern language has made this
-   change, we felt it unwise to stray from the pack. The typical
-   rationale for the C ordering is to allow these operators to be used
-   as non-short-circuiting logical operations.
+   C precedence rules for the binary bitwise operators make them bind
+   less tightly than comparisons. The typical rationale for the C
+   ordering is to allow these operators to be used as
+   non-short-circuiting logical operations.
 
    In contrast to C, we give bitwise operations a higher precedence than
    binary addition/subtraction and comparison operators. This enables
