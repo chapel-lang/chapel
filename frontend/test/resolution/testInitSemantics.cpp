@@ -1453,7 +1453,7 @@ static void testInitGenericAfterConcrete() {
     auto t = resolveTypeOfX(context, program);
 
     assert(t);
-    assert(t->isAnyType());
+    assert(t->isUnknownType());
 
     assert(guard.errors().size() == 2);
     assert(guard.error(0)->message() ==

@@ -235,7 +235,7 @@ Resolver::createForInitialSignature(Context* context, const Function* fn,
     fn->thisFormal()->traverse(ret);
     auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
     if (receiverType.hasTypePtr()) {
-      if (auto ct = receiverType.type()->toCompositeType()) {
+      if (auto ct = receiverType.type()->getCompositeType()) {
         ret.inCompositeType = ct;
       }
       ret.allowReceiverScopes = true;
@@ -3021,7 +3021,12 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   // and probably a few other features.
   bool emitLookupErrors = !resolvingCalledIdent && !scopeResolveOnly;
 
-  if (parenlessInfo.areCandidatesOnlyParenlessProcs() && !scopeResolveOnly) {
+  if (parenlessInfo.hasMethodCandidates() &&
+      getTypeGenericity(context, methodReceiverType()) != Type::CONCRETE) {
+    // Can't establish type yet, defer until receiver is instantiated.
+    result.setType(QualifiedType());
+  } else if (parenlessInfo.areCandidatesOnlyParenlessProcs() &&
+             !scopeResolveOnly) {
     // Ambiguous, but a special case: there are many parenless functions.
     // This might be fine, if their 'where' clauses leave only one.
     //
@@ -4056,6 +4061,12 @@ void Resolver::exit(const Dot* dot) {
     ResolvedExpression& r = byPostorder.byAst(dot);
     r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
     return;
+  }
+
+  // Handle generic receiver type later in function resolution,
+  // once we have an instantiation.
+  if (getTypeGenericity(context, receiver.type()) != Type::CONCRETE) {
+    deferToFunctionResolution = true;
   }
 
   if (scopeResolveOnly || deferToFunctionResolution)
