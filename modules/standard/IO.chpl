@@ -7218,7 +7218,7 @@ iter fileReader.lines(
   :throws: if a valid byte offset cannot be found for one or more chunks
 */
 @chpldoc.nodoc
-private proc findFileChunks(const ref f: file, n: int, bounds: range, findLast: bool = false): [] int throws {
+private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
   const nDataBytes = bounds.high - bounds.low,
         approxBytesPerChunk = nDataBytes / n;
 
@@ -7226,7 +7226,7 @@ private proc findFileChunks(const ref f: file, n: int, bounds: range, findLast: 
   chunkOffsets[0] = bounds.low;
   chunkOffsets[n] = bounds.high;
 
-  forall i in (if findLast then 1..n else 1..<n) with (ref chunkOffsets) {
+  forall i in 1..<n with (ref chunkOffsets) {
     const estOffset = bounds.low + i * approxBytesPerChunk,
           r = f.reader(region=estOffset..);
 
