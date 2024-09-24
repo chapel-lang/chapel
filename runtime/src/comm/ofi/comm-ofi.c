@@ -361,7 +361,7 @@ static const char* mcmModeNames[] = { "undefined",
 static bool cxiHybridMRMode = false;
 
 
-// OFI-specific non-blocking handle implementation 
+// OFI-specific non-blocking handle implementation
 
 // This is defined here because it is used in the forward declarations below.
 // The rountines to initialize and destroy handles, nb_handle_init and
@@ -2542,14 +2542,14 @@ void init_ofiEp(void) {
   //
   // Compute numbers of transmit and receive contexts, and then create
   // the transmit context table.
-  // 
+  //
   // The logic here is a bit convoluted and can probably be cleaned up. See
   // the tciTab comment above for more details. For non-scalable endpoints,
   // we would like to have one transmit context (and therefore one endpoint)
   // per worker thread, one per AM handler, and one for the process in
   // general. That will allow us to bind worker threads and AM handlers to
   // transmit contexts. If we can't get that many endpoints then transmit
-  // contexts will not be bound, which signficantly reduces performance. 
+  // contexts will not be bound, which signficantly reduces performance.
   //
   // For scalable endpoints we only need one transmit endpoint with enough
   // transmit contexts to bind them as described above. If max_ep_tx_ctx for
@@ -4377,7 +4377,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 
 /*
  * amRequestRmaPut
- * 
+ *
  * Performs a PUT by sending an active message to the remote node that causes
  * it to perform a GET. This operation returns when the GET has completed.
  */
@@ -5510,7 +5510,7 @@ void amCheckLiveness(void) {
 // Interface: RMA
 //
 
-static inline 
+static inline
 void nb_handle_init(nb_handle_t h) {
   h->id = chpl_task_getId();
   h->reported = false;
@@ -5518,7 +5518,7 @@ void nb_handle_init(nb_handle_t h) {
   h->next = NULL;
 }
 
-static inline 
+static inline
 void nb_handle_destroy(nb_handle_t h) {
   atomic_destroy_bool(&h->complete);
 }
@@ -5585,7 +5585,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
 
-  nb_handle_t handle = NULL; 
+  nb_handle_t handle = NULL;
   if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_put_nb(handle, addr, node, raddr, size);
   }
@@ -5612,7 +5612,7 @@ int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
 
 /*
  * check_complete
- * 
+ *
  * Returns true if a new handle completion is detected, false otherwise.
  * Ignores handles that have previously completed (h->reported == true). If
  * blocking is true and there are uncompleted handles this will not return
@@ -5662,7 +5662,7 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
         handle->reported = true;
       }
     }
-    if (!blocking || completed || !pending) { 
+    if (!blocking || completed || !pending) {
       break;
     }
     // progress the endpoint so handles can complete and then try again
@@ -6110,7 +6110,7 @@ static rmaPutFn_t rmaPutFn_selector;
 
 static inline
 void ofi_put(const void* addr, c_nodeid_t node, void* raddr, size_t size) {
-  
+
   // Allocate the handle on the stack to avoid malloc overhead
   nb_handle handle_struct;
   nb_handle_t handle = &handle_struct;
@@ -6138,12 +6138,12 @@ void ofi_put(const void* addr, c_nodeid_t node, void* raddr, size_t size) {
 static
 nb_handle_t ofi_put_nb(nb_handle_t handle, const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
-  
+
   char *src = (char *) addr;
   char *dest = (char *) raddr;
   nb_handle_t prev = NULL;
   nb_handle_t first = NULL;
- 
+
   if (size > ofi_info->ep_attr->max_msg_size) {
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
                "splitting large PUT %d:%p <= %p, size %zd",
@@ -6284,7 +6284,7 @@ void rmaPutFn_msgOrdFence(nb_handle_t handle, void* myAddr, void* mrDesc,
     //
     // Special case: If our last operation was an AMO then we need to do a
     // fenced PUT to force the AMO to be visible before this PUT.
-    // TODO: this logic is a bit screwed-up. FI_FENCE by itself doesn't 
+    // TODO: this logic is a bit screwed-up. FI_FENCE by itself doesn't
     // force the AMO to be visible, it just ensures that the PUT cannot pass
     // the AMO. We need to do something to make it visible, and we need
     // to clear the bitmap so that we don't keep fencing PUTs until something
@@ -7534,7 +7534,7 @@ void forceMemFxVisAllNodes(chpl_bool checkPuts, chpl_bool checkAmos,
                            struct perTxCtxInfo_t* tcip) {
   //
   // Enforce MCM: make sure the memory effects of all the operations
-  // we've done so far, to any node, are actually visible.  
+  // we've done so far, to any node, are actually visible.
   //
   mcmReleaseAllNodes(checkPuts ? tcip->putVisBitmap : NULL,
                      checkAmos ? tcip->amoVisBitmap : NULL,
