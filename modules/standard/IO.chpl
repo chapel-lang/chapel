@@ -7121,7 +7121,7 @@ iter fileReader.lines(
     const f = chpl_fileFromReaderOrWriter(this),
           myStart = qio_channel_start_offset_unlocked(this._channel_internal),
           myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
-          myBounds = myStart..<min(myEnd, try! f.size),
+          myBounds = myStart..min(myEnd, try! f.size),
           nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
                                               else here.maxTaskPar;
     try {
@@ -7162,36 +7162,36 @@ iter fileReader.lines(
     const f = chpl_fileFromReaderOrWriter(this),
           myStart = qio_channel_start_offset_unlocked(this._channel_internal),
           myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
-          myBounds = myStart..<min(myEnd, try! f.size),
+          myBounds = myStart..min(myEnd, try! f.size),
           fpath = try! f.path;
 
     try {
       // try to break the file into chunks and read the lines in parallel
       // can fail if the file is too small to break into 'targetLocales.size' chunks
       const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
-
       coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
-        const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
-              locFile = try! open(fpath, ioMode.r),
-              nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
-                                                  else here.maxTaskPar;
+        const locBounds = byteOffsets[lid]..byteOffsets[lid+1];
+        if locBounds.size > 1 {
+          const locFile = try! open(fpath, ioMode.r),
+                nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                    else here.maxTaskPar;
+          try {
+            // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
+            const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
+            coforall tid in 0..<nTasks {
+              const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                    r = try! locFile.reader(region=taskBounds);
 
-        try {
-          // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
-          const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
-          coforall tid in 0..<nTasks {
-            const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
-                  r = try! locFile.reader(region=taskBounds);
-
-            if taskBounds.size > 0 {
-              var line: t;
-              while (try! r.readLine(line, stripNewline=stripNewline)) do
-                yield line;
+              if taskBounds.size > 0 {
+                var line: t;
+                while (try! r.readLine(line, stripNewline=stripNewline)) do
+                  yield line;
+              }
             }
+          } catch {
+            // fall back to serial iteration for this locale if 'findFileChunks' fails
+            for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
           }
-        } catch {
-          // fall back to serial iteration for this locale if 'findFileChunks' fails
-          for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
         }
       }
     } catch {
@@ -7218,7 +7218,7 @@ iter fileReader.lines(
   :throws: if a valid byte offset cannot be found for one or more chunks
 */
 @chpldoc.nodoc
-private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
+private proc findFileChunks(const ref f: file, n: int, bounds: range, findLast: bool = false): [] int throws {
   const nDataBytes = bounds.high - bounds.low,
         approxBytesPerChunk = nDataBytes / n;
 
@@ -7226,7 +7226,7 @@ private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int th
   chunkOffsets[0] = bounds.low;
   chunkOffsets[n] = bounds.high;
 
-  forall i in 1..<n with (ref chunkOffsets) {
+  forall i in (if findLast then 1..n else 1..<n) with (ref chunkOffsets) {
     const estOffset = bounds.low + i * approxBytesPerChunk,
           r = f.reader(region=estOffset..);
 
