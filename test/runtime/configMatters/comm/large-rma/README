@@ -1,0 +1,3 @@
+Test RMA operations that are larger than the maximum message size of the fabric
+and therefore require multiple transfers. This is accomplished by setting
+the CHPL_RT_COMM_OFI_MAX_MSG_SIZE to a small value.
