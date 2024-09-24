@@ -844,11 +844,7 @@ class FileInfo:
         self.use_segments.clear()
         self.def_segments.clear()
         self.scope_segments.clear()
-        import time
-        start_time = time.time()
         self.visit(asts)
-        end_time = time.time()
-        log(f"Rebuilt index for {self.uri} in {end_time - start_time} seconds")
         self.use_segments.sort()
         self.def_segments.sort()
 
@@ -1819,10 +1815,7 @@ def run_lsp():
 
         names = set()
         items = []
-        import time
-        start_time = time.time()
         for name, node, depth in fi.get_visible_nodes(params.position):
-            # log(node)
             if not isinstance(node, chapel.NamedDecl):
                 continue
             # if name is already suggested, skip it
@@ -1836,8 +1829,6 @@ def run_lsp():
             if item:
                 items.append(item)
                 names.add(name)
-        end_time = time.time()
-        log(f"Completion took {end_time - start_time} seconds")
 
         return CompletionList(is_incomplete=False, items=items)
 
