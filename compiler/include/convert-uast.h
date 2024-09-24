@@ -30,7 +30,7 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-class Converter;
+struct Converter;
 
 class UastConverter {
  private:
