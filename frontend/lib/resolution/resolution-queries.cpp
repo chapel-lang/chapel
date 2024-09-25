@@ -3705,8 +3705,10 @@ resolveIteratorTheseCall(Context* context,
 
     bool leaderOnly = false;
     bool standalone = false;
+    bool serial = true;
     for (auto actual : ci.actuals()) {
       if (actual.byName() == USTR("tag")) {
+        serial = false;
         if (auto paramValue = actual.type().param()) {
           if (auto enumValue = paramValue->toEnumParam()) {
             leaderOnly = enumValue->value().str == "leader";
@@ -3719,6 +3721,10 @@ resolveIteratorTheseCall(Context* context,
 
     // Loop expressions don't have standalone iterators.
     if (standalone) return empty;
+
+    // the loop was written as a serial loop expression, so no parallel
+    // 'these' calls are allowed.
+    if (!serial && !loopIt->supportsParallel()) return empty;
 
     bool succeeded = true;
     for (auto receiverType : receiverTypes) {

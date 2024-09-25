@@ -82,6 +82,10 @@ class LoopExprIteratorType final : public IteratorType {
     return isZippered_;
   }
 
+  bool supportsParallel() const {
+    return supportsParallel_;
+  }
+
   const ID& sourceLocation() const {
     return sourceLocation_;
   }
