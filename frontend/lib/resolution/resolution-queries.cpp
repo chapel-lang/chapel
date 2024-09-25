@@ -55,11 +55,13 @@ namespace {
   struct EvaluatedCandidates {
     chpl::resolution::CandidatesAndForwardingInfo matching;
     std::vector<chpl::resolution::ApplicabilityResult> rejected;
+    std::vector<chpl::resolution::ApplicabilityResult> rejectedIteratorsMissingTag;
     bool evaluatedAnyNestedFunction = false;
 
     bool operator==(const EvaluatedCandidates& rhs) const {
       return this->matching == rhs.matching &&
         this->rejected == rhs.rejected &&
+        this->rejectedIteratorsMissingTag == rhs.rejectedIteratorsMissingTag &&
         this->evaluatedAnyNestedFunction == rhs.evaluatedAnyNestedFunction;
     }
     bool operator!=(const EvaluatedCandidates& rhs) const {
@@ -69,6 +71,7 @@ namespace {
       matching.swap(rhs.matching);
       std::swap(rejected, rhs.rejected);
       std::swap(evaluatedAnyNestedFunction, rhs.evaluatedAnyNestedFunction);
+      std::swap(rejectedIteratorsMissingTag, rhs.rejectedIteratorsMissingTag);
     }
     static bool update(EvaluatedCandidates& keep, EvaluatedCandidates& addin) {
       return chpl::defaultUpdate(keep, addin);
@@ -76,9 +79,10 @@ namespace {
     void mark(chpl::Context* context) const {
       matching.mark(context);
       chpl::mark<decltype(rejected)>{}(context, rejected);
+      chpl::mark<decltype(rejectedIteratorsMissingTag)>{}(context, rejectedIteratorsMissingTag);
     }
     size_t hash() const {
-      return chpl::hash(matching, rejected, evaluatedAnyNestedFunction);
+      return chpl::hash(matching, rejected, rejectedIteratorsMissingTag, evaluatedAnyNestedFunction);
     }
   };
 }
@@ -2151,7 +2155,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return ApplicabilityResult::failure(sig->id(), FAIL_FORMAL_ACTUAL_MISMATCH);
+    return ApplicabilityResult::failure(sig->id(), faMap.reason());
   }
 
   // compute the substitutions
@@ -2993,7 +2997,7 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
   return QUERY_END(result);
 }
 
-static bool
+static optional<CandidateFailureReason>
 isUntypedSignatureApplicable(Context* context,
                              const UntypedFnSignature* ufs,
                              const FormalActualMap& faMap,
@@ -3005,17 +3009,16 @@ isUntypedSignatureApplicable(Context* context,
   //  * ref-ness
 
   if (!faMap.isValid()) {
-    return false;
+    return faMap.reason();
   }
 
   // TODO: more to check for method-ness?
+  // TODO: better reason failed in this case
   if (!ci.isOpCall() && ci.isMethodCall() != ufs->isMethod()) {
-    return false;
+    return FAIL_CANDIDATE_OTHER;
   }
 
-  // TODO: reason failed
-
-  return true;
+  return empty;
 }
 
 // given a typed function signature, determine if it applies to a call
@@ -3024,8 +3027,8 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
-  if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return ApplicabilityResult::failure(tfs->id(), /* TODO */ FAIL_CANDIDATE_OTHER);
+  if (auto reasonFailed = isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
+    return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
   }
 
   // Next, check that the types are compatible
@@ -3223,6 +3226,8 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
 
     if (s.success()) {
       ret.matching.addCandidate(s.candidate());
+    } else if (s.reason() == FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API) {
+      ret.rejectedIteratorsMissingTag.push_back(s);
     } else if (gatherRejected) {
       ret.rejected.push_back(s);
     }

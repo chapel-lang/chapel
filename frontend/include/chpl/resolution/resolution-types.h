@@ -1218,6 +1218,8 @@ enum CandidateFailureReason {
   FAIL_CANNOT_PASS,
   /* Not a valid formal-actual mapping for this candidate. */
   FAIL_FORMAL_ACTUAL_MISMATCH,
+  /* Special case of formal/actual mismatch when we tried to call a parallel iterator without a tag. */
+  FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API,
   /* The wrong number of varargs were given to the function. */
   FAIL_VARARG_MISMATCH,
   /* The where clause returned 'false'. */
@@ -1461,6 +1463,11 @@ class FormalActualMap {
   int failingActualIdx_ = -1;
   int failingFormalIdx_ = -1;
 
+  // A standalone iterator will have an extra formal for the iterKind.
+  // If we call foo() and fail to get a formal-actual mapping, but only
+  // because we're missing the iterKind, we should still come back to it.
+  bool missingIteratorActuals_ = false;
+
  public:
 
   using FormalActualIterable = Iterable<std::vector<FormalActual>>;
@@ -1501,6 +1508,15 @@ class FormalActualMap {
 
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
+
+  /** Check why the mapping was invalid. */
+  CandidateFailureReason reason() const {
+    CHPL_ASSERT(!mappingIsValid_);
+    if (missingIteratorActuals_) {
+      return FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API;
+    }
+    return FAIL_FORMAL_ACTUAL_MISMATCH;
+  }
 
   /** get the FormalActuals in the order of the formal arguments */
   FormalActualIterable byFormals() const {
