@@ -846,6 +846,143 @@ static void testForallLeaderFollowerThese(Context* context) {
 //   assert(!guard.realizeErrors());
 // }
 
+// Invoke an iterator in a loop expression, yielding a tuple of the iterator's
+// yield values, then invoke the loop expression in a regular loop and ensure
+// the index variable is as expected.
+//
+//
+// Note: this test will need to be updated when we have support for 
+// "precipitating" loop expressions into arrays. Right now, it assumes
+// the ability to store loop expressions into variables.
+template <typename Predicate>
+static void pairIteratorInLoopExpression(
+    Context* context, const char* iterators, const char* iterCall,
+    std::array<const char*, 2> loopExprType, std::array<const char*, 2> loopType,
+    Predicate&& pred) {
+  ErrorGuard guard(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+
+  std::string program = std::string(iterators) + "\n";
+  program = program + "var r1 = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
+  program = program + loopType[0] + " j in r1 "  + loopType[1] + " j;\n";
+
+  printf("===== Resolving program =====\n");
+  printf("%s\n", program.c_str());
+  printf("=============================\n\n");
+
+  auto vars = resolveTypesOfVariables(context, program, { "r1", "j" });
+  assert(!guard.realizeErrors());
+  assert(vars.at("r1").kind() == QualifiedType::VAR);
+  assert(vars.at("r1").type()->isLoopExprIteratorType());
+  assert(vars.at("r1").type()->toLoopExprIteratorType()->yieldType().type());
+
+  auto yieldedType = vars.at("r1").type()->toLoopExprIteratorType()->yieldType();
+  assert(yieldedType.type()->isTupleType());
+  assert(yieldedType.type()->toTupleType()->isStarTuple());
+  assert(yieldedType.type()->toTupleType()->numElements() == 2);
+  assert(pred(yieldedType.type()->toTupleType()->starType()));
+
+  assert(vars.at("j") == yieldedType);
+}
+
+static void testForLoopExpression(Context* context) {
+
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Serial iterator yields reals, so expect real.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionStandalone(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Standalone iterator yields ints, so expect ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isIntType(); });
+}
+
+static void testForallLoopExpressionLeaderFollower(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) {
+    auto type = t.type();
+    if (!type->isTupleType()) return false;
+
+    auto tt = type->toTupleType();
+    return tt->isStarTuple() && tt->numElements() == 2 && tt->starType().type()->isIntType();
+  });
+}
+
+static void testBracketLoopExpressionStandalone(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Standalone iterator yields ints, so expect ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isIntType(); });
+}
+
+static void testBracketLoopExpressionLeaderFollower(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) {
+    auto type = t.type();
+    if (!type->isTupleType()) return false;
+
+    auto tt = type->toTupleType();
+    return tt->isStarTuple() && tt->numElements() == 2 && tt->starType().type()->isIntType();
+  });
+}
+
+static void testBracketLoopExpressionSerial(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -874,6 +1011,13 @@ int main() {
   // testForallStandaloneRedirect(context);
   testForallLeaderFollowerThese(context);
   // testForallLeaderFollowerRedirect(context);
+
+  testForLoopExpression(context);
+  testForallLoopExpressionStandalone(context);
+  testForallLoopExpressionLeaderFollower(context);
+  testBracketLoopExpressionStandalone(context);
+  testBracketLoopExpressionLeaderFollower(context);
+  testBracketLoopExpressionSerial(context);
 
   return 0;
 }
