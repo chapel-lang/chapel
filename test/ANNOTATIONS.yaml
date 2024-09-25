@@ -2537,6 +2537,11 @@ arkouda-array_create:
   04/05/24:
     - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
 
+arkouda-sort-cases:
+  <<: *arkouda-base
+  08/07/24:
+    - Closes 3526 refactor argsortMsg to remove registerND annotation (Bears-R-Us/#3602)
+
 shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
