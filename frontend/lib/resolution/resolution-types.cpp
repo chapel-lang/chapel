@@ -46,33 +46,6 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-void OuterVariables::add(Context* context, ID mention, ID var) {
-  ID mentionParent = mention.parentSymbolId(context);
-  ID symbolParent = symbol_.parentSymbolId(context);
-  ID varParent = var.parentSymbolId(context);
-  const bool isReachingUse = symbolParent != varParent;
-  const bool isChildUse = mentionParent != symbol_;
-
-  CHPL_ASSERT(varParent != symbol_);
-  if (!isReachingUse) {
-    CHPL_ASSERT(mention && symbol_.contains(mention));
-  }
-
-  auto it = idToVarAndMentionIndices_.find(var);
-  if (it == idToVarAndMentionIndices_.end()) {
-    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
-    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
-    variables_.push_back(var);
-    if (isReachingUse) numReachingVariables_++;
-  }
-
-  // Don't bother storing the mention for a child use.
-  if (!isChildUse) {
-    it->second.second.push_back(mentions_.size());
-    mentions_.push_back(mention);
-  }
-}
-
 bool
 UntypedFnSignature::FormalDetail::operator<(const FormalDetail& other) const {
   if (name != other.name) {
