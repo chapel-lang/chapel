@@ -65,8 +65,9 @@ static void test1() {
   auto methodU = UntypedFnSignature::get(context, method);
   auto functionU = UntypedFnSignature::get(context, function);
 
-  auto methodT = typedSignatureInitial(context, methodU);
-  auto functionT = typedSignatureInitial(context, functionU);
+  ResolutionContext rcval(context);
+  auto methodT = typedSignatureInitial(&rcval, methodU);
+  auto functionT = typedSignatureInitial(&rcval, functionU);
 
   auto it = initialTypeForTypeDecl(context, c->id());
   assert(it);

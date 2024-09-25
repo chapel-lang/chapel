@@ -20,7 +20,9 @@
 #ifndef CHPL_LIB_RESOLUTION_RESOLVER_H
 #define CHPL_LIB_RESOLUTION_RESOLVER_H
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
@@ -33,6 +35,8 @@ namespace resolution {
 struct Resolver {
   // types used below
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+  using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+  using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
 
   /**
     When looking up matches for a particular identifier, we might encounter
@@ -84,6 +88,9 @@ struct Resolver {
   bool skipTypeQueries = false;
 
   // internal variables
+  ResolutionContext emptyResolutionContext;
+  ResolutionContext* rc = &emptyResolutionContext;
+  bool didPushFrame = false;
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
   std::vector<int> tagTracker;
@@ -108,9 +115,17 @@ struct Resolver {
 
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
-  owned<OuterVariables> outerVars;
 
   // results of the resolution process
+
+  // Map from outer variable mention to type and target ID.
+  OuterVariables outerVariables;
+
+  // Storage for child functions resolved within this function. This models
+  // the generic cache implemented in the 'resolveFunctionByPois' and
+  // 'resolveFunctionByInfo' functions, but using resolver state.
+  ResolvedFunction::PoiTraceToChildMap poiTraceToChild;
+  ResolvedFunction::SigAndInfoToChildPtrMap sigAndInfoToChildPtr;
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
@@ -135,19 +150,27 @@ struct Resolver {
            const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
-    : context(context), symbol(symbol),
+    : context(context),
+      symbol(symbol),
       poiScope(poiScope),
+      emptyResolutionContext(context),
       byPostorder(byPostorder),
       poiInfo(makePoiInfo(poiScope)) {
-
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
  public:
+  // Explicitly disable the copy constructor, since a lot of state in a
+  // resolver can't/shouldn't be copied, and this will ensure that never
+  // happens.
+  Resolver(const Resolver& rhs) = delete;
+  Resolver& operator=(const Resolver& rhs) = delete;
+  Resolver(Resolver&& rhs) = default;
+ ~Resolver();
 
   // set up Resolver to resolve a Module
   static Resolver
-  createForModuleStmt(Context* context, const uast::Module* mod,
+  createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
 
@@ -160,7 +183,8 @@ struct Resolver {
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
-  createForInitialSignature(Context* context, const uast::Function* fn,
+  createForInitialSignature(ResolutionContext* rc,
+                            const uast::Function* fn,
                             ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve an instantiation of a Function signature
@@ -174,14 +198,14 @@ struct Resolver {
   // set up Resolver to resolve a Function body/return type after
   // instantiation (if any instantiation was needed)
   static Resolver
-  createForFunction(Context* context,
+  createForFunction(ResolutionContext* rc,
                    const uast::Function* fn,
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
                    ResolutionResultByPostorderID& byPostorder);
 
   static Resolver
-  createForInitializer(Context* context,
+  createForInitializer(ResolutionContext* rc,
                        const uast::Function* fn,
                        const PoiScope* poiScope,
                        const TypedFnSignature* typedFnSignature,
@@ -190,8 +214,7 @@ struct Resolver {
   // set up Resolver to scope resolve a Function
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
-                                  ResolutionResultByPostorderID& byPostorder,
-                                  owned <OuterVariables> outerVars);
+                                  ResolutionResultByPostorderID& byPostorder);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,
@@ -255,6 +278,12 @@ struct Resolver {
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
+
+  static const PoiScope*
+  poiScopeOrNull(Context* context,
+                 const TypedFnSignature* sig,
+                 const Scope* inScope,
+                 const PoiScope* inPoiScope);
 
   /**
     During AST traversal, find the last called expression we entered.
@@ -551,6 +580,11 @@ struct Resolver {
                                const uast::Identifier* ident);
 
   void resolveIdentifier(const uast::Identifier* ident);
+
+  /** Returns 'true' and sets 'out' if an outer var was found for 'target'. */
+  bool lookupOuterVariable(types::QualifiedType& out,
+                           const uast::Identifier* ident,
+                           const ID& target);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */

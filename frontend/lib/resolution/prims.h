@@ -27,8 +27,7 @@
 namespace chpl {
 namespace resolution {
 
-
-CallResolutionResult resolvePrimCall(Context* context,
+CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                                      const uast::PrimCall* call,
                                      const CallInfo& ci,
                                      const Scope* inScope,

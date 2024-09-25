@@ -22,6 +22,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/uast/all-uast.h"
 
 using namespace chpl;
 using namespace uast;

@@ -539,6 +539,11 @@ bool idIsField(Context* context, ID id);
 const ID& idToParentId(Context* context, ID id);
 
 /**
+ Returns the parent function ID given an ID.
+ */
+ID idToParentFunctionId(Context* context, ID id);
+
+/**
  Returns the parent AST node given an AST node
  */
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);

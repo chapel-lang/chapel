@@ -17,30 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef TRY_CATCH_ANALYSIS_H
-#define TRY_CATCH_ANALYSIS_H
+#include "chpl/parsing/FileContents.h"
+#include "chpl/framework/ErrorBase.h"
 
-#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
-namespace uast {
-
-  class AggregateDecl;
+namespace parsing {
 
 
-} // end namespace uast
-namespace resolution {
-
-struct Resolver;
-
-void checkThrows(ResolutionContext* rc,
-                 ResolutionResultByPostorderID& result,
-                 const uast::AstNode* symbol);
+void FileContents::mark(Context* context) const {
+  if (error_ != nullptr) error_->mark(context);
+}
 
 
-} // end namespace resolution
-
-
+} // end namespace parsing
 } // end namespace chpl
-
-#endif //TRY_CATCH_ANALYSIS_H

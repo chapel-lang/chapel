@@ -852,10 +852,11 @@ static const TypedFnSignature* test20Helper(Context* context, std::string progra
   auto x = M->stmt(M->numStmts()-1)->toVarLikeDecl();
   auto call = x->initExpression()->toFnCall();
 
+  ResolutionContext rcval(context);
   auto r = rr.byAstOrNull(call);
   auto candidate = r->mostSpecific().only();
   auto sig = candidate.fn();
-  sig = resolveFunction(context, sig, r->poiScope())->signature();
+  sig = resolveFunction(&rcval, sig, r->poiScope())->signature();
   return sig;
 }
 static void test20() {

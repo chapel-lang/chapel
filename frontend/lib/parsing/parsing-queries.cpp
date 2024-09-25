@@ -1297,8 +1297,9 @@ bool idIsParenlessFunction(Context* context, ID id) {
 
 bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsFunction(context, up)) return true;
   }
   return false;
 }
@@ -1451,6 +1452,16 @@ const ID& idToParentId(Context* context, ID id) {
   }
 
   return QUERY_END(result);
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    // Get the first parent function (a parent could be a record/class/etc).
+    if (parsing::idIsFunction(context, up)) return up;
+  }
+  return {};
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {

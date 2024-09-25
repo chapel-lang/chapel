@@ -96,7 +96,8 @@ areOverloadsPresentInDefiningScope(Context* context,
     if (auto fn = node->toFunction()) {
       if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
         ResolutionResultByPostorderID r;
-        auto vis = Resolver::createForInitialSignature(context, fn, r);
+        ResolutionContext rcval(context);
+        auto vis = Resolver::createForInitialSignature(&rcval, fn, r);
         // use receiver for method, first formal for standalone operator
         auto checkFormal =
             (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
@@ -332,7 +333,8 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                                    needsInstantiation,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
@@ -380,7 +382,8 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
                                    /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
@@ -415,7 +418,8 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
                                    /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
@@ -479,7 +483,8 @@ generateDeSerialize(Context* context, const CompositeType* compType,
                                    /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
@@ -519,7 +524,8 @@ generateDomainMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return result;
 }
@@ -558,7 +564,8 @@ generateArrayMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return result;
 }
@@ -596,7 +603,8 @@ generateTupleMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return result;
 }
@@ -649,7 +657,8 @@ fieldAccessorQuery(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return QUERY_END(result);
 }
@@ -781,7 +790,8 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
                                    needsInstantiation,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
@@ -839,7 +849,8 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return result;
 }
@@ -879,7 +890,8 @@ generateEnumMethod(Context* context,
         /* needsInstantiation */ false,
         /* instantiatedFrom */ nullptr,
         /* parentFn */ nullptr,
-        /* formalsInstantiated */ Bitmap());
+        /* formalsInstantiated */ Bitmap(),
+        /* outerVariables */ {});
   }
 
   return result;
@@ -1003,7 +1015,8 @@ generateToOrFromCastForEnum(Context* context,
                                    /* needsInstantiation */ true,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
   return ret;
 }
 
@@ -1084,7 +1097,8 @@ getOrderToEnumFunction(Context* context, bool paramVersion, const EnumType* et) 
                                    /* needsInstantiation */ true,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return QUERY_END(ret);
 }
@@ -1125,7 +1139,8 @@ getEnumToOrderFunction(Context* context, bool paramVersion, const EnumType* et) 
                                    /* needsInstantiation */ paramVersion,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return QUERY_END(ret);
 }

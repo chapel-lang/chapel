@@ -20,6 +20,9 @@
 #include "chpl/framework/ID.h"
 
 #include "chpl/framework/update-functions.h"
+#include "chpl/resolution/scope-types.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/AstTag.h"
 
 #include <cstring>
 
