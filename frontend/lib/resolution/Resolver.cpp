@@ -4904,12 +4904,15 @@ bool Resolver::enter(const IndexableLoop* loop) {
       auto& iterandRE = byPostorder.byAst(iterand);
       auto& MSC = iterandRE.mostSpecific();
       auto fn = MSC.only() ? MSC.only().fn() : nullptr;
-      const unsigned int tagPos = 1;
-      if (fn && fn->isIterator() &&
-          fn->numFormals() >= (tagPos + 1) &&
-          fn->formalType(tagPos).type() == EnumType::getIterKindType(context)) {
-        if (!loopRequiresParallel) {
-          m = IterDetails::ANY;
+      if (fn && fn->isIterator()) {
+        const unsigned int tagPos =
+            fn->isMethod() ? 1 : 0;  // offset for 'this'
+        if (fn->numFormals() > tagPos &&
+            fn->formalType(tagPos).type() ==
+                EnumType::getIterKindType(context)) {
+          if (!loopRequiresParallel) {
+            m = IterDetails::ANY;
+          }
         }
       }
     }
