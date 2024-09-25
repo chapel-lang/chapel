@@ -30,16 +30,18 @@ namespace types {
 class LoopExprIteratorType final : public IteratorType {
  private:
   bool isZippered_;
+  bool supportsParallel_;
   QualifiedType iterand_;
   ID sourceLocation_;
 
   LoopExprIteratorType(QualifiedType yieldType,
                        bool isZippered,
+                       bool supportsParallel,
                        QualifiedType iterand,
                        ID sourceLocation)
     : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType)),
-      isZippered_(isZippered), iterand_(std::move(iterand)),
-      sourceLocation_(std::move(sourceLocation)) {
+      isZippered_(isZippered), supportsParallel_(supportsParallel),
+      iterand_(std::move(iterand)), sourceLocation_(std::move(sourceLocation)) {
     if (isZippered_) {
       CHPL_ASSERT(iterand_.type() && iterand_.type()->isTupleType());
     }
@@ -49,6 +51,7 @@ class LoopExprIteratorType final : public IteratorType {
     auto rhs = (LoopExprIteratorType*) other;
     return yieldType_ == rhs->yieldType_ &&
            isZippered_ == rhs->isZippered_ &&
+           supportsParallel_ == rhs->supportsParallel_ &&
            iterand_ == rhs->iterand_ &&
            sourceLocation_ == rhs->sourceLocation_;
   }
@@ -63,6 +66,7 @@ class LoopExprIteratorType final : public IteratorType {
   getLoopExprIteratorType(Context* context,
                           QualifiedType yieldType,
                           bool isZippered,
+                          bool supportsParallel,
                           QualifiedType iterand,
                           ID sourceLocation);
 
@@ -70,6 +74,7 @@ class LoopExprIteratorType final : public IteratorType {
   static const LoopExprIteratorType* get(Context* context,
                                          QualifiedType yieldType,
                                          bool isZippered,
+                                         bool supportsParallel,
                                          QualifiedType iterand,
                                          ID sourceLocation);
 
