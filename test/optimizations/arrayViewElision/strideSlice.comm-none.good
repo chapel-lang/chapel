@@ -1,4 +1,4 @@
-ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:5
+ArrayViewElision supported strideSlice.chpl:5
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,positive)
@@ -6,7 +6,7 @@ ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:5
 	rhsIndexingExprs: 
 		range(int(64),both,positive)
 
-ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:11
+ArrayViewElision supported strideSlice.chpl:11
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -14,7 +14,7 @@ ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:11
 	rhsIndexingExprs: 
 		range(int(64),both,positive)
 
-ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:17
+ArrayViewElision supported strideSlice.chpl:17
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,positive)
