@@ -3680,7 +3680,6 @@ resolveIteratorTheseCall(Context* context,
     // we only resolve the leader of its first iterand. On the other hand,
     // we resolve all follower iterators of the loop expression.
 
-    bool leaderOnly = false;
     std::vector<QualifiedType> receiverTypes;
     if (loopIt->isZippered()) {
       auto receiverQt = loopIt->iterand();
@@ -3704,16 +3703,22 @@ resolveIteratorTheseCall(Context* context,
     // is even more undesireable. So, resolve the followers if that's what
     // we're doing, but return the existig yield instead of re-resolving the body.
 
+    bool leaderOnly = false;
+    bool standalone = false;
     for (auto actual : ci.actuals()) {
       if (actual.byName() == USTR("tag")) {
         if (auto paramValue = actual.type().param()) {
           if (auto enumValue = paramValue->toEnumParam()) {
             leaderOnly = enumValue->value().str == "leader";
+            standalone = enumValue->value().str == "standalone";
           }
         }
         break;
       }
     }
+
+    // Loop expressions don't have standalone iterators.
+    if (standalone) return empty;
 
     bool succeeded = true;
     for (auto receiverType : receiverTypes) {
