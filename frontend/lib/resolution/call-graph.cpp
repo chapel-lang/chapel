@@ -97,15 +97,17 @@ void CalledFnCollector::process() {
   if (resolvedFunction) {
     CHPL_ASSERT(symbol && symbol->isFunction());
     // we are handling a function, so visit based on the ResolvedFunction.
+    chpl::resolution::ResolutionContext rcval(context);
     const ResolutionResultByPostorderID& byPostorder =
       resolvedFunction->resolutionById();
-    ResolvedVisitor<CalledFnCollector> rv(context, symbol, *this, byPostorder);
+    ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
     symbol->traverse(rv);
   } else {
     CHPL_ASSERT(symbol && symbol->isModule());
+    chpl::resolution::ResolutionContext rcval(context);
     const ResolutionResultByPostorderID& byPostorder =
       resolveModule(context, symbol->id());
-    ResolvedVisitor<CalledFnCollector> rv(context, symbol, *this, byPostorder);
+    ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
     symbol->traverse(rv);
   }
 }
@@ -117,7 +119,8 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
   for (const auto& candidate : re->mostSpecific()) {
     if (const TypedFnSignature* sig = candidate.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+        chpl::resolution::ResolutionContext rcval(context);
+        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
         called.insert({fn, depth});
       }
     }
@@ -129,7 +132,8 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
     // Ideally, that would work by generating uAST for them.
     if (const TypedFnSignature* sig = action.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        const ResolvedFunction* fn = resolveFunction(context, sig, poiScope);
+        chpl::resolution::ResolutionContext rcval(context);
+        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
         called.insert({fn, depth});
       }
     }
