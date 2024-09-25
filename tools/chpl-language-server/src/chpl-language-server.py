@@ -781,11 +781,11 @@ class FileInfo:
                             d += int(
                                 self.context.context.is_bundled_path(
                                     visible_path
-                                ))
+                                )
+                            )
                             # if not explicitly used, increase the depth by 1
                             d += int(
-                                visible_path
-                                not in files_named_in_use_or_import
+                                visible_path not in files_named_in_use_or_import
                             )
 
                         visible_nodes.append(
