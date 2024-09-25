@@ -3730,7 +3730,7 @@ resolveIteratorTheseCall(Context* context,
     for (auto receiverType : receiverTypes) {
       std::vector<CallInfoActual> actuals;
       actuals.emplace_back(receiverType, USTR("this"));
-      for (int i = 1; i < ci.numActuals(); i++) {
+      for (size_t i = 1; i < ci.numActuals(); i++) {
         actuals.push_back(ci.actual(i));
       }
 
