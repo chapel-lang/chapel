@@ -1428,27 +1428,30 @@ static int testArgMapping(const DisambiguationContext& dctx,
     return testOpArgMapping(dctx, candidate1, candidate2, actualIdx, ds, reason);
   }
 
-  QualifiedType f1Type = fa1->formalType();
-  QualifiedType f2Type = fa2->formalType();
-  QualifiedType actualType = fa1->actualType();
-  CHPL_ASSERT(actualType == fa2->actualType());
+  QualifiedType f1QualType = fa1->formalType();
+  QualifiedType f2QualType = fa2->formalType();
+  QualifiedType actualQualType = fa1->actualType();
+  auto f1Type = f1QualType.type();
+  auto f2Type = f2QualType.type();
+  auto actualType = actualQualType.type();
+  CHPL_ASSERT(actualQualType == fa2->actualType());
 
-  if (!actualType.hasTypePtr()) return -1;
+  if (!actualQualType.hasTypePtr()) return -1;
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
-  if (f1Type.kind() == QualifiedType::OUT ||
-      f2Type.kind() == QualifiedType::OUT) {
+  if (f1QualType.kind() == QualifiedType::OUT ||
+      f2QualType.kind() == QualifiedType::OUT) {
     return -1;
   }
 
   // Additionally, ignore the difference between referential tuples
   // and value tuples.
   // TODO: not sure how to reproduce this code in Dyno
-  if (actualType.type()->isTupleType()) {
-    f1Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f1Type.type()));
-    f2Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f2Type.type()));
-    actualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, actualType.type()));
+  if (actualType->isTupleType()) {
+    f1QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f1Type));
+    f2QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f2Type));
+    actualQualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, actualType));
   }
   // TODO: Not sure we still need this here, based on production
   // Initializer work-around: Skip 'this' for generic initializers
@@ -1457,8 +1460,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
   //   auto nd2 = fa2->formal()->toNamedDecl();
   //   if (nd1 != nullptr && nd2 != nullptr &&
   //       nd1->name() == USTR("this") && nd2->name() == USTR("this")) {
-  //     if (getTypeGenericity(dctx.context, f1Type) != Type::CONCRETE &&
-  //         getTypeGenericity(dctx.context, f2Type) != Type::CONCRETE) {
+  //     if (getTypeGenericity(dctx.context, f1QualType) != Type::CONCRETE &&
+  //         getTypeGenericity(dctx.context, f2QualType) != Type::CONCRETE) {
   //       return;
   //     }
   //   }
@@ -1469,10 +1472,10 @@ static int testArgMapping(const DisambiguationContext& dctx,
   bool formal1Narrows = false;
   bool formal2Narrows = false;
 
-  QualifiedType actualScalarT = actualType;
+  QualifiedType actualScalarT = actualQualType;
 
-  bool f1Param = f1Type.hasParamPtr();
-  bool f2Param = f2Type.hasParamPtr();
+  bool f1Param = f1QualType.hasParamPtr();
+  bool f2Param = f2QualType.hasParamPtr();
 
   bool f1Instantiated = fa1->formalInstantiated();
   bool f2Instantiated = fa2->formalInstantiated();
@@ -1492,9 +1495,9 @@ static int testArgMapping(const DisambiguationContext& dctx,
     f2PartiallyGeneric = isFormalPartiallyGeneric(candidate2, fa2);
   }
 
-  bool actualParam = actualType.isParam();
+  bool actualParam = actualQualType.isParam();
   EXPLAIN("Actual's type: ");
-  EXPLAIN_DUMP(&actualType);
+  EXPLAIN_DUMP(&actualQualType);
   if (actualParam)
     EXPLAIN(" (param)");
   EXPLAIN("\n");
@@ -1508,7 +1511,7 @@ static int testArgMapping(const DisambiguationContext& dctx,
 
   // Figure out scalar type for candidate matching
   if (formal1Promotes || formal2Promotes) {
-    actualScalarT = computeActualScalarType(dctx.context, actualType);
+    actualScalarT = computeActualScalarType(dctx.context, actualQualType);
   }
 
   // consider promotion
@@ -1530,6 +1533,17 @@ static int testArgMapping(const DisambiguationContext& dctx,
   //   class GenericChild : Parent { type t; }
   // Here a GenericChild argument should be preferred to a Parent one
   if (f1Type == f2Type) {
+
+    if (f1Param && !f2Param) {
+      reason = "param vs not";
+      return 1;
+    }
+
+    if (!f1Param && f2Param) {
+      reason = "param vs not";
+      return 2;
+    }
+
     if (!f1Instantiated && f2Instantiated) {
       reason = "concrete vs generic";
       return 1;
@@ -1593,7 +1607,7 @@ static int testArgMapping(const DisambiguationContext& dctx,
     //   proc f(complex(128), complex(128))
     //   f(1.0, 1.0i) calling the complex(128) version
 
-    int p = prefersNumericCoercion(dctx, f1Type, f2Type, actualScalarT, reason);
+    int p = prefersNumericCoercion(dctx, f1QualType, f2QualType, actualScalarT, reason);
 
     if (p == 1) {
       return 1;
@@ -1611,20 +1625,20 @@ static int testArgMapping(const DisambiguationContext& dctx,
       reason = "actual type vs not";
       return 2;
     }
-
-    if (actualScalarT == f1Type && actualScalarT != f2Type) {
+    auto actualScalarType = actualScalarT.type();
+    if (actualScalarType == f1Type && actualScalarType != f2Type) {
       reason = "scalar type vs not";
       return 1;
     }
 
-    if (actualScalarT == f2Type && actualScalarT != f1Type) {
+    if (actualScalarType == f2Type && actualScalarType != f1Type) {
       reason = "scalar type vs not";
       return 2;
     }
 
 
-    bool fn1Dispatches = moreSpecificCanDispatch(dctx, f1Type, f2Type);
-    bool fn2Dispatches = moreSpecificCanDispatch(dctx, f2Type, f1Type);
+    bool fn1Dispatches = moreSpecificCanDispatch(dctx, f1QualType, f2QualType);
+    bool fn2Dispatches = moreSpecificCanDispatch(dctx, f2QualType, f1QualType);
     if (fn1Dispatches && !fn2Dispatches) {
       reason = "can dispatch";
       return 1;
