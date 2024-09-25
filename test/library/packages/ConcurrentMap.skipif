@@ -1,0 +1,10 @@
+
+# AtomicObjects uses extern blocks
+CHPL_LLVM==none
+# AtomicObjects uses GCC inline assembly (for x86) or a compiler builtin
+# (for arm), so only test it on gcc/clang (which we know support this builtin)
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+CHPL_TARGET_COMPILER==pgi
+CHPL_TARGET_COMPILER==cray-prgenv-cray
+CHPL_TARGET_COMPILER==intel
+CHPL_TARGET_COMPILER==cray-prgenv-intel
