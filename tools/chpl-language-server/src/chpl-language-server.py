@@ -774,16 +774,17 @@ class FileInfo:
                     if visible_node:
                         d = depth
                         visible_path = visible_node[1].location().path()
-
                         if visible_path != file:
                             # if from a different file, increase the depth by 1
                             d += 1
-                            # if from a bundled path and not explicitly imported, increase the depth by 1
+                            # if from a bundled path increase the depth by 1
                             d += int(
                                 self.context.context.is_bundled_path(
                                     visible_path
-                                )
-                                and visible_path
+                                ))
+                            # if not explicitly used, increase the depth by 1
+                            d += int(
+                                visible_path
                                 not in files_named_in_use_or_import
                             )
 
