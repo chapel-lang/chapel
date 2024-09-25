@@ -15,13 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SRCS
+    InitErrorHandling.cpp
+    InitNormalize.cpp
+    LoopAttributeInfo.cpp
+    ResolveScope.cpp
     addInitGuards.cpp
     buildDefaultFunctions.cpp
+    checkGeneratedAst.cpp
     checkNormalized.cpp
     checkResolved.cpp
-    checkGeneratedAst.cpp
     cleanup.cpp
     convert-uast.cpp
+    convert-typed-uast.cpp
     createTaskFunctions.cpp
     denormalize.cpp
     errorHandling.cpp
@@ -29,9 +34,7 @@ set(SRCS
     externCResolve.cpp
     flattenClasses.cpp
     flattenFunctions.cpp
-    InitErrorHandling.cpp
     initializerRules.cpp
-    InitNormalize.cpp
     insertLineNumbers.cpp
     insertWideReferences.cpp
     normalize.cpp
@@ -39,7 +42,6 @@ set(SRCS
     parallel.cpp
     parseAndConvert.cpp
     resolveIntents.cpp
-    ResolveScope.cpp
     returnStarTuplesByRefArgs.cpp
     scopeResolve.cpp
     splitInit.cpp
