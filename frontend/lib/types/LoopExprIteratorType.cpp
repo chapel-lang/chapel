@@ -25,22 +25,22 @@ namespace types {
 
 const owned<LoopExprIteratorType>&
 LoopExprIteratorType::getLoopExprIteratorType(Context* context,
+                                              QualifiedType yieldType,
                                               bool isZippered,
                                               QualifiedType iterand,
-                                              ID sourceLocation,
-                                              QualifiedType yieldType) {
-  QUERY_BEGIN(getLoopExprIteratorType, context, isZippered, iterand, sourceLocation, yieldType);
-  auto result = toOwned(new LoopExprIteratorType(isZippered, std::move(iterand), std::move(sourceLocation), std::move(yieldType)));
+                                              ID sourceLocation) {
+  QUERY_BEGIN(getLoopExprIteratorType, context, yieldType, isZippered, iterand, sourceLocation);
+  auto result = toOwned(new LoopExprIteratorType(std::move(yieldType), isZippered, std::move(iterand), std::move(sourceLocation)));
   return QUERY_END(result);
 }
 
 const LoopExprIteratorType*
 LoopExprIteratorType::get(Context* context,
+                          QualifiedType yieldType,
                           bool isZippered,
                           QualifiedType iterand,
-                          ID sourceLocation,
-                          QualifiedType yieldType) {
-  return getLoopExprIteratorType(context, isZippered, std::move(iterand), std::move(sourceLocation), yieldType).get();
+                          ID sourceLocation) {
+  return getLoopExprIteratorType(context, std::move(yieldType), isZippered, std::move(iterand), std::move(sourceLocation)).get();
 }
 
 }  // end namespace types

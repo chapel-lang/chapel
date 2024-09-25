@@ -54,15 +54,15 @@ class PromotionIteratorType final : public IteratorType {
 
   static const owned<PromotionIteratorType>&
   getPromotionIteratorType(Context* context,
+                           QualifiedType yieldType,
                            const resolution::TypedFnSignature* scalarFn,
-                           resolution::SubstitutionsMap promotedFormals,
-                           QualifiedType yieldType);
+                           resolution::SubstitutionsMap promotedFormals);
 
  public:
   static const PromotionIteratorType* get(Context* context,
+                                          QualifiedType yieldType,
                                           const resolution::TypedFnSignature* scalarFn,
-                                          resolution::SubstitutionsMap promotedFormals,
-                                          QualifiedType yieldType);
+                                          resolution::SubstitutionsMap promotedFormals);
 
   const resolution::TypedFnSignature* scalarFn() const {
     return scalarFn_;

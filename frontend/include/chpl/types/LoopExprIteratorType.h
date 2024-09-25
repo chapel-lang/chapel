@@ -33,10 +33,10 @@ class LoopExprIteratorType final : public IteratorType {
   QualifiedType iterand_;
   ID sourceLocation_;
 
-  LoopExprIteratorType(bool isZippered,
+  LoopExprIteratorType(QualifiedType yieldType,
+                       bool isZippered,
                        QualifiedType iterand,
-                       ID sourceLocation,
-                       QualifiedType yieldType)
+                       ID sourceLocation)
     : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType)),
       isZippered_(isZippered), iterand_(std::move(iterand)),
       sourceLocation_(std::move(sourceLocation)) {
@@ -61,17 +61,17 @@ class LoopExprIteratorType final : public IteratorType {
 
   static const owned<LoopExprIteratorType>&
   getLoopExprIteratorType(Context* context,
+                          QualifiedType yieldType,
                           bool isZippered,
                           QualifiedType iterand,
-                          ID sourceLocation,
-                          QualifiedType yieldType);
+                          ID sourceLocation);
 
  public:
   static const LoopExprIteratorType* get(Context* context,
+                                         QualifiedType yieldType,
                                          bool isZippered,
                                          QualifiedType iterand,
-                                         ID sourceLocation,
-                                         QualifiedType yieldType);
+                                         ID sourceLocation);
 
   bool isZippered() const {
     return isZippered_;

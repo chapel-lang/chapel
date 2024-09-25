@@ -4840,8 +4840,8 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
 
     if (!iterandType.isUnknownOrErroneous()) {
       auto loopExprType =
-        LoopExprIteratorType::get(rv.context, isZippered,
-                                  iterandType, loop->id(), bodyType);
+        LoopExprIteratorType::get(rv.context, bodyType, isZippered,
+                                  iterandType, loop->id());
       loopType = QualifiedType(QualifiedType::CONST_VAR, loopExprType);
     }
   }
