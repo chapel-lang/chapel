@@ -454,8 +454,15 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                                       UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
+
+  // Replace existing 'this' in 'ci'
+  int off = 0;
+  if (ci.isMethodCall() && ci.actual(0).byName() == "this") {
+    off = 1;
+  }
+
   // append the other actuals
-  newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
+  newActuals.insert(newActuals.end(), ci.actuals_.begin() + off, ci.actuals_.end());
 
   if (ci.name() == USTR("init")) {
     // For calls to 'init', tag the receiver with a special intent to

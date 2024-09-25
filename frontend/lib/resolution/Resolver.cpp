@@ -3273,6 +3273,16 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     }
 
+    validateAndSetToId(result, ident, id);
+
+    // Before computing the type, handle field use inside an initializer.
+    //
+    // NB: this is important for parent fields, which may result in an
+    //   implicit 'super.init()' call, which may instantiate a generic field.
+    if (initResolver) {
+      std::ignore = initResolver->handleUseOfField(ident);
+    }
+
     // Attempt to lookup an outer variable.
     if (!lookupOuterVariable(type, ident, id)) {
 
@@ -3327,7 +3337,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       // have `this` inserted, as well as whether or not to turn this
       // into a parenless call.
 
-      // Fall through to validateAndSetToId
+      // Fall through
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
       // Possibly a "compatibility hack" with production: we haven't checked
@@ -3335,10 +3345,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       // care and assumes `ident` points to this function. Setting
       // the toId also helps determine if this is a method call
 
-      // Fall through to validateAndSetToId
+      // Fall through
     }
 
-    validateAndSetToId(result, ident, id);
     result.setType(type);
     // if there are multiple ids we should have gotten
     // a multiple definition error at the declarations.
@@ -3346,13 +3355,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
 }
 
 bool Resolver::enter(const Identifier* ident) {
-  if (initResolver && initResolver->handleResolvingFieldAccess(ident)) {
-    std::ignore = initResolver->handleUseOfField(ident);
-    return false;
-  } else {
-    resolveIdentifier(ident);
-    return false;
-  }
+  resolveIdentifier(ident);
+  return false;
 }
 
 void Resolver::exit(const Identifier* ident) {
@@ -3792,9 +3796,17 @@ void Resolver::prepareCallInfoActuals(const Call* call,
 
 static const Type* getGenericType(Context* context, const Type* recv) {
   const Type* gen = nullptr;
-  if (auto cur = recv->toCompositeType()) {
+  if (auto cur = recv->toRecordType()) {
     gen = cur->instantiatedFromCompositeType();
     if (gen == nullptr) gen = cur;
+  } else if (auto bct = recv->toBasicClassType()) {
+    if (bct->parentClassType()->instantiatedFromCompositeType()) {
+      auto pt = getGenericType(context, bct->parentClassType())->toBasicClassType();
+      bct = BasicClassType::get(context, bct->id(), bct->name(), pt, bct->instantiatedFrom(), bct->substitutions());
+    }
+
+    gen = bct->instantiatedFromCompositeType();
+    if (gen == nullptr) gen = bct;
   } else if (auto cur = recv->toClassType()) {
     auto m = getGenericType(context, cur->manageableType());
     gen = ClassType::get(context, m->toManageableType(),
@@ -3928,21 +3940,25 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   if (!skip) {
     QualifiedType receiverType = methodReceiverType();
 
-    // Calling initializer without qualifier, e.g., `init(a, b, c);``
-    //
     // If the user has mistakenly instantiated a field of the type before
     // calling ``init``, then the receiver type will either be fully or
     // partially instantiated. This will cause a failure to resolve the
     // ``init`` call, and result in a confusing and unhelpful error message.
+    // To resolve this problem, manually compute the fully-generic type that
+    // is being initialized and reset the receiver.
     //
-    // Instead, whenever we see this kind of 'init' call, we will set the
-    // receiver type to be fully-generic as if the user had not instantiated
-    // any fields. This matches the behavior when calling ``this.init(...)``,
-    // where ``this`` is treated as fully-generic.
-    if (initResolver &&
-        ci.name() == USTR("init") && ci.isMethodCall() == false) {
-      auto gen = getGenericType(context, receiverType.type());
+    // Note: erroneous field accesses will be handled by invoking
+    // ``InitResolver::handleResolvedCall`` below.
+    //
+    // TODO: Move this logic into InitResolver.cpp - but where?
+    if (initResolver && ci.name() == USTR("init")) {
+      auto gt = ci.isMethodCall() ? ci.calledType() : receiverType;
+      auto gen = getGenericType(context, gt.type());
       receiverType = QualifiedType(QualifiedType::INIT_RECEIVER, gen);
+
+      if (ci.isMethodCall()) {
+        ci = CallInfo::createWithReceiver(ci, receiverType);
+      }
     }
 
     std::vector<ApplicabilityResult>* rejected = nullptr;
@@ -3980,8 +3996,12 @@ void Resolver::exit(const Call* call) {
 }
 
 bool Resolver::enter(const Dot* dot) {
-  if (initResolver && initResolver->handleResolvingFieldAccess(dot))
-    return false;
+  // Need to handle fields before the compiler-generated accessor, in case
+  // an implicit super.init() instantiates a generic field.
+  if (initResolver) {
+    initResolver->handleUseOfField(dot);
+  }
+
   return true;
 }
 
@@ -4061,8 +4081,6 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
 }
 
 void Resolver::exit(const Dot* dot) {
-  if (initResolver && initResolver->handleUseOfField(dot)) return;
-
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
 
   bool deferToFunctionResolution = false;
@@ -4219,6 +4237,8 @@ void Resolver::exit(const Dot* dot) {
 
   if (scopeResolveOnly || deferToFunctionResolution)
     return;
+
+  // TODO: Unique error for user-defined field accessor
 
   // resolve a.x where a is a record/class and x is a field or parenless method
   std::vector<CallInfoActual> actuals;
