@@ -208,6 +208,7 @@ lint-standard-modules: chplcheck FORCE
 		--internal-prefix "_" \
 		--internal-prefix "chpl_" \
 		--disable-rule "ControlFlowParentheses" \
+		--disable-rule "UnusedFormal" \
 		$(MODULES_TO_LINT)
 
 compile-util-python: FORCE

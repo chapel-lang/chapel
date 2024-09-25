@@ -202,7 +202,7 @@ checking for unused formals.
 
 .. code-block:: python
 
-   @driver.advanced_rule(default=False)
+   @driver.advanced_rule
    def UnusedFormal(context, root):
        formals = dict()
        uses = set()
