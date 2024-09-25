@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _ATTRIBUTE_H_
-#define _ATTRIBUTE_H_
+#ifndef _METADATA_H_
+#define _METADATA_H_
 
 #include <memory>
 #include <cstdint>

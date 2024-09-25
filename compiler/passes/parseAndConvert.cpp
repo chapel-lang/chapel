@@ -1134,7 +1134,13 @@ void parseAndConvertUast() {
 
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
-  auto converter = UastConverter(gContext);
+  chpl::owned<UastConverter> converter;
+  if (fDynoCompilerLibrary) {
+    INT_FATAL("TODO");
+    //converter = createTypedConverter(gContext);
+  } else {
+    converter = createUntypedConverter(gContext);
+  }
 
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
@@ -1144,7 +1150,7 @@ void parseAndConvertUast() {
 
   addDynoLibFiles();
 
-  loadAndConvertModules(converter);
+  loadAndConvertModules(*converter.get());
 
   setupDynoLibFileGeneration();
 
@@ -1161,7 +1167,7 @@ void parseAndConvertUast() {
 
   checkConfigs();
 
-  converter.postConvertApplyFixups();
+  converter->postConvertApplyFixups();
 
   // One last catchall for errors.
   if (dynoRealizeErrors()) USR_STOP();
