@@ -19,7 +19,6 @@ class gpu_type:
     def __init__(self, sdk_path_env,
                         sdk_path_env_bitcode,
                         sdk_path_env_include,
-                        sdk_path_env_runtime,
                         compiler,
                         default_arch,
                         llvm_target,
@@ -29,7 +28,6 @@ class gpu_type:
         self.sdk_path_env = sdk_path_env
         self.sdk_path_env_bitcode = sdk_path_env_bitcode
         self.sdk_path_env_include = sdk_path_env_include
-        self.sdk_path_env_runtime = sdk_path_env_runtime
         self.compiler = compiler
         self.default_arch = default_arch
         self.llvm_target = llvm_target
@@ -54,7 +52,6 @@ GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
                        sdk_path_env_bitcode="CHPL_CUDA_PATH",
                        sdk_path_env_include="CHPL_CUDA_PATH",
-                       sdk_path_env_runtime="CHPL_CUDA_PATH",
                        compiler="nvcc",
                        default_arch="sm_60",
                        llvm_target="NVPTX",
@@ -64,7 +61,6 @@ GPU_TYPES = {
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     sdk_path_env_bitcode="CHPL_ROCM_BITCODE_PATH",
                     sdk_path_env_include="CHPL_ROCM_INCLUDE_PATH",
-                    sdk_path_env_runtime="CHPL_ROCM_RUNTIME_PATH",
                     compiler="hipcc",
                     default_arch="",
                     llvm_target="AMDGPU",
@@ -74,7 +70,6 @@ GPU_TYPES = {
     "cpu": gpu_type(sdk_path_env="",
                     sdk_path_env_bitcode="",
                     sdk_path_env_include="",
-                    sdk_path_env_runtime="",
                     compiler="",
                     default_arch="",
                     llvm_target="",
@@ -174,7 +169,6 @@ def get_sdk_path(for_gpu, sdk_type='bitcode'):
     sub_env_names = {
         "bitcode": gpu.sdk_path_env_bitcode,
         "include": gpu.sdk_path_env_include,
-        "runtime": gpu.sdk_path_env_runtime
     }
     assert sdk_type in sub_env_names
 

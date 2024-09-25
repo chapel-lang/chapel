@@ -108,15 +108,11 @@ def get_runtime_link_args(runtime_subdir):
             system.append("-lcuda")
         elif gpu_type == "amd":
             paths = [sdk_path]
-            runtime_path = chpl_gpu.get_sdk_path(gpu_type, sdk_type='runtime')
-            if runtime_path not in paths:
-                paths.append(runtime_path)
             for p in paths:
                 lib_path = os.path.join(p, "lib")
                 system.append("-L" + lib_path)
                 system.append("-Wl,-rpath," + lib_path)
             system.append("-lamdhip64")
-            system.append("-lhsa-runtime64")
 
     # always link with the math library
     system.append("-lm")
