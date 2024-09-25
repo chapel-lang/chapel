@@ -858,7 +858,7 @@ template <typename Predicate>
 static void pairIteratorInLoopExpression(
     Context* context, const char* iterators, const char* iterCall,
     std::array<const char*, 2> loopExprType, std::array<const char*, 2> loopType,
-    Predicate&& pred) {
+    Predicate&& pred, int expectErrors = 0) {
   ErrorGuard guard(context);
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
@@ -871,7 +871,10 @@ static void pairIteratorInLoopExpression(
   printf("=============================\n\n");
 
   auto vars = resolveTypesOfVariables(context, program, { "r1", "j" });
-  assert(!guard.realizeErrors());
+
+  assert(guard.realizeErrors() == expectErrors);
+  if (expectErrors) return;
+
   assert(vars.at("r1").kind() == QualifiedType::VAR);
   assert(vars.at("r1").type()->isLoopExprIteratorType());
   assert(vars.at("r1").type()->toLoopExprIteratorType()->yieldType().type());
@@ -983,6 +986,55 @@ static void testBracketLoopExpressionSerial(Context* context) {
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
+static void testForLoopExpressionInForall(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // You can't iterate in paralell over a serial loop expression, even if
+  // the overloads for the iterands are present.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return true; },
+                               /* expectErrors */ 1);
+}
+
+static void testForLoopExpressionInBracketLoop(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Bracket loop falls back to serial, so it's okay to give it a for expression.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+// At this time, because parallel loops require a serial overload, you can
+// fall back to the serial iterator even if you're using a forall expression.
+// However, since we are not liking the idea of changing the return type based
+// on context, the loop yield type is still the one from the parallel loop.
+// This probably won't compile if we were to add type compatibility checks.
+static void testForallExpressionInForLoop(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    )"""";
+
+  // Bracket loop falls back to serial, so it's okay to give it a for expression.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->toIntType(); });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1018,6 +1070,9 @@ int main() {
   testBracketLoopExpressionStandalone(context);
   testBracketLoopExpressionLeaderFollower(context);
   testBracketLoopExpressionSerial(context);
+  testForLoopExpressionInForall(context);
+  testForLoopExpressionInBracketLoop(context);
+  testForallExpressionInForLoop(context);
 
   return 0;
 }
