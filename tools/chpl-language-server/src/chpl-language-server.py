@@ -733,7 +733,9 @@ class FileInfo:
             # overloaded functions.
             return name, documented_nodes[0]
 
-        def visible_nodes_for_scopes(node: chapel.AstNode, scopes: List[chapel.Scope]):
+        def visible_nodes_for_scopes(
+            node: chapel.AstNode, scopes: List[chapel.Scope]
+        ):
             visible_nodes = []
             file = node.location().path()
             in_bundled_module = self.context.context.is_bundled_path(file)
@@ -755,11 +757,16 @@ class FileInfo:
                             d += 1
                             # if from a bundled path and not explicitly imported, increase the depth by 1
                             d += int(
-                                self.context.context.is_bundled_path(visible_path)
-                                and visible_path not in files_named_in_use_or_import
+                                self.context.context.is_bundled_path(
+                                    visible_path
+                                )
+                                and visible_path
+                                not in files_named_in_use_or_import
                             )
 
-                        visible_nodes.append((visible_node[0], visible_node[1], d))
+                        visible_nodes.append(
+                            (visible_node[0], visible_node[1], d)
+                        )
             return visible_nodes
 
         visible_nodes = []
@@ -767,7 +774,9 @@ class FileInfo:
 
         # node_and_scopes: List[Tuple[chapel.AstNode, List[chapel.Scope]]] = []
         if segment:
-            visible_nodes.extend(visible_nodes_for_scopes(segment.node, segment.scopes))
+            visible_nodes.extend(
+                visible_nodes_for_scopes(segment.node, segment.scopes)
+            )
         else:
             # no segment found, use the top level nodes
             for a in self.get_asts():
@@ -924,7 +933,9 @@ class FileInfo:
 
         return None
 
-    def scope_at_position(self, position: Position) -> Optional[ScopedNodeAndRange]:
+    def scope_at_position(
+        self, position: Position
+    ) -> Optional[ScopedNodeAndRange]:
         """
         Given a position, return the scope that contains it.
         """
@@ -935,8 +946,6 @@ class FileInfo:
             if s.rng.start > position:
                 break
         return found
-
-
 
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
