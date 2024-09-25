@@ -942,9 +942,14 @@ class FileInfo:
         """
         Given a position, return the scope that contains it.
         """
+        found = None
         for s in self.scope_segments.elts:
             if s.rng.start <= position <= s.rng.end:
-                return s
+                found = s
+            if s.rng.start > position:
+                break
+        return found
+
 
 
     def file_lines(self) -> List[str]:
