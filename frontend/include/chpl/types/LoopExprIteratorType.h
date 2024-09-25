@@ -47,7 +47,7 @@ class LoopExprIteratorType final : public IteratorType {
     }
   }
 
-  bool contentsMatchInner(const Type* other) const {
+  bool contentsMatchInner(const Type* other) const override {
     auto rhs = (LoopExprIteratorType*) other;
     return yieldType_ == rhs->yieldType_ &&
            isZippered_ == rhs->isZippered_ &&
@@ -56,7 +56,7 @@ class LoopExprIteratorType final : public IteratorType {
            sourceLocation_ == rhs->sourceLocation_;
   }
 
-  void markUniqueStringsInner(Context* context) const {
+  void markUniqueStringsInner(Context* context) const override {
     yieldType_.mark(context);
     iterand_.mark(context);
     sourceLocation_.mark(context);
