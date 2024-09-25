@@ -3680,10 +3680,6 @@ resolveIteratorTheseCall(Context* context,
     // we only resolve the leader of its first iterand. On the other hand,
     // we resolve all follower iterators of the loop expression.
 
-    static int counter = 0;
-    counter++;
-    if (counter > 10) debuggerBreakHere();
-
     bool leaderOnly = false;
     std::vector<QualifiedType> receiverTypes;
     if (loopIt->isZippered()) {
