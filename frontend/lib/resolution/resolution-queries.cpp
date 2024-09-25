@@ -3694,6 +3694,16 @@ resolveIteratorTheseCall(Context* context,
       receiverTypes.push_back(loopIt->iterand());
     }
 
+    // To robustly match the production implementation, we actually need
+    // to re-resolve the loop expr body given the (potentially new)
+    // results of resolving the follower iterators. However, this raises
+    // some challenges (e.g., suddenly loops are closures since they
+    // refer to their surrounding variables). Moreover, consensus at the time
+    // of writing is that allowing follower iterator types to change depending
+    // on usage context is undesirable, and allowing the yielded type to change
+    // is even more undesireable. So, resolve the followers if that's what
+    // we're doing, but return the existig yield instead of re-resolving the body.
+
     for (auto actual : ci.actuals()) {
       if (actual.byName() == USTR("tag")) {
         if (auto paramValue = actual.type().param()) {
@@ -3706,7 +3716,6 @@ resolveIteratorTheseCall(Context* context,
     }
 
     bool succeeded = true;
-    std::vector<QualifiedType> yieldedTypes;
     for (auto receiverType : receiverTypes) {
       std::vector<CallInfoActual> actuals;
       actuals.emplace_back(receiverType, USTR("this"));
@@ -3730,22 +3739,13 @@ resolveIteratorTheseCall(Context* context,
       }
 
       if (leaderOnly) return c;
-
-      yieldedTypes.push_back(c.exprType().type()->toIteratorType()->yieldType());
     }
 
     if (!succeeded) {
       return empty;
     }
 
-    auto yieldedTuple = TupleType::getQualifiedTuple(context, yieldedTypes);
-    auto iteratorType =
-      LoopExprIteratorType::get(context,
-                                loopIt->isZippered(),
-                                loopIt->iterand(),
-                                loopIt->sourceLocation(),
-                                QualifiedType(QualifiedType::VAR, yieldedTuple));
-    return CallResolutionResult(QualifiedType(QualifiedType::VAR, iteratorType));
+    return CallResolutionResult(loopIt->yieldType());
   }
   return empty;
 }
