@@ -367,8 +367,7 @@ def get_sdk_version():
                     if match:
                         rocm_version = match.group(1)
         return rocm_version
-
-    if get() == 'nvidia':
+    elif get() == 'nvidia':
         chpl_cuda_path = get_sdk_path('nvidia')
         version_file_json = '%s/version.json' % chpl_cuda_path
         version_file_txt = '%s/version.txt' % chpl_cuda_path
@@ -392,6 +391,8 @@ def get_sdk_version():
                 if match:
                     cuda_version = match.group(1)
         return cuda_version
+    else:
+        return 'none'
 
 
 def _validate_rocm_version_impl():

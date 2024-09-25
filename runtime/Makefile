@@ -64,6 +64,19 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/c
 	  sed 's/^ *//;s/ *$$//' | \
 	  sed 's/[^0-9A-Za-z]/_/g' | \
 	  awk '{ print "#define " toupper($$1) }' >> $(CHPL_ENV_HEADER)
+	
+	@$(CHPL_MAKE_HOME)/util/printchplenv --only CHPL_GPU_SDK_VERSION --value | \
+		grep -q none && \
+			echo "#define CHPL_GPU_SDK_VERSION_MAJOR 0" >> $(CHPL_ENV_HEADER) && \
+			echo "#define CHPL_GPU_SDK_VERSION_MINOR 0" >> $(CHPL_ENV_HEADER) && \
+			echo "#define CHPL_GPU_SDK_VERSION_PATCH 0" >> $(CHPL_ENV_HEADER) \
+		|| \
+			$(CHPL_MAKE_HOME)/util/printchplenv --only CHPL_GPU_SDK_VERSION --value | \
+			sed 's/\./ /g' | \
+			awk '{ print "#define CHPL_GPU_SDK_VERSION_MAJOR " $$1; \
+						 print "#define CHPL_GPU_SDK_VERSION_MINOR " $$2; \
+						 print "#define CHPL_GPU_SDK_VERSION_PATCH " $$3 }' >> $(CHPL_ENV_HEADER)
+
 	@echo "#endif /* _CHPL_ENV_GEN_H_ */" >> $(CHPL_ENV_HEADER)
 
 THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
