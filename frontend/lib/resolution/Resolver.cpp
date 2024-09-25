@@ -66,6 +66,7 @@ namespace {
       LEADER_FOLLOWER = 0b0010,
       FOLLOWER        = 0b0100,
       SERIAL          = 0b1000,
+      ANY             = ~NONE,
     };
 
     // When an iter is resolved these pieces of the process will be stored.
@@ -113,7 +114,8 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask);
+                                      int mask,
+                                      std::vector<owned<ErrorBase>>* iterResErrors = nullptr);
 
 Resolver::~Resolver() {
   if (didPushFrame) {
@@ -4521,7 +4523,8 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask) {
+                                      int mask,
+                                      std::vector<owned<ErrorBase>>* iterResErrors) {
   Context* context = rv.context;
 
   if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
@@ -4530,13 +4533,16 @@ static IterDetails resolveIterDetails(Resolver& rv,
     return {};
   }
 
-  // Resolve the iterand but suppress errors for now. We'll reissue them
-  // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
-  // our injected call is successful.
-  auto runResult = context->runAndTrackErrors([&](Context* context) {
-    iterand->traverse(rv);
-    return nullptr;
-  });
+  if (!iterResErrors) {
+    // Resolve the iterand but suppress errors for now. We'll reissue them
+    // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
+    // our injected call is successful.
+    auto runResult = context->runAndTrackErrors([&](Context* context) {
+      iterand->traverse(rv);
+      return nullptr;
+    });
+    iterResErrors = &runResult.errors();
+  }
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
   bool wasIterSigResolved = false;
@@ -4560,7 +4566,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
   }
 
   // Reissue the errors.
-  for (auto& e : runResult.errors()) {
+  for (auto& e : *iterResErrors) {
     if (e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
       auto& f = std::get<0>(nmc->info());
@@ -4889,7 +4895,27 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!loopRequiresParallel) m |= IterDetails::SERIAL;
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
+    // For an explicit iterator call with a tag given, allow resolving any
+    // kind of iterator so it resolves to the tag.
+    auto runResult = context->runAndTrackErrors([&](Context* context) {
+      iterand->traverse(*this);
+      return nullptr;
+    });
+    if (iterand->isFnCall()) {
+      auto& iterandRE = byPostorder.byAst(iterand);
+      auto& MSC = iterandRE.mostSpecific();
+      auto fn = MSC.only() ? MSC.only().fn() : nullptr;
+      const unsigned int tagPos = 1;
+      if (fn && fn->isIterator() &&
+          fn->numFormals() >= (tagPos + 1) &&
+          fn->formalType(tagPos).type() == EnumType::getIterKindType(context)) {
+        if (!loopRequiresParallel) {
+          m = IterDetails::ANY;
+        }
+      }
+    }
+
+    auto dt = resolveIterDetails(*this, loop, iterand, {}, m, &runResult.errors());
     idxType = dt.idxType;
   }
 
