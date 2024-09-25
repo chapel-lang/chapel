@@ -2540,7 +2540,7 @@ arkouda-array_create:
 arkouda-sort-cases:
   <<: *arkouda-base
   08/07/24:
-    - Closes 3526: refactor argsortMsg to remove registerND annotation (Bears-R-Us/#3602)
+    - Closes 3526 refactor argsortMsg to remove registerND annotation (Bears-R-Us/#3602)
 
 shoc-triad-all-lg:
   11/10/22:
