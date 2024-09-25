@@ -4527,12 +4527,10 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       std::vector<owned<ErrorBase>>* iterResErrors) {
   Context* context = rv.context;
 
-  if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
-    // Resolve the iterand as much as possible even if there is nothing to do.
-    iterand->traverse(rv);
-    return {};
-  }
+  IterDetails ret;
 
+  // Ensure we resolve the iterand as much as possible even if there is nothing
+  // to do. Skip if we have saved resolution results already.
   if (!iterResErrors) {
     // Resolve the iterand but suppress errors for now. We'll reissue them
     // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
@@ -4544,28 +4542,29 @@ static IterDetails resolveIterDetails(Resolver& rv,
     iterResErrors = &runResult.errors();
   }
 
-  // Resolve iterators, stopping immediately when we get a valid yield type.
-  bool wasIterSigResolved = false;
-  auto ret = resolveIterDetailsInPriorityOrder(rv, wasIterSigResolved,
-                                               astForErr, iterand,
-                                               leaderYieldType,
-                                               mask);
-
-  // Only issue a "not iterable" error if the iterand has a type. If it was
-  // not typed then earlier resolution of the iterand will have spit out an
-  // approriate error for us already.
+  // Resolve iterators if we should, stopping immediately when we get a valid
+  // yield type.
   bool skipNoCandidatesError = true;
-  if (!wasIterSigResolved) {
-    auto& iterandRE = rv.byPostorder.byAst(iterand);
-    if (!iterandRE.type().isUnknownOrErroneous()) {
-      ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
-                                    iterandRE.type());
-    } else {
-      skipNoCandidatesError = false;
+  if (mask != IterDetails::NONE && !rv.scopeResolveOnly) {
+    bool wasIterSigResolved = false;
+    ret = resolveIterDetailsInPriorityOrder(
+        rv, wasIterSigResolved, astForErr, iterand, leaderYieldType, mask);
+
+    // Only issue a "not iterable" error if the iterand has a type. If it was
+    // not typed then earlier resolution of the iterand will have spit out an
+    // approriate error for us already.
+    if (!wasIterSigResolved) {
+      auto& iterandRE = rv.byPostorder.byAst(iterand);
+      if (!iterandRE.type().isUnknownOrErroneous()) {
+        ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+                                      iterandRE.type());
+      } else {
+        skipNoCandidatesError = false;
+      }
     }
   }
 
-  // Reissue the errors.
+  // Emit stored iterand resolution errors.
   for (auto& e : *iterResErrors) {
     if (e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
