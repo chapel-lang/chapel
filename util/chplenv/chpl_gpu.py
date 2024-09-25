@@ -341,6 +341,7 @@ def _validate_cuda_version_impl():
     return True
 
 def get_sdk_version():
+    version = 'none'
     if get() == 'amd':
         chpl_rocm_path = get_sdk_path('amd', sdk_type='include')
         files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
@@ -366,7 +367,7 @@ def get_sdk_version():
                     match = re.search(r"llvm-amdgpu-([\d\.]+)", my_stdout)
                     if match:
                         rocm_version = match.group(1)
-        return rocm_version
+        version = rocm_version
     elif get() == 'nvidia':
         chpl_cuda_path = get_sdk_path('nvidia')
         version_file_json = '%s/version.json' % chpl_cuda_path
@@ -390,9 +391,9 @@ def get_sdk_version():
                 match = re.search(pattern, my_stdout)
                 if match:
                     cuda_version = match.group(1)
-        return cuda_version
-    else:
-        return 'none'
+        version = cuda_version
+    version = version.strip() if version is not None else 'none'
+    return version
 
 
 def _validate_rocm_version_impl():
