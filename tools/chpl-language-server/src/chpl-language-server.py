@@ -761,6 +761,10 @@ class FileInfo:
             file = node.location().path()
             in_bundled_module = self.context.context.is_bundled_path(file)
             for depth, scope in enumerate(scopes):
+                files_named_in_use_or_import = set()
+                for m in scope.modules_named_in_use_or_import():
+                    files_named_in_use_or_import.add(m.location().path())
+
                 for name, nodes in scope.visible_nodes():
                     visible_node = visible_nodes_for_scope(
                         name, nodes, in_bundled_module
@@ -768,10 +772,15 @@ class FileInfo:
                     if visible_node:
                         d = depth
                         visible_path = visible_node[1].location().path()
-                        # if from a bundled path, increase the depth by 1
-                        d += int(self.context.context.is_bundled_path(visible_path))
-                        # if from another file, increase the depth by 1
-                        d += int(visible_path != file)
+
+                        if visible_path != file:
+                            # if from a different file, increase the depth by 1
+                            d += 1
+                            # if from a bundled path and not explicitly imported, increase the depth by 1
+                            d += int(
+                                self.context.context.is_bundled_path(visible_path)
+                                and visible_path not in files_named_in_use_or_import
+                            )
 
                         visible_nodes.append((visible_node[0], visible_node[1], d))
             return visible_nodes
