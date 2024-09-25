@@ -28,7 +28,8 @@ static void checkCalledSetMatches(CalledFnsSet& called,
   std::vector<std::string> gotSymPaths;
 
   // note: this loop runs in a nondeterministic order
-  for (const ResolvedFunction* fn : called) {
+  for (auto pair : called) {
+    const ResolvedFunction* fn = pair.first;
     gotSymPaths.push_back(fn->id().symbolPath().str());
   }
   std::sort(gotSymPaths.begin(), gotSymPaths.end());
