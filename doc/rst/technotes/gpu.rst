@@ -29,7 +29,7 @@ Overview
 The Chapel compiler will generate GPU kernels for certain parallel operations
 such as ``forall``/``foreach`` loops, ``reduce`` expressions and promoted
 expressions. These will be launched onto a GPU when the current locale (e.g.
-``here``) is the sublocale representing that particluar GPU. To deploy code to a
+``here``) is the sublocale representing that particular GPU. To deploy code to a
 GPU, put the relevant code in an ``on`` statement targeting a GPU sublocale
 (i.e. ``here.gpus[0]``).
 
