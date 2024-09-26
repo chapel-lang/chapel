@@ -1324,6 +1324,15 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
       }
     }
   }
+#ifdef DEBUG
+  printf("distances:\n");
+  for (int i = 0; i < numLocales; i++) {
+    for (int j = 0; j < numObjs; j++) {
+      printf("%02d ", distances[i][j]);
+    }
+    printf("\n");
+  }
+#endif
 }
 
 
