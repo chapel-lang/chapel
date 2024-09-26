@@ -704,7 +704,11 @@ static void partitionResources(void) {
   if (debug) {
     for (int i = 0; i < numLocalesOnNode; i++) {
       char buf[1024];
-      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSets[i]);
+      if (logAccSets[i] != NULL) {
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSets[i]);
+      } else {
+        strncpy(buf, "unknown", sizeof(buf));
+      }
       _DBG_P("logAccSets[%d]: %s", i, buf);
     }
   }
