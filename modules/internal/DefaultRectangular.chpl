@@ -1307,15 +1307,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
         }
 
-        if !localeModelPartitionsIterationOnSublocales {
-          data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
-        } else {
-          data = _ddata_allocate_noinit(eltType, size,
-                                        callPostAlloc,
-                                        subloc = (if here._getChildCount() > 1
-                                                  then c_sublocid_all
-                                                  else c_sublocid_none));
-        }
+        data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
 
         if initElts {
           init_elts(data, size, eltType);

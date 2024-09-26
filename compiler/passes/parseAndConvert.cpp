@@ -548,8 +548,6 @@ static std::set<UniqueString> gatherStdModuleNames() {
     modNames.erase(UniqueString::get(gContext, "LocaleModelHelpGPU"));
     modNames.erase(UniqueString::get(gContext, "GpuDiagnostics"));
   }
-  // Workaround: don't try to compile LocaleModelHelpAPU
-  modNames.erase(UniqueString::get(gContext, "LocaleModelHelpAPU"));
   // Workaround: don't try to compile PrivateDist to avoid a compilation error
   modNames.erase(UniqueString::get(gContext, "PrivateDist"));
   // Workaround: don't try to compile GMP or BigInteger if CHPL_GMP is none
