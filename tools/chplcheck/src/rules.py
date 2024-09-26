@@ -620,6 +620,61 @@ def register_rules(driver: LintDriver):
             yield AdvancedRuleResult(formals[unused], anchor)
 
     @driver.advanced_rule
+    def UnusedTaskIntent(context: Context, root: AstNode):
+        """
+        Warn for unused task intents in functions.
+        """
+        if isinstance(root, Comment):
+            return
+
+        intents = dict()
+        uses = set()
+
+        for intent, _ in chapel.each_matching(
+            root, set([TaskVar, ReduceIntent])
+        ):
+            # var intents may have side effects, so we don't want to warn on them
+            if isinstance(intent, TaskVar) and intent.intent() == "var":
+                continue
+            intents[intent.unique_id()] = intent
+
+        for use, _ in chapel.each_matching(root, Identifier):
+            refersto = use.to_node()
+            if refersto:
+                uses.add(refersto.unique_id())
+
+        for unused in intents.keys() - uses:
+            taskvar = intents[unused]
+            with_clause = taskvar.parent()
+            task_block = with_clause.parent()
+
+            # only loops can be anchors for attributes
+            anchor = None
+            if isinstance(task_block, chapel.Loop):
+                anchor = task_block
+            yield AdvancedRuleResult(
+                taskvar, anchor, data=(taskvar, with_clause, task_block)
+            )
+
+    @driver.fixit(UnusedTaskIntent)
+    def RemoveTaskIntent(context: Context, result: AdvancedRuleResult):
+        """
+        Remove the unused task intent from the function.
+        """
+        assert isinstance(result.data, tuple)
+        _, with_clause, _ = result.data
+
+        fixit = None
+        # if the with clause only has one expr, remove the entire with clause
+        if len(list(with_clause.exprs())) == 1:
+            fixit = Fixit.build(Edit.build(with_clause.location(), ""))
+        else:
+            # for now, locations are messy enough that we can't easily cleanly
+            # remove the taskvar
+            pass
+        return [fixit] if fixit else []
+
+    @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
         """
         Warn for unused index variables in loops.
