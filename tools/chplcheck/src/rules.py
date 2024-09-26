@@ -885,7 +885,7 @@ def register_rules(driver: LintDriver):
                 # only loops and NamedDecls can be anchors for indentation
                 anchor = (
                     parent_for_indentation
-                    if not isinstance(parent_for_indentation, (Loop, NamedDecl))
+                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
                     else None
                 )
                 yield AdvancedRuleResult(child, anchor=anchor)
