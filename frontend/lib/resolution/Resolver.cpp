@@ -3966,6 +3966,8 @@ static const Type* getGenericType(Context* context, const Type* recv) {
     auto m = getGenericType(context, cur->manageableType());
     gen = ClassType::get(context, m->toManageableType(),
                          cur->manager(), cur->decorator());
+  } else if (recv->isDomainType()) {
+    gen = DomainType::getGenericDomainType(context);
   }
   return gen;
 }
