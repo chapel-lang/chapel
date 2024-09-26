@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# skip for AMD GPUs (for now) - see: https://github.com/Cray/chapel-private/issues/6739
+if [ "$CHPL_GPU" = "amd" ]; then
+  echo "True"
+  exit
+fi
+
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 CHAI_BRANCH=main
 CHAI_URL=${CHAI_URL:-https://github.com/chapel-lang/ChAI.git}
