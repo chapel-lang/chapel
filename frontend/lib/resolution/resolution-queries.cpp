@@ -539,6 +539,24 @@ static void checkForParenlessMethodFieldRedefinition(Context* context,
   }
 }
 
+// Returns 'true' if parent frames are present in the RC.
+static bool checkIfParentFramesArePresent(ResolutionContext* rc,
+                                          const UntypedFnSignature* usig) {
+  Context* context = rc->context();
+  bool ret = !rc->isEmpty();
+
+  // TODO: Becomes a structural issue after we pass in the parent.
+  if (!ret) {
+    const ID& id = usig->id();
+    context->error(id, "stack frames for the parent of '%s' are not "
+                       "present, so outer variables in its signature "
+                       "cannot be typed",
+                       usig->name().c_str());
+  }
+
+  return ret;
+}
+
 static const TypedFnSignature*
 typedSignatureInitialImpl(ResolutionContext* rc,
                           const UntypedFnSignature* untypedSig) {
@@ -562,6 +580,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
         parentSignature = sig;
       }
     } else {
+      // TODO: Have the user pass the parent signature to make this explicit.
       auto parentShape = UntypedFnSignature::get(context, parentFnId);
       parentSignature = typedSignatureInitial(rc, parentShape);
     }
@@ -569,9 +588,18 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     // The parent signature must exist.
     if (!parentSignature) return nullptr;
 
-    // All parents need to be concrete for the signature to be evaluated.
+    // TODO: Change this from a warning to a 'return nullptr' once we pass
+    // in the parent function signature - in that case it is on the caller
+    // to make sure they are concrete.
     for (auto up = parentSignature; up; up = up->parentFn()) {
-      if (up->needsInstantiation()) return nullptr;
+      if (up->needsInstantiation()) {
+        const ID& id = untypedSig->id();
+        context->error(id, "One or more parent functions was inferred "
+                           "to be generic while constructing the "
+                           "initial signature of '%s'",
+                           untypedSig->name().c_str());
+        break;
+      }
     }
   }
 
@@ -581,9 +609,11 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // visit the formals, but not the return type or body
   for (auto formal : fn->formals()) formal->traverse(visitor);
 
-  // Give up if we could not type outer variables present in the signature.
-  if (parentSignature && rc->isEmpty() && !visitor.outerVariables.isEmpty()) {
-    return nullptr;
+  if (!visitor.outerVariables.isEmpty()) {
+    CHPL_ASSERT(parentSignature);
+
+    // Outer variables can't be typed without stack frames, so give up.
+    if (!checkIfParentFramesArePresent(rc, untypedSig)) return nullptr;
   }
 
   // now, construct a TypedFnSignature from the result
@@ -598,7 +628,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   if (auto whereClause = fn->whereClause()) {
     if (needsInstantiation) {
       // Visit the where clause for generic nested functions just to collect
-      // outer variables. TODO: Wrap in speculative block?
+      // outer variables. TODO: Is this OK or could POI muck with this?
       if (parentSignature) whereClause->traverse(visitor);
       whereResult = TypedFnSignature::WHERE_TBD;
     } else {
@@ -607,9 +637,11 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     }
   }
 
-  // Give up if we could not type outer variables used in the where clause.
-  if (parentSignature && rc->isEmpty() && !visitor.outerVariables.isEmpty()) {
-    return nullptr;
+  if (!visitor.outerVariables.isEmpty()) {
+    CHPL_ASSERT(parentSignature);
+
+    // Outer variables can't be typed without stack frames, so give up.
+    if (!checkIfParentFramesArePresent(rc, untypedSig)) return nullptr;
   }
 
   checkForParenlessMethodFieldRedefinition(context, fn, visitor);
@@ -2524,7 +2556,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   ResolutionResultByPostorderID rr;
 
   if (!fn->body() && !isInitializer) {
-    CHPL_ASSERT(false && "Should only be called on functions!");
+    CHPL_ASSERT(false && "Should only be called on functions with a body!");
     return nullptr;
   }
 
@@ -2758,6 +2790,8 @@ static const ResolvedFunction*
 helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                     const PoiScope* poiScope,
                     bool skipIfRunning) {
+  // Nothing to do, there is no body.
+  if (parsing::idIsExtern(rc->context(), sig->id())) return nullptr;
 
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
