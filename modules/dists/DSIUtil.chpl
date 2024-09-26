@@ -649,7 +649,7 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
 
 // this is an overload for views that are ranges. This will be used by code
 // paths that comes from elided array views. We could consider using this
-// lighterweight implementation as a more general special case for 1D bulk
+// lighter weight implementation as a more general special case for 1D bulk
 // transfers.
 proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
                              targetView : range(?)) {
