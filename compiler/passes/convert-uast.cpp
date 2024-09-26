@@ -3674,7 +3674,7 @@ struct Converter final : UastConverter {
       auto* ident =
         uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
 
-      // Always convert the taraget expression so that we note used modules
+      // Always convert the target expression so that we note used modules
       // as needed. We won't necessarily use the resulting expression;
       // see the comment below.
       auto converted = convertExprOrNull(ident);
