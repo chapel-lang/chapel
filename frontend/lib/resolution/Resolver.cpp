@@ -3059,7 +3059,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
     // procs can be ruled out if their 'where' clauses are false. If even
     // one identifier is not a parenless proc, there's an ambiguity.
     //
-    // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
+    // outParenlessOverloadInfo will be false if we found non-parenless-proc
     // IDs. In that case we may emit an ambiguity error later, after filtering
     // out incorrect receivers.
     outParenlessOverloadInfo =
