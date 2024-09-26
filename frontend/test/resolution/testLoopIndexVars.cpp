@@ -561,6 +561,57 @@ static void testIterSigDetection(Context* context) {
     assert(m["d"].type()->isStringType());
 }
 
+static void testExplicitTaggedIter(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  std::string program =
+    R""""(
+
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0.0,0.0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
+
+    for a in i1() do;
+    for b in i1(tag=iterKind.standalone) do;
+    for c in i1(tag=iterKind.leader) do;
+    for d in i1(tag=iterKind.follower, followThis="") do;
+    )"""";
+
+    auto mod = parseModule(context, program);
+    auto& rr = resolveModule(context, mod->id());
+    assert(!guard.realizeErrors());
+
+    auto aLoop = parentAst(context, findVariable(mod, "a"))->toIndexableLoop();
+    auto aSig1 = rr.byAst(aLoop->iterand()).mostSpecific().only().fn();
+    assert(aSig1->isSerialIterator(context));
+
+    auto bLoop = parentAst(context, findVariable(mod, "b"))->toIndexableLoop();
+    auto bSig1 = rr.byAst(bLoop->iterand()).mostSpecific().only().fn();
+    assert(bSig1->isParallelStandaloneIterator(context));
+
+    auto cLoop = parentAst(context, findVariable(mod, "c"))->toIndexableLoop();
+    auto cSig1 = rr.byAst(cLoop->iterand()).mostSpecific().only().fn();
+    assert(cSig1->isParallelLeaderIterator(context));
+
+    auto dLoop = parentAst(context, findVariable(mod, "d"))->toIndexableLoop();
+    auto dSig1 = rr.byAst(dLoop->iterand()).mostSpecific().only().fn();
+    assert(dSig1->isParallelFollowerIterator(context));
+
+    auto m = resolveTypesOfVariables(context, program, { "a", "b", "c", "d"});
+    assert(!guard.realizeErrors());
+    assert(m["a"].kind() == QualifiedType::CONST_VAR);
+    assert(m["a"].type()->isRealType());
+    assert(m["b"].kind() == QualifiedType::CONST_VAR);
+    assert(m["b"].type()->isIntType());
+    assert(m["c"].kind() == QualifiedType::CONST_VAR);
+    assert(m["c"].type()->isTupleType());
+    assert(m["d"].kind() == QualifiedType::CONST_VAR);
+    assert(m["d"].type()->isStringType());
+}
+
 static void
 unpackIterKindStrToBool(const std::string& str,
                         bool* needSerial=nullptr,
@@ -860,6 +911,7 @@ int main() {
   auto ctx = buildStdContext();
   Context* context = ctx.get();
   testIterSigDetection(context);
+  testExplicitTaggedIter(context);
   testSerialZip(context);
   testParallelZip(context);
   testForallStandaloneThese(context);
