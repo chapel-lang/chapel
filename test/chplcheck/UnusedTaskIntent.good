@@ -1,0 +1,12 @@
+UnusedTaskIntent.chpl:21: warning: cobegin has no effect if it contains fewer than 2 statements
+UnusedTaskIntent.chpl:10: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:11: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:13: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:15: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:16: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:19: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:22: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:24: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:26: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:27: node violates rule UnusedTaskIntent
+[Success matching fixit for UnusedTaskIntent]
