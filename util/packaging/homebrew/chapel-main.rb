@@ -14,7 +14,7 @@ class Chapel < Formula
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm"
+  depends_on "llvm@18"
   depends_on "pkg-config"
   depends_on "python@3.12"
 
@@ -70,10 +70,10 @@ class Chapel < Formula
       system "make", "cleanall"
 
       rm_r("third-party/llvm/llvm-src/")
-      rm_r("third-party/gasnet/gasnet-src")
-      rm_r("third-party/libfabric/libfabric-src")
+      rm_r("third-party/gasnet/gasnet-src/")
+      rm_r("third-party/libfabric/libfabric-src/")
       rm_r("third-party/fltk/fltk-1.3.8-source.tar.gz")
-      rm_r("third-party/libunwind/libunwind-src")
+      rm_r("third-party/libunwind/libunwind-src/")
       rm_r("third-party/gmp/gmp-src/")
       rm_r("third-party/qthread/qthread-src/")
     end
