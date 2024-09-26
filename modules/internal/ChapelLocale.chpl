@@ -33,11 +33,6 @@ module ChapelLocale {
   use ChapelBase;
   use ChapelNumLocales;
 
-  compilerAssert(!(!localeModelHasSublocales &&
-   localeModelPartitionsIterationOnSublocales),
-   "Locale model without sublocales can not have " +
-   "localeModelPartitionsIterationOnSublocales set to true.");
-
   //
   // Node and sublocale types and special sublocale values.
   //
@@ -46,13 +41,9 @@ module ChapelLocale {
 
   @chpldoc.nodoc
   extern const c_sublocid_none: chpl_sublocID_t;
-  @chpldoc.nodoc
-  extern const c_sublocid_all: chpl_sublocID_t;
 
   inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t) do
-    return (subloc != c_sublocid_none
-            && subloc != c_sublocid_none
-            && subloc != c_sublocid_all);
+    return (subloc != c_sublocid_none);
 
   /*
     regular: Has a concrete BaseLocale instance
