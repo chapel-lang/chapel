@@ -66,7 +66,6 @@ namespace {
       LEADER_FOLLOWER = 0b0010,
       FOLLOWER        = 0b0100,
       SERIAL          = 0b1000,
-      ANY             = ~NONE,
     };
 
     // When an iter is resolved these pieces of the process will be stored.
@@ -114,8 +113,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask,
-                                      std::vector<owned<ErrorBase>>* iterResErrors = nullptr);
+                                      int mask);
 
 Resolver::~Resolver() {
   if (didPushFrame) {
@@ -4523,49 +4521,46 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask,
-                                      std::vector<owned<ErrorBase>>* iterResErrors) {
+                                      int mask) {
   Context* context = rv.context;
 
-  IterDetails ret;
-
-  // Ensure we resolve the iterand as much as possible even if there is nothing
-  // to do. Skip if we have saved resolution results already.
-  if (!iterResErrors) {
-    // Resolve the iterand but suppress errors for now. We'll reissue them
-    // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
-    // our injected call is successful.
-    auto runResult = context->runAndTrackErrors([&](Context* context) {
-      iterand->traverse(rv);
-      return nullptr;
-    });
-    iterResErrors = &runResult.errors();
+  if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
+    // Resolve the iterand as much as possible even if there is nothing to do.
+    iterand->traverse(rv);
+    return {};
   }
 
-  // Resolve iterators if we should, stopping immediately when we get a valid
-  // yield type.
-  bool skipNoCandidatesError = true;
-  if (mask != IterDetails::NONE && !rv.scopeResolveOnly) {
-    bool wasIterSigResolved = false;
-    ret = resolveIterDetailsInPriorityOrder(
-        rv, wasIterSigResolved, astForErr, iterand, leaderYieldType, mask);
+  // Resolve the iterand but suppress errors for now. We'll reissue them
+  // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
+  // our injected call is successful.
+  auto runResult = context->runAndTrackErrors([&](Context* context) {
+    iterand->traverse(rv);
+    return nullptr;
+  });
 
-    // Only issue a "not iterable" error if the iterand has a type. If it was
-    // not typed then earlier resolution of the iterand will have spit out an
-    // approriate error for us already.
-    if (!wasIterSigResolved) {
-      auto& iterandRE = rv.byPostorder.byAst(iterand);
-      if (!iterandRE.type().isUnknownOrErroneous()) {
-        ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
-                                      iterandRE.type());
-      } else {
-        skipNoCandidatesError = false;
-      }
+  // Resolve iterators, stopping immediately when we get a valid yield type.
+  bool wasIterSigResolved = false;
+  auto ret = resolveIterDetailsInPriorityOrder(rv, wasIterSigResolved,
+                                               astForErr, iterand,
+                                               leaderYieldType,
+                                               mask);
+
+  // Only issue a "not iterable" error if the iterand has a type. If it was
+  // not typed then earlier resolution of the iterand will have spit out an
+  // approriate error for us already.
+  bool skipNoCandidatesError = true;
+  if (!wasIterSigResolved) {
+    auto& iterandRE = rv.byPostorder.byAst(iterand);
+    if (!iterandRE.type().isUnknownOrErroneous()) {
+      ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+                                    iterandRE.type());
+    } else {
+      skipNoCandidatesError = false;
     }
   }
 
-  // Emit stored iterand resolution errors.
-  for (auto& e : *iterResErrors) {
+  // Reissue the errors.
+  for (auto& e : runResult.errors()) {
     if (e->type() == NoMatchingCandidates) {
       auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
       auto& f = std::get<0>(nmc->info());
