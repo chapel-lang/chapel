@@ -14,5 +14,6 @@ Active rules:
   PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   PascalCaseModules            Warn for modules that are not 'PascalCase'.
   SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
+  UnusedFormal                 Warn for unused formals in functions.
   UnusedLoopIndex              Warn for unused index variables in loops.
   UnusedTupleUnpack            Warn for unused tuple unpacking, such as '(_, _)'.
