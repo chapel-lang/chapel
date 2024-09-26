@@ -882,10 +882,10 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                # conditionals do not support attributes
+                # only loops and NamedDecls can be anchors for indentation
                 anchor = (
                     parent_for_indentation
-                    if not isinstance(parent_for_indentation, Conditional)
+                    if not isinstance(parent_for_indentation, (Loop, NamedDecl))
                     else None
                 )
                 yield AdvancedRuleResult(child, anchor=anchor)
