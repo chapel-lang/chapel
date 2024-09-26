@@ -1439,7 +1439,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                   for (int j = 0; j < numNics; j++) {
                     _DBG_P("used[%d] = %d, distances[%d][%d] = %d",
                            j, used[j], i, j, distances[i][j]);
-                    if ((!used[j]) && (distances[i][j] < minimum)) {
+                    if ((!used[j]) && (distances[i][j] <= minimum)) {
                       minimum = distances[i][j];
                       minLoc = i;
                       minNic = j;
@@ -1512,6 +1512,7 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
     int owners[numDevs]; // locale that owns each device
     hwloc_obj_t objs[numDevs]; // the device objects
     int devsPerLocale = numDevs / numLocales;
+    _DBG_P("devsPerLocale = %d", devsPerLocale);
     int owned[numLocales]; // number of devices each locale owns
 
     for (int i = 0; i < numDevs; i++) {
@@ -1565,7 +1566,7 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
         for (int i = 0; i < numLocales; i++) {
           if (owned[i] < devsPerLocale) {
             for (int j = 0; j < numDevs; j++) {
-              if ((owners[j] == -1) && (distances[i][j] < minimum)) {
+              if ((owners[j] == -1) && (distances[i][j] <= minimum)) {
                 minimum = distances[i][j];
                 minLoc = i;
                 minDev = j;
