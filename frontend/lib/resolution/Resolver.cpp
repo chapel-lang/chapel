@@ -4894,9 +4894,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!loopRequiresParallel) m |= IterDetails::SERIAL;
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    // For an explicit iterator call with a tag given, allow resolving any
-    // kind of iterator so it resolves to the tag.
-    auto runResult = context->runAndTrackErrors([&](Context* context) {
+    // For an explicit iterator call with a tag given, just resolve the call
+    // if possible.
+    context->runAndTrackErrors([&](Context* context) {
       iterand->traverse(*this);
       return nullptr;
     });
@@ -4910,15 +4910,15 @@ bool Resolver::enter(const IndexableLoop* loop) {
         if (fn->numFormals() > tagPos &&
             fn->formalType(tagPos).type() ==
                 EnumType::getIterKindType(context)) {
-          if (!loopRequiresParallel) {
-            m = IterDetails::ANY;
-          }
+          idxType = iterandRE.type();
         }
       }
     }
 
-    auto dt = resolveIterDetails(*this, loop, iterand, {}, m, &runResult.errors());
-    idxType = dt.idxType;
+    if (idxType.isUnknownOrErroneous()) {
+      auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
+      idxType = dt.idxType;
+    }
   }
 
   enterScope(loop);
