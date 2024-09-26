@@ -585,18 +585,22 @@ static void testExplicitTaggedIter(Context* context) {
     assert(!guard.realizeErrors());
 
     auto aLoop = parentAst(context, findVariable(mod, "a"))->toIndexableLoop();
+    assert(rr.byAst(aLoop->iterand()).associatedActions().empty());
     auto aSig1 = rr.byAst(aLoop->iterand()).mostSpecific().only().fn();
     assert(aSig1->isSerialIterator(context));
 
     auto bLoop = parentAst(context, findVariable(mod, "b"))->toIndexableLoop();
+    assert(rr.byAst(bLoop->iterand()).associatedActions().empty());
     auto bSig1 = rr.byAst(bLoop->iterand()).mostSpecific().only().fn();
     assert(bSig1->isParallelStandaloneIterator(context));
 
     auto cLoop = parentAst(context, findVariable(mod, "c"))->toIndexableLoop();
+    assert(rr.byAst(cLoop->iterand()).associatedActions().empty());
     auto cSig1 = rr.byAst(cLoop->iterand()).mostSpecific().only().fn();
     assert(cSig1->isParallelLeaderIterator(context));
 
     auto dLoop = parentAst(context, findVariable(mod, "d"))->toIndexableLoop();
+    assert(rr.byAst(dLoop->iterand()).associatedActions().empty());
     auto dSig1 = rr.byAst(dLoop->iterand()).mostSpecific().only().fn();
     assert(dSig1->isParallelFollowerIterator(context));
 
