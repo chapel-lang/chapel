@@ -812,6 +812,14 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   return false;
 }
 
+static bool classTypeIsManagedAndDecorated(Context* context,
+                                           const ClassType* ct) {
+  if (ct && ct->manager() && ct->decorator().isManaged()) {
+    return true;
+  }
+  return false;
+}
+
 static bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
                                              const Type*& mightBeManagerRecord,
@@ -822,7 +830,10 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   auto ct = mightBeClass->toClassType();
   auto aot = mightBeClass->toAnyOwnedType();
 
-  if (!mr || ((!ct || !ct->manager() || !ct->decorator().isManaged()) && !aot )) return false;
+  bool isCtManagedAndDecorated = classTypeIsManagedAndDecorated(context, ct);
+  // if mightBeManagerRecord is a record type and (mightBeClass is a class type
+  // that is managed and decorated or mightBeClass is an AnyOwnedType) we can continue
+  if (!mr || (!isCtManagedAndDecorated && !aot )) return false;
 
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
 
