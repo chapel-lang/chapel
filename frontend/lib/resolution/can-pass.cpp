@@ -968,7 +968,6 @@ CanPassResult CanPassResult::canPass(Context* context,
     formalQT = QualifiedType(formalQT.kind(), formalT, formalQT.param());
   }
 
-
   // if the formal type is unknown, allow passing
   // this can come up with e.g.
   //   proc f(a: int(?w), b: int(2*w))

@@ -2133,6 +2133,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // will not resolve because the receiver formal is 'nonnil borrowed').
   const Type* initReceiverType = qtNewExpr.type();
   if (auto clsType = qtNewExpr.type()->toClassType()) {
+    // always set the receiver to be borrowed non-nil b/c we don't want to
+    // call initializers for '_owned' when the receiver is 'owned(MyClass)'
     auto newDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     initReceiverType = clsType->withDecorator(context, newDecor);
     CHPL_ASSERT(initReceiverType);
@@ -2485,8 +2487,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       // get the new class type if the receiver is a class
       auto nct = rt->toClassType();
       // get the manager record using ClassType method managerRecordType()
-      if (auto mr = checkIfReceiverIsManagerRecord(context, nct, parentId))
-      {
+      if (auto mr = checkIfReceiverIsManagerRecord(context, nct, parentId)) {
         ct = mr;
         auto fieldName = parsing::fieldIdToName(context, id);
         // TODO: shared has additional fields that are not generic
@@ -2494,9 +2495,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         auto intent = fieldName == "chpl_t" ? QualifiedType::TYPE : QualifiedType::VAR;
         auto borrowed = nct->withDecorator(context, nct->decorator().toBorrowed());
         return QualifiedType(intent, borrowed);
-      }
-      else if (auto comprt = rt->getCompositeType())
-      {
+      } else if (auto comprt = rt->getCompositeType()) {
         if (comprt->id() == parentId) {
           ct = comprt; // handle record, class with field
         } else if (auto bct = comprt->toBasicClassType()) {
@@ -2527,10 +2526,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
 const types::CompositeType*
 Resolver::checkIfReceiverIsManagerRecord(Context* context,
-                                         const types::ClassType* nct,
+                                         const types::ClassType* ct,
                                          ID& parentId) {
-  if (nct) {
-    if (auto mr = nct->managerRecordType(context)) {
+  if (ct) {
+    if (auto mr = ct->managerRecordType(context)) {
       if (mr->id() == parentId) {
         return mr;
       }

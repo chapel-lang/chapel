@@ -3632,8 +3632,8 @@ static bool resolveFnCallSpecial(Context* context,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
+  // TODO: .borrow()
   // TODO: chpl__coerceCopy
-
 
   // explicit param casts are resolved here
   if (ci.isOpCall() && ci.name() == USTR(":")) {
