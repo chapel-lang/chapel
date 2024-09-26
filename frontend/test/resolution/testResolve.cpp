@@ -1688,6 +1688,26 @@ static void test26() {
   }
 }
 
+// Make sure that 'extern' functions still have 'ResolvedFunction' entries.
+static void test27() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // 'this' qualified, type field
+  std::string prog =
+    R"""(
+      extern proc foo(): int;
+    )""";
+
+  auto m = parseModule(context, prog);
+  auto f = m->stmt(0)->toFunction();
+  assert(f && f->linkage() == Decl::EXTERN);
+  auto rf = resolveConcreteFunction(context, f->id());
+  assert(rf->returnType().type()->isIntType());
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -1715,6 +1735,7 @@ int main() {
   test24();
   test25();
   test26();
+  test27();
 
   return 0;
 }

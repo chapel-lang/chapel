@@ -2551,23 +2551,21 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
   const PoiScope* poiScope = poiInfo.poiScope();
-  bool isInitializer = sig->isInitializer();
   PoiInfo resolvedPoiInfo;
   ResolutionResultByPostorderID rr;
 
-  if (!fn->body() && !isInitializer) {
-    CHPL_ASSERT(false && "Should only be called on functions with a body!");
+  if (!fn->body() && !fn) {
+    CHPL_ASSERT(false && "Should only be called on functions!");
     return nullptr;
   }
 
-  const TypedFnSignature* inputSig = sig;
   const TypedFnSignature* finalSig = sig;
 
-  auto visitor = isInitializer
-    ? Resolver::createForInitializer(rc, fn, poiScope, inputSig, rr)
-    : Resolver::createForFunction(rc, fn, poiScope, inputSig, rr);
+  auto visitor = sig->isInitializer()
+    ? Resolver::createForInitializer(rc, fn, poiScope, sig, rr)
+    : Resolver::createForFunction(rc, fn, poiScope, sig, rr);
 
-  if (isInitializer) {
+  if (sig->isInitializer()) {
     CHPL_ASSERT(visitor.initResolver.get());
     auto qt = QualifiedType(QualifiedType::VAR, VoidType::get(context));
     visitor.returnType = std::move(qt);
@@ -2582,7 +2580,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   }
 
   // then, compute the return type if it is not an initializer
-  if (!isInitializer) {
+  if (!sig->isInitializer()) {
     computeReturnType(visitor);
 
   // else, potentially write out a new initializer signature
@@ -2598,14 +2596,14 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
 
   // check that throws are handled or forwarded
   // TODO: Call for initializers as well, and remove checks in the resolver.
-  if (!isInitializer) checkThrows(rc, rr, fn);
+  if (!sig->isInitializer()) checkThrows(rc, rr, fn);
 
   // TODO: can this be encapsulated in a method?
   resolvedPoiInfo.swap(visitor.poiInfo);
   resolvedPoiInfo.setResolved(true);
   resolvedPoiInfo.setPoiScope(nullptr);
 
-  CHPL_ASSERT(inputSig == finalSig || isInitializer);
+  CHPL_ASSERT(sig == finalSig || sig->isInitializer());
 
   auto ret = toOwned(new ResolvedFunction(finalSig,
                                   fn->returnIntent(),
@@ -2790,9 +2788,6 @@ static const ResolvedFunction*
 helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                     const PoiScope* poiScope,
                     bool skipIfRunning) {
-  // Nothing to do, there is no body.
-  if (parsing::idIsExtern(rc->context(), sig->id())) return nullptr;
-
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
