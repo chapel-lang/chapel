@@ -1507,20 +1507,21 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
   int numLocales = chpl_get_num_locales_on_node();
   _DBG_P("count = %d", *count);
   _DBG_P("numLocales = %d", numLocales);
-  if (numLocales > 1) {
+  int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  if (numColocales > 1) {
     int numDevs = *count;
     int owners[numDevs]; // locale that owns each device
     hwloc_obj_t objs[numDevs]; // the device objects
-    int devsPerLocale = numDevs / numLocales;
+    int devsPerLocale = numDevs / numColocales;
     _DBG_P("devsPerLocale = %d", devsPerLocale);
-    int owned[numLocales]; // number of devices each locale owns
+    int owned[numColocales]; // number of devices each co-locale owns
 
     for (int i = 0; i < numDevs; i++) {
       owners[i] = -1;
       objs[i] = NULL;
     }
 
-    for (int i = 0; i < numLocales; i++) {
+    for (int i = 0; i < numColocales; i++) {
       owned[i] = 0;
     }
 
@@ -1589,6 +1590,7 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
     assert(j == devsPerLocale);
     *count = devsPerLocale;
   } else {
+    // No co-locales, use all the devices.
     for (int i = 0; i < *count; i++) {
       outAddrs[i] = inAddrs[i];
     }
