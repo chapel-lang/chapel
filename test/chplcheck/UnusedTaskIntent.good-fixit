@@ -26,4 +26,7 @@ module UnusedTaskIntent {
   [1..10 with (in A,
   const in B)] { ; }
 
+  @chplcheck.ignore("UnusedTaskIntent")
+  [1..10 with(ref A)] { ; }
+
 }
