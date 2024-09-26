@@ -71,7 +71,7 @@ module ChapelArrayViewElision {
   proc chpl__ave_exprCanBeProtoSlice(base, idxExprs...) param: bool {
     return chpl__ave_baseTypeSupports(base) &&
            chpl__ave_idxExprsSupport(base.idxType, (...idxExprs)) &&
-           !chpl__ave_nonComplientSlice(base, (...idxExprs));
+           !chpl__ave_nonCompliantSlice(base, (...idxExprs));
   }
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
@@ -408,14 +408,14 @@ module ChapelArrayViewElision {
     return true;
   }
 
-  private proc chpl__ave_nonComplientSlice(base, idxExprs: domain) param {
-    // distributed array sliced with a distributed domain is non-complient
+  private proc chpl__ave_nonCompliantSlice(base, idxExprs: domain) param {
+    // distributed array sliced with a distributed domain is non-compliant.
     // such slices imply "redistribution" of the data. Right now, let's ignore
     // those
     return !chpl__isDROrDRView(base) && !chpl__isDROrDRView(idxExprs);
   }
 
-  private proc chpl__ave_nonComplientSlice(base, idxExprs...) param {
+  private proc chpl__ave_nonCompliantSlice(base, idxExprs...) param {
     return false;
   }
 
