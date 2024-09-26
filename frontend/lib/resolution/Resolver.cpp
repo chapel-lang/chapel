@@ -4900,7 +4900,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
       auto& MSC = iterandRE.mostSpecific();
       auto fn = MSC.only() ? MSC.only().fn() : nullptr;
       if (fn && fn->isIterator()) {
-        const unsigned int tagPos =
+        const int tagPos =
             fn->isMethod() ? 1 : 0;  // offset for 'this'
         if (fn->numFormals() > tagPos &&
             fn->formalType(tagPos).type() ==
