@@ -539,6 +539,26 @@ static void checkForParenlessMethodFieldRedefinition(Context* context,
   }
 }
 
+// Returns 'true' and emits an error if parent frames are not in the RC.
+static bool errorIfParentFramesNotPresent(ResolutionContext* rc,
+                                          const UntypedFnSignature* usig) {
+  Context* context = rc->context();
+
+  // TODO: More specifically, check if parent frames exist.
+  bool ret = rc->isEmpty();
+
+  // TODO: Becomes a structural issue after we pass in the parent.
+  if (ret) {
+    const ID& id = usig->id();
+    context->error(id, "stack frames for the parent of '%s' are not "
+                       "present, so outer variables in its signature "
+                       "cannot be typed",
+                       usig->name().c_str());
+  }
+
+  return ret;
+}
+
 static const TypedFnSignature*
 typedSignatureInitialImpl(ResolutionContext* rc,
                           const UntypedFnSignature* untypedSig) {
@@ -562,6 +582,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
         parentSignature = sig;
       }
     } else {
+      // TODO: Have the user pass the parent signature to make this explicit.
       auto parentShape = UntypedFnSignature::get(context, parentFnId);
       parentSignature = typedSignatureInitial(rc, parentShape);
     }
@@ -569,9 +590,18 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     // The parent signature must exist.
     if (!parentSignature) return nullptr;
 
-    // All parents need to be concrete for the signature to be evaluated.
+    // TODO: Change this from a warning to a 'return nullptr' once we pass
+    // in the parent function signature - in that case it is on the caller
+    // to make sure they are concrete.
     for (auto up = parentSignature; up; up = up->parentFn()) {
-      if (up->needsInstantiation()) return nullptr;
+      if (up->needsInstantiation()) {
+        const ID& id = untypedSig->id();
+        context->error(id, "One or more parent functions was inferred "
+                           "to be generic while constructing the "
+                           "initial signature of '%s'",
+                           untypedSig->name().c_str());
+        break;
+      }
     }
   }
 
@@ -581,9 +611,11 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // visit the formals, but not the return type or body
   for (auto formal : fn->formals()) formal->traverse(visitor);
 
-  // Give up if we could not type outer variables present in the signature.
-  if (parentSignature && rc->isEmpty() && !visitor.outerVariables.isEmpty()) {
-    return nullptr;
+  if (!visitor.outerVariables.isEmpty()) {
+    CHPL_ASSERT(parentSignature);
+
+    // Outer variables can't be typed without stack frames, so give up.
+    if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
   // now, construct a TypedFnSignature from the result
@@ -598,7 +630,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   if (auto whereClause = fn->whereClause()) {
     if (needsInstantiation) {
       // Visit the where clause for generic nested functions just to collect
-      // outer variables. TODO: Wrap in speculative block?
+      // outer variables. TODO: Is this OK or could POI muck with this?
       if (parentSignature) whereClause->traverse(visitor);
       whereResult = TypedFnSignature::WHERE_TBD;
     } else {
@@ -607,9 +639,11 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     }
   }
 
-  // Give up if we could not type outer variables used in the where clause.
-  if (parentSignature && rc->isEmpty() && !visitor.outerVariables.isEmpty()) {
-    return nullptr;
+  if (!visitor.outerVariables.isEmpty()) {
+    CHPL_ASSERT(parentSignature);
+
+    // Outer variables can't be typed without stack frames, so give up.
+    if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
   checkForParenlessMethodFieldRedefinition(context, fn, visitor);
@@ -2519,23 +2553,22 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
   const PoiScope* poiScope = poiInfo.poiScope();
-  bool isInitializer = sig->isInitializer();
   PoiInfo resolvedPoiInfo;
   ResolutionResultByPostorderID rr;
 
-  if (!fn->body() && !isInitializer) {
-    CHPL_ASSERT(false && "Should only be called on functions!");
+  // TODO: Make sure the ID is an extern function specifically.
+  bool canResolveWithoutAst = parsing::idIsExtern(context, sig->id()) ||
+                              sig->isInitializer();
+  if (!fn && !canResolveWithoutAst) {
+    CHPL_ASSERT(false && "Unexpected input to 'resolveFunction'!");
     return nullptr;
   }
 
-  const TypedFnSignature* inputSig = sig;
-  const TypedFnSignature* finalSig = sig;
+  auto visitor = sig->isInitializer()
+    ? Resolver::createForInitializer(rc, fn, poiScope, sig, rr)
+    : Resolver::createForFunction(rc, fn, poiScope, sig, rr);
 
-  auto visitor = isInitializer
-    ? Resolver::createForInitializer(rc, fn, poiScope, inputSig, rr)
-    : Resolver::createForFunction(rc, fn, poiScope, inputSig, rr);
-
-  if (isInitializer) {
+  if (sig->isInitializer()) {
     CHPL_ASSERT(visitor.initResolver.get());
     auto qt = QualifiedType(QualifiedType::VAR, VoidType::get(context));
     visitor.returnType = std::move(qt);
@@ -2549,12 +2582,14 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
     return nullptr;
   }
 
+  const TypedFnSignature* finalSig = sig;
+
   // then, compute the return type if it is not an initializer
-  if (!isInitializer) {
+  if (!sig->isInitializer()) {
     computeReturnType(visitor);
 
   // else, potentially write out a new initializer signature
-  } else if (visitor.initResolver) {
+  } else {
     finalSig = visitor.initResolver->finalize();
   }
 
@@ -2566,14 +2601,14 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
 
   // check that throws are handled or forwarded
   // TODO: Call for initializers as well, and remove checks in the resolver.
-  if (!isInitializer) checkThrows(rc, rr, fn);
+  if (!sig->isInitializer()) checkThrows(rc, rr, fn);
 
   // TODO: can this be encapsulated in a method?
   resolvedPoiInfo.swap(visitor.poiInfo);
   resolvedPoiInfo.setResolved(true);
   resolvedPoiInfo.setPoiScope(nullptr);
 
-  CHPL_ASSERT(inputSig == finalSig || isInitializer);
+  CHPL_ASSERT(sig == finalSig || sig->isInitializer());
 
   auto ret = toOwned(new ResolvedFunction(finalSig,
                                   fn->returnIntent(),
@@ -2758,7 +2793,6 @@ static const ResolvedFunction*
 helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                     const PoiScope* poiScope,
                     bool skipIfRunning) {
-
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
