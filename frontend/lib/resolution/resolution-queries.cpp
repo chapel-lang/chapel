@@ -539,14 +539,16 @@ static void checkForParenlessMethodFieldRedefinition(Context* context,
   }
 }
 
-// Returns 'true' if parent frames are present in the RC.
-static bool checkIfParentFramesArePresent(ResolutionContext* rc,
+// Returns 'true' and emits an error if parent frames are not in the RC.
+static bool errorIfParentFramesNotPresent(ResolutionContext* rc,
                                           const UntypedFnSignature* usig) {
   Context* context = rc->context();
-  bool ret = !rc->isEmpty();
+
+  // TODO: More specifically, check if parent frames exist.
+  bool ret = rc->isEmpty();
 
   // TODO: Becomes a structural issue after we pass in the parent.
-  if (!ret) {
+  if (ret) {
     const ID& id = usig->id();
     context->error(id, "stack frames for the parent of '%s' are not "
                        "present, so outer variables in its signature "
@@ -613,7 +615,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     CHPL_ASSERT(parentSignature);
 
     // Outer variables can't be typed without stack frames, so give up.
-    if (!checkIfParentFramesArePresent(rc, untypedSig)) return nullptr;
+    if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
   // now, construct a TypedFnSignature from the result
@@ -641,7 +643,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     CHPL_ASSERT(parentSignature);
 
     // Outer variables can't be typed without stack frames, so give up.
-    if (!checkIfParentFramesArePresent(rc, untypedSig)) return nullptr;
+    if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
   checkForParenlessMethodFieldRedefinition(context, fn, visitor);
@@ -2554,12 +2556,13 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   PoiInfo resolvedPoiInfo;
   ResolutionResultByPostorderID rr;
 
-  if (!fn->body() && !fn) {
-    CHPL_ASSERT(false && "Should only be called on functions!");
+  // TODO: Make sure the ID is an extern function specifically.
+  bool canResolveWithoutAst = parsing::idIsExtern(context, sig->id()) ||
+                              sig->isInitializer();
+  if (!fn && !canResolveWithoutAst) {
+    CHPL_ASSERT(false && "Unexpected input to 'resolveFunction'!");
     return nullptr;
   }
-
-  const TypedFnSignature* finalSig = sig;
 
   auto visitor = sig->isInitializer()
     ? Resolver::createForInitializer(rc, fn, poiScope, sig, rr)
@@ -2579,12 +2582,14 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
     return nullptr;
   }
 
+  const TypedFnSignature* finalSig = sig;
+
   // then, compute the return type if it is not an initializer
   if (!sig->isInitializer()) {
     computeReturnType(visitor);
 
   // else, potentially write out a new initializer signature
-  } else if (visitor.initResolver) {
+  } else {
     finalSig = visitor.initResolver->finalize();
   }
 
