@@ -4370,7 +4370,6 @@ void Resolver::exit(const New* node) {
 
 static const QualifiedType&
 getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
-
   QUERY_BEGIN(getIterKindConstantOrUnknownQuery, context, constant);
 
   QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
