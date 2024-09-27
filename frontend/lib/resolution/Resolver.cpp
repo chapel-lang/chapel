@@ -4725,11 +4725,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   return ret;
 }
 
-static bool handleArrayTypeExpr(Resolver& rv,
-                                const IndexableLoop* loop,
-                                bool& outBodyResolved) {
-  outBodyResolved = false;
-
+static bool isShapedLikeArray(const IndexableLoop* loop) {
   // 'forall' expressions are not arrays, only [] ... expressions could be.
   if (!loop->isBracketLoop() || !loop->isExpressionLevel()) return false;
 
@@ -4742,16 +4738,11 @@ static bool handleArrayTypeExpr(Resolver& rv,
     // If there's more than one statement, it's not an array
   if (loop->numStmts() > 1) return false;
 
-  // Now, we have some expression in the iterand, which may or may not
-  // be a domain, and we have no index variables and no with clause. The only
-  // way to know if this is a type now is to resolve the body of the loop and
-  // see if it's a type.
+  return true;
+}
 
-  outBodyResolved = true;
-
-  rv.enterScope(loop);
-  loop->body()->traverse(rv);
-  // Scope is exited in exit(IndexableLoop)
+static bool handleArrayTypeExpr(Resolver& rv,
+                                const IndexableLoop* loop) {
 
   auto bodyType = QualifiedType();
   if (loop->numStmts() == 1) {
@@ -4863,11 +4854,26 @@ bool Resolver::enter(const IndexableLoop* loop) {
   auto iterand = loop->iterand();
   iterand->traverse(*this);
 
-  // Array expressions and bracket loops can look very similar. Check
-  // if it's an array expression first, and if it is, we're done.
-  bool bodyResolved = false;
-  if (handleArrayTypeExpr(*this, loop, bodyResolved)) {
-    return false;
+  bool shapedLikeArray = false;
+  if ((shapedLikeArray = isShapedLikeArray(loop))) {
+    // Array expressions and bracket loops can look very similar.
+    // For array type expressions, we do not need to go through the
+    // iterator/'these' logic handled below. Resolve the body so we can check
+    // if it's an array.
+    enterScope(loop);
+    loop->body()->traverse(*this);
+
+    // If it's an array, no need to do any more work.
+    if (handleArrayTypeExpr(*this, loop)) {
+      return false;
+
+    // Otherwise, we need to continue doing loop resolution, including the
+    // iterator/'these' logic. When performing that logic, we don't want
+    // the loop body to be our scope (indices are outside the loop), so
+    // exit the scope here.
+    } else {
+      exitScope(loop);
+    }
   }
 
   // Not an array expression. In this case, depending on the loop type,
@@ -4900,7 +4906,8 @@ bool Resolver::enter(const IndexableLoop* loop) {
     with->traverse(*this);
   }
 
-  if (!bodyResolved) {
+  // If the loop is shaped like an array, we've already resolved the body
+  if (!shapedLikeArray) {
     loop->body()->traverse(*this);
   }
 
