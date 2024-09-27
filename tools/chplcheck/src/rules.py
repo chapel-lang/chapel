@@ -653,7 +653,7 @@ def register_rules(driver: LintDriver):
             if isinstance(task_block, chapel.Loop):
                 anchor = task_block
             yield AdvancedRuleResult(
-                taskvar, anchor, data=(taskvar, with_clause, task_block)
+                taskvar, anchor, data=(with_clause, task_block)
             )
 
     @driver.fixit(UnusedTaskIntent)
@@ -662,12 +662,26 @@ def register_rules(driver: LintDriver):
         Remove the unused task intent from the function.
         """
         assert isinstance(result.data, tuple)
-        _, with_clause, _ = result.data
+        with_clause, task_block = result.data
 
         fixit = None
         # if the with clause only has one expr, remove the entire with clause
         if len(list(with_clause.exprs())) == 1:
-            fixit = Fixit.build(Edit.build(with_clause.location(), ""))
+            with_loc = with_clause.location()
+            header_loc = (
+                task_block.header_location()
+                if isinstance(task_block, Loop)
+                else task_block.block_header()
+            )
+            if header_loc is not None:
+                start = header_loc.end()
+                end = with_loc.end()
+            else:
+                start = with_loc.start()
+                end = with_loc.end()
+
+            fixit = Fixit.build(Edit(with_loc.path(), start, end, ""))
+
         else:
             # for now, locations are messy enough that we can't easily cleanly
             # remove the taskvar

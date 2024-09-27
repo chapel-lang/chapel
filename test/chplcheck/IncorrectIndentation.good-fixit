@@ -163,31 +163,31 @@ module IncorrectIndentation {
 
   var dummy: int;
 
-  begin 
+  begin
   {
     writeln("hi");
     writeln("??");
   }
 
-  begin 
+  begin
   {
   writeln("hi");
   }
 
-  begin  {
+  begin {
   writeln("hi");
   }
 
-  begin  {
+  begin {
     writeln("hi");
       writeln("hi");
   }
 
-  begin  {
+  begin {
     writeln("hi"); writeln("hi");
   }
 
-  begin  {
+  begin {
     @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
@@ -229,33 +229,33 @@ module IncorrectIndentation {
     writeln("hi");
   }
 
-  cobegin 
+  cobegin
   {
     writeln("hi");
     writeln("??");
   }
 
-  cobegin 
+  cobegin
   {
   writeln("hi");
   writeln("hi");
   }
 
-  cobegin  {
+  cobegin {
   writeln("hi");
   writeln("hi");
   }
 
-  cobegin  {
+  cobegin {
     writeln("hi");
       writeln("hi");
   }
 
-  cobegin  {
+  cobegin {
     writeln("hi"); writeln("hi");
   }
 
-  cobegin  {
+  cobegin {
     writeln("hi");
     @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
