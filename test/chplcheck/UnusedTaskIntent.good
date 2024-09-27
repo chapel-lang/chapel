@@ -9,4 +9,5 @@ UnusedTaskIntent.chpl:22: node violates rule UnusedTaskIntent
 UnusedTaskIntent.chpl:24: node violates rule UnusedTaskIntent
 UnusedTaskIntent.chpl:26: node violates rule UnusedTaskIntent
 UnusedTaskIntent.chpl:27: node violates rule UnusedTaskIntent
+UnusedTaskIntent.chpl:32: node violates rule UnusedTaskIntent
 [Success matching fixit for UnusedTaskIntent]

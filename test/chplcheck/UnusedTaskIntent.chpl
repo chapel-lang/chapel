@@ -29,4 +29,7 @@ module UnusedTaskIntent {
   @chplcheck.ignore("UnusedTaskIntent")
   [1..10 with(ref A)] { ; }
 
+  forall 1..10 with (const A) { }
+  forall 1..10 with (const x: int) { }
+  forall 1..10 with (const x = 1) { }
 }

@@ -633,9 +633,16 @@ def register_rules(driver: LintDriver):
         for intent, _ in chapel.each_matching(
             root, set([TaskVar, ReduceIntent])
         ):
-            # var intents may have side effects, so we don't want to warn on them
-            if isinstance(intent, TaskVar) and intent.intent() == "var":
-                continue
+            # task private variables may have side effects,
+            # so we don't want to warn on them
+            if isinstance(intent, TaskVar):
+                if intent.intent() == "var":
+                    continue
+                if intent.intent() == "<const-var>" and (
+                    intent.type_expression() is not None
+                    or intent.init_expression() is not None
+                ):
+                    continue
             intents[intent.unique_id()] = intent
 
         for use, _ in chapel.each_matching(root, Identifier):
