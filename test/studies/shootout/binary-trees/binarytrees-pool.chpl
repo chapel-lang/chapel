@@ -45,7 +45,7 @@ proc main() {
 
     forall 1..iterations
       with (+ reduce sum,
-            const pool = new bumpPtrMemPool(poolSize, alignment=0)) {
+            var pool = new bumpPtrMemPool(poolSize, alignment=0)) {
       const t = newWithAllocator(pool, unmanaged Tree, depth, pool);
       sum += t.sum();
     }
