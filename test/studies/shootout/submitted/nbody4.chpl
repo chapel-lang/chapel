@@ -1,8 +1,8 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Michael Ferguson
-   derived from the Chapel# version by Brad Chamberlain
+   contributed by Damian McGuckin
+   derived from the Chapel version by Brad Chamberlain
 */
 
 use Math;                     // to get access to 'pi'
@@ -18,8 +18,8 @@ param solarMass = 4 * pi * pi,
 // bodies in the solar system
 //
 record body {
-  var pos: 3*real;
-  var vel: 3*real;
+  var pos: 4*real;
+  var vel: 4*real;
   var mass: real;
 }
 
@@ -32,37 +32,37 @@ var bodies = (/* sun */
               /* jupiter */
               new body(pos = ( 4.84143144246472090e+00,
                               -1.16032004402742839e+00,
-                              -1.03622044471123109e-01),
+                              -1.03622044471123109e-01, 0.0),
                        vel = ( 1.66007664274403694e-03 * daysPerYear,
                                7.69901118419740425e-03 * daysPerYear,
-                              -6.90460016972063023e-05 * daysPerYear),
+                              -6.90460016972063023e-05 * daysPerYear, 0.0),
                       mass =   9.54791938424326609e-04 * solarMass),
 
               /* saturn */
               new body(pos = ( 8.34336671824457987e+00,
                                4.12479856412430479e+00,
-                              -4.03523417114321381e-01),
+                              -4.03523417114321381e-01, 0.0),
                        vel = (-2.76742510726862411e-03 * daysPerYear,
                                4.99852801234917238e-03 * daysPerYear,
-                               2.30417297573763929e-05 * daysPerYear),
+                               2.30417297573763929e-05 * daysPerYear, 0.0),
                       mass =   2.85885980666130812e-04 * solarMass),
 
               /* uranus */
               new body(pos = ( 1.28943695621391310e+01,
                               -1.51111514016986312e+01,
-                              -2.23307578892655734e-01),
+                              -2.23307578892655734e-01, 0.0),
                        vel = ( 2.96460137564761618e-03 * daysPerYear,
                                2.37847173959480950e-03 * daysPerYear,
-                              -2.96589568540237556e-05 * daysPerYear),
+                              -2.96589568540237556e-05 * daysPerYear, 0.0),
                       mass =   4.36624404335156298e-05 * solarMass),
 
               /* neptune */
               new body(pos = ( 1.53796971148509165e+01,
                               -2.59193146099879641e+01,
-                               1.79258772950371181e-01),
+                               1.79258772950371181e-01, 0.0),
                        vel = ( 2.68067772490389322e-03 * daysPerYear,
                                1.62824170038242295e-03 * daysPerYear,
-                              -9.51592254519715870e-05 * daysPerYear),
+                              -9.51592254519715870e-05 * daysPerYear, 0.0),
                       mass =   5.15138902046611451e-05 * solarMass)
               );
 
@@ -83,27 +83,37 @@ proc main() {
 // compute the sun's initial velocity
 //
 proc initSun() {
-  const p = + reduce (for b in bodies do (b.vel * b.mass));
-  bodies[0].vel = -p / solarMass;
+  var p = bodies[0].vel; // initially all zeros
+
+  for param i in 1..<numBodies {
+    p -= bodies[i].vel * bodies[i].mass;
+  }
+  bodies[0].vel = p / solarMass;
 }
 
 //
 // advance the positions and velocities of all the bodies
 //
 proc advance(dt) {
-  for param i in 0..<numBodies {
-    for param j in i+1..<numBodies {
-      const dpos = bodies[i].pos - bodies[j].pos,
-            dposNormSq = sumOfSquares(dpos),
-            mag = dt / (dposNormSq * sqrt(dposNormSq));
+  param n = numBodies-1;
 
-      bodies[i].vel -= dpos * bodies[j].mass * mag;
-      bodies[j].vel += dpos * bodies[i].mass * mag;
+  for param i in 0..n-1 {
+    const p = bodies[i].pos; // rip 'pos' out of loop
+    const m = bodies[i].mass; // rip 'mass' out of loop
+    var v = bodies[i].vel; // accumulate within loop
+
+    for param j in i+1..n {
+      const dp = p - bodies[j].pos;
+      const dpsq = sumOfSquares(dp);
+      const mag = dt / (dpsq * sqrt(dpsq));
+
+      v -= dp * bodies[j].mass * mag;
+      bodies[j].vel += dp * m * mag;
     }
+	bodies[i].vel = v;
+    bodies[i].pos += dt * v;
   }
-
-  for param i in 0..<numBodies do
-    bodies[i].pos += dt * bodies[i].vel;
+  bodies[n].pos += dt * bodies[n].vel;
 }
 
 //
@@ -112,20 +122,19 @@ proc advance(dt) {
 proc energy() {
   var e = 0.0;
 
-  for i in 0..<numBodies {
-    e += 0.5 * bodies[i].mass * sumOfSquares(bodies[i].vel);
-    for j in i+1..<numBodies {
-      e -= (bodies[i].mass * bodies[j].mass)
-           / sqrt(sumOfSquares(bodies[i].pos - bodies[j].pos));
-    }
-  }
+  for param i in 0..<numBodies {
+    const p = bodies[i].pos; // rip 'pos' out of loop
+    var _e = 0.5 * sumOfSquares(bodies[i].vel);
 
+    for param j in i+1..<numBodies {
+      _e -= bodies[j].mass / sqrt(sumOfSquares(p - bodies[j].pos));
+    }
+    e = fma(_e, bodies[i].mass, e); // rip common multiplier out of loop
+  }
   return e;
 }
 
-//
-// compute the sum of squares of a 3-tuple's elements
-//
-inline proc sumOfSquares((x,y,z)) {
-  return x**2 + y**2 + z**2;
+inline proc sumOfSquares(v)
+{
+  return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
 }
