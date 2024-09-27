@@ -23,28 +23,29 @@ proc main() {
   // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
   {
-    var pool = new bumpPtrMemPool(poolSize, alignment=0);
-    const strTree = newWithAllocator(pool, unmanaged Tree, strDepth, pool);
+    const pool = new bumpPtrMemPool(poolSize, alignment=0),
+          strTree = newWithAllocator(pool, unmanaged Tree, strDepth, pool);
     writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   }
 
   //
   // Build the long-lived tree.
   //
-  var pool = new bumpPtrMemPool(poolSize, alignment=0);
-  const llTree = newWithAllocator(pool, unmanaged Tree, maxDepth, pool);
+  const pool = new bumpPtrMemPool(poolSize, alignment=0),
+        llTree = newWithAllocator(pool, unmanaged Tree, maxDepth, pool);
 
   //
   // Iterate over the depths. At each depth, create the required trees in
   // parallel, compute their sums, and free them.
   //
   for depth in depths {
-    const iterations = 2**(maxDepth - depth + minDepth);
+    const iterations = 2**(maxDepth - depth + minDepth),
+          poolSize = iterations/here.maxTaskPar*2**(depth+1)*nodeSize;
     var sum = 0;
 
     forall 1..iterations
       with (+ reduce sum,
-            var pool = new bumpPtrMemPool(poolSize*8, alignment=0)) {
+            const pool = new bumpPtrMemPool(poolSize, alignment=0)) {
       const t = newWithAllocator(pool, unmanaged Tree, depth, pool);
       sum += t.sum();
     }
