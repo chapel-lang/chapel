@@ -523,6 +523,28 @@ class FunctionType final : public Type {
 *                                                                             *
 ************************************** | *************************************/
 
+
+// Similar to TemporaryConversionSymbol and works with it for
+// temporarily representing a Type.
+class TemporaryConversionType final : public Type {
+ public:
+  chpl::types::QualifiedType qt;
+  explicit TemporaryConversionType(chpl::types::QualifiedType qt);
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
+  DECLARE_COPY(TemporaryConversionType);
+  TemporaryConversionType* copyInner(SymbolMap* map)    override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+};
+
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 #ifndef TYPE_EXTERN
 #define TYPE_EXTERN extern
 #endif

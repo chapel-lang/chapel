@@ -592,6 +592,7 @@ static void test11() {
   assert(!guard.realizeErrors());
 
   for (auto& [name, var] : vars) {
+    std::ignore = name;
     assert(var.type());
     assert(var.type()->isIntType());
   }
@@ -738,6 +739,148 @@ static void test14b() {
   assert(guard.realizeErrors() == 2);
 }
 
+static void test15() {
+  // Test ambiguity emitted between nested function and method.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      class Foo {
+        proc init() {}
+
+        proc asdf() {
+          return 1;
+        }
+
+        proc doSomething() {
+          proc asdf() do return 2;
+          return asdf();
+        }
+      }
+
+      var f = new Foo();
+      var x = f.doSomething();
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x" });
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test16() {
+  // Test resolving 'this' call on variable that shadows field
+
+  {
+    // For automatic variable
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
+
+          proc init() {}
+
+          proc doSomething() {
+            const tup = this.tup;
+            return tup(0);
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    // For formal
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
+
+          proc init() {}
+
+          proc doSomething(tup) {
+            return tup(0);
+          }
+        }
+
+        var f = new Foo();
+        var anotherTup : 2*int;
+        var x = f.doSomething(anotherTup);
+        )""";
+
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
+static void test17() {
+  // Test resolving method calls from within param for loop.
+
+  // Parenful
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf() do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf();
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Parenless
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf;
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -754,6 +897,9 @@ int main() {
   test13();
   test14();
   test14b();
+  test15();
+  test16();
+  test17();
 
   return 0;
 }

@@ -802,7 +802,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
     __primitive("chpl_comm_get_strd",
       __primitive("array_get", dest, buf._value.getDataIndex(1)),
       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-      rid, c_sublocid_any,
+      rid, c_sublocid_none,
       __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
       __primitive("array_get",cnt, count._value.getDataIndex(1)),
@@ -821,7 +821,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
       __primitive("chpl_comm_put_strd",
         __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
         __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
-        rid, c_sublocid_any
+        rid, c_sublocid_none
         __primitive("array_get", dest, buf._value.getDataIndex(1)),
         __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
         __primitive("array_get",cnt, count._value.getDataIndex(1)),

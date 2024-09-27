@@ -20,6 +20,7 @@
 #include "chpl/resolution/scope-queries.h"
 
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"

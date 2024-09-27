@@ -43,6 +43,9 @@ testMaybeRef(const char* test,
   Context* context = &ctx;
   ErrorGuard guard(context);
 
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
   std::string testname = test;
   testname += ".chpl";
   auto path = UniqueString::get(context, testname);
@@ -67,7 +70,7 @@ testMaybeRef(const char* test,
     auto parentAst = idToAst(context, parentId);
     assert(parentAst && parentAst->isFunction());
     const ResolvedFunction* r = resolveConcreteFunction(context, parentId);
-    auto sig = inferRefMaybeConstFormals(context,
+    auto sig = inferRefMaybeConstFormals(rc,
                                          r->signature(),
                                          /* poiScope */ nullptr);
     auto untyped = sig->untyped();

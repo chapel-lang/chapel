@@ -69,55 +69,6 @@
 
 using namespace chpl;
 
-// TODO: replace this global by adjusting things to convert one module
-// at a time
-std::set<chpl::ID> gConvertFilterModuleIds;
-
-namespace {
-
-struct ConvertedSymbolsMap {
-  ID inSymbolId;
-  ConvertedSymbolsMap* parentMap = nullptr;
-
-  std::unordered_map<ID, Symbol*> syms;
-  std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
-
-  std::vector<std::pair<SymExpr*, ID>> identFixups;
-  std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
-  std::vector<std::pair<SymExpr*,
-                        const resolution::TypedFnSignature*>> callFixups;
-
-  ConvertedSymbolsMap() { }
-  ConvertedSymbolsMap(ID id, ConvertedSymbolsMap* parentMap)
-    : inSymbolId(id), parentMap(parentMap)
-  { }
-
-  // if it was already in the map, this will replace it
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym, bool trace);
-  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn,
-                       bool trace);
-  Symbol* findConvertedSym(ID id, bool trace);
-  FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig,
-                            bool trace);
-  void noteIdentFixupNeeded(SymExpr* se, ID id, ConvertedSymbolsMap* cur,
-                            bool trace);
-  void noteModuleFixupNeeded(ModuleSymbol* m, ID id, ConvertedSymbolsMap* cur,
-                             bool trace);
-  void noteCallFixupNeeded(SymExpr* se,
-                           const resolution::TypedFnSignature* sig,
-                           ConvertedSymbolsMap* cur,
-                           bool trace);
-
-  ConvertedSymbolsMap* findMapContainingBoth(ID id1, ID id2);
-
-  // find the map containing the passed ID as well as the current symbol ID
-  ConvertedSymbolsMap* findMapContaining(ID id) {
-    return findMapContainingBoth(id, inSymbolId);
-  }
-
-  void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
-};
-
 struct Converter;
 
 struct LoopAttributeInfo {
@@ -261,13 +212,6 @@ struct LoopAttributeInfo {
   void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
 
-// TODO: replace this global variable with a field in Converter
-// once we have a single Converter instance that converts a module
-// and all of its dependencies.
-// At that time, the global scope can be represented by symStack[0]
-// and code containing a conditional to use gConvertedSyms can be removed.
-static ConvertedSymbolsMap gConvertedSyms;
-
 struct Converter {
   struct ModStackEntry {
     const uast::Module* mod = nullptr;
@@ -283,13 +227,10 @@ struct Converter {
   struct SymStackEntry {
     const uast::AstNode* ast;
     const resolution::ResolutionResultByPostorderID* resolved;
-    owned<ConvertedSymbolsMap> convertedSyms;
 
     SymStackEntry(const uast::AstNode* ast,
-                  const resolution::ResolutionResultByPostorderID* resolved,
-                  ConvertedSymbolsMap* parentMap)
-      : ast(ast), resolved(resolved), convertedSyms(nullptr) {
-      convertedSyms = toOwned(new ConvertedSymbolsMap(ast->id(), parentMap));
+                  const resolution::ResolutionResultByPostorderID* resolved)
+      : ast(ast), resolved(resolved) {
     }
   };
 
@@ -304,6 +245,24 @@ struct Converter {
   int delegateCounter = 0;
 
   ModTag topLevelModTag;
+
+  // which modules / submodules to convert
+  std::unordered_set<chpl::ID> modulesToConvert;
+
+  // to keep track of symbols that have been converted & fixups needed
+  std::unordered_map<ID, Symbol*> syms;
+  std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
+
+  std::vector<std::pair<SymExpr*, ID>> identFixups;
+  std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
+  std::vector<std::pair<SymExpr*,
+                        const resolution::TypedFnSignature*>> callFixups;
+
+  // stores type fixups that are needed
+  std::vector<Symbol*> typeFixups;
+
+  // stores a mapping from chpl::Type* to Type*
+  std::unordered_map<const chpl::types::Type*, Type*> convertedTypes;
 
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
@@ -326,24 +285,42 @@ struct Converter {
   std::vector<BlockStmt*> blockStack;
 
 
-  Converter(chpl::Context* context,
-            ModTag topLevelModTag)
+  Converter(chpl::Context* context)
     : context(context),
-      topLevelModTag(topLevelModTag)
-  { }
+      topLevelModTag(MOD_USER)
+  {
+    canScopeResolve = fDynoScopeResolve;
+    trace = fDynoDebugTrace;
+  }
+
+  // supporting UastConverter methods
+  void clearModulesToConvert() {
+    modulesToConvert.clear();
+  }
+
+  void addModuleToConvert(ID id) {
+    modulesToConvert.insert(std::move(id));
+  }
+
+  ModuleSymbol*
+  convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag);
+
+  void postConvertApplyFixups();
+
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
-  Type* convertType(const types::QualifiedType qt);
-  Symbol* convertParam(const types::QualifiedType qt);
+  Type* convertType(types::QualifiedType qt);
+  Symbol* convertParam(types::QualifiedType qt);
 
   // convertAST helpers
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym);
   void setResolvedCall(const uast::FnCall* call, CallExpr* ret);
 
   // type conversion helpers
+  Type* helpConvertType(types::QualifiedType qt);
   Type* convertClassType(const types::QualifiedType qt);
-  Type* convertCPtrType(const types::QualifiedType qt);
+  Type* convertCPtrType(const types::CPtrType* t);
   Type* convertEnumType(const types::QualifiedType qt);
   Type* convertExternType(const types::QualifiedType qt);
   Type* convertFunctionType(const types::QualifiedType qt);
@@ -361,13 +338,15 @@ struct Converter {
   // methods to help track what has been converted
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn);
-  Symbol* findConvertedSym(ID id);
-  FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig);
-  ConvertedSymbolsMap* findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur);
+  Symbol* findConvertedSym(ID id, bool neverTrace=false);
+  Symbol* findConvertedFn(const resolution::TypedFnSignature* sig,
+                          bool neverTrace=false);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig);
+  void noteTypeFixupNeeded(Symbol* sym);
+
   void noteAllContainedFixups(BaseAST* ast, int depth);
 
   // symStack helpers
@@ -403,8 +382,7 @@ struct Converter {
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
-      return fDynoScopeBundled ||
-             !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return fDynoScopeBundled || topLevelModTag == MOD_USER;
     }
 
     return false;
@@ -418,7 +396,7 @@ struct Converter {
   }
   bool shouldResolve(ID symbolId) {
     if (fDynoCompilerLibrary) {
-      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return topLevelModTag == MOD_USER;
     } else {
       return shouldResolve(symbolId.symbolPath());
     }
@@ -457,15 +435,6 @@ struct Converter {
     }
 
     return FLAG_UNKNOWN;
-  }
-
-  static bool isBlockComment(const uast::Comment* node) {
-    const auto& str = node->str();
-    if (str.size() < 4) return false;
-    if (str[0] != '/' || str[1] != '*') return false;
-    INT_ASSERT(str[str.size()-1] == '/');
-    INT_ASSERT(str[str.size()-2] == '*');
-    return true;
   }
 
   Expr* visit(const uast::Comment* node) {
@@ -1139,8 +1108,8 @@ struct Converter {
       return nullptr;
     }
 
-    // skip any submodules that are dead
-    if (gConvertFilterModuleIds.count(umod->id()) == 0) {
+    // skip any submodules that do not need to be converted /  are dead
+    if (modulesToConvert.count(umod->id()) == 0) {
       return nullptr;
     }
 
@@ -3267,7 +3236,9 @@ struct Converter {
 
     // Update the function symbol with any resolution results.
     if (shouldResolveFunction && resolvedFn != nullptr) {
-      auto retType = resolution::returnType(context, resolvedFn->signature(), poiScope);
+      // TODO: Need to thread stack frames through the RC.
+      chpl::resolution::ResolutionContext rcval(context);
+      auto retType = resolution::returnType(&rcval, resolvedFn->signature(), poiScope);
       fn->retType = convertType(retType);
     }
 
@@ -3562,7 +3533,7 @@ struct Converter {
   }
   DefExpr* visit(const uast::Module* node) {
     // skip any submodules that are dead
-    if (gConvertFilterModuleIds.count(node->id()) == 0) {
+    if (modulesToConvert.count(node->id()) == 0) {
       return nullptr;
     }
 
@@ -4179,7 +4150,7 @@ struct Converter {
         auto linkageName = node->linkageName() ? varSym->cname : nullptr;
         stmts = convertTypesToExtern(stmts, linkageName);
 
-        // fix up gConvertedSyms since convertTypesToExtern
+        // fix up convertedSyms since convertTypesToExtern
         // replaced the DefExpr/Symbol
         INT_ASSERT(stmts->body.last() && isDefExpr(stmts->body.last()));
         auto newDef = toDefExpr(stmts->body.last());
@@ -4465,8 +4436,6 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
     if (rr != nullptr) {
       types::QualifiedType qt = rr->type();
       if (!qt.isUnknown()) {
-        printf("SETTING VARIABLE TYPE!!\n");
-
         // Set a type for the variable
         sym->type = convertType(qt);
 
@@ -4500,10 +4469,6 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       } else if (nBest == 1) {
         const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
-        if (fn == nullptr) {
-          // we will fix it later
-          fn = new TemporaryConversionSymbol(sig);
-        }
 
         // TODO: Do we need to remove the old baseExpr?
         SymExpr* se = new SymExpr(fn);
@@ -4516,13 +4481,46 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
   }
 }
 
-Type* Converter::convertType(const types::QualifiedType qt) {
+Type* Converter::convertType(types::QualifiedType qt) {
+  if (!qt.hasTypePtr())
+    return dtUnknown;
+
+  const chpl::types::Type* t = qt.type();
+
+  // reuse one from the map if we have already converted it
+  {
+    auto it = convertedTypes.find(t);
+    if (it != convertedTypes.end()) {
+      return it->second;
+    }
+  }
+
+  // convert the type
+  types::QualifiedType::Kind kind = types::QualifiedType::TYPE;
+  auto useQt = types::QualifiedType(kind, t); // normalize qualifier
+  Type* ret = helpConvertType(useQt);
+
+  // save the result to the map
+  convertedTypes[t] = ret;
+
+  return ret;
+}
+
+Type* Converter::helpConvertType(types::QualifiedType qt) {
   using namespace types;
 
   if (!qt.hasTypePtr())
     return dtUnknown;
 
-  switch (qt.type()->tag()) {
+  const chpl::types::Type* t = qt.type();
+
+  // reuse one from the map if we have already converted it
+  auto it = convertedTypes.find(t);
+  if (it != convertedTypes.end()) {
+    return it->second;
+  }
+
+  switch (t->tag()) {
     // builtin types with their own classes
     case typetags::AnyType:       return dtAny;
     case typetags::CStringType:   return dtStringC;
@@ -4561,27 +4559,27 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
 
     // declared types
-    case typetags::ClassType:   return convertClassType(qt);
-    case typetags::EnumType:   return convertEnumType(qt);
-    case typetags::ExternType:   return convertExternType(qt);
-    case typetags::FunctionType:   return convertFunctionType(qt);
+    case typetags::ClassType:     return convertClassType(qt);
+    case typetags::EnumType:      return convertEnumType(qt);
+    case typetags::ExternType:    return convertExternType(qt);
+    case typetags::FunctionType:  return convertFunctionType(qt);
 
-    case typetags::ArrayType: return dtUnknown;
-    case typetags::BasicClassType:   return convertBasicClassType(qt);
-    case typetags::AnyClassType: return dtAnyManagementNonNilable;
-    case typetags::DomainType:   return dtUnknown;
-    case typetags::RecordType:   return convertRecordType(qt);
-    case typetags::TupleType:   return convertTupleType(qt);
-    case typetags::UnionType:   return convertUnionType(qt);
+    case typetags::ArrayType:      return dtUnknown;
+    case typetags::BasicClassType: return convertBasicClassType(qt);
+    case typetags::AnyClassType:   return dtAnyManagementNonNilable;
+    case typetags::DomainType:     return dtUnknown;
+    case typetags::RecordType:     return convertRecordType(qt);
+    case typetags::TupleType:      return convertTupleType(qt);
+    case typetags::UnionType:      return convertUnionType(qt);
 
     // primitive types
-    case typetags::BoolType:   return convertBoolType(qt);
-    case typetags::ComplexType:   return convertComplexType(qt);
-    case typetags::ImagType:   return convertImagType(qt);
-    case typetags::IntType:   return convertIntType(qt);
-    case typetags::RealType:   return convertRealType(qt);
-    case typetags::UintType:   return convertUintType(qt);
-    case typetags::CPtrType:   return convertCPtrType(qt);
+    case typetags::BoolType:       return convertBoolType(qt);
+    case typetags::ComplexType:    return convertComplexType(qt);
+    case typetags::ImagType:       return convertImagType(qt);
+    case typetags::IntType:        return convertIntType(qt);
+    case typetags::RealType:       return convertRealType(qt);
+    case typetags::UintType:       return convertUintType(qt);
+    case typetags::CPtrType:       return convertCPtrType(t->toCPtrType());
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -4605,12 +4603,44 @@ Type* Converter::convertType(const types::QualifiedType qt) {
   return nullptr;
 }
 
-Type* Converter::convertCPtrType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
-  return nullptr;
+Type* Converter::convertCPtrType(const types::CPtrType* t) {
+  // find the C pointer type to instantiate
+  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+
+  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  if (t->eltType() == nullptr) {
+    return base;
+  }
+
+  auto qt = types::QualifiedType(types::QualifiedType::TYPE, t);
+
+  if (base->numFields() == 0) {
+    // the proper AST for CPointer hasn't been created yet,
+    // and we need it to proceed, so return a temporary conversion symbol.
+    Type* t = new TemporaryConversionType(qt);
+    return t;
+  }
+
+  // otherwise, convert the element type
+  auto eltQt = types::QualifiedType(types::QualifiedType::TYPE, t->eltType());
+  Type* convertedEltT = Converter::convertType(eltQt);
+  if (isTemporaryConversionType(convertedEltT)) {
+    // return a temporary conversion symbol since something is missing
+    Type* t = new TemporaryConversionType(qt);
+    return t;
+  }
+
+  // instantiate it with the element type
+  // note: getInstantiation should re-use existing instantiations
+  int index = 1;
+  Expr* insnPoint = nullptr; // TODO: set this to something?
+  AggregateType* ret =
+    base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+  return ret;
 }
 
-Type* Converter::convertClassType(const types::QualifiedType qt) {
+Type* Converter::convertClassType(types::QualifiedType qt) {
   auto classType = qt.type()->toClassType();
 
   if (auto mt = classType->manageableType()) {
@@ -4639,27 +4669,27 @@ Type* Converter::convertClassType(const types::QualifiedType qt) {
   return nullptr;
 }
 
-Type* Converter::convertEnumType(const types::QualifiedType qt) {
+Type* Converter::convertEnumType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled enum type");
   return nullptr;
 }
 
-Type* Converter::convertExternType(const types::QualifiedType qt) {
+Type* Converter::convertExternType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled extern type");
   return nullptr;
 }
 
-Type* Converter::convertFunctionType(const types::QualifiedType qt) {
+Type* Converter::convertFunctionType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled function type");
   return nullptr;
 }
 
-Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
+Type* Converter::convertBasicClassType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled basic class type");
   return nullptr;
 }
 
-Type* Converter::convertRecordType(const types::QualifiedType qt) {
+Type* Converter::convertRecordType(types::QualifiedType qt) {
   const types::RecordType* t = qt.type()->toRecordType();
   if (t->isStringType()) {
     return dtString;
@@ -4673,12 +4703,12 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
   return nullptr;
 }
 
-Type* Converter::convertTupleType(const types::QualifiedType qt) {
+Type* Converter::convertTupleType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled tuple type");
   return nullptr;
 }
 
-Type* Converter::convertUnionType(const types::QualifiedType qt) {
+Type* Converter::convertUnionType(types::QualifiedType qt) {
   CHPL_UNIMPL("Unhandled union type");
   return nullptr;
 }
@@ -4751,36 +4781,36 @@ static IF1_int_type getUintSize(const types::UintType* t) {
 }
 
 
-Type* Converter::convertBoolType(const types::QualifiedType qt) {
+Type* Converter::convertBoolType(types::QualifiedType qt) {
   return dtBool;
 }
 
-Type* Converter::convertComplexType(const types::QualifiedType qt) {
+Type* Converter::convertComplexType(types::QualifiedType qt) {
   const types::ComplexType* t = qt.type()->toComplexType();
   return dtComplex[getComplexSize(t)];
 }
 
-Type* Converter::convertImagType(const types::QualifiedType qt) {
+Type* Converter::convertImagType(types::QualifiedType qt) {
   const types::ImagType* t = qt.type()->toImagType();
   return dtImag[getImagSize(t)];
 }
 
-Type* Converter::convertIntType(const types::QualifiedType qt) {
+Type* Converter::convertIntType(types::QualifiedType qt) {
   const types::IntType* t = qt.type()->toIntType();
   return dtInt[getIntSize(t)];
 }
 
-Type* Converter::convertRealType(const types::QualifiedType qt) {
+Type* Converter::convertRealType(types::QualifiedType qt) {
   const types::RealType* t = qt.type()->toRealType();
   return dtReal[getRealSize(t)];
 }
 
-Type* Converter::convertUintType(const types::QualifiedType qt) {
+Type* Converter::convertUintType(types::QualifiedType qt) {
   const types::UintType* t = qt.type()->toUintType();
   return dtUInt[getUintSize(t)];
 }
 
-Symbol* Converter::convertParam(const types::QualifiedType qt) {
+Symbol* Converter::convertParam(types::QualifiedType qt) {
 
   const types::Param* p = qt.param();
   const types::Type* t = qt.type();
@@ -4827,97 +4857,6 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   return nullptr;
 }
 
-void Converter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
-  if (!canScopeResolve) return;
-
-  if (symStack.size() > 0) {
-    symStack.back().convertedSyms->noteConvertedSym(ast, sym, trace);
-  } else {
-    gConvertedSyms.noteConvertedSym(ast, sym, trace);
-  }
-}
-
-void Converter::noteConvertedFn(const resolution::TypedFnSignature* sig,
-                                FnSymbol* fn) {
-  if (!canScopeResolve) return;
-
-  if (symStack.size() > 0) {
-    symStack.back().convertedSyms->noteConvertedFn(sig, fn, trace);
-  } else {
-    gConvertedSyms.noteConvertedFn(sig, fn, trace);
-  }
-}
-
-Symbol* Converter::findConvertedSym(ID id) {
-  if (!canScopeResolve) return nullptr;
-
-  if (symStack.size() > 0) {
-    return symStack.back().convertedSyms->findConvertedSym(id, trace);
-  } else {
-    return gConvertedSyms.findConvertedSym(id, trace);
-  }
-}
-
-FnSymbol* Converter::findConvertedFn(const resolution::TypedFnSignature* sig) {
-  if (!canScopeResolve) return nullptr;
-
-  if (symStack.size() > 0) {
-    return symStack.back().convertedSyms->findConvertedFn(sig, trace);
-  } else {
-    return gConvertedSyms.findConvertedFn(sig, trace);
-  }
-}
-
-ConvertedSymbolsMap* Converter::findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur) {
-  ConvertedSymbolsMap* m = nullptr;
-  cur = &gConvertedSyms;
-  if (symStack.size() > 0) {
-    // figure out where to put the fixup
-    cur = symStack.back().convertedSyms.get();
-    m = cur->findMapContaining(id);
-  }
-
-  if (m == nullptr) {
-    m = &gConvertedSyms;
-  }
-  return m;
-}
-
-void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
-  if (!canScopeResolve) return;
-
-  ConvertedSymbolsMap* cur;
-  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
-
-  m->noteIdentFixupNeeded(se, id, cur, trace);
-}
-
-void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
-  if (!canScopeResolve) return;
-
-  ConvertedSymbolsMap* cur;
-  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
-
-  m->noteModuleFixupNeeded(mod, id, cur, trace);
-}
-
-void Converter::noteCallFixupNeeded(SymExpr* se,
-                                    const resolution::TypedFnSignature* sig) {
-  if (!canScopeResolve) return;
-
-  ConvertedSymbolsMap* cur;
-  ConvertedSymbolsMap* m = findSymbolMapForId(sig->untyped()->id(), cur);
-
-  m->noteCallFixupNeeded(se, sig, cur, trace);
-}
-
-static std::string computeMapName(ID inSymbolId) {
-  if (inSymbolId.isEmpty())
-    return "global";
-  else
-    return inSymbolId.str();
-}
-
 static std::string astName(const uast::AstNode* ast) {
   if (ast == nullptr) {
     return "null";
@@ -4926,6 +4865,147 @@ static std::string astName(const uast::AstNode* ast) {
   } else {
     return "unknown";
   }
+}
+
+void Converter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Converted sym %s %s to %s[%i]\n",
+           astName(ast).c_str(), ast->id().str().c_str(),
+           sym->name, sym->id);
+  }
+
+  syms[ast->id()] = sym;
+}
+
+void Converter::noteConvertedFn(const resolution::TypedFnSignature* sig,
+                                FnSymbol* fn) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Converted fn %s %s to %s[%i]\n",
+           sig->untyped()->name().c_str(),
+           sig->untyped()->id().str().c_str(),
+           fn->name, fn->id);
+  }
+
+  fns.emplace(sig, fn);
+}
+
+Symbol* Converter::findConvertedSym(ID id, bool neverTrace) {
+  if (!canScopeResolve) return nullptr;
+
+  bool doTrace = trace && !neverTrace;
+
+  auto it = syms.find(id);
+  if (it != syms.end()) {
+    Symbol* ret = it->second;
+    // already converted it, so return that
+    if (doTrace) {
+      printf("Found sym %s %s\n", ret->name, id.str().c_str());
+    }
+    // convert references to classes as anymanaged
+    // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
+    //
+    // The call to `getDecoratedClass` used to try and insert a defPoint for
+    // the DecoratedClass's TypeSymbol when first creating it. This doesn't
+    // work if the AggregateType that represents the class isn't already in
+    // the tree.
+    //
+    // We can run into this situation when scope-resolving an AggregateType
+    // that contains a reference to itself. Now, getDecoratedClass will not
+    // try to insert a defPoint when the original AggregateType is not in the
+    // tree. We will insert these defPoints manually later in
+    // `postConvertApplyFixups`.
+    if (TypeSymbol* ts = toTypeSymbol(ret)) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->isClass() && isClassLikeOrManaged(at)) {
+          Type* useType =
+            at->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+          ret = useType->symbol;
+        }
+      }
+    }
+    return ret;
+  }
+
+  if (doTrace) {
+    printf("Could not find sym %s\n", id.str().c_str());
+  }
+
+  return new TemporaryConversionSymbol(id);
+}
+
+Symbol* Converter::findConvertedFn(const resolution::TypedFnSignature* sig,
+                                   bool neverTrace) {
+  if (!canScopeResolve) return nullptr;
+
+  bool doTrace = trace && !neverTrace;
+
+  auto it = fns.find(sig);
+  if (it != fns.end()) {
+    FnSymbol* fn = it->second;
+    // already converted it, so return that
+    if (doTrace) {
+      printf("Found fn %s %s\n",
+             sig->untyped()->name().c_str(),
+             sig->untyped()->id().str().c_str());
+    }
+    return fn;
+  }
+
+  if (doTrace) {
+    printf("Could not find fn %s\n", sig->untyped()->id().str().c_str());
+  }
+
+  return new TemporaryConversionSymbol(sig);
+}
+
+void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Noting fixup needed [%i] for mention of %s\n",
+           se->id,
+           id.str().c_str());
+  }
+
+  identFixups.emplace_back(se, id);
+}
+
+void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Noting fixup needed [%i] for mention of %s\n",
+           mod->id, id.str().c_str());
+  }
+
+  moduleFixups.emplace_back(mod, id);
+}
+
+void Converter::noteCallFixupNeeded(SymExpr* se,
+                                    const resolution::TypedFnSignature* sig) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Noting fixup needed [%i] for mention of %s\n",
+           se->id,
+           sig->untyped()->id().str().c_str());
+  }
+
+  callFixups.emplace_back(se, sig);
+}
+
+void Converter::noteTypeFixupNeeded(Symbol* sym) {
+  if (!canScopeResolve) return;
+
+  if (trace) {
+    printf("Noting fixup needed in [%i]\n", sym->id);
+  }
+
+  typeFixups.push_back(sym);
 }
 
 void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
@@ -4939,17 +5019,18 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
 
   if (depth > 0) {
     if (isModuleSymbol(ast)) {
+      // stop if we get to a nested module
       return;
     }
     if (auto fn = toFnSymbol(ast)) {
       if (!fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
-        // ignore functions that are created from building expressions
-        // but aren't represented in the uAST
+        // stop if we get to a function that isn't compiler-generated
         return;
       }
     }
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (isAggregateType(ts->type)) {
+        // stop if we get to a nested class/record/union
         return;
       }
     }
@@ -4966,41 +5047,31 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
       }
     }
   }
+
+  if (Symbol* sym = toSymbol(ast)) {
+    bool noteIt = false;
+    if (auto fn = toFnSymbol(sym)) {
+      if (isTemporaryConversionType(fn->retType)) {
+        noteIt = true;
+      }
+    }
+    if (isTemporaryConversionType(sym->type)) {
+      noteIt = true;
+    }
+
+    if (noteIt) {
+      noteTypeFixupNeeded(sym);
+    }
+  }
 }
 
 void Converter::pushToSymStack(
      const uast::AstNode* ast,
      const resolution::ResolutionResultByPostorderID* resolved) {
-  ConvertedSymbolsMap* parentMap = nullptr;
-  if (symStack.size() > 0) {
-    auto backMap = symStack.back().convertedSyms.get();
-    auto backAst = parsing::idToAst(context, backMap->inSymbolId);
-
-    // If we're inside a nested function, then we should use the parent
-    // function's ConvertedSymbolsMap as the parentMap.
-    //
-    // If we're inside an aggregate, then we should use that aggregate's
-    // map as the parent so that we can find the right fields. This can
-    // happen for methods declared inside a class or record.
-    if (backAst->toFunction() ||
-        backAst->isAggregateDecl()) {
-      parentMap = backMap;
-    } else {
-      // Find the current top-level module from symStack and consider it the
-      // parent.
-      // We could track things in a more granular way but we might need to
-      // access something like A.B.C.D (where A, B, C are modules) later.
-      parentMap = symStack.front().convertedSyms.get();
-    }
-  } else {
-    parentMap = &gConvertedSyms;
-  }
   if (trace) {
-    printf("Entering %s %s with parent %s\n",
-           astName(ast).c_str(), ast->id().str().c_str(),
-           computeMapName(parentMap->inSymbolId).c_str());
+    printf("Entering %s %s\n", astName(ast).c_str(), ast->id().str().c_str());
   }
-  symStack.emplace_back(ast, resolved, parentMap);
+  symStack.emplace_back(ast, resolved);
 }
 
 
@@ -5011,7 +5082,6 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
 
   if (symStack.size() > 0) {
     CHPL_ASSERT(symStack.back().ast == ast);
-    symStack.back().convertedSyms->applyFixups(context, ast, trace);
   } else {
     CHPL_ASSERT(false && "stack error");
   }
@@ -5033,172 +5103,19 @@ Converter::currentResolutionResult() {
   return r;
 }
 
-void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
-                                           Symbol* sym,
-                                           bool trace) {
-  if (trace) {
-    printf("Converted sym %s %s to %s[%i] and noting it in %s\n",
-           astName(ast).c_str(), ast->id().str().c_str(),
-           sym->name, sym->id,
-           computeMapName(inSymbolId).c_str());
-  }
+ModuleSymbol*
+Converter::convertToplevelModule(const chpl::uast::Module* mod,
+                                 ModTag modTag) {
+  astlocMarker markAstLoc(mod->id());
 
-  syms[ast->id()] = sym;
+  topLevelModTag = modTag;
+  ModuleSymbol* ret = convertModule(mod);
+  return ret;
 }
 
-void ConvertedSymbolsMap::noteConvertedFn(
-                                const resolution::TypedFnSignature* sig,
-                                FnSymbol* fn,
-                                bool trace) {
-  if (trace) {
-    printf("Converted fn %s %s to %s[%i] and noting it in %s\n",
-           sig->untyped()->name().c_str(),
-           sig->untyped()->id().str().c_str(),
-           fn->name, fn->id,
-           computeMapName(inSymbolId).c_str());
-  }
+void Converter::postConvertApplyFixups() {
+  // apply fixups that we have tracked
 
-  fns.emplace(sig, fn);
-}
-
-void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
-                                               ConvertedSymbolsMap* cur,
-                                               bool trace) {
-  if (trace) {
-    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
-           se->id,
-           id.str().c_str(),
-           computeMapName(cur->inSymbolId).c_str(),
-           computeMapName(this->inSymbolId).c_str());
-  }
-
-  identFixups.emplace_back(se, id);
-}
-
-void ConvertedSymbolsMap::noteModuleFixupNeeded(ModuleSymbol* m, ID id,
-                                                ConvertedSymbolsMap* cur,
-                                                bool trace) {
-  if (trace) {
-    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
-           m->id,
-           id.str().c_str(),
-           computeMapName(cur->inSymbolId).c_str(),
-           computeMapName(this->inSymbolId).c_str());
-  }
-
-  moduleFixups.emplace_back(m, id);
-}
-
-void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
-                                const resolution::TypedFnSignature* sig,
-                                ConvertedSymbolsMap* cur,
-                                bool trace) {
-  if (trace) {
-    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
-           se->id,
-           sig->untyped()->id().str().c_str(),
-           computeMapName(cur->inSymbolId).c_str(),
-           computeMapName(this->inSymbolId).c_str());
-  }
-
-  callFixups.emplace_back(se, sig);
-}
-
-Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
-  for (ConvertedSymbolsMap* cur = this;
-       cur != nullptr;
-       cur = cur->parentMap) {
-    auto it = cur->syms.find(id);
-    if (it != cur->syms.end()) {
-      Symbol* ret = it->second;
-      // already converted it, so return that
-      if (trace) {
-        printf("Found sym %s %s in %s\n",
-               ret->name, id.str().c_str(), inSymbolId.str().c_str());
-      }
-      // convert references to classes as anymanaged
-      // e.g. 'C' in 'typeFn(C)' refers to anymanaged C rather than borrowed C
-      //
-      // The call to `getDecoratedClass` used to try and insert a defPoint for
-      // the DecoratedClass's TypeSymbol when first creating it. This doesn't
-      // work if the AggregateType that represents the class isn't already in
-      // the tree.
-      //
-      // We can run into this situation when scope-resolving an AggregateType
-      // that contains a reference to itself. Now, getDecoratedClass will not
-      // try to insert a defPoint when the original AggregateType is not in the
-      // tree. We will insert these defPoints manually later in
-      // `postConvertApplyFixups`.
-      if (TypeSymbol* ts = toTypeSymbol(ret)) {
-        if (AggregateType* at = toAggregateType(ts->type)) {
-          if (at->isClass() && isClassLikeOrManaged(at)) {
-            Type* useType =
-              at->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
-            ret = useType->symbol;
-          }
-        }
-      }
-      return ret;
-    }
-  }
-
-  if (trace) {
-    printf("Could not find sym %s in %s or parents\n",
-           id.str().c_str(), inSymbolId.str().c_str());
-  }
-
-  return new TemporaryConversionSymbol(id);
-}
-
-FnSymbol* ConvertedSymbolsMap::findConvertedFn(
-                                  const resolution::TypedFnSignature* sig,
-                                  bool trace) {
-  for (ConvertedSymbolsMap* cur = this;
-       cur != nullptr;
-       cur = cur->parentMap) {
-    auto it = cur->fns.find(sig);
-    if (it != cur->fns.end()) {
-      FnSymbol* fn = it->second;
-      // already converted it, so return that
-      if (trace) {
-        printf("Found fn %s %s in %s\n",
-               sig->untyped()->name().c_str(),
-               sig->untyped()->id().str().c_str(),
-               computeMapName(inSymbolId).c_str());
-      }
-      return fn;
-    }
-  }
-
-  if (trace) {
-    printf("Could not find fn %s in %s or parents\n",
-           sig->untyped()->id().str().c_str(),
-           computeMapName(inSymbolId).c_str());
-  }
-
-  return nullptr;
-}
-
-ConvertedSymbolsMap* ConvertedSymbolsMap::findMapContainingBoth(ID id1,
-                                                                ID id2) {
-  for (ConvertedSymbolsMap* cur = this;
-       cur != nullptr && !cur->inSymbolId.isEmpty();
-       cur = cur->parentMap) {
-    if (cur->inSymbolId.contains(id1) &&
-        cur->inSymbolId.contains(id2)) {
-      return cur;
-    }
-  }
-
-  return nullptr;
-}
-
-void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
-                                      const uast::AstNode* inAst,
-                                      bool trace) {
-
-  // Note: we should be able to minimize the fixups needed
-  // by converting the modules in the initialization order
   llvm::SmallPtrSet<SymExpr*, 4> fixedUp;
 
   // Fix up any SymExprs needing to be re-targeted
@@ -5213,10 +5130,10 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     auto tcsymbol = se->symbol();
     INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
-    Symbol* sym = findConvertedSym(target, /* trace */ false);
+    Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     if (isTemporaryConversionSymbol(sym)) {
-      context->error(inAst, "could not find target symbol for sym fixup for %s within %s",
-                target.str().c_str(), inSymbolId.str().c_str());
+      INT_FATAL(se, "could not find target symbol for sym fixup for %s",
+                target.str().c_str());
     }
 
     se->setSymbol(sym);
@@ -5234,18 +5151,17 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
       fixedUp.insert(se);
     }
   }
-  // clear gIdentFixups since these have now been processed
   identFixups.clear();
 
   for (const auto& p : moduleFixups) {
     ModuleSymbol* m = p.first;
     const ID& target = p.second;
 
-    Symbol* sym = findConvertedSym(target, /* trace */ false);
+    Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     auto usedM = toModuleSymbol(sym);
     if (!usedM) {
-      context->error(inAst, "could not find target symbol for module fixup for %s within %s",
-                target.str().c_str(), inSymbolId.str().c_str());
+      INT_FATAL(m, "could not find target symbol for module fixup for %s",
+                target.str().c_str());
     }
 
     m->moduleUseAdd(usedM);
@@ -5259,52 +5175,41 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
 
-    FnSymbol* fn = findConvertedFn(target, /* trace */ false);
-    if (fn == nullptr) {
-      auto idForErr = inAst ? inAst->id() : target->id();
-      context->error(idForErr, "could not find target function for call fixup %s within %s",
-                 target->untyped()->name().c_str(),
-                 inSymbolId.str().c_str());
+    Symbol* sym = findConvertedFn(target, /* neverTrace */ true);
+    if (!isFnSymbol(sym)) {
+      INT_FATAL(se, "could not find target function for call fixup %s",
+                target->untyped()->name().c_str());
     }
-    se->setSymbol(fn);
+    se->setSymbol(sym);
   }
-  // clear gFnCallFixups since these have now been processed
   callFixups.clear();
 
-  // copy the syms and fns maps to the parent map if the symbols
-  // within could be visible elsewhere
-  if (parentMap && inAst) {
-    if (inAst->isModule() || inSymbolId == inAst->id()) {
-      if (trace) {
-        printf("Copying symbols from %s to parent %s\n",
-               computeMapName(inSymbolId).c_str(),
-               computeMapName(parentMap->inSymbolId).c_str());
+  // Fix up any Type* that need to be computed based on other information
+  for (Symbol* sym : typeFixups) {
+    // handle Symbol is a FnSymbol and retType is the TCT
+    if (FnSymbol* fn = toFnSymbol(sym)) {
+      if (auto tct = toTemporaryConversionType(fn->retType)) {
+        Type* t = convertType(tct->qt);
+        if (t == nullptr) {
+          INT_FATAL(sym, "could not find target type for fixup");
+          t = dtUnknown;
+        }
+        fn->retType = t;
       }
-      parentMap->syms.insert(syms.begin(), syms.end());
-      parentMap->fns.insert(fns.begin(), fns.end());
+    }
+
+    // handle Symbol->type is the TCT
+    if (auto tct = toTemporaryConversionType(sym->type)) {
+      Type* t = convertType(tct->qt);
+      if (t == nullptr) {
+        INT_FATAL(sym, "could not find target type for fixup");
+        t = dtUnknown;
+      }
+      sym->type = t;
     }
   }
-}
+  typeFixups.clear();
 
-
-} // end anonymous namespace
-
-ModuleSymbol*
-convertToplevelModule(chpl::Context* context,
-                      const chpl::uast::Module* mod,
-                      ModTag modTag) {
-  astlocMarker markAstLoc(mod->id());
-  Converter c(context, modTag);
-
-  c.canScopeResolve = fDynoScopeResolve;
-  c.trace = fDynoDebugTrace;
-
-  ModuleSymbol* ret = c.convertModule(mod);
-  return ret;
-}
-
-void postConvertApplyFixups(chpl::Context* context) {
-  gConvertedSyms.applyFixups(context, nullptr, /* trace */ false);
 
   // Add defPoints that 'getDecoratedClass' was prevented from inserting when
   // the original AggregateType was no longer in the tree.
@@ -5354,9 +5259,38 @@ void postConvertApplyFixups(chpl::Context* context) {
   }
 
   // clear out the globals to save space
-  // (in future, these will be fields in Converter,
-  //  and they can be cleared out without any special action if the
-  //  Converter is destroyed after it is no longer needed)
-  gConvertedSyms.syms.clear();
-  gConvertedSyms.fns.clear();
+  // (could be removed & wait for the Converter to be destroyed)
+  syms.clear();
+  fns.clear();
+  convertedTypes.clear();
+}
+
+
+// Implementation for UastConverter methods that forward to
+// the implementation in Converter
+// This strategy just keeps Converter private to this file.
+
+UastConverter::UastConverter(chpl::Context* context) {
+  converter_ = toOwned(new Converter(context));
+}
+
+UastConverter::~UastConverter() {
+}
+
+void UastConverter::clearModulesToConvert() {
+  converter_->clearModulesToConvert();
+}
+
+void UastConverter::addModuleToConvert(ID id) {
+  converter_->addModuleToConvert(std::move(id));
+}
+
+ModuleSymbol*
+UastConverter::convertToplevelModule(const chpl::uast::Module* mod,
+                                     ModTag modTag) {
+  return converter_->convertToplevelModule(mod, modTag);
+}
+
+void UastConverter::postConvertApplyFixups() {
+  converter_->postConvertApplyFixups();
 }

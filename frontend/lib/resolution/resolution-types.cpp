@@ -46,33 +46,6 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-void OuterVariables::add(Context* context, ID mention, ID var) {
-  ID mentionParent = mention.parentSymbolId(context);
-  ID symbolParent = symbol_.parentSymbolId(context);
-  ID varParent = var.parentSymbolId(context);
-  const bool isReachingUse = symbolParent != varParent;
-  const bool isChildUse = mentionParent != symbol_;
-
-  CHPL_ASSERT(varParent != symbol_);
-  if (!isReachingUse) {
-    CHPL_ASSERT(mention && symbol_.contains(mention));
-  }
-
-  auto it = idToVarAndMentionIndices_.find(var);
-  if (it == idToVarAndMentionIndices_.end()) {
-    auto p = std::make_pair(variables_.size(), std::vector<size_t>());
-    it = idToVarAndMentionIndices_.emplace_hint(it, var, std::move(p));
-    variables_.push_back(var);
-    if (isReachingUse) numReachingVariables_++;
-  }
-
-  // Don't bother storing the mention for a child use.
-  if (!isChildUse) {
-    it->second.second.push_back(mentions_.size());
-    mentions_.push_back(mention);
-  }
-}
-
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -481,8 +454,15 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                                       UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
+
+  // Replace existing 'this' in 'ci'
+  int off = 0;
+  if (ci.isMethodCall() && ci.actual(0).byName() == "this") {
+    off = 1;
+  }
+
   // append the other actuals
-  newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
+  newActuals.insert(newActuals.end(), ci.actuals_.begin() + off, ci.actuals_.end());
 
   if (ci.name() == USTR("init")) {
     // For calls to 'init', tag the receiver with a special intent to
@@ -870,11 +850,13 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
-                    Bitmap formalsInstantiated) {
+                    Bitmap formalsInstantiated,
+                    OuterVariables outerVariables) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
-              formalsInstantiated);
+              formalsInstantiated,
+              outerVariables);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
@@ -883,7 +865,8 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                                              isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
-                                             std::move(formalsInstantiated)));
+                                             std::move(formalsInstantiated),
+                                             std::move(outerVariables)));
 
   return QUERY_END(result);
 }
@@ -896,7 +879,8 @@ TypedFnSignature::get(Context* context,
                       bool needsInstantiation,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
-                      Bitmap formalsInstantiated) {
+                      Bitmap formalsInstantiated,
+                      OuterVariables outerVariables) {
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
                              whereClauseResult,
@@ -904,7 +888,8 @@ TypedFnSignature::get(Context* context,
                              /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
-                             std::move(formalsInstantiated)).get();
+                             std::move(formalsInstantiated),
+                             std::move(outerVariables)).get();
 }
 
 const TypedFnSignature*
@@ -920,7 +905,8 @@ TypedFnSignature::getInferred(
                              /* isRefinementOnly */ true,
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
-                             inferredFrom->formalsInstantiatedBitmap()).get();
+                             inferredFrom->formalsInstantiatedBitmap(),
+                             inferredFrom->outerVariables()).get();
 }
 
 
@@ -1099,12 +1085,12 @@ void MostSpecificCandidate::stringify(std::ostream& ss,
 }
 
 void
-MostSpecificCandidates::inferOutFormals(Context* context,
+MostSpecificCandidates::inferOutFormals(ResolutionContext* rc,
                                         const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
-    MostSpecificCandidate& c = candidates[i];
-    if (c) {
-      c.fn_ = chpl::resolution::inferOutFormals(context, c.fn(), instantiationPoiScope);
+    if (MostSpecificCandidate& c = candidates[i]) {
+      constexpr auto f = chpl::resolution::inferOutFormals;
+      c.fn_ = f(rc, c.fn(), instantiationPoiScope);
     }
   }
 }
@@ -1261,11 +1247,8 @@ static const ID& methodReceiverTypeIdForMethodId(Context* context,
         } else {
           // Resolve the method receiver to an ID
           ResolutionResultByPostorderID r;
-          owned<OuterVariables> outerVars =
-            toOwned(new OuterVariables(context, methodId));
           auto visitor =
-            Resolver::createForScopeResolvingFunction(context, fn, r,
-                                                      std::move(outerVars));
+            Resolver::createForScopeResolvingFunction(context, fn, r);
 
           const AstNode* typeExpr = nullptr;
           if (auto thisFormal = fn->thisFormal()) {
@@ -1495,7 +1478,8 @@ TypedMethodLookupHelper::receiverScopes() const {
 
 bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
                                                    const ID& methodId) const {
-  const TypedFnSignature* tfs = typedSignatureInitialForId(context, methodId);
+  ResolutionContext rcval(context);
+  const TypedFnSignature* tfs = typedSignatureInitialForId(&rcval, methodId);
 
   if (tfs && tfs->isMethod()) {
     QualifiedType methodRcvType = tfs->formalType(0);
@@ -1552,8 +1536,8 @@ ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
   if (resolvingMethodId_ == methodId) {
     return methodLookupForType(context, resolvingMethodReceiverType_);
   } else {
-    const TypedFnSignature* tfs = nullptr;
-    tfs = typedSignatureInitialForId(context, methodId);
+    ResolutionContext rcval(context);
+    const TypedFnSignature* tfs = typedSignatureInitialForId(&rcval, methodId);
     if (tfs && tfs->isMethod()) {
       QualifiedType rcvType = tfs->formalType(0);
       return methodLookupForType(context, rcvType);
@@ -1562,7 +1546,6 @@ ReceiverScopeTypedHelper::methodLookupForMethodId(Context* context,
 
   return nullptr;
 }
-
 
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);

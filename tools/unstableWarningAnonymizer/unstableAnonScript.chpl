@@ -71,15 +71,29 @@ proc countUniqueWarnings(ref warningsMap: map(string, ?t),
                          inputFileReader: IO.fileReader(?)
                         ) where t == (int, set(string)) {
   // A pattern of a typical warning line
-  // Ex: filename.chpl:lineNumber: warning message blah
+  // filename.chpl:lineNumber: warning message blah
+  // Other warnings looks like this:
+  // <command-line arg>:argNumber: warning message blah
+  // <command line>: warning message blah
   // Anything inside ( ) is a capture group
-  const warningRegex = new regex("(.*.chpl|<command-line arg>):\\d+: (.*)\n");
+  // (?: ) is a non-capturing group
+  param regexStr = "(?:(.*\\.chpl|<command-line arg>):\\d+|(<command line>))" +
+                   ": (.*)\n"; // The warning message capture group
+  const warningRegex = new regex(regexStr);
   var warning: string;
   var fileName: string;
-  for (_, fileNameMatch, warningMatch) in inputFileReader.matches(warningRegex,
-                                                                  captures=2) {
-    inputFileReader.extractMatch(warningMatch, warning);
+  // Although there are 3 capture groups in the regex,
+  // capture group 1 and 2 are mutually exclusive due to the OR operator
+  for (_, fileNameMatch, cmdLineMatch, warningMatch)
+   in inputFileReader.matches(warningRegex,captures=3) {
+    var cmdLine: string;
     inputFileReader.extractMatch(fileNameMatch, fileName);
+    inputFileReader.extractMatch(cmdLineMatch, cmdLine);
+    inputFileReader.extractMatch(warningMatch, warning);
+    fileName+=cmdLine; // Since either fileName or cmdLine will be empty
+    // Collapse <command-line arg> and <command line> into <command line>
+    // Since they are the same "fileName" (i.e. the command line)
+    if fileName == "<command line>" then fileName = "<commond-line arg>";
     // Check if the string mentions that something is unstable
     // If so, add it to the map
     if !containsUnstableWarning(warning) then
@@ -97,8 +111,9 @@ proc countUniqueWarnings(ref warningsMap: map(string, ?t),
 
 proc containsUnstableWarning(warning: string): bool {
   // Check if the string mentions that something is unstable
-  return warning.find("unstable") != -1 || warning.find("enum-to-bool") != -1
-         || warning.find("enum-to-float") != -1;
+  return warning.find("unstable") != -1 ||
+         warning.find("enum-to-bool") != -1 ||
+         warning.find("enum-to-float") != -1;
 }
 
 
@@ -136,6 +151,11 @@ proc anonymizeWarning(warning: string): string {
                     "behavior is unstable and may change in the future.";
   if warning.find(constArgs) != -1 then
     return "warning: The argument " + constArgs;
+
+  param ambigSourceNote = "which module is chosen in this case is unstable";
+  param ambigSource = "warning: ambiguous module source file; ";
+  if warning.find(ambigSourceNote) != -1 then
+    return ambigSource + ambigSourceNote;
 
   return warning;
 }

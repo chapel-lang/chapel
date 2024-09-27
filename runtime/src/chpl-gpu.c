@@ -879,7 +879,7 @@ void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
     // source is on device, we can't pass device pointers to comm layer. We'll
     // create a copy of the source on the local host.
     src_data = chpl_malloc(size);
-    src_data_subloc = c_sublocid_any;
+    src_data_subloc = c_sublocid_none;
 
     chpl_gpu_memcpy(src_data_subloc, src_data, src_subloc, src, size, commID,
                     ln, fn);
@@ -911,7 +911,7 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
     // destination is on device, we can't pass device pointers to comm layer.
     // We'll create a buffer on the local host.
     dst_buff = chpl_malloc(size);
-    dst_buff_subloc = c_sublocid_any;
+    dst_buff_subloc = c_sublocid_none;
   }
 
   if (src_subloc >= 0) {
@@ -1205,6 +1205,13 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src, size_t n,
                      int32_t commID, int ln, int32_t fn) {
+
+  /* This generates just a lot of output
+
+  CHPL_GPU_DEBUG("chpl_gpu_memcpy of %zu bytes <src subloc:%d, ptr:%p> "
+                 "<dst subloc:%d, ptr:%p>\n", n, src_subloc, src, dst_subloc,
+                 dst);
+  */
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
     memmove(dst, src, n);
@@ -1241,6 +1248,10 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
   memmove(dst, src, n);
   #endif
 
+  /* This generates just a lot of output
+
+  CHPL_GPU_DEBUG("chpl_gpu_memcpy successful\n");
+  */
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
@@ -1396,9 +1407,6 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
-
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);

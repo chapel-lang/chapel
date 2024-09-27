@@ -582,6 +582,12 @@ all:
   06/17/24:
     - text: Revert to default GASNET_SND_THREAD=0 (#25307)
       config: 16-node-apollo-hdr
+  08/12/24:
+    - text: Update bundled qthreads to 1.20 (#25210)
+      config: chapcs
+  08/28/24:
+    - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
+      config: chapcs
 
 # End all
 
@@ -901,7 +907,6 @@ empty-chpl-barrier.ml-time:
   06/26/21:
     - Optimize allLocalesBarrier by reducing communication (#17978)
 
-
 exchange:
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
@@ -909,6 +914,8 @@ exchange:
     - Fix some issues with constant domain optimization (#16397)
   09/29/20:
     - Remove an unneeded assignment from array view slice initializer (#16477)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
 
 fannkuch-redux:
   07/22/14:
@@ -998,6 +1005,14 @@ ft-a:
 heat_2d_dist.ml-time:
   08/31/23:
     - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+  08/13/24:
+    - Expand auto local access optimization to support basic offsets (#25712)
+  08/19/24:
+    - Stencil Distribution performance improvments (#25701)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
+  09/11/24:
+    - Prevent offset access with block arrays to thwart dynamic ALA (#25933)
 
 hpl:
   12/11/15:
@@ -1572,6 +1587,8 @@ mg: &mg-base
 
 mg-b:
   <<: *mg-base
+  08/19/24:
+    - Stencil Distribution performance improvments (#25701)
 
 mg.ml-time:
   05/11/17:
@@ -1606,6 +1623,9 @@ miniMD:
     - Enable bulk-transfer for BlockDist by default (#12797)
   03/13/20:
     -  Reallocate 1D arrays in place, when possible (#15177)
+  07/08/24:
+    - Implement array view elision (#24390)
+
 
 miniMD.ml-time:
   09/14/17:
@@ -1844,6 +1864,9 @@ return-array-8: &return-array-base
     - remove unnecessary return from array-return tests (#5486)
   05/01/18:
     - Enable variables declared with generic type (#9355)
+  09/10/24:
+    - Avoid array allocation for moving to equal domain (#25896)
+
 return-array-20000000:
   <<: *return-array-base
 return-array-40000000:
@@ -2094,16 +2117,6 @@ thread-ring:
     - Prevent serialization from qthread sync vars (#9737)
   08/30/18:
     - Reduce hugepage waste from call stacks (#10254)
-  08/12/24:
-    - Update bundled qthreads to 1.20 (#25210)
-  08/28/24:
-    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
-
-twopt-buildtrees:
-  08/12/24:
-    - Update bundled qthreads to 1.20 (#25210)
-  08/28/24:
-    - Qthreads Adjust Fences To Fix Perf Regression (#25833)
 
 time_array_vs_ddata:
   05/31/14:
@@ -2523,6 +2536,11 @@ arkouda-array_create:
   <<: *arkouda-base
   04/05/24:
     - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
+
+arkouda-sort-cases:
+  <<: *arkouda-base
+  08/07/24:
+    - Closes 3526 refactor argsortMsg to remove registerND annotation (Bears-R-Us/#3602)
 
 shoc-triad-all-lg:
   11/10/22:

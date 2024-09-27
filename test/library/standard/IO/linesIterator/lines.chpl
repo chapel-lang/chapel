@@ -1,7 +1,7 @@
 use IO, FileSystem;
 
 config const fileName = "lines.txt",
-             n = 10000;
+             n = 9999;
 
 const nsum = (n * (n + 1)) / 2;
 
@@ -73,5 +73,33 @@ assert(dataFileSum(18.., false, bytes, Locales) == nsum - 45);
 assert(dataFileSum(18.., false, bytes, [Locales.first,]) == nsum - 45);
 assert(dataFileSum(18.., false, bytes, [Locales.last,]) == nsum - 45);
 assert(dataFileSum(18.., false, bytes, none) == nsum - 45);
+
+
+// skipping last 5 lines
+//                    digit-len     + \n + ('region' not inclusive)
+const nBytes = 5 * ((n:string).size + 1) + 1,
+      fileLen = try! open(fileName, mode=ioMode.r).size,
+      toRead = fileLen - nBytes,
+      nsum2 = ((n - 5) * ((n - 5) + 1)) / 2;
+
+assert(dataFileSum(..toRead, true, string, Locales) == nsum2);
+assert(dataFileSum(..toRead, true, string, [Locales.first,]) == nsum2);
+assert(dataFileSum(..toRead, true, string, [Locales.last,]) == nsum2);
+assert(dataFileSum(..toRead, true, string, none) == nsum2);
+
+assert(dataFileSum(..toRead, false, string, Locales) == nsum2);
+assert(dataFileSum(..toRead, false, string, [Locales.first,]) == nsum2);
+assert(dataFileSum(..toRead, false, string, [Locales.last,]) == nsum2);
+assert(dataFileSum(..toRead, false, string, none) == nsum2);
+
+assert(dataFileSum(..toRead, true, bytes, Locales) == nsum2);
+assert(dataFileSum(..toRead, true, bytes, [Locales.first,]) == nsum2);
+assert(dataFileSum(..toRead, true, bytes, [Locales.last,]) == nsum2);
+assert(dataFileSum(..toRead, true, bytes, none) == nsum2);
+
+assert(dataFileSum(..toRead, false, bytes, Locales) == nsum2);
+assert(dataFileSum(..toRead, false, bytes, [Locales.first,]) == nsum2);
+assert(dataFileSum(..toRead, false, bytes, [Locales.last,]) == nsum2);
+assert(dataFileSum(..toRead, false, bytes, none) == nsum2);
 
 remove(fileName);

@@ -21,10 +21,7 @@
 
 #include "chpl/libraries/LibraryFileFormat.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/uast/Include.h"
-#include "chpl/uast/MultiDecl.h"
-#include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/TupleDecl.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/version-info.h"
 

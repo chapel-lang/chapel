@@ -75,7 +75,7 @@ void chpl_task_setSubloc(c_sublocid_t subloc) {
 #endif
 static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void) {
-  return c_sublocid_any;
+  return c_sublocid_none;
 }
 
 #define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() 0

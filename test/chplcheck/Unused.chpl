@@ -33,4 +33,9 @@ module Unused {
 
   myProc(1,2);
   myProcIgnored(1,2);
+
+  var Outer: [1..10] int;
+  proc foo(Outer) {
+    Outer[1] = 2;
+  }
 }

@@ -40,6 +40,12 @@
       - clear
       - sort
 
+      .. warning::
+
+        :proc:`list.sort<List.list.sort>` is deprecated - please use the
+        :proc:`sort(x: list)<Sort.sort>` procedure from the
+        :mod:`Sort` module instead
+
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
 

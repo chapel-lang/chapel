@@ -1762,11 +1762,9 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
   //
   // Note: we don't ask for FI_ORDER_ATOMIC_RAW because the some providers
   // doesn't support it.  FI_ORDER_ATOMIC_WAR ordering is enforced by the
-  // MCM. We need FI_ORDER_RMA_WAW to ensure sequential consistency of
-  // writes.
+  // MCM.
   //
   uint64_t need_msg_orders =   FI_ORDER_ATOMIC_WAW
-                             | FI_ORDER_RMA_WAW
                              | FI_ORDER_SAS;
   if (set) {
     // Only use this mode if the tasking layer has a fixed number of threads.
@@ -3975,8 +3973,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
   DBG_PRINTF(DBG_ORDER,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
-  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ?
-                      (FI_FENCE | FI_DELIVERY_COMPLETE) : 0;
+  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ? FI_FENCE : 0;
   chpl_atomic_bool txnDone;
   void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
   ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
@@ -4662,7 +4659,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     // Special case: Do a fenced send if we need it for ordering with
     // respect to some prior operation(s).
     //
-    flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+    flags |= FI_FENCE;
   }
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
   (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
@@ -4998,7 +4995,7 @@ size_t handleAmReq(amRequest_t *req) {
         struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                      .rma = req->rma, };
         chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
-                                 &arg, sizeof(arg), c_sublocid_any,
+                                 &arg, sizeof(arg), c_sublocid_none,
                                  chpl_nullTaskID);
       }
       size = sizeof(req->rma);
@@ -5009,7 +5006,7 @@ size_t handleAmReq(amRequest_t *req) {
         struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                      .rma = req->rma, };
         chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
-                                 &arg, sizeof(arg), c_sublocid_any,
+                                 &arg, sizeof(arg), c_sublocid_none,
                                  chpl_nullTaskID);
       }
       size = sizeof(req->rma);
@@ -5748,6 +5745,7 @@ void chpl_comm_ensure_progress(void) {
     // to begin with.
     CHK_TRUE((tcip = tciAlloc()) != NULL);
     (*tcip->ensureProgressFn)(tcip);
+    tciFree(tcip);
   }
 }
 
@@ -6050,7 +6048,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     // Special case: If our last operation was an AMO  then we need to do a
     // fenced PUT to force the AMO to complete before this PUT.
     //
-    flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+    flags |= FI_FENCE;
   }
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
   (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
@@ -6467,7 +6465,7 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
     // that visibility.
     //
     (void) wrap_fi_readmsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
-                           FI_FENCE | FI_DELIVERY_COMPLETE, tcip);
+                           FI_FENCE, tcip);
     if (havePutsOut) {
       bitmapClear(tcip->putVisBitmap, node);
     }
@@ -6876,7 +6874,7 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
     if (havePutsOut ||
        (famo && haveAmosOut &&
           !(ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW))) {
-      flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+      flags |= FI_FENCE;
     }
     if (havePutsOut) {
       bitmapClear(tcip->putVisBitmap, ab->node);

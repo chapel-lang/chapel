@@ -491,7 +491,7 @@ module GPU
         // because of this hack.
         extern proc chpl_task_getRequestedSubloc(): int(32);
         const curSubloc = chpl_task_getRequestedSubloc();
-        chpl_task_setSubloc(-2);
+        chpl_task_setSubloc(c_sublocid_none);
         var HostArr = A;
         res = doCpuReduceHelp(op, HostArr): res.type;
         chpl_task_setSubloc(curSubloc);

@@ -1730,6 +1730,7 @@ module ChapelDomain {
     }
 
     // assumes that data is already initialized
+    // this function is used in Fortran interop
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -1746,6 +1747,31 @@ module ChapelDomain {
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
+    }
+
+    // assumes that the caller has checked:
+    //  * that 'from' and the receiver domain match & have compatible types
+    //  * that the distributions match as well
+    //  * that the 'from array is not unowned
+    //  * that the domain/array implementation supports doiBuildArrayMoving
+    pragma "no copy return"
+    @chpldoc.nodoc
+    proc buildArrayMoving(from) {
+      var x = _value.doiBuildArrayMoving(from);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+
+      // note: 'from' will be deinited here, normally leading to
+      // deleting the array instance. The array implementation needs
+      // to have set anything stolen to 'nil' in doiBuildArrayMoving
+      // and then to take no action on it when deleting.
     }
 
     /*

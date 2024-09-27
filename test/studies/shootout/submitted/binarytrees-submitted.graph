@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: binarytrees.dat, binarytrees-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted (3), submitted (4)
+files: binarytrees.dat, binarytrees-submitted.dat, binarytrees4.dat
 graphtitle: Submitted Binary Trees Shootout Benchmark (n=21)
 ylabel: Time (seconds)

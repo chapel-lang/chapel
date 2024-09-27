@@ -3,7 +3,6 @@
 FLAGS="--enable-rule ConsecutiveDecls"\
 " --enable-rule BoolLitInCondStatement"\
 " --enable-rule UseExplicitModules"\
-" --enable-rule UnusedFormal"\
 " --enable-rule CamelOrPascalCaseVariables"\
 " --enable-rule NestedCoforalls"\
 " --internal-prefix myprefix_ --internal-prefix _"\

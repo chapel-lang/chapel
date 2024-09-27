@@ -4,4 +4,45 @@ blockSize dflt (200): 100 100 100 100 200 201 202 203 204 205 206 207 208 209 21
 blockSize=8    (300): 300 301 302 303 304 305 306 307 300 301 302 303 304 305 306 307 300 301 302 303 304 305 306 307 220 221 222 223 100 100 100 100
 itersPerThr=4  (400): 300 301 302 303 400 400 400 400 401 401 401 401 402 402 402 402 403 403 403 403 404 404 404 404 405 405 405 405 100 100 100 100
 blsz=5 ipt=3   (500): 500 500 500 501 501 501 502 502 502 503 503 503 504 504 504 500 500 500 501 501 501 502 502 502 503 405 405 405 100 100 100 100
-blsz=2 ipt=3   (600): 500 610 610 610 611 611 611 610 502 503 620 620 620 620 620 620 621 500 634 634 634 634 634 634 634 405 405 405 100 100 100 100
+blsz=2 ipt=3   (600): 500 610 610 610 611 611 611 610 502 503 620 620 620 620 620 620 621 500 632 632 632 632 632 632 632 405 405 405 100 100 100 100
+
+numIndices 32  itersPerThread 1  blockSize 3/3  gridSize 11
+  threadIdx:  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1
+    blockId:  0  0  0  1  1  1  2  2  2  3  3  3  4  4  4  5  5  5  6  6  6  7  7  7  8  8  8  9  9  9 10 10
+
+numIndices 32  itersPerThread 2  blockSize 3/3  gridSize 6
+  threadIdx:  0  0  1  1  2  2  0  0  1  1  2  2  0  0  1  1  2  2  0  0  1  1  2  2  0  0  1  1  2  2  0  0
+    blockId:  0  0  0  0  0  0  1  1  1  1  1  1  2  2  2  2  2  2  3  3  3  3  3  3  4  4  4  4  4  4  5  5
+
+numIndices 32  itersPerThread 3  blockSize 3/3  gridSize 4
+  threadIdx:  0  0  0  1  1  1  2  2  2  0  0  0  1  1  1  2  2  2  0  0  0  1  1  1  2  2  2  0  0  0  1  1
+    blockId:  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  2  3  3  3  3  3
+
+numIndices 32  itersPerThread 4  blockSize 3/3  gridSize 3
+  threadIdx:  0  0  0  0  1  1  1  1  2  2  2  2  0  0  0  0  1  1  1  1  2  2  2  2  0  0  0  0  1  1  1  1
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2
+
+numIndices 32  itersPerThread 5  blockSize 3/3  gridSize 3
+  threadIdx:  0  0  0  0  0  1  1  1  1  1  2  2  2  2  2  0  0  0  0  0  1  1  1  1  1  2  2  2  2  2  0  0
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  2  2
+
+numIndices 32  itersPerThread 8  blockSize 1/1  gridSize 4
+  threadIdx:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    blockId:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  3  3  3  3  3  3  3  3
+
+numIndices 32  itersPerThread 8  blockSize 2/2  gridSize 2
+  threadIdx:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
+
+numIndices 32  itersPerThread 8  blockSize 3/3  gridSize 2
+  threadIdx:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  0  0  0  0  0  0  0  0
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
+
+numIndices 32  itersPerThread 8  blockSize 4/4  gridSize 1
+  threadIdx:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  3  3  3  3  3  3  3  3
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+
+numIndices 32  itersPerThread 8  blockSize 5/5  gridSize 1
+  threadIdx:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  3  3  3  3  3  3  3  3
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+

@@ -8,7 +8,7 @@ cat $CWD/../../../compflags/bradc/printstuff/version.goodstart
 diff $CWD/../../../../compiler/main/BUILD_VERSION $CWD/zero.txt > /dev/null 2>&1 && echo "" || \
   { echo -n " pre-release (" && cat $CWD/../../../../compiler/main/BUILD_VERSION | tr -d \"\\n && echo ")" ; }
 # During release mode:
-# echo ""
+#echo ""
 
 # print Sphinx and chapeldomain versions
 python=$($CWD/../../../../util/config/find-python.sh)

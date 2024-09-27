@@ -36,6 +36,8 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"

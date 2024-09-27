@@ -141,6 +141,7 @@ static void test4() {
   {
     printf("part 1\n");
     context->advanceToNextRevision(true);
+    ErrorGuard guard(context);
 
     const std::string program =
       R""""(
@@ -154,6 +155,7 @@ static void test4() {
       )"""";
 
     auto qt = resolveTypeOfXInit(context, program);
+    for (auto& e : guard.errors()) std::cout << e->message() << std::endl;
     assert(qt.type() != nullptr);
     assert(qt.type()->isIntType());
 

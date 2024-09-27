@@ -20,16 +20,17 @@
 #ifndef CHPL_PARSING_FILE_CONTENTS_H
 #define CHPL_PARSING_FILE_CONTENTS_H
 
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/framework/stringify-functions.h"
-#include "chpl/framework/ErrorBase.h"
 
 #include <string>
 
 namespace chpl {
-namespace parsing {
 
+// Forward declare the error class that can't be referenced until later.
+class ErrorBase;
+
+namespace parsing {
 
 /**
  This class represents the result of reading a file.
@@ -39,7 +40,7 @@ class FileContents {
   std::string text_;
   // TODO: it would be better to use the LLVM error handling strategy here,
   //       instead of storing errors created via Context.
-  const ErrorBase* error_;
+  const ErrorBase* error_ = nullptr;
 
  public:
   /** Construct a FileContents containing empty text and no error */
@@ -72,9 +73,7 @@ class FileContents {
   static bool update(FileContents& keep, FileContents& addin) {
     return chpl::defaultUpdate(keep, addin);
   }
-  void mark(Context* context) const {
-    if (error_ != nullptr) error_->mark(context);
-  }
+  void mark(Context* context) const;
 };
 
 

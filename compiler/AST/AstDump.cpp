@@ -850,6 +850,17 @@ void AstDump::exitCatchStmt(CatchStmt* node) {
 }
 
 //
+// ImplementsStmt
+//
+bool AstDump::enterImplementsStmt(ImplementsStmt* node) {
+  newline();
+  write("ifc");
+  if (fLogIds)
+    fprintf(mFP, "[%d]", node->id);
+  return true;
+}
+
+//
 // Helper functions
 //
 

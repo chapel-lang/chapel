@@ -4,7 +4,7 @@ const InitialQueueSize = 1024;
 const OperationsPerThread = 1024;
 
 proc main() {
-  var lfq = new unmanaged LockFreeQueue(int);
+  var lfq = new LockFreeQueue(int);
 
   // Fill the queue and warm up the cache.
   forall i in 1..InitialQueueSize with (var tok = lfq.getToken()) do lfq.enqueue(i, tok);

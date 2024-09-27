@@ -279,7 +279,7 @@ def register_rules(driver: LintDriver):
 
         # Now, we should warn: there's a node in a conditional or
         # if/else, it has parentheses at the top level, but it doesn't need them.
-        return BasicRuleResult(node, data=subject)
+        return BasicRuleResult(subject, data=subject)
 
     @driver.fixit(ControlFlowParentheses)
     def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
@@ -289,7 +289,7 @@ def register_rules(driver: LintDriver):
         paren_loc = subject.parenth_location()
         assert paren_loc
 
-        # If parentheeses span multiple lines, don't provide a fixit,
+        # If parentheses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
         end_line, end_col = paren_loc.end()
@@ -586,7 +586,7 @@ def register_rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
-    @driver.advanced_rule(default=False)
+    @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
         Warn for unused formals in functions.

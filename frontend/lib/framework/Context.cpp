@@ -938,7 +938,9 @@ static void logErrorInContext(Context* context,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
+  ID useId;
+  if (ast) useId = ast->id();
+  auto err = GeneralError::vbuild(kind, useId, fmt, vl);
   context->report(std::move(err));
 }
 

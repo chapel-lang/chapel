@@ -315,6 +315,8 @@ static void testCForLoop() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   auto iterText = R""""(
                    iter myIter() {
@@ -340,7 +342,7 @@ static void testCForLoop() {
   assert(idx.type().type() == IntType::get(context, 0));
 
   const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only().fn();
-  auto fn = resolveFunction(context, sig, nullptr);
+  auto fn = resolveFunction(rc, sig, nullptr);
   auto rf = fn->resolutionById();
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
   auto cond = rf.byAst(whileLoop->condition());
@@ -352,7 +354,7 @@ static void testParamFor() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
-
+  ResolutionContext rcval(context);
   //
   // Test iteration over an iterator call
   //
@@ -369,7 +371,7 @@ static void testParamFor() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  ResolvedVisitor<ParamCollector> rv(&rcval, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
@@ -397,6 +399,8 @@ static void testNestedParamFor() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   auto loopText = R"""(
   var sum = 0;
@@ -415,7 +419,7 @@ static void testNestedParamFor() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  ResolvedVisitor<ParamCollector> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));

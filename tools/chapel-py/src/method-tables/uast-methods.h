@@ -91,7 +91,9 @@ CLASS_BEGIN(AstNode)
          std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
          auto sigObj = std::get<0>(args);
-         auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         // TODO: Might need to do frame rewinding here.
+         resolution::ResolutionContext rcval(context);
+         auto resolvedFn = resolution::resolveFunction(&rcval, sigObj->value_.signature, sigObj->value_.poiScope);
          if (!resolvedFn) return {};
 
          auto r = resolvedFn->byAstOrNull(node);

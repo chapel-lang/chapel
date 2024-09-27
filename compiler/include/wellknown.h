@@ -71,6 +71,10 @@ extern AggregateType* dtString;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 
+// these are only used when the dyno resolver is active
+extern AggregateType* dtCPointer;
+extern AggregateType* dtCPointerConst;
+
 extern Type* dt_c_int;
 extern Type* dt_c_uint;
 extern Type* dt_c_long;
