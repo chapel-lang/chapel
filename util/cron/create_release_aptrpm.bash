@@ -37,7 +37,7 @@ set -e
 source $CHPL_HOME/util/packaging/common/build_helpers.sh
 
 # if using a remote tarball, download it
-if [ -z "$CHPL_TARBALL_LOCATION" ]; then
+if [ -n "$CHPL_TARBALL_LOCATION" ]; then
   log_info "Downloading Chapel tarball from '$CHPL_TARBALL_LOCATION'"
   mkdir -p $CHPL_HOME/util/packaging/tarballs
   wget --no-check-certificate ${CHPL_TARBALL_LOCATION} -O $CHPL_HOME/util/packaging/tarballs/chapel-${CHPL_VERSION}.tar.gz
