@@ -829,11 +829,12 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   auto mr = mightBeManagerRecord->toRecordType();
   auto ct = mightBeClass->toClassType();
   auto aot = mightBeClass->toAnyOwnedType();
+  auto ast = mightBeClass->toAnySharedType();
 
   bool isCtManagedAndDecorated = classTypeIsManagedAndDecorated(context, ct);
   // if mightBeManagerRecord is a record type and (mightBeClass is a class type
   // that is managed and decorated or mightBeClass is an AnyOwnedType) we can continue
-  if (!mr || (!isCtManagedAndDecorated && !aot )) return false;
+  if (!mr || (!isCtManagedAndDecorated && !aot && !ast )) return false;
 
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
 
@@ -847,6 +848,8 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   // now it's `_owned` of type RecordType
   if (aot) {
     mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr);
+  } else if (ast) {
+    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr);
   } else {
     mightBeClass = ct->managerRecordType(context);
   }
