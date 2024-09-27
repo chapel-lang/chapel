@@ -212,6 +212,18 @@ static void test5() {
     proc buz(type arg: owned C) {
     }
 
+    proc type (owned).doSomething(obj: owned) {
+
+    }
+    var objA = new C(1);
+    owned.doSomething(objA);
+
+    proc type _owned.doNothing(obj: owned) {
+
+    }
+    var objB = new C(1);
+    owned.doNothing(objB);
+
     var obj = new C(5);
     var x = obj.borrow();
 
@@ -271,6 +283,18 @@ static void test6() {
 
     proc buz(type arg: shared C) {
     }
+
+    proc type (shared).doSomething(obj: owned) {
+
+    }
+    var objA = new C(1);
+    shared.doSomething(objA);
+
+    proc type _shared.doNothing(obj: owned) {
+
+    }
+    var objB = new C(1);
+    shared.doNothing(objB);
 
     var obj = new shared C(5);
     var x = obj.borrow();
