@@ -4533,11 +4533,8 @@ resolveIterTypeWithTag(Resolver& rv,
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindFormal.isUnknown()) {
-    context->report(
-        GeneralError::get(ErrorBase::WARNING,
-                          parsing::locateAst(context, astForErr),
-                          "resolving parallel iterators is not supported "
-                          "without module code"));
+    context->warning(astForErr, "resolving parallel iterators is not supported "
+                                "without module code");
     return error;
   }
 

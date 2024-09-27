@@ -880,6 +880,47 @@ class Context {
   ;
 
   /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void warning(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void warning(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void warning(const uast::AstNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
     Sets the enableDebugTrace flag. This was needed because the context
     in main gets created before the arguments to the compiler are parsed.
   */
