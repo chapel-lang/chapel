@@ -833,7 +833,8 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
 
   bool isCtManagedAndDecorated = classTypeIsManagedAndDecorated(context, ct);
   // if mightBeManagerRecord is a record type and (mightBeClass is a class type
-  // that is managed and decorated or mightBeClass is an AnyOwnedType) we can continue
+  // that is managed and decorated or mightBeClass is the generic 'owned' or 
+  // 'shared' type) we can continue
   if (!mr || (!isCtManagedAndDecorated && !aot && !ast )) return false;
 
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
