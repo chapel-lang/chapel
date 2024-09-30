@@ -6,7 +6,7 @@
      Brad Chamberlain
 */
 
-use Allocators;
+use Allocators, Math;
 
 config const n = 10;                         // the maximum tree depth
 
@@ -41,7 +41,7 @@ proc main() {
   //
   for depth in depths {
     const iterations = 2**(maxDepth - depth + minDepth),
-          ps = poolSize(depth, iterations/here.maxTaskPar);
+          ps = poolSize(depth, divCeilPos(iterations, here.maxTaskPar));
     var sum = 0;
 
     forall 1..iterations
