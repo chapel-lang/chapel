@@ -30,6 +30,11 @@ namespace types {
 
 class FnIteratorType final : public IteratorType {
  private:
+  /*
+    The iterator procedure that was invoked to construct an iterator of this
+    type. E.g,, the type of `foo()` will contain `iter foo()` as the iterator
+    function.
+   */
   const resolution::TypedFnSignature* iteratorFn_;
 
   FnIteratorType(QualifiedType yieldType, const resolution::TypedFnSignature* iteratorFn)

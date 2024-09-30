@@ -29,9 +29,32 @@ namespace types {
 
 class LoopExprIteratorType final : public IteratorType {
  private:
+  /*
+     Whether the loop expression is zippered. In production, zippered
+     loop expressions contain all of their iterands and separately invoke
+     leader/follower iterators on each one
+   */
   bool isZippered_;
+  /*
+     Whether this loop can be iterated over in parallel. Some loops
+     ('for' and 'foreach') can't, even when their iterands support parallel
+     iteration.
+   */
   bool supportsParallel_;
+  /*
+     The type of the thing being iterated over, used for resolving the
+     needed leader/follower iterators. If the loop is zippered, iterand
+     should be a tuple type.
+   */
   QualifiedType iterand_;
+  /*
+     The ID of the AST node that caused this loop type to be constructed.
+     This is part of the type so that loop expressions created at different
+     places are considered to have a different type.
+
+     Note: this may need to change if we compiler-generated loop expressions,
+     since the IDs of those would be nebulous.
+   */
   ID sourceLocation_;
 
   LoopExprIteratorType(QualifiedType yieldType,

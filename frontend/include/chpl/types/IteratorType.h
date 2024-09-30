@@ -28,6 +28,14 @@ namespace types {
 
 class IteratorType : public Type {
  protected:
+  /*
+    The type produced by this iterator. E.g., in a loop such
+    as the right hand side in the below assignment:
+
+       var A = foreach i in 1..10 do (i,i);
+
+    the yield type is (int, int).
+   */
   QualifiedType yieldType_;
 
   IteratorType(typetags::TypeTag tag, QualifiedType yieldType)

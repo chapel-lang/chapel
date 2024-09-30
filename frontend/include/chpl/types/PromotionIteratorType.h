@@ -33,7 +33,12 @@ namespace types {
 
 class PromotionIteratorType final : public IteratorType {
  private:
+  /* The scalar (non-array) function that was invoked as part of the promotion. */
   const resolution::TypedFnSignature* scalarFn_;
+  /*
+     Mapping of promoted formals to their array (non-scalar) types, for the
+     purposes of determining the parallel iteration strategy.
+   */
   const resolution::SubstitutionsMap promotedFormals_;
 
   PromotionIteratorType(const resolution::TypedFnSignature* scalarFn,
