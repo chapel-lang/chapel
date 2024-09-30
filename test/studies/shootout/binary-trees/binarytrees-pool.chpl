@@ -15,15 +15,16 @@ proc main() {
         maxDepth = max(minDepth + 2, n),     // the deepest normal tree
         strDepth = maxDepth + 1,             // the depth of the "stretch" tree
         depths = minDepth..maxDepth by 2,    // the range of depths to create
-        nodeSize = 24,                       // the size of a node
-        poolSize = 2**(maxDepth+2)*nodeSize; // how much each pool allocates
+        nodeSize = 24;                       // the size of a node
   var stats: [depths] (int,int);             // stores statistics for the trees
+
+  inline proc poolSize(depth, num=1) do return num*2**(depth+1)*nodeSize;
 
   //
   // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
   {
-    const pool = new bumpPtrMemPool(poolSize, alignment=0),
+    const pool = new bumpPtrMemPool(poolSize(strDepth), alignment=0),
           strTree = newWithAllocator(pool, unmanaged Tree, strDepth, pool);
     writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   }
@@ -31,7 +32,7 @@ proc main() {
   //
   // Build the long-lived tree.
   //
-  const pool = new bumpPtrMemPool(poolSize, alignment=0),
+  const pool = new bumpPtrMemPool(poolSize(maxDepth), alignment=0),
         llTree = newWithAllocator(pool, unmanaged Tree, maxDepth, pool);
 
   //
@@ -40,12 +41,12 @@ proc main() {
   //
   for depth in depths {
     const iterations = 2**(maxDepth - depth + minDepth),
-          poolSize = iterations/here.maxTaskPar*2**(depth+1)*nodeSize;
+          ps = poolSize(depth, iterations/here.maxTaskPar);
     var sum = 0;
 
     forall 1..iterations
       with (+ reduce sum,
-            var pool = new bumpPtrMemPool(poolSize, alignment=0)) {
+            var pool = new bumpPtrMemPool(ps, alignment=0)) {
       const t = newWithAllocator(pool, unmanaged Tree, depth, pool);
       sum += t.sum();
     }
