@@ -144,6 +144,7 @@ from lsprotocol.types import (
 import argparse
 import configargparse
 import sys
+import functools
 
 
 def log(*args, **kwargs):
@@ -352,13 +353,9 @@ EltT = TypeVar("EltT")
 class PositionList(Generic[EltT]):
     get_range: Callable[[EltT], Range]
     elts: List[EltT] = field(default_factory=list)
-    sort_by_end: bool = False
 
     def sort(self):
         self.elts.sort(key=lambda x: self.get_range(x).start)
-
-    def reverse(self):
-        self.elts.reverse()
 
     def append(self, elt: EltT):
         self.elts.append(elt)
@@ -438,7 +435,6 @@ class ResolvedPair:
 class ScopedNodeAndRange:
     node: chapel.AstNode
     scopes: List[chapel.Scope] = field(default_factory=list)
-    rng: Range = field(init=False)
 
     @staticmethod
     def create(node: chapel.AstNode) -> Optional["ScopedNodeAndRange"]:
@@ -451,8 +447,10 @@ class ScopedNodeAndRange:
             return None
         return ScopedNodeAndRange(node, scopes)
 
-    def __post_init__(self):
-        self.rng = location_to_range(self.node.location())
+    @property
+    @functools.cache
+    def rng(self):
+        return location_to_range(self.node.location())
 
 
 @dataclass
@@ -617,12 +615,11 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    # visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
-        self.scope_segments = PositionList(lambda x: x.rng, sort_by_end=True)
+        self.scope_segments = PositionList(lambda x: x.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
         self.rebuild_index()
@@ -711,9 +708,19 @@ class FileInfo:
     def get_visible_nodes(
         self, pos: Position
     ) -> List[Tuple[str, chapel.AstNode, int]]:
+        """
+        Returns the visible nodes at a given position.
+        """
         def visible_nodes_for_scope(
             name: str, nodes: List[chapel.AstNode], in_bundled_module: bool
         ) -> Optional[Tuple[str, chapel.AstNode]]:
+            """
+            Narrow the list of visible nodes to those that are actually visible
+
+            The heuristic here is to avoid showing internal symbols to the user,
+            i.e. those that start with 'chpl_' or '_'. We also avoid showing nodes
+            with the @chpldoc.nodoc attribute.
+            """
             # Don't show internal symbols to the user, even if they
             # are technically in scope. The exception is if we're currently
             # editing a standard file.
@@ -756,51 +763,67 @@ class FileInfo:
             # overloaded functions.
             return name, documented_nodes[0]
 
+        @functools.cache
+        def files_named_in_use_or_import(scope: chapel.Scope) -> Set[str]:
+            files = set()
+            for m in scope.modules_named_in_use_or_import():
+                files.add(m.location().path())
+            return files
+
+        def apply_depth_heuristic(
+            scope: chapel.Scope,
+            name: str,
+            node: chapel.AstNode,
+            original_depth: int,
+            cur_file: str,
+        ) -> Tuple[str, chapel.AstNode, int]:
+            """
+            Heuristic to provide results in a more useful order, since
+            most clients will sort alphabetically. We can provide a
+            depth that is used to sort the results, so that the most
+            relevant results are shown first.
+            """
+            depth = original_depth
+            vis_path = node.location().path()
+            if vis_path != cur_file:
+                # if from a different file, increase the depth by 1
+                depth += 1
+                # if from a bundled path increase the depth by 1
+                depth += int(self.context.context.is_bundled_path(vis_path))
+                # if not explicitly used, increase the depth by 1
+                files_named_in_use = files_named_in_use_or_import(scope)
+                depth += int(vis_path not in files_named_in_use)
+            return (name, node, depth)
+
         def visible_nodes_for_scopes(
             node: chapel.AstNode, scopes: List[chapel.Scope]
         ):
             visible_nodes = []
-            file = node.location().path()
-            in_bundled_module = self.context.context.is_bundled_path(file)
+            cur_file = node.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(cur_file)
+            # for each scope of the node
             for depth, scope in enumerate(scopes):
-                files_named_in_use_or_import = set()
-                for m in scope.modules_named_in_use_or_import():
-                    files_named_in_use_or_import.add(m.location().path())
-
+                # for all of the visible nodes in the scope
                 for name, nodes in scope.visible_nodes():
+                    # narrow the list of visible nodes to those that are
+                    # actually visible to the user (i.e. not nodoc/internal)
                     visible_node = visible_nodes_for_scope(
                         name, nodes, in_bundled_module
                     )
-                    if visible_node:
-                        d = depth
-                        visible_path = visible_node[1].location().path()
-                        if visible_path != file:
-                            # if from a different file, increase the depth by 1
-                            d += 1
-                            # if from a bundled path increase the depth by 1
-                            d += int(
-                                self.context.context.is_bundled_path(
-                                    visible_path
-                                )
-                            )
-                            # if not explicitly used, increase the depth by 1
-                            d += int(
-                                visible_path not in files_named_in_use_or_import
-                            )
-
-                        visible_nodes.append(
-                            (visible_node[0], visible_node[1], d)
-                        )
+                    if visible_node is None:
+                        continue
+                    vn = apply_depth_heuristic(
+                        scope, *visible_node, depth, cur_file
+                    )
+                    visible_nodes.append(vn)
             return visible_nodes
 
         visible_nodes = []
         segment = self.scope_at_position(pos)
 
-        # node_and_scopes: List[Tuple[chapel.AstNode, List[chapel.Scope]]] = []
         if segment:
-            visible_nodes.extend(
-                visible_nodes_for_scopes(segment.node, segment.scopes)
-            )
+            vns = visible_nodes_for_scopes(segment.node, segment.scopes)
+            visible_nodes.extend(vns)
         else:
             # no segment found, use the top level nodes
             for a in self.get_asts():
@@ -868,7 +891,6 @@ class FileInfo:
         self.def_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
-        # self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
             # TODO: suppress resolution errors due to false-positives
