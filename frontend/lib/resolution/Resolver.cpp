@@ -3979,6 +3979,7 @@ getIterKindConstantOrWarn(Context* context,
 static optional<CallResolutionResult>
 rerunCallInfoWithIteratorTag(ResolutionContext* rc,
                              const uast::Call* call,
+                             ResolvedExpression& r,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              QualifiedType receiverType,
@@ -3997,7 +3998,13 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   auto newC = resolveCallInMethod(rc, call, newCi, inScopes, receiverType,
       /* rejected */ nullptr);
 
+  // Also note the call as an associated action
   if (!newC.mostSpecific().isEmpty()) {
+    for (auto sig : newC.mostSpecific()) {
+      if (!sig) continue;
+      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id());
+    }
+
     return newC;
   }
 
@@ -4012,6 +4019,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
 static CallResolutionResult
 resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
                                      const uast::Call* call,
+                                     ResolvedExpression& r,
                                      const CallInfo& ci,
                                      const CallScopeInfo& inScopes,
                                      QualifiedType receiverType,
@@ -4023,12 +4031,12 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   // Other overloads are present and may be usable to fill in for 'foo()'.
   if (c.mostSpecific().isEmpty() && c.rejectedPossibleIteratorCandidates()) {
     if (auto standalone =
-          rerunCallInfoWithIteratorTag(rc, call, ci, inScopes, receiverType,
+          rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
                                        USTR("standalone"))) {
       return *standalone;
     }
     if (auto parallel =
-        rerunCallInfoWithIteratorTag(rc, call, ci, inScopes, receiverType,
+        rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
                                      USTR("leader"))) {
       return *parallel;
     }
@@ -4076,6 +4084,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
                                        ci);
 
   if (!skip) {
+    ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();
 
     // If the user has mistakenly instantiated a field of the type before
@@ -4100,12 +4109,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     }
 
     std::vector<ApplicabilityResult>* rejected = nullptr;
-    auto c = resolveCallInMethodReattemptIfNeeded(rc, call, ci, inScopes,
+    auto c = resolveCallInMethodReattemptIfNeeded(rc, call, r, ci, inScopes,
                                                   receiverType,
                                                   rejected);
 
     // save the most specific candidates in the resolution result for the id
-    ResolvedExpression& r = byPostorder.byAst(call);
     handleResolvedCallPrintCandidates(r, call, ci, inScopes, receiverType, c);
 
     // handle type inference for variables split-inited by 'out' formals

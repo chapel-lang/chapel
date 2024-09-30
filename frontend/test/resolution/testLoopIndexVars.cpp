@@ -794,22 +794,18 @@ static void testForallStandaloneThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-// Daniel 07/19/24: Disabling this deliberately. Production requires a
-//                  serial iteartor even when a standalone iterator is
-//                  available and would be preferred.
-//
-// static void testForallStandaloneRedirect(Context* context) {
-//   printf("%s\n", __FUNCTION__);
-//   ErrorGuard guard(context);
-// 
-//   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-//   auto program = R""""(
-//                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
-//                   forall i in foo() do i;
-//                   )"""";
-//   assertLoopMatches(context, program, "standalone", 1, 0);
-//   assert(!guard.realizeErrors());
-// }
+static void testForallStandaloneRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "standalone", 1, 0);
+  assert(!guard.realizeErrors());
+}
 
 static void testForallLeaderFollowerThese(Context* context) {
   printf("%s\n", __FUNCTION__);
@@ -828,23 +824,19 @@ static void testForallLeaderFollowerThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-// Daniel 07/19/24: Disabling this deliberately. Production requires a
-//                  serial iteartor even when a leader/follower pair is
-//                  available and would be preferred.
-//
-// static void testForallLeaderFollowerRedirect(Context* context) {
-//   printf("%s\n", __FUNCTION__);
-//   ErrorGuard guard(context);
-// 
-//   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-//   auto program = R""""(
-//                   iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
-//                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
-//                   forall i in foo() do i;
-//                   )"""";
-//   assertLoopMatches(context, program, "leader", 2, 0, 1);
-//   assert(!guard.realizeErrors());
-// }
+static void testForallLeaderFollowerRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "leader", 2, 0, 1);
+  assert(!guard.realizeErrors());
+}
 
 // Invoke an iterator in a loop expression, yielding a tuple of the iterator's
 // yield values, then invoke the loop expression in a regular loop and ensure
@@ -1060,9 +1052,9 @@ int main() {
   testSerialZip(context);
   testParallelZip(context);
   testForallStandaloneThese(context);
-  // testForallStandaloneRedirect(context);
+  testForallStandaloneRedirect(context);
   testForallLeaderFollowerThese(context);
-  // testForallLeaderFollowerRedirect(context);
+  testForallLeaderFollowerRedirect(context);
 
   testForLoopExpression(context);
   testForallLoopExpressionStandalone(context);
