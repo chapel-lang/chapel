@@ -3951,6 +3951,84 @@ shouldSkipCallResolution(Resolver* rv, const uast::Call* call,
   return skip;
 }
 
+static const QualifiedType&
+getIterKindConstantOrWarnQuery(Context* context,
+                               const AstNode* astForErr,
+                               UniqueString iterKindStr) {
+  QUERY_BEGIN(getIterKindConstantOrWarnQuery, context, astForErr, iterKindStr);
+
+  auto iterKindActual = getIterKindConstantOrUnknownQuery(context, iterKindStr);
+  bool needSerial = iterKindStr.isEmpty();
+
+  // Exit early if we need a parallel iterator and don't have the enum.
+  if (!needSerial && iterKindActual.isUnknown()) {
+    context->warning(astForErr, "resolving parallel iterators is not supported "
+                                "without module code");
+  }
+
+  return QUERY_END(iterKindActual);
+}
+
+static optional<CallResolutionResult>
+rerunCallInfoWithIteratorTag(ResolutionContext* rc,
+                             const uast::Call* call,
+                             const CallInfo& ci,
+                             const CallScopeInfo& inScopes,
+                             QualifiedType receiverType,
+                             UniqueString iterKindStr) {
+  auto iterKindActual = getIterKindConstantOrWarnQuery(rc->context(), call, iterKindStr);
+  if (iterKindActual.isUnknown()) return empty;
+
+  std::vector<CallInfoActual> actuals;
+  for (const auto& actual : ci.actuals())
+    actuals.push_back(actual);
+  actuals.emplace_back(iterKindActual, USTR("tag"));
+
+  auto newCi = CallInfo(ci.name(), ci.calledType(), ci.isMethodCall(),
+      ci.hasQuestionArg(), ci.isParenless(), actuals);
+
+  auto newC = resolveCallInMethod(rc, call, newCi, inScopes, receiverType,
+      /* rejected */ nullptr);
+
+  if (!newC.mostSpecific().isEmpty()) {
+    return newC;
+  }
+
+  return empty;
+}
+
+// Invokes resolveCallInMethod, and if that fails due to iterator candidates
+// (e.g., we called foo() but only foo(standalone) is in scope), re-attempts
+// the resolution with the other candidates.
+//
+// Note that the order here should match resolveIterDetailsInPriorityOrder.
+static CallResolutionResult
+resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
+                                     const uast::Call* call,
+                                     const CallInfo& ci,
+                                     const CallScopeInfo& inScopes,
+                                     QualifiedType receiverType,
+                                     std::vector<ApplicabilityResult>* rejected) {
+  auto c = resolveCallInMethod(rc, call, ci, inScopes,
+                               receiverType,
+                               rejected);
+
+  // Other overloads are present and may be usable to fill in for 'foo()'.
+  if (c.mostSpecific().isEmpty() && c.rejectedPossibleIteratorCandidates()) {
+    if (auto standalone =
+          rerunCallInfoWithIteratorTag(rc, call, ci, inScopes, receiverType,
+                                       USTR("standalone"))) {
+      return *standalone;
+    }
+    if (auto parallel =
+        rerunCallInfoWithIteratorTag(rc, call, ci, inScopes, receiverType,
+                                     USTR("leader"))) {
+      return *parallel;
+    }
+  }
+  return c;
+}
+
 void Resolver::handleCallExpr(const uast::Call* call) {
   if (scopeResolveOnly) {
     return;
@@ -4015,9 +4093,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     }
 
     std::vector<ApplicabilityResult>* rejected = nullptr;
-    auto c = resolveCallInMethod(rc, call, ci, inScopes,
-                                 receiverType,
-                                 rejected);
+    auto c = resolveCallInMethodReattemptIfNeeded(rc, call, ci, inScopes,
+                                                  receiverType,
+                                                  rejected);
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
@@ -4601,13 +4679,11 @@ resolveIterTypeWithTag(Resolver& rv,
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindFormal = getIterKindConstantOrUnknownQuery(context, iterKindStr);
+  auto iterKindActual = getIterKindConstantOrWarnQuery(context, astForErr, iterKindStr);
   bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
-  if (!needSerial && iterKindFormal.isUnknown()) {
-    context->warning(astForErr, "resolving parallel iterators is not supported "
-                                "without module code");
+  if (!needSerial && iterKindActual.isUnknown()) {
     return error;
   }
 
@@ -4650,7 +4726,7 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindFormal, followThisFormal);
+  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindActual, followThisFormal);
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
