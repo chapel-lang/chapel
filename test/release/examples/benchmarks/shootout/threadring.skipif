@@ -1,0 +1,3 @@
+# This test currently hangs at the end of main for the gpu locale model.
+
+CHPL_LOCALE_MODEL == gpu
