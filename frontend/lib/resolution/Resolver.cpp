@@ -3951,19 +3951,26 @@ shouldSkipCallResolution(Resolver* rv, const uast::Call* call,
   return skip;
 }
 
+static const bool& warnForMissingIterKindEnum(Context* context,
+                                              const AstNode* astForErr) {
+  QUERY_BEGIN(warnForMissingIterKindEnum, context, astForErr);
+  context->warning(astForErr, "resolving parallel iterators is not supported "
+                              "without module code");
+  return QUERY_END(true);
+}
+
 static const QualifiedType&
-getIterKindConstantOrWarnQuery(Context* context,
-                               const AstNode* astForErr,
-                               UniqueString iterKindStr) {
-  QUERY_BEGIN(getIterKindConstantOrWarnQuery, context, astForErr, iterKindStr);
+getIterKindConstantOrWarn(Context* context,
+                          const AstNode* astForErr,
+                          UniqueString iterKindStr) {
+  QUERY_BEGIN(getIterKindConstantOrWarn, context, astForErr, iterKindStr);
 
   auto iterKindActual = getIterKindConstantOrUnknownQuery(context, iterKindStr);
   bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
-    context->warning(astForErr, "resolving parallel iterators is not supported "
-                                "without module code");
+    warnForMissingIterKindEnum(context, astForErr);
   }
 
   return QUERY_END(iterKindActual);
@@ -3976,7 +3983,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
                              const CallScopeInfo& inScopes,
                              QualifiedType receiverType,
                              UniqueString iterKindStr) {
-  auto iterKindActual = getIterKindConstantOrWarnQuery(rc->context(), call, iterKindStr);
+  auto iterKindActual = getIterKindConstantOrWarn(rc->context(), call, iterKindStr);
   if (iterKindActual.isUnknown()) return empty;
 
   std::vector<CallInfoActual> actuals;
@@ -4679,7 +4686,7 @@ resolveIterTypeWithTag(Resolver& rv,
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindActual = getIterKindConstantOrWarnQuery(context, astForErr, iterKindStr);
+  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKindStr);
   bool needSerial = iterKindStr.isEmpty();
   bool needStandalone = iterKindStr == USTR("standalone");
   bool needLeader = iterKindStr == USTR("leader");
