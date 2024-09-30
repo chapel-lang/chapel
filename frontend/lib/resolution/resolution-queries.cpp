@@ -4584,6 +4584,7 @@ static void doGatherCandidates(ResolutionContext* rc,
                                LastResortCandidateGroups& outLrcGroups,
                                CheckedScopes& outVisited,
                                size_t& outFirstPoiCandidateIdx,
+                               bool& outRejectedPossibleIteratorCandidates,
                                const Call* call,
                                const CallInfo& ci,
                                const CallScopeInfo& inScopes,
@@ -4602,6 +4603,8 @@ static void doGatherCandidates(ResolutionContext* rc,
   auto& initial = filter(rc, v, ci, gatherRejections);
   const auto& initialCandidates = initial.matching;
   const auto& initialRejections = initial.rejected;
+  outRejectedPossibleIteratorCandidates =
+    !initial.rejectedIteratorsMissingTag.empty();
 
   if (rejected != nullptr) {
     rejected->insert(rejected->end(),
@@ -4649,6 +4652,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
                           const CallInfo& ci,
                           const CallScopeInfo& inScopes,
                           size_t& firstPoiCandidate,
+                          bool& outRejectedPossibleIteratorCandidates,
                           std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
   CandidatesAndForwardingInfo candidates;
@@ -4670,7 +4674,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   // don't worry about last resort for compiler generated candidates
 
   // look for candidates without using POI.
-  doGatherCandidates(rc, candidates, lrcGroups, visited, firstPoiCandidate,
+  doGatherCandidates(rc, candidates, lrcGroups, visited,
+                     firstPoiCandidate, outRejectedPossibleIteratorCandidates,
                      call, ci, inScopes, rejected, nullptr);
 
   // next, look for candidates using POIs
@@ -4684,7 +4689,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       break;
     }
 
-    doGatherCandidates(rc, candidates, lrcGroups, visited, firstPoiCandidate,
+    doGatherCandidates(rc, candidates, lrcGroups, visited,
+                       firstPoiCandidate, outRejectedPossibleIteratorCandidates,
                        call, ci, inScopes, rejected, curPoi);
   }
 
@@ -4784,6 +4790,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        const CallInfo& ci,
                                        const CallScopeInfo& inScopes,
                                        PoiInfo& poiInfo,
+                                       bool& outRejectedPossibleIteratorCandidates,
                                        std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
 
@@ -4792,6 +4799,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   auto candidates = gatherAndFilterCandidates(rc, astForErr, call, ci,
                                               inScopes,
                                               firstPoiCandidate,
+                                              outRejectedPossibleIteratorCandidates,
                                               rejected);
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -4816,6 +4824,7 @@ resolveFnCall(ResolutionContext* rc,
   Context* context = rc->context();
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
+  bool rejectedPossibleIteratorCandidates = false;
 
   // Note: currently type constructors are not implemented as methods
   if (ci.calledType().kind() == QualifiedType::TYPE &&
@@ -4831,10 +4840,13 @@ resolveFnCall(ResolutionContext* rc,
     // * filter and instantiate
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
-    mostSpecific = resolveFnCallFilterAndFindMostSpecific(rc, astForErr,
-                                                          call, ci,
-                                                          inScopes,
-                                                          poiInfo, rejected);
+    mostSpecific =
+      resolveFnCallFilterAndFindMostSpecific(rc, astForErr,
+                                             call, ci,
+                                             inScopes,
+                                             poiInfo,
+                                             rejectedPossibleIteratorCandidates,
+                                             rejected);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
@@ -4904,7 +4916,9 @@ resolveFnCall(ResolutionContext* rc,
     }
   }
 
-  return CallResolutionResult(mostSpecific, retType, std::move(poiInfo));
+  return CallResolutionResult(mostSpecific,
+                              rejectedPossibleIteratorCandidates,
+                              retType, std::move(poiInfo));
 }
 
 static
@@ -5026,7 +5040,9 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
   MostSpecificCandidates emptyCandidates;
   QualifiedType emptyType;
   PoiInfo emptyPoi;
-  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
+  return CallResolutionResult(emptyCandidates,
+                              /* rejectedPossibleIteratorCandidates */ false,
+                              emptyType, emptyPoi);
 }
 
 CallResolutionResult

@@ -1865,6 +1865,7 @@ class CallResolutionResult {
   // whether the resolution result was handled using some compiler-level logic,
   // which does not correspond to a TypedSignature or AST.
   bool speciallyHandled_ = false;
+  bool rejectedPossibleIteratorCandidates_ = false;
 
  public:
   CallResolutionResult() {}
@@ -1877,13 +1878,15 @@ class CallResolutionResult {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
+                       bool rejectedPossibleIteratorCandidates,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo,
                        bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
       poiInfo_(std::move(poiInfo)),
-      speciallyHandled_(speciallyHandled)
+      speciallyHandled_(speciallyHandled),
+      rejectedPossibleIteratorCandidates_(rejectedPossibleIteratorCandidates)
   {
   }
 
@@ -1898,6 +1901,13 @@ class CallResolutionResult {
 
   /** whether the resolution result was handled using some compiler-level logic */
   bool speciallyHandled() const { return speciallyHandled_; }
+
+  /** whether we rejected candidates because they expected a tag or followThis.
+      This might indicate that we need to re-resolve with tag to find parallel
+      iterators. */
+  bool rejectedPossibleIteratorCandidates() const {
+    return rejectedPossibleIteratorCandidates_;
+  }
 
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
