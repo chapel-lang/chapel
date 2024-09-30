@@ -34,12 +34,6 @@
 
 #include <map>
 
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
-
 static auto myiter = std::string(R""""(
 iter myiter() {
   yield 1;
