@@ -711,6 +711,7 @@ class FileInfo:
         """
         Returns the visible nodes at a given position.
         """
+
         def visible_nodes_for_scope(
             name: str, nodes: List[chapel.AstNode], in_bundled_module: bool
         ) -> Optional[Tuple[str, chapel.AstNode]]:
