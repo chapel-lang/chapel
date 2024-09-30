@@ -3807,6 +3807,10 @@ bool Resolver::enter(const uast::Domain* decl) {
 }
 
 void Resolver::exit(const uast::Domain* decl) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
   const DomainType* genericDomainType = DomainType::getGenericDomainType(context);
   if (CompositeType::isMissingBundledRecordType(context, genericDomainType->id())) {
     // If we don't have the standard library code backing the Domain type, leave
