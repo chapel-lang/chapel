@@ -675,6 +675,8 @@ def register_rules(driver: LintDriver):
         # if the with clause only has one expr, remove the entire with clause
         if len(list(with_clause.exprs())) == 1:
             with_loc = with_clause.location()
+            # header_loc is the location of the block header without the `with`
+            # e.g. `forall i in 1..10`, `begin`, `cobegin`
             header_loc = (
                 task_block.header_location()
                 if isinstance(task_block, Loop)
