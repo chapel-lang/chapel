@@ -4681,6 +4681,9 @@ resolveIterTypeWithTag(Resolver& rv,
 
   auto iterKindActual = getIterKindConstantOrWarnQuery(context, astForErr, iterKindStr);
   bool needSerial = iterKindStr.isEmpty();
+  bool needStandalone = iterKindStr == USTR("standalone");
+  bool needLeader = iterKindStr == USTR("leader");
+  bool needFollower = iterKindStr == USTR("follower");
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
@@ -4695,18 +4698,16 @@ resolveIterTypeWithTag(Resolver& rv,
   // are automatically provided by the compiler. Report an error.
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
-  if (fn && fn->isParallelIterator(context)) {
-    context->error(astForErr,
-                   "explicitly invoking parallel iterators is not allowed -- "
-                   "they are invoked implicitly by the compiler.");
-    return error;
-  }
 
   bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
-  bool wasMatchingIterResolved =
-    // Call to a serial iterator overload, and we are looking for a serial iterator.
-    (fn && fn->isSerialIterator(context) && needSerial) ||
-    // Loop expressions (which we just resolved) and we are looking for a serial iterator.
+  // Call to a serial iterator overload, and we are looking for a serial iterator.
+  bool wasMatchingIterResolved = fn &&
+    ((needSerial && fn->isSerialIterator(context)) ||
+     (needStandalone && fn->isParallelStandaloneIterator(context)) ||
+     (needLeader && fn->isParallelLeaderIterator(context)) ||
+     (needFollower && fn->isParallelFollowerIterator(context)));
+  // Loop expressions (which we just resolved) and we are looking for a serial iterator.
+  wasMatchingIterResolved |=
     (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
 
   // The iterand was a call to a serial iterator, and we need a serial iterator.
