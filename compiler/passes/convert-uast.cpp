@@ -4530,6 +4530,11 @@ Type* Converter::helpConvertType(types::QualifiedType qt) {
     case typetags::UnknownType:   return dtUnknown;
     case typetags::VoidType:      return dtVoid;
 
+    // subclasses of IterableType
+    case typetags::FnIteratorType: return dtUnknown; // a lie
+    case typetags::LoopExprIteratorType: return dtUnknown; // a lie
+    case typetags::PromotionIteratorType: return dtUnknown; // a lie
+
     // subclasses of BuiltinType
 
     // concrete builtin types
@@ -4592,6 +4597,8 @@ Type* Converter::helpConvertType(types::QualifiedType qt) {
     case typetags::END_CompositeType:
     case typetags::START_PrimitiveType:
     case typetags::END_PrimitiveType:
+    case typetags::START_IteratorType:
+    case typetags::END_IteratorType:
     case typetags::NUM_TYPE_TAGS:
       INT_FATAL("should not be reachable");
       return dtUnknown;

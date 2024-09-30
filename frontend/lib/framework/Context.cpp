@@ -977,6 +977,18 @@ void Context::error(const resolution::TypedFnSignature* inFn,
   // TODO: add note about instantiation & POI stack
 }
 
+void Context::warning(Location loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, loc, fmt);
+}
+
+void Context::warning(ID id, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, id, fmt);
+}
+
+void Context::warning(const uast::AstNode* ast, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, ast, fmt);
+}
+
 #undef CHPL_CONTEXT_LOG_ERROR_HELPER
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {

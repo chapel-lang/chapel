@@ -70,9 +70,7 @@ namespace {
 
     // When an iter is resolved these pieces of the process will be stored.
     struct Pieces {
-      bool wasCallInjected = false;
-      CallResolutionResult crr;
-      const TypedFnSignature* sig = crr.mostSpecific().only().fn();
+      const IteratorType* iterType = nullptr;
     };
     Pieces standalone;
     Pieces leader;
@@ -101,6 +99,7 @@ getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant);
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
+                       const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
                        UniqueString iterKindStr,
@@ -4463,7 +4462,7 @@ getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
 // This helper resolves by priority order as described in 'IterDetails'.
 static IterDetails
 resolveIterDetailsInPriorityOrder(Resolver& rv,
-                                  bool& outWasIterSigResolved,
+                                  const IteratorType* iteratingOver,
                                   const AstNode* astForErr,
                                   const AstNode* iterand,
                                   const QualifiedType& leaderYieldType,
@@ -4471,9 +4470,8 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   IterDetails ret;
   bool computedLeaderYieldType = false;
   if (mask & IterDetails::STANDALONE) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
+    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, iteratingOver, astForErr,
                                          iterand, USTR("standalone"), {});
-    outWasIterSigResolved = (ret.standalone.sig != nullptr);
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -4481,7 +4479,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   }
 
   if (mask & IterDetails::LEADER_FOLLOWER) {
-    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
+    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, iteratingOver, astForErr,
                                                  iterand, USTR("leader"),
                                                  {});
     computedLeaderYieldType = true;
@@ -4492,10 +4490,9 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   if (mask & IterDetails::LEADER_FOLLOWER ||
       mask & IterDetails::FOLLOWER) {
     if (!ret.leaderYieldType.isUnknownOrErroneous()) {
-      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, astForErr,
+      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, iteratingOver, astForErr,
                                            iterand, USTR("follower"),
                                            ret.leaderYieldType);
-      outWasIterSigResolved = (ret.follower.sig != nullptr);
       if (!ret.idxType.isUnknownOrErroneous()) {
         ret.succeededAt = computedLeaderYieldType
             ? IterDetails::LEADER_FOLLOWER
@@ -4506,9 +4503,8 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   }
 
   if (mask & IterDetails::SERIAL) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, astForErr,
+    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, iteratingOver, astForErr,
                                          iterand, {}, {});
-    outWasIterSigResolved = (ret.serial.sig != nullptr);
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::SERIAL;
     }
@@ -4522,25 +4518,23 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
                                       int mask) {
-  Context* context = rv.context;
-
-  if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
-    // Resolve the iterand as much as possible even if there is nothing to do.
-    iterand->traverse(rv);
+  if (rv.scopeResolveOnly) {
     return {};
   }
 
-  // Resolve the iterand but suppress errors for now. We'll reissue them
-  // next, possibly suppressing a "NoMatchingCandidates" for the iterand if
-  // our injected call is successful.
-  auto runResult = context->runAndTrackErrors([&](Context* context) {
-    iterand->traverse(rv);
-    return nullptr;
-  });
+  auto iterandRe = rv.byPostorder.byAst(iterand);
+  const IteratorType* iteratingOver = nullptr;
+  if (!iterandRe.type().isUnknownOrErroneous()) {
+    iteratingOver = iterandRe.type().type()->toIteratorType();
+  } else {
+    // The thing-to-be-iterated is not an iterator, but it might be iterable
+    // using its 'these()' method. Don't resolve it now, since we haven't
+    // decided on which overloads we need; resolveIterTypeWithTag will do that
+    // on finding that toIterate is null.
+  }
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
-  bool wasIterSigResolved = false;
-  auto ret = resolveIterDetailsInPriorityOrder(rv, wasIterSigResolved,
+  auto ret = resolveIterDetailsInPriorityOrder(rv, iteratingOver,
                                                astForErr, iterand,
                                                leaderYieldType,
                                                mask);
@@ -4548,33 +4542,57 @@ static IterDetails resolveIterDetails(Resolver& rv,
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
   // approriate error for us already.
-  bool skipNoCandidatesError = true;
-  if (!wasIterSigResolved) {
+  if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
-      ret.idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+      ret.idxType = CHPL_TYPE_ERROR(rv.context, NonIterable, astForErr, iterand,
                                     iterandRE.type());
-    } else {
-      skipNoCandidatesError = false;
     }
-  }
-
-  // Reissue the errors.
-  for (auto& e : runResult.errors()) {
-    if (e->type() == NoMatchingCandidates) {
-      auto nmc = static_cast<ErrorNoMatchingCandidates*>(e.get());
-      auto& f = std::get<0>(nmc->info());
-      if (skipNoCandidatesError && f == iterand) continue;
-    }
-    context->report(std::move(e));
   }
 
   return ret;
 }
 
+static QualifiedType resolveTheseMethod(Resolver& rv,
+                                        const AstNode* iterand,
+                                        const QualifiedType& iterandType,
+                                        const QualifiedType& tagType,
+                                        const QualifiedType& followThisType) {
+  auto& iterandRe = rv.byPostorder.byAst(iterand);
+  std::vector<CallInfoActual> actuals;
+
+  actuals.push_back(CallInfoActual(iterandType, USTR("this")));
+
+  if (!tagType.isUnknown()) {
+    actuals.emplace_back(tagType, USTR("tag"));
+  }
+
+  if (!followThisType.isUnknown()) {
+    actuals.emplace_back(followThisType, USTR("followThis"));
+  }
+
+  auto ci = CallInfo(USTR("these"),
+                     iterandType,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(actuals));
+
+  auto inScope = rv.scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
+  auto c = resolveGeneratedCall(rv.context, iterand, ci, inScopes);
+
+  rv.handleResolvedCallWithoutError(iterandRe, iterand, ci, c,
+      { { AssociatedAction::ITERATE,
+      iterand->id() } });
+
+  return c.exprType();
+}
+
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
+                       const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
                        UniqueString iterKindStr,
@@ -4584,114 +4602,64 @@ resolveIterTypeWithTag(Resolver& rv,
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
   auto iterKindFormal = getIterKindConstantOrUnknownQuery(context, iterKindStr);
-  bool needStandalone = iterKindStr == USTR("standalone");
-  bool needLeader = iterKindStr == USTR("leader");
-  bool needFollower = iterKindStr == USTR("follower");
   bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
-  if (!needSerial && iterKindFormal.isUnknown()) return error;
-
-  auto iterKindType = EnumType::getIterKindType(context);
-  CHPL_ASSERT(needSerial || (iterKindFormal.type() == iterKindType &&
-                             iterKindFormal.hasParamPtr()));
+  if (!needSerial && iterKindFormal.isUnknown()) {
+    context->warning(astForErr, "resolving parallel iterators is not supported "
+                                "without module code");
+    return error;
+  }
 
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
+  auto iterandType = iterandRE.type();
+
+  // If the user explicitly provided a tag, this is an error: tags
+  // are automatically provided by the compiler. Report an error.
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
-  bool wasIterandTypeResolved = !iterandRE.type().isUnknownOrErroneous();
-  bool wasIterResolved = fn && fn->isIterator();
-  bool wasMatchingIterResolved = wasIterResolved &&
-    ((fn->isParallelStandaloneIterator(context) && needStandalone) ||
-     (fn->isParallelLeaderIterator(context) && needLeader) ||
-     (fn->isParallelFollowerIterator(context) && needFollower) ||
-     (fn->isSerialIterator(context) && needSerial));
-
-  QualifiedType ret = error;
-
-  // We resolved the iterator we need right off the bat, so use it.
-  if (wasMatchingIterResolved) {
-    ret = iterandRE.type();
-    outIterPieces = { false, {}, fn };
-
-  // We cannot inject e.g., the 'tag' actual in this case, so error out.
-  } else if (needSerial && wasIterResolved) {
+  if (fn && fn->isParallelIterator(context)) {
+    context->error(astForErr,
+                   "explicitly invoking parallel iterators is not allowed -- "
+                   "they are invoked implicitly by the compiler.");
     return error;
+  }
+
+  bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
+  bool wasMatchingIterResolved =
+    // Call to a serial iterator overload, and we are looking for a serial iterator.
+    (fn && fn->isSerialIterator(context) && needSerial) ||
+    // Loop expressions (which we just resolved) and we are looking for a serial iterator.
+    (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
+
+  // The iterand was a call to a serial iterator, and we need a serial iterator.
+  if (wasMatchingIterResolved && wasIterandTypeResolved) {
+    CHPL_ASSERT(iterandType.type()->isIteratorType() &&
+                iterandType.type() == iteratingOver &&
+                "an iterator was resolved, expecting an iterator type");
+    outIterPieces = { iteratingOver };
+    return iteratingOver->yieldType();
 
   // There's nothing to do in this case, so error out.
   } else if (needSerial && !wasIterandTypeResolved) {
     return error;
-
-  // In this branch we prepare a generated iterator call. It could be a call
-  // to 'these()' on the iterand type, or it could be a redirect of the
-  // existing call with 'iterKind' and (optionally) 'followThis' arguments
-  // tacked onto the end.
-  } else {
-    bool shouldCreateTheseCall = !wasIterResolved && wasIterandTypeResolved;
-
-    // We need to fill in the following pieces to construct a 'CallInfo'.
-    UniqueString callName;
-    types::QualifiedType callCalledType;
-    bool callIsMethodCall = false;
-    bool callHasQuestionArg = false;
-    bool callIsParenless = false;
-    std::vector<CallInfoActual> callActuals;
-
-    // If we are constructing a new 'these()' call then add a receiver.
-    if (shouldCreateTheseCall) {
-      callName = USTR("these");
-      callCalledType = iterandRE.type();
-      callIsMethodCall = true;
-      callActuals.push_back(CallInfoActual(iterandRE.type(), USTR("this")));
-
-    // The iterand is an unresolved call, or it is a resolved iterator but
-    // not the one that we need. Regather existing actuals and reuse the
-    // receiver if it is present.
-    } else if (auto call = iterand->toCall()) {
-
-      bool raiseErrors = false;
-      auto tmp = CallInfo::create(context, call, rv.byPostorder, raiseErrors);
-
-      callName = tmp.name();
-      callCalledType = tmp.calledType();
-      callIsMethodCall = tmp.isMethodCall();
-      callIsParenless = tmp.isParenless();
-      for (auto& a : tmp.actuals()) callActuals.push_back(a);
-    } else {
-      CHPL_UNIMPL("unknown iterand");
-      return error;
-    }
-
-    if (!needSerial) {
-      callActuals.push_back(CallInfoActual(iterKindFormal, USTR("tag")));
-    }
-
-    if (needFollower) {
-      auto x = CallInfoActual(followThisFormal, USTR("followThis"));
-      callActuals.push_back(std::move(x));
-    }
-
-    auto ci = CallInfo(std::move(callName),
-                       std::move(callCalledType),
-                       std::move(callIsMethodCall),
-                       std::move(callHasQuestionArg),
-                       std::move(callIsParenless),
-                       std::move(callActuals));
-    auto inScope = rv.scopeStack.back();
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-    auto c = resolveGeneratedCall(context, iterand, ci, inScopes);
-
-    outIterPieces = { true, c, c.mostSpecific().only().fn() };
-    ret = c.exprType();
-
-    if (!ret.isUnknownOrErroneous()) {
-      rv.handleResolvedCall(iterandRE, astForErr, ci, c,
-                            { { AssociatedAction::ITERATE, iterand->id() } });
-    }
   }
 
-  return ret;
+  // The iterand is either not an iterator (but could have a 'these' method)
+  // or an iterator. The latter have compiler-generated 'these' methods
+  // which implement the dispatch logic like rewriting an iterator from `iter foo()`
+  // to `iter foo(tag)`. So just resolve the 'these' method.
+  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindFormal, followThisFormal);
+  if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
+    // These produced a valid iterator. We already configured the call
+    // with the desired tag, so that's sufficient.
+
+    iteratingOver = qt.type()->toIteratorType();
+    outIterPieces = { iteratingOver };
+    return iteratingOver->yieldType();
+  }
+  return qt;
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
@@ -4754,35 +4722,6 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   }
 
   return false;
-}
-
-static void
-backpatchArrayTypeSpecifier(Resolver& rv, const IndexableLoop* loop) {
-  if (rv.scopeResolveOnly || !loop->isBracketLoop()) return;
-  Context* context = rv.context;
-
-  // Check if this is an array
-  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
-  if (!iterandType.isUnknown() && iterandType.type()->isDomainType()) {
-    QualifiedType eltType;
-
-    CHPL_ASSERT(loop->isExpressionLevel() && loop->numStmts() <= 1);
-    if (loop->numStmts() == 1) {
-      eltType = rv.byPostorder.byAst(loop->stmt(0)).type();
-    } else if (loop->numStmts() == 0) {
-      eltType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-    }
-
-    // TODO: resolve array types when the iterand is something other than
-    // a domain.
-    if (eltType.isType() || eltType.kind() == QualifiedType::TYPE_QUERY) {
-      eltType = QualifiedType(QualifiedType::TYPE, eltType.type());
-      auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
-
-      auto& re = rv.byPostorder.byAst(loop);
-      re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
-    }
-  }
 }
 
 static QualifiedType
@@ -4860,6 +4799,119 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   return ret;
 }
 
+static bool isShapedLikeArray(const IndexableLoop* loop) {
+  // 'forall' expressions are not arrays, only [] ... expressions could be.
+  if (!loop->isBracketLoop() || !loop->isExpressionLevel()) return false;
+
+  // If there's an 'in' or 'with' clause, it's not an array
+  if (loop->index() != nullptr || loop->withClause() != nullptr) return false;
+
+  // If there's a 'zip', it's not an array
+  if (loop->iterand()->isZip()) return false;
+
+    // If there's more than one statement, it's not an array
+  if (loop->numStmts() > 1) return false;
+
+  return true;
+}
+
+static bool handleArrayTypeExpr(Resolver& rv,
+                                const IndexableLoop* loop) {
+
+  auto bodyType = QualifiedType();
+  if (loop->numStmts() == 1) {
+    bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
+  } else {
+    bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
+  }
+
+  // The body wasn't a type, so this isn't an array type epxression
+  // Make an exception for unknown or erroneous bodies, since the user may
+  // have been trying to define a type but made a mistake (or we may be
+  // in a partially-instantiated situation and the type is not yet known).
+  if (!bodyType.isUnknownOrErroneous() &&
+      !bodyType.isType() &&
+      bodyType.kind() != QualifiedType::TYPE_QUERY) {
+    return false;
+  }
+
+  // It is an array. Time to build the array type.
+
+  auto domainType = QualifiedType();
+  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+  if (!iterandType.isUnknownOrErroneous()) {
+    if (iterandType.type()->isDomainType()) {
+      domainType = iterandType;
+    } else {
+      // TODO: convert range into domain
+    }
+  }
+
+  if (domainType.isUnknown()) {
+    // TODO: emit an error here
+    return true;
+  }
+
+  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
+  auto arrayType = ArrayType::getArrayType(rv.context, domainType, eltType);
+
+  auto& re = rv.byPostorder.byAst(loop);
+  re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
+
+  return true;
+}
+
+static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
+  if (!loop->isExpressionLevel()) return;
+
+  CHPL_ASSERT(loop->numStmts() == 1);
+  auto bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
+
+  auto loopType = QualifiedType();
+  if (!bodyType.isUnknownOrErroneous()) {
+    // Loop expressions keep the types of their iterands (effectively)
+    // because they need to preserve them for resolving leaders and followers
+    // later.
+
+    QualifiedType iterandType;
+    bool isZippered = false;
+    if (auto zip = loop->iterand()->toZip()) {
+      isZippered = true;
+      bool allChildrenResolved = true;
+      std::vector<QualifiedType> iterandTypes;
+
+      for (auto child : zip->children()) {
+        auto childType = rv.byPostorder.byAst(child).type();
+        if (childType.isUnknownOrErroneous()) {
+          allChildrenResolved = false;
+          break;
+        }
+        iterandTypes.push_back(childType);
+      }
+
+      if (allChildrenResolved) {
+        iterandType =
+          QualifiedType(QualifiedType::TYPE,
+                        TupleType::getQualifiedTuple(rv.context,
+                                                     std::move(iterandTypes)));
+      }
+    } else {
+      iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+    }
+
+    if (!iterandType.isUnknownOrErroneous()) {
+      bool supportsParallel = loop->isForall() || loop->isBracketLoop();
+      auto loopExprType =
+        LoopExprIteratorType::get(rv.context, bodyType, isZippered,
+                                  supportsParallel, iterandType, loop->id());
+      loopType = QualifiedType(QualifiedType::CONST_VAR, loopExprType);
+    }
+  }
+
+  auto& re = rv.byPostorder.byAst(loop);
+  re.setType(loopType);
+}
+
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
@@ -4874,11 +4926,35 @@ bool Resolver::enter(const IndexableLoop* loop) {
   if (isParamForLoop) return resolveParamForLoop(*this, loop->toFor());
 
   auto iterand = loop->iterand();
-  QualifiedType idxType;
+  iterand->traverse(*this);
 
+  bool shapedLikeArray = false;
+  if ((shapedLikeArray = isShapedLikeArray(loop))) {
+    // Array expressions and bracket loops can look very similar.
+    // For array type expressions, we do not need to go through the
+    // iterator/'these' logic handled below. Resolve the body so we can check
+    // if it's an array.
+    enterScope(loop);
+    loop->body()->traverse(*this);
+
+    // If it's an array, no need to do any more work.
+    if (handleArrayTypeExpr(*this, loop)) {
+      return false;
+
+    // Otherwise, we need to continue doing loop resolution, including the
+    // iterator/'these' logic. When performing that logic, we don't want
+    // the loop body to be our scope (indices are outside the loop), so
+    // exit the scope here.
+    } else {
+      exitScope(loop);
+    }
+  }
+
+  // Not an array expression. In this case, depending on the loop type,
+  // we need to resolve various iterators.
+  QualifiedType idxType;
   if (iterand->isZip()) {
     idxType = resolveZipExpression(*this, loop, iterand->toZip());
-
   } else {
     bool loopRequiresParallel = loop->isForall();
     bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
@@ -4904,11 +4980,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
     with->traverse(*this);
   }
 
-  loop->body()->traverse(*this);
+  // If the loop is shaped like an array, we've already resolved the body
+  if (!shapedLikeArray) {
+    loop->body()->traverse(*this);
+  }
 
-  // TODO: Resolve the loop body first when it looks like an array type,
-  // and if the body is a type, then skip resolving iterators to save time.
-  backpatchArrayTypeSpecifier(*this, loop);
+  noteLoopExprType(*this, loop);
 
   return false;
 }
@@ -5126,6 +5203,7 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* reduceOrScan,
                                          const AstNode* op,
                                          const AstNode* iterand) {
+  iterand->traverse(resolver);
   auto dt = resolveIterDetails(resolver, reduceOrScan, iterand, {},
                                IterDetails::SERIAL);
   auto idxType = dt.idxType;
@@ -5304,6 +5382,11 @@ bool Resolver::enter(const Import* node) {
 }
 
 void Resolver::exit(const Import* node) {}
+
+bool Resolver::enter(const uast::Zip* zip) {
+  return true;
+}
+void Resolver::exit(const uast::Zip* zip) {}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
