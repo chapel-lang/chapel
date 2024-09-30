@@ -1348,6 +1348,42 @@ static const Type* computeVarArgTuple(Resolver& resolver,
   return typePtr;
 }
 
+
+static bool adjustTupleTypeIntentForDecl(Context* context,
+                                            const NamedDecl* decl,
+                                            QualifiedType::Kind declaredKind,
+                                            QualifiedType::Kind& qtKind,
+                                            const Type*& typePtr) {
+  // adjust tuple declarations for value / referential tuples
+  if (typePtr != nullptr && decl->isVarArgFormal() == false) {
+    if (auto tupleType = typePtr->toTupleType()) {
+      if (declaredKind == QualifiedType::DEFAULT_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context);
+        qtKind = QualifiedType::CONST_REF;
+        return true;
+      } else if (declaredKind == QualifiedType::CONST_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context, /* makeConst */ true);
+        qtKind = QualifiedType::CONST_REF;
+        return true;
+      } else if (qtKind == QualifiedType::CONST_IN ||
+                 qtKind == QualifiedType::CONST_REF) {
+        typePtr = tupleType->toValueTuple(context, /* makeConst */ true);
+        return true;
+      } else if (qtKind == QualifiedType::VAR ||
+                 qtKind == QualifiedType::CONST_VAR ||
+                 qtKind == QualifiedType::REF ||
+                 qtKind == QualifiedType::IN ||
+                 qtKind == QualifiedType::OUT ||
+                 qtKind == QualifiedType::INOUT ||
+                 qtKind == QualifiedType::TYPE) {
+        typePtr = tupleType->toValueTuple(context);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /* If the type is generic with defaults, computes the defaults of a type.
    Returns the original type if instantiating with defaults isn't necessary. */
 static QualifiedType computeTypeDefaults(Resolver& resolver,
@@ -1577,6 +1613,19 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
           computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
         }
       }
+
+      // The type expression is a type-tuple (e.g., (type int, type bool)),
+      // but the actual value may be value-tuple (e.g., (int, bool)), or a ref
+      // tuple, etc. Need to adjust the intents so that getTypeForDecl (which
+      // runs canPass) doesn't balk at the mismatch.
+      auto adjustedQtKind = qtKind;
+      auto adjustedTypePtr = typeExprT.type();
+      if (adjustTupleTypeIntentForDecl(context, decl, qtKind,
+                                       adjustedQtKind, adjustedTypePtr)) {
+        typeExprT = QualifiedType(typeExprT.kind(), adjustedTypePtr, typeExprT.param());
+      }
+
+      //
       // Check that the initExpr type is compatible with declared type
       // Check kinds are OK
       // Handle any implicit conversions / instantiations
@@ -1608,29 +1657,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
                                  qtKind, typePtr);
   }
 
-  // adjust tuple declarations for value / referential tuples
-  if (typePtr != nullptr && decl->isVarArgFormal() == false) {
-    if (auto tupleType = typePtr->toTupleType()) {
-      if (declaredKind == QualifiedType::DEFAULT_INTENT) {
-        typePtr = tupleType->toReferentialTuple(context);
-        qtKind = QualifiedType::CONST_REF;
-      } else if (declaredKind == QualifiedType::CONST_INTENT) {
-        typePtr = tupleType->toReferentialTuple(context, /* makeConst */ true);
-        qtKind = QualifiedType::CONST_REF;
-      } else if (qtKind == QualifiedType::CONST_IN ||
-                 qtKind == QualifiedType::CONST_REF) {
-        typePtr = tupleType->toValueTuple(context, /* makeConst */ true);
-      } else if (qtKind == QualifiedType::VAR ||
-                 qtKind == QualifiedType::CONST_VAR ||
-                 qtKind == QualifiedType::REF ||
-                 qtKind == QualifiedType::IN ||
-                 qtKind == QualifiedType::OUT ||
-                 qtKind == QualifiedType::INOUT ||
-                 qtKind == QualifiedType::TYPE) {
-        typePtr = tupleType->toValueTuple(context);
-      }
-    }
-  }
+  adjustTupleTypeIntentForDecl(context, decl, declaredKind, qtKind, typePtr);
 
   ResolvedExpression& result = byPostorder.byAst(decl);
   result.setType(QualifiedType(qtKind, typePtr, paramPtr));
