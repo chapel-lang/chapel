@@ -197,16 +197,23 @@ const RecordType* CompositeType::getDistributionType(Context* context) {
                          /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
+static const ID getOwnedRecordId(Context* context) {
+  return parsing::getSymbolFromTopLevelModule(context, "OwnedObject", "_owned");
+}
+
+static const ID getSharedRecordId(Context* context) {
+  return parsing::getSymbolFromTopLevelModule(context, "SharedObject",
+                                              "_shared");
+}
+
 static const RecordType* tryCreateManagerRecord(Context* context,
-                                                const char* moduleName,
-                                                const char* recordName,
+                                                const ID& recordId,
                                                 const BasicClassType* bct) {
   const RecordType* instantiatedFrom = nullptr;
   SubstitutionsMap subs;
   if (bct != nullptr) {
     instantiatedFrom = tryCreateManagerRecord(context,
-                                              moduleName,
-                                              recordName,
+                                              recordId,
                                               /*bct*/ nullptr);
 
     auto fields = fieldsForTypeDecl(context,
@@ -227,21 +234,20 @@ static const RecordType* tryCreateManagerRecord(Context* context,
     }
   }
 
-  auto name = UniqueString::get(context, recordName);
-  auto id = parsing::getSymbolFromTopLevelModule(context, moduleName, recordName);
-  return RecordType::get(context, id, name,
+  auto name = recordId.symbolName(context);
+  return RecordType::get(context, recordId, name,
                          instantiatedFrom,
                          std::move(subs));
 }
 
 const RecordType*
 CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
-  return tryCreateManagerRecord(context, "OwnedObject", "_owned", bct);
+  return tryCreateManagerRecord(context, getOwnedRecordId(context), bct);
 }
 
 const RecordType*
 CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
-  return tryCreateManagerRecord(context, "SharedObject", "_shared", bct);
+  return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
 }
 
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
@@ -252,15 +258,14 @@ bool CompositeType::isMissingBundledType(Context* context, ID id) {
 bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
   bool noLibrary = parsing::bundledModulePath(context).isEmpty();
   if (noLibrary) {
-    auto path = id.symbolPath();
     return id == CompositeType::getStringType(context)->id() ||
            id == CompositeType::getRangeType(context)->id() ||
            id == TupleType::getGenericTupleType(context)->id() ||
            id == CompositeType::getBytesType(context)->id() ||
            id == CompositeType::getDistributionType(context)->id() ||
            id == DomainType::getGenericDomainType(context)->id() ||
-           path == "OwnedObject._owned" ||
-           path == "SharedObject._shared";
+           id == getOwnedRecordId(context) ||
+           id == getSharedRecordId(context);
   }
 
   return false;
