@@ -140,10 +140,7 @@ module M {
     assert(call->byAst(ETGood).type().type() == AType.type());
   }
 
-  // TODO: Re-enable error checking once we get more module code resolving
-  // successfully. Currently enough resolves to do this test, but we get errors
-  // along the way.
-  // assert(guard.errors().size() == 0);
+  assert(guard.errors().size() == 0);
   guard.realizeErrors(context);
 
   std::string arrayText;
