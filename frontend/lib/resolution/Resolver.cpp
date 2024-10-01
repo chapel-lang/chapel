@@ -923,6 +923,22 @@ static bool isCallToClassManager(const FnCall* call) {
          name == USTR("unmanaged") || name == USTR("borrowed");
 }
 
+static std::vector<const TypeQuery*>
+collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
+  std::vector<const TypeQuery*> ret;
+
+  auto func = [&](const AstNode* ast, auto& self) -> void {
+    for (auto child : ast->children()) {
+      if (auto tq = child->toTypeQuery()) ret.push_back(tq);
+      if (recurse) self(child, self);
+    }
+  };
+
+  func(ast, func);
+
+  return ret;
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const QualifiedType& actualType,
@@ -1008,15 +1024,80 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                          isNonStarVarArg,
                          /* isTopLevel */ false);
     } else {
-      // Error if it is not calling a type constructor
-      auto actualCt = actualTypePtr->toCompositeType();
+      auto typeQueries = collectTypeQueriesIn(call);
 
+      // There are no type queries in the call, so there is nothing to do.
+      if (typeQueries.empty()) return;
+
+      // If we are a resolving a signature, then we have resolved the types
+      // of the call's sub-expressions, so we can accurately judge whether
+      // or not the call is to a type constructor.
+      QualifiedType baseExprType;
+      bool isCertainlyCallToTypeConstructor = false;
+      if (this->signatureOnly) {
+        if (auto expr = call->calledExpression()) {
+          CHPL_ASSERT(byPostorder.hasId(expr->id()));
+
+          baseExprType = byPostorder.byAst(expr).type();
+
+          if (baseExprType.kind() == QualifiedType::TYPE &&
+              (baseExprType.type() &&
+               baseExprType.type()->getCompositeType())) {
+            isCertainlyCallToTypeConstructor = true;
+          }
+        }
+      }
+
+      // If we know that the call is not a type constructor, then emit an
+      // error about illegal type queries, and then give up. We know from
+      // above that there's at least one '?w' type query in the call.
+      //
+      // TODO: Can emit more elaborate errors here.
+      if (this->signatureOnly && !isCertainlyCallToTypeConstructor) {
+        CHPL_ASSERT(!typeQueries.empty());
+        context->error(typeQueries[0], "One or more type queries appeared "
+                                       "outside of a type constructor call - "
+                                       "here is the first one");
+        return;
+      }
+
+      // From this point on, we are only working with the type of the entire
+      // call. To explain why, consider the following code:
+      //
+      //          proc foo(x: helper(bool)) {}
+      //
+      // If 'signatureOnly == true', then we already would have returned if
+      // 'helper' is not a type constructor. However, if '!signatureOnly',
+      // then we are preparing to resolve a function's body and only have
+      // access to the entire type of 'x'. So the only thing we can use to
+      // judge if 'helper(bool)' is a type constructor is whether or not
+      // 'helper(bool)' returns a 'CompositeType'.
+      //
+      // We already know from above that the call has to contain type queries,
+      // and we can rely on previous resolution when 'signatureOnly == true'
+      // to prevent bogus type queries like 'helper(?w)'.
+      //
+      // So just assume that 'helper(bool)' is a type constructor and fail
+      // if 'typeConstructorInitial' returns 'nullptr'.
+
+      // Try to convert the type of the call to a composite type.
+      auto actualCt = actualTypePtr->getCompositeType();
+
+      // If we're not working with a composite type, give up. There's some
+      // sort of structural issue that we should have detected earlier.
       if (actualCt == nullptr) {
-        context->error(formalTypeExpr, "Type construction call expected");
+        CHPL_ASSERT(!this->signatureOnly);
         return;
-      } else if (!actualCt->instantiatedFromCompositeType()) {
-        context->error(formalTypeExpr, "Instantiated type expected");
-        return;
+      }
+
+      // Make sure that 'actualCt' is instantiated. Only do this when we're
+      // first evaluating the signature and not when we're "reloading" the
+      // types of type queries.
+      if (this->signatureOnly) {
+        if (!actualCt->instantiatedFromCompositeType()) {
+          context->error(formalTypeExpr, "Instantiated type expected");
+          return;
+        }
       }
 
       // TODO: need to implement type queries for domain type expressions
@@ -1024,6 +1105,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
       auto baseCt = actualCt->instantiatedFromCompositeType();
       auto sig = typeConstructorInitial(context, baseCt);
+      CHPL_ASSERT(sig);
 
       // Generate a simple CallInfo for the call
       auto callInfo = CallInfo::createSimple(call);

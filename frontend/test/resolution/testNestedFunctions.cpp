@@ -26,24 +26,31 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
-#define TEST_NAME(ctx__)\
-  chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
+#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
 
 static Context*
 turnOnWarnUnstable(Context* ctx) {
+  // TODO: Turn on after infinite cycle bug in 'recomputeIfNeeded' is fixed,
+  // see private issue #6721.
+  /*
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   CompilerFlags flags;
   flags.set(CompilerFlags::WARN_UNSTABLE, true);
   setCompilerFlags(ctx, std::move(flags));
   assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNSTABLE));
+  */
   return ctx;
 }
 
 // This test demonstrates that it is safe to resolve a nested function like
 // normal if the function does not refer to outer variables, regardless of
 // whether or not the function is generic or concrete.
-static void test0(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test0(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   // This snippet is a mockup of code from the internal modules.
@@ -76,9 +83,8 @@ static void test0(void) {
 }
 
 // Very simple test exercising nested functions with outer variables.
-static void test1(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test1(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -100,9 +106,8 @@ static void test1(void) {
 // We should be able to call the sibling nested function 'ding' within the
 // child nested function 'baz'. The nested functions use outer variables in
 // their bodies _and_ their signatures.
-static void test2(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test2(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -158,9 +163,8 @@ static void test2(void) {
 // behave properly. The outermost function 'foo' has multiple instantiations,
 // which 'baz' is indirectly dependent on (uses of the outer variable 'a').
 // Then 'baz' is used to instantiate the nested function 'bar'.
-static void test3(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test3(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -221,9 +225,8 @@ static void test3(void) {
 }
 
 // Interaction between outer variables and generic constraints.
-static void test4(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test4(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -263,9 +266,8 @@ static void test4(void) {
 
 // This is private issue #6022. It tests a case where a nested function uses
 // a field accessible through a outer method's receiver.
-static void test5(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test5(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -294,9 +296,8 @@ static void test5(void) {
 }
 
 // Same as test5 but with a nested method instead of a nested function.
-static void test6(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test6(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -324,9 +325,8 @@ static void test6(void) {
 // This is not legal, but we should still perform the correct name resolution.
 // TODO: Right now, mentions of 'T' in 'helper' are not resolved to the field.
 /**
-static void test7(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test7(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -362,9 +362,8 @@ static void test7(void) {
 // this program still type as though it would work? Right now it can't
 // be typed because the lookup fails.
 /*
-static void test8(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test8(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -394,9 +393,8 @@ static void test8(void) {
 }
 */
 
-static void test9(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test9(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -421,10 +419,8 @@ static void test9(void) {
 }
 
 // This is private issue #6123. TODO: Error "type construction call expected".
-/*
-static void test10(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+static void test10(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
   std::string program =
@@ -450,21 +446,26 @@ static void test10(void) {
   auto qt = resolveQualifiedTypeOfX(ctx, program);
   assert(!guard.realizeErrors());
   assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type() && qt.type()->isIntType());
+  assert(qt.type() && qt.type()->isRealType());
 }
-*/
 
 int main() {
-  test0();
-  test1();
-  test2();
-  test3();
-  test4();
-  test5();
-  test6();
-  // test7();
-  // test8();
-  test9();
-  // test10();
+  // testInfiniteCycleBug();
+
+  auto context = buildStdContext();
+  Context* ctx = turnOnWarnUnstable(context.get());
+
+  test0(ctx);
+  test1(ctx);
+  test2(ctx);
+  test3(ctx);
+  test4(ctx);
+  test5(ctx);
+  test6(ctx);
+  // test7(ctx);
+  // test8(ctx);
+  test9(ctx);
+  test10(ctx);
+
   return 0;
 }
