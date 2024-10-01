@@ -1484,7 +1484,8 @@ class FormalActualMap {
            actualIdxToFormalIdx_ == other.actualIdxToFormalIdx_ &&
            mappingIsValid_ == other.mappingIsValid_ &&
            failingActualIdx_ == other.failingActualIdx_ &&
-           failingFormalIdx_ == other.failingFormalIdx_;
+           failingFormalIdx_ == other.failingFormalIdx_ &&
+           missingIteratorActuals_ == other.missingIteratorActuals_;
   }
 
   bool operator!=(const FormalActualMap& other) const {
@@ -1499,11 +1500,13 @@ class FormalActualMap {
     (void) mappingIsValid_; // nothing to mark
     (void) failingActualIdx_; // nothing to mark
     (void) failingFormalIdx_; // nothing to mark
+    (void) missingIteratorActuals_; // nothing to mark
   }
 
   size_t hash() const {
     return chpl::hash(byFormalIdx_, actualIdxToFormalIdx_, mappingIsValid_,
-                      failingActualIdx_, failingFormalIdx_);
+                      failingActualIdx_, failingFormalIdx_,
+                      missingIteratorActuals_);
   }
 
   /** check if mapping is valid */
