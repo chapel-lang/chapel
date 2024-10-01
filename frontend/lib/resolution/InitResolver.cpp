@@ -315,31 +315,33 @@ static const Type* ctFromSubs(Context* context,
     ret = ClassType::get(context, basic, manager, dec);
   } else if (receiverType->isDomainType()) {
     // Extract domain information from _instance substitution
-    // TODO: also support associative domains here; currently assumes rectangular
+    // TODO: also support associative domains here
+
+    QualifiedType instanceQt;
     QualifiedType rank;
     QualifiedType idxType;
     QualifiedType stridable;
 
-    CHPL_ASSERT(subs.size() == 1);
-    auto instanceQt = subs.begin()->second;
-    auto instance = subs.begin()->second.type();
-    CHPL_ASSERT(instance);
+    if (subs.size() == 1) {
+      instanceQt = subs.begin()->second;
+      if (auto instance = instanceQt.type()) {
+        if (auto instanceCt = instance->toClassType()) {
+          if (auto instanceBct = instanceCt->basicClassType()) {
+            // Get BaseRectangularDom parent subs for rectangular domain info
+            if (auto baseRect = instanceBct->parentClassType()) {
+              if (baseRect->name() == "BaseRectangularDom") {
+                auto innerSubs = baseRect->sortedSubstitutions();
+                CHPL_ASSERT(innerSubs.size() == 3);
 
-    auto instanceCt = instance->toClassType();
-    CHPL_ASSERT(instanceCt);
-    auto instanceBct = instanceCt->basicClassType();
-    CHPL_ASSERT(instanceBct);
-
-    // Get BaseRectangularDom parent subs for rectangular domain info
-    auto baseRect = instanceBct->parentClassType();
-    CHPL_ASSERT(baseRect->name() == "BaseRectangularDom");
-
-    auto innerSubs = baseRect->sortedSubstitutions();
-    CHPL_ASSERT(innerSubs.size() == 3);
-
-    rank = innerSubs[0].second;
-    idxType = innerSubs[1].second;
-    stridable = innerSubs[2].second;
+                rank = innerSubs[0].second;
+                idxType = innerSubs[1].second;
+                stridable = innerSubs[2].second;
+              }
+            }
+          }
+        }
+      }
+    }
 
     ret = DomainType::getRectangularType(context, instanceQt, rank, idxType,
                                          stridable);

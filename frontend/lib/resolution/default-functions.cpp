@@ -200,6 +200,8 @@ generateInitParts(Context* context,
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
 
+  } else if (CompositeType::isMissingBundledType(context, compType->id())) {
+    // ignore
   } else {
     CHPL_ASSERT(false && "Not possible!");
   }

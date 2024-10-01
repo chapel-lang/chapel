@@ -324,6 +324,44 @@ module M {
 //   assert(findVarType(m, rr, "equal").isParamTrue());
 // }
 
+
+static void testBadDomain(std::string domainType) {
+  // Ensure we gracefully error for bad domain type expressions.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+R"""(
+module M {
+  var d : )""" + domainType + R"""(;
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const Variable* d = m->stmt(0)->toVariable();
+  assert(d);
+  assert(d->name() == "d");
+  QualifiedType dType = rr.byAst(d).type();
+  assert(dType.type()->isErroneousType());
+
+  assert(guard.errors().size() == 1);
+  auto& e = guard.errors()[0];
+  assert(e->type() == chpl::InvalidDomainCall);
+
+  printf("Success: cannot resolve incorrect domain type expression %s\n",
+         domainType.c_str());
+
+  guard.clearErrors();
+}
+
 int main() {
   testRectangular("domain(1)", 1, "int", "one");
   testRectangular("domain(2)", 2, "int", "one");
@@ -349,6 +387,13 @@ int main() {
   // testIndex("domain(2, bool)", "2*bool");
   // testIndex("domain(int)", "int");
   // testIndex("domain(string)", "string");
+
+  testBadDomain("domain()");
+  testBadDomain("domain(1, 2, 3, 4)");
+  testBadDomain("domain(\"asdf\")");
+  testBadDomain("domain(\"asdf\", \"asdf2\")");
+  testBadDomain("domain(1, \"asdf\")");
+  testBadDomain("domain(1, int, \"asdf\")");
 
   return 0;
 }

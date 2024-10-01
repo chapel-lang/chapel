@@ -2372,7 +2372,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                    /* isMethodCall */ true,
                    /* hasQuestionArg */ false,
                    /* isParenless */ false,
-                   std::move(actuals));
+                   actuals);
 
       auto scope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
@@ -2381,20 +2381,22 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       });
 
       // Use the init call's receiver type as the resulting TYPE
-      const Type* receiverTy;
+      const Type* receiverTy = nullptr;
       if (runResult.ranWithoutErrors()) {
         auto result = runResult.result();
-        auto initMsc = result.mostSpecific().only();
-        CHPL_ASSERT(initMsc);
-
-        handleResolvedCall(r, call, ci, result,
-                           {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
-
-        receiverTy = initMsc.fn()->formalType(0).type();
-        assert(receiverTy);
-      } else {
+        if (auto initMsc = result.mostSpecific().only()) {
+          handleResolvedCall(r, call, ci, result,
+                             {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
+          receiverTy = initMsc.fn()->formalType(0).type();
+        }
+      }
+      if (!receiverTy) {
         receiverTy = ErroneousType::get(context);
-        CHPL_REPORT(context, InvalidDomainCall, fnCall);
+        std::vector<QualifiedType> actualTypesForErr;
+        for (auto it = actuals.begin() + 2; it != actuals.end(); ++it) {
+          actualTypesForErr.push_back(it->type());
+        }
+        CHPL_REPORT(context, InvalidDomainCall, fnCall, actualTypesForErr);
       }
       r.setType(QualifiedType(QualifiedType::TYPE, receiverTy));
     }
