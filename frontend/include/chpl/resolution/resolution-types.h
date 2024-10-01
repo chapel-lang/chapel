@@ -1913,7 +1913,8 @@ class CallResolutionResult {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
-           speciallyHandled_ == other.speciallyHandled_;
+           speciallyHandled_ == other.speciallyHandled_ &&
+           rejectedPossibleIteratorCandidates_ == other.rejectedPossibleIteratorCandidates_;
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
@@ -1923,6 +1924,8 @@ class CallResolutionResult {
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
     std::swap(speciallyHandled_, other.speciallyHandled_);
+    std::swap(rejectedPossibleIteratorCandidates_,
+              other.rejectedPossibleIteratorCandidates_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
