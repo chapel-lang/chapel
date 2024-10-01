@@ -764,8 +764,12 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
-      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
-      state->qt = reRhs.type();
+      auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
+
+      auto param = state->qt.kind() == QualifiedType::PARAM ? rhsType.param() : nullptr;
+      auto qt = QualifiedType(state->qt.kind(), rhsType.type(), param);
+      state->qt = qt;
+
       state->initPointId = node->id();
       state->isInitialized = true;
 
