@@ -324,13 +324,8 @@ module M {
 //   assert(findVarType(m, rr, "equal").isParamTrue());
 // }
 
-
-static void testBadDomain(std::string domainType) {
-  // Ensure we gracefully error for bad domain type expressions.
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
+static void testBadDomainHelper(std::string domainType, Context* context,
+                                ErrorGuard& guard) {
   std::string program =
 R"""(
 module M {
@@ -360,6 +355,31 @@ module M {
          domainType.c_str());
 
   guard.clearErrors();
+}
+
+// Ensure we gracefully error for bad domain type expressions, with or without
+// the standard modules available.
+static void testBadDomain(std::string domainType) {
+  // Without standard modules
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    testBadDomainHelper(domainType, context, guard);
+  }
+
+  // With standard modules
+  {
+    Context::Configuration config;
+    config.chplHome = getenv("CHPL_HOME");
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+
+    testBadDomainHelper(domainType, context, guard);
+  }
 }
 
 int main() {
