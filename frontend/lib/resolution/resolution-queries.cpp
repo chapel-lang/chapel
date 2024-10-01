@@ -5597,6 +5597,39 @@ const Decl* findFieldByName(Context* context,
   return ret;
 }
 
+static UniqueString iterKindToUniqueString(Context* context,
+                                           Function::IteratorKind kind) {
+  switch (kind) {
+    case Function::IteratorKind::SERIAL:
+      return UniqueString();
+    case Function::IteratorKind::STANDALONE:
+      return USTR("standalone");
+    case Function::IteratorKind::FOLLOWER:
+      return USTR("follower");
+    case Function::IteratorKind::LEADER:
+      return USTR("leader");
+  }
+  CHPL_ASSERT(false && "unhandled iterator kind");
+  return UniqueString();
+}
+
+const QualifiedType&
+getIterKindConstantOrUnknown(Context* context, Function::IteratorKind iterKind) {
+  QUERY_BEGIN(getIterKindConstantOrUnknown, context, iterKind);
+
+  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
+
+  auto constant = iterKindToUniqueString(context, iterKind);
+  if (!constant.isEmpty()) {
+    auto ik = EnumType::getIterKindType(context);
+    if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
+      auto it = m->find(constant);
+      if (it != m->end()) ret = it->second;
+    }
+  }
+
+  return QUERY_END(ret);
+}
 
 
 } // end namespace resolution

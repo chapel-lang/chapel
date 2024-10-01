@@ -92,9 +92,6 @@ namespace {
   };
 }
 
-static const QualifiedType&
-getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant);
-
 // Helper to resolve a specified iterator signature and its yield type.
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
@@ -102,7 +99,7 @@ resolveIterTypeWithTag(Resolver& rv,
                        const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       UniqueString iterKindStr,
+                       Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal);
 
 // Resolve iterators according to the policy set in 'mask' (see the type
@@ -4082,11 +4079,11 @@ static const bool& warnForMissingIterKindEnum(Context* context,
 static const QualifiedType&
 getIterKindConstantOrWarn(Context* context,
                           const AstNode* astForErr,
-                          UniqueString iterKindStr) {
-  QUERY_BEGIN(getIterKindConstantOrWarn, context, astForErr, iterKindStr);
+                          Function::IteratorKind iterKind) {
+  QUERY_BEGIN(getIterKindConstantOrWarn, context, astForErr, iterKind);
 
-  auto iterKindActual = getIterKindConstantOrUnknownQuery(context, iterKindStr);
-  bool needSerial = iterKindStr.isEmpty();
+  auto iterKindActual = getIterKindConstantOrUnknown(context, iterKind);
+  bool needSerial = iterKind == Function::SERIAL;
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
@@ -4103,8 +4100,8 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              QualifiedType receiverType,
-                             UniqueString iterKindStr) {
-  auto iterKindActual = getIterKindConstantOrWarn(rc->context(), call, iterKindStr);
+                             uast::Function::IteratorKind iterKind) {
+  auto iterKindActual = getIterKindConstantOrWarn(rc->context(), call, iterKind);
   if (iterKindActual.isUnknown()) return empty;
 
   std::vector<CallInfoActual> actuals;
@@ -4152,12 +4149,12 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   if (c.mostSpecific().isEmpty() && c.rejectedPossibleIteratorCandidates()) {
     if (auto standalone =
           rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
-                                       USTR("standalone"))) {
+                                       Function::STANDALONE)) {
       return *standalone;
     }
     if (auto parallel =
         rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
-                                     USTR("leader"))) {
+                                     Function::LEADER)) {
       return *parallel;
     }
   }
@@ -4643,23 +4640,6 @@ void Resolver::exit(const New* node) {
   }
 }
 
-static const QualifiedType&
-getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
-  QUERY_BEGIN(getIterKindConstantOrUnknownQuery, context, constant);
-
-  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
-
-  if (!constant.isEmpty()) {
-    auto ik = EnumType::getIterKindType(context);
-    if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
-      auto it = m->find(constant);
-      if (it != m->end()) ret = it->second;
-    }
-  }
-
-  return QUERY_END(ret);
-}
-
 // This helper resolves by priority order as described in 'IterDetails'.
 static IterDetails
 resolveIterDetailsInPriorityOrder(Resolver& rv,
@@ -4672,7 +4652,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   bool computedLeaderYieldType = false;
   if (mask & IterDetails::STANDALONE) {
     ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, iteratingOver, astForErr,
-                                         iterand, USTR("standalone"), {});
+                                         iterand, Function::STANDALONE, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -4681,7 +4661,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   if (mask & IterDetails::LEADER_FOLLOWER) {
     ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, iteratingOver, astForErr,
-                                                 iterand, USTR("leader"),
+                                                 iterand, Function::LEADER,
                                                  {});
     computedLeaderYieldType = true;
   } else if (mask & IterDetails::FOLLOWER) {
@@ -4692,7 +4672,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
       mask & IterDetails::FOLLOWER) {
     if (!ret.leaderYieldType.isUnknownOrErroneous()) {
       ret.idxType = resolveIterTypeWithTag(rv, ret.follower, iteratingOver, astForErr,
-                                           iterand, USTR("follower"),
+                                           iterand, Function::FOLLOWER,
                                            ret.leaderYieldType);
       if (!ret.idxType.isUnknownOrErroneous()) {
         ret.succeededAt = computedLeaderYieldType
@@ -4705,7 +4685,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   if (mask & IterDetails::SERIAL) {
     ret.idxType = resolveIterTypeWithTag(rv, ret.serial, iteratingOver, astForErr,
-                                         iterand, {}, {});
+                                         iterand, Function::SERIAL, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::SERIAL;
     }
@@ -4813,17 +4793,17 @@ resolveIterTypeWithTag(Resolver& rv,
                        const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       UniqueString iterKindStr,
+                       Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal) {
   Context* context = rv.context;
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKindStr);
-  bool needSerial = iterKindStr.isEmpty();
-  bool needStandalone = iterKindStr == USTR("standalone");
-  bool needLeader = iterKindStr == USTR("leader");
-  bool needFollower = iterKindStr == USTR("follower");
+  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKind);
+  bool needSerial = iterKind == Function::SERIAL;
+  bool needStandalone = iterKind == Function::STANDALONE;
+  bool needLeader = iterKind == Function::LEADER;
+  bool needFollower = iterKind == Function::FOLLOWER;
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
