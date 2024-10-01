@@ -3974,24 +3974,7 @@ static bool resolveFnCallSpecialType(Context* context,
   // the type.
   //
   // TODO: sync, single
-  if (ci.name() == "domain") {
-    // // TODO: a compiler-generated type constructor would be simpler, but we
-    // // don't support default values on compiler-generated methods because the
-    // // default values require existing AST.
-
-    // // Note: 'dmapped' is treated like a binary operator at the moment, so
-    // // we don't need to worry about distribution type for 'domain(...)' exprs.
-
-    // // Transform domain type expressions like `domain(arg1, ...)` into:
-    // //   _domain.static_type(arg1, ...)
-    // auto genericDom = DomainType::getGenericDomainType(context);
-    // auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
-    // auto typeCtorName = UniqueString::get(context, "static_type");
-    // auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
-
-    // result = resolveCall(rc, call, ctorCall, inScopes);
-    // return true;
-  } else if (ci.name() == "atomic") {
+  if (ci.name() == "atomic") {
     auto newName = UniqueString::get(context, "chpl__atomicType");
     auto ctorCall = CallInfo::copyAndRename(ci, newName);
     result = resolveCall(rc, call, ctorCall, inScopes);
