@@ -486,14 +486,19 @@ reportInvalidMultipleInheritance(Context* context,
 const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 /**
+  Retrieve the 'param' tag for an iterator constant. If the 'iterKind' enum
+  is not available, this will return an unknown type.
+ */
+const types::QualifiedType&
+getIterKindConstantOrUnknown(Context* context, uast::Function::IteratorKind kind);
+
+/**
   Returns the field in 'ad' (or its parent) that matches 'name'.
 */
 const uast::Decl* findFieldByName(Context* context,
                                   const uast::AggregateDecl* ad,
                                   const types::CompositeType* ct,
                                   UniqueString name);
-
-
 
 } // end namespace resolution
 } // end namespace chpl
