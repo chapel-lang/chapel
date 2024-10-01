@@ -4682,6 +4682,23 @@ static QualifiedType resolveTheseMethod(Resolver& rv,
   return c.exprType();
 }
 
+static bool isExplicitlyTaggedIteratorCall(Context* context,
+                                           ResolvedExpression& re,
+                                           const TypedFnSignature* fn) {
+  if (!fn || !fn->isParallelIterator(context)) return false;
+
+  // We could've ended up resolving a leader automatically from a serial
+  // call (if the serial overload doesn't exist). To check that this was
+  // an explicit tag, we need to not have any ITERATE associted actions.
+  auto count = std::count_if(re.associatedActions().begin(),
+                             re.associatedActions().end(),
+                             [](const AssociatedAction& aa) {
+                               return aa.action() == AssociatedAction::ITERATE;
+                             });
+
+  return count == 0;
+}
+
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
@@ -4715,9 +4732,12 @@ resolveIterTypeWithTag(Resolver& rv,
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 
   bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
+  // For iterator forwarding, we can write serial 'for' loops over tagged iterator calls
+  bool treatAsSerial = fn &&
+    (fn->isSerialIterator(context) || isExplicitlyTaggedIteratorCall(context, iterandRE, fn));
   // Call to a serial iterator overload, and we are looking for a serial iterator.
   bool wasMatchingIterResolved = fn &&
-    ((needSerial && fn->isSerialIterator(context)) ||
+    ((needSerial && treatAsSerial) ||
      (needStandalone && fn->isParallelStandaloneIterator(context)) ||
      (needLeader && fn->isParallelLeaderIterator(context)) ||
      (needFollower && fn->isParallelFollowerIterator(context)));
