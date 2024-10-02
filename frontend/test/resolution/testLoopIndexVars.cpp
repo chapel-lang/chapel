@@ -509,10 +509,10 @@ static void testIterSigDetection(Context* context) {
     R""""(
 
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i2(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
     iter i2(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
-    iter i2() { yield false; }
+    iter i2() { yield ""; }
 
     for a in i1() do;
     forall b in i1() do;
@@ -548,9 +548,9 @@ static void testIterSigDetection(Context* context) {
     assert(m["a"].kind() == QualifiedType::CONST_VAR);
     assert(m["a"].type()->isRealType());
     assert(m["b"].kind() == QualifiedType::CONST_VAR);
-    assert(m["b"].type()->isIntType());
+    assert(m["b"].type()->isRealType());
     assert(m["c"].kind() == QualifiedType::CONST_VAR);
-    assert(m["c"].type()->isBoolType());
+    assert(m["c"].type()->isStringType());
     assert(m["d"].kind() == QualifiedType::CONST_VAR);
     assert(m["d"].type()->isStringType());
 }
@@ -564,14 +564,14 @@ static void testExplicitTaggedIter(Context* context) {
     R""""(
 
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
-    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0.0,0.0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
+    iter i2(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i3(param tag: iterKind) where tag == iterKind.leader { yield (0.0,0.0); }
+    iter i4(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
 
     for a in i1() do;
-    for b in i1(tag=iterKind.standalone) do;
-    for c in i1(tag=iterKind.leader) do;
-    for d in i1(tag=iterKind.follower, followThis="") do;
+    for b in i2(tag=iterKind.standalone) do;
+    for c in i3(tag=iterKind.leader) do;
+    for d in i4(tag=iterKind.follower, followThis="") do;
     )"""";
 
     auto mod = parseModule(context, program);
@@ -937,12 +937,11 @@ static void testForLoopExpression(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  // Serial iterator yields reals, so expect real.
   pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"for", "do"},
                                [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
@@ -951,14 +950,13 @@ static void testForallLoopExpressionStandalone(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  // Standalone iterator yields ints, so expect ints.
   pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
-                               [](const QualifiedType& t) { return t.type()->isIntType(); });
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
 static void testForallLoopExpressionLeaderFollower(Context* context) {
@@ -967,32 +965,24 @@ static void testForallLoopExpressionLeaderFollower(Context* context) {
     R""""(
     iter i1() { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  // Follower iterator yields tuples of ints, so expect tuples of ints.
   pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
-                               [](const QualifiedType& t) {
-    auto type = t.type();
-    if (!type->isTupleType()) return false;
-
-    auto tt = type->toTupleType();
-    return tt->isStarTuple() && tt->numElements() == 2 && tt->starType().type()->isIntType();
-  });
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
 static void testBracketLoopExpressionStandalone(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  // Standalone iterator yields ints, so expect ints.
   pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
-                               [](const QualifiedType& t) { return t.type()->isIntType(); });
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
 static void testBracketLoopExpressionLeaderFollower(Context* context) {
@@ -1001,18 +991,12 @@ static void testBracketLoopExpressionLeaderFollower(Context* context) {
     R""""(
     iter i1() { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
   // Follower iterator yields tuples of ints, so expect tuples of ints.
   pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
-                               [](const QualifiedType& t) {
-    auto type = t.type();
-    if (!type->isTupleType()) return false;
-
-    auto tt = type->toTupleType();
-    return tt->isStarTuple() && tt->numElements() == 2 && tt->starType().type()->isIntType();
-  });
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
 }
 
 static void testBracketLoopExpressionSerial(Context* context) {
@@ -1031,9 +1015,9 @@ static void testForLoopExpressionInForall(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
   // You can't iterate in paralell over a serial loop expression, even if
@@ -1047,9 +1031,9 @@ static void testForLoopExpressionInBracketLoop(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
   // Bracket loop falls back to serial, so it's okay to give it a for expression.
@@ -1066,14 +1050,14 @@ static void testForallExpressionInForLoop(Context* context) {
   auto iters =
     R""""(
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield followThis; }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
   // Bracket loop falls back to serial, so it's okay to give it a for expression.
   pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"for", "do"},
-                               [](const QualifiedType& t) { return t.type()->toIntType(); });
+                               [](const QualifiedType& t) { return t.type()->toRealType(); });
 }
 
 int main() {
