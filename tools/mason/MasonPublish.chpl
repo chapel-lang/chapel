@@ -690,7 +690,8 @@ proc refreshLicenseList(overwrite=false) throws {
   const branch = '--branch main ';
   const depth = '--depth 1 ';
   const url = 'https://github.com/spdx/license-list-data.git ';
-  const command = 'git clone -q ' + branch + depth + url + dest;
+  const referIfAble = " --reference-if-able " + dest;
+  const command = 'git clone -q ' + branch + depth + url + dest + referIfAble;
   if !isDir(dest) {
     runCommand(command);
   } else if overwrite {
