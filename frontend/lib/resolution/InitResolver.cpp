@@ -769,9 +769,8 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       // field doesn't contribute to the receiver type.
       updateResolverVisibleReceiverType();
 
-      auto reLhs = initResolver_.byPostorder.byId(lhs->id());
+      auto& reLhs = initResolver_.byPostorder.byId(lhs->id());
       auto lhsQt = reLhs.type();
-
       auto lhsKind = lhsQt.kind();
       if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM && isConstQualifier(lhsKind)) {
         // Regardless of the field's intent, it is mutable in this expression.
