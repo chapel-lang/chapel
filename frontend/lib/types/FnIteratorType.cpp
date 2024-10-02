@@ -32,17 +32,19 @@ void FnIteratorType::markUniqueStringsInner(Context* context) const {
 const owned<FnIteratorType>&
 FnIteratorType::getFnIteratorType(Context* context,
                                   QualifiedType yieldType,
-                                  const resolution::TypedFnSignature* iteratorFn) {
-  QUERY_BEGIN(getFnIteratorType, context, yieldType, iteratorFn);
-  auto result = toOwned(new FnIteratorType(std::move(yieldType), iteratorFn));
+                                  const resolution::TypedFnSignature* iteratorFn,
+                                  const resolution::PoiScope* poiScope) {
+  QUERY_BEGIN(getFnIteratorType, context, yieldType, iteratorFn, poiScope);
+  auto result = toOwned(new FnIteratorType(std::move(yieldType), iteratorFn, poiScope));
   return QUERY_END(result);
 }
 
 const FnIteratorType*
 FnIteratorType::get(Context* context,
                     QualifiedType yieldType,
-                    const resolution::TypedFnSignature* iteratorFn) {
-  return getFnIteratorType(context, yieldType, iteratorFn).get();
+                    const resolution::TypedFnSignature* iteratorFn,
+                    const resolution::PoiScope* poiScope) {
+  return getFnIteratorType(context, yieldType, iteratorFn, poiScope).get();
 }
 
 }  // end namespace types
