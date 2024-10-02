@@ -1392,6 +1392,59 @@ getCompilerGeneratedFunction(Context* context,
   return nullptr;
 }
 
+static const BuilderResult&
+buildAssignmentOperators(Context* context,
+                         QualifiedType lhs, QualifiedType rhs) {
+  std::stringstream ss;
+  lhs.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  auto typeName = ss.str();
+
+  auto modName = "chpl__generated_" + typeName + "_=";
+  auto baseName = UniqueString::get(context, "ChapelBase");
+  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), ID(baseName, ID_GEN_START, 0), UniqueString::get(context, "ChapelBase"));
+  auto builder = bld.get();
+  auto dummyLoc = Location(UniqueString::get(context, "ChapelBase.="));
+
+  auto lhsFormal = Formal::build(builder, dummyLoc, nullptr,
+                                 UniqueString::get(context, "lhs"),
+                                 Formal::REF, nullptr, nullptr);
+  auto rhsFormal = Formal::build(builder, dummyLoc, nullptr,
+                                 UniqueString::get(context, "rhs"),
+                                 Formal::CONST, nullptr, nullptr);
+  AstList formals;
+  formals.push_back(std::move(lhsFormal));
+  formals.push_back(std::move(rhsFormal));
+
+  AstList stmts;
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("="),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::OPERATOR,
+                               /*receiver=*/nullptr,
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+
+  auto modPath = result.topLevelExpression(0)->id().symbolPath();
+  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(result));
+
+  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
+
+  return br;
+}
 
 static const TypedFnSignature* const&
 getCompilerGeneratedBinaryOpQuery(Context* context,
@@ -1407,6 +1460,48 @@ getCompilerGeneratedBinaryOpQuery(Context* context,
     } else if (rhs.type() && rhs.type()->isEnumType()) {
       result = generateCastToEnum(context, lhs, rhs);
     }
+  } else if (name == USTR("=") &&
+             lhs.type() == rhs.type() &&
+             (lhs.type()->isPrimitiveType() ||
+              lhs.type()->isTupleType() ||
+              lhs.type()->isClassType())) {
+
+    auto& br = buildAssignmentOperators(context, lhs, rhs);
+    auto assignFn = br.topLevelExpression(0)->child(0)->toFunction();
+
+    auto lhsType = QualifiedType(QualifiedType::REF, lhs.type());
+    auto rhsType = QualifiedType(QualifiedType::CONST_IN, rhs.type());
+    std::vector<QualifiedType> formalTypes = {lhsType, rhsType};
+
+    auto lhsDet =
+        UntypedFnSignature::FormalDetail(UniqueString::get(context, "lhs"),
+                                         UntypedFnSignature::DK_NO_DEFAULT, assignFn->formal(0));
+    auto rhsDet =
+        UntypedFnSignature::FormalDetail(UniqueString::get(context, "rhs"),
+                                       UntypedFnSignature::DK_NO_DEFAULT, assignFn->formal(1));
+    std::vector<UntypedFnSignature::FormalDetail> ufsFormals = {lhsDet, rhsDet};
+
+    auto ufs = UntypedFnSignature::get(context,
+                          /*id*/ assignFn->id(),
+                          /*name*/ USTR("="),
+                          /*isMethod*/ false,
+                          /*isTypeConstructor*/ false,
+                          /*isCompilerGenerated*/ true,
+                          /*throws*/ false,
+                          /*idTag*/ asttags::Function,
+                          /*kind*/ uast::Function::Kind::OPERATOR,
+                          /*formals*/ std::move(ufsFormals),
+                          /*whereClause*/ nullptr);
+
+    result = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ false,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
   }
 
   return QUERY_END(result);
