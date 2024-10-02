@@ -769,13 +769,17 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       // field doesn't contribute to the receiver type.
       updateResolverVisibleReceiverType();
 
-      auto lhsKind = state->qt.kind();
-      if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM) {
+      auto reLhs = initResolver_.byPostorder.byId(lhs->id());
+      auto lhsQt = reLhs.type();
+
+      auto lhsKind = lhsQt.kind();
+      if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM && isConstQualifier(lhsKind)) {
         // Regardless of the field's intent, it is mutable in this expression.
         lhsKind = QualifiedType::REF;
       }
-      auto lhsType = QualifiedType(lhsKind, state->qt.type(), state->qt.param());
+      auto lhsType = QualifiedType(lhsKind, lhsQt.type(), lhsQt.param());
       initResolver_.byPostorder.byAst(lhs).setType(lhsType);
+      initPoints.insert(node);
 
     } else {
       CHPL_ASSERT(0 == "Not handled yet!");
