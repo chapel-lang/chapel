@@ -1509,6 +1509,32 @@ static void testInheritance() {
     x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
     assert(ss.str() == "owned Child(int(64))");
   }
+
+  // Default initializer
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class A {
+        type TA;
+        var a : TA;
+      }
+      class B : A(?) {
+        type TB;
+        var b : TB;
+      }
+
+      var x = new B(int, 1, real, 42.0);
+      )""";
+
+    auto xt = resolveTypeOfX(context, program);
+
+    std::stringstream ss;
+    xt->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "owned B(int(64), real(64))");
+  }
 }
 
 static void testImplicitSuperInit() {
