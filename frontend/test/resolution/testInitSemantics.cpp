@@ -27,12 +27,6 @@
 
 #define TEST_NAME(ctx__) TEST_NAME_FROM_FN_NAME(ctx__)
 
-std::string opEquals = R"""(
-    operator =(ref lhs: int, rhs: int) {
-      __primitive("=", lhs, rhs);
-    }
-    )""";
-
 std::string otherOps = R"""(
     operator >(ref lhs: int, rhs: int) {
       return __primitive(">", lhs, rhs);
@@ -45,7 +39,7 @@ static void testFieldUseBeforeInit1(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -79,7 +73,7 @@ static void testFieldUseBeforeInit1(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "'x' is used before it is initialized");
-  assert(msg->location(ctx).firstLine() == 11);
+  assert(msg->location(ctx).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
@@ -89,7 +83,7 @@ static void testInitReturnVoid(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -117,7 +111,7 @@ static void testInitReturnVoid(void) {
   // Check the error (which comes last) to see if it lines up.
   auto& msg = guard.errors().back();
   assert(msg->message() == "initializers can only return 'void'");
-  assert(msg->location(ctx).firstLine() == 12);
+  assert(msg->location(ctx).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
@@ -127,7 +121,7 @@ static void testInitReturnEarly(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -155,7 +149,7 @@ static void testInitReturnEarly(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "cannot return from initializer before initialization is complete");
-  assert(msg->location(ctx).firstLine() == 11);
+  assert(msg->location(ctx).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
@@ -165,7 +159,7 @@ static void testInitThrow(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -193,7 +187,7 @@ static void testInitThrow(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "initializers are not yet allowed to throw errors");
-  assert(msg->location(ctx).firstLine() == 12);
+  assert(msg->location(ctx).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
@@ -203,7 +197,7 @@ static void testInitTryBang(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -232,7 +226,7 @@ static void testInitTryBang(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Only catch-less try! statements are allowed in initializers for now");
-  assert(msg->location(ctx).firstLine() == 12);
+  assert(msg->location(ctx).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
@@ -261,7 +255,7 @@ static void testInitInsideLoops(void) {
     ErrorGuard guard(ctx);
 
     auto path = TEST_NAME(ctx);
-    std::string contents = opEquals + R""""(
+    std::string contents = R""""(
       record r {
         var x: int;
       }
@@ -288,7 +282,7 @@ static void testInitInsideLoops(void) {
     // Check the error (which comes last) to see if it lines up.
     auto& msg = guard.errors().back();
     assert(msg->message() == message);
-    assert(msg->location(ctx).firstLine() == 11);
+    assert(msg->location(ctx).firstLine() == 7);
     assert(guard.realizeErrors());
   }
 }
@@ -299,7 +293,7 @@ static void testThisComplete(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
       var y : int;
@@ -333,7 +327,7 @@ static void testSecondAssign(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -364,7 +358,7 @@ static void testOutOfOrder(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x, y, z: int;
     }
@@ -390,7 +384,7 @@ static void testOutOfOrder(void) {
 
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Field \"x\" initialized out of order");
-  assert(msg->location(ctx).firstLine() == 11);
+  assert(msg->location(ctx).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
@@ -400,7 +394,7 @@ static void testInitCondBasic(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
       var y : int;
@@ -439,7 +433,7 @@ static void testInitCondBadOrder(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     record r {
       var x: int;
       var y : int;
@@ -472,12 +466,12 @@ static void testInitCondBadOrder(void) {
   {
     auto& msg = guard.errors()[0];
     assert(msg->message() == "Field \"x\" initialized out of order");
-    assert(msg->location(ctx).firstLine() == 14);
+    assert(msg->location(ctx).firstLine() == 10);
   }
   {
     auto& msg = guard.errors()[1];
     assert(msg->message() == "Field \"y\" initialized out of order");
-    assert(msg->location(ctx).firstLine() == 16);
+    assert(msg->location(ctx).firstLine() == 12);
   }
   assert(guard.realizeErrors());
 }
@@ -488,7 +482,7 @@ static void testInitCondGenericDiff(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     operator >(const lhs : int, const rhs : int) {
       return __primitive(">", lhs, rhs);
     }
@@ -528,7 +522,7 @@ static void testInitCondGenericDiff(void) {
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Initializer must compute the same type in each branch");
-  assert(msg->location(ctx).firstLine() == 14);
+  assert(msg->location(ctx).firstLine() == 10);
   assert(guard.realizeErrors());
 }
 
@@ -538,7 +532,7 @@ static void testInitCondGeneric(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     operator >(const lhs : int, const rhs : int) {
       return __primitive(">", lhs, rhs);
     }
@@ -582,7 +576,7 @@ static void testInitParamCondGeneric(void) {
   ErrorGuard guard(ctx);
 
   auto path = UniqueString::get(ctx, "mod");
-  std::string contents = opEquals + R""""(
+  std::string contents = R""""(
     operator >(const lhs : int, const rhs : int) {
       return __primitive(">", lhs, rhs);
     }
@@ -624,16 +618,16 @@ static void testInitParamCondGeneric(void) {
   assert(guard.errors().size() == 0);
 
   {
-    auto t = mod->stmt(3)->toVariable();
+    auto t = mod->stmt(2)->toVariable();
     auto tType = rr.byAst(t).type();
-    auto X = mod->stmt(5)->toVariable();
+    auto X = mod->stmt(4)->toVariable();
     auto XType = rr.byAst(X).type();
     assert(tType.type() == XType.type());
   }
   {
-    auto f = mod->stmt(4)->toVariable();
+    auto f = mod->stmt(3)->toVariable();
     auto fType = rr.byAst(f).type();
-    auto Y = mod->stmt(6)->toVariable();
+    auto Y = mod->stmt(5)->toVariable();
     auto YType = rr.byAst(Y).type();
     assert(fType.type() == YType.type());
   }
@@ -645,7 +639,7 @@ static void testNotThisDot(void) {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + otherOps + R""""(
+  std::string contents = otherOps + R""""(
     record X {
       proc type foo() {
         return 5;
@@ -695,11 +689,7 @@ static void testRelevantInit(void) {
   //
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + otherOps + R""""(
-    operator =(ref lhs: int, const rhs: int) {
-      __primitive("=", lhs, rhs);
-    }
-
+  std::string contents = otherOps + R""""(
     record X {
       var val : int;
     }
@@ -743,7 +733,7 @@ static void testOwnedUserInit(void) {
   // class doesn't make it a candidate.
 
   auto path = TEST_NAME(ctx);
-  std::string contents = opEquals + otherOps + R""""(
+  std::string contents = otherOps + R""""(
     class Parent {
       proc init() {}
     }
@@ -1131,8 +1121,6 @@ static void testUseAfterInit() {
       return ret;
     }
 
-    operator =(ref lhs: real, const rhs: real) { __primitive("=", lhs, rhs); }
-
     class PointDoubleX {
       var a, b : real;
 
@@ -1163,9 +1151,6 @@ static void testInitEqOther(void) {
   ErrorGuard guard(ctx);
 
   std::string program = R"""(
-    operator =(ref lhs: numeric, const in rhs: numeric) {
-      __primitive("=", lhs, rhs);
-    }
     record R {
       type T;
       var field : T;
@@ -1341,9 +1326,6 @@ static void testInheritance() {
       operator *(const lhs: int, rhs: real) : real {
         return __primitive("*", lhs, rhs);
       }
-      operator =(ref lhs: real, const rhs: real) : void {
-        __primitive("=", lhs, rhs);
-      }
 
       proc Child.init() {
         this.y = x * 42.0;
@@ -1368,8 +1350,6 @@ static void testInheritance() {
       operator *(const lhs: int, rhs: real) : real {
         return __primitive("*", lhs, rhs);
       }
-      operator =(ref lhs: real, const rhs: real) : void {}
-      operator =(ref lhs: int, const rhs: int) : void {}
 
       proc Child.init() {
         this.x = 42;
