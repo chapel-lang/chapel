@@ -505,6 +505,14 @@ findTaggedIteratorForType(ResolutionContext* context,
                           const types::IteratorType* type,
                           uast::Function::IteratorKind iterKind);
 
+CallResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                      const uast::AstNode* iterand,
+                                      const types::QualifiedType& receiverType,
+                                      uast::Function::IteratorKind iterKind,
+                                      const types::QualifiedType& followThis,
+                                      const CallScopeInfo& inScopes);
+
+
 } // end namespace resolution
 } // end namespace chpl
 #endif

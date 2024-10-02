@@ -1763,7 +1763,6 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 
 bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
                                               const uast::AstNode* astForErr,
-                                              const CallInfo& ci,
                                               const CallResolutionResult& c,
                                               optional<ActionAndId> actionAndId) {
 
@@ -1803,7 +1802,7 @@ void Resolver::handleResolvedCall(ResolvedExpression& r,
                                   const CallInfo& ci,
                                   const CallResolutionResult& c,
                                   optional<ActionAndId> actionAndId) {
-  if (handleResolvedCallWithoutError(r, astForErr, ci, c, std::move(actionAndId))) {
+  if (handleResolvedCallWithoutError(r, astForErr, c, std::move(actionAndId))) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   }
 }
@@ -1817,7 +1816,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  optional<ActionAndId> actionAndId) {
   bool wasCallGenerated = (bool) actionAndId;
   CHPL_ASSERT(!wasCallGenerated || receiverType.isUnknown());
-  if (handleResolvedCallWithoutError(r, call, ci, c, std::move(actionAndId))) {
+  if (handleResolvedCallWithoutError(r, call, c, std::move(actionAndId))) {
     if (c.mostSpecific().isEmpty() &&
         !c.mostSpecific().isAmbiguous()) {
       // The call isn't ambiguous; it might be that we rejected all the candidates
@@ -3355,7 +3354,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
         } else {
           // Save result if successful
-          if (handleResolvedCallWithoutError(result, ident, ci, c) &&
+          if (handleResolvedCallWithoutError(result, ident, c) &&
               emitLookupErrors) {
             issueErrorForFailedCallResolution(ident, ci, c);
           }
@@ -4737,35 +4736,15 @@ static IterDetails resolveIterDetails(Resolver& rv,
 static QualifiedType resolveTheseMethod(Resolver& rv,
                                         const AstNode* iterand,
                                         const QualifiedType& iterandType,
-                                        const QualifiedType& tagType,
+                                        Function::IteratorKind iterKind,
                                         const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterand);
-  std::vector<CallInfoActual> actuals;
-
-  actuals.push_back(CallInfoActual(iterandType, USTR("this")));
-
-  if (!tagType.isUnknown()) {
-    actuals.emplace_back(tagType, USTR("tag"));
-  }
-
-  if (!followThisType.isUnknown()) {
-    actuals.emplace_back(followThisType, USTR("followThis"));
-  }
-
-  auto ci = CallInfo(USTR("these"),
-                     iterandType,
-                     /* isMethodCall */ true,
-                     /* hasQuestionArg */ false,
-                     /* isParenless */ false,
-                     /* actuals */ std::move(actuals));
-
   auto inScope = rv.scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-  auto c = resolveGeneratedCall(rv.context, iterand, ci, inScopes);
 
-  rv.handleResolvedCallWithoutError(iterandRe, iterand, ci, c,
-      { { AssociatedAction::ITERATE,
-      iterand->id() } });
+  auto c = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
+  rv.handleResolvedCallWithoutError(iterandRe, iterand, c,
+      { { AssociatedAction::ITERATE, iterand->id() } });
 
   return c.exprType();
 }
@@ -4850,7 +4829,7 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindActual, followThisFormal);
+  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
