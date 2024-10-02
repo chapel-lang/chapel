@@ -2906,6 +2906,7 @@ CHPL_DEFINE_STD_HASH_(FormalActualMap, (key.hash()));
 CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
+CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std
