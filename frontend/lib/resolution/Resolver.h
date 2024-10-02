@@ -304,20 +304,35 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Determine the method receiver, which is a type under
-     full resolution, but only an ID under scope resolution.
-    */
-  bool getMethodReceiver(types::QualifiedType* outType = nullptr,
-                         ID* outId = nullptr);
+  /** Try to get info about the closest method receiver. The first value
+      is the ID of the containing symbol. It could be a method or a
+      composite type. The second value is the type of the receiver.
 
-  /* Compute the receiver type (when resolving a method)
-     and return a type containing nullptr if it is not applicable.
+      If 'allowNonLocal' is true, then the type may be the type of a
+      non-local receiver when a nested non-method function is enclosed
+      by a method, e.g.,
 
-     This one is different from getMethodReceiver in two ways:
-       1. It isn't useful during scope resolution
-       2. For declarations contained in a class or record (even if they are
-          not methods), it will return the class/record type here.
-   */
+      proc R.foo() {
+        proc nested() {
+          // In this scope the call to 'methodReceiverType()' returns
+          // 'R', even though 'nested' is not a method itself.
+        }
+      }
+  */
+  std::optional<std::tuple<ID, types::QualifiedType>>
+  closestMethodReceiverInfo(bool allowNonLocal);
+
+  /** In a method, compute the ID of the receiver's composite type
+      using only scope-resolution. */
+  ID scopeResolveCompositeIdFromMethodReceiver();
+
+  /* Return the type of the lexically closest receiver, or 'nullptr' if
+     none exists. The type may be the type of a non-local receiver (see
+     the note in 'closestMethodReceiverInfo');
+
+     Use 'closestMethodReceiverInfo(false)' instead in the case where
+     you only want the receiver type of the current method.
+  */
   types::QualifiedType methodReceiverType();
 
   /* Return a helper that can compute the additional scopes

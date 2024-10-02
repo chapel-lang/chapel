@@ -520,22 +520,31 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
   return whereClauseResult;
 }
 
-static void checkForParenlessMethodFieldRedefinition(Context* context,
-                                                     const Function* fn,
-                                                     Resolver& visitor) {
+static void
+checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
+  Context* context = rv.context;
 
   if (fn->isMethod() && fn->isParenless()) {
-    QualifiedType receiverType;
-    ID receiverId;
-    if (visitor.getMethodReceiver(&receiverType, &receiverId)) {
+    bool allowNonLocal = false;
+    if (auto receiverInfo = rv.closestMethodReceiverInfo(allowNonLocal)) {
+      auto compositeId = std::get<0>(*receiverInfo);
+      auto receiverType = std::get<1>(*receiverInfo);
+
       if (receiverType.type()) {
         // use the type information, if it is present
         if (auto ct = receiverType.type()->getCompositeType()) {
-          receiverId = ct->id();
+          compositeId = ct->id();
         }
       }
-      if (!receiverId.isEmpty()) {
-        if (parsing::idContainsFieldWithName(context, receiverId, fn->name())) {
+
+      // Forcibly use scope-resolution to look up the composite if needed.
+      if (parsing::idIsFunction(context, compositeId)) {
+        compositeId = rv.scopeResolveCompositeIdFromMethodReceiver();
+      }
+
+      if (compositeId) {
+        if (parsing::idContainsFieldWithName(context, compositeId,
+                                             fn->name())) {
           context->error(fn, "parenless proc redeclares the field '%s'",
                          fn->name().c_str());
         }
@@ -651,7 +660,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
-  checkForParenlessMethodFieldRedefinition(context, fn, visitor);
+  checkForParenlessMethodFieldRedefinition(visitor, fn);
 
   result = TypedFnSignature::get(context,
                                  untypedSig,
@@ -2796,7 +2805,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
       child->traverse(visitor);
     }
 
-    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
+    checkForParenlessMethodFieldRedefinition(visitor, fn);
 
     sig = visitor.typedSignature;
   }
