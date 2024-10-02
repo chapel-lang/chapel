@@ -1627,6 +1627,28 @@ static void testInitGenericAfterConcrete() {
   }
 }
 
+static void testNilFieldInit() {
+  std::string program = R"""(
+    class C { var x: int; }
+
+    record R {
+      var x: unmanaged C?;
+      proc init() {
+        x = nil;
+      }
+    }
+ 
+    var x: R;
+  )""";
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  auto t = resolveTypeOfX(context, program);
+  assert(t);
+  assert(t->isRecordType());
+
+  assert(guard.errors().size() == 0);
+};
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1673,6 +1695,7 @@ int main() {
 
   testInitGenericAfterConcrete();
 
+  testNilFieldInit();
   return 0;
 }
 
