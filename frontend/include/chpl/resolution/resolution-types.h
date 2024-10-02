@@ -1893,6 +1893,14 @@ class CallResolutionResult {
   {
   }
 
+  static CallResolutionResult getEmpty() {
+    return CallResolutionResult(
+        MostSpecificCandidates::getEmpty(),
+        /* rejectedPossibleIteratorCandidates */ false,
+        types::QualifiedType(),
+        PoiInfo());
+  }
+
   /** get the most specific candidates for return-intent overloading */
   const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
 
