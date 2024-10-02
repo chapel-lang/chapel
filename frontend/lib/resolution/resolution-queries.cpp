@@ -5547,8 +5547,6 @@ findTaggedIterator(ResolutionContext* rc,
   }
 
   if (isFollower && followThisType.isUnknownOrErroneous()) {
-    rc->context()->error(scope->id(), "cannot resolve follower iterator: "
-                                      "no valid leader iterator found");
     auto ret = MostSpecificCandidate();
     return CHPL_RESOLUTION_QUERY_END(ret);
   }
@@ -5587,13 +5585,11 @@ findTaggedIterator(ResolutionContext* rc,
 }
 
 const MostSpecificCandidate&
-findTaggedIteratorForType(ResolutionContext* context,
-                          const IteratorType* type,
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const FnIteratorType* fnIter,
                           Function::IteratorKind iterKind) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, context, type, iterKind);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, rc, fnIter, iterKind);
 
-  CHPL_ASSERT(type->isFnIteratorType() && "other iterator types not implemented");
-  auto fnIter = type->toFnIteratorType();
   auto name = fnIter->iteratorFn()->untyped()->name();
   auto receiverType = QualifiedType(); // TODO
   std::vector<QualifiedType> argTypes;
@@ -5601,11 +5597,36 @@ findTaggedIteratorForType(ResolutionContext* context,
     argTypes.push_back(fnIter->iteratorFn()->formalType(i));
   }
 
-  auto lookupScope = scopeForId(context->context(), fnIter->iteratorFn()->id());
+  auto lookupScope = scopeForId(rc->context(), fnIter->iteratorFn()->id());
   auto poiScope = fnIter->poiScope();
 
-  auto ret = findTaggedIterator(context, name, receiverType, argTypes, iterKind,
+  auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
                                 lookupScope, poiScope);
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind) {
+  CHPL_RESOLUTION_QUERY_BEGIN(taggedYieldTypeForType, rc, fnIter, iterKind);
+
+  auto lookupScope = scopeForId(rc->context(), fnIter->iteratorFn()->id());
+  auto poiScope = fnIter->poiScope();
+  auto inScopes = CallScopeInfo::forNormalCall(lookupScope, poiScope);
+
+  // building a call resolution result takes care of setting up the
+  // PoI scope and doing type inference using that PoI scope, so do it here.
+  auto msc = findTaggedIteratorForType(rc, fnIter, iterKind);
+  auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+
+  QualifiedType ret;
+  if (!c.exprType().isUnknownOrErroneous()) {
+    if (auto it = c.exprType().type()->toIteratorType()) {
+      ret = it->yieldType();
+    }
+  }
+
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 

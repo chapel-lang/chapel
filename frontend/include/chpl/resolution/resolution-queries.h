@@ -501,9 +501,14 @@ const uast::Decl* findFieldByName(Context* context,
                                   UniqueString name);
 
 const MostSpecificCandidate&
-findTaggedIteratorForType(ResolutionContext* context,
-                          const types::IteratorType* type,
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const types::FnIteratorType* fnIter,
                           uast::Function::IteratorKind iterKind);
+
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind);
 
 CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                                       const uast::AstNode* iterand,

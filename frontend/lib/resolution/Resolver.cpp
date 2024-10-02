@@ -4160,6 +4160,46 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   return c;
 }
 
+static void
+issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
+                                           const uast::Call* call,
+                                           const CallScopeInfo& inScopes,
+                                           const CallResolutionResult& c) {
+  const FnIteratorType* iterType = nullptr;
+  if (!c.exprType().isUnknownOrErroneous() &&
+      (iterType = c.exprType().type()->toFnIteratorType())) {
+
+    std::vector<std::pair<Function::IteratorKind, QualifiedType>> yieldTypes;
+    static const Function::IteratorKind iterKinds[] =
+      { Function::SERIAL, Function::STANDALONE, Function::FOLLOWER };
+
+    for (auto iterKind : iterKinds) {
+      auto qt = taggedYieldTypeForType(rv.rc, iterType, iterKind);
+      if (!qt.isUnknownOrErroneous()) {
+        yieldTypes.emplace_back(iterKind, qt);
+      }
+    }
+
+    bool incompatibleYieldTypes = false;
+    if (yieldTypes.size() > 1) {
+      for (size_t i = 1; i < yieldTypes.size(); i++) {
+        if (yieldTypes[i].second != yieldTypes[0].second) {
+          incompatibleYieldTypes = true;
+          break;
+        }
+      }
+    }
+
+    if (incompatibleYieldTypes) {
+      for (auto msc : c.mostSpecific()) {
+        if (msc) {
+          rv.context->error(msc.fn()->id(), "incompatible yield types for iterator");
+        }
+      }
+    }
+  }
+}
+
 void Resolver::handleCallExpr(const uast::Call* call) {
   if (scopeResolveOnly) {
     return;
@@ -4234,6 +4274,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+
+    // issue errors for iterator groups where e.g. serial/standalone types mismatch
+    issueIteratorIncompatibilityErrorsIfNeeded(*this, call, inScopes, c);
 
     if (initResolver) {
       initResolver->handleResolvedCall(call, &c);
