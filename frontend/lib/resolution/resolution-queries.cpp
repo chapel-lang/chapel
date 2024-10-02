@@ -4082,15 +4082,26 @@ considerCompilerGeneratedOperators(Context* context,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall()) return nullptr;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
+
+  // Generate assignment operators if the standard library isn't available.
+  bool generateAssign = parsing::bundledModulePath(context).isEmpty() &&
+                        ci.name() == USTR("=");
 
   // Avoid invoking the query if we don't need a binary operation here.
-  if (ci.name() != USTR(":") || ci.numActuals() != 2) return nullptr;
+  if (!(ci.numActuals() == 2 &&
+        (ci.name() == USTR(":") || generateAssign))) {
+    return nullptr;
+  }
 
   auto lhsType = ci.actual(0).type();
   auto rhsType = ci.actual(1).type();
-  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
-      !(rhsType.type() && rhsType.type()->isEnumType())) {
+
+  if (lhsType.type() == nullptr || rhsType.type() == nullptr) return nullptr;
+
+  if (ci.name() == USTR(":") &&
+      !lhsType.type()->isEnumType() &&
+      !rhsType.type()->isEnumType()) {
     return nullptr;
   }
 
