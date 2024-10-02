@@ -2530,7 +2530,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                       sig->outerVariables());
 
   // May need to resolve the body at this point to compute final TFS.
-  if (result->isInitializer() && !result->isCompilerGenerated()) {
+  if (result->isInitializer()) {
     auto rf = resolveFunction(rc, result, poiScope);
     result = rf->signature();
   }
