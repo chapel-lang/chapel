@@ -99,7 +99,7 @@ const char* Function::kindToString(Kind kind) {
 
 const char* Function::iteratorKindToString(IteratorKind kind) {
   switch (kind) {
-    case Function::SERIAL:     return "<serial>";
+    case Function::SERIAL:     return "serial";
     case Function::STANDALONE: return "standalone";
     case Function::LEADER:     return "leader";
     case Function::FOLLOWER:   return "follower";

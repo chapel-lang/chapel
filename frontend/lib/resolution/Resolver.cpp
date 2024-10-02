@@ -4169,21 +4169,21 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
   if (!c.exprType().isUnknownOrErroneous() &&
       (iterType = c.exprType().type()->toFnIteratorType())) {
 
-    std::vector<std::pair<Function::IteratorKind, QualifiedType>> yieldTypes;
+    std::vector<std::tuple<Function::IteratorKind, QualifiedType, const TypedFnSignature*>> yieldTypes;
     static const Function::IteratorKind iterKinds[] =
       { Function::SERIAL, Function::STANDALONE, Function::FOLLOWER };
 
     for (auto iterKind : iterKinds) {
       auto qt = taggedYieldTypeForType(rv.rc, iterType, iterKind);
       if (!qt.isUnknownOrErroneous()) {
-        yieldTypes.emplace_back(iterKind, qt);
+        yieldTypes.emplace_back(iterKind, qt, nullptr);
       }
     }
 
     bool incompatibleYieldTypes = false;
     if (yieldTypes.size() > 1) {
       for (size_t i = 1; i < yieldTypes.size(); i++) {
-        if (yieldTypes[i].second != yieldTypes[0].second) {
+        if (std::get<1>(yieldTypes[i]) != std::get<1>(yieldTypes[0])) {
           incompatibleYieldTypes = true;
           break;
         }
@@ -4191,11 +4191,11 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
     }
 
     if (incompatibleYieldTypes) {
-      for (auto msc : c.mostSpecific()) {
-        if (msc) {
-          rv.context->error(msc.fn()->id(), "incompatible yield types for iterator");
-        }
+      for (auto& foundIter : yieldTypes) {
+        std::get<2>(foundIter) =
+          findTaggedIteratorForType(rv.rc, iterType, std::get<0>(foundIter)).fn();
       }
+      CHPL_REPORT(rv.context, IncompatibleYieldTypes, call, std::move(yieldTypes));
     }
   }
 }

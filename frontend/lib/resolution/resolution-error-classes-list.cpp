@@ -579,6 +579,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorIncompatibleYieldTypes::write(ErrorWriterBase& wr) const {
+  auto call = std::get<0>(info_);
+  auto& yieldTypes = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "incompatible yield types in iterator group.");
+  wr.message("Encountered while resolving the following call:");
+  wr.codeForLocation(call);
+  wr.message("All versions of the iterator except the leader should yield the same type.");
+
+  for (auto& data : yieldTypes) {
+    wr.message("");
+    auto iterKindStr = uast::Function::iteratorKindToString(std::get<0>(data));
+    auto qt = std::get<1>(data);
+    auto fn = std::get<2>(data);
+
+    wr.note(fn->id(), "the ", iterKindStr, " version of the iterator '", fn->untyped()->name() ,"' yields values of type '", qt.type(), "'.");
+    wr.codeForLocation(fn->id());
+  }
+}
+
 void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   auto primCall = std::get<const uast::PrimCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
