@@ -296,11 +296,7 @@ static void buildInitArgs(Context* context,
 
 static void collectFields(const AstNode* ast,
                           std::vector<const VarLikeDecl*>& fields) {
-  if (auto decl = ast->toAggregateDecl()) {
-    for (auto d : decl->decls()) {
-      collectFields(d, fields);
-    }
-  } else if (auto var = ast->toVarLikeDecl()) {
+  if (auto var = ast->toVarLikeDecl()) {
     fields.push_back(var);
   } else if (auto multi = ast->toMultiDecl()) {
     for (auto d : multi->decls()) {
@@ -355,7 +351,9 @@ static void initHelper(Context* context,
   }
 
   std::vector<const VarLikeDecl*> fields;
-  collectFields(typeDecl, fields);
+  for (auto d : typeDecl->decls()) {
+    collectFields(d, fields);
+  }
 
   for (auto field : fields) {
     Formal::Intent kind;
