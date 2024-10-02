@@ -500,7 +500,7 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
-const TypedFnSignature* const&
+const MostSpecificCandidate&
 findTaggedIteratorForType(ResolutionContext* context,
                           const types::IteratorType* type,
                           uast::Function::IteratorKind iterKind);
