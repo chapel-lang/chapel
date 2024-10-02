@@ -5631,6 +5631,97 @@ getIterKindConstantOrUnknown(Context* context, Function::IteratorKind iterKind) 
   return QUERY_END(ret);
 }
 
+static const TypedFnSignature* const&
+findTaggedIterator(ResolutionContext* rc,
+                   UniqueString name,
+                   QualifiedType receiverType,
+                   std::vector<QualifiedType> argTypes,
+                   Function::IteratorKind tag,
+                   const Scope* scope,
+                   const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, receiverType, argTypes, tag, scope, poiScope);
+
+  auto scopeInfo = CallScopeInfo::forNormalCall(scope, poiScope);
+
+  auto followThisType = QualifiedType();
+  bool isFollower = tag == Function::FOLLOWER;
+  bool isSerial = tag == Function::SERIAL;
+  if (isFollower) {
+    auto leaderSig = findTaggedIterator(rc, name, receiverType, argTypes,
+                                        Function::LEADER, scope, poiScope);
+    if (leaderSig) {
+      auto retType = returnType(rc, leaderSig, poiScope);
+
+      if (!retType.isUnknownOrErroneous() && retType.type()->isFnIteratorType()) {
+        followThisType = retType.type()->toFnIteratorType()->yieldType();
+      }
+    }
+  }
+
+  if (isFollower && followThisType.isUnknownOrErroneous()) {
+    rc->context()->error(scope->id(), "cannot resolve follower iterator: "
+                                      "no valid leader iterator found");
+    return CHPL_RESOLUTION_QUERY_END(nullptr);
+  }
+
+  auto iterKindType = EnumType::getIterKindType(rc->context());
+
+  std::vector<CallInfoActual> actuals;
+  for (auto argType : argTypes) {
+    // We explicitly insert the tag below.
+    if (argType.type() == iterKindType) continue;
+    actuals.push_back(CallInfoActual(argType, UniqueString()));
+  }
+  if (!isSerial) {
+    auto iterKind = getIterKindConstantOrUnknown(rc->context(), tag);
+    if (iterKind.isUnknownOrErroneous()) {
+      return CHPL_RESOLUTION_QUERY_END(nullptr);
+    }
+
+    actuals.push_back(CallInfoActual(iterKind, USTR("tag")));
+  }
+
+  if (isFollower) {
+    actuals.push_back(CallInfoActual(followThisType, USTR("followThis")));
+  }
+
+  auto ci = CallInfo(name, receiverType,
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+
+  auto c = resolveGeneratedCall(rc->context(), parsing::idToAst(rc->context(), scope->id()), ci, scopeInfo);
+  if (auto onlyCandidate = c.mostSpecific().only()) {
+    return CHPL_RESOLUTION_QUERY_END(onlyCandidate.fn());
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(nullptr);
+}
+
+const TypedFnSignature* const&
+findTaggedIteratorForType(ResolutionContext* context,
+                          const IteratorType* type,
+                          Function::IteratorKind iterKind) {
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, context, type, iterKind);
+
+  CHPL_ASSERT(type->isFnIteratorType() && "other iterator types not implemented");
+  auto fnIter = type->toFnIteratorType();
+  auto name = fnIter->iteratorFn()->untyped()->name();
+  auto receiverType = QualifiedType(); // TODO
+  std::vector<QualifiedType> argTypes;
+  for (int i = 0; i < fnIter->iteratorFn()->numFormals(); i++) {
+    argTypes.push_back(fnIter->iteratorFn()->formalType(i));
+  }
+
+  auto lookupScope = scopeForId(context->context(), fnIter->iteratorFn()->id());
+  auto poiScope = fnIter->poiScope();
+
+  auto ret = findTaggedIterator(context, name, receiverType, argTypes, iterKind,
+                                lookupScope, poiScope);
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

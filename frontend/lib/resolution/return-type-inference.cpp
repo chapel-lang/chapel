@@ -1133,7 +1133,8 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
 
   if (sig->isIterator()) {
     result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, result, sig));
+                           FnIteratorType::get(context, result, sig, poiScope));
+
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);

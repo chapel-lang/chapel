@@ -500,6 +500,11 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
+const TypedFnSignature* const&
+findTaggedIteratorForType(ResolutionContext* context,
+                          const types::IteratorType* type,
+                          uast::Function::IteratorKind iterKind);
+
 } // end namespace resolution
 } // end namespace chpl
 #endif
