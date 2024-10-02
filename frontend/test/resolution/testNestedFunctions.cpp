@@ -418,7 +418,7 @@ static void test9(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
-// This is private issue #6123. TODO: Error "type construction call expected".
+// This is private issue #6123.
 static void test10(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
@@ -449,9 +449,34 @@ static void test10(Context* ctx) {
   assert(qt.type() && qt.type()->isRealType());
 }
 
-int main() {
-  // testInfiniteCycleBug();
+// This is private #6022.
+static void test11(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
 
+  std::string program =
+    R""""(
+    class Foo {
+      type valType = int;
+      proc typeGetter(type t) type do return t;
+
+      proc read() {
+        proc nested(x : typeGetter(valType)) do return x;
+        return nested(0);
+      }
+    }
+
+    var foo = new Foo(int);
+    var x = foo.read();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+int main() {
   auto context = buildStdContext();
   Context* ctx = turnOnWarnUnstable(context.get());
 
@@ -466,6 +491,7 @@ int main() {
   // test8(ctx);
   test9(ctx);
   test10(ctx);
+  test11(ctx);
 
   return 0;
 }
