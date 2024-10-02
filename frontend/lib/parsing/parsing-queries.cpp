@@ -214,6 +214,7 @@ parseFileContainingIdToBuilderResult(Context* context,
       symbolPath = id.symbolPath();
     } else {
       symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+      if (symbolPath.isEmpty()) return nullptr;
 
       // Assumption: The generated module goes only one symbol deep.
       CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
@@ -1246,7 +1247,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  if (!id.isFabricatedId()) {
+  if (!id.isFabricatedId() ||
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
