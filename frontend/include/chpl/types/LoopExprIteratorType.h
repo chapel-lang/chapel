@@ -58,11 +58,12 @@ class LoopExprIteratorType final : public IteratorType {
   ID sourceLocation_;
 
   LoopExprIteratorType(QualifiedType yieldType,
+                       const resolution::PoiScope* poiScope,
                        bool isZippered,
                        bool supportsParallel,
                        QualifiedType iterand,
                        ID sourceLocation)
-    : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType)),
+    : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType), poiScope),
       isZippered_(isZippered), supportsParallel_(supportsParallel),
       iterand_(std::move(iterand)), sourceLocation_(std::move(sourceLocation)) {
     if (isZippered_) {
@@ -88,6 +89,7 @@ class LoopExprIteratorType final : public IteratorType {
   static const owned<LoopExprIteratorType>&
   getLoopExprIteratorType(Context* context,
                           QualifiedType yieldType,
+                          const resolution::PoiScope* poiScope,
                           bool isZippered,
                           bool supportsParallel,
                           QualifiedType iterand,
@@ -96,6 +98,7 @@ class LoopExprIteratorType final : public IteratorType {
  public:
   static const LoopExprIteratorType* get(Context* context,
                                          QualifiedType yieldType,
+                                         const resolution::PoiScope* poiScope,
                                          bool isZippered,
                                          bool supportsParallel,
                                          QualifiedType iterand,

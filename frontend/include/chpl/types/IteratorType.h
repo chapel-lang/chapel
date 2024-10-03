@@ -22,6 +22,7 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -37,9 +38,16 @@ class IteratorType : public Type {
     the yield type is (int, int).
    */
   QualifiedType yieldType_;
+  /*
+    The instantiation scope that was used for the function that generated this
+    iterator. This is needed to properly find leader/follower etc. overloads
+    of generic function.
+   */
+  const resolution::PoiScope* poiScope_;
 
-  IteratorType(typetags::TypeTag tag, QualifiedType yieldType)
-    : Type(tag), yieldType_(std::move(yieldType)) {}
+  IteratorType(typetags::TypeTag tag, QualifiedType yieldType,
+               const resolution::PoiScope* poiScope)
+    : Type(tag), yieldType_(std::move(yieldType)), poiScope_(poiScope) {}
 
   Genericity genericity() const override {
     return CONCRETE;
@@ -48,6 +56,10 @@ class IteratorType : public Type {
  public:
   const QualifiedType& yieldType() const {
     return yieldType_;
+  }
+
+  const resolution::PoiScope* poiScope() const {
+    return poiScope_;
   }
 };
 
