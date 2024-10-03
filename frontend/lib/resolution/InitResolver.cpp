@@ -280,6 +280,43 @@ bool InitResolver::isFinalReceiverStateValid(void) {
   return ret;
 }
 
+// Extract domain information from _instance substitution
+// TODO: also support associative domains here
+static const DomainType* domainTypeFromSubsHelper(
+    Context* context, const CompositeType::SubstitutionsMap& subs) {
+  // Expect one substitution for _instance
+  if (subs.size() != 1) {
+    return DomainType::getGenericDomainType(context);
+  }
+
+  QualifiedType instanceQt = subs.begin()->second;
+
+  QualifiedType rank;
+  QualifiedType idxType;
+  QualifiedType stridable;
+
+  if (auto instance = instanceQt.type()) {
+    if (auto instanceCt = instance->toClassType()) {
+      if (auto instanceBct = instanceCt->basicClassType()) {
+        // Get BaseRectangularDom parent subs for rectangular domain info
+        if (auto baseRect = instanceBct->parentClassType()) {
+          if (baseRect->name() == "BaseRectangularDom") {
+            auto innerSubs = baseRect->sortedSubstitutions();
+            CHPL_ASSERT(innerSubs.size() == 3);
+
+            rank = innerSubs[0].second;
+            idxType = innerSubs[1].second;
+            stridable = innerSubs[2].second;
+          }
+        }
+      }
+    }
+  }
+
+  return DomainType::getRectangularType(context, instanceQt, rank, idxType,
+                                        stridable);
+}
+
 static const Type* ctFromSubs(Context* context,
                               const Type* receiverType,
                               const BasicClassType* superType,
@@ -314,37 +351,7 @@ static const Type* ctFromSubs(Context* context,
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(context, basic, manager, dec);
   } else if (receiverType->isDomainType()) {
-    // Extract domain information from _instance substitution
-    // TODO: also support associative domains here
-
-    QualifiedType instanceQt;
-    QualifiedType rank;
-    QualifiedType idxType;
-    QualifiedType stridable;
-
-    if (subs.size() == 1) {
-      instanceQt = subs.begin()->second;
-      if (auto instance = instanceQt.type()) {
-        if (auto instanceCt = instance->toClassType()) {
-          if (auto instanceBct = instanceCt->basicClassType()) {
-            // Get BaseRectangularDom parent subs for rectangular domain info
-            if (auto baseRect = instanceBct->parentClassType()) {
-              if (baseRect->name() == "BaseRectangularDom") {
-                auto innerSubs = baseRect->sortedSubstitutions();
-                CHPL_ASSERT(innerSubs.size() == 3);
-
-                rank = innerSubs[0].second;
-                idxType = innerSubs[1].second;
-                stridable = innerSubs[2].second;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    ret = DomainType::getRectangularType(context, instanceQt, rank, idxType,
-                                         stridable);
+    ret = domainTypeFromSubsHelper(context, subs);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
