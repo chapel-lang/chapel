@@ -52,6 +52,7 @@ class PromotionIteratorType final : public IteratorType {
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (PromotionIteratorType*) other;
     return this->yieldType_ == rhs->yieldType_ &&
+           this->poiScope_ == rhs->poiScope_ &&
            this->scalarFn_ == rhs->scalarFn_ &&
            this->promotedFormals_ == rhs->promotedFormals_;
   }

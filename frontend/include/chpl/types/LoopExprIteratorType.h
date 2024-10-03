@@ -74,6 +74,7 @@ class LoopExprIteratorType final : public IteratorType {
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (LoopExprIteratorType*) other;
     return yieldType_ == rhs->yieldType_ &&
+           poiScope_ == rhs->poiScope_ &&
            isZippered_ == rhs->isZippered_ &&
            supportsParallel_ == rhs->supportsParallel_ &&
            iterand_ == rhs->iterand_ &&
