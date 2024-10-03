@@ -5584,10 +5584,19 @@ findTaggedIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-static CallScopeInfo callScopeInfoForFnIterator(Context* context,
-                                                const FnIteratorType* fnIter) {
-  auto lookupScope = scopeForId(context, fnIter->iteratorFn()->id());
-  auto poiScope = fnIter->poiScope();
+static CallScopeInfo callScopeInfoForIterator(Context* context,
+                                              const IteratorType* iter) {
+  ID id;
+  if (auto fnIter = iter->toFnIteratorType()) {
+    id = fnIter->iteratorFn()->id();
+  } else if (auto loopIter = iter->toLoopExprIteratorType()) {
+    id = loopIter->sourceLocation();
+  } else {
+    CHPL_ASSERT(iter->isPromotionIteratorType());
+    id = iter->toPromotionIteratorType()->scalarFn()->id();
+  }
+  auto lookupScope = scopeForId(context, id);
+  auto poiScope = iter->poiScope();
   return CallScopeInfo::forNormalCall(lookupScope, poiScope);
 }
 
@@ -5606,7 +5615,7 @@ findTaggedIteratorForType(ResolutionContext* rc,
   for (int i = 0; i < fnIter->iteratorFn()->numFormals(); i++) {
     argTypes.push_back(fnIter->iteratorFn()->formalType(i));
   }
-  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIter);
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter);
 
   auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
                                 inScopes.lookupScope(), inScopes.poiScope());
@@ -5622,7 +5631,7 @@ taggedYieldTypeForType(ResolutionContext* rc,
   // building a call resolution result takes care of setting up the
   // PoI scope and doing type inference using that PoI scope, so do it here.
   auto msc = findTaggedIteratorForType(rc, fnIter, iterKind);
-  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIter);
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter);
   auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 
   QualifiedType ret;
@@ -5657,7 +5666,7 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
     }
   }
 
-  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIt);
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIt);
   return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 }
 
@@ -5666,8 +5675,7 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
                                 const AstNode* astForErr,
                                 const LoopExprIteratorType* loopIt,
                                 uast::Function::IteratorKind iterKind,
-                                const types::QualifiedType& followThis,
-                                const CallScopeInfo& inScopes) {
+                                const types::QualifiedType& followThis) {
   // When resolving the leader iterator of a zippered loop expression,
   // we only resolve the leader of its first iterand. On the other hand,
   // we resolve all follower iterators of the loop expression.
@@ -5698,6 +5706,7 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
   if (!serial && !loopIt->supportsParallel())
     return CallResolutionResult::getEmpty();
 
+  auto inScopes = callScopeInfoForIterator(rc->context(), loopIt);
   bool succeeded = true;
   for (auto receiverType : receiverTypes) {
     auto c = resolveTheseCall(rc, astForErr, receiverType,
@@ -5731,7 +5740,7 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
     if (auto fnIt = receiverType.type()->toFnIteratorType()) {
       return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
-      return resolveTheseCallForLoopIterator(rc, astForErr, loopIt, iterKind, followThis, inScopes);
+      return resolveTheseCallForLoopIterator(rc, astForErr, loopIt, iterKind, followThis);
     }
   }
 
