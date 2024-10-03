@@ -5124,7 +5124,7 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
     if (!iterandType.isUnknownOrErroneous()) {
       bool supportsParallel = loop->isForall() || loop->isBracketLoop();
       auto loopExprType =
-        LoopExprIteratorType::get(rv.context, bodyType, isZippered,
+        LoopExprIteratorType::get(rv.context, bodyType, rv.poiScope, isZippered,
                                   supportsParallel, iterandType, loop->id());
       loopType = QualifiedType(QualifiedType::CONST_VAR, loopExprType);
     }

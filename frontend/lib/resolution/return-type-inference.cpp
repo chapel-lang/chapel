@@ -1133,7 +1133,7 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
 
   if (sig->isIterator()) {
     result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, result, sig, poiScope));
+                           FnIteratorType::get(context, result, poiScope, sig));
 
   }
 

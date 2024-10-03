@@ -36,24 +36,18 @@ class FnIteratorType final : public IteratorType {
     function.
    */
   const resolution::TypedFnSignature* iteratorFn_;
-  /*
-    The instantiation scope that was used for the function that generated this
-    iterator. This is needed to properly find leader/follower etc. overloads
-    of generic function.
-   */
-  const resolution::PoiScope* poiScope_;
 
   FnIteratorType(QualifiedType yieldType,
-                 const resolution::TypedFnSignature* iteratorFn,
-                 const resolution::PoiScope* poiScope)
-    : IteratorType(typetags::FnIteratorType, std::move(yieldType)),
-      iteratorFn_(iteratorFn), poiScope_(poiScope) {}
+                 const resolution::PoiScope* poiScope,
+                 const resolution::TypedFnSignature* iteratorFn)
+    : IteratorType(typetags::FnIteratorType, std::move(yieldType), poiScope),
+      iteratorFn_(iteratorFn) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (FnIteratorType*) other;
     return this->yieldType_ == rhs->yieldType_ &&
-           this->iteratorFn_ == rhs->iteratorFn_ &&
-           this->poiScope_ == rhs->poiScope_;
+           this->poiScope_ == rhs->poiScope_ &&
+           this->iteratorFn_ == rhs->iteratorFn_;
   }
 
   void markUniqueStringsInner(Context* context) const override;
@@ -61,21 +55,17 @@ class FnIteratorType final : public IteratorType {
   static const owned <FnIteratorType>&
   getFnIteratorType(Context* context,
                     QualifiedType yieldType,
-                    const resolution::TypedFnSignature* iteratorFn,
-                    const resolution::PoiScope* poiScope);
+                    const resolution::PoiScope* poiScope,
+                    const resolution::TypedFnSignature* iteratorFn);
 
  public:
   static const FnIteratorType* get(Context* context,
                                    QualifiedType yieldType,
-                                   const resolution::TypedFnSignature* iteratorFn,
-                                   const resolution::PoiScope* poiScope);
+                                   const resolution::PoiScope* poiScope,
+                                   const resolution::TypedFnSignature* iteratorFn);
 
   const resolution::TypedFnSignature* iteratorFn() const {
     return iteratorFn_;
-  }
-
-  const resolution::PoiScope* poiScope() const {
-    return poiScope_;
   }
 };
 
