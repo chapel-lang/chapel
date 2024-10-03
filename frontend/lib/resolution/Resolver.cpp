@@ -2571,18 +2571,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     // that we are working with a nested method
     if (auto rt = methodReceiverType().type()) {
       // get the new class type if the receiver is a class
-      auto nct = rt->toClassType();
-      // get the manager record using ClassType method managerRecordType()
-      if (auto mr = checkIfReceiverIsManagerRecord(context, nct, parentId)) {
-        ct = mr;
-        auto fieldName = parsing::fieldIdToName(context, id);
-        // TODO: shared has additional fields that are not generic
-        if (fieldName == "chpl_t" || fieldName == "chpl_p") {
-          auto intent = fieldName == "chpl_t" ? QualifiedType::TYPE : QualifiedType::VAR;
-          auto borrowed = nct->withDecorator(context, nct->decorator().toBorrowed());
-          return QualifiedType(intent, borrowed);
+      if (auto ct = rt->toClassType()) {
+        if (auto mr = ct->managerRecordType(context)) {
+          rt = mr;
         }
-      } else if (auto comprt = rt->getCompositeType()) {
+      }
+
+      if (auto comprt = rt->getCompositeType()) {
         if (comprt->id() == parentId) {
           ct = comprt; // handle record, class with field
         } else if (auto bct = comprt->toBasicClassType()) {
