@@ -1761,6 +1761,94 @@ static void test29(Context* context) {
   }
 }
 
+static void test30(Context* context) {
+  // test that various incompatible iterator type cases are caught (or not).
+  ErrorGuard guard(context);
+  auto assertIncompatibleYieldError = [&]() {
+    assert(guard.numErrors() >= 1);
+    for (auto& error : guard.errors()) {
+      if (error->type() == ErrorType::IncompatibleYieldTypes) {
+        guard.realizeErrors();
+        return;
+      }
+    }
+
+    assert(false && "IncompatibleYieldTypes error not found");
+  };
+
+  {
+    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    std::string prog =
+      R"""(
+      iter i1() { yield 0.0; }
+      iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+      var l = i1();
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, prog, {"l"});
+    assertIncompatibleYieldError();
+  }
+
+  {
+    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    std::string prog =
+      R"""(
+      iter i1() { yield 0.0; }
+      iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0; }
+      var l = i1();
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, prog, {"l"});
+    assertIncompatibleYieldError();
+  }
+
+  {
+    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    std::string prog =
+      R"""(
+      iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+      iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+      var l = i1();
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, prog, {"l"});
+    assertIncompatibleYieldError();
+  }
+
+  {
+    // No leader means we can't invoke a follower, so the follower type is not
+    // considered and no error is emitted.
+
+    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    std::string prog =
+      R"""(
+      iter i1() { yield 0.0; }
+      iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0; }
+      var l = i1();
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, prog, {"l"});
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    // No follower means we can't check the follower's type.
+
+    ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+    std::string prog =
+      R"""(
+      iter i1() { yield 0.0; }
+      iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      var l = i1();
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, prog, {"l"});
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -1802,7 +1890,6 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(ctx, program1);
 }
 
-
 int main() {
   test1();
   test2();
@@ -1835,6 +1922,7 @@ int main() {
   auto ctx = buildStdContext();
   test28(ctx.get());
   test29(ctx.get());
+  test30(ctx.get());
 
   testInfiniteCycleBug();
 
