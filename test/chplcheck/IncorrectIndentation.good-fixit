@@ -107,13 +107,11 @@ module IncorrectIndentation {
     writeln("??");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   on here
   {
   writeln("hi");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   on here {
   writeln("hi");
   }
@@ -139,13 +137,11 @@ module IncorrectIndentation {
     writeln("??");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   begin
   {
   writeln("hi");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   begin {
   writeln("hi");
   }
@@ -167,33 +163,31 @@ module IncorrectIndentation {
 
   var dummy: int;
 
-  begin with (ref dummy)
+  begin
   {
     writeln("hi");
     writeln("??");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
-  begin with (ref dummy)
+  begin
   {
   writeln("hi");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
-  begin with (ref dummy) {
+  begin {
   writeln("hi");
   }
 
-  begin with (ref dummy) {
+  begin {
     writeln("hi");
       writeln("hi");
   }
 
-  begin with (ref dummy) {
+  begin {
     writeln("hi"); writeln("hi");
   }
 
-  begin with (ref dummy) {
+  begin {
     @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
@@ -208,14 +202,12 @@ module IncorrectIndentation {
     writeln("??");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   cobegin
   {
   writeln("hi");
   writeln("hi");
   }
 
-  @chplcheck.ignore("IncorrectIndentation")
   cobegin {
   writeln("hi");
   writeln("hi");
@@ -237,33 +229,33 @@ module IncorrectIndentation {
     writeln("hi");
   }
 
-  cobegin with (ref dummy)
+  cobegin
   {
     writeln("hi");
     writeln("??");
   }
 
-  cobegin with (ref dummy)
+  cobegin
   {
   writeln("hi");
   writeln("hi");
   }
 
-  cobegin with (ref dummy) {
+  cobegin {
   writeln("hi");
   writeln("hi");
   }
 
-  cobegin with (ref dummy) {
+  cobegin {
     writeln("hi");
       writeln("hi");
   }
 
-  cobegin with (ref dummy) {
+  cobegin {
     writeln("hi"); writeln("hi");
   }
 
-  cobegin with (ref dummy) {
+  cobegin {
     writeln("hi");
     @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do

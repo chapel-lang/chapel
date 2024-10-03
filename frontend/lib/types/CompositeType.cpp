@@ -22,8 +22,10 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/BasicClassType.h"
 #include "chpl/types/ClassType.h"
+#include "chpl/types/ClassTypeDecorator.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/NamedDecl.h"
@@ -184,6 +186,53 @@ const RecordType* CompositeType::getLocaleIDType(Context* context) {
                          SubstitutionsMap());
 }
 
+static const RecordType* tryCreateManagerRecord(Context* context,
+                                                const char* moduleName,
+                                                const char* recordName,
+                                                const BasicClassType* bct) {
+  const RecordType* instantiatedFrom = nullptr;
+  SubstitutionsMap subs;
+  if (bct != nullptr) {
+    instantiatedFrom = tryCreateManagerRecord(context,
+                                              moduleName,
+                                              recordName,
+                                              /*bct*/ nullptr);
+
+    auto fields = fieldsForTypeDecl(context,
+                                    instantiatedFrom,
+                                    DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) != "chpl_t") continue;
+      auto ctd = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto ct = ClassType::get(context, bct, /* manager */ nullptr, ctd);
+
+      subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
+      break;
+    }
+    if (fields.numFields() == 0) {
+      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context,
+                                                            instantiatedFrom->id()));
+      return nullptr;
+    }
+  }
+
+  auto name = UniqueString::get(context, recordName);
+  auto id = parsing::getSymbolFromTopLevelModule(context, moduleName, recordName);
+  return RecordType::get(context, id, name,
+                         instantiatedFrom,
+                         std::move(subs));
+}
+
+const RecordType*
+CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, "OwnedObject", "_owned", bct);
+}
+
+const RecordType*
+CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, "SharedObject", "_shared", bct);
+}
+
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
   return isMissingBundledClassType(context, id) ||
          isMissingBundledRecordType(context, id);
@@ -196,7 +245,9 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
     return path == "String._string" ||
            path == "ChapelRange._range" ||
            path == "ChapelTuple._tuple" ||
-           path == "Bytes._bytes";
+           path == "Bytes._bytes" ||
+           path == "OwnedObject._owned" ||
+           path == "SharedObject._shared";
   }
 
   return false;
@@ -207,7 +258,7 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error" || 
+           path == "Errors.Error" ||
            path == "CTypes.c_ptr" ||
            path == "CTypes.c_ptrConst";
   }

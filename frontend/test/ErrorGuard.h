@@ -78,7 +78,14 @@ class ErrorGuard {
   }
 
   /** Get the number of errors contained in the guard. */
-  inline size_t numErrors() const { return this->errors().size(); }
+  inline size_t numErrors(bool countWarnings = true) const {
+    size_t ret = handler_->errors().size();
+    if (!countWarnings) {
+      for (auto& err : handler_->errors())
+        if (err->kind() == chpl::ErrorBase::WARNING) --ret;
+    }
+    return ret;
+  }
 
   const chpl::owned<chpl::ErrorBase>& error(size_t idx) const {
     assert(idx < numErrors());

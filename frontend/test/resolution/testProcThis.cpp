@@ -46,8 +46,83 @@ static void test1() {
   assert(qt.type() == RealType::get(context, 0));
 }
 
+static void test2() {
+  // Test resolution of 'this' on a taskVar in begin statement
+  printf("test2\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  setupModuleSearchPaths(context, false, false, {}, {});
+
+  auto program = R""""(
+                  module M {
+                    record R { var y : int; }
+                    proc R.this(i: int) { return this.y + i; }
+
+                    var myVar = new R(42);                      
+
+                    begin with (in myVar) {                        
+                      var x = myVar[5];                        
+                    } 
+                  }
+                )"""";
+  auto m = parseModule(context, std::move(program));
+  assert(m->numStmts() > 0);
+  auto begin = m->stmt(m->numStmts()-1)->toBegin();
+  assert(begin);
+  const Variable* x = begin->stmt(0)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type();
+  assert(qt.type()->isIntType());
+  assert(!guard.realizeErrors()); 
+}
+
+//test resolution of 'this' on a taskVar in a coforall statement
+static void test3() {
+  printf("test3\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  setupModuleSearchPaths(context, false, false, {}, {});
+
+  auto program = R""""(
+                  module M {
+                    record R { var y : int; }
+                    proc R.this(i: int) { return this.y + i; }
+
+                    var myVar = new R(42);                      
+
+                    coforall i in 1..10 with (in myVar) {                        
+                      var x = myVar[5];                        
+                    } 
+                  }
+                )"""";
+  auto m = parseModule(context, std::move(program));
+  assert(m->numStmts() > 0);
+  auto coforall = m->stmt(m->numStmts()-1)->toCoforall();
+  assert(coforall);
+  const Variable* x = coforall->stmt(0)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type();
+  assert(qt.type()->isIntType());
+
+  assert(!guard.realizeErrors()); 
+}
+
 int main() {
   test1();
+  test2();
+  test3();
 
   return 0;
 }

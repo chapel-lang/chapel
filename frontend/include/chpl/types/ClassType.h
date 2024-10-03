@@ -110,6 +110,10 @@ class ClassType final : public Type {
   /** Returns the version of this ClassType with the passed decorator */
   const ClassType* withDecorator(Context* context,
                                  ClassTypeDecorator decorator) const;
+
+  /** Returns the recordType for the manager */
+  const RecordType* managerRecordType(Context* context) const;
+
 };
 
 

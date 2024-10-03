@@ -432,6 +432,16 @@ module ChapelLocale {
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
 
+    // if using a gpu locale return its position in the parent locale's
+    // `here.gpus` array
+    proc gpuId : int do return gpuIdImpl();
+
+    @chpldoc.nodoc
+    proc gpuIdImpl() : int {
+      halt("Can not use 'gpuId' field on a non gpu locale");
+      return -1;
+    }
+
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {

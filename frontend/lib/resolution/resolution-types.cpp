@@ -1388,6 +1388,12 @@ gatherReceiverAndParentScopesForType(Context* context,
       scopes.push_back(scopeForId(context, ct->id()));
 
       if (auto bct = ct->toBasicClassType()) {
+        // add the scope for the manager type
+        if (auto classType = thisType->toClassType()) {
+          if (auto managerType = classType->managerRecordType(context)) {
+            scopes.push_back(scopeForId(context, managerType->id()));
+          }
+        }
         // also add scopes for all superclass types
         auto cur = bct->parentClassType();
         while (cur != nullptr) {

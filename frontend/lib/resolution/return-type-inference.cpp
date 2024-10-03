@@ -1046,10 +1046,11 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
 
 // returns 'true' if it was a case handled here & sets 'result' in that case
 // returns 'false' if it needs to be computed with a ResolvedVisitor traversal
-static bool helpComputeReturnType(Context* context,
+static bool helpComputeReturnType(ResolutionContext* rc,
                                   const TypedFnSignature* sig,
                                   const PoiScope* poiScope,
                                   QualifiedType& result) {
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
 
   // TODO: Optimize the order of this case and the isCompilerGenerated case
@@ -1074,8 +1075,7 @@ static bool helpComputeReturnType(Context* context,
 
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      ResolutionContext rc(context);
-      auto visitor = Resolver::createForFunction(&rc, fn, poiScope, sig,
+      auto visitor = Resolver::createForFunction(rc, fn, poiScope, sig,
                                                  resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
@@ -1146,7 +1146,7 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
   const UntypedFnSignature* untyped = sig->untyped();
   QualifiedType result;
 
-  bool computed = helpComputeReturnType(context, sig, poiScope, result);
+  bool computed = helpComputeReturnType(rc, sig, poiScope, result);
   if (!computed) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
@@ -1158,6 +1158,11 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
     if (auto rFn = resolveFunction(rc, sig, poiScope)) {
       result = rFn->returnType();
     }
+  }
+
+  if (sig->isIterator()) {
+    result = QualifiedType(result.kind(),
+                           FnIteratorType::get(context, result, sig));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1232,7 +1237,7 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
 
 void computeReturnType(Resolver& resolver) {
   QualifiedType returnType;
-  bool computed = helpComputeReturnType(resolver.context,
+  bool computed = helpComputeReturnType(resolver.rc,
                                         resolver.typedSignature,
                                         resolver.poiScope,
                                         returnType);
