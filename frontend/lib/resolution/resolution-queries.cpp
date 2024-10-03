@@ -5584,6 +5584,13 @@ findTaggedIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
+static CallScopeInfo callScopeInfoForFnIterator(Context* context,
+                                                const FnIteratorType* fnIter) {
+  auto lookupScope = scopeForId(context, fnIter->iteratorFn()->id());
+  auto poiScope = fnIter->poiScope();
+  return CallScopeInfo::forNormalCall(lookupScope, poiScope);
+}
+
 const MostSpecificCandidate&
 findTaggedIteratorForType(ResolutionContext* rc,
                           const FnIteratorType* fnIter,
@@ -5591,17 +5598,18 @@ findTaggedIteratorForType(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, rc, fnIter, iterKind);
 
   auto name = fnIter->iteratorFn()->untyped()->name();
-  auto receiverType = QualifiedType(); // TODO
+  auto receiverType =
+    fnIter->iteratorFn()->isMethod() ?
+    fnIter->iteratorFn()->formalType(0) :
+    QualifiedType();
   std::vector<QualifiedType> argTypes;
   for (int i = 0; i < fnIter->iteratorFn()->numFormals(); i++) {
     argTypes.push_back(fnIter->iteratorFn()->formalType(i));
   }
-
-  auto lookupScope = scopeForId(rc->context(), fnIter->iteratorFn()->id());
-  auto poiScope = fnIter->poiScope();
+  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIter);
 
   auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
-                                lookupScope, poiScope);
+                                inScopes.lookupScope(), inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
@@ -5611,13 +5619,10 @@ taggedYieldTypeForType(ResolutionContext* rc,
                        uast::Function::IteratorKind iterKind) {
   CHPL_RESOLUTION_QUERY_BEGIN(taggedYieldTypeForType, rc, fnIter, iterKind);
 
-  auto lookupScope = scopeForId(rc->context(), fnIter->iteratorFn()->id());
-  auto poiScope = fnIter->poiScope();
-  auto inScopes = CallScopeInfo::forNormalCall(lookupScope, poiScope);
-
   // building a call resolution result takes care of setting up the
   // PoI scope and doing type inference using that PoI scope, so do it here.
   auto msc = findTaggedIteratorForType(rc, fnIter, iterKind);
+  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIter);
   auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 
   QualifiedType ret;
@@ -5634,8 +5639,7 @@ static CallResolutionResult
 resolveTheseCallForFnIterator(ResolutionContext* rc,
                               const FnIteratorType* fnIt,
                               uast::Function::IteratorKind iterKind,
-                              const types::QualifiedType& followThis,
-                              const CallScopeInfo& inScopes) {
+                              const types::QualifiedType& followThis) {
   auto& msc = findTaggedIteratorForType(rc, fnIt, iterKind);
 
   if (msc && iterKind == Function::FOLLOWER) {
@@ -5653,6 +5657,7 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
     }
   }
 
+  auto inScopes = callScopeInfoForFnIterator(rc->context(), fnIt);
   return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 }
 
@@ -5724,7 +5729,7 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
   // process (since we do not generate 'these' methods).
   if (receiverType.type()) {
     if (auto fnIt = receiverType.type()->toFnIteratorType()) {
-      return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis, inScopes);
+      return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
       return resolveTheseCallForLoopIterator(rc, astForErr, loopIt, iterKind, followThis, inScopes);
     }
