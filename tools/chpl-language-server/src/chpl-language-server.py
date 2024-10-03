@@ -1446,7 +1446,7 @@ class ChapelLanguageServer(LanguageServer):
         """
         loc = location_to_location(sym.location())
 
-        inst_id = ""
+        inst_id = None
         context_id = None
 
         return CallHierarchyItem(
@@ -1484,8 +1484,8 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], str)
-            or not isinstance(item.data[2], str)
+            or not isinstance(item.data[1], Optional[str])
+            or not isinstance(item.data[2], Optional[str])
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
@@ -1494,13 +1494,7 @@ class ChapelLanguageServer(LanguageServer):
             return None
         uid, idx, ctx = item.data
 
-        context_id = None
-        if ctx != "":
-            context_id = ctx
-
-        print(f"Context: {context_id}", file=sys.stderr)
-
-        fi, _ = self.get_file_info(item.uri, context_id=context_id)
+        fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
         # TODO: Performance:
         # Once the Python bindings supports it, we can use the
