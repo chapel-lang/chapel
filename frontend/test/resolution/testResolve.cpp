@@ -1849,6 +1849,124 @@ static void test30(Context* context) {
   }
 }
 
+static void test31(Context* context) {
+  // Tests generic iterator producers + PoI
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+  std::string prog =
+    R"""(
+    module PoiIterator {
+      iter myIter(arg) {
+        yield computeReturn(arg);
+      }
+      iter myIter(arg, param tag) where tag == iterKind.standalone {
+        yield computeReturn(arg);
+      }
+
+      {
+        proc computeReturn(arg: int) {
+          return arg + 1;
+        }
+
+        forall i1 in myIter(13) {}
+        for j1 in myIter(13) {}
+      }
+
+      {
+        proc computeReturn(arg: int) {
+          return arg == 1;
+        }
+
+        forall i2 in myIter(13) {}
+        for j2 in myIter(13) {}
+      }
+
+      module Library {
+        import super.{myIter};
+
+        proc computeReturn(arg) {
+          return "hello";
+        }
+
+        proc buildIterator() {
+          return myIter(13);
+        }
+      }
+
+
+      {
+        use Library;
+
+        // This is more specific than library's computeReturn, but was not in scope
+        // when buildIterator was called.
+        proc computeReturn(arg: int) {
+          return arg == 1;
+        }
+
+        forall i3 in buildIterator() {}
+        for j3 in buildIterator() {}
+      }
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
+
+  assert(vars.at("i1").type()->isIntType());
+  assert(vars.at("j1").type()->isIntType());
+  assert(vars.at("i2").type()->isBoolType());
+  assert(vars.at("j2").type()->isBoolType());
+  assert(vars.at("i3").type()->isStringType());
+  assert(vars.at("j3").type()->isStringType());
+}
+
+static void test32(Context* context) {
+  // Tests generic iterator producers + PoI
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+  std::string prog =
+    R"""(
+    module PoiIterator {
+      iter myIter(arg) {
+        yield computeReturn(arg);
+      }
+      iter myIter(arg, param tag) where tag == iterKind.standalone {
+        yield computeReturn(arg);
+      }
+
+      module Library {
+        import super.{myIter};
+
+        proc buildIterator() {
+          return myIter(13);
+        }
+      }
+
+
+      {
+        use Library;
+
+        // This is available in scope when iterating, but is not available
+        // at the time when the iterator is instantiated, so iteration doesn't
+        // succeed.
+        proc computeReturn(arg: int) {
+          return arg == 1;
+        }
+
+        forall i in buildIterator() {}
+        for j in buildIterator() {}
+      }
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"i", "j"});
+
+  assert(vars.at("i").isUnknownOrErroneous());
+  assert(vars.at("j").isUnknownOrErroneous());
+  assert(guard.realizeErrors() >= 1);
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -1923,6 +2041,8 @@ int main() {
   test28(ctx.get());
   test29(ctx.get());
   test30(ctx.get());
+  test31(ctx.get());
+  test32(ctx.get());
 
   testInfiniteCycleBug();
 
