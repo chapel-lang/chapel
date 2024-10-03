@@ -12,7 +12,7 @@ print('MASON_HOME=$PWD/mason_home')
 
 print('MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry')
 print('MASON_OFFLINE=false')
-print('SPACK_ROOT=$MASON_HOME/spack')
+print('SPACK_ROOT=$PWD/mason_home/spack')
 
 cachePath = os.getenv('REPO_CACHE_PATH', default='')
 if cachePath != '':
