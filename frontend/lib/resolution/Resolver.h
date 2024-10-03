@@ -29,6 +29,8 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
+#include <optional>
+
 namespace chpl {
 namespace resolution {
 
