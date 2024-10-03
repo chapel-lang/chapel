@@ -974,34 +974,6 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       result = QualifiedType(QualifiedType::REF, ft.type());
     }
     return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
-    auto dt = sig->formalType(0).type()->toDomainType();
-
-    if (untyped->name() == "idxType") {
-      result = dt->idxType();
-    } else if (untyped->name() == "rank") {
-      // Can't use `RankType::rank` because `D.rank` is defined for associative
-      // domains, even though they don't have a matching substitution.
-      result = QualifiedType(QualifiedType::PARAM,
-                             IntType::get(context, 64),
-                             IntParam::get(context, dt->rankInt()));
-    } else if (untyped->name() == "strides") {
-      result = dt->strides();
-    } else if (untyped->name() == "parSafe") {
-      result = dt->parSafe();
-    } else if (untyped->name() == "isRectangular") {
-      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-      auto type = BoolType::get(context);
-      result = QualifiedType(QualifiedType::PARAM, type, val);
-    } else if (untyped->name() == "isAssociative") {
-      auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-      auto type = BoolType::get(context);
-      result = QualifiedType(QualifiedType::PARAM, type, val);
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated domain method");
-      return true;
-    }
-    return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
     auto at = sig->formalType(0).type()->toArrayType();
     
