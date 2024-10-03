@@ -633,9 +633,9 @@ void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
     // that's wrong for both.
     auto qt = actualTypes[0];
     if (!qt.isType() && !(qt.type() && qt.type()->isIntType())) {
-      wr.message(
-          "However, the first actual was ", decayToValue(qt),
-          " rather than an int (for rectangular) or a type (for associative).");
+      wr.message("However, the first actual was ", decayToValue(qt),
+                 " rather than an 'int' (for rectangular) or a type (for "
+                 "associative).");
       wr.code(fnCall, {fnCall->actual(0)});
     }
   } else if (fnCall->numActuals() <= 3) {
@@ -643,19 +643,21 @@ void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
     // the first.
     wr.message(
         "This 'domain' call is structured like a rectangular domain type.");
+    bool erroredForIdxType = false;
     if (fnCall->numActuals() >= 2) {
       auto idxTypeQt = actualTypes[1];
       if (!idxTypeQt.isType()) {
-        wr.message("However, the second actual (idxType) was ",
+        erroredForIdxType = true;
+        wr.message("However, the second actual ('idxType') was ",
                    decayToValue(idxTypeQt), " rather than a type as required.");
         wr.code(fnCall, {fnCall->actual(1)});
       }
     }
     if (fnCall->numActuals() == 3) {
       auto stridesQt = actualTypes[2];
-      wr.message("However, the third actual (strides) was ",
-                 decayToValue(stridesQt),
-                 " rather than a strideKind as required.");
+      wr.message((erroredForIdxType ? "Additionally" : "However"),
+                 ", the third actual ('strides') was ", decayToValue(stridesQt),
+                 " rather than a 'strideKind' as required.");
       wr.code(fnCall, {fnCall->actual(2)});
     }
   } else {
