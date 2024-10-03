@@ -56,7 +56,7 @@ class DomainType final : public CompositeType {
   // TODO: distributions
   Kind kind_;
 
-  // Will compute idxType, rank, and stridable from 'subs'
+  // Will compute idxType, rank, and strides from 'subs'
   DomainType(ID id, UniqueString name,
              const DomainType* instantiatedFrom,
              SubstitutionsMap subs,
@@ -94,7 +94,7 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& instance,
                                               const QualifiedType& rank,
                                               const QualifiedType& idxType,
-                                              const QualifiedType& stridable);
+                                              const QualifiedType& strides);
 
   /** Return an associative domain type */
   static const DomainType* getAssociativeType(Context* context,
@@ -127,7 +127,7 @@ class DomainType final : public CompositeType {
     }
   }
 
-  const QualifiedType& stridable() const {
+  const QualifiedType& strides() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
     return subs_.at(ID(UniqueString(), 2, 0));
   }

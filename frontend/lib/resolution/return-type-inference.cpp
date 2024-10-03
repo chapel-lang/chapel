@@ -985,8 +985,8 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       result = QualifiedType(QualifiedType::PARAM,
                              IntType::get(context, 64),
                              IntParam::get(context, dt->rankInt()));
-    } else if (untyped->name() == "stridable") {
-      result = dt->stridable();
+    } else if (untyped->name() == "strides") {
+      result = dt->strides();
     } else if (untyped->name() == "parSafe") {
       result = dt->parSafe();
     } else if (untyped->name() == "isRectangular") {

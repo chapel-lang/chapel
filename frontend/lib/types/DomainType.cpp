@@ -38,7 +38,7 @@ void DomainType::stringify(std::ostream& ss,
     ss << ",";
     idxType().type()->stringify(ss, stringKind);
     ss << ",";
-    stridable().param()->stringify(ss, stringKind);
+    strides().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Associative) {
     ss << "domain(";
@@ -82,7 +82,7 @@ DomainType::getRectangularType(Context* context,
                                const QualifiedType& instance,
                                const QualifiedType& rank,
                                const QualifiedType& idxType,
-                               const QualifiedType& stridable) {
+                               const QualifiedType& strides) {
   auto genericDomain = getGenericDomainType(context);
 
   SubstitutionsMap subs;
@@ -90,10 +90,10 @@ DomainType::getRectangularType(Context* context,
   subs.emplace(ID(UniqueString(), 0, 0), rank);
   CHPL_ASSERT(idxType.isType());
   subs.emplace(ID(UniqueString(), 1, 0), idxType);
-  CHPL_ASSERT(stridable.isParam() && stridable.param()->isEnumParam() &&
-              stridable.param()->toEnumParam()->value().id.symbolPath() ==
+  CHPL_ASSERT(strides.isParam() && strides.param()->isEnumParam() &&
+              strides.param()->toEnumParam()->value().id.symbolPath() ==
                   "ChapelRange.strideKind");
-  subs.emplace(ID(UniqueString(), 2, 0), stridable);
+  subs.emplace(ID(UniqueString(), 2, 0), strides);
 
 
   // Add substitution for _instance field

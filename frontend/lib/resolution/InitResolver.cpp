@@ -301,19 +301,19 @@ static const DomainType* domainTypeFromSubsHelper(
             CHPL_ASSERT(rf.numFields() == 3);
             QualifiedType rank;
             QualifiedType idxType;
-            QualifiedType stridable;
+            QualifiedType strides;
             for (int i = 0; i < rf.numFields(); i++) {
               if (rf.fieldName(i) == "rank") {
                 rank = rf.fieldType(i);
               } else if (rf.fieldName(i) == "idxType") {
                 idxType = rf.fieldType(i);
               } else if (rf.fieldName(i) == "strides") {
-                stridable = rf.fieldType(i);
+                strides = rf.fieldType(i);
               }
             }
 
             return DomainType::getRectangularType(context, instanceQt, rank,
-                                                  idxType, stridable);
+                                                  idxType, strides);
           } else if (baseDom->name() == "BaseAssociativeDom") {
             // TODO: support associative domains
           } else {

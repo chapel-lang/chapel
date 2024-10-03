@@ -118,7 +118,7 @@ module M {
   assert(findVarType(m, rr, "ig") == idxTypeVarTy);
 
   auto stridesVarTy = findVarType(m, rr, "s");
-  assert(stridesVarTy == dType->stridable());
+  assert(stridesVarTy == dType->strides());
   assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
 
   assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
