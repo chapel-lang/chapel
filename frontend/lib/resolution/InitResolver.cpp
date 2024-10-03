@@ -280,41 +280,52 @@ bool InitResolver::isFinalReceiverStateValid(void) {
   return ret;
 }
 
-// Extract domain information from _instance substitution
-// TODO: also support associative domains here
+// Extract domain type information from _instance substitution
 static const DomainType* domainTypeFromSubsHelper(
     Context* context, const CompositeType::SubstitutionsMap& subs) {
+  auto genericDomain = DomainType::getGenericDomainType(context);
+
   // Expect one substitution for _instance
-  if (subs.size() != 1) {
-    return DomainType::getGenericDomainType(context);
-  }
+  if (subs.size() != 1) return genericDomain;
 
-  QualifiedType instanceQt = subs.begin()->second;
-
-  QualifiedType rank;
-  QualifiedType idxType;
-  QualifiedType stridable;
+  const QualifiedType instanceQt = subs.begin()->second;
 
   if (auto instance = instanceQt.type()) {
     if (auto instanceCt = instance->toClassType()) {
       if (auto instanceBct = instanceCt->basicClassType()) {
         // Get BaseRectangularDom parent subs for rectangular domain info
-        if (auto baseRect = instanceBct->parentClassType()) {
-          if (baseRect->name() == "BaseRectangularDom") {
-            auto innerSubs = baseRect->sortedSubstitutions();
-            CHPL_ASSERT(innerSubs.size() == 3);
+        if (auto baseDom = instanceBct->parentClassType()) {
+          auto& rf = fieldsForTypeDecl(context, baseDom,
+                                       DefaultsPolicy::IGNORE_DEFAULTS);
+          if (baseDom->name() == "BaseRectangularDom") {
+            CHPL_ASSERT(rf.numFields() == 3);
+            QualifiedType rank;
+            QualifiedType idxType;
+            QualifiedType stridable;
+            for (int i = 0; i < rf.numFields(); i++) {
+              if (rf.fieldName(i) == "rank") {
+                rank = rf.fieldType(i);
+              } else if (rf.fieldName(i) == "idxType") {
+                idxType = rf.fieldType(i);
+              } else if (rf.fieldName(i) == "strides") {
+                stridable = rf.fieldType(i);
+              }
+            }
 
-            rank = innerSubs[0].second;
-            idxType = innerSubs[1].second;
-            stridable = innerSubs[2].second;
+            return DomainType::getRectangularType(context, instanceQt, rank,
+                                                  idxType, stridable);
+          } else if (baseDom->name() == "BaseAssociativeDom") {
+            // TODO: support associative domains
+          } else {
+            CHPL_ASSERT(false && "Not handled!");
           }
         }
       }
     }
   }
 
-  return DomainType::getRectangularType(context, instanceQt, rank, idxType,
-                                        stridable);
+  // If we reach here, we weren't able to resolve the domain type
+  return genericDomain;
 }
 
 static const Type* ctFromSubs(Context* context,

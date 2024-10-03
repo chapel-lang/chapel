@@ -86,9 +86,15 @@ DomainType::getRectangularType(Context* context,
   auto genericDomain = getGenericDomainType(context);
 
   SubstitutionsMap subs;
+  CHPL_ASSERT(rank.isParam() && rank.param()->isIntParam());
   subs.emplace(ID(UniqueString(), 0, 0), rank);
+  CHPL_ASSERT(idxType.isType());
   subs.emplace(ID(UniqueString(), 1, 0), idxType);
+  CHPL_ASSERT(stridable.isParam() && stridable.param()->isEnumParam() &&
+              stridable.param()->toEnumParam()->value().id.symbolPath() ==
+                  "ChapelRange.strideKind");
   subs.emplace(ID(UniqueString(), 2, 0), stridable);
+
 
   // Add substitution for _instance field
   auto& rf = fieldsForTypeDecl(context, genericDomain,
@@ -118,6 +124,7 @@ DomainType::getAssociativeType(Context* context,
                                const QualifiedType& idxType,
                                const QualifiedType& parSafe) {
   SubstitutionsMap subs;
+  // TODO: assert validity of sub types
   subs.emplace(ID(UniqueString(), 0, 0), idxType);
   subs.emplace(ID(UniqueString(), 1, 0), parSafe);
   auto name = UniqueString::get(context, "_domain");

@@ -94,8 +94,10 @@ module M {
   assert(d);
   assert(d->name() == "d");
 
-  QualifiedType dType = rr.byAst(d).type();
-  assert(dType.type()->isDomainType());
+  QualifiedType dQt = rr.byAst(d).type();
+  assert(dQt.type());
+  auto dType = dQt.type()->toDomainType();
+  assert(dType);
 
   auto dTypeExpr = d->typeExpression();
   assert(dTypeExpr);
@@ -107,11 +109,17 @@ module M {
   QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
   (void)fullIndexType;
 
-  assert(findVarType(m, rr, "r").param()->toIntParam()->value() == rank);
+  auto rankVarTy = findVarType(m, rr, "r");
+  assert(rankVarTy == dType->rank());
+  assert(rankVarTy.param()->toIntParam()->value() == rank);
 
-  assert(findVarType(m, rr, "ig") == findVarType(m, rr, "i"));
+  auto idxTypeVarTy = findVarType(m, rr, "i");
+  assert(idxTypeVarTy == dType->idxType());
+  assert(findVarType(m, rr, "ig") == idxTypeVarTy);
 
-  assert(findVarType(m, rr, "s").param()->toEnumParam()->value().str == strides);
+  auto stridesVarTy = findVarType(m, rr, "s");
+  assert(stridesVarTy == dType->stridable());
+  assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
 
   assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
 
@@ -131,7 +139,7 @@ module M {
     assert(call->signature()->instantiatedFrom() != nullptr);
 
     const Variable* GT = findOnlyNamed(m, "GT")->toVariable();
-    assert(call->byAst(GT).type().type() == dType.type());
+    assert(call->byAst(GT).type().type() == dType);
   }
 
   {
@@ -144,7 +152,7 @@ module M {
     assert(call->signature()->instantiatedFrom() == nullptr);
 
     const Variable* CT = findOnlyNamed(m, "CT")->toVariable();
-    assert(call->byAst(CT).type().type() == dType.type());
+    assert(call->byAst(CT).type().type() == dType);
   }
 
   assert(guard.errors().size() == 0);
