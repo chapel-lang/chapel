@@ -409,14 +409,17 @@ if ($testblog == 1) {
             exit 1;
         }
     }
-    if ($blogonly == 0) {
-        # copy the relevant blog source files into the test directory so they'll be
-        # ran alongside all the other tests
-        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", $exitOnError, 1);
-        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", $exitOnError, 1);
-        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", $exitOnError, 1);
-        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", $exitOnError, 1);
-    }
+    
+    # copy the relevant blog source files into the test directory so they'll be
+    # ran alongside all the other tests and the results will truncate $CHPL_HOME
+    # from the test file paths when reporting errors. Copying specific subdirectories
+    # this way avoids a bunch of skipped directories and the problem of testing
+    # the archetypes blog directory.
+    mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", $exitOnError, 1);
+    mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", $exitOnError, 1);
+    mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", $exitOnError, 1);
+    mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", $exitOnError, 1);
+    
 }
 
 # Determine which make to use.
@@ -631,9 +634,7 @@ if ($examples == 1) {
 }
 
 if ($blogonly == 1 || ($testblog == 1 && $examples == 1)) {
-    # test the sub-directories explicitly to avoid a bunch of skipped directories,
-    # and also avoid the problem of testing the archetypes directory
-    $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
+    $testdirs .= " $testdir/copied-chapel-blog/";
 }
 
 if ($chplcheckonly == 1) {
