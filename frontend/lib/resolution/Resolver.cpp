@@ -4481,38 +4481,18 @@ static void resolveNewForClass(Resolver& rv, const New* node,
   re.setType(qt);
 }
 
-static void resolveNewForRecord(Resolver& rv, const New* node,
-                                const RecordType* recordType) {
+static void resolveNewForRecordLike(Resolver& rv, const New* node,
+                                const CompositeType* recordLikeType) {
+  CHPL_ASSERT(recordLikeType->isRecordType() ||
+              recordLikeType->isDomainType() ||
+              recordLikeType->isUnionType());
+
   ResolvedExpression& re = rv.byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordType);
+    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordLikeType);
   } else {
-    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordType);
-    re.setType(qt);
-  }
-}
-
-static void resolveNewForDomain(Resolver& rv, const New* node,
-                                const DomainType* domainType) {
-  ResolvedExpression& re = rv.byPostorder.byAst(node);
-
-  if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, domainType);
-  } else {
-    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, domainType);
-    re.setType(qt);
-  }
-}
-
-static void resolveNewForUnion(Resolver& rv, const New* node,
-                               const UnionType* unionType) {
-  ResolvedExpression& re = rv.byPostorder.byAst(node);
-
-  if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, unionType);
-  } else {
-    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, unionType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordLikeType);
     re.setType(qt);
   }
 }
@@ -4543,21 +4523,14 @@ void Resolver::exit(const New* node) {
     return;
   }
 
-  if (qtTypeExpr.type()->isBasicClassType()) {
+  auto type = qtTypeExpr.type();
+  if (type->isBasicClassType()) {
     CHPL_ASSERT(false && "Expected fully decorated class type");
-
-  } else if (auto classType = qtTypeExpr.type()->toClassType()) {
+  } else if (auto classType = type->toClassType()) {
     resolveNewForClass(*this, node, classType);
-
-  } else if (auto recordType = qtTypeExpr.type()->toRecordType()) {
-    resolveNewForRecord(*this, node, recordType);
-
-  } else if (auto domainType = qtTypeExpr.type()->toDomainType()) {
-    resolveNewForDomain(*this, node, domainType);
-
-  } else if (auto unionType = qtTypeExpr.type()->toUnionType()) {
-    resolveNewForUnion(*this, node, unionType);
-
+  } else if (type->isRecordType() || type->isDomainType() ||
+             type->isUnionType()) {
+    resolveNewForRecordLike(*this, node, type->toCompositeType());
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
       CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
