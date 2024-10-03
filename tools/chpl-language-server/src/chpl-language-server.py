@@ -499,6 +499,8 @@ class ContextContainer:
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
         self.global_uses: Dict[str, List[References]] = defaultdict(list)
+        self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
+        self.instantiation_id_counter = 0
 
         if config:
             file_config = config.for_file(file)
@@ -507,6 +509,27 @@ class ContextContainer:
                 self.file_paths = file_config["files"]
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
+
+    def register_signature(self, sig: chapel.TypedSignature) -> str:
+        """
+        The language server can't send over typed signatures directly for
+        situations such as call hierarchy items (but we need to reason about
+        instantiations). Instead, keep a global unique ID for each signature,
+        and use that to identify them.
+        """
+        if sig in self.instantiation_ids:
+            return self.instantiation_ids[sig]
+
+        self.instantiation_id_counter += 1
+        uid = str(self.instantiation_id_counter)
+        self.instantiation_ids[sig] = uid
+        return uid
+
+    def retrieve_signature(self, uid: str) -> Optional[chapel.TypedSignature]:
+        for sig, sig_uid in self.instantiation_ids.items():
+            if sig_uid == uid:
+                return sig
+        return None
 
     def new_file_info(
         self, uri: str, use_resolver: bool
@@ -1420,7 +1443,7 @@ class ChapelLanguageServer(LanguageServer):
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
         fi, _ = self.get_file_info(item.uri)
-        item.data[1] = fi.index_of_instantiation(fn, sig)
+        item.data[1] = fi.context.register_signature(sig)
 
         return item
 
@@ -1433,7 +1456,7 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], int)
+            or not isinstance(item.data[1], str)
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
@@ -1456,11 +1479,7 @@ class ChapelLanguageServer(LanguageServer):
             # We don't handle that here.
             return None
 
-        instantiation = None
-        if idx != -1:
-            instantiation = fi.instantiation_at_index(fn, idx)
-        else:
-            instantiation = fi.concrete_instantiation_for(fn)
+        instantiation = fi.context.retrieve_signature(idx)
 
         return (fi, fn, instantiation)
 
