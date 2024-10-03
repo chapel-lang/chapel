@@ -2577,10 +2577,11 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         ct = mr;
         auto fieldName = parsing::fieldIdToName(context, id);
         // TODO: shared has additional fields that are not generic
-        CHPL_ASSERT(fieldName == "chpl_t" || fieldName == "chpl_p");
-        auto intent = fieldName == "chpl_t" ? QualifiedType::TYPE : QualifiedType::VAR;
-        auto borrowed = nct->withDecorator(context, nct->decorator().toBorrowed());
-        return QualifiedType(intent, borrowed);
+        if (fieldName == "chpl_t" || fieldName == "chpl_p") {
+          auto intent = fieldName == "chpl_t" ? QualifiedType::TYPE : QualifiedType::VAR;
+          auto borrowed = nct->withDecorator(context, nct->decorator().toBorrowed());
+          return QualifiedType(intent, borrowed);
+        }
       } else if (auto comprt = rt->getCompositeType()) {
         if (comprt->id() == parentId) {
           ct = comprt; // handle record, class with field
