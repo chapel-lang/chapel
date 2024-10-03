@@ -1,9 +1,19 @@
+#!/usr/bin/env python3
+
+import os
+
 # Ensure mason in PATH
-PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH
+print('PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH')
 
 # Mason envs
-MASON_HOME=$PWD/mason_home
+print('MASON_HOME=$PWD/mason_home')
+
 # Note, this registry should only ever be used by mason update tests
-MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry
-MASON_OFFLINE=false
-SPACK_ROOT=$PWD/mason_home/spack
+
+print('MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry')
+print('MASON_OFFLINE=false')
+print('SPACK_ROOT=$MASON_HOME/spack')
+
+cachePath = os.getenv('REPO_CACHE_PATH', default='')
+if cachePath != '':
+   print('MASON_LICENSE_CACHE_PATH=' + cachePath)

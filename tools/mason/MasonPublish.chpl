@@ -690,7 +690,8 @@ proc refreshLicenseList(overwrite=false) throws {
   const branch = '--branch main ';
   const depth = '--depth 1 ';
   const url = 'https://github.com/spdx/license-list-data.git ';
-  const referIfAble = " --reference-if-able " + dest;
+  const referIfAble = if MASON_LICENSE_CACHE_PATH != "" then
+    " --reference-if-able " + MASON_LICENSE_CACHE_PATH + "/spdx" else "";
   const command = 'git clone -q ' + branch + depth + url + dest + referIfAble;
   if !isDir(dest) {
     runCommand(command);
