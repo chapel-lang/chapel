@@ -140,14 +140,11 @@ const QualifiedType& DomainType::getDefaultDistType(Context* context) {
 
   QualifiedType result;
 
-  auto [id, name] = parsing::getSymbolFromTopLevelModule(
-      context, "DefaultRectangular", "defaultDist");
-  auto modName = ID::parentSymbolPath(context, id.symbolPath());
-
-  if (auto mod = parsing::getToplevelModule(context, modName)) {
+  if (auto mod = parsing::getToplevelModule(
+          context, UniqueString::get(context, "DefaultRectangular"))) {
     for (auto stmt : mod->children()) {
       auto decl = stmt->toNamedDecl();
-      if (decl && decl->name() == name) {
+      if (decl && decl->name() == USTR("defaultDist")) {
         auto res = resolution::resolveModuleStmt(context, stmt->id());
         result = res.byId(stmt->id()).type();
       }
