@@ -254,80 +254,79 @@ module M {
 //   printf("Success: %s\n", domainType.c_str());
 // }
 
-// static void testBadPass(std::string argType, std::string actualType) {
-//   // Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
-//   Context ctx;
-//   Context* context = &ctx;
-//   ErrorGuard guard(context);
+static void testBadPass(std::string argType, std::string actualType) {
+  // Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
 
-//   std::string program = DomainModule +
-// R"""(
-// module M {
-//   use ChapelDomain;
-  
-//   proc foo(arg: )""" + argType + R"""() {
-//     return 42;
-//   }
+  std::string program =
+R"""(
+module M {
+  proc foo(arg: )""" + argType + R"""() {
+    return 42;
+  }
 
-//   var d : )""" + actualType + R"""(;
-//   var c_ret = foo(d);
-// }
-// )""";
-//   // TODO: generic checks
+  var d : )""" + actualType + R"""(;
+  var c_ret = foo(d);
+}
+)""";
+  // TODO: generic checks
 
-//   auto path = UniqueString::get(context, "input.chpl");
-//   setFileText(context, path, std::move(program));
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
 
-//   const ModuleVec& vec = parseToplevel(context, path);
-//   const Module* m = vec[1]; 
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
 
-//   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-//   auto c_ret = findOnlyNamed(m, "c_ret")->toVariable();
-//   assert(rr.byAst(c_ret).type().isErroneousType());
-//   assert(guard.errors().size() == 1);
-//   auto& e = guard.errors()[0];
-//   assert(e->type() == chpl::NoMatchingCandidates);
+  auto c_ret = findOnlyNamed(m, "c_ret")->toVariable();
+  assert(rr.byAst(c_ret).type().isErroneousType());
+  assert(guard.errors().size() == 1);
+  auto& e = guard.errors()[0];
+  assert(e->type() == chpl::NoMatchingCandidates);
 
-//   printf("Success: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
+  printf("Success: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
 
-//   // 'clear' rather than 'realize' to simplify test output
-//   guard.clearErrors();
-// }
+  // 'clear' rather than 'realize' to simplify test output
+  guard.clearErrors();
+}
 
-// static void testIndex(std::string domainType,
-//                       std::string expectedType) {
-//   Context ctx;
-//   Context* context = &ctx;
-//   ErrorGuard guard(context);
+static void testIndex(std::string domainType,
+                      std::string expectedType) {
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+  ErrorGuard guard(context);
 
-//   std::string program = DomainModule + ArrayModule +
-// R"""(
-// module M {
-//   use ChapelDomain;
-//   use ChapelArray;
+  std::string program =
+R"""(
+module M {
+  var d : )""" + domainType + R"""(;
+  type t = )""" + expectedType + R"""(;
+  type i = index(d);
 
-//   var d : )""" + domainType + R"""(;
-//   type t = )""" + expectedType + R"""(;
-//   type i = index(d);
+  param equal = i == t;
+}
+)""";
 
-//   param equal = i == t;
-// }
-// )""";
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
 
-//   auto path = UniqueString::get(context, "input.chpl");
-//   setFileText(context, path, std::move(program));
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
 
-//   const ModuleVec& vec = parseToplevel(context, path);
-//   const Module* m = vec[2];
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-//   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-//   findVarType(m, rr, "d").dump();
-//   findVarType(m, rr, "t").dump();
-//   findVarType(m, rr, "i").dump();
+  assert(!findVarType(m, rr, "d").isUnknownOrErroneous());
+  assert(!findVarType(m, rr, "t").isUnknownOrErroneous());
+  assert(!findVarType(m, rr, "i").isUnknownOrErroneous());
 
-//   assert(findVarType(m, rr, "equal").isParamTrue());
-// }
+  assert(findVarType(m, rr, "equal").isParamTrue());
+
+  printf("Success: index(%s) == %s\n", domainType.c_str(),
+         expectedType.c_str());
+}
 
 static void testBadDomainHelper(std::string domainType, Context* context,
                                 ErrorGuard& guard) {
@@ -356,9 +355,6 @@ module M {
   auto& e = guard.errors()[0];
   assert(e->type() == chpl::InvalidDomainCall);
 
-  printf("Success: cannot resolve incorrect domain type expression %s\n",
-         domainType.c_str());
-
   guard.clearErrors();
 }
 
@@ -382,6 +378,9 @@ static void testBadDomain(std::string domainType) {
 
     testBadDomainHelper(domainType, context, guard);
   }
+
+  printf("Success: cannot resolve %s\n",
+         domainType.c_str());
 }
 
 int main() {
@@ -397,16 +396,19 @@ int main() {
   // testAssociative("domain(int, false)", "int", false);
   // testAssociative("domain(string)", "string", true);
 
-  // TODO: re-enable
-  // testBadPass("domain(1)", "domain(2)");
+  testBadPass("domain(1)", "domain(2)");
+  testBadPass("domain(1, int(16))", "domain(1, int(8))");
+  testBadPass("domain(1, int(8))", "domain(1, int(16))");
+  testBadPass("domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
+  // TODO: re-enable associative badPass
   // testBadPass("domain(int)", "domain(string)");
   // testBadPass("domain(1)", "domain(int)");
 
-  // TODO: re-enable indexes
-  // testIndex("domain(1)", "int");
-  // testIndex("domain(2)", "2*int");
-  // testIndex("domain(1, bool)", "bool");
-  // testIndex("domain(2, bool)", "2*bool");
+  testIndex("domain(1)", "int");
+  testIndex("domain(2)", "2*int");
+  testIndex("domain(1, bool)", "bool");
+  testIndex("domain(2, bool)", "2*bool");
+  // TODO: re-enable associative indexes
   // testIndex("domain(int)", "int");
   // testIndex("domain(string)", "string");
 
