@@ -2756,7 +2756,7 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
   // Call the implementation which resolves the function body.
-  auto resolved = resolveFunctionByInfoImpl(rc, sig, std::move(poiInfo));
+  auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
 
   // The final signature should only differ for initializers.
   auto finalSig = resolved->signature();
@@ -4603,6 +4603,7 @@ static MostSpecificCandidates
 findMostSpecificAndCheck(Context* context,
                          const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
+                         const AstNode* astForErr,
                          const Call* call,
                          const CallInfo& ci,
                          const Scope* inScope,
@@ -4621,15 +4622,15 @@ findMostSpecificAndCheck(Context* context,
   }
 
   // note any most-specific candidates from POI in poiInfo.
-  // TODO: This can be the case for generated calls, but is skipping the POI
-  // accumulation safe?
-  if (call != nullptr) {
-    size_t n = candidates.size();
-    for (size_t i = firstPoiCandidate; i < n; i++) {
-      for (const MostSpecificCandidate& candidate : mostSpecific) {
-        if (candidate.fn() == candidates.get(i)) {
-          poiInfo.addIds(call->id(), candidate.fn()->id());
-        }
+  auto id =
+      call != nullptr ? call->id() :
+      astForErr != nullptr ? astForErr->id() :
+      ID();
+  size_t n = candidates.size();
+  for (size_t i = firstPoiCandidate; i < n; i++) {
+    for (const MostSpecificCandidate& candidate : mostSpecific) {
+      if (candidate.fn() == candidates.get(i)) {
+        poiInfo.addIds(id, candidate.fn()->id());
       }
     }
   }
@@ -4660,9 +4661,9 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   // * check signatures
   // * gather POI info
   auto mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate, call, ci,
-                             inScopes.callScope(), inScopes.poiScope(),
-                             poiInfo);
+    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+                             astForErr, call, ci, inScopes.callScope(),
+                             inScopes.poiScope(), poiInfo);
 
   return mostSpecific;
 }
