@@ -46,7 +46,7 @@
 #include "metadata.h"
 #include "optimizations.h"
 #include "parser.h"
-#include "passes.h"
+//#include "passes.h"
 #include "resolution.h"
 #include "stmt.h"
 
@@ -155,6 +155,8 @@ struct TConverter final : UastConverter {
   // What is the module / function we are converting?
   const AstNode* symbol = nullptr; // Module* or Function*
   Symbol* curSymbol = nullptr; // corresponding to the above
+  Symbol* rvv = nullptr;
+  LabelSymbol* epilogueLabel = nullptr;
 
   // When converting an expression or a statement, where should we
   // put new nodes?
@@ -291,12 +293,13 @@ struct TConverter final : UastConverter {
     aListStack.push_back({lst, expr});
     curAList = lst;
   }
-  void popAList() {
+  Expr* popAList() {
     CHPL_ASSERT(aListStack.size() > 0);
     printf("pop ");
     nprint_view(aListStack.back().second);
     printf("\n");
 
+    Expr* ret = nullptr;
     {
       // update the parentExpr and parentSymbol pointers for the new nodes
       auto& back = aListStack.back();
@@ -306,6 +309,7 @@ struct TConverter final : UastConverter {
       for_alist(ast, alist) {
         insert_help(ast, parentExpr, parentSymbol);
       }
+      ret = parentExpr;
     }
 
     aListStack.pop_back();
@@ -313,6 +317,8 @@ struct TConverter final : UastConverter {
       curAList = aListStack.back().first;
     else
       curAList = &scratchSpaceBlock->body;
+
+    return ret;
   }
 
   BlockStmt* pushNewBlock() {
@@ -324,15 +330,15 @@ struct TConverter final : UastConverter {
     pushAList(&block->body, block);
     return block;
   }
-  void popBlock() {
-    popAList();
+  BlockStmt* popBlock() {
+    return toBlockStmt(popAList());
   }
 
   void enterCallActuals(CallExpr* call) {
     pushAList(&call->argList, call);
   }
-  void exitCallActuals() {
-    popAList();
+  CallExpr* exitCallActuals() {
+    return toCallExpr(popAList());
   }
 
   void enterFormals(FnSymbol* fn) {
@@ -374,6 +380,7 @@ struct TConverter final : UastConverter {
   // helpers
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
   CallExpr* convertLifetimeIdent(const Identifier* node, RV& rv);
+  void simplifyEpilogue(FnSymbol* fn);
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -1157,6 +1164,29 @@ void TConverter::exit(const Module* node, RV& rv) {
   printf("exit module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
+// this does a micro-optimization to replace
+//   GOTO(epilogue)
+//   epilogue:
+// with relying on the pass-through
+void TConverter::simplifyEpilogue(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+
+  if (Expr* labelDef = epilogueLabel->defPoint) {
+    if (GotoStmt* g = toGotoStmt(labelDef->prev)) {
+      if (g->gotoTag == GOTO_RETURN) {
+        // remove the GOTO and rely on fall-through
+        g->remove();
+      }
+    }
+  }
+
+  // if the epilogue label is now unused, remove it
+  if (epilogueLabel->firstSymExpr() == nullptr) {
+    epilogueLabel->defPoint->remove();
+  }
+}
+
+
 bool TConverter::enter(const Function* node, RV& rv) {
   printf("enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
@@ -1223,6 +1253,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     enterFormals(fn);
     for (auto decl : node->formals()) {
       DefExpr* conv = nullptr;
+      astlocMarker markAstLoc(decl->id());
 
       // A "normal" formal.
       if (auto formal = decl->toFormal()) {
@@ -1378,9 +1409,41 @@ bool TConverter::enter(const Function* node, RV& rv) {
   if (node->body()) {
     printf("Converting body into %i\n", fn->body->id);
     pushBlock(fn->body);
+
+    if (fn->retType != dtVoid) {
+      // construct the RVV
+      rvv = newTemp("ret", fn->retType);
+      rvv->addFlag(FLAG_RVV);
+
+      if (fn->retTag == RET_PARAM)      rvv->addFlag(FLAG_PARAM);
+      if (fn->retTag == RET_TYPE)       rvv->addFlag(FLAG_TYPE_VARIABLE);
+      if (fn->hasFlag(FLAG_MAYBE_TYPE)) rvv->addFlag(FLAG_MAYBE_TYPE);
+
+      fn->insertAtHead(new DefExpr(rvv));
+    }
+
+    // construct the epilogue label
+    epilogueLabel = new LabelSymbol(astr("_end_", fn->name));
+    epilogueLabel->addFlag(FLAG_EPILOGUE_LABEL);
+    // note: label is added to the AST later
+
     for (auto stmt : node->body()->stmts()) {
+      astlocMarker markAstLoc(stmt->id());
       stmt->traverse(rv);
     }
+
+    // add the epilogue label to the AST
+    fn->insertAtTail(new DefExpr(epilogueLabel));
+
+    // TODO: add deinit calls for the end-of-block actions for the function here
+
+    // add the single return
+    if (fn->retType == dtVoid) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    } else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, rvv));
+    }
+
     popBlock();
   }
 
@@ -1388,14 +1451,15 @@ bool TConverter::enter(const Function* node, RV& rv) {
   nprint_view(fn);
   printf("\n");
 
-  // TODO: change to emitting returns in a normalized way in the first place
-  // to avoid PRIM_DEREF and other workarounds for not having types
-  // at the time we are normalizing.
-  printf("normalizing returns\n");
-  normalizeReturns(fn);
-  printf("after normalizing fn is now ");
+  printf("simplifying epilogue\n");
+  simplifyEpilogue(fn);
+  printf("after simplifying fn is now ");
   nprint_view(fn);
   printf("\n");
+
+  // clear return variables so they can't be confused
+  rvv = nullptr;
+  epilogueLabel = nullptr;
 
   return false;
 }
@@ -1419,6 +1483,7 @@ void TConverter::exit(const Literal* node, RV& rv) {
 
 bool TConverter::enter(const Return* node, RV& rv) {
   printf("enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
   CallExpr* ret = new CallExpr(PRIM_RETURN);
 
   curAList->insertAtTail(ret);
@@ -1429,7 +1494,23 @@ bool TConverter::enter(const Return* node, RV& rv) {
 void TConverter::exit(const Return* node, RV& rv) {
   printf("exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  exitCallActuals();
+  CallExpr* ret = exitCallActuals();
+
+  // normalize returns to une the Return Value Variable (RVV)
+  if (node->value() != nullptr) {
+    FnSymbol* fn = toFnSymbol(curSymbol);
+    Expr* retExpr = ret->get(1)->remove();
+    CallExpr* move = nullptr;
+    if (fn->returnsRefOrConstRef()) {
+      move = new CallExpr(PRIM_MOVE, rvv, new CallExpr(PRIM_ADDR_OF, retExpr));
+    } else {
+      move = new CallExpr(PRIM_MOVE, rvv, retExpr);
+    }
+    ret->insertBefore(move);
+  }
+
+  // replace with GOTO(epilogue)
+  ret->replace(new GotoStmt(GOTO_RETURN, epilogueLabel));
 }
 
 
