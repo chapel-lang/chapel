@@ -40,11 +40,8 @@ static void testRectangular(std::string domainType,
                                   int rank,
                                   std::string idxType,
                                   std::string strides) {
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context ctx(config);
-  Context* context = &ctx;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
   ErrorGuard guard(context);
 
   std::string program =
@@ -379,11 +376,8 @@ static void testBadDomain(std::string domainType) {
 
   // With standard modules
   {
-    Context::Configuration config;
-    config.chplHome = getenv("CHPL_HOME");
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    auto ctx = buildStdContext();
+    auto context = ctx.get();
     ErrorGuard guard(context);
 
     testBadDomainHelper(domainType, context, guard);
