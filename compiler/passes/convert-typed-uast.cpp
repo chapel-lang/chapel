@@ -50,6 +50,9 @@
 #include "resolution.h"
 #include "stmt.h"
 
+
+#include "view.h" // DEBUG only
+
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -151,6 +154,7 @@ struct TConverter final : UastConverter {
 
   // What is the module / function we are converting?
   const AstNode* symbol = nullptr; // Module* or Function*
+  Symbol* curSymbol = nullptr; // corresponding to the above
 
   // When converting an expression or a statement, where should we
   // put new nodes?
@@ -176,7 +180,10 @@ struct TConverter final : UastConverter {
 
   // keeps track of which block/formals list/actuals list we are currently
   // in the process of creating
-  std::vector<AList*> aListStack;
+  //
+  // the Expr* pointer is used to set the parentExpr for anything added
+  // to the AList.
+  std::vector<std::pair<AList*, Expr*>> aListStack;
   // this block is where we store any result created at the top-level
   BlockStmt* scratchSpaceBlock = nullptr;
 
@@ -277,26 +284,44 @@ struct TConverter final : UastConverter {
 
 
   // aListStack helpers
-  void pushAList(AList* lst) {
-    aListStack.push_back(lst);
+  void pushAList(AList* lst, Expr* expr) {
+    printf("push ");
+    nprint_view(expr);
+    printf("\n");
+    aListStack.push_back({lst, expr});
     curAList = lst;
   }
   void popAList() {
     CHPL_ASSERT(aListStack.size() > 0);
+    printf("pop ");
+    nprint_view(aListStack.back().second);
+    printf("\n");
+
+    {
+      // update the parentExpr and parentSymbol pointers for the new nodes
+      auto& back = aListStack.back();
+      AList& alist = *back.first;
+      Expr* parentExpr = back.second;
+      Symbol* parentSymbol = curSymbol;
+      for_alist(ast, alist) {
+        insert_help(ast, parentExpr, parentSymbol);
+      }
+    }
+
     aListStack.pop_back();
     if (aListStack.size() > 0)
-      curAList = aListStack.back();
+      curAList = aListStack.back().first;
     else
       curAList = &scratchSpaceBlock->body;
   }
 
   BlockStmt* pushNewBlock() {
     auto newBlockStmt = new BlockStmt();
-    pushAList(&newBlockStmt->body);
+    pushAList(&newBlockStmt->body, newBlockStmt);
     return newBlockStmt;
   }
   BlockStmt* pushBlock(BlockStmt* block) {
-    pushAList(&block->body);
+    pushAList(&block->body, block);
     return block;
   }
   void popBlock() {
@@ -304,14 +329,14 @@ struct TConverter final : UastConverter {
   }
 
   void enterCallActuals(CallExpr* call) {
-    pushAList(&call->argList);
+    pushAList(&call->argList, call);
   }
   void exitCallActuals() {
     popAList();
   }
 
   void enterFormals(FnSymbol* fn) {
-    pushAList(&fn->formals);
+    pushAList(&fn->formals, nullptr);
   }
   void exitFormals(FnSymbol* fn) {
     popAList();
@@ -428,6 +453,9 @@ struct TConverter final : UastConverter {
 
   bool enter(const Function* ast, RV& rv);
   void exit(const Function* ast, RV& rv);
+
+  bool enter(const Literal* ast, RV& rv);
+  void exit(const Literal* ast, RV& rv);
 
   bool enter(const Return* ast, RV& rv);
   void exit(const Return* ast, RV& rv);
@@ -629,7 +657,9 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   const ResolutionResultByPostorderID& resolved = resolveModule(context, id);
   pushBlock(modSym->initFn->body);
   const AstNode* oldSymbol = symbol;
+  Symbol* oldCurSymbol = curSymbol;
   symbol = mod;
+  curSymbol = modSym->initFn;
   moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
   currentResolvedFunction = nullptr;
 
@@ -643,6 +673,7 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
 
   // tidy up after traversal
   symbol = oldSymbol;
+  curSymbol = oldCurSymbol;
   popBlock();
 }
 
@@ -666,7 +697,9 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   pushBlock(modSym->block);
   const AstNode* oldSymbol = symbol;
   const ResolvedFunction* oldFn = currentResolvedFunction;
+  Symbol* oldCurSymbol = curSymbol;
   symbol = fn;
+  curSymbol = nullptr; // to be set later
   currentResolvedFunction = r;
   moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
 
@@ -677,6 +710,7 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
 
   // tidy up after traversal
   symbol = oldSymbol;
+  curSymbol = oldCurSymbol;
   currentResolvedFunction = oldFn;
   popBlock();
 }
@@ -1091,7 +1125,7 @@ CallExpr* TConverter::convertLifetimeIdent(const uast::Identifier* node, RV& rv)
 }
 
 bool TConverter::enter(const Module* node, RV& rv) {
-  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("enter module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (modulesToConvert.count(node->id()) == 0) {
     // this module should not be converted.
@@ -1120,11 +1154,11 @@ bool TConverter::enter(const Module* node, RV& rv) {
   return true;
 }
 void TConverter::exit(const Module* node, RV& rv) {
-  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("exit module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const Function* node, RV& rv) {
-  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
 
   if (node != symbol) {
@@ -1142,6 +1176,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   FnSymbol* fn = new FnSymbol("_");
   curAList->insertAtTail(new DefExpr(fn));
+  curSymbol = fn; // for setting child node's parentSymbol
 
   // note the correspondence between the ResolvedFunction & what it converts to
   // (for calls, including recursive calls)
@@ -1181,10 +1216,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
   IntentTag thisTag = INTENT_BLANK;
   ArgSymbol* convertedReceiver = nullptr;
 
-  enterFormals(fn);
 
   // Convert the formals
   if (node->numFormals() > 0) {
+    printf("Converting formals\n");
+    enterFormals(fn);
     for (auto decl : node->formals()) {
       DefExpr* conv = nullptr;
 
@@ -1241,9 +1277,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
         noteConvertedVariable(decl, conv->sym);
       }
     }
+    exitFormals(fn);
   }
-
-  exitFormals(fn);
 
   const char* convName = convertFunctionNameAndAstr(node);
 
@@ -1301,6 +1336,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   Expr* lifetimeConstraints = nullptr;
   if (node->numLifetimeClauses() > 0) {
+    printf("Converting lifetime clause\n");
     // create a new AList for the lifetime clause
     pushNewBlock();
 
@@ -1320,15 +1356,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
     popBlock();
   }
 
-  BlockStmt* body = nullptr;
-  if (node->body()) {
-    body = new BlockStmt();
-  }
-
   setupFunctionDecl(fn, retTag, retType, node->throws(),
                     whereClause,
                     lifetimeConstraints,
-                    body);
+                    // pass a body or not to set FLAG_NO_FN_BODY appropriately
+                    node->body() ? fn->body : nullptr);
 
   if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
     Flag linkageFlag = convertFlagForDeclLinkage(node);
@@ -1343,23 +1375,50 @@ bool TConverter::enter(const Function* node, RV& rv) {
   fn->retType = convertType(currentResolvedFunction->returnType().type());
 
   // visit the body to convert
-  if (body) {
-    pushBlock(body);
-    node->body()->traverse(rv);
+  if (node->body()) {
+    printf("Converting body into %i\n", fn->body->id);
+    pushBlock(fn->body);
+    for (auto stmt : node->body()->stmts()) {
+      stmt->traverse(rv);
+    }
+    popBlock();
   }
 
+  printf("Fn is now ");
+  nprint_view(fn);
+  printf("\n");
+
+  // TODO: change to emitting returns in a normalized way in the first place
+  // to avoid PRIM_DEREF and other workarounds for not having types
+  // at the time we are normalizing.
+  printf("normalizing returns\n");
   normalizeReturns(fn);
+  printf("after normalizing fn is now ");
+  nprint_view(fn);
+  printf("\n");
 
   return false;
 }
 void TConverter::exit(const Function* node, RV& rv) {
-  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-
-  popBlock();
+  printf("exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
+bool TConverter::enter(const Literal* node, RV& rv) {
+  printf("enter literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+
+  Expr* se = untypedConverter->convertAST(node);
+  curAList->insertAtTail(se);
+
+  return false;
+}
+void TConverter::exit(const Literal* node, RV& rv) {
+  printf("exit literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
+
 bool TConverter::enter(const Return* node, RV& rv) {
-  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   CallExpr* ret = new CallExpr(PRIM_RETURN);
 
   curAList->insertAtTail(ret);
@@ -1368,18 +1427,18 @@ bool TConverter::enter(const Return* node, RV& rv) {
   return true;
 }
 void TConverter::exit(const Return* node, RV& rv) {
-  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   exitCallActuals();
 }
 
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
-  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   return true;
 }
 void TConverter::exit(const AstNode* node, RV& rv) {
-  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  printf("exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
