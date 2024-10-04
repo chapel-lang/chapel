@@ -164,11 +164,9 @@ module M {
 //   Context* context = &ctx;
 //   ErrorGuard guard(context);
 
-//   std::string program = DomainModule +
+//   std::string program =
 // R"""(
 // module M {
-//   use ChapelDomain;
-  
 //   var d : )""" + domainType + R"""(;
 //   type ig = )""" + idxType + R"""(;
 
