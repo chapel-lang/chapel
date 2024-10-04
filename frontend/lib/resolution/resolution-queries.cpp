@@ -5526,18 +5526,19 @@ findTaggedIterator(ResolutionContext* rc,
                    QualifiedType receiverType,
                    std::vector<QualifiedType> argTypes,
                    Function::IteratorKind tag,
-                   const Scope* scope,
+                   const Scope* callScope,
+                   const Scope* iteratorScope,
                    const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, receiverType, argTypes, tag, scope, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
 
-  auto scopeInfo = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
 
   auto followThisType = QualifiedType();
   bool isFollower = tag == Function::FOLLOWER;
   bool isSerial = tag == Function::SERIAL;
   if (isFollower) {
     auto candidate = findTaggedIterator(rc, name, receiverType, argTypes,
-                                        Function::LEADER, scope, poiScope);
+                                        Function::LEADER, callScope, iteratorScope, poiScope);
     if (candidate) {
       auto retType = returnType(rc, candidate.fn(), poiScope);
 
@@ -5580,13 +5581,14 @@ findTaggedIterator(ResolutionContext* rc,
                      /* isParenless */ false,
                      actuals);
 
-  auto c = resolveGeneratedCall(rc->context(), parsing::idToAst(rc->context(), scope->id()), ci, scopeInfo);
+  auto c = resolveGeneratedCall(rc->context(), parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
   auto ret = c.mostSpecific().only();
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
 static CallScopeInfo callScopeInfoForIterator(Context* context,
                                               const IteratorType* iter) {
+  // The ID of the scope to lookup the other overloads in.
   ID id;
   if (auto fnIter = iter->toFnIteratorType()) {
     id = fnIter->iteratorFn()->id();
@@ -5596,9 +5598,31 @@ static CallScopeInfo callScopeInfoForIterator(Context* context,
     CHPL_ASSERT(iter->isPromotionIteratorType());
     id = iter->toPromotionIteratorType()->scalarFn()->id();
   }
-  auto lookupScope = scopeForId(context, id);
+  auto iteratorScope = scopeForId(context, id);
+  auto callScope = iteratorScope;
   auto poiScope = iter->poiScope();
-  return CallScopeInfo::forNormalCall(lookupScope, poiScope);
+
+  // If the function needs a PoI scope, this scope will capture functions
+  // at the iterator's own point of instantiation; we don't want to include
+  // this scope in the overload search (lookup scope), because that would make
+  // it possible to introduce new overloads of the iterator via PoI, which we do not
+  // want to allow.
+  //
+  // However, we do want to include the functions available at instantiation time
+  // when resolving the bodies of the other overloads, if applicable. So,
+  // change to callScope to unwrap one level from the PoI scope.
+  //
+  // Loop expressions do not create new PoI scopes (should they?) so they
+  // are exempt from this.
+  //
+  // See the comment on CallScopeInfo for details on why three scopes are
+  // necessary for resolving functions.
+  if (poiScope && !iter->isLoopExprIteratorType()) {
+    callScope = poiScope->inScope();
+    poiScope = poiScope->inFnPoi();
+  }
+
+  return CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
 }
 
 const MostSpecificCandidate&
@@ -5619,7 +5643,7 @@ findTaggedIteratorForType(ResolutionContext* rc,
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIter);
 
   auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
-                                inScopes.lookupScope(), inScopes.poiScope());
+                                inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
