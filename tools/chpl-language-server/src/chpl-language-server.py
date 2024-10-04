@@ -1150,7 +1150,10 @@ class ChapelLanguageServer(LanguageServer):
                 self.get_file_info("file://" + file, do_update=False)
 
     def get_file_info(
-        self, uri: str, do_update: bool = False, context_id: Optional[str] = None
+        self,
+        uri: str,
+        do_update: bool = False,
+        context_id: Optional[str] = None,
     ) -> Tuple[FileInfo, List[Any]]:
         """
         The language server maintains a FileInfo object per file. The FileInfo
@@ -1178,13 +1181,11 @@ class ChapelLanguageServer(LanguageServer):
         else:
             if context_id:
                 context = self.retrieve_context(context_id)
-                assert(context)
+                assert context
             else:
                 context = self.get_context(uri)
 
-            file_info, errors = context.new_file_info(
-                uri, self.use_resolver
-            )
+            file_info, errors = context.new_file_info(uri, self.use_resolver)
             self.file_infos[fi_key] = file_info
 
             # Also make this the "default" context for this file in case we
@@ -2048,7 +2049,10 @@ def run_lsp():
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
-        return next(([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs), [])
+        return next(
+            ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
+            [],
+        )
 
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
