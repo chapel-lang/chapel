@@ -165,7 +165,7 @@ IMPLEMENT_DUMP(Type);
 
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("string"))
+    if (rec->id().symbolPath() == USTR("String._string"))
       return true;
   }
   return false;
@@ -173,7 +173,7 @@ bool Type::isStringType() const {
 
 bool Type::isBytesType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("bytes"))
+    if (rec->id().symbolPath() == USTR("Bytes._bytes"))
       return true;
   }
   return false;
@@ -181,7 +181,7 @@ bool Type::isBytesType() const {
 
 bool Type::isLocaleType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("locale"))
+    if (rec->id().symbolPath() == USTR("ChapelLocale._locale"))
       return true;
   }
   return false;
