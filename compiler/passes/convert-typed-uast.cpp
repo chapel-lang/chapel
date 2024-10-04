@@ -152,8 +152,9 @@ struct TConverter final : UastConverter {
   // What is the module / function we are converting?
   const AstNode* symbol = nullptr; // Module* or Function*
 
-  // When converting a statement, where should we put new nodes?
-  BlockStmt* curBlock = nullptr;
+  // When converting an expression or a statement, where should we
+  // put new nodes?
+  AList* curAList = nullptr;
 
   bool trace = false;
   bool haveSetupModules = false;
@@ -173,8 +174,9 @@ struct TConverter final : UastConverter {
   // which functions to convert with types
   CalledFnsSet functionsToConvertWithTypes;
 
-  // keeps track of which block we are currently in the process of creating
-  std::vector<BlockStmt*> blockStack;
+  // keeps track of which block/formals list/actuals list we are currently
+  // in the process of creating
+  std::vector<AList*> aListStack;
   // this block is where we store any result created at the top-level
   BlockStmt* scratchSpaceBlock = nullptr;
 
@@ -198,7 +200,7 @@ struct TConverter final : UastConverter {
   TConverter(Context* context) : context(context) {
     SET_LINENO(rootModule);
     scratchSpaceBlock = new BlockStmt();
-    curBlock = scratchSpaceBlock;
+    curAList = &scratchSpaceBlock->body;
 
     untypedConverter = createUntypedConverter(context);
   }
@@ -232,6 +234,8 @@ struct TConverter final : UastConverter {
   }
 
   Expr* convertAST(const AstNode* node) override;
+
+  Expr* convertExpr(const AstNode* node, RV& rv);
 
   ModuleSymbol* convertToplevelModule(const Module* mod,
                                       ModTag modTag) override;
@@ -272,25 +276,45 @@ struct TConverter final : UastConverter {
   Symbol* convertParam(types::QualifiedType qt);
 
 
-  // blockStack helpers
+  // aListStack helpers
+  void pushAList(AList* lst) {
+    aListStack.push_back(lst);
+    curAList = lst;
+  }
+  void popAList() {
+    CHPL_ASSERT(aListStack.size() > 0);
+    aListStack.pop_back();
+    if (aListStack.size() > 0)
+      curAList = aListStack.back();
+    else
+      curAList = &scratchSpaceBlock->body;
+  }
+
   BlockStmt* pushNewBlock() {
     auto newBlockStmt = new BlockStmt();
-    blockStack.push_back(newBlockStmt);
-    curBlock = newBlockStmt;
-    return curBlock;
+    pushAList(&newBlockStmt->body);
+    return newBlockStmt;
   }
   BlockStmt* pushBlock(BlockStmt* block) {
-    blockStack.push_back(block);
-    curBlock = block;
-    return curBlock;
+    pushAList(&block->body);
+    return block;
   }
   void popBlock() {
-    CHPL_ASSERT(blockStack.size() > 0);
-    blockStack.pop_back();
-    if (blockStack.size() > 0)
-      curBlock = blockStack.back();
-    else
-      curBlock = scratchSpaceBlock;
+    popAList();
+  }
+
+  void enterCallActuals(CallExpr* call) {
+    pushAList(&call->argList);
+  }
+  void exitCallActuals() {
+    popAList();
+  }
+
+  void enterFormals(FnSymbol* fn) {
+    pushAList(&fn->formals);
+  }
+  void exitFormals(FnSymbol* fn) {
+    popAList();
   }
 
   // methods to help track what has been converted & handle fixups
@@ -314,18 +338,17 @@ struct TConverter final : UastConverter {
     return functionsToConvertWithTypes.count(r) == 0;
   }
 
-  Expr* convertExprOrNull(const AstNode* node) {
+  Expr* convertExprOrNull(const AstNode* node, RV& rv) {
     if (node == nullptr)
       return nullptr;
 
-    Expr* ret = convertAST(node);
-    INT_ASSERT(ret);
+    Expr* ret = convertExpr(node, rv);
     return ret;
   }
 
   // helpers
-  Expr* convertLifetimeClause(const AstNode* node);
-  CallExpr* convertLifetimeIdent(const Identifier* node);
+  Expr* convertLifetimeClause(const AstNode* node, RV& rv);
+  CallExpr* convertLifetimeIdent(const Identifier* node, RV& rv);
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -406,6 +429,9 @@ struct TConverter final : UastConverter {
   bool enter(const Function* ast, RV& rv);
   void exit(const Function* ast, RV& rv);
 
+  bool enter(const Return* ast, RV& rv);
+  void exit(const Return* ast, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -413,8 +439,16 @@ struct TConverter final : UastConverter {
 TConverter::~TConverter() { }
 
 Expr* TConverter::convertAST(const AstNode* node) {
-  CHPL_UNIMPL("convertAST");
-  return nullptr;
+  // TODO: is this sufficient?
+  return untypedConverter->convertAST(node);
+}
+
+Expr* TConverter::convertExpr(const AstNode* node, RV& rv) {
+  // traverse to add it to curAList
+  node->traverse(rv);
+
+  // remove the last thing from the current AList and return that
+  return curAList->last()->remove();
 }
 
 ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
@@ -1013,7 +1047,7 @@ void TConverter::noteConvertedVariable(const uast::AstNode* ast, Symbol* sym) {
   }
 }
 
-Expr* TConverter::convertLifetimeClause(const uast::AstNode* node) {
+Expr* TConverter::convertLifetimeClause(const uast::AstNode* node, RV& rv) {
   astlocMarker markAstLoc(node->id());
 
   INT_ASSERT(node->isOpCall() || node->isReturn());
@@ -1028,14 +1062,14 @@ Expr* TConverter::convertLifetimeClause(const uast::AstNode* node) {
                opCall->op() == USTR("==")||
                opCall->op() == USTR("<=")||
                opCall->op() == USTR(">="));
-    Expr* lhs = convertLifetimeIdent(lhsIdent);
-    Expr* rhs = convertLifetimeIdent(rhsIdent);
+    Expr* lhs = convertLifetimeIdent(lhsIdent, rv);
+    Expr* rhs = convertLifetimeIdent(rhsIdent, rv);
     return new CallExpr(opCall->op().c_str(), lhs, rhs);
   } else if (auto ret = node->toReturn()) {
     INT_ASSERT(ret->value() && ret->value()->isIdentifier());
     auto ident = ret->value()->toIdentifier();
 
-    Expr* val = convertLifetimeIdent(ident);
+    Expr* val = convertLifetimeIdent(ident, rv);
     return new CallExpr(PRIM_RETURN, val);
 
   } else {
@@ -1045,12 +1079,14 @@ Expr* TConverter::convertLifetimeClause(const uast::AstNode* node) {
   }
 }
 
-CallExpr* TConverter::convertLifetimeIdent(const uast::Identifier* node) {
+CallExpr* TConverter::convertLifetimeIdent(const uast::Identifier* node, RV& rv)
+{
   astlocMarker markAstLoc(node->id());
 
   auto ident = node->toIdentifier();
   INT_ASSERT(ident);
-  CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF, convertExprOrNull(node));
+  CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF,
+                                    convertExprOrNull(node, rv));
   return callExpr;
 }
 
@@ -1105,7 +1141,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
   CHPL_ASSERT(currentResolvedFunction != nullptr);
 
   FnSymbol* fn = new FnSymbol("_");
-  curBlock->insertAtTail(new DefExpr(fn));
+  curAList->insertAtTail(new DefExpr(fn));
 
   // note the correspondence between the ResolvedFunction & what it converts to
   // (for calls, including recursive calls)
@@ -1136,6 +1172,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
   }
 
   fn->addFlag(FLAG_RESOLVED);
+
   if (currentResolvedFunction->signature()->instantiatedFrom() != nullptr) {
     // generic instantiations are "invisible"
     fn->addFlag(FLAG_INVISIBLE_FN);
@@ -1144,14 +1181,16 @@ bool TConverter::enter(const Function* node, RV& rv) {
   IntentTag thisTag = INTENT_BLANK;
   ArgSymbol* convertedReceiver = nullptr;
 
-  // Add the formals
+  enterFormals(fn);
+
+  // Convert the formals
   if (node->numFormals() > 0) {
     for (auto decl : node->formals()) {
       DefExpr* conv = nullptr;
 
       // A "normal" formal.
       if (auto formal = decl->toFormal()) {
-        conv = toDefExpr(convertAST(formal));
+        conv = toDefExpr(convertExpr(formal, rv));
         INT_ASSERT(conv);
 
         // Special handling for implicit receiver formal.
@@ -1203,6 +1242,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
       }
     }
   }
+
+  exitFormals(fn);
 
   const char* convName = convertFunctionNameAndAstr(node);
 
@@ -1260,8 +1301,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   Expr* lifetimeConstraints = nullptr;
   if (node->numLifetimeClauses() > 0) {
+    // create a new AList for the lifetime clause
+    pushNewBlock();
+
     for (auto clause : node->lifetimeClauses()) {
-      Expr* convertedClause = convertLifetimeClause(clause);
+      Expr* convertedClause = convertLifetimeClause(clause, rv);
       INT_ASSERT(convertedClause);
 
       if (lifetimeConstraints == nullptr) {
@@ -1272,6 +1316,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
       }
     }
     INT_ASSERT(lifetimeConstraints);
+
+    popBlock();
   }
 
   BlockStmt* body = nullptr;
@@ -1286,7 +1332,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
     Flag linkageFlag = convertFlagForDeclLinkage(node);
-    Expr* linkageExpr = convertExprOrNull(node->linkageName());
+    Expr* linkageExpr = convertExprOrNull(node->linkageName(), rv);
 
     // This thing sets the 'cname' if it's a string literal, attaches
     // some flags, sets the return type to 'void' if no type is
@@ -1311,6 +1357,22 @@ void TConverter::exit(const Function* node, RV& rv) {
 
   popBlock();
 }
+
+bool TConverter::enter(const Return* node, RV& rv) {
+  printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  CallExpr* ret = new CallExpr(PRIM_RETURN);
+
+  curAList->insertAtTail(ret);
+  enterCallActuals(ret);
+
+  return true;
+}
+void TConverter::exit(const Return* node, RV& rv) {
+  printf("exit %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  exitCallActuals();
+}
+
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
   printf("enter %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
