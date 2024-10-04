@@ -140,8 +140,7 @@ module M {
     assert(call->byAst(ETGood).type().type() == AType.type());
   }
 
-  assert(guard.errors().size() == 0);
-  guard.realizeErrors(context);
+  assert(guard.realizeErrors() == 0);
 
   std::string arrayText;
   arrayText += "[" + domainType + "] " + eltType;

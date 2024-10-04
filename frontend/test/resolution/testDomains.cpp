@@ -152,7 +152,7 @@ module M {
     assert(call->byAst(CT).type().type() == dType);
   }
 
-  assert(guard.errors().size() == 0);
+  assert(guard.realizeErrors() == 0);
 
   printf("Success: %s\n", domainType.c_str());
 }
