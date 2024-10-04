@@ -2078,6 +2078,34 @@ static void test33(Context* context) {
   assert(vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
 }
 
+static void test34(Context* context) {
+  // tests that PoI is not used to find new iterator overloads
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+  std::string prog =
+    R"""(
+    iter myIter(arg) {
+      yield 1;
+    }
+
+    {
+      iter myIter(arg, param tag) where tag == iterKind.standalone {
+        yield "hello";
+      }
+
+      [i in myIter(true)] {
+        // writeln(i); // should print '1', even though new overload is present
+      }
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"i"});
+
+  assert(vars.at("i").type());
+  assert(vars.at("i").type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -2114,6 +2142,7 @@ int main() {
   test31(ctx.get());
   test32(ctx.get());
   test33(ctx.get());
+  test34(ctx.get());
 
   return 0;
 }

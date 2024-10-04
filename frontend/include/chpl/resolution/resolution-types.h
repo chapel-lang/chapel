@@ -1977,6 +1977,9 @@ class CallScopeInfo {
   static CallScopeInfo forNormalCall(const Scope* scope, const PoiScope* poiScope);
   static CallScopeInfo forQualifiedCall(Context* context, const ID& moduleId,
                                         const Scope* scope, const PoiScope* poiScope);
+  static CallScopeInfo forIteratorOverloadSearch(const Scope* callScope,
+                                                 const Scope* lookupScope,
+                                                 const PoiScope* poiScope);
 
   const Scope* callScope() const { return callScope_; }
   const Scope* lookupScope() const { return lookupScope_; }
