@@ -286,7 +286,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(rc, best.fn(), resolver.poiScope));
+    re.setType(returnType(rc, best.fn(), re.poiScope()));
   }
 
   // there should be only one candidate at this point

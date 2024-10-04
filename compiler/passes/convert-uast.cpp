@@ -3238,7 +3238,9 @@ struct Converter {
     if (shouldResolveFunction && resolvedFn != nullptr) {
       // TODO: Need to thread stack frames through the RC.
       chpl::resolution::ResolutionContext rcval(context);
-      auto retType = resolution::returnType(&rcval, resolvedFn->signature(), poiScope);
+      auto retType =
+        resolution::returnType(&rcval, resolvedFn->signature(),
+                               resolvedFn->poiInfo().poiScope());
       fn->retType = convertType(retType);
     }
 
