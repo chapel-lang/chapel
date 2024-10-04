@@ -394,6 +394,8 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
+  /*
+    I think all of this code is replaced by post-parse-checks.cpp
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();
@@ -430,8 +432,9 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
+  */
 
-  if (isIterator) {
+  if (fn->isIterator()) {
     for_formals(formal, fn) {
       if (formal->intent == INTENT_OUT) {
         USR_FATAL_CONT(formal, "out intent is not yet supported for iterators");

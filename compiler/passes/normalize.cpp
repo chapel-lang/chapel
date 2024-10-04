@@ -97,7 +97,6 @@ static void        processSyntacticTupleAssignment(CallExpr* call);
 static void        addEndOfStatementMarkers(BaseAST* base);
 static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
-static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 static void        fixupOutArrayFormals(FnSymbol* fn);
 
@@ -1882,7 +1881,7 @@ static bool hasGenericArrayReturn(FnSymbol* fn);
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
                           bool genericArrayRet);
 
-static void normalizeReturns(FnSymbol* fn) {
+void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   SET_LINENO(fn);
