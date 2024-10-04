@@ -46,6 +46,7 @@
 #include "metadata.h"
 #include "optimizations.h"
 #include "parser.h"
+#include "passes.h"
 #include "resolution.h"
 #include "stmt.h"
 
@@ -579,6 +580,7 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   modSym->initFn->retType = dtVoid;
 
   modSym->initFn->addFlag(FLAG_MODULE_INIT);
+  modSym->initFn->addFlag(FLAG_RESOLVED);
   modSym->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
 
   // add the init function to the module
@@ -601,6 +603,9 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rv(&rcval, symbol, *this, resolved);
   symbol->traverse(rv);
+
+  // add the 'return _void' at the end of the module init function
+  modSym->initFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   // tidy up after traversal
   symbol = oldSymbol;
@@ -1296,6 +1301,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
     pushBlock(body);
     node->body()->traverse(rv);
   }
+
+  normalizeReturns(fn);
 
   return false;
 }

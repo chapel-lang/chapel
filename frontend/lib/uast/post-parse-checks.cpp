@@ -167,11 +167,7 @@ struct Visitor {
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
-  void checkFunctionReturnsYields(const Function* node);
-  void checkReturnHelper(const Return* node);
-  void checkYieldHelper(const Yield* node);
   void checkIncludeModuleStrictName(const Module* node);
-  void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
   */
 
