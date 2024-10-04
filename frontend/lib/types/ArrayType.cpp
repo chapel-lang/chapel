@@ -46,7 +46,8 @@ void ArrayType::stringify(std::ostream& ss,
 }
 
 static ID getArrayID(Context* context) {
-  return parsing::getSymbolFromTopLevelModule(context, "ChapelArray", "_array");
+  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelArray",
+                                                "_array");
 }
 
 const owned<ArrayType>&

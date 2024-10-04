@@ -82,7 +82,8 @@ const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
 
 const ID& CPtrType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
-  ID result = parsing::getSymbolFromTopLevelModule(context, "CTypes", "c_ptr");
+  ID result =
+      parsing::getSymbolIdFromTopLevelModule(context, "CTypes", "c_ptr");
   return QUERY_END(result);
 }
 
@@ -97,7 +98,8 @@ const CPtrType* CPtrType::withoutConst(Context* context) const {
 
 const ID& CPtrType::getConstId(Context* context) {
   QUERY_BEGIN(getConstId, context);
-  ID result = parsing::getSymbolFromTopLevelModule(context, "CTypes", "c_ptrConst");
+  ID result =
+      parsing::getSymbolIdFromTopLevelModule(context, "CTypes", "c_ptrConst");
   return QUERY_END(result);
 }
 

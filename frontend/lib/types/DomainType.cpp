@@ -54,7 +54,8 @@ void DomainType::stringify(std::ostream& ss,
 }
 
 static ID getDomainID(Context* context) {
-  return parsing::getSymbolFromTopLevelModule(context, "ChapelDomain", "_domain");
+  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelDomain",
+                                                "_domain");
 }
 
 const owned<DomainType>&
@@ -139,9 +140,8 @@ const QualifiedType& DomainType::getDefaultDistType(Context* context) {
 
   QualifiedType result;
 
-  auto id = parsing::getSymbolFromTopLevelModule(context, "DefaultRectangular",
-                                                 "defaultDist");
-  auto name = id.symbolName(context);
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(
+      context, "DefaultRectangular", "defaultDist");
   auto modName = ID::parentSymbolPath(context, id.symbolPath());
 
   if (auto mod = parsing::getToplevelModule(context, modName)) {

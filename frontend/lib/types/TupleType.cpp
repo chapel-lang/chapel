@@ -100,8 +100,8 @@ TupleType::getTupleType(Context* context, const TupleType* instantiatedFrom,
   QUERY_BEGIN(getTupleType, context, instantiatedFrom, subs,
                             isVarArgTuple);
 
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelTuple", "_tuple");
-  auto name = id.symbolName(context);
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelTuple", "_tuple");
   auto result = toOwned(new TupleType(id, name, instantiatedFrom,
                                       std::move(subs), isVarArgTuple));
 

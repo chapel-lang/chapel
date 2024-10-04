@@ -65,8 +65,8 @@ BasicClassType::getRootClassType(Context* context) {
 
 const BasicClassType*
 BasicClassType::getReduceScanOpType(Context* context) {
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelReduce", "ReduceScanOp");
-  auto name = id.symbolName(context);
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(
+      context, "ChapelReduce", "ReduceScanOp");
   auto objectType = getRootClassType(context);
 
   return getBasicClassType(context, id, name,
