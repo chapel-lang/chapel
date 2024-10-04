@@ -36,12 +36,13 @@ static QualifiedType findVarType(const Module* m,
   return rr.byAst(var).type();
 }
 
-static void testRectangular(std::string domainType,
+static void testRectangular(Context* context,
+                                  std::string domainType,
                                   int rank,
                                   std::string idxType,
                                   std::string strides) {
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::string program =
@@ -157,11 +158,12 @@ module M {
   printf("Success: %s\n", domainType.c_str());
 }
 
-// static void testAssociative(std::string domainType,
+// static void testAssociative(Context* context,
+//                                   std::string domainType,
 //                                   std::string idxType,
 //                                   bool parSafe) {
-//   Context ctx;
-//   Context* context = &ctx;
+//   context->advanceToNextRevision(false);
+//   setupModuleSearchPaths(context, false, false, {}, {});
 //   ErrorGuard guard(context);
 
 //   std::string program =
@@ -252,10 +254,11 @@ module M {
 //   printf("Success: %s\n", domainType.c_str());
 // }
 
-static void testBadPass(std::string argType, std::string actualType) {
+static void testBadPass(Context* context, std::string argType,
+                        std::string actualType) {
   // Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::string program =
@@ -291,10 +294,11 @@ module M {
   guard.clearErrors();
 }
 
-static void testIndex(std::string domainType,
+static void testIndex(Context* context,
+                      std::string domainType,
                       std::string expectedType) {
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::string program =
@@ -321,6 +325,8 @@ module M {
   assert(!findVarType(m, rr, "i").isUnknownOrErroneous());
 
   assert(findVarType(m, rr, "equal").isParamTrue());
+
+  // assert(guard.realizeErrors() == 0);
 
   printf("Success: index(%s) == %s\n", domainType.c_str(),
          expectedType.c_str());
@@ -358,7 +364,7 @@ module M {
 
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
-static void testBadDomain(std::string domainType) {
+static void testBadDomain(Context* contextWithStd, std::string domainType) {
   // Without standard modules
   {
     Context ctx;
@@ -370,11 +376,11 @@ static void testBadDomain(std::string domainType) {
 
   // With standard modules
   {
-    auto ctx = buildStdContext();
-    auto context = ctx.get();
-    ErrorGuard guard(context);
+    contextWithStd->advanceToNextRevision(false);
+    setupModuleSearchPaths(contextWithStd, false, false, {}, {});
+    ErrorGuard guard(contextWithStd);
 
-    testBadDomainHelper(domainType, context, guard);
+    testBadDomainHelper(domainType, contextWithStd, guard);
   }
 
   printf("Success: cannot resolve %s\n",
@@ -382,40 +388,49 @@ static void testBadDomain(std::string domainType) {
 }
 
 int main() {
-  testRectangular("domain(1)", 1, "int", "one");
-  testRectangular("domain(2)", 2, "int", "one");
-  testRectangular("domain(1, strides=strideKind.one)", 1, "int", "one");
-  testRectangular("domain(2, int(8))", 2, "int(8)", "one");
-  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
-  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  // Set up context with standard modules, re-used between tests for
+  // performance.
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+
+  testRectangular(context, "domain(1)", 1, "int", "one");
+  testRectangular(context, "domain(2)", 2, "int", "one");
+  testRectangular(context, "domain(1, strides=strideKind.one)", 1, "int", "one");
+  testRectangular(context, "domain(2, int(8))", 2, "int(8)", "one");
+  testRectangular(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangular(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  context->collectGarbage();
 
   // TODO: re-enable associative
-  // testAssociative("domain(int)", "int", true);
-  // testAssociative("domain(int, false)", "int", false);
-  // testAssociative("domain(string)", "string", true);
+  // testAssociative(context, "domain(int)", "int", true);
+  // testAssociative(context, "domain(int, false)", "int", false);
+  // testAssociative(context, "domain(string)", "string", true);
+  // context->collectGarbage();
 
-  testBadPass("domain(1)", "domain(2)");
-  testBadPass("domain(1, int(16))", "domain(1, int(8))");
-  testBadPass("domain(1, int(8))", "domain(1, int(16))");
-  testBadPass("domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
+  testBadPass(context, "domain(1)", "domain(2)");
+  testBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
+  testBadPass(context, "domain(1, int(8))", "domain(1, int(16))");
+  testBadPass(context, "domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
   // TODO: re-enable associative badPass
-  // testBadPass("domain(int)", "domain(string)");
-  // testBadPass("domain(1)", "domain(int)");
+  // testBadPass(context, "domain(int)", "domain(string)");
+  // testBadPass(context, "domain(1)", "domain(int)");
+  context->collectGarbage();
 
-  testIndex("domain(1)", "int");
-  testIndex("domain(2)", "2*int");
-  testIndex("domain(1, bool)", "bool");
-  testIndex("domain(2, bool)", "2*bool");
+  testIndex(context, "domain(1)", "int");
+  testIndex(context, "domain(2)", "2*int");
+  testIndex(context, "domain(1, bool)", "bool");
+  testIndex(context, "domain(2, bool)", "2*bool");
   // TODO: re-enable associative indexes
-  // testIndex("domain(int)", "int");
-  // testIndex("domain(string)", "string");
+  // testIndex(context, "domain(int)", "int");
+  // testIndex(context, "domain(string)", "string");
+  context->collectGarbage();
 
-  testBadDomain("domain()");
-  testBadDomain("domain(1, 2, 3, 4)");
-  testBadDomain("domain(\"asdf\")");
-  testBadDomain("domain(\"asdf\", \"asdf2\")");
-  testBadDomain("domain(1, \"asdf\")");
-  testBadDomain("domain(1, int, \"asdf\")");
+  testBadDomain(context, "domain()");
+  testBadDomain(context, "domain(1, 2, 3, 4)");
+  testBadDomain(context, "domain(\"asdf\")");
+  testBadDomain(context, "domain(\"asdf\", \"asdf2\")");
+  testBadDomain(context, "domain(1, \"asdf\")");
+  testBadDomain(context, "domain(1, int, \"asdf\")");
 
   return 0;
 }
