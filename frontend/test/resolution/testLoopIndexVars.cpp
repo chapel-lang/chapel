@@ -34,12 +34,6 @@
 
 #include <map>
 
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
-
 static auto myiter = std::string(R""""(
 iter myiter() {
   yield 1;
@@ -561,6 +555,61 @@ static void testIterSigDetection(Context* context) {
     assert(m["d"].type()->isStringType());
 }
 
+static void testExplicitTaggedIter(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  std::string program =
+    R""""(
+
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0.0,0.0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
+
+    for a in i1() do;
+    for b in i1(tag=iterKind.standalone) do;
+    for c in i1(tag=iterKind.leader) do;
+    for d in i1(tag=iterKind.follower, followThis="") do;
+    )"""";
+
+    auto mod = parseModule(context, program);
+    auto& rr = resolveModule(context, mod->id());
+    assert(!guard.realizeErrors());
+
+    auto aLoop = parentAst(context, findVariable(mod, "a"))->toIndexableLoop();
+    assert(rr.byAst(aLoop->iterand()).associatedActions().empty());
+    auto aSig1 = rr.byAst(aLoop->iterand()).mostSpecific().only().fn();
+    assert(aSig1->isSerialIterator(context));
+
+    auto bLoop = parentAst(context, findVariable(mod, "b"))->toIndexableLoop();
+    assert(rr.byAst(bLoop->iterand()).associatedActions().empty());
+    auto bSig1 = rr.byAst(bLoop->iterand()).mostSpecific().only().fn();
+    assert(bSig1->isParallelStandaloneIterator(context));
+
+    auto cLoop = parentAst(context, findVariable(mod, "c"))->toIndexableLoop();
+    assert(rr.byAst(cLoop->iterand()).associatedActions().empty());
+    auto cSig1 = rr.byAst(cLoop->iterand()).mostSpecific().only().fn();
+    assert(cSig1->isParallelLeaderIterator(context));
+
+    auto dLoop = parentAst(context, findVariable(mod, "d"))->toIndexableLoop();
+    assert(rr.byAst(dLoop->iterand()).associatedActions().empty());
+    auto dSig1 = rr.byAst(dLoop->iterand()).mostSpecific().only().fn();
+    assert(dSig1->isParallelFollowerIterator(context));
+
+    auto m = resolveTypesOfVariables(context, program, { "a", "b", "c", "d"});
+    assert(!guard.realizeErrors());
+    assert(m["a"].kind() == QualifiedType::CONST_VAR);
+    assert(m["a"].type()->isRealType());
+    assert(m["b"].kind() == QualifiedType::CONST_VAR);
+    assert(m["b"].type()->isIntType());
+    assert(m["c"].kind() == QualifiedType::CONST_VAR);
+    assert(m["c"].type()->isTupleType());
+    assert(m["d"].kind() == QualifiedType::CONST_VAR);
+    assert(m["d"].type()->isStringType());
+}
+
 static void
 unpackIterKindStrToBool(const std::string& str,
                         bool* needSerial=nullptr,
@@ -794,22 +843,18 @@ static void testForallStandaloneThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-// Daniel 07/19/24: Disabling this deliberately. Production requires a
-//                  serial iteartor even when a standalone iterator is
-//                  available and would be preferred.
-//
-// static void testForallStandaloneRedirect(Context* context) {
-//   printf("%s\n", __FUNCTION__);
-//   ErrorGuard guard(context);
-// 
-//   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-//   auto program = R""""(
-//                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
-//                   forall i in foo() do i;
-//                   )"""";
-//   assertLoopMatches(context, program, "standalone", 1, 0);
-//   assert(!guard.realizeErrors());
-// }
+static void testForallStandaloneRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "standalone", 1, 0);
+  assert(!guard.realizeErrors());
+}
 
 static void testForallLeaderFollowerThese(Context* context) {
   printf("%s\n", __FUNCTION__);
@@ -828,23 +873,19 @@ static void testForallLeaderFollowerThese(Context* context) {
   assert(!guard.realizeErrors());
 }
 
-// Daniel 07/19/24: Disabling this deliberately. Production requires a
-//                  serial iteartor even when a leader/follower pair is
-//                  available and would be preferred.
-//
-// static void testForallLeaderFollowerRedirect(Context* context) {
-//   printf("%s\n", __FUNCTION__);
-//   ErrorGuard guard(context);
-// 
-//   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-//   auto program = R""""(
-//                   iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
-//                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
-//                   forall i in foo() do i;
-//                   )"""";
-//   assertLoopMatches(context, program, "leader", 2, 0, 1);
-//   assert(!guard.realizeErrors());
-// }
+static void testForallLeaderFollowerRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "leader", 2, 0, 1);
+  assert(!guard.realizeErrors());
+}
 
 // Invoke an iterator in a loop expression, yielding a tuple of the iterator's
 // yield values, then invoke the loop expression in a regular loop and ensure
@@ -1057,12 +1098,13 @@ int main() {
   auto ctx = buildStdContext();
   Context* context = ctx.get();
   testIterSigDetection(context);
+  testExplicitTaggedIter(context);
   testSerialZip(context);
   testParallelZip(context);
   testForallStandaloneThese(context);
-  // testForallStandaloneRedirect(context);
+  testForallStandaloneRedirect(context);
   testForallLeaderFollowerThese(context);
-  // testForallLeaderFollowerRedirect(context);
+  testForallLeaderFollowerRedirect(context);
 
   testForLoopExpression(context);
   testForallLoopExpressionStandalone(context);
