@@ -598,7 +598,8 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   currentResolvedFunction = nullptr;
 
   // traverse
-  ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
+  ResolutionContext rcval(context);
+  ResolvedVisitor<TConverter> rv(&rcval, symbol, *this, resolved);
   symbol->traverse(rv);
 
   // tidy up after traversal
@@ -631,7 +632,8 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
 
   // traverse
-  ResolvedVisitor<TConverter> rv(context, symbol, *this, resolved);
+  ResolutionContext rcval(context);
+  ResolvedVisitor<TConverter> rv(&rcval, symbol, *this, resolved);
   symbol->traverse(rv);
 
   // tidy up after traversal
