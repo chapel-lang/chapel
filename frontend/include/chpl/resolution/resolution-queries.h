@@ -408,7 +408,7 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   as the point-of-instantiation scopes that were used when resolving them.
  */
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::AstNode* astForErr,
+                                          const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
@@ -424,7 +424,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
  */
 CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
-                             const uast::AstNode* astForErr,
+                             const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
