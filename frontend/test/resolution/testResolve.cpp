@@ -1967,6 +1967,117 @@ static void test32(Context* context) {
   assert(guard.realizeErrors() >= 1);
 }
 
+static void test33(Context* context) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+
+  // Same as test31, but with loop expressions (which require leader/follower).
+
+  auto prog =
+    R"""(
+    module PoiLoopExpr {
+      record iterableRecord {}
+
+      proc myIter(arg) {
+        return [i in arg] (i, i);
+      }
+
+      {
+        iter iterableRecord.these() {
+          yield 1;
+        }
+
+        iter iterableRecord.these(param tag) where tag == iterKind.leader {
+          yield (1,);
+        }
+
+        iter iterableRecord.these(param tag, followThis) where tag == iterKind.follower {
+          yield 1;
+        }
+
+        forall i1 in myIter(new iterableRecord()) {}
+        for j1 in myIter(new iterableRecord()) {}
+      }
+
+      {
+        iter iterableRecord.these() {
+          yield 1.0;
+        }
+
+        iter iterableRecord.these(param tag) where tag == iterKind.leader {
+          yield (1,);
+        }
+
+        iter iterableRecord.these(param tag, followThis) where tag == iterKind.follower {
+          yield 1.0;
+        }
+
+        forall i2 in myIter(new iterableRecord()) {}
+        for j2 in myIter(new iterableRecord()) {}
+      }
+
+      module Library {
+        import super.{iterableRecord, myIter};
+
+        iter iterableRecord.these() {
+          yield true;
+        }
+
+        iter iterableRecord.these(param tag) where tag == iterKind.leader {
+          yield (1,);
+        }
+
+        iter iterableRecord.these(param tag, followThis) where tag == iterKind.follower {
+          yield true;
+        }
+
+        proc buildIterator() {
+          return myIter(new iterableRecord());
+        }
+      }
+
+      {
+        use Library;
+
+        forall i3 in buildIterator() {}
+        for j3 in buildIterator() {}
+      }
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
+
+  assert(vars.at("i1").type()->isTupleType());
+  assert(vars.at("i1").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("i1").type()->toTupleType()->elementType(0).type()->isIntType());
+  assert(vars.at("i1").type()->toTupleType()->elementType(1).type()->isIntType());
+
+  assert(vars.at("j1").type()->isTupleType());
+  assert(vars.at("j1").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("j1").type()->toTupleType()->elementType(0).type()->isIntType());
+  assert(vars.at("j1").type()->toTupleType()->elementType(1).type()->isIntType());
+
+  assert(vars.at("i2").type()->isTupleType());
+  assert(vars.at("i2").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("i2").type()->toTupleType()->elementType(0).type()->isRealType());
+  assert(vars.at("i2").type()->toTupleType()->elementType(1).type()->isRealType());
+
+  assert(vars.at("j2").type()->isTupleType());
+  assert(vars.at("j2").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("j2").type()->toTupleType()->elementType(0).type()->isRealType());
+  assert(vars.at("j2").type()->toTupleType()->elementType(1).type()->isRealType());
+
+  assert(vars.at("i3").type()->isTupleType());
+  assert(vars.at("i3").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("i3").type()->toTupleType()->elementType(0).type()->isBoolType());
+  assert(vars.at("i3").type()->toTupleType()->elementType(1).type()->isBoolType());
+
+  assert(vars.at("j3").type()->isTupleType());
+  assert(vars.at("j3").type()->toTupleType()->numElements() == 2);
+  assert(vars.at("j3").type()->toTupleType()->elementType(0).type()->isBoolType());
+  assert(vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -2043,6 +2154,7 @@ int main() {
   test30(ctx.get());
   test31(ctx.get());
   test32(ctx.get());
+  test33(ctx.get());
 
   testInfiniteCycleBug();
 
