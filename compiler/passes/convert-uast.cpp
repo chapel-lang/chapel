@@ -3030,7 +3030,6 @@ struct Converter {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
-    const resolution::PoiScope* poiScope = nullptr;
 
     if (shouldResolveFunction || shouldScopeResolveFunction) {
       if (shouldResolveFunction) {
