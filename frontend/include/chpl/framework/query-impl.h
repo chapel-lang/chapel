@@ -144,7 +144,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
                 << " { ";
       clearTerminalColor(std::cout);
       std::cout << traceQueryName << " (";
-      queryArgsPrint(tupleOfArg);
+      queryArgsPrint(std::cout, tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
       std::cout <<"hash: 0x"
@@ -594,11 +594,10 @@ Context::querySetterUpdateResult(
 
 } // end namespace chpl
 
-#define QUERY_BEGIN_INNER(isInput, func, context, ...) \
+#define QUERY_BEGIN_INNER(isInput, func, funcName, context, ...) \
   auto* BEGIN_QUERY_FUNCTION = func; \
   Context* BEGIN_QUERY_CONTEXT = context; \
-  const char* BEGIN_QUERY_FUNC_NAME = #func; \
-  CHPL_ASSERT(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
+  const char* BEGIN_QUERY_FUNC_NAME = (funcName); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \
@@ -619,14 +618,14 @@ Context::querySetterUpdateResult(
 
 #define QUERY_BEGIN_TIMING(context__) \
   context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP, \
+                                                             BEGIN_QUERY_ARGS);
 
 #else
 
 #define QUERY_BEGIN_TIMING(context__)
 
 #endif
-
 
 /**
   Use QUERY_BEGIN at the start of the implementation of a particular query.
@@ -637,7 +636,7 @@ Context::querySetterUpdateResult(
   class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
-  QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
@@ -654,7 +653,7 @@ Context::querySetterUpdateResult(
   for input queries.
  */
 #define QUERY_BEGIN_INPUT(func, context, ...) \
-  QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
+  QUERY_BEGIN_INNER(true, func, #func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
@@ -683,7 +682,6 @@ Context::querySetterUpdateResult(
                                  std::move(result), \
                                  BEGIN_QUERY_FUNC_NAME))
 
-
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:
@@ -702,7 +700,6 @@ Context::querySetterUpdateResult(
                                    std::move(result), \
                                    #func, \
                                    false)
-
 
 /**
   Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.

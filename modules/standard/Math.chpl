@@ -20,7 +20,7 @@
 
 /*
 
-This module provides frequently used mathematical constants and functions.
+Support for frequently used mathematical constants and functions.
 
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
@@ -388,12 +388,16 @@ module Math {
     return casinh(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc atan(x: real(64)): real(64);
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -401,7 +405,9 @@ module Math {
     return atanf(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -409,7 +415,9 @@ module Math {
     return catanf(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -419,18 +427,20 @@ module Math {
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
+     This is the arc (or inverse) tangent of `y` / `x` which lies in the
+     inclusive range [-pi,+pi] where the signs of `y` and `x` are used to
+     determine the quadrant of the result.
+  */
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc atan2(y: real(64), x: real(64)): real(64);
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
+     This is the arc (or inverse) tangent of `y` / `x` which lies in the
+     inclusive range [-pi,+pi] where the signs of `y` and `x` are used to
+     determine the quadrant of the result.
+  */
   inline proc atan2(y : real(32), x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"

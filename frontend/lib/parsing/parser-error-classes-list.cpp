@@ -511,11 +511,12 @@ void ErrorInvalidThrowaway::write(ErrorWriterBase& wr) const {
   }
 }
 
-static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
-                                            const uast::AstNode* node,
-                                            const uast::Attribute* attr,
-                                            ErrorBase::Kind kind,
-                                            ErrorType type) {
+void ErrorInvalidGpuAttribute::write(ErrorWriterBase& wr) const {
+  const uast::AstNode*   node = std::get<const uast::AstNode*>(info_);
+  const uast::Attribute* attr = std::get<const uast::Attribute*>(info_);
+  ErrorBase::Kind        kind = kind_;
+  ErrorType              type = type_;
+
   const char* loopTypes = nullptr;
   if (node->isFor()) {
     loopTypes = "for";
@@ -550,20 +551,6 @@ static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
 
   wr.message("The affected ", whatIsAffected, " is here:");
   wr.codeForLocation(node);
-}
-
-void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
-}
-
-void ErrorInvalidBlockSize::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
 }
 
 void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {

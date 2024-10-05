@@ -134,6 +134,12 @@ module LockFreeStack {
     proc init(type objType) {
       this.objType = objType;
     }
+    proc deinit() {
+      drain();
+      if var top = _top.read() {
+        delete top;
+      }
+    }
 
     proc getToken() : owned TokenWrapper {
       return _manager.register();
@@ -148,7 +154,7 @@ module LockFreeStack {
         n.next = oldTop;
         if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
-      } while (!_top.compareAndSwap(oldTop, n));
+      } while !_top.compareAndSwap(oldTop, n);
       tok.unpin();
     }
 
@@ -158,7 +164,7 @@ module LockFreeStack {
       var shouldYield = false;
       do {
         oldTop = _top.read();
-        if (oldTop == nil) {
+        if oldTop == nil {
           tok.unpin();
           var retval : objType;
           return (false, retval);
@@ -166,7 +172,7 @@ module LockFreeStack {
         var newTop = oldTop!.next;
         if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
-      } while (!_top.compareAndSwap(oldTop, newTop));
+      } while !_top.compareAndSwap(oldTop, newTop);
       var retval = oldTop!.val;
       tok.deferDelete(oldTop);
       tok.unpin();

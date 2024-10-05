@@ -120,8 +120,8 @@ void printStatistics(const char* pass) {
     kTemporaryConversionThunk;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nTemporaryConversionType+nDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kTemporaryConversionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -481,6 +481,7 @@ Type* BaseAST::getWideRefType() {
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
     case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
+    case E_TemporaryConversionType:  return "TemporaryConversionType";
     case E_PrimitiveType:      return "PrimitiveType";
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";

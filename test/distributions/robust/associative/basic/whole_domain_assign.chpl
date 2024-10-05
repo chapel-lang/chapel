@@ -33,7 +33,7 @@ proc testWhole(DA) {
   DA2 = DA;
   if debug then writeln(DA2);
   var success = true;
-  for (ai, ai2) in zip(DA.sorted(), DA2.sorted()) {
+  for (ai, ai2) in zip(Sort.sorted(DA), Sort.sorted(DA2)) {
     if ai != ai2 {
       success = false;
       break;

@@ -1,0 +1,17 @@
+usekeyComparator.chpl:42: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp1: keyComparator').
+usekeyComparator.chpl:43: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp2: keyComparator').
+usekeyComparator.chpl:44: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp3: keyComparator').
+usekeyComparator.chpl:47: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp4: keyComparator').
+usekeyComparator.chpl:48: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp5: keyComparator').
+usekeyComparator.chpl:49: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp6: keyComparator').
+usekeyComparator.chpl:52: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp7: keyComparator').
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: In iterator 'sorted':
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp8: keyComparator').
+  usekeyComparator.chpl:53: called as sorted(x: [domain(1,int(64),one)] int(64), comparator: myCmp8)
+usekeyComparator.chpl:54: warning: Defining a comparator with a 'key' method without implementing the keyComparator interface is deprecated. Please implement the keyComparator interface (i.e. 'record myCmp9: keyComparator').
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true

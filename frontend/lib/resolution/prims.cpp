@@ -223,10 +223,12 @@ static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
   return fields->fieldType(fieldNum - 1);;
 }
 
-static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
+static QualifiedType primCallResolves(ResolutionContext* rc,
+                                      const CallInfo &ci,
                                       bool forMethod, bool resolveFn,
                                       const PrimCall* call,
                                       const CallScopeInfo& inScopes) {
+  Context* context = rc->context();
   if ((forMethod && ci.numActuals() < 2) ||
       (!forMethod && ci.numActuals() < 1)) {
     return QualifiedType();
@@ -270,7 +272,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
     if (resolveFn) {
       // We did find a candidate; resolve the function body.
       auto bodyResult = context->runAndTrackErrors([&](Context* context) {
-        return resolveFunction(context, bestCandidate, inScopes.poiScope());
+        return resolveFunction(rc, bestCandidate, inScopes.poiScope());
       });
       callAndFnResolved &= bodyResult.ranWithoutErrors();
     }
@@ -330,6 +332,18 @@ static QualifiedType primGpuAllocShared(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isIntegralType()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+}
+
+// currently this is a copy of primGpuSetBlockSize
+static QualifiedType primGpuSetItersPerThread(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto firstActualType = ci.actual(0).type();
@@ -453,8 +467,9 @@ struct TestFunctionFinder {
     if (parsing::idIsInBundledModule(context, fn->id())) return false;
 
     // The function also needs to be concrete.
+    ResolutionContext rcval(context);
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
-    const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
+    const TypedFnSignature* sig = typedSignatureInitial(&rcval, uSig);
     if (sig == nullptr || sig->needsInstantiation()) return false;
 
     if (canPass(context, testType, sig->formalType(0)).passes()) {
@@ -1075,11 +1090,12 @@ primSimpleTypeName(Context* context, const CallInfo& ci) {
   return makeParamString(context, eval);
 }
 
-CallResolutionResult resolvePrimCall(Context* context,
+CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                                      const PrimCall* call,
                                      const CallInfo& ci,
                                      const Scope* inScope,
                                      const PoiScope* inPoiScope) {
+  Context* context = rc->context();
   bool allParam = true;
   for (const CallInfoActual& actual : ci.actuals()) {
     if (!actual.type().hasParamPtr()) {
@@ -1102,7 +1118,9 @@ CallResolutionResult resolvePrimCall(Context* context,
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
-    return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+    return CallResolutionResult(candidates,
+                                /* rejectedPossibleIteratorCandidates */ false,
+                                type, poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1237,7 +1255,7 @@ CallResolutionResult resolvePrimCall(Context* context,
                          prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
         auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
-        type = primCallResolves(context, ci, forMethod, resolveFn, call, inScopes);
+        type = primCallResolves(rc, ci, forMethod, resolveFn, call, inScopes);
       }
       break;
 
@@ -1606,6 +1624,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
+    case PRIM_NEW_WITH_ALLOCATOR:
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
@@ -1631,8 +1650,16 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primGpuSetBlockSize(context, ci);
       break;
 
+    case PRIM_GPU_SET_ITERS_PER_THREAD:
+      type = primGpuSetItersPerThread(context, ci);
+      break;
+
     case PRIM_ASSERT_ON_GPU:
       type = primAssertOnGpu(context, ci);
+      break;
+
+    case PRIM_ASSERT_GPU_ELIGIBLE:
+      type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       break;
 
     case PRIM_GPU_INIT_KERNEL_CFG:
@@ -1791,7 +1818,9 @@ CallResolutionResult resolvePrimCall(Context* context,
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
-  return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+  return CallResolutionResult(candidates,
+                              /* rejectedPossibleIteratorCandidates */ false,
+                              type, poi, /* specially handled */ true);
 }
 
 

@@ -48,6 +48,7 @@ target_sources(ChplFrontend-obj
                Parser.cpp
                parser-error-classes-list.cpp
                parsing-queries.cpp
+               FileContents.cpp
               )
 
 add_custom_target(parser

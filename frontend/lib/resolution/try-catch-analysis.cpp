@@ -53,7 +53,8 @@ struct TryCatchAnalyzer {
   using RV = ResolvedVisitor<TryCatchAnalyzer>;
 
   // input
-  Context* context;
+  ResolutionContext* rc;
+  Context* context = rc ? rc->context() : nullptr;
   const AstNode* astForErr;
   ErrorCheckingMode mode;
   // need to keep a stack of try nodes and some meta info
@@ -64,10 +65,10 @@ struct TryCatchAnalyzer {
   // maybe no output?
   std::vector<QualifiedType> returnedTypes;
 
-  TryCatchAnalyzer(Context* context,
+  TryCatchAnalyzer(ResolutionContext* rc,
                    const AstNode* symbol,
                    ErrorCheckingMode mode)
-    : context(context),
+    : rc(rc),
       astForErr(symbol),
       mode(mode) {
   }
@@ -289,7 +290,7 @@ struct TryCatchAnalyzer {
 
   void TryCatchAnalyzer::process(const uast::AstNode* symbol,
                                  ResolutionResultByPostorderID& byPostorder) {
-    ResolvedVisitor<TryCatchAnalyzer> rv(context, symbol, *this, byPostorder);
+    ResolvedVisitor<TryCatchAnalyzer> rv(rc, symbol, *this, byPostorder);
     // Traverse formals and then the body. This is done here rather
     // than in enter(Function) because nested functions will have
     // 'process' called on them separately.
@@ -341,11 +342,12 @@ struct TryCatchAnalyzer {
     return mode;
   }
 
-  void checkThrows(Context* context, ResolutionResultByPostorderID& result,
+  void checkThrows(ResolutionContext* rc,
+                   ResolutionResultByPostorderID& result,
                    const AstNode* symbol) {
     if (symbol->isFunction() || symbol->isModule()) {
-      auto mode = computeErrorCheckingMode(context, symbol);
-      auto v = TryCatchAnalyzer(context, symbol, mode);
+      auto mode = computeErrorCheckingMode(rc->context(), symbol);
+      auto v = TryCatchAnalyzer(rc, symbol, mode);
       v.process(symbol, result);
     }
   }

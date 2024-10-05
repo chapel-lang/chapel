@@ -27,7 +27,7 @@
 
 PARAM_NODE(BoolParam, bool)
 PARAM_NODE(ComplexParam, ComplexDouble)
-PARAM_NODE(EnumParam, ID)
+PARAM_NODE(EnumParam, EnumValue)
 PARAM_NODE(IntParam, int64_t)
 PARAM_NODE(NoneParam, NoneValue)
 PARAM_NODE(RealParam, double)

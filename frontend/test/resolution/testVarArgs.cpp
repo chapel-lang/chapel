@@ -121,9 +121,9 @@ struct Collector {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
         const TypedFnSignature* sig = result.mostSpecific().only().fn();
-        auto fn = resolveFunction(rv.context(), sig, result.poiScope());
+        auto fn = resolveFunction(rv.rc(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
+        ResolvedVisitor<Collector> newRV(rv.rc(), nullptr, *this, fn->resolutionById());
         auto untyped = idToAst(rv.context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
@@ -508,12 +508,14 @@ static void testMatcher(Qualifier formalIntent,
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   Collector col;
-  ResolvedVisitor<Collector> rv(context, m, col, rr);
+  ResolvedVisitor<Collector> rv(rc, m, col, rr);
   m->traverse(rv);
 
   if (guard.errors().size()) {
@@ -536,12 +538,14 @@ customHelper(std::string program, bool fail = false,
              std::vector<owned<ErrorBase>>* errorsOut=nullptr) {
   Context* context = getNewContext();
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   Collector pc;
-  ResolvedVisitor<Collector> rv(context, m, pc, rr);
+  ResolvedVisitor<Collector> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   int numErrors = guard.numErrors();

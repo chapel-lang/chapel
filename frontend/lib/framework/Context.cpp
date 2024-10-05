@@ -892,10 +892,12 @@ void Context::report(owned<ErrorBase> error) {
 
     errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
   } else if (queryStack.size() > 0) {
     bool isSilencing = false;
 
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
     reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
@@ -936,7 +938,9 @@ static void logErrorInContext(Context* context,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
+  ID useId;
+  if (ast) useId = ast->id();
+  auto err = GeneralError::vbuild(kind, useId, fmt, vl);
   context->report(std::move(err));
 }
 
@@ -971,6 +975,18 @@ void Context::error(const resolution::TypedFnSignature* inFn,
                     const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
   // TODO: add note about instantiation & POI stack
+}
+
+void Context::warning(Location loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, loc, fmt);
+}
+
+void Context::warning(ID id, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, id, fmt);
+}
+
+void Context::warning(const uast::AstNode* ast, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, ast, fmt);
 }
 
 #undef CHPL_CONTEXT_LOG_ERROR_HELPER
@@ -1181,7 +1197,8 @@ static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
     into.storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
-    if (!dependency.errorCollectionRoot) {
+    if (!dependency.errorCollectionRoot &&
+        dependency.query->errorsPresentInSelfOrDependencies) {
       storeErrorsForHelp(dependency.query, visited, into);
     }
   }
@@ -1215,6 +1232,8 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
       parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      parentQuery->errorsPresentInSelfOrDependencies |=
+        resultEntry->errorsPresentInSelfOrDependencies;
     }
 
     // Propagate query errors that occurred in the child query to the parent
@@ -1256,7 +1275,7 @@ void Context::queryTimingReport(std::ostream& os) {
   os << "query timings\n";
 
   auto w1 = 40;
-  auto w2 = 14;
+  auto w2 = 15;
 
   os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
      << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
@@ -1280,6 +1299,26 @@ void Context::queryTimingReport(std::ostream& os) {
     }
 }
 
+void Context::finishQueryStopwatch(querydetail::QueryMapBase* base,
+                                   size_t depth,
+                                   const std::string& args,
+                                   querydetail::QueryTimingDuration elapsed) {
+  if (enableQueryTiming) {
+    base->timings.query.update(elapsed);
+  }
+  if (enableQueryTimingTrace) {
+    auto asMicros =
+      std::chrono::duration_cast<std::chrono::microseconds>(elapsed);
+    auto nMicroseconds = asMicros.count();
+    auto os = queryTimingTraceOutput.get();
+    CHPL_ASSERT(os != nullptr);
+    *os << depth << ' '
+        << base->queryName << ' '
+        << nMicroseconds << ' '
+        << args << '\n';
+  }
+}
+
 // TODO should these be ifdef'd away if !QUERY_TIMING_ENABLED? Or just warn?
 void Context::beginQueryTimingTrace(const std::string& outname) {
   queryTimingTraceOutput = std::make_unique<std::ofstream>(outname);
@@ -1294,19 +1333,21 @@ void Context::endQueryTimingTrace() {
 namespace querydetail {
 
 
-void queryArgsPrintSep() {
-  printf(", ");
+void queryArgsPrintSep(std::ostream& s) {
+  s << ", ";
 }
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool emittedErrors,
+                   bool errorsPresentInSelfOrDependencies,
                    std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     dependencies(),
     emittedErrors(emittedErrors),
+    errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
     recursionErrors(std::move(recursionErrors)),
     errors(),
     parentQueryMap(parentQueryMap) {

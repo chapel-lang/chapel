@@ -6,8 +6,8 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-  defaultHashTableResizeThreshold: real(64)
                        numLocales: int(64)
+  defaultHashTableResizeThreshold: real(64)
 
 M1 config vars:
                               aaa: int(64)

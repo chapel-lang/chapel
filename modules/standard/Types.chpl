@@ -132,7 +132,6 @@ proc isRecordType(type t) param {
           isRangeType(t)  ||
           isTupleType(t)  ||
           isSyncType(t)   ||
-          isSingleType(t) ||
           isStringType(t) ||
           isAtomicType(t) then
     return false;
@@ -173,11 +172,6 @@ proc isDmapType(type t) param {
 /* Returns true if ``t`` is a sync type, false otherwise. */
 proc isSyncType(type t) param {
   return isSubtype(t, _syncvar);
-}
-
-/* Returns true if ``t`` is a single type, false otherwise. */
-proc isSingleType(type t) param {
-  return isSubtype(t, _singlevar);
 }
 
 /* Returns true if ``t`` is an atomic type, false otherwise. */
@@ -364,9 +358,6 @@ proc isDmapValue(e)      param do  return isDmapType(e.type);
 /* Returns ``true`` if the argument is a sync value */
 proc isSyncValue(x)      param do  return isSyncType(x.type);
 
-/* Returns ``true`` if the argument is a single value */
-proc isSingleValue(x)    param do  return isSingleType(x.type);
-
 /* Returns ``true`` if the argument is an atomic value */
 proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
@@ -455,8 +446,6 @@ proc isArray(type t)     param do  return isArrayType(t);
 proc isDmap(type t)      param do  return isDmapType(t);
 @chpldoc.nodoc
 proc isSync(type t)      param do  return isSyncType(t);
-@chpldoc.nodoc
-proc isSingle(type t)    param do  return isSingleType(t);
 @chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
@@ -654,7 +643,6 @@ proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 // for internal use until we have a better name
 proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
-  isSingleType(t) ||
   isAtomicType(t);
 
 // isSubtype(), isProperSubtype() are now directly handled by compiler

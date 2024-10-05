@@ -1558,6 +1558,209 @@ static void test25() {
   }
 }
 
+static void test26() {
+  // Test resolving a generic type field usage in a method signature.
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // 'this' qualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc, concrete receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc, concrete receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+}
+
+// Make sure that 'extern' functions still have 'ResolvedFunction' entries.
+static void test27() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // 'this' qualified, type field
+  std::string prog =
+    R"""(
+      extern proc foo(): int;
+    )""";
+
+  auto m = parseModule(context, prog);
+  auto f = m->stmt(0)->toFunction();
+  assert(f && f->linkage() == Decl::EXTERN);
+  auto rf = resolveConcreteFunction(context, f->id());
+  assert(rf->returnType().type()->isIntType());
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test28(Context* context) {
+  // Test that if we fail to resolve a call to an iterator, but there's
+  // a tagged overload (e.g., a leader or a follower), that we find the tagged
+  // overload instead.
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+
+  std::string prog =
+    R"""(
+      iter foo(param tag) where tag == iterKind.standalone {
+        yield 1;
+        yield 2;
+        yield 3;
+      }
+      var loop = foo();
+      forall i in loop {}
+      forall j in foo() {}
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"loop", "i", "j"});
+
+  CHPL_ASSERT(vars.at("loop").type());
+  CHPL_ASSERT(vars.at("loop").type()->isIteratorType());
+  CHPL_ASSERT(vars.at("i").type());
+  CHPL_ASSERT(vars.at("i").type()->isIntType());
+  CHPL_ASSERT(vars.at("i").type()->toIntType()->isDefaultWidth());
+  CHPL_ASSERT(vars.at("i") == vars.at("j"));
+}
+
+static void test29(Context* context) {
+  // Test that if we fail to resolve a call to a non-iterator, but there's
+  // a tagged overload (e.g., a leader or a follower), that we _don't_ find
+  // the tagged overload, since procs can't be tagged.
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+
+  std::string prog =
+    R"""(
+      proc foo(param tag) where tag == iterKind.standalone {
+        yield 1;
+        yield 2;
+        yield 3;
+      }
+      var loop = foo();
+      forall i in loop {}
+      forall j in foo() {}
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, prog, {"loop", "i", "j"});
+  for (auto var : vars) {
+    CHPL_ASSERT(var.second.isUnknownOrErroneous());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1584,6 +1787,12 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+
+  auto ctx = buildStdContext();
+  test28(ctx.get());
+  test29(ctx.get());
 
   return 0;
 }

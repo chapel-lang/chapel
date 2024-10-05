@@ -7,9 +7,3 @@ CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==cray-prgenv-cray
 CHPL_TARGET_COMPILER==intel
 CHPL_TARGET_COMPILER==cray-prgenv-intel
-
-# These tests have known memory leaks. To cover this, we have a subset of tests
-# where we explicitly pass '--memLeaks' as an execopt. For other correctness
-# tests, we don't want them to fail in our broader "memory leak" job so we skip
-# when we're running that job.
-CHPL_MEM_LEAK_TESTING==true

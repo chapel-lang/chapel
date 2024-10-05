@@ -67,6 +67,26 @@ module LocaleModelHelpMem {
     return chpl_mem_alloc(size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
+  import Allocators;
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc_with_allocator(size:int(64),
+                                      md:chpl_mem_descInt_t,
+                                      ref allocator: record): c_ptr(void) {
+    // TODO: what to do with `md`?
+    return allocator.allocate(size);
+  }
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc_with_allocator(size:int(64),
+                                      md:chpl_mem_descInt_t,
+                                      const ref allocator: class): c_ptr(void) {
+    // TODO: what to do with `md`?
+    return allocator.allocate(size);
+  }
+
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"

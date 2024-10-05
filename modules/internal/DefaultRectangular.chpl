@@ -33,7 +33,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil;
-  public use ChapelArray;
+  use ChapelArray;
   use ChapelDistribution, ChapelRange, OS, CTypes, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
@@ -56,7 +56,7 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
-  config param defaultRectangularSupportsAutoLocalAccess = true;
+  config param defaultRectangularSupportsAutoLocalAccess = false;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
@@ -143,15 +143,7 @@ module DefaultRectangular {
 
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
-      // FIXME benharsh: Here's what we want to do:
-      //   defaultDist = new dmap(new DefaultDist());
-      // The problem is that the LHS of the "proc =" for _distributions
-      // loses its ref intent in the removeWrapRecords pass.
-      //
-      // The code below is copied from the contents of the "proc =".
-      const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(),
-                                                      definedConst=false));
+      defaultDist = new dmap(new DefaultDist());
     }
   }
 
@@ -717,9 +709,23 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-
-      var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
       return new unmanaged DefaultRectangularArr(eltType=eltType,
+                                       rank=rank,
+                                       idxType=idxType,
+                                       strides=strides,
+                                       dom=_to_unmanaged(this),
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
+                                       data=data);
+    }
+
+    proc doiBuildArrayMoving(from: DefaultRectangularArr(?)) {
+      var movedData = from.data;
+      from.data = nil; // so that it won't be freed when 'from' is deleted
+      return new unmanaged DefaultRectangularArr(
+                                       eltType=from.eltType,
                                        rank=rank,
                                        idxType=idxType,
                                        strides=strides,
@@ -728,9 +734,8 @@ module DefaultRectangular {
                                        // but the array should deinit them
                                        deinitElts=true,
                                        dom=_to_unmanaged(this),
-                                       data=data);
+                                       data=movedData);
     }
-
 
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
@@ -1137,6 +1142,11 @@ module DefaultRectangular {
     }
 
     override proc dsiDestroyArr(deinitElts:bool) {
+      // give up early if the array's data has already been stolen
+      if data == nil {
+        return;
+      }
+
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }
@@ -1297,15 +1307,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
         }
 
-        if !localeModelPartitionsIterationOnSublocales {
-          data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
-        } else {
-          data = _ddata_allocate_noinit(eltType, size,
-                                        callPostAlloc,
-                                        subloc = (if here._getChildCount() > 1
-                                                  then c_sublocid_all
-                                                  else c_sublocid_none));
-        }
+        data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
 
         if initElts {
           init_elts(data, size, eltType);
@@ -1694,6 +1696,10 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
+  iter chpl__serialViewIter1D(arr, viewDom) ref {
+    for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+  }
+
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
@@ -1758,6 +1764,14 @@ module DefaultRectangular {
 
   override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
     return defaultRectangularSupportsAutoLocalAccess;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsArrayViewElision() param {
+    return true;
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsShortArrayTransfer() param {
+    return true;
   }
 
   // Why can the following two functions not be collapsed into one
@@ -2149,12 +2163,12 @@ module DefaultRectangular {
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Alocid = Adata.locale.id;
-    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Adata.locale.chpl_localeid());
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     const Blocid = Bdata.locale.id;
-    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(Bdata.locale.chpl_localeid());
 
     type t = A.eltType;
@@ -2268,10 +2282,10 @@ module DefaultRectangular {
     use ChplConfig;
 
     const Alocid = A.data.locale.id;
-    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(A.data.locale.chpl_localeid());
     const Blocid = B.data.locale.id;
-    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_none else
                           chpl_sublocFromLocaleID(B.data.locale.chpl_localeid());
 
     if !_isLocSublocSameAsHere(Alocid, Asublocid) &&

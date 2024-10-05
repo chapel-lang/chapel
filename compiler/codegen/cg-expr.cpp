@@ -795,11 +795,10 @@ static
 GenRet codegenLocaleForNode(GenRet node)
 {
   node = codegenValue(node);
-  GenRet anySublocale = codegenUseGlobal("c_sublocid_any");
 
   std::vector<GenRet> args;
   args.push_back(codegenValue(node));
-  args.push_back(codegenUseGlobal("c_sublocid_any"));
+  args.push_back(codegenUseGlobal("c_sublocid_none"));
   args.push_back(codegenZero());
   args.push_back(codegenZero32());
 
@@ -5783,8 +5782,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     else {
       // the call doesn't have a subloc argument
       if (useGpuVersion) {
-        // but we need to use the GPU version, pass `c_sublocid_any`
-        GenRet subloc = codegenUseGlobal("c_sublocid_any");
+        // but we need to use the GPU version, pass `c_sublocid_none`
+        GenRet subloc = codegenUseGlobal("c_sublocid_none");
         args.push_back(subloc);
       }
     }
@@ -6288,9 +6287,6 @@ DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
 
 DEFINE_PRIM(ASSERT_ON_GPU) {
-  // Remove the string argument to the GPU primitive.
-  call->get(1)->remove();
-
   ret = call->codegenBasicPrimitiveExpr();
 }
 

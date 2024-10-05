@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/* A distribution for mapping domain/array indices to locales in a 1:1 manner. */
+
 @unstable("PrivateDist is unstable and may change in the future")
 prototype module PrivateDist {
 

@@ -1655,9 +1655,6 @@ void AggregateType::renameInstantiation() {
   } else if (!developer && symbol->hasFlag(FLAG_SYNC)) {
     name = "sync ";
     buildFieldNames(this, name, false);
-  } else if (!developer && symbol->hasFlag(FLAG_SINGLE)) {
-    name = "single ";
-    buildFieldNames(this, name, false);
   } else if (!developer && symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
     name = "atomic ";
     buildFieldNames(this, name, false);
@@ -2903,6 +2900,21 @@ void AggregateType::addClassToHierarchy() {
   addClassToHierarchy(localSeen);
 }
 
+static BlockStmt* getEnclosingBlockForImplements(Symbol* sym) {
+  auto parentSym = sym->defPoint->parentSymbol;
+  if (auto fn = toFnSymbol(parentSym)) {
+    return fn->body;
+  } else if (auto mod = toModuleSymbol(parentSym)) {
+    return mod->block;
+  } else if( auto ty = toTypeSymbol(parentSym)) {
+    return getEnclosingBlockForImplements(ty);
+  } else {
+    // Fallback, this shouldn't happen but if it does, we'll just return the
+    // module's block
+    return sym->getModule()->block;
+  }
+}
+
 void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
   // classes already in hierarchy
   static std::set<AggregateType*> globalSeen;
@@ -2943,8 +2955,8 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       }
 
       auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
-      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
-      this->symbol->getModule()->block->insertAtTail(istmt);
+      auto istmt = ImplementsStmt::build(isym, ifcActuals, nullptr);
+      getEnclosingBlockForImplements(this->symbol)->insertAtTail(istmt);
 
       expr->remove();
       continue;

@@ -31,7 +31,6 @@
 #include <vector>
 
 #include "chpl/framework/Context.h"
-#include "chpl/types/QualifiedType.h"
 #include "chpl/util/memory.h"
 
 namespace chpl {
@@ -159,11 +158,9 @@ template<typename ... Ts> struct mark<std::tuple<Ts...>> {
     mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
-
-template <>
-struct mark<types::QualifiedType::Kind> {
-  void operator()(Context* context, types::QualifiedType::Kind t) {
-    // No need to mark enums
+template<typename ... Ts> struct mark<const std::tuple<Ts...>> {
+  void operator()(Context* context, const std::tuple<Ts...>& keep) const {
+    mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
 

@@ -4,10 +4,10 @@ var c_sublocid_vass: chpl_sublocID_t = -7;
 proc main {
 
   forall IDX in MYITER()
-    with (const in c_sublocid_any,
+    with (const in c_sublocid_none,
           const in c_sublocid_vass)
   {
-    USEME2(c_sublocid_any, c_sublocid_vass);
+    USEME2(c_sublocid_none, c_sublocid_vass);
   }
 
 }

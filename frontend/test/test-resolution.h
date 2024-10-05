@@ -24,6 +24,12 @@
 
 #include "chpl/resolution/resolution-types.h"
 
+#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
+
 // forward declare classes and namespaces
 namespace chpl {
   namespace resolution {
@@ -78,5 +84,15 @@ void ensureErroneousType(const QualifiedType& type);
 QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
 Context::Configuration getConfigWithHome();
+
+/**
+  Returns the ResolvedFunction called by a particular
+  ResolvedExpression, if there was exactly one candidate.
+  Otherwise, it returns nullptr.
+
+  This function does not handle return intent overloading.
+ */
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                             const ResolvedExpression& r);
 
 #endif

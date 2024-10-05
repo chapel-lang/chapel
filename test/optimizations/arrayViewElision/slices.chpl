@@ -1,4 +1,4 @@
-config param useDomain = true, rank = 1;
+config param useDomain = false, rank = 1, dist = "default";
 
 proc multuplify(param rank, x) {
   var ret: rank*x.type;
@@ -12,8 +12,8 @@ var arrRanges = multuplify(rank, 1..5);
 
 param aVal = 1, bVal = 2;
 
-var A: [(...arrRanges)] int = aVal;
-var B: [(...arrRanges)] int = bVal;
+var (A, B) = createArrays();
+
 
 var counter = 1;
 proc test(dstRange, srcRange) {
@@ -28,13 +28,14 @@ proc test(dstRange, srcRange) {
   const checkDom = A.domain[(...dstSlice)];
 
   writeln("Test ", counter);
+  writeln(A);
+  writeln();
+
   for idx in A.domain {
     const checkVal = if checkDom.contains(idx) then bVal else aVal;
     assert(A[idx] == checkVal);
   }
 
-  writeln(A);
-  writeln();
   counter += 1;
 
   A = aVal; // reset
@@ -79,3 +80,40 @@ if !useDomain {
   test(.., ..);
 }
 writeln("-----------------");
+
+proc createArrays() {
+  select dist {
+    when "default" {
+      var A: [(...arrRanges)] int = aVal;
+      var B: [(...arrRanges)] int = bVal;
+      A = aVal;
+      B = bVal;
+      return (A, B);
+    }
+    when "block" {
+      use BlockDist;
+      var A = blockDist.createArray((...arrRanges), int);
+      var B = blockDist.createArray((...arrRanges), int);
+      A = aVal;
+      B = bVal;
+      return (A, B);
+    }
+    when "cyclic" {
+      use CyclicDist;
+      var A = cyclicDist.createArray((...arrRanges), int);
+      var B = cyclicDist.createArray((...arrRanges), int);
+      A = aVal;
+      B = bVal;
+      return (A, B);
+    }
+    when "stencil" {
+      use StencilDist;
+      var A = stencilDist.createArray((...arrRanges), int);
+      var B = stencilDist.createArray((...arrRanges), int);
+      A = aVal;
+      B = bVal;
+      return (A, B);
+    }
+  }
+}
+

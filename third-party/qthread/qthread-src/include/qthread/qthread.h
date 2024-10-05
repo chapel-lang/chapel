@@ -102,6 +102,10 @@ using std::memory_order_relaxed;
 # define Q_ALIGNED(x) __attribute__((aligned(x)))
 #endif
 
+#if QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
+#define QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+#endif
+
 Q_STARTCXX /* */
 /* NOTE!!!!!!!!!!!
  * Reads and writes operate on aligned_t-size segments of memory.

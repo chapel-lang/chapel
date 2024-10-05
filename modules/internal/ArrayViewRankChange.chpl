@@ -119,6 +119,10 @@ module ArrayViewRankChange {
               this.idx == that.idx &&
               this.downDist.dsiEqualDMaps(that.downDist));
     }
+
+    proc dsiEqualDMaps(that) {
+      return false;
+    }
   }
 
   private proc downDomType(param rank : int,

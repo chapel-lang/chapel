@@ -59,18 +59,20 @@ static void checkFunctionSignatures() {
 
 static void checkPrimNew() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->inTree() &&  call->isPrimitive(PRIM_NEW)) {
+    if (call->inTree() && isNewLike(call)) {
 
-      if (call->numActuals() >= 1) {
-        Expr*    arg1     = call->get(1);
+      int type_index = call->isPrimitive(PRIM_NEW) ? 1 : 2;
+
+      if (call->numActuals() >= type_index) {
+        Expr*    arg1     = call->get(type_index);
         SymExpr* se       = toSymExpr(arg1);
         Expr*    typeExpr = NULL;
 
         // Extract the type expression
         if (se != NULL && se->symbol() == gModuleToken) {
-          typeExpr = call->get(3);
+          typeExpr = call->get(type_index+2);
         } else {
-          typeExpr = call->get(1);
+          typeExpr = call->get(type_index);
         }
 
         if        (isUnresolvedSymExpr(typeExpr) == true) {

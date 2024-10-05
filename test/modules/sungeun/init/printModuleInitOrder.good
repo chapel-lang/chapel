@@ -18,6 +18,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        ChapelNumLocales
        DefaultRectangular
         ChapelArray
          ChapelPrivatization
@@ -45,7 +46,6 @@ Initializing Modules:
         RangeChunk
         Search
          HideDeprecatedReexport
-       ChapelNumLocales
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray

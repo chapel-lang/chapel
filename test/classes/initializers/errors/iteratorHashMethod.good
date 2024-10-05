@@ -1,0 +1,4 @@
+iteratorHashMethod.chpl:4: error: iterators can't be the 'hash' method, please rename this iterator
+iteratorHashMethod.chpl:4: In iterator 'hash':
+iteratorHashMethod.chpl:5: error: 'return' statements with values are not allowed in iterators
+iteratorHashMethod.chpl:4: note: 'hash' is declared as an iterator here

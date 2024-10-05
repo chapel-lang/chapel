@@ -1,19 +1,17 @@
 FROM @@{OS_BASE_IMAGE}
 
-RUN dnf upgrade -y && dnf install -y sudo vim which
+@@{INJECT_BEFORE_DEPS}
 
-RUN useradd -ms /bin/bash user && \
-    usermod -aG wheel user && \
-    echo "user:password" | chpasswd && \
-    sed -i 's/%wheel[ \t]\{1,\}ALL=(ALL)[ \t]\{1,\}ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
+@@{TEST_ENV}
 
-USER user
-WORKDIR /home/user
+RUN dnf upgrade -y && dnf install -y --allowerasing sudo vim which shadow-utils
+
+@@{USER_CREATION}
 
 COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
 
 USER root
-RUN dnf install -y ./@@{PACKAGE_NAME}
+RUN dnf install -y --allowerasing ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user
 
@@ -21,5 +19,5 @@ RUN mason new MyPackage
 WORKDIR /home/user/MyPackage
 RUN chplcheck src/*.chpl
 RUN mason build
-RUN mason run
+RUN mason run -- -nl 1
 WORKDIR /home/user

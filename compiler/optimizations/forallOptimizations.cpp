@@ -1077,7 +1077,7 @@ ALACandidate::ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs):
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return; }
+      if (isNewLike(parentCall)) { return; }
     }
 
     // don't analyze further if the call base is a yielded symbol
@@ -1179,6 +1179,25 @@ void ALACandidate::addOffset(Expr* e) {
     offsetExprs_.push_back(zero);
   }
 }
+Expr* ForallOptimizationInfo::getLoopDomainExpr() {
+  // loop domain is the 0th iterand
+  return this->getIterand(0);
+}
+
+Expr* ForallOptimizationInfo::getIterand(int idx) {
+  if (auto &s = iterSym[idx]) {
+    return new SymExpr(s);
+  }
+  else if (auto &e = dotDomIterExpr[idx]) {
+    return e->copy();
+  }
+  else if (auto &s = iterCallTmp[idx]) {
+    return new SymExpr(s);
+  }
+  else {
+    return nullptr;
+  }
+}
 
 // for a call like `A[i]`, this will create something like
 //
@@ -1192,8 +1211,8 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
                                           CallExpr *&allChecks) {
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
+  int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
-  const int iterandIdx = candidate.getIterandIdx();
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
                                 optInfo.staticCheckWOffSymForSymMap :
@@ -1202,19 +1221,20 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   SET_LINENO(forall);
 
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
-    CallExpr* check = new CallExpr("chpl__dynamicAutoLocalCheck");
+    CallExpr* check = new CallExpr("chpl__ala_dynamicCheck");
     optInfo.dynamicCheckForSymMap[baseSym] = check;
 
     check->insertAtTail(baseSym);
 
-    if (optInfo.iterSym[iterandIdx] != NULL) {
-      check->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
+    if (Expr* e = optInfo.getLoopDomainExpr()) {
+      check->insertAtTail(e);
     }
-    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-      check->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
+    else {
+      INT_FATAL("optInfo didn't have enough information");
     }
-    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-      check->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+
+    if (Expr* e = optInfo.getIterand(iterandIdx)) {
+      check->insertAtTail(e);
     }
     else {
       INT_FATAL("optInfo didn't have enough information");
@@ -1241,6 +1261,10 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
       offsetCheck->insertAtTail(e->copy());
     }
 
+    CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
+        new SymExpr(staticCheckSymMap[baseSym]));
+    offsetCheck = new CallExpr("||", staticOverride, offsetCheck);
+
     CallExpr* newCheck = new CallExpr("&&", offsetCheck); // we'll add curCheck
     curCheck->replace(newCheck);
     newCheck->insertAtTail(curCheck);
@@ -1260,7 +1284,7 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
 
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
-  const int iterandIdx = candidate.getIterandIdx();
+  int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
@@ -1270,24 +1294,25 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
   if (staticCheckSymMap.count(baseSym) == 0) {
     SET_LINENO(forall);
 
-    VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
+    VarSymbol *checkSym = new VarSymbol("chpl__ala_staticCheckSym");
     checkSym->addFlag(FLAG_PARAM);
     // mark it with FLAG_TEMP to prevent the normalizer from adding
     // PRIM_END_OF_STATEMENT in the wrong places for loops.
     checkSym->addFlag(FLAG_TEMP);
     staticCheckSymMap[baseSym] = checkSym;
 
-    CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
+    CallExpr *checkCall = new CallExpr("chpl__ala_staticCheck");
     checkCall->insertAtTail(baseSym);
 
-    if (optInfo.iterSym[iterandIdx] != NULL) {
-      checkCall->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
+    if (Expr* e = optInfo.getLoopDomainExpr()) {
+      checkCall->insertAtTail(e);
     }
-    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-      checkCall->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
+    else {
+      INT_FATAL("optInfo didn't have enough information");
     }
-    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-      checkCall->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+
+    if (Expr* e = optInfo.getIterand(iterandIdx)) {
+      checkCall->insertAtTail(e);
     }
     else {
       INT_FATAL("optInfo didn't have enough information");

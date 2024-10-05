@@ -21,6 +21,7 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/framework/Context.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
 #include "chpl/parsing/FileContents.h"
@@ -106,9 +107,27 @@ introspectParsedFiles(Context* context);
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
+
+  If setParentSymbolPath is not nullptr, sets it to the parentSymbolPath used
+  when creating the BuilderResult.
  */
 const uast::BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id);
+parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setParentSymbolPath=nullptr);
+
+/**
+  Fetch the BuilderResult storing compiler-generated uAST based on the given
+  symbolPath.
+ */
+const uast::BuilderResult&
+getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath);
+
+/**
+  Set the BuilderResult storing compiler-generated uAST based on the given
+  symbolPath.
+ */
+void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
+                                 uast::BuilderResult result);
 
 /**
   A function for counting the tokens when parsing
@@ -520,6 +539,11 @@ bool idIsField(Context* context, ID id);
 const ID& idToParentId(Context* context, ID id);
 
 /**
+ Returns the parent function ID given an ID.
+ */
+ID idToParentFunctionId(Context* context, ID id);
+
+/**
  Returns the parent AST node given an AST node
  */
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
@@ -655,6 +679,12 @@ void reportUnstableWarningForId(Context* context, ID idMention,
   Given an ID, returns the module kind for the ID.
 */
 uast::Module::Kind idToModuleKind(Context* context, ID id);
+
+/*
+  Given a unique string, determine if it matches the name of a known special
+  method.
+*/
+bool isSpecialMethodName(UniqueString name);
 
 } // end namespace parsing
 } // end namespace chpl

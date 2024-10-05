@@ -192,19 +192,61 @@ introspectParsedFiles(Context* context) {
   return toReturn;
 }
 
+static const BuilderResult&
+compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
+  QUERY_BEGIN(compilerGeneratedBuilderQuery, context, symbolPath);
+
+  BuilderResult ret;
+
+  return QUERY_END(ret);
+}
+
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id) {
-  UniqueString path;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, path, parentSymbolPath);
-  if (found) {
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    return &p;
-  }
+parseFileContainingIdToBuilderResult(Context* context,
+                                     ID id,
+                                     UniqueString* setParentSymbolPath) {
+  if (id.isFabricatedId() &&
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
+    // Find the generated module's symbol path
+    UniqueString symbolPath;
+    if (id.symbolName(context).startsWith("chpl__generated")) {
+      symbolPath = id.symbolPath();
+    } else {
+      symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+      if (symbolPath.isEmpty()) return nullptr;
 
-  return nullptr;
+      // Assumption: The generated module goes only one symbol deep.
+      CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
+    }
+
+    const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
+    assert(br.numTopLevelExpressions() != 0);
+    if (setParentSymbolPath) *setParentSymbolPath = UniqueString();
+    return &br;
+  } else  {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    bool found = context->filePathForId(id, path, parentSymbolPath);
+    if (found) {
+      const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                        parentSymbolPath);
+      if (setParentSymbolPath) *setParentSymbolPath = parentSymbolPath;
+      return &p;
+    }
+
+    return nullptr;
+  }
+}
+
+const BuilderResult&
+getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath) {
+  return compilerGeneratedBuilderQuery(context, symbolPath);
+}
+
+void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
+                                 BuilderResult result) {
+  QUERY_STORE_RESULT(compilerGeneratedBuilderQuery, context, result, symbolPath);
 }
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
@@ -1205,7 +1247,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  if (!id.isFabricatedId()) {
+  if (!id.isFabricatedId() ||
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
@@ -1224,9 +1267,8 @@ AstTag idToTag(Context* context, ID id) {
 }
 
 bool idIsModule(Context* context, ID id) {
-  if (id.postOrderId() >= 0) {
-    // it can't possibly be a module if it's got a positive post-order ID
-    // since all modules have post-order ID -1
+  if (!id.isSymbolDefiningScope()) {
+    // it can't possibly be a module if it doesn't define a scope
     return false;
   }
   AstTag tag = idToTag(context, id);
@@ -1257,8 +1299,9 @@ bool idIsParenlessFunction(Context* context, ID id) {
 
 bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsFunction(context, up)) return true;
   }
   return false;
 }
@@ -1267,7 +1310,7 @@ bool idIsFunction(Context* context, ID id) {
   // Functions always have their own ID symbol scope,
   // and if it's not a function, we can return false
   // without doing further work.
-  if (id.postOrderId() != -1) {
+  if (!id.isSymbolDefiningScope()) {
     return false;
   }
 
@@ -1389,14 +1432,38 @@ const ID& idToParentId(Context* context, ID id) {
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
 
+  // Performance: Could this query use id.parentSymbolId in many cases?
+
   ID result;
 
-  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  UniqueString parentSymbolPath;
+  const BuilderResult* r =
+    parseFileContainingIdToBuilderResult(context, id, &parentSymbolPath);
+
   if (r != nullptr) {
     result = r->idToParentId(id);
+    // For a submodule in a separate file, the BuilderResult's idToParentId
+    // will return an empty ID for the submodule.
+    // Detect that and return the parent module in that case.
+    if (result.isEmpty() && !parentSymbolPath.isEmpty()) {
+      ID parentSymbolId = id.parentSymbolId(context);
+      CHPL_ASSERT(!parentSymbolId.isEmpty());
+      CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
+      result = parentSymbolId;
+    }
   }
 
   return QUERY_END(result);
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    // Get the first parent function (a parent could be a record/class/etc).
+    if (parsing::idIsFunction(context, up)) return up;
+  }
+  return {};
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
@@ -2004,6 +2071,16 @@ Module::Kind idToModuleKind(Context* context, ID id) {
   return getModuleKindQuery(context, modID);
 }
 
+bool isSpecialMethodName(UniqueString name) {
+  if (name == USTR("init") || name == USTR("deinit") || name == USTR("init=") ||
+      name == USTR("postinit") || name == USTR("enterContext") ||
+      name == USTR("exitContext") || name == USTR("serialize") ||
+      name == USTR("deserialize") || name == USTR("hash")) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 } // end namespace parsing
 } // end namespace chpl

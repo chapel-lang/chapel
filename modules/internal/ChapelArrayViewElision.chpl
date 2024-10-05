@@ -19,11 +19,11 @@
  */
 
 module ChapelArrayViewElision {
-  use ChapelBase only iterKind;
+  use ChapelArray;
+  use ChapelBase;
   use ChapelRange;
   use DefaultRectangular;
   use CTypes;
-  use ChapelArray only _validRankChangeArgs;
 
   //
   // compiler interface
@@ -70,26 +70,31 @@ module ChapelArrayViewElision {
 
   proc chpl__ave_exprCanBeProtoSlice(base, idxExprs...) param: bool {
     return chpl__ave_baseTypeSupports(base) &&
-           chpl__ave_idxExprsSupport(base.idxType, (...idxExprs));
+           chpl__ave_idxExprsSupport(base.idxType, (...idxExprs)) &&
+           !chpl__ave_nonComplientSlice(base, (...idxExprs));
   }
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
                                               b: chpl__protoSlice) param: bool {
-    if a.isRankChange != b.isRankChange then return false; //or assert?
+    // for now, only same array types on both sides are supported
+    if a.ptrToArr.deref().type != b.ptrToArr.deref().type then return false;
 
-    if !a.isRankChange then return true; // nothing else to check
+    // either both sides are rank-changes, or neither is
+    if a.isRankChange != b.isRankChange then return false;
 
-    // we want to check that if there are integrals in the original slicing
-    // expressions, they are at the same rank. In other words, if we are working
-    // with rank-changes, we want to make sure that the collapsed dims on both
-    // sides match
-    type aType = a.slicingExprType;
-    type bType = b.slicingExprType;
-    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
-    for param i in 0..<a.slicingExprType.size {
-      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
-           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
-        return false;
+    if a.isRankChange {
+      // we want to check that if there are integrals in the original slicing
+      // expressions, they are at the same rank. In other words, if we are
+      // working with rank-changes, we want to make sure that the collapsed dims
+      // on both sides match
+      type aType = a.slicingExprType;
+      type bType = b.slicingExprType;
+      compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
+      for param i in 0..<a.slicingExprType.size {
+        if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
+             (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
+          return false;
+        }
       }
     }
 
@@ -196,8 +201,12 @@ module ChapelArrayViewElision {
       halt("protoSlice copy initializer should never be called");
     }
 
+    // 1D always returns a range
     inline proc domOrRange where rank==1 {
-      return ranges; // doesn't matter whether it is a domain or a range
+      if isDomain(ranges) then
+        return ranges.dim[0];
+      else
+        return ranges;
     }
 
     inline proc domOrRange where rank>1 {
@@ -222,7 +231,6 @@ module ChapelArrayViewElision {
       }
     }
 
-    inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
 
@@ -319,6 +327,10 @@ module ChapelArrayViewElision {
         yield arr[i];
       }
     }
+
+    proc supportsShortArrayTransfer() param {
+      return ptrToArr.deref().domain.supportsShortArrayTransfer();
+    }
   }
 
   // we need this as otherwise compiler-generated equality operator requires
@@ -360,8 +372,8 @@ module ChapelArrayViewElision {
 
   private proc chpl__ave_baseTypeSupports(base) param: bool {
     import Reflection;
-    return isArray(base) && // also could be a view?
-           isSubtype(base._instance.type, DefaultRectangularArr) &&
+    return isArray(base) && !chpl__isArrayView(base) && // we could allow views
+           base.domain.supportsArrayViewElision() &&
            Reflection.canResolve("c_addrOf", base);
   }
 
@@ -394,6 +406,17 @@ module ChapelArrayViewElision {
       return false;
     }
     return true;
+  }
+
+  private proc chpl__ave_nonComplientSlice(base, idxExprs: domain) param {
+    // distributed array sliced with a distributed domain is non-complient
+    // such slices imply "redistribution" of the data. Right now, let's ignore
+    // those
+    return !chpl__isDROrDRView(base) && !chpl__isDROrDRView(idxExprs);
+  }
+
+  private proc chpl__ave_nonComplientSlice(base, idxExprs...) param {
+    return false;
   }
 
   private proc chpl__ave_idxExprsSupport(type idxType,

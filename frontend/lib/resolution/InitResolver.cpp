@@ -41,6 +41,9 @@
 //       "or this.init()"
 // - [ ] "cannot pass a record to a function before 'init this'"
 //
+// Refactoring:
+//   Try to move init-specific logic in Resolver into InitResolver
+//
 namespace chpl {
 namespace resolution {
 
@@ -82,6 +85,12 @@ bool InitResolver::setupFromType(const Type* type) {
   fieldToInitState_.clear();
   fieldIdsByOrdinal_.clear();
 
+  if (auto ct = type->toClassType()) {
+    if (auto bct = ct->basicClassType()) {
+      superType_ = bct->parentClassType();
+    }
+  }
+
   auto ct = type->getCompositeType();
   auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
 
@@ -104,6 +113,25 @@ bool InitResolver::setupFromType(const Type* type) {
   }
 
   return anyAffectsResultingType;
+}
+
+void InitResolver::resolveImplicitSuperInit() {
+  // TODO: better error when arg-less super.init() does not exist
+  //       -- e.g. class Parent { type T; var x : T; }
+
+  if (phase_ == PHASE_NEED_SUPER_INIT &&
+      superType_->isObjectType() == false) {
+    std::vector<CallInfoActual> actuals;
+    auto superCT = ClassType::get(ctx_, superType_, nullptr,
+                                  ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
+    auto superQT = QualifiedType(QualifiedType::INIT_RECEIVER, superCT);
+    actuals.push_back(CallInfoActual(superQT, USTR("this")));
+    auto ci = CallInfo(USTR("init"), superQT, true, false, false, actuals);
+    auto inScopes = CallScopeInfo::forNormalCall(initResolver_.scopeStack.back(), initResolver_.poiScope);
+    auto c = resolveGeneratedCall(ctx_, fn_->body()->child(0), ci, inScopes);
+
+    updateSuperType(&c);
+  }
 }
 
 void InitResolver::doSetupInitialState(void) {
@@ -131,6 +159,7 @@ void InitResolver::copyState(InitResolver& other) {
   thisCompleteIds_ = other.thisCompleteIds_;
   isDescendingIntoAssignment_ = other.isDescendingIntoAssignment_;
   currentRecvType_ = other.currentRecvType_;
+  superType_ = other.superType_;
 }
 
 InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
@@ -253,6 +282,7 @@ bool InitResolver::isFinalReceiverStateValid(void) {
 
 static const Type* ctFromSubs(Context* context,
                               const Type* receiverType,
+                              const BasicClassType* superType,
                               const CompositeType* compositeType,
                               const CompositeType::SubstitutionsMap& subs) {
   auto root = compositeType->instantiatedFromCompositeType() ?
@@ -262,17 +292,23 @@ static const Type* ctFromSubs(Context* context,
   const Type* ret = nullptr;
 
   if (auto rec = receiverType->toRecordType()) {
+    auto instantatiatedFrom = subs.empty() ? nullptr : root->toRecordType();
     ret = RecordType::get(context, rec->id(), rec->name(),
-                          root->toRecordType(),
+                          instantatiatedFrom,
                           subs);
   } else if (auto cls = receiverType->toClassType()) {
     auto oldBasic = cls->basicClassType();
     CHPL_ASSERT(oldBasic && "Not handled!");
 
+    bool genericParent =
+        superType && superType->instantiatedFromCompositeType() != nullptr;
+    auto instantiatedFrom =
+        (subs.empty() && !genericParent) ? nullptr : root->toBasicClassType();
+
     auto basic = BasicClassType::get(context, oldBasic->id(),
                                      oldBasic->name(),
-                                     oldBasic->parentClassType(),
-                                     root->toBasicClassType(),
+                                     superType,
+                                     instantiatedFrom,
                                      subs);
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
@@ -296,7 +332,18 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                                        DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
-  if (!rfNoDefaults.isGeneric()) return currentRecvType_;
+  bool genericParent =
+      superType_ && superType_->instantiatedFromCompositeType() != nullptr;
+
+  if (!rfNoDefaults.isGeneric()) {
+    if (genericParent) {
+      // Might need to update the parent of the initial receiver type after
+      // a super.init call
+      return ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
+    } else {
+      return currentRecvType_;
+    }
+  }
 
   auto isValidQtForSubstitutions = [this](const QualifiedType qt) {
     if (qt.isUnknown()) return false;
@@ -311,7 +358,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 
     if (isInitiallyConcrete) continue;
 
-    if (!shouldIncludeFieldInTypeConstructor(ctx_, id, qtInitial)) continue;
+    if (!isFieldSyntacticallyGeneric(ctx_, id)) continue;
 
     // TODO: Will need to relax this as we go.
     if (isValidQtForSubstitutions(state->qt)) {
@@ -328,7 +375,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
         // substitutions from previous fields. If the composite type is
         // dependently typed, we might be able to compute defaults that
         // depend on these prior substitutions.
-        auto ctIntermediate = ctFromSubs(ctx_, initialRecvType_, ctInitial, subs);
+        auto ctIntermediate = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
         auto& rfIntermediate = fieldsForTypeDecl(ctx_, ctIntermediate->getCompositeType(),
                                                  DefaultsPolicy::USE_DEFAULTS);
 
@@ -341,14 +388,13 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     }
   }
 
-  if (subs.size() == 0) {
-    return currentRecvType_;
-  } else {
-    const Type* ret = ctFromSubs(ctx_, initialRecvType_, ctInitial, subs);
+  if (!subs.empty() || genericParent) {
+    const Type* ret = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
     CHPL_ASSERT(ret);
     return ret;
+  } else {
+    return currentRecvType_;
   }
-
 }
 
 QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
@@ -373,6 +419,8 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   formalsInstantiated.resize(ufs->numFormals());
 
+  bool needsInstantiation = false;
+
   for (int i = 0; i < tfs->numFormals(); i++) {
     if (i == 0) {
       auto qt = QualifiedType(determineReceiverIntent(), newRecvType);
@@ -381,15 +429,19 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
     } else {
       formalTypes.push_back(tfs->formalType(i));
       formalsInstantiated.setBit(i, tfs->formalIsInstantiated(i));
+      if (tfs->formalType(i).genericity() == Type::Genericity::GENERIC) {
+        needsInstantiation = true;
+      }
     }
   }
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              /* needsInstantiation */ false,
+                              needsInstantiation,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
-                              formalsInstantiated);
+                              formalsInstantiated,
+                              /* outerVariables */ {});
   return ret;
 }
 
@@ -425,6 +477,10 @@ void InitResolver::updateResolverVisibleReceiverType(void) {
     auto tfs = computeTypedSignature(updated);
     initResolver_.typedSignature = tfs;
     currentRecvType_ = updated;
+
+    // Update type of 'this'
+    auto& thisRE = initResolver_.byPostorder.byAst(fn_->thisFormal());
+    thisRE.setType(tfs->formalType(0));
   }
 }
 
@@ -471,6 +527,9 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
   const AstNode* prior = node;
 
   for (; parent != nullptr; parent = parentOf(parent)) {
+    // Stop searching upwards once we hit the initializer symbol
+    if (parent->id().isSymbolDefiningScope()) break;
+
     if (auto opCall = parent->toOpCall())
       if (opCall->op() == USTR("="))
         if (prior && opCall->actual(0) == prior)
@@ -481,39 +540,31 @@ bool InitResolver::isMentionOfNodeInLhsOfAssign(const AstNode* node) {
   return false;
 }
 
-ID InitResolver::fieldIdFromName(UniqueString name) {
-  if (!isNameOfField(ctx_, name, initialRecvType_)) return ID();
-  // TODO: Need to replace this as we continue to build it up?
-  auto ct = initialRecvType_->getCompositeType();
-  auto ret = parsing::fieldIdWithName(ctx_, ct->id(), name);
-  return ret;
-}
+std::pair<ID,bool> InitResolver::fieldIdFromPossibleMentionOfField(const AstNode* node) {
+  if (node->isDot()) {
+    auto dot = node->toDot();
+    if (auto ident = dot->receiver()->toIdentifier()) {
+      if (dot->field() != "init" &&
+          (ident->name() == "this" || ident->name() == "super")) {
+        auto ct = currentRecvType_->getCompositeType();
 
-ID InitResolver::fieldIdFromPossibleMentionOfField(const AstNode* node) {
-  UniqueString name;
+        if (auto decl = findFieldByName(ctx_, aggregateDecl_, ct, dot->field())) {
+          return {decl->id(), !aggregateDecl_->id().contains(decl->id())};
+        }
+      }
+    }
+  } else if (auto ident = node->toIdentifier()) {
+    auto& re = initResolver_.byPostorder.byAst(ident);
+    auto fieldID = re.toId();
 
-  // TODO: Just remove this and check the set ID in all cases?
-  if (auto ident = node->toIdentifier()) {
-    name = ident->name();
-  } else if (auto dot = node->toDot()) {
-    if (auto lhs = dot->receiver()->toIdentifier()) {
-      if (lhs->name() == USTR("this")) name = dot->field();
+    // Note: Assumes an Identifier resolving to a field is a reliable
+    // indication that the field belongs to the type being initialized.
+    if (!fieldID.isEmpty() && parsing::idIsField(ctx_, fieldID)) {
+      return {fieldID, !aggregateDecl_->id().contains(fieldID)};
     }
   }
 
-  if (name.isEmpty()) return ID();
-
-  auto ret = ID();
-  auto fieldId = fieldIdFromName(name);
-  auto& re = initResolver_.byPostorder.byAst(node);
-
-  if (fieldId.isEmpty()) return ret;
-
-  // TODO: Handle case where "this.foo" resolve to a paren-less method
-  auto id = re.toId();
-  if (!id.isEmpty() && parsing::idIsField(ctx_, id)) return id;
-
-  return ret;
+  return {ID(), false};
 }
 
 bool InitResolver::isFieldInitialized(ID fieldId) {
@@ -551,10 +602,42 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   return true;
 }
 
-// TODO: Detect calls to super.
 bool InitResolver::handleCallToSuperInit(const FnCall* node,
                                          const CallResolutionResult* c) {
+  if (auto dot = node->calledExpression()->toDot()) {
+    if (auto ident = dot->receiver()->toIdentifier()) {
+      if (ident->name() == "super" && dot->field() == "init") {
+        if (useOfSuperFields_.size() > 0) {
+          for (auto [fieldID, useID] : useOfSuperFields_) {
+            auto fieldNode = parsing::idToAst(ctx_, fieldID)->toNamedDecl();
+            ctx_->error(useID, "Cannot access parent field \"%s\" before super.init() or this.init()", fieldNode->name().c_str());
+          }
+        }
+
+        updateSuperType(c);
+
+        this->explicitSuperInit = true;
+
+        return true;
+      }
+    }
+  }
+
   return false;
+}
+
+void InitResolver::updateSuperType(const CallResolutionResult* c) {
+  auto& msc = c->mostSpecific().only();
+  auto superThis = msc.formalActualMap().byFormalIdx(0).formalType().type();
+
+  this->superType_ = superThis->getCompositeType()->toBasicClassType();
+
+  // Only update the current receiver if the parent was generic.
+  if (superType_->instantiatedFromCompositeType() != nullptr) {
+    updateResolverVisibleReceiverType();
+  }
+
+  phase_ = PHASE_NEED_COMPLETE;
 }
 
 bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
@@ -655,8 +738,10 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   auto rhs = node->actual(1);
 
   // TODO: Is 'field' or 'this.field' too strict of a pattern?
-  auto fieldId = fieldIdFromPossibleMentionOfField(lhs);
-  if (fieldId.isEmpty()) return false;
+  auto [fieldId, isSuperField] = fieldIdFromPossibleMentionOfField(lhs);
+
+  // parent fields already evaluated by 'handleUseOfField'
+  if (fieldId.isEmpty() || isSuperField) return false;
 
   auto state = fieldStateFromId(fieldId);
   CHPL_ASSERT(state);
@@ -679,8 +764,12 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
-      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
-      state->qt = reRhs.type();
+      auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
+
+      auto param = state->qt.kind() == QualifiedType::PARAM ? rhsType.param() : nullptr;
+      auto qt = QualifiedType(state->qt.kind(), rhsType.type(), param);
+      state->qt = qt;
+
       state->initPointId = node->id();
       state->isInitialized = true;
 
@@ -748,17 +837,35 @@ bool InitResolver::handleInitStatement(const uast::Init* node) {
 }
 
 bool InitResolver::handleUseOfField(const AstNode* node) {
-  auto id = fieldIdFromPossibleMentionOfField(node);
+  auto [id, isSuperField] = fieldIdFromPossibleMentionOfField(node);
   if (id.isEmpty()) return false;
 
-  if (isFieldInitialized(id)) return false;
+  if (!isSuperField && isFieldInitialized(id)) return false;
 
   auto state = fieldStateFromId(id);
   bool isValidPreInitMention = false;
 
-  if (isDescendingIntoAssignment_)
+  if (isDescendingIntoAssignment_ && isSuperField == false)
     if (isMentionOfNodeInLhsOfAssign(node))
       isValidPreInitMention = true;
+
+  // uses of parent fields might be valid during PHASE_NEED_COMPLETE if we
+  // implicitly resolved super.init(). We still need to keep track of parent
+  // field usage in case an explicit super.init() comes up later.
+  if (isSuperField) {
+    if (explicitSuperInit == false && phase_ != PHASE_COMPLETE) {
+      // Upon first use of parent field, need to insert a super.init() call
+      // TODO: store this as an associated action
+      if (useOfSuperFields_.empty()) {
+        this->resolveImplicitSuperInit();
+      }
+
+      useOfSuperFields_.push_back({id, node->id()});
+      return true;
+    } else {
+      isValidPreInitMention = true;
+    }
+  }
 
   if (!isValidPreInitMention) {
     ctx_->error(node, "'%s' is used before it is initialized",
@@ -769,75 +876,16 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   return false;
 }
 
-ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
-  if (vec.size() != 2) return ID();
-  if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
-  auto one = vec[0].firstId();
-  auto two = vec[1].firstId();
+ID InitResolver::solveNameConflictByIgnoringField(const MatchingIdsWithName& vec) {
+  if (vec.numIds() != 2) return ID();
+  auto one = vec.id(0);
+  auto two = vec.id(1);
   CHPL_ASSERT(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
   auto ret = parsing::idIsField(ctx_, one) ? two : one;
   CHPL_ASSERT(!parsing::idIsField(ctx_, ret));
   return ret;
-}
-
-bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
-  auto parenlessInfo = Resolver::ParenlessOverloadInfo();
-  auto scope = initResolver_.methodReceiverScopes();
-  auto vec = initResolver_.lookupIdentifier(node, scope, parenlessInfo);
-
-  // Handle and exit early if there were no ambiguities.
-  if (vec.size() == 1 && vec[0].numIds() == 1) {
-    auto& id = vec[0].firstId();
-    if (parsing::idIsField(ctx_, id)) {
-      auto state = fieldStateFromId(id);
-      auto qt = state->qt;
-      auto& re = initResolver_.byPostorder.byAst(node);
-      re.setToId(id);
-      re.setType(qt);
-      return true;
-    }
-  }
-
-  // If there are two names and one is a field, get the other name.
-  auto id = solveNameConflictByIgnoringField(vec);
-  if (!id.isEmpty()) {
-    CHPL_ASSERT(!parsing::idIsField(ctx_, id));
-    const bool localGenericToUnknown = true;
-    auto qt = initResolver_.typeForId(id, localGenericToUnknown);
-    auto& re = initResolver_.byPostorder.byAst(node);
-    re.setToId(id);
-    re.setType(qt);
-    return true;
-  }
-
-  return false;
-}
-
-bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
-  if (auto ident = node->receiver()->toIdentifier()) {
-
-    // TODO: Check parent for more context, and 'this.this'.
-    if (ident->name() == USTR("this")) {
-      auto name = node->field();
-      auto id = fieldIdFromName(name);
-      if (!id.isEmpty()) {
-        auto state = fieldStateFromId(id);
-        CHPL_ASSERT(state);
-        auto qt = state->qt;
-        auto& re = initResolver_.byPostorder.byAst(node);
-        re.setToId(id);
-        re.setType(qt);
-        return true;
-      }
-    } else {
-      // Otherwise, proceed normally.
-      return false;
-    }
-  }
-
-  return false;
 }
 
 void InitResolver::checkEarlyReturn(const Return* ret) {

@@ -148,7 +148,7 @@ static void testEmptyRecordCompilerGenInit() {
   auto& associatedActions = reNewCall.associatedActions();
   assert(associatedActions.size() == 1);
   auto initTfs = associatedActions[0].fn();
-  assert(initTfs->id() == r->id());
+  assert(initTfs->untyped()->compilerGeneratedOrigin() == r->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
 
@@ -241,8 +241,7 @@ static void testTertMethodCallCrossModule() {
   assert(tfsInit);
   auto ufsInit = tfsInit->untyped();
   assert(ufsInit);
-  assert(!tfsInit->id().isEmpty());
-  assert(tfsInit->id().symbolPath() == "A.C");
+  assert(tfsInit->untyped()->compilerGeneratedOrigin().symbolPath() == "A.C");
   assert(ufsInit->isCompilerGenerated());
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
@@ -790,7 +789,9 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 
 
   {
-    auto ct = vars.at("x1").type()->toCompositeType();
+    auto clt = vars.at("x1").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
     assert(ct->name() == "C");
 
@@ -808,7 +809,9 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
   }
 
   {
-    auto ct = vars.at("x2").type()->toCompositeType();
+    auto clt = vars.at("x2").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
     assert(ct->name() == "C");
 
@@ -846,9 +849,10 @@ static void testCompilerGeneratedGenericNewClass() {
 
 
   {
-    auto ct = vars.at("x1").type()->toCompositeType();
+    auto clt = vars.at("x1").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
     auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
@@ -864,9 +868,10 @@ static void testCompilerGeneratedGenericNewClass() {
   }
 
   {
-    auto ct = vars.at("x2").type()->toCompositeType();
+    auto clt = vars.at("x2").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
     auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
@@ -887,9 +892,10 @@ static void testCompilerGeneratedGenericNewClass() {
   }
 
   {
-    auto ct = vars.at("x4").type()->toCompositeType();
+    auto clt = vars.at("x4").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
     auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);

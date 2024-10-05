@@ -387,6 +387,7 @@ bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
 bool fDynoNoBreakError = false;
+static char fDynoTimingPath[FILENAME_MAX] = "";
 
 bool fResolveConcreteFns = false;
 bool fIdBasedMunging = false;
@@ -613,12 +614,13 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
   saveChplHomeDerivedInEnv();
 }
 
-static void setEnv(const ArgumentDescription* desc, const char* arg) {
+static void setChplEnv(const ArgumentDescription* desc, const char* arg) {
     // Copy desc->env because it is 'const char *'
     std::string env = std::string(desc->env);
     // Cut off underscore prefix so we are left with variable name
     env.erase(0, 1);
     envMap[env] = strdup(arg);
+    setenv(env.c_str(), arg, 1);
 }
 
 static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
@@ -1220,7 +1222,7 @@ Record components:
  {"long option" (or "" for separators), 'short option', "description of option argument(s), if any", "option description", "option type", &affectedVariable, "environment variable name", setter_function},
 */
 
-// The setEnv args use _ variable prefix (_CHPL_HOME) to ensure that setEnv is
+// The setChplEnv args use _ variable prefix (_CHPL_HOME) to ensure that setChplEnv is
 // only called when a flag is passed - otherwise arg functions are  called if
 // their environment variable is set
 
@@ -1345,26 +1347,26 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
  {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome},
- {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setEnv},
- {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setEnv},
- {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setEnv},
- {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", NULL, "_CHPL_COMM", setEnv},
- {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", NULL, "_CHPL_COMM_SUBSTRATE", setEnv},
- {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", NULL, "_CHPL_GASNET_SEGMENT", setEnv},
- {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", NULL, "_CHPL_GMP", setEnv},
- {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", NULL, "_CHPL_HWLOC", setEnv},
- {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", NULL, "_CHPL_LAUNCHER", setEnv},
- {"lib-pic", ' ', "<pic>", "Specify whether to use position-dependent or position-independent code", "S", NULL, "_CHPL_LIB_PIC", setEnv},
- {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setEnv},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
- {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
- {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setEnv},
- {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
- {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
- {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
- {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
- {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
- {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
+ {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setChplEnv},
+ {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setChplEnv},
+ {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setChplEnv},
+ {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", NULL, "_CHPL_COMM", setChplEnv},
+ {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", NULL, "_CHPL_COMM_SUBSTRATE", setChplEnv},
+ {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", NULL, "_CHPL_GASNET_SEGMENT", setChplEnv},
+ {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", NULL, "_CHPL_GMP", setChplEnv},
+ {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", NULL, "_CHPL_HWLOC", setChplEnv},
+ {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", NULL, "_CHPL_LAUNCHER", setChplEnv},
+ {"lib-pic", ' ', "<pic>", "Specify whether to use position-dependent or position-independent code", "S", NULL, "_CHPL_LIB_PIC", setChplEnv},
+ {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setChplEnv},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setChplEnv},
+ {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setChplEnv},
+ {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setChplEnv},
+ {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setChplEnv},
+ {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setChplEnv},
+ {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setChplEnv},
+ {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setChplEnv},
+ {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setChplEnv},
+ {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setChplEnv},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL},
@@ -1461,7 +1463,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
- {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
+ {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setChplEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
  {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
@@ -1512,6 +1514,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
+ {"dyno-timing", ' ', NULL, "Enable [disable] timing output when using dyno compiler library", "P", &fDynoTimingPath, "CHPL_DYNO_TIMING", NULL},
  {"dyno-debug-print-parsed-files", ' ', NULL, "Enable [disable] printing all files that were parsed by Dyno", "N", &fDynoDebugPrintParsedFiles, "CHPL_DYNO_DEBUG_PRINT_PARSED_FILES", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
@@ -1642,6 +1645,7 @@ static void printStuff(const char* argv0) {
     } else if ((size_t)wanted_to_write >= sizeof(buf)) {
       USR_FATAL("CHPL_HOME path name is too long");
     }
+    fflush(stdout); // make sure output is flushed before running subprocess
     int status = mysystem(buf, "running printchplenv", false);
     if (compilerSetChplLLVM) {
       printf("---\n");
@@ -2481,6 +2485,12 @@ int main(int argc, char* argv[]) {
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
+
+  }
+
+  if (fDynoTimingPath[0] != '\0' &&
+      (fDriverCompilationPhase || fDriverDoMonolithic)) {
+    gContext->beginQueryTimingTrace(fDynoTimingPath);
   }
 
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
@@ -2518,6 +2528,11 @@ int main(int argc, char* argv[]) {
     Phase::ReportText(
         "\n\nTiming for driver mode overhead\n--------------\n");
     tracker.ReportPass();
+  }
+
+  if (fDynoTimingPath[0] != '\0' &&
+      (fDriverCompilationPhase || fDriverDoMonolithic)) {
+    gContext->endQueryTimingTrace();
   }
 
   tracker.StartPhase("driverCleanup");

@@ -117,8 +117,11 @@ class CompositeType : public Type {
     CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
 
-    // check that subs is consistent with instantiatedFrom
-    CHPL_ASSERT((instantiatedFrom_ == nullptr) == subs_.empty());
+    // check that subs is consistent with instantiatedFrom, except in the
+    // case of class types which can be generic with empty subs due to
+    // inheritance
+    CHPL_ASSERT(tag == typetags::BasicClassType ||
+                (instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
@@ -221,6 +224,12 @@ class CompositeType : public Type {
 
   /** Get the chpl_localeID_t type */
   static const RecordType* getLocaleIDType(Context* context);
+
+  /** Get the record _owned implementing owned */
+  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
+
+  /** Get the record _shared implementing shared */
+  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
 
   /** When compiling without a standard library (for testing purposes),
       the compiler code needs to work around the fact that there

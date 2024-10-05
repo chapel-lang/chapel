@@ -174,6 +174,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveNewWithAllocator(CallExpr* call);
 static void resolveForResolutionPoint(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
@@ -423,7 +424,7 @@ FnSymbol* getAutoDestroy(Type* t) {
 }
 
 Type* getCopyTypeDuringResolution(Type* t) {
-  if (isSyncType(t) || isSingleType(t)) {
+  if (isSyncType(t)) {
     Type* baseType = t->getField("valType")->type;
     return baseType;
   }
@@ -453,7 +454,7 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
   Type* actualValType = actualType->getValType();
   Type* formalValType = formalType->getValType();
 
-  if (isSyncType(actualValType) || isSingleType(actualValType)) {
+  if (isSyncType(actualValType)) {
     copyType = getCopyTypeDuringResolution(actualValType);
   } else if (isAliasingArrayType(actualValType) ||
              actualValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -2546,7 +2547,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
     return;
 
   for_formals_actuals(formal, actual, call)
-    if (isSyncType(formal->type) || isSingleType(formal->type)) {
+    if (isSyncType(formal->type)) {
       const char* name = "";
 
       if (SymExpr* aSE = toSymExpr(actual))
@@ -2792,7 +2793,7 @@ void resolvePromotionType(AggregateType* at) {
   // don't try to resolve promotion types for sync
   // (for erroneous sync of array it leads to coercion which leads
   //  to confusing error messages)
-  if (at->symbol->hasFlag(FLAG_SINGLE) || at->symbol->hasFlag(FLAG_SYNC))
+  if (at->symbol->hasFlag(FLAG_SYNC))
     return;
 
   VarSymbol* temp     = newTemp(at);
@@ -2885,6 +2886,10 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_NEW:
       resolveNew(call);
+      break;
+
+    case PRIM_NEW_WITH_ALLOCATOR:
+      resolveNewWithAllocator(call);
       break;
 
     case PRIM_RESOLUTION_POINT:
@@ -3833,7 +3838,7 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
       if (isUnresolvedSymExpr(call->baseExpr) &&
           inFn->name == astrSassign &&
           inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
-          (isSyncType(srcType) || isSingleType(srcType)) &&
+          isSyncType(srcType) &&
           targetType->getValType() == srcType) {
 
         // if we are in a compiler-generated assign, rewrite sync/single
@@ -7047,7 +7052,7 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
     actualScalarType = actualType->scalarPromotionType->getValType();
   }
 
-  if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
+  if (isSyncType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
   }
 
@@ -8601,13 +8606,12 @@ void resolveInitVar(CallExpr* call) {
                                      /*for field*/ nullptr);
   }
 
-  bool srcSyncSingle = isSyncType(srcType->getValType()) ||
-                       isSingleType(srcType->getValType());
+  bool srcSync = isSyncType(srcType->getValType());
 
   // This is a workaround to avoid deprecation warnings for sync/single
   // variables within compiler-generated initializers.
   FnSymbol* inFn = call->getFunction();
-  if (srcSyncSingle &&
+  if (srcSync &&
       inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
       (inFn->name == astrInit || inFn->name == astrInitEquals) &&
       targetType->getValType() == srcType->getValType()) {
@@ -8617,11 +8621,11 @@ void resolveInitVar(CallExpr* call) {
     // change
     //   PRIM_INIT_VAR lhsSync, rhsSync
     // to
-    //   PRIM_MOVE lhsSync, chpl__compilerGeneratedCopySyncSingle(rhsSync)
+    //   PRIM_MOVE lhsSync, chpl__compilerGeneratedCopySync(rhsSync)
 
     call->primitive = primitives[PRIM_MOVE];
     srcExpr->remove();
-    CallExpr* clone = new CallExpr("chpl__compilerGeneratedCopySyncSingle",
+    CallExpr* clone = new CallExpr("chpl__compilerGeneratedCopySync",
                                    srcExpr);
     call->insertAtTail(clone);
     resolveExpr(clone);
@@ -8638,7 +8642,7 @@ void resolveInitVar(CallExpr* call) {
   bool isDomain = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN);
   bool isDomainWithoutNew = isDomain &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
-  bool initCopySyncSingle = inferType && srcSyncSingle;
+  bool initCopySyncSingle = inferType && srcSync;
   bool initCopyIter = inferType && srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 
   if (isDomain &&
@@ -9500,7 +9504,11 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
 
   moveSetConstFlagsAndCheck(call, rhs);
 
-  if (gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) {
+  // TODO: the check for chpl_here_alloc_with_allocator is a workaround
+  // since allocators are not fully integrated with gChplHereAlloc
+  if ((gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) ||
+      (rhs->resolvedFunction() &&
+       0 == strcmp("chpl_here_alloc_with_allocator", rhs->resolvedFunction()->name))) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
     Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
@@ -9792,7 +9800,8 @@ static void resolveNew(CallExpr* newExpr) {
   } else {
     const char* name = NULL;
 
-    if (Expr* arg = newExpr->get(1)) {
+    int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+    if (Expr* arg = newExpr->get(idx)) {
       if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
         name = urse->unresolved;
 
@@ -9811,6 +9820,12 @@ static void resolveNew(CallExpr* newExpr) {
     }
   }
 }
+
+
+static void resolveNewWithAllocator(CallExpr* newExpr) {
+  resolveNew(newExpr);
+}
+
 
 static void checkManagerType(Type* t) {
   // Verify that the manager matches expectations
@@ -9992,7 +10007,8 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   //
   //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
   //
-  if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+  int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+  if (CallExpr* partial = toCallExpr(newExpr->get(idx))) {
     SymExpr* typeExpr = toSymExpr(partial->baseExpr);
 
     partial->remove();
@@ -10011,15 +10027,17 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
 static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   SymExpr* retval = NULL;
 
-  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+  int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+
+  if (SymExpr* se = toSymExpr(newExpr->get(idx))) {
     if (se->symbol() != gModuleToken) {
       retval = se;
 
     } else {
-      retval = toSymExpr(newExpr->get(3));
+      retval = toSymExpr(newExpr->get(idx+2));
     }
 
-  } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+  } else if (CallExpr* partial = toCallExpr(newExpr->get(idx))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
       retval = partial->partialTag ? se : NULL;
     }
@@ -12381,7 +12399,6 @@ static bool ensureSerializersExist(AggregateType* at) {
     return createSerializeDeserialize(at);
   }
   else if (! ts->hasFlag(FLAG_GENERIC)                &&
-           ! isSingleType(ts->type)                   &&
            ! isSyncType(ts->type)                     &&
            ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
            ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
@@ -12678,7 +12695,6 @@ static const char* autoCopyFnForType(AggregateType* at) {
       at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
       isRecordWrappedType(at)                == false &&
       isSyncType(at)                         == false &&
-      isSingleType(at)                       == false &&
       at->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
     retval = astr_initCopy;
   }
@@ -12767,7 +12783,6 @@ bool propagateNotPOD(Type* t) {
     } else {
       // Some special rules for special things.
       if (isSyncType(at)                        ||
-          isSingleType(at)                      ||
           at->symbol->hasFlag(FLAG_DOMAIN)      || // may as well check these
           at->symbol->hasFlag(FLAG_ARRAY)       ||
           at->symbol->hasFlag(FLAG_ATOMIC_TYPE) ) {
@@ -12969,11 +12984,8 @@ static void insertReturnTemps() {
 
               } else
               if ((fn->retType->getValType() &&
-                   (isSyncType(fn->retType->getValType()) ||
-                    isSingleType(fn->retType->getValType())))         ||
-
-                  isSyncType(fn->retType)                             ||
-                  isSingleType(fn->retType)                           )
+                   isSyncType(fn->retType->getValType())) ||
+                  isSyncType(fn->retType))
               {
                 CallExpr* sls = new CallExpr(
                     astr_chpl_statementLevelSymbol, tmp);
@@ -14316,8 +14328,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
           auto fn = toFnSymbol(val->defPoint->parentSymbol);
           bool doEmitError = fn && isUserRoutine(fn) &&
                              !val->hasFlag(FLAG_UNSAFE) &&
-                             !at->symbol->hasFlag(FLAG_SYNC) &&
-                             !at->symbol->hasFlag(FLAG_SINGLE);
+                             !at->symbol->hasFlag(FLAG_SYNC);
           if (doEmitError) {
             USR_FATAL_CONT(call, "cannot default initialize '%s' because "
                                  "field '%s' of type '%s' does not have "

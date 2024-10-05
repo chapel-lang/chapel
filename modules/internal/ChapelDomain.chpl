@@ -46,6 +46,9 @@ module ChapelDomain {
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
+  @chpldoc.nodoc
+  config param noSortedWarnings = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -1727,6 +1730,7 @@ module ChapelDomain {
     }
 
     // assumes that data is already initialized
+    // this function is used in Fortran interop
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -1743,6 +1747,31 @@ module ChapelDomain {
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
+    }
+
+    // assumes that the caller has checked:
+    //  * that 'from' and the receiver domain match & have compatible types
+    //  * that the distributions match as well
+    //  * that the 'from array is not unowned
+    //  * that the domain/array implementation supports doiBuildArrayMoving
+    pragma "no copy return"
+    @chpldoc.nodoc
+    proc buildArrayMoving(from) {
+      var x = _value.doiBuildArrayMoving(from);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+
+      // note: 'from' will be deinited here, normally leading to
+      // deleting the array instance. The array implementation needs
+      // to have set anything stolen to 'nil' in doiBuildArrayMoving
+      // and then to take no action on it when deleting.
     }
 
     /*
@@ -2791,11 +2820,23 @@ module ChapelDomain {
     }
 
     // associative array interface
-    /* Yields the domain indices in sorted order. */
+    /*
+      Yields the domain indices in sorted order. This method is only supported
+      on associative domains.
+
+      .. warning::
+
+         It is recommended to use :proc:`Sort.sorted` instead of this method.
+
+    */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      for i in _value.dsiSorted(comparator) {
-        yield i;
-      }
+      if !this.isAssociative() then
+        compilerError("'.sorted()' is only supported on associative domains");
+      if !noSortedWarnings then
+        compilerWarning(
+          "It is recommended to use 'Sort.sorted' instead of this method. ",
+          "Compile with '-snoSortedWarnings' to suppress this warning.");
+      for x in this._value.dsiSorted(comparator) do yield x;
     }
 
     @chpldoc.nodoc
@@ -2865,6 +2906,16 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc autoLocalAccessOffsetCheck(offsets) {
       return _value.dsiAutoLocalAccessOffsetCheck(offsets);
+    }
+
+    @chpldoc.nodoc
+    proc supportsArrayViewElision() param {
+      return _value.dsiSupportsArrayViewElision();
+    }
+
+    @chpldoc.nodoc
+    proc supportsShortArrayTransfer() param {
+      return _value.dsiSupportsShortArrayTransfer();
     }
 
     @chpldoc.nodoc

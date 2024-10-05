@@ -166,7 +166,7 @@ def get_sdk_path(for_gpu, sdk_type='bitcode'):
     gpu_type = get()
 
     # No SDK path if GPU is not being used.
-    if gpu_type == 'cpu':
+    if gpu_type in ('cpu', 'none'):
         return 'none'
 
     # Check vendor-specific environment variable for SDK path
@@ -218,7 +218,10 @@ def get_sdk_path(for_gpu, sdk_type='bitcode'):
 
         return chpl_sdk_path
     elif gpu_type == for_gpu:
-        _reportMissingGpuReq("Can't find {} toolkit.".format(get()))
+        _reportMissingGpuReq(("Can't find {} toolkit. Try setting {} to the " +
+                              "{} installation path.").format(gpu.runtime_impl,
+                                                              gpu.sdk_path_env,
+                                                              gpu.runtime_impl))
         return 'error'
     else:
         return ''

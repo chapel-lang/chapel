@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* The ``OS`` module provides definitions matching operating system interfaces.
+/* Supports features matching operating system interfaces.
 
    This module provides Chapel declarations for the constants, types,
    and functions defined by various operating systems' programmatic
@@ -32,7 +32,7 @@
 
  */
 module OS {
-  /* This module provides definitions matching the POSIX programming interface.
+  /* Support for features matching the POSIX programming interface.
 
      The ``OS.POSIX`` modudle specifically provides POSIX.1-2017.  That standard
      can be found at <https://pubs.opengroup.org/onlinepubs/9699919799/>.

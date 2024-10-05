@@ -638,6 +638,8 @@ static void check_afterInlineFunctions() {
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+         // "_interim" args added in gpuTransforms.cpp have ref types
+         if (! def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
           INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
         }
       }

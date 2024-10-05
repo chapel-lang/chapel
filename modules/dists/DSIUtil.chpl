@@ -568,7 +568,7 @@ proc createWholeDomainForInds(param rank, type idxType, param strides, inds) {
 // Compute the active dimensions of this assignment. For example, LeftDims
 // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
 // a rank change occurred and that the inferredRank should be '1', the
-// LeftActives = (2,), the RightActives = (1,)
+// LeftActives = (1,), the RightActives = (0,)
 proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   param LeftRank  = LeftDims.size;
   param RightRank = RightDims.size;
@@ -647,6 +647,22 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   return {(...rngs)};
 }
 
+// this is an overload for views that are ranges. This will be used by code
+// paths that comes from elided array views. We could consider using this
+// lighterweight implementation as a more general special case for 1D bulk
+// transfers.
+proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
+                             targetView : range(?)) {
+  if srcSlice.rank != 1 then
+    compilerError("bulkCommTranslateDomain: source slice and source domain must have identical rank");
+
+  param strides = chpl_strideUnion(targetView, srcSlice);
+
+  const dense = densify(srcSlice.dim(0), srcView);
+  const rng  = unDensify(dense, targetView);
+
+  return {rng};
+}
 //
 // bulkCommConvertCoordinate() converts
 //   point 'ind' within 'bView'
@@ -683,6 +699,17 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;
+}
+
+// this is a 1D, range-based version of the above. It is used by AVE, which
+// tries to avoid creating domains for views.
+proc bulkCommConvertCoordinate(ind, bView:range(?), aView:range(?))
+{
+  if boundsChecking then
+    assert(bView.contains(ind));
+
+  const result = aView.orderToIndex(bView.indexOrder(ind));
+  return (result,);
 }
 
 record chpl_PrivatizedDistHelper : writeSerializable {

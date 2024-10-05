@@ -1176,7 +1176,8 @@ static void insertFieldAccess(FnSymbol*          method,
   checkIdInsideWithClause(expr, usymExpr);
 
   if (nestDepth > 0) {
-    USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
+    USR_FATAL_CONT(usymExpr,
+                   "Illegal use of identifier '%s' from enclosing type", name);
   }
 
   if (isTypeSymbol(sym) == true) {
@@ -1673,11 +1674,11 @@ static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym) {
     if (isAggregateType(canonicalClassType(ts->type))) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (CallExpr* grandParentCall = toCallExpr(parentCall->parentExpr)) {
-          if (grandParentCall->isPrimitive(PRIM_NEW)) {
+          if (isNewLike(grandParentCall)) {
             return parentCall;
           } else if(callSpecifiesClassKind(grandParentCall)) {
             if (CallExpr* outerCall = toCallExpr(grandParentCall->parentExpr)) {
-              if (outerCall->isPrimitive(PRIM_NEW))
+              if (isNewLike(outerCall))
                 return parentCall;
             }
           }

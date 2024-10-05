@@ -43,16 +43,18 @@ computeAndPrintStuff(Context* context,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns,
                      bool scopeResolveOnly) {
-
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
   // Scope resolve / resolve concrete functions before printing
   if (auto fn = ast->toFunction()) {
     if (scopeResolveOnly) {
       inFn = scopeResolveFunction(context, fn->id());
     } else {
       auto untyped = UntypedFnSignature::get(context, fn);
-      auto typed = typedSignatureInitial(context, untyped);
+
+      auto typed = typedSignatureInitial(rc, untyped);
       if (!typed->needsInstantiation()) {
-        inFn = resolveFunction(context, typed, nullptr);
+        inFn = resolveFunction(rc, typed, nullptr);
       }
     }
   }
@@ -68,7 +70,7 @@ computeAndPrintStuff(Context* context,
       if (candidate) {
         auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {
-          auto fn = resolveFunction(context, sig, r->poiScope());
+          auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }
       }

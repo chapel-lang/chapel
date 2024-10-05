@@ -122,10 +122,10 @@ struct Collector {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
         const TypedFnSignature* sig = result.mostSpecific().only().fn();
-        auto fn = resolveFunction(rv.context(), sig, result.poiScope());
+        auto fn = resolveFunction(rv.rc(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
-        auto untyped = idToAst(rv.context(), sig->id());
+        ResolvedVisitor<Collector> newRV(rv.rc(), nullptr, *this, fn->resolutionById());
+        auto untyped = idToAst(rv.rc()->context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
       }
@@ -195,14 +195,15 @@ static void printErrors(const ErrorGuard& guard) {
   }
 }
 
-static Collector customHelper(std::string program, Context* context, Module* moduleOut = nullptr, bool fail = false) {
+static Collector customHelper(std::string program, ResolutionContext* rc, Module* moduleOut = nullptr, bool fail = false) {
+  Context* context = rc->context();
   ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   Collector pc;
-  ResolvedVisitor<Collector> rv(context, m, pc, rr);
+  ResolvedVisitor<Collector> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   if (debug) {
@@ -221,7 +222,7 @@ static Collector customHelper(std::string program, Context* context, Module* mod
   }
 
   if (!fail) {
-    assert(!guard.realizeErrors());
+    assert(!guard.realizeErrors(/* countWarnings */ false));
   }
 
   return pc;
@@ -230,6 +231,8 @@ static Collector customHelper(std::string program, Context* context, Module* mod
 // helper for running task intent tests
 static void kindHelper(Qualifier kind, const std::string& constructName) {
   Context* context = getNewContext();
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   std::string program;
   program += "var x = 0;\n";
@@ -243,7 +246,7 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
   program += "  var y = x;\n";
   program += "}\n";
 
-  auto col = customHelper(program, context);
+  auto col = customHelper(program, rc);
   const auto intType = IntType::get(context, 0);
 
   // Test shadow variable type is as expected
@@ -307,6 +310,9 @@ static void reduceHelper(const std::string& constructName) {
   assert(constructName == "forall" || constructName == "coforall");
 
   Context* context = getNewContext();
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
   // Very simple test focusing on scope resolution
   std::string program;
   program += R"""(operator +=(ref lhs: int, rhs: int) {
@@ -320,7 +326,7 @@ var x = 0;
   x += 1;
 })""";
 
-  auto col = customHelper(program, context);
+  auto col = customHelper(program, rc);
 
   // Test shadow variable type is as expected
   {

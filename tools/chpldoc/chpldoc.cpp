@@ -36,6 +36,8 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
@@ -292,8 +294,11 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   // any tool, in one go. That will allow us to check for any unrecognized
   // attributes.
   for (auto attr : attrs->children()) {
-    if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
-      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
+    auto name = attr->toAttribute()->name();
+    if (name.startsWith(USTR("chpldoc."))) {
+      if (name == UniqueString::get(gContext, "chpldoc.nodoc")) {
+        // ignore, it's a known attribute
+      } else if (name == UniqueString::get(gContext, "chpldoc.attributeSignature")) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -335,6 +340,27 @@ static bool symbolNameBeginsWithChpl(const Decl* node) {
   return false;
 }
 
+/*
+ Attributes can be documented with the (plain) functions that provide
+ their implementation. This has the advantage of being able to explicitly
+ specify the types of the parameters, and generally use the existing chpldoc
+ functionality in that area. Functions that document attributes are marked
+ with @chpldoc.attributeSignature("attributeName"); check for this attribute
+ on the given node.
+*/
+static UniqueString nameOfAttributeSignature(const AstNode* node) {
+  if (auto attrs = parsing::astToAttributeGroup(gContext, node)) {
+    auto attr = attrs->getAttributeNamed(
+        UniqueString::get(gContext, "chpldoc.attributeSignature"));
+    if (attr && attr->numActuals() == 1) {
+      if (auto name = attr->actual(0)->toStringLiteral()) {
+        return name->value();
+      }
+    }
+  }
+  return UniqueString();
+}
+
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
   if (attrs) {
@@ -344,7 +370,7 @@ static bool isNoDoc(const Decl* e) {
       return true;
     }
   }
-  if (symbolNameBeginsWithChpl(e)) {
+  if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
     // can be used to document chpl_ symbols or otherwise remove the
     // chpl_ prefix from symbols we want documented
@@ -769,7 +795,6 @@ static bool isCalleReservedWord(const AstNode* callee) {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")
        || callee->toIdentifier()->name() == USTR("atomic")))
       return true;
     return false;
@@ -1014,6 +1039,14 @@ struct RstSignatureVisitor {
     return false;
   }
 
+  bool enter(const Interface* i) {
+    os_ << "interface " << i->name().c_str();
+    if (i->isFormalListExplicit() && i->numFormals() > 0) {
+      interpose(i->formals(), ", ", "(", ")");
+    }
+    return false;
+  }
+
   bool enter(const Enum* e) {
     os_ << "enum " << e->name().c_str() << " ";
     interpose(e->enumElements(), ", ", "{ ", " }");
@@ -1098,7 +1131,8 @@ struct RstSignatureVisitor {
     }
 
     // Function Name
-    os_ << kindToString(f->kind());
+    auto attrName = nameOfAttributeSignature(f);
+    os_ << (attrName.isEmpty() ? kindToString(f->kind()) : "attribute");
     os_ << " ";
 
     // storage kind
@@ -1133,6 +1167,8 @@ struct RstSignatureVisitor {
       // Function Name
       os_ << f->name().str();
       os_ << " ";
+    } else if (!attrName.isEmpty()) {
+      os_ << "@" << attrName.str();
     } else {
       // Function Name
       os_ << f->name().str();
@@ -1141,7 +1177,7 @@ struct RstSignatureVisitor {
     // Formals
     int numThisFormal = f->thisFormal() ? 1 : 0;
     int nFormals = f->numFormals() - numThisFormal;
-    if (nFormals == 0 && f->isParenless()) {
+    if (nFormals == 0 && (f->isParenless() || !attrName.isEmpty())) {
       // pass
     } else if (nFormals == 0) {
       os_ << "()";
@@ -1591,6 +1627,14 @@ struct RstResultBuilder {
     return getResult(true);
   }
 
+  owned<RstResult> visit(const Interface* i) {
+    if (isNoDoc(i)) return {};
+    show("interface", i);
+    visitChildren(i);
+    return getResult(true);
+  }
+
+
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
@@ -1610,7 +1654,19 @@ struct RstResultBuilder {
       return {};
     bool doIndent = f->isMethod() && f->isPrimaryMethod();
     if (doIndent) indentDepth_ ++;
-    show(kindToRstString(f->isMethod(), f->kind()), f);
+
+    // Attributes are documented as functions using @chpldoc.attributeSignature
+    // Instead of using "method" or "function" etc. for the sphinx directive
+    // we use "annotation" to indicate that this is an attribute.
+    auto attrName = nameOfAttributeSignature(f);
+    std::string directive;
+    if (attrName.isEmpty()) {
+      directive = kindToRstString(f->isMethod(), f->kind());
+    } else {
+      directive = "annotation";
+    }
+    show(directive, f);
+
     if (doIndent) indentDepth_ --;
     return getResult();
   }
@@ -1973,6 +2029,7 @@ struct CommentVisitor {
   DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
+  DEF_ENTER(Interface, true)
 
 #undef DEF_ENTER
 

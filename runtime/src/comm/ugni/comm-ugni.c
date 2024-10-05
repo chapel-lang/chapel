@@ -4248,7 +4248,7 @@ void rf_handler(gni_cq_entry_t* ev)
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
                                &bundle, sizeof(bundle),
-                               c_sublocid_any, chpl_nullTaskID);
+                               c_sublocid_none, chpl_nullTaskID);
     }
     break;
 

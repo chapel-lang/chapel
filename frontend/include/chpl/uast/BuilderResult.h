@@ -142,6 +142,8 @@ class BuilderResult final {
   // but only for modules & symbols stored in the symbol table
   llvm::DenseMap<ID, std::pair<int,int>> libraryFileSymbols_;
 
+  ID generatedFrom_;
+
   // For use with library files.
   // Returns the module index & symbol index for the symbol
   // containing the passed ID.
@@ -159,10 +161,14 @@ class BuilderResult final {
  public:
   /** Construct an empty BuilderResult */
   BuilderResult();
-  /** Construct a BuilderResult that records a particular file path,
-      and optionally refers to a LibraryFile. */
+  /** Construct a BuilderResult that records a particular file path.
+      Optional arguments include:
+        - a LibraryFile to refer to in place of a file
+        - an ID from which this uAST was generated
+      */
   BuilderResult(UniqueString filePath,
-                const libraries::LibraryFile* lib = nullptr);
+                const libraries::LibraryFile* lib = nullptr,
+                ID generatedFrom = ID());
 
   /** Return the file path this result refers to */
   UniqueString filePath() const {

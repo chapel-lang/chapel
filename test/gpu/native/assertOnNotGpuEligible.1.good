@@ -1,0 +1,3 @@
+assertOnNotGpuEligible.chpl:15: In function 'funcMarkedNotGpuizableThatTriesToGpuize':
+assertOnNotGpuEligible.chpl:17: error: Loop is marked with @gpu.assertEligible but is not eligible for execution on a GPU
+assertOnNotGpuEligible.chpl:15: note: parent function disallows execution on a GPU

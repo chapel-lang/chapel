@@ -230,7 +230,8 @@ struct ReturnTypeInferrer {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
-  Context* context;
+  ResolutionContext* rc;
+  Context* context = rc ? rc->context() : nullptr;
   const Function* fnAstForErr;
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
@@ -242,10 +243,10 @@ struct ReturnTypeInferrer {
   // output
   std::vector<QualifiedType> returnedTypes;
 
-  ReturnTypeInferrer(Context* context,
+  ReturnTypeInferrer(ResolutionContext* rc,
                      const Function* fn,
                      const Type* declaredReturnType)
-    : context(context),
+    : rc(rc),
       fnAstForErr(fn),
       returnIntent(fn->returnIntent()),
       functionKind(fn->kind()),
@@ -291,7 +292,7 @@ struct ReturnTypeInferrer {
 
 void ReturnTypeInferrer::process(const uast::AstNode* symbol,
                                  ResolutionResultByPostorderID& byPostorder) {
-  ResolvedVisitor<ReturnTypeInferrer> rv(context, symbol, *this, byPostorder);
+  ResolvedVisitor<ReturnTypeInferrer> rv(rc, symbol, *this, byPostorder);
   symbol->traverse(rv);
 }
 
@@ -606,7 +607,6 @@ void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
   exitScope(ast);
 }
 
-
 // For a class type construction, returns a BasicClassType
 static const Type* const&
 returnTypeForTypeCtorQuery(Context* context,
@@ -621,7 +621,7 @@ returnTypeForTypeCtorQuery(Context* context,
   // handle type construction
   const AggregateDecl* ad = nullptr;
   if (!untyped->id().isEmpty())
-    if (auto ast = parsing::idToAst(context, untyped->id()))
+    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin()))
       ad = ast->toAggregateDecl();
 
   if (ad) {
@@ -647,13 +647,13 @@ returnTypeForTypeCtorQuery(Context* context,
     if (instantiatedFrom != nullptr) {
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
-        const Decl* formalDecl = untyped->formalDecl(i);
+        auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
         // based on typeConstructorInitialQuery.
         auto useKind = formalType.kind();
         bool hasInitExpression = false;
-        if (auto vd = formalDecl->toVarLikeDecl()) {
+        if (auto vd = field->toVarLikeDecl()) {
           // Substitute with the kind of the underlying field corresponding to
           // the formal. For example, if we substitute in a type for a generic
           // VAR decl, the type we construct will need to be inited with a VAR
@@ -679,7 +679,7 @@ returnTypeForTypeCtorQuery(Context* context,
         } else {
           auto useQt =
               QualifiedType(useKind, formalType.type(), formalType.param());
-          subs.insert({formalDecl->id(), useQt});
+          subs.insert({field->id(), useQt});
         }
       }
     }
@@ -849,6 +849,92 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   return QUERY_END(result);
 }
 
+static bool helpComputeOrderToEnumReturnType(Context* context,
+                                             const TypedFnSignature* sig,
+                                             QualifiedType& result) {
+  auto firstQt = sig->formalType(0);
+  auto secondQt = sig->formalType(1);
+
+  CHPL_ASSERT(secondQt.type() && secondQt.type()->isEnumType());
+  auto kind = QualifiedType::CONST_VAR;
+  const EnumType* et = secondQt.type()->toEnumType();
+  const Type* type = et;
+  const Param* param = nullptr;
+
+  if (firstQt.isParam()) {
+    auto inputParam = firstQt.param();
+    CHPL_ASSERT(inputParam);
+    kind = QualifiedType::PARAM;
+
+    // Use max value of int64 to represent the fact that the ordinal
+    // is invalid (we will run out of enum elements to investigate before
+    // we reach this value).
+    uint64_t whichValue = std::numeric_limits<uint64_t>::max();
+    if (auto intParam = inputParam->toIntParam()) {
+      if (intParam->value() >= 0) {
+        whichValue = intParam->value();
+      }
+    } else if (auto uintParam = inputParam->toUintParam()) {
+      whichValue = uintParam->value();
+    } else {
+      CHPL_ASSERT(false && "param value should've been integral");
+    }
+
+    auto ast =
+      parsing::idToAst(context, et->id())->toEnum();
+    uint64_t counter = 0;
+    for (auto elem : ast->enumElements()) {
+      if (counter == whichValue) {
+        param = Param::getEnumParam(context, elem->id());
+        break;
+      }
+      counter++;
+    }
+
+    if (!param) {
+      context->error(ast, "ordinal value out of range");
+      type = ErroneousType::get(context);
+    }
+  }
+
+  result = QualifiedType(kind, type, param);
+  return true;
+}
+
+static bool helpComputeEnumToOrderReturnType(Context* context,
+                                             const TypedFnSignature* sig,
+                                             QualifiedType& result) {
+  auto firstQt = sig->formalType(0);
+
+  CHPL_ASSERT(firstQt.type() && firstQt.type()->isEnumType());
+  auto kind = QualifiedType::CONST_VAR;
+  const EnumType* et = firstQt.type()->toEnumType();
+  const Type* type = IntType::get(context, 0);
+  const Param* param = nullptr;
+
+  if (firstQt.isParam()) {
+    auto inputParam = firstQt.param()->toEnumParam();
+    CHPL_ASSERT(inputParam);
+    kind = QualifiedType::PARAM;
+
+    auto ast =
+      parsing::idToAst(context, et->id())->toEnum();
+    int counter = 0;
+    for (auto elem : ast->enumElements()) {
+      if (elem->id() == inputParam->value().id) {
+        param = IntParam::get(context, counter);
+        break;
+      }
+      counter++;
+    }
+
+    CHPL_ASSERT(param);
+  }
+
+  result = QualifiedType(kind, type, param);
+  return true;
+}
+
 static bool helpComputeCompilerGeneratedReturnType(Context* context,
                                                    const TypedFnSignature* sig,
                                                    const PoiScope* poiScope,
@@ -929,9 +1015,29 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
     }
       return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
-      auto cpt = sig->formalType(0).type()->toCPtrType();
-      result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+    auto cpt = sig->formalType(0).type()->toCPtrType();
+    result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isEnumType()) {
+    auto enumType = sig->formalType(0).type()->toEnumType();
+    if (untyped->name() == "size") {
+      auto ast = parsing::idToAst(context, enumType->id())->toEnum();
+      CHPL_ASSERT(ast);
+      int numElts = ast->numElements();
+      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                             IntParam::get(context, numElts));
       return true;
+    }
+    CHPL_ASSERT(false && "unhandled compiler-generated enum method");
+    return true;
+  } else if (!untyped->isMethod()) {
+    if (untyped->name() == "chpl__orderToEnum") {
+      return helpComputeOrderToEnumReturnType(context, sig, result);
+    } else if (untyped->name() == "chpl__enumToOrder") {
+      return helpComputeEnumToOrderReturnType(context, sig, result);
+    }
+    CHPL_ASSERT(false && "unhandled compiler-generated function");
+    return true;
   } else {
     CHPL_ASSERT(false && "unhandled compiler-generated record method");
     return true;
@@ -940,10 +1046,11 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
 
 // returns 'true' if it was a case handled here & sets 'result' in that case
 // returns 'false' if it needs to be computed with a ResolvedVisitor traversal
-static bool helpComputeReturnType(Context* context,
+static bool helpComputeReturnType(ResolutionContext* rc,
                                   const TypedFnSignature* sig,
                                   const PoiScope* poiScope,
                                   QualifiedType& result) {
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
 
   // TODO: Optimize the order of this case and the isCompilerGenerated case
@@ -968,7 +1075,7 @@ static bool helpComputeReturnType(Context* context,
 
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+      auto visitor = Resolver::createForFunction(rc, fn, poiScope, sig,
                                                  resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
@@ -1030,16 +1137,16 @@ static bool helpComputeReturnType(Context* context,
   return false;
 }
 
-const QualifiedType& returnType(Context* context,
-                                const TypedFnSignature* sig,
-                                const PoiScope* poiScope) {
-  QUERY_BEGIN(returnType, context, sig, poiScope);
+static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
+                                            const TypedFnSignature* sig,
+                                            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
 
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-
   QualifiedType result;
 
-  bool computed = helpComputeReturnType(context, sig, poiScope, result);
+  bool computed = helpComputeReturnType(rc, sig, poiScope, result);
   if (!computed) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
@@ -1048,26 +1155,38 @@ const QualifiedType& returnType(Context* context,
     // resolve the function body
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
-    if (auto rFn = resolveFunction(context, sig, poiScope)) {
+    if (auto rFn = resolveFunction(rc, sig, poiScope)) {
       result = rFn->returnType();
     }
   }
 
-  return QUERY_END(result);
+  if (sig->isIterator()) {
+    result = QualifiedType(result.kind(),
+                           FnIteratorType::get(context, result, sig));
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+QualifiedType returnType(ResolutionContext* rc,
+                         const TypedFnSignature* sig,
+                         const PoiScope* poiScope) {
+  return returnTypeQuery(rc, sig, poiScope);
 }
 
 static const TypedFnSignature* const&
-inferOutFormalsQuery(Context* context,
+inferOutFormalsQuery(ResolutionContext* rc,
                      const TypedFnSignature* sig,
                      const PoiScope* instantiationPoiScope) {
-  QUERY_BEGIN(inferOutFormalsQuery, context, sig, instantiationPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(inferOutFormalsQuery, rc, sig,
+                              instantiationPoiScope);
 
+  Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-
   std::vector<types::QualifiedType> formalTypes;
 
   // resolve the function body
-  if (auto rFn = resolveFunction(context, sig, instantiationPoiScope)) {
+  if (auto rFn = resolveFunction(rc, sig, instantiationPoiScope)) {
     const ResolutionResultByPostorderID& rr = rFn->resolutionById();
 
     int numFormals = sig->numFormals();
@@ -1086,10 +1205,10 @@ inferOutFormalsQuery(Context* context,
                                          std::move(formalTypes),
                                          sig);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-const TypedFnSignature* inferOutFormals(Context* context,
+const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* instantiationPoiScope) {
   if (sig == nullptr) {
@@ -1110,16 +1229,15 @@ const TypedFnSignature* inferOutFormals(Context* context,
   // also just return 'sig' if the function needs instantiation;
   // in that case, we can't infer the 'out' formals by resolving the body.
   if (anyGenericOutFormals && !sig->needsInstantiation()) {
-    return inferOutFormalsQuery(context, sig, instantiationPoiScope);
+    return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;
   }
 }
 
 void computeReturnType(Resolver& resolver) {
-
   QualifiedType returnType;
-  bool computed = helpComputeReturnType(resolver.context,
+  bool computed = helpComputeReturnType(resolver.rc,
                                         resolver.typedSignature,
                                         resolver.poiScope,
                                         returnType);
@@ -1138,7 +1256,7 @@ void computeReturnType(Resolver& resolver) {
 
     // infer the return type
     if (fn->linkage() != Decl::EXTERN) {
-      auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+      auto v = ReturnTypeInferrer(resolver.rc, fn, declaredReturnType);
       v.process(fn->body(), resolver.byPostorder);
       resolver.returnType = v.returnedType();
     }

@@ -58,6 +58,20 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
 
+    # 'else if' statements do not have proper locations
+    #
+    # https://github.com/chapel-lang/chapel/issues/25256
+    elif isinstance(node, Conditional):
+        parent = node.parent()
+        grandparent = parent.parent() if parent else None
+        if (
+            isinstance(parent, Block)
+            and parent.block_style() == "implicit"
+            and grandparent
+            and isinstance(grandparent, Conditional)
+        ):
+            return True
+
     return False
 
 
@@ -265,7 +279,7 @@ def register_rules(driver: LintDriver):
 
         # Now, we should warn: there's a node in a conditional or
         # if/else, it has parentheses at the top level, but it doesn't need them.
-        return BasicRuleResult(node, data=subject)
+        return BasicRuleResult(subject, data=subject)
 
     @driver.fixit(ControlFlowParentheses)
     def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
@@ -275,7 +289,7 @@ def register_rules(driver: LintDriver):
         paren_loc = subject.parenth_location()
         assert paren_loc
 
-        # If parentheeses span multiple lines, don't provide a fixit,
+        # If parentheses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
         end_line, end_col = paren_loc.end()
@@ -572,7 +586,7 @@ def register_rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
-    @driver.advanced_rule(default=False)
+    @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
         Warn for unused formals in functions.
@@ -604,6 +618,84 @@ def register_rules(driver: LintDriver):
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
             yield AdvancedRuleResult(formals[unused], anchor)
+
+    @driver.advanced_rule
+    def UnusedTaskIntent(context: Context, root: AstNode):
+        """
+        Warn for unused task intents in functions.
+        """
+        if isinstance(root, Comment):
+            return
+
+        intents = dict()
+        uses = set()
+
+        for intent, _ in chapel.each_matching(
+            root, set([TaskVar, ReduceIntent])
+        ):
+            # task private variables may have side effects,
+            # so we don't want to warn on them
+            if isinstance(intent, TaskVar):
+                if intent.intent() == "var":
+                    continue
+                if intent.intent() == "<const-var>" and (
+                    intent.type_expression() is not None
+                    or intent.init_expression() is not None
+                ):
+                    continue
+            intents[intent.unique_id()] = intent
+
+        for use, _ in chapel.each_matching(root, Identifier):
+            refersto = use.to_node()
+            if refersto:
+                uses.add(refersto.unique_id())
+
+        for unused in intents.keys() - uses:
+            taskvar = intents[unused]
+            with_clause = taskvar.parent()
+            task_block = with_clause.parent()
+
+            # only loops can be anchors for attributes
+            anchor = None
+            if isinstance(task_block, chapel.Loop):
+                anchor = task_block
+            yield AdvancedRuleResult(
+                taskvar, anchor, data=(with_clause, task_block)
+            )
+
+    @driver.fixit(UnusedTaskIntent)
+    def RemoveTaskIntent(context: Context, result: AdvancedRuleResult):
+        """
+        Remove the unused task intent from the function.
+        """
+        assert isinstance(result.data, tuple)
+        with_clause, task_block = result.data
+
+        fixit = None
+        # if the with clause only has one expr, remove the entire with clause
+        if len(list(with_clause.exprs())) == 1:
+            with_loc = with_clause.location()
+            # header_loc is the location of the block header without the `with`
+            # e.g. `forall i in 1..10`, `begin`, `cobegin`
+            header_loc = (
+                task_block.header_location()
+                if isinstance(task_block, Loop)
+                else task_block.block_header()
+            )
+            if header_loc is not None:
+                start = header_loc.end()
+                end = with_loc.end()
+            else:
+                start = with_loc.start()
+                end = with_loc.end()
+
+            fixit = Fixit.build(Edit(with_loc.path(), start, end, ""))
+
+        else:
+            # for now, locations are messy enough that we can't easily cleanly
+            # remove the taskvar
+            pass
+        return [fixit] if fixit else []
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
@@ -813,7 +905,13 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                yield child
+                # only loops and NamedDecls can be anchors for indentation
+                anchor = (
+                    parent_for_indentation
+                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
+                    else None
+                )
+                yield AdvancedRuleResult(child, anchor=anchor)
 
             prev_depth = depth
             prev = child

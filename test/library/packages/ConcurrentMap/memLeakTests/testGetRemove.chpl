@@ -1,1 +1,0 @@
-../testGetRemove.chpl

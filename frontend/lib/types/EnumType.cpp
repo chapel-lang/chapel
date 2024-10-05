@@ -18,8 +18,10 @@
  */
 #include "chpl/types/EnumType.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/Enum.h"
+#include "chpl/uast/EnumElement.h"
 
 namespace chpl {
 namespace types {
@@ -78,7 +80,7 @@ getParamConstantsMapQuery(Context* context, const EnumType* et) {
   auto ast = parsing::idToAst(context, et->id());
   if (auto e = ast->toEnum()) {
     for (auto elem : e->enumElements()) {
-      auto param = EnumParam::get(context, elem->id());
+      auto param = Param::getEnumParam(context, elem->id());
       auto k = UniqueString::get(context, elem->name().str());
       QualifiedType v(QualifiedType::PARAM, et, param);
       ret.insert({std::move(k), std::move(v)});

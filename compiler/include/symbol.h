@@ -671,8 +671,8 @@ public:
   chpl::ID symId;
   const chpl::resolution::TypedFnSignature* sig;
 
-  TemporaryConversionSymbol(chpl::ID symId);
-  TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+  explicit TemporaryConversionSymbol(chpl::ID symId);
+  explicit TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
 
   void  verify()                                          override;
   void  accept(AstVisitor* visitor)                       override;
@@ -940,7 +940,6 @@ extern VarSymbol *gUninstantiated;
 extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
-extern Symbol *gSingleVarAuxFields;
 
 extern FnSymbol* chplUserMain;
 

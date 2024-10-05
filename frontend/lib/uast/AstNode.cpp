@@ -660,6 +660,64 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
   return ret;
 }
 
+owned<AstNode> AstNode::copy() const {
+  switch (this->tag()) {
+    #define CASE_LEAF(NAME) \
+      case asttags::NAME: \
+      { \
+        const NAME* casted = (const NAME*) this; \
+        auto ret = toOwned(new NAME(*casted)); \
+        ret->setID(ID()); \
+        return ret; \
+        break; \
+      }
+
+    #define CASE_NODE(NAME) \
+      case asttags::NAME: \
+      { \
+        const NAME* casted = (const NAME*) this; \
+        auto ret = toOwned(new NAME(*casted)); \
+        ret->setID(ID()); \
+        for (auto& child : ret->children_) { \
+          child = child->copy(); \
+        } \
+        return ret; \
+        break; \
+      }
+
+    #define CASE_OTHER(NAME) \
+      case asttags::NAME: \
+      { \
+        CHPL_ASSERT(false && "this code should never be run"); \
+        break; \
+      }
+
+    #define AST_NODE(NAME) CASE_NODE(NAME)
+    #define AST_LEAF(NAME) CASE_LEAF(NAME)
+    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+
+    // Apply the above macros to uast-classes-list.h
+    // to fill in the cases
+    #include "chpl/uast/uast-classes-list.h"
+    // and also for NUM_AST_TAGS
+    CASE_OTHER(NUM_AST_TAGS)
+    CASE_OTHER(AST_TAG_UNKNOWN)
+
+    // clear the macros
+    #undef AST_NODE
+    #undef AST_LEAF
+    #undef AST_BEGIN_SUBCLASSES
+    #undef AST_END_SUBCLASSES
+    #undef CASE_LEAF
+    #undef CASE_NODE
+    #undef CASE_OTHER
+  }
+
+  owned<AstNode> ret;
+  return ret;
+}
+
 IMPLEMENT_DUMP(AstNode);
 
 } // end namespace uast

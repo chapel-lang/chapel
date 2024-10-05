@@ -201,6 +201,15 @@ GPU_CUB_WRAP(DECL_ONE_SORT, keys);
 
 #undef DECL_ONE_SORT
 
+#else // HAS_GPU_LOCALE
+
+// Provide a fallback for the chpl_assert_on_gpu function for non-GPU locales.
+// This works exactly the same as the standard one.
+
+static inline void chpl_assert_on_gpu(int32_t ln, int32_t fn) {
+  chpl_error("assertOnGpu() failed", ln, fn);
+}
+
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

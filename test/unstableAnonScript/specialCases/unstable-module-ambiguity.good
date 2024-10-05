@@ -1,0 +1,2 @@
+Hey, if you're modifying the output of this test, maybe it's time to remove this special case from the script?
+1 instance of "warning: ambiguous module source file; which module is chosen in this case is unstable"

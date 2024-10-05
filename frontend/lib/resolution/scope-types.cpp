@@ -19,14 +19,58 @@
 
 #include "chpl/resolution/scope-types.h"
 
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/NamedDecl.h"
 
 #include "scope-help.h"
 
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/Config/llvm-config.h"
+
 namespace chpl {
 namespace resolution {
 
+IdAndFlags::IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
+                       bool isParenfulFunction, bool isMethod,
+                       bool isModule, bool isType)
+  : id_(std::move(id)) {
+
+  // setup the flags
+  Flags flags = 0;
+  if (isPublic) {
+    flags |= PUBLIC;
+  } else {
+    flags |= NOT_PUBLIC;
+  }
+  if (isMethodOrField) {
+    flags |= METHOD_FIELD;
+  } else {
+    flags |= NOT_METHOD_FIELD;
+  }
+  if (isParenfulFunction) {
+    flags |= PARENFUL_FUNCTION;
+  } else {
+    flags |= NOT_PARENFUL_FUNCTION;
+  }
+  if (isMethod) {
+    flags |= METHOD;
+  } else {
+    flags |= NOT_METHOD;
+  }
+  if (isModule) {
+    flags |= MODULE;
+  } else {
+    flags |= NOT_MODULE;
+  }
+  if (isType) {
+    flags |= TYPE;
+  } else {
+    flags |= NOT_TYPE;
+  }
+
+  flags_ = flags;
+}
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
@@ -42,7 +86,20 @@ std::string IdAndFlags::flagsToString(Flags flags) {
   if ((flags & METHOD) != 0)     ret += "method ";
   if ((flags & NOT_METHOD) != 0) ret += "!method ";
 
+  if ((flags & MODULE) != 0)     ret += "module ";
+  if ((flags & NOT_MODULE) != 0) ret += "!module ";
+
+  if ((flags & TYPE) != 0)     ret += "type ";
+  if ((flags & NOT_TYPE) != 0) ret += "!type ";
   return ret;
+}
+
+void IdAndFlags::stringify(std::ostream& ss,
+                           chpl::StringifyKind stringKind) const {
+  id_.stringify(ss, stringKind);
+  ss << "[";
+  ss << flagsToString(flags_);
+  ss << "]";
 }
 
 using Flags = IdAndFlags::Flags;
@@ -142,11 +199,49 @@ void FlagSet::mark(Context* context) const {
   // nothing, because flags don't need to be marked.
 }
 
+bool
+OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
+                                IdAndFlags::Flags filterFlags,
+                                const IdAndFlags::FlagSet& excludeFlagSet) const
+{
+  const OwnedIdsWithName& ownedIds = *this;
+
+  // Are all of the filter flags present in flagsOr?
+  // If not, it is not possible for this to match.
+  if ((ownedIds.flagsOr_ & filterFlags) != filterFlags) {
+    return false;
+  }
+
+  const IdAndFlags* beginIds = nullptr;
+  const IdAndFlags* endIds = nullptr;
+  if (ownedIds.moreIdvs_ == nullptr) {
+    beginIds = &ownedIds.idv_;
+    endIds = beginIds + 1;
+  } else {
+    const IdAndFlags* last = nullptr;
+    beginIds = &ownedIds.moreIdvs_->front();
+    last = &ownedIds.moreIdvs_->back();
+    endIds = last + 1;
+  }
+
+  bool anyAppended = false;
+  for (auto cur = beginIds; cur != endIds; ++cur) {
+    if (cur->matchesFilter(filterFlags, excludeFlagSet)) {
+      dst.idvs_.push_back(*cur);
+      anyAppended = true;
+    }
+  }
+
+  return anyAppended;
+
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
     for (const auto& elt : *ptr) {
       elt.id_.stringify(ss, stringKind);
+      ss << " ";
     }
   } else {
     if (!idv_.id_.isEmpty()) {
@@ -155,95 +250,77 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
-                         const IdAndFlags::FlagSet& excludeFlagSet) const {
-  // Are all of the filter flags present in flagsOr?
-  // If not, it is not possible for this to match.
-  if ((flagsOr_ & filterFlags) != filterFlags) {
-    return chpl::empty;
-  }
+void MatchingIdsWithName::removeDuplicateIds() {
+  std::unordered_set<IdAndFlags> s;
 
-  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
-  }
-  // The first ID isn't visible; are others?
-  if (moreIdvs_.get() == nullptr) {
-    return chpl::empty;
-  }
-
-  // Are all of the filter flags present in flagsAnd?
-  // And, if excludeFlags is present, some flag in it is not present in flagsOr?
-  // If so, return the borrow
-  if ((flagsAnd_ & filterFlags) == filterFlags &&
-      excludeFlagSet.noneMatch(flagsOr_)) {
-    // filter does not rule out anything in the OwnedIds,
-    // so we can return a match.
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
-  }
-
-  // Otherwise, use a loop to decide if we can borrow
-  for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
-      continue;
-
-    // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlagSet);
-  }
-
-  // No ID was visible, so we can't borrow.
-  return chpl::empty;
-}
-
-int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
-                                         IdAndFlags::Flags flagsOr) {
-  if (moreIdvs_ == nullptr) {
-    return 1;
-  }
-
-  // if the current filter is a subset of flagsAnd, then all of the
-  // found symbols will included in this borrowedIds, so we don't have
-  // to consider them individually.
-  if ((flagsAnd & filterFlags_) == filterFlags_ &&
-      excludeFlagSet_.noneMatch(flagsOr)) {
-    // all of the found symbols will match
-    return moreIdvs_->size();
-  }
-
-  // Otherwise, consider the individual IDs to count those that are included.
-  int count = 0;
-  for (const auto& idv : *moreIdvs_) {
-    if (isIdVisible(idv)) {
-      count += 1;
-    }
-  }
-  return count;
-}
-
-bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
-  if (moreIdvs_ == nullptr) {
-    if (isIdVisible(idv_)) {
-      return idv_.isMethodOrField();
-    }
-  }
-
-  for (const auto& idv : *moreIdvs_) {
-    if (isIdVisible(idv)) {
-      if (!idv.isMethodOrField()) {
-        return false;
+  // remove duplicate IDs in the idvs_ vector
+  size_t end = idvs_.size();
+  size_t cur = 0; // the position to fill in
+  for (size_t i = 0; i < end; i++) {
+    auto pair = s.insert(idvs_[i]);
+    if (pair.second == true) {
+      // It was inserted, so it was unique.
+      // Include it in the result
+      // by storing it into the element 'cur'
+      if (i != cur) {
+        idvs_[cur] = idvs_[i];
       }
+      cur++;
+    }
+  }
+
+  if (cur != end) {
+#if LLVM_VERSION_MAJOR >= 14
+    idvs_.truncate(cur);
+#else
+    idvs_.resize(cur);
+#endif
+  }
+}
+
+void MatchingIdsWithName::truncate(int sz) {
+  CHPL_ASSERT(0 <= sz && sz <= (int) idvs_.size());
+#if LLVM_VERSION_MAJOR >= 14
+  idvs_.truncate(sz);
+#else
+  idvs_.resize(sz);
+#endif
+
+}
+
+void MatchingIdsWithName::clear() {
+  idvs_.clear();
+}
+
+bool MatchingIdsWithName::containsOnlyMethodsOrFields() const {
+  for (const auto& idv : idvs_) {
+    if (!idv.isMethodOrField()) {
+      return false;
     }
   }
 
   return true;
 }
 
-void BorrowedIdsWithName::stringify(std::ostream& ss,
+void MatchingIdsWithName::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   for (const auto& elt : *this) {
     elt.stringify(ss, stringKind);
   }
 }
+
+bool lookupInDeclMap(const DeclMap& declared,
+                     UniqueString name,
+                     MatchingIdsWithName& result,
+                     IdAndFlags::Flags filterFlags,
+                     const IdAndFlags::FlagSet& excludeFlags) {
+  auto search = declared.find(name);
+  if (search != declared.end()) {
+    return search->second.gatherMatches(result, filterFlags, excludeFlags);
+  }
+  return false;
+}
+
 
 Scope::Scope(Context* context,
              const uast::AstNode* ast, const Scope* parentScope,
@@ -280,17 +357,20 @@ Scope::Scope(Context* context,
   flags_ = flags;
 }
 
-void Scope::addBuiltin(UniqueString name) {
+void Scope::addBuiltinVar(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name,
-                    OwnedIdsWithName(ID(),
-                                     uast::Decl::PUBLIC,
-                                     /*isField*/ false,
-                                     /*isMethod*/ false,
-                                     /*isParenfulFunction*/ false));
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinVar()));
 }
+
+void Scope::addBuiltinType(UniqueString name) {
+  // Just refer to empty ID since builtin type declarations don't
+  // actually exist in the AST.
+  // The resolver knows that the empty ID means a builtin thing.
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinType()));
+}
+
 
 const Scope* Scope::moduleScope() const {
   const Scope* cur;
@@ -306,23 +386,6 @@ const Scope* Scope::parentModuleScope() const {
   auto modScope = this->moduleScope();
   if (auto ps = modScope->parentScope()) return ps->moduleScope();
   return nullptr;
-}
-
-bool Scope::lookupInScope(UniqueString name,
-                          std::vector<BorrowedIdsWithName>& result,
-                          IdAndFlags::Flags filterFlags,
-                          const IdAndFlags::FlagSet& excludeFlags) const {
-  auto search = declared_.find(name);
-  if (search != declared_.end()) {
-    // There might not be any IDs that are visible to us, so borrow returns
-    // an optional list.
-    auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
-    if (borrowedIds) {
-      result.push_back(std::move(*borrowedIds));
-      return true;
-    }
-  }
-  return false;
 }
 
 bool Scope::contains(UniqueString name) const {
@@ -354,12 +417,30 @@ void Scope::collectNames(std::set<UniqueString>& namesDefined,
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "Scope ";
-  ss << tagToString(tag());
-  ss << " kind=";
+  ss << tagToString(tag()) << " ";
   id().stringify(ss, stringKind);
-  ss << " numDeclared=";
-  ss << std::to_string(numDeclared());
+
+  if (stringKind != StringifyKind::DEBUG_SUMMARY) {
+    ss << " numDeclared=";
+    ss << std::to_string(numDeclared());
+  }
 }
+
+bool VisibilitySymbols::mightHaveName(UniqueString name) const {
+  UniqueString unused;
+
+  switch (kind_) {
+    case SYMBOL_ONLY:
+    case ONLY_CONTENTS:
+      return lookupName(name, unused);
+    case ALL_CONTENTS:
+      return true;
+    case CONTENTS_EXCEPT:
+      return !lookupName(name, unused);
+  }
+  return false;
+}
+
 
 bool VisibilitySymbols::lookupName(UniqueString name,
                                    UniqueString &declared) const {
@@ -455,13 +536,32 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
   }
 }
 
+void ModulePublicSymbols::stringify(std::ostream& ss,
+                                    chpl::StringifyKind stringKind) const {
+  ss << "ModulePublicSymbols {";
+  for (const auto& pair: syms_) {
+    ss << pair.first.str() << " ";
+    pair.second.stringify(ss, stringKind);
+    ss << "\n";
+  }
+  ss << "}\n";
+}
+
+MethodLookupHelper::~MethodLookupHelper() { }
+
+ReceiverScopeHelper::~ReceiverScopeHelper() { }
+
+
+IMPLEMENT_DUMP(IdAndFlags);
 IMPLEMENT_DUMP(OwnedIdsWithName);
-IMPLEMENT_DUMP(BorrowedIdsWithName);
+IMPLEMENT_DUMP(MatchingIdsWithName);
 IMPLEMENT_DUMP(Scope);
 IMPLEMENT_DUMP(VisibilitySymbols);
 IMPLEMENT_DUMP(ResolvedVisibilityScope);
 IMPLEMENT_DUMP(PoiScope);
 IMPLEMENT_DUMP(InnermostMatch);
+IMPLEMENT_DUMP(ModulePublicSymbols);
+
 
 } // end namespace resolution
 } // end namespace chpl

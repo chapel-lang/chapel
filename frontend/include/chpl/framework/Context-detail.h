@@ -151,25 +151,24 @@ struct QueryMapArgTupleEqual final {
 };
 
 // define a way to debug-print out a tuple
-void queryArgsPrintSep();
+void queryArgsPrintSep(std::ostream& s);
 
 template<typename T>
-static void queryArgsPrintOne(const T& v) {
+static void queryArgsPrintOne(std::ostream& s, const T& v) {
   stringify<T> tString;
-  std::ostringstream ss;
-  tString(ss, chpl::StringifyKind::DEBUG_SUMMARY, v);
-  printf("%s", ss.str().c_str() );
+  tString(s, chpl::StringifyKind::DEBUG_SUMMARY, v);
 }
 
 
 template<typename TUP, size_t... I>
-static inline void queryArgsPrintImpl(const TUP& tuple,
+static inline void queryArgsPrintImpl(std::ostream& s,
+                                      const TUP& tuple,
                                       std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
-  auto print = [](bool printsep, const auto& elem) {
+  auto print = [](std::ostream& s, bool printsep, const auto& elem) {
       if(printsep)
-        queryArgsPrintSep();
-      queryArgsPrintOne(elem);
+        queryArgsPrintSep(s);
+      queryArgsPrintOne(s, elem);
   };
 
   // TODO: C++17 comma fold expression
@@ -179,9 +178,17 @@ static inline void queryArgsPrintImpl(const TUP& tuple,
   // This prints the elements in order, with a separator in-between.
   // The comma (, 0) is used to initialize a dummy initializer_list.
   // The compiler optimizes away the dummy variable and list of 0s.
-  auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
+  auto dummy = { (print(s, I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
 }
+
+template<typename... Ts>
+void queryArgsPrint(std::ostream& s, const std::tuple<Ts...>& tuple) {
+  queryArgsPrintImpl(s, tuple, std::index_sequence_for<Ts...>{});
+}
+static inline void queryArgsPrint(std::ostream& s, const std::tuple<>& tuple) {
+}
+
 
 // taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
 // when the queryArgsToStringsImpl is dropped we can remove these too
@@ -219,13 +226,6 @@ auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   // std::ostringstream ss;
   // stringifier(ss, chpl::StringifyKind::DEBUG_SUMMARY, tuple);
   // return ss.str();
-}
-
-template<typename... Ts>
-void queryArgsPrint(const std::tuple<Ts...>& tuple) {
-  queryArgsPrintImpl(tuple, std::index_sequence_for<Ts...>{});
-}
-static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
 // Performance: this struct only contains a pointer and an additional bit
@@ -266,6 +266,13 @@ class QueryMapResultBase {
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
+  // Whether or not any errors were produced by this query or its dependencies.
+  // This is useful to short-circuit collecting errors (emitted or not)
+  // when they are being tracked and stored in a list.
+  //
+  // This is not too strongly connected to emittedErrors (which tracks whether
+  // errors --- if any --- were shown to the user for this query result only)
+  mutable bool errorsPresentInSelfOrDependencies = false;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
@@ -274,6 +281,7 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool emittedErrors,
+                     bool errorsPresentInSelfOrDependencies,
                      std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
@@ -294,18 +302,20 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
                  bool emittedErrors,
+                 bool errorsPresentInSelfOrDependencies,
                  std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
     : QueryMapResultBase(lastChecked, lastChanged, emittedErrors,
+                         errorsPresentInSelfOrDependencies,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
@@ -434,11 +444,16 @@ struct QueryTimingStopwatch {
   typename Clock::time_point start_;
 
   QueryTimingStopwatch(bool enabled, F onExit)
-      : onExit_(onExit) {
+      : onExit_(std::move(onExit)) {
     if (enabled) {
       start_ = Clock::now();
     }
   }
+
+  QueryTimingStopwatch(QueryTimingStopwatch&& rhs) = default;
+  QueryTimingStopwatch(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(QueryTimingStopwatch&& rhs) = default;
 
   QueryTimingDuration elapsed() {
     auto stop = Clock::now();
@@ -451,7 +466,7 @@ struct QueryTimingStopwatch {
 // Helper function to sort out the templates over lambda's
 template <typename F> QueryTimingStopwatch<F>
 makeQueryTimingStopwatch(bool enabled, F onExit) {
-  return QueryTimingStopwatch<F>(enabled, onExit);
+  return QueryTimingStopwatch<F>(enabled, std::move(onExit));
 }
 
 inline auto

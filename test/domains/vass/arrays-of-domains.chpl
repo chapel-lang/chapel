@@ -43,4 +43,4 @@ var AAB = makeDomain(2, rr);
 writeln("AAB.domain ", sorted(AAB.domain));
 writeln("AAB = ", sorted(AAB, new AAcomparator()));
 
-record AAcomparator { proc key(a) do return a.size; }
+record AAcomparator: keyComparator { proc key(a) do return a.size; }

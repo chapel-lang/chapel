@@ -1326,6 +1326,7 @@ private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+private extern proc qio_channel_start_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
@@ -4951,10 +4952,6 @@ inline proc fileWriter.unlock() {
   }
 }
 
-@chpldoc.nodoc
-@deprecated("'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release")
-config param fileOffsetWithoutLocking = false;
-
 /*
    Return the current offset of a :record:`fileReader`.
 
@@ -6972,23 +6969,112 @@ proc fileWriter.styleElement(element:int):int {
   Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
-  Only serial iteration is supported. This iterator will halt on internal
-  system errors.
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines() with (+ reduce sum) {
+      sum += line:int
+    }
 
   .. warning::
 
-    This iterator executes on the current locale. This may impact multilocale
-    performance if the current locale is not the same locale on which the
-    fileReader was created.
+    This iterator executes on the current locale. This may impact performance if
+    the current locale is not the same locale on which the fileReader was created.
 
-  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. Defaults to false
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
   :yields: lines from the fileReader, by default with a trailing ``\n``
 
- */
-iter fileReader.lines(stripNewline = false) {
-
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
 
+/*
+  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` using
+  multiple locales - the fileReader lock will be held while iterating over the lines.
+
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
+      sum += line:int
+    }
+
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    This procedure does not support reading from a memory-file (e.g.,
+    files opened with :proc:`openMemFile`)
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg targetLocales: The locales on which to read the lines (parallel
+                      iteration only)
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
+  :yields: lines from the fileReader, by default with a trailing ``\n``
+
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string,
+  targetLocales: [] locale
+): t
+  where t == string || t == bytes
+{
+  try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
+
+@chpldoc.nodoc
+iter fileReader._lines_serial(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   // Save iostyleInternal
   const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
@@ -7001,7 +7087,7 @@ iter fileReader.lines(stripNewline = false) {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, locking, deserializerType, this);
+  var itemReader = new itemReaderInternal(t, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -7014,8 +7100,147 @@ iter fileReader.lines(stripNewline = false) {
 
   // Set the iostyle back to original state
   this._set_styleInternal(saved_style);
+}
 
-  this.unlock();
+// single locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..min(myEnd, try! f.size),
+          nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                              else here.maxTaskPar;
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'nTasks' chunks
+      const byteOffsets = findFileChunks(f, nTasks, myBounds);
+
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! f.reader(region=taskBounds);
+
+        var line: t;
+        while (try! r.readLine(line, stripNewline=stripNewline)) do
+          yield line;
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+// multi-locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string,
+  targetLocales: [?tld] locale
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..min(myEnd, try! f.size),
+          fpath = try! f.path;
+
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'targetLocales.size' chunks
+      const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
+      coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
+        const locBounds = byteOffsets[lid]..byteOffsets[lid+1];
+
+        // if byteOffsets looks like [0, 10, 10, 14, 21], then don't try to read 10..10 (locale 1)
+        if locBounds.size > 1 {
+          const locFile = try! open(fpath, ioMode.r),
+                nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                    else here.maxTaskPar;
+          try {
+            // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
+            const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
+            coforall tid in 0..<nTasks {
+              const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                    r = try! locFile.reader(region=taskBounds);
+
+              if taskBounds.size > 0 {
+                var line: t;
+                while (try! r.readLine(line, stripNewline=stripNewline)) do
+                  yield line;
+              }
+            }
+          } catch {
+            // fall back to serial iteration for this locale if 'findFileChunks' fails
+            for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
+          }
+        }
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+/*
+  Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+  roughly equally sized chunks, where each byte offset comes immidiately after
+  a newline.
+
+  :arg f: the file to search
+  :arg n: the number of chunks to find
+  :arg bounds: a range of byte offsets to break into chunks
+
+  :returns: a length ``n+1`` array of byte offsets (the first offset is
+            ``bounds.low`` and the last is ``bounds.high``)
+
+  :throws: if a valid byte offset cannot be found for one or more chunks
+*/
+@chpldoc.nodoc
+private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
+  const nDataBytes = bounds.high - bounds.low,
+        approxBytesPerChunk = nDataBytes / n;
+
+  var chunkOffsets: [0..n] int;
+  chunkOffsets[0] = bounds.low;
+  chunkOffsets[n] = bounds.high;
+
+  forall i in 1..<n with (ref chunkOffsets) {
+    const estOffset = bounds.low + i * approxBytesPerChunk,
+          r = f.reader(region=estOffset..);
+
+    try {
+      r.advanceThroughNewline(); // advance past the next newline
+    } catch e {
+      // there wasn't an offset in this chunk
+      throw new Error(
+        "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+        ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+      );
+    }
+    chunkOffsets[i] = r.offset(); // record the offset for this chunk
+  }
+
+  return chunkOffsets;
 }
 
 public use ChapelIOStringifyHelper;
@@ -9473,6 +9698,7 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
+
 /*
    Write values to a :record:`fileWriter`. The output will be produced
    atomically - the ``fileWriter`` lock will be held while writing all of the
@@ -11329,7 +11555,7 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 @chpldoc.nodoc
-proc fileWriter._writefOne(fmtStr, ref arg, i: int,
+proc fileWriter._writefOne(fmtStr, const ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,

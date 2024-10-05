@@ -1,0 +1,2 @@
+in Recursive, EXTRA_CHECKS=42
+in SubModule.foo, EXTRA_CHECKS=42

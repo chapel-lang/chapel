@@ -202,7 +202,7 @@ static void test3() {
                          )"""";
 
   auto qt = resolveQualifiedTypeOfX(context, contents);
-  assert(qt.type()->isRealType()); // and not real
+  assert(qt.type()->isRealType()); // and not int
 }
 
 static void test4() {
@@ -570,6 +570,316 @@ static void test10() {
   assert(t2.type()->isBoolType());
 }
 
+static void test11() {
+  // Type method calls are allowed on nilable classes; their receiver should
+  // be generic over nilability and management.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class C {
+      proc type typeMethod() {
+        return 42;
+      }
+    }
+    var x1 = (C).typeMethod();
+    var x2 = (owned C).typeMethod();
+    var x3 = (borrowed C?).typeMethod();
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2", "x3" });
+  assert(!guard.realizeErrors());
+
+  for (auto& [name, var] : vars) {
+    std::ignore = name;
+    assert(var.type());
+    assert(var.type()->isIntType());
+  }
+}
+
+static void test12() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class C {
+      proc parenlessParam param {
+        return 42;
+      }
+      proc parenlessType type {
+        return this.type;
+      }
+    }
+
+    var x: owned C? = new owned C?();
+    param p1 = x.parenlessParam;
+    type t1 = x.parenlessType;
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"p1", "t1"});
+  assert(!guard.realizeErrors());
+
+  ensureParamInt(vars["p1"], 42);
+
+  auto t1 = vars["t1"];
+  assert(t1.type());
+  assert(t1.type()->isClassType());
+  assert(t1.type()->toClassType()->decorator().isNilable());
+  assert(t1.type()->toClassType()->manager() == AnyOwnedType::get(context));
+}
+
+static void test13() {
+  // Test fields that are deemed concrete by the initial type constructor
+  // logic but are then discovered to be generic (this should produce errors).
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record r {
+      var x: SecretlyGeneric;
+      var y: poop(x.type);
+      var z: SecretlyNotGeneric;
+    }
+
+    proc poop(type arg) type do return arg;
+    proc SecretlyGeneric type do return owned class;
+    proc SecretlyNotGeneric type do return int;
+
+    var myR: r;
+    var tmp = (myR.x, myR.y, myR.z);
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "tmp" });
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::SyntacticGenericityMismatch);
+  }
+  guard.realizeErrors();
+}
+
+static void test14() {
+  // Test that the error from test13 is not spuriously emitted when inheritance
+  // is in play.
+  //
+  // Original error in https://github.com/Cray/chapel-private/issues/6673,
+  // where 'myFoo.asdf' would complain about asdf being a generic field.
+  // It's not actually generic when the error is emitted; it's just that
+  // fields of parent class Bar aren't instantiated yet. A robust check
+  // (locked down by this issue) must ensure that all parent classes are
+  // fully instantiated before issuing the error.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      enum strideKind { one }
+
+      record Wrapper {
+        param strides: strideKind = strideKind.one;
+      }
+
+      class Bar {
+        param strides: strideKind;
+      }
+
+      class Foo: Bar(?) {
+        var asdf : Wrapper(strides);
+
+        proc init(param strides) {
+          super.init(strides);
+        }
+      }
+
+      var myFoo = new unmanaged Foo(strideKind.one);
+      var myFooAsdf = myFoo.asdf;
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf" });
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test14b() {
+  // Test that the error from test13 is correctly emitted when inheritance
+  // is in play.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      enum strideKind { one }
+
+      record Wrapper {
+        param strides: strideKind = strideKind.one;
+      }
+
+      class Bar {
+        param strides: strideKind;
+      }
+
+      class Foo: Bar(?) {
+        var asdf : Wrapper(strides);
+        var notConcrete: SecretlyGeneric;
+
+        proc init(param strides) {
+          super.init(strides);
+        }
+      }
+
+      proc SecretlyGeneric type do return owned class;
+      var myFoo = new unmanaged Foo(strideKind.one);
+      var myFooAsdf = myFoo.asdf;
+      var myNotConcrete = myFoo.notConcrete;
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf", "myNotConcrete" });
+  assert(guard.realizeErrors() == 2);
+}
+
+static void test15() {
+  // Test ambiguity emitted between nested function and method.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+      class Foo {
+        proc init() {}
+
+        proc asdf() {
+          return 1;
+        }
+
+        proc doSomething() {
+          proc asdf() do return 2;
+          return asdf();
+        }
+      }
+
+      var f = new Foo();
+      var x = f.doSomething();
+      )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "x" });
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test16() {
+  // Test resolving 'this' call on variable that shadows field
+
+  {
+    // For automatic variable
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
+
+          proc init() {}
+
+          proc doSomething() {
+            const tup = this.tup;
+            return tup(0);
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    // For formal
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          var tup : 2*int;
+
+          proc init() {}
+
+          proc doSomething(tup) {
+            return tup(0);
+          }
+        }
+
+        var f = new Foo();
+        var anotherTup : 2*int;
+        var x = f.doSomething(anotherTup);
+        )""";
+
+    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
+static void test17() {
+  // Test resolving method calls from within param for loop.
+
+  // Parenful
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf() do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf();
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Parenless
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+        class Foo {
+          proc asdf do return 3;
+
+          proc doSomething() {
+            for param i in 0..2 do
+              return asdf;
+          }
+        }
+
+        var f = new Foo();
+        var x = f.doSomething();
+        )""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type());
+    assert(initType.type()->isIntType());
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
 
 int main() {
   test1();
@@ -582,6 +892,14 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
+  test13();
+  test14();
+  test14b();
+  test15();
+  test16();
+  test17();
 
   return 0;
 }

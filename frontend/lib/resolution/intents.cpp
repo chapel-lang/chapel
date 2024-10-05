@@ -77,7 +77,8 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType()) {
+      t->isRecordType() || t->isUnionType() || t->isTupleType() ||
+      t->isIteratorType()) {
     if (isThis) {
       if (isInit)
         return QualifiedType::REF;
