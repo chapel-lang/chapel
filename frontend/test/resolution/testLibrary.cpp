@@ -125,10 +125,69 @@ static void testDeserialize() {
   assert(guard.numErrors() == 0);
 }
 
+static void testStringBytes() {
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  setupModuleSearchPaths(context, false, false, {}, {});
+
+  std::string program = R"""(
+    proc test() {
+      var x : string;
+      var y = x.byteIndices;
+
+      var a : bytes;
+      var b = a.byteIndices;
+    }
+
+    test();
+    )""";
+
+  auto m = parseModule(context, std::move(program));
+  auto rr = resolveModule(context, m->id());
+
+  ResolutionContext rcval(context);
+  auto testCall = m->stmt(1)->toFnCall();
+  auto testSig = rr.byAst(testCall).mostSpecific().only().fn();
+  auto testFn = resolveFunction(&rcval, testSig, rr.byAst(testCall).poiScope());
+
+  {
+    auto x = findVariable(m, "x");
+    auto xRes = testFn->byAst(x);
+    assert(xRes.type().type()->isStringType());
+    assert(xRes.associatedActions().size() == 1);
+    auto action = xRes.associatedActions()[0];
+    assert(action.action() == AssociatedAction::DEFAULT_INIT);
+    assert(action.fn()->id().str() == "String._string.init");
+
+    auto y = findVariable(m, "y");
+    std::stringstream ss;
+    testFn->byAst(y).type().type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "range(int(64), both, one)");
+  }
+
+  {
+    auto a = findVariable(m, "a");
+    auto aRes = testFn->byAst(a);
+    assert(aRes.type().type()->isBytesType());
+    assert(aRes.associatedActions().size() == 1);
+    auto action = aRes.associatedActions()[0];
+    assert(action.action() == AssociatedAction::DEFAULT_INIT);
+    assert(action.fn()->id().str() == "Bytes._bytes.init");
+
+    auto b = findVariable(m, "b");
+    std::stringstream ss;
+    testFn->byAst(b).type().type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(ss.str() == "range(int(64), both, one)");
+  }
+}
+
 int main() {
   // testHelloWorld();
   testSerialize();
   testDeserialize();
+  testStringBytes();
 
   return 0;
 }

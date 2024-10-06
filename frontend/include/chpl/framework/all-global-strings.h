@@ -171,5 +171,10 @@ X(llvmAssertVectorized, "llvm.assertVectorized")
 X(deprecated          , "deprecated")
 X(unstable            , "unstable")
 
+X(stringId            , "String._string")
+X(bytesId             , "Bytes._bytes")
+X(localeId            , "ChapelLocale._locale")
+X(rangeId             , "ChapelRange._range")
+
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */
