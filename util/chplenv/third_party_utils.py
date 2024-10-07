@@ -471,3 +471,4 @@ def could_not_find_pkgconfig_pkg(pkg, envname):
     else:
         install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
         error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))
+

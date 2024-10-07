@@ -3,6 +3,7 @@ import os
 import glob
 import json
 import chpl_locale_model
+import chpl_platform
 import chpl_llvm
 import chpl_compiler
 import re
@@ -229,6 +230,65 @@ def get_gpu_mem_strategy():
                  ", ".join(valid_options))
         return memtype
     return "array_on_device"
+
+def get_runtime_compile_args():
+    if chpl_locale_model.get() != 'gpu':
+        return [], []
+    bundled = []
+    system = []
+
+    gpu_type = get()
+    sdk_path = get_sdk_path(gpu_type, sdk_type='include')
+    incl = chpl_home_utils.get_chpl_runtime_incl()
+
+    # this -D is needed since it affects code inside of headers
+    bundled.append("-DHAS_GPU_LOCALE")
+    if gpu_type == "cpu":
+        bundled.append("-DGPU_RUNTIME_CPU")
+
+    # If compiling for GPU locales, add CUDA runtime headers to include path
+    bundled.append("-I" + os.path.join(incl, "gpu", gpu_type))
+    if gpu_type == "nvidia":
+        system.append("-I" + os.path.join(sdk_path, "include"))
+
+        # workaround an issue with __float128 not being supported by clang in device code
+        system.append("-D__STRICT_ANSI__=1")
+
+    elif gpu_type == "amd":
+        # -isystem instead of -I silences warnings from inside these includes.
+        system.append("-isystem" + os.path.join(sdk_path, "include"))
+        system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
+    
+    return bundled, system
+
+def get_runtime_link_args():
+    if chpl_locale_model.get() != 'gpu':
+        return [], []
+    bundled = []
+    system = []
+
+    gpu_type = get()
+    sdk_path = get_sdk_path(gpu_type, sdk_type='include')
+
+    if gpu_type == "nvidia":
+        system.append("-L" + os.path.join(sdk_path, "lib64"))
+        system.append("-lcudart")
+        if chpl_platform.is_wsl():
+            # WSL needs to link with libcuda that belongs to the driver hosted in Windows
+            system.append("-L" + os.path.join("/usr", "lib", "wsl", "lib"))
+        system.append("-lcuda")
+    elif gpu_type == "amd":
+        paths = [sdk_path]
+        for p in paths:
+            lib_path = os.path.join(p, "lib")
+            system.append("-L" + lib_path)
+            system.append("-Wl,-rpath," + lib_path)
+        system.append("-lamdhip64")
+
+    return bundled, system
+
+
+
 
 
 def get_cuda_libdevice_path():
