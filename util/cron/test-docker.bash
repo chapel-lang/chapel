@@ -7,6 +7,9 @@
 # Assumes Docker is already running on the system, logged into an account with
 # appropriate permissions to push the images.
 #
+# Expected environment variables:
+# - RELEASE_VERSION (optional): If set, will also push the image tagged as
+#   'latest' and this version. Should match version in release branch name.
 
 
 CWD=$(cd $(dirname $0) ; pwd)
@@ -115,6 +118,13 @@ update_all_images() {
 }
 # END FUNCTIONS
 
+
+if [ -n "$RELEASE_VERSION" ]
+then
+  log_info "Building and pushing nightly and release-tagged images for version: $RELEASE_VERSION"
+else
+  log_info "Building and pushing nightly images"
+fi
 
 # Build and push nightly images
 update_all_images
