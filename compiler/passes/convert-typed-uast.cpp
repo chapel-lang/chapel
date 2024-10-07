@@ -84,26 +84,6 @@ struct TConverter final : UastConverter {
   /// Nested Types ///
   using RV = ResolvedVisitor<TConverter>;
 
-  // When converting variables etc. with @assertOnGpu or @blockSize,
-  // we don't just create a DefExpr; we also create an enclosing block which
-  // contains calls to primitives that implement @assertOnGpu and @blockSize.
-  //
-  // This data structure contains pointers to both.
-  struct VariableDefInfo {
-    DefExpr* variableDef;
-    Expr* entireExpr;
-
-    /**
-      Helper for code that calls 'convertVariable' but doesn't expect to handle
-      blocks with additional primitives, which can be introduced by that call
-      for GPU attributes that need to be propagated to init expressions.
-     */
-    Expr* requireDefOnly() const {
-      CHPL_ASSERT(entireExpr == variableDef);
-      return variableDef;
-    }
-  };
-
   // State required to mimic the desugaring of multi-declarations into
   // regular ones.
   struct MultiDeclState {
@@ -384,10 +364,12 @@ struct TConverter final : UastConverter {
   // Accordingly, this returns 'nullptr' if the type expression isn't
   // a type with a runtime component.
   Expr* convertRuntimeTypeExpression(const AstNode* node, RV& rv);
-  VariableDefInfo convertVariable(const uast::Variable* node,
-                                  RV& rv,
-                                  bool useLinkageName,
-                                  MultiDeclState* multiState = nullptr);
+  // note: the relevant calls and DefExpr are added to curAList;
+  // this function returns the VarSymbol*
+  VarSymbol* convertVariable(const uast::Variable* node,
+                             RV& rv,
+                             bool useLinkageName,
+                             MultiDeclState* multiState = nullptr);
   void simplifyEpilogue(FnSymbol* fn);
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym, RV& rv);
 
@@ -1279,33 +1261,21 @@ Expr* TConverter::convertRuntimeTypeExpression(const AstNode* node, RV& rv) {
   return nullptr;
 }
 
-TConverter::VariableDefInfo
-TConverter::convertVariable(const uast::Variable* node,
-                            RV& rv,
-                            bool useLinkageName,
-                            MultiDeclState* multiState) {
+VarSymbol* TConverter::convertVariable(const uast::Variable* node,
+                                       RV& rv,
+                                       bool useLinkageName,
+                                       MultiDeclState* multiState) {
   astlocMarker markAstLoc(node->id());
 
   bool isStatic = false;
-  Expr* staticSharingKind = nullptr;
   if (auto ag = node->attributeGroup()) {
     if (auto attr = ag->getAttributeNamed(USTR("functionStatic"))) {
-      if (!node->initExpression()) {
-        USR_FATAL(node->id(), "function-static variables must have an initializer.");
-      }
-      // post-parse checks rule this out.
-      CHPL_ASSERT(!node->destination());
-      isStatic = true;
-
-      if (attr->numActuals() > 0) {
-        staticSharingKind = convertExpr(attr->actual(0), rv);
-      }
+      CHPL_UNIMPL("function-static variables");
     }
   }
 
   bool isRemote = node->destination() != nullptr ||
                   (multiState != nullptr && multiState->localeTemp != nullptr);
-  auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
   bool inTupleDecl = false; // TODO fixme
   auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str(),
@@ -1338,20 +1308,7 @@ TConverter::convertVariable(const uast::Variable* node,
   }
   uast::Variable::Kind symbolKind = node->kind();
   if (isRemote) {
-    // Remote variables get desugared early (now!), but they get turned
-    // into references to remote memory. So, we need the symbol storage
-    // kind to be REF, not VAR.
-    switch(symbolKind) {
-      case uast::Variable::VAR:
-        symbolKind = uast::Variable::REF;
-        break;
-      case uast::Variable::CONST:
-        symbolKind = uast::Variable::CONST_REF;
-        break;
-      default:
-        // post-parse checks rule this out.
-        CHPL_ASSERT(false && "unsupported remote variable kind");
-    }
+    CHPL_UNIMPL("remote variable");
   }
 
   // Adjust the variable according to its kind, e.g. 'const'/'type'.
@@ -1379,7 +1336,7 @@ TConverter::convertVariable(const uast::Variable* node,
     INT_ASSERT(linkageFlag != FLAG_UNKNOWN);
     varSym->cname = convertLinkageNameAstr(node);
   }
-  Expr* destinationExpr = convertExprOrNull(node->destination(), rv);
+  //Expr* destinationExpr = convertExprOrNull(node->destination(), rv);
   Expr* typeExpr = convertRuntimeTypeExpression(node->typeExpression(), rv);
   Expr* initExpr = nullptr;
 
@@ -1392,108 +1349,40 @@ TConverter::convertVariable(const uast::Variable* node,
     }
 
     if (isStatic) {
-      auto initExprCall = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
-      initExpr = initExprCall;
-
-      if (staticSharingKind) {
-        initExprCall->insertAtTail(staticSharingKind);
-      }
+      CHPL_UNIMPL("function-static variables");
     }
   } else {
     initExpr = convertExprOrNull(node->initExpression(), rv);
   }
+
   if ((!typeExpr && !initExpr) && multiState) {
-    // Need to draw type expr and init expr from previous variable.
-    CHPL_ASSERT(block);
-
-    if (!multiState->typeTemp && multiState->prevTypeExpr) {
-      auto newTypeTemp = newTemp("type_tmp");
-      newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
-      multiState->typeTemp = newTypeTemp;
-
-      auto prevTypeExpr = multiState->prevTypeExpr;
-      multiState->replaceTypeExpr(new SymExpr(newTypeTemp));
-
-      // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
-      std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
-    }
-    if (auto typeTemp = multiState->typeTemp) {
-      // Once we create the type temp we clear the type expressions so that
-      // there's no risk of copying it.
-      CHPL_ASSERT(multiState->prevTypeExpr == nullptr);
-
-      // If the type symbol was defined by a previously-visited variable,
-      // and since we visit in reverse, its current definition will be
-      // after us, which is not good. Move it up to before this symbol.
-      auto typeDefPoint = typeTemp->defPoint;
-      if (typeDefPoint->list) typeDefPoint->remove();
-      block->insertAtHead(typeDefPoint);
-
-      typeExpr = new SymExpr(typeTemp);
-    }
-    if (auto prevInitExpr = multiState->prevInitExpr) {
-      Expr* replaceWith;
-      if (prevInitExpr->isNoInitExpr()) {
-        replaceWith = prevInitExpr->copy();
-      } else if (typeExpr) {
-        replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
-      } else {
-        replaceWith = new SymExpr(varSym);
-      }
-      multiState->replaceInitExpr(replaceWith);
-      initExpr = prevInitExpr;
-    }
-
-    multiState->prev = varSym;
-  } else if (multiState) {
-    CHPL_ASSERT(block);
-    multiState->prevTypeExpr = typeExpr;
-    multiState->prevInitExpr = initExpr;
-    multiState->typeTemp = nullptr;
-    multiState->prev = varSym;
+    CHPL_UNIMPL("multi-vars");
   }
 
   DefExpr* def = nullptr;
-  VariableDefInfo ret;
   if (isRemote) {
-    CHPL_ASSERT(block);
-    auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
-    auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
-    wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
-
-    if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-    if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
-    auto wrapperDef = new DefExpr(wrapper, wrapperCall);
-
-    auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
-    def = new DefExpr(varSym, new CallExpr(wrapperGet));
-    varSym->addFlag(FLAG_REMOTE_VARIABLE);
-
-    block->insertAtTail(wrapperDef);
-    block->insertAtTail(def);
-    ret = VariableDefInfo { def, block };
+    CHPL_UNIMPL("remote variable");
   } else {
-    def = new DefExpr(varSym, initExpr, typeExpr);
-    Expr* entireExpr = def;
-    if (block) {
-      entireExpr = block;
-      block->insertAtTail(def);
-    }
+    def = new DefExpr(varSym);
+    curAList->insertAtTail(def);
 
-    ret = VariableDefInfo { def, entireExpr };
+    CallExpr* move = nullptr;
+    if (varSym->isRef()) {
+      move = new CallExpr(PRIM_MOVE, varSym,
+                                     new CallExpr(PRIM_ADDR_OF, initExpr));
+    } else {
+      move = new CallExpr(PRIM_MOVE, varSym, initExpr);
+    }
+    curAList->insertAtTail(move);
   }
 
   auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
   if (!loopFlags.empty()) {
-    auto block = new BlockStmt(BLOCK_SCOPELESS);
-    block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
-    block->insertAtTail(ret.entireExpr);
-
-    if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
-      block->insertAtTail(primBlock);
-    }
-
-    ret.entireExpr = block;
+    CHPL_UNIMPL("loop attribute info");
+    // curAList->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
+    //if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
+    //  curAList->insertAtTail(primBlock);
+    //}
   }
   // If the init expression of this variable is a domain and this
   // variable is not const, propagate that information by setting
@@ -1506,7 +1395,7 @@ TConverter::convertVariable(const uast::Variable* node,
   // Note the variable is converted so we can wire up SymExprs later
   noteConvertedSym(node, varSym);
 
-  return ret;
+  return varSym;
 }
 
 // this does a micro-optimization to replace
@@ -1920,10 +1809,10 @@ void TConverter::exit(const Formal* node, RV& rv) {
 bool TConverter::enter(const Variable* node, RV& rv) {
   printf("enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  auto info = convertVariable(node, rv, true);
-  INT_ASSERT(info.entireExpr && info.variableDef);
-  auto varSym = toVarSymbol(info.variableDef->sym);
+  VarSymbol* varSym = convertVariable(node, rv, true);
   INT_ASSERT(varSym);
+  // note: convertVariable should have added the DefExpr and any associated
+  // stuff to curAList.
 
   // Special handling for extern type variables.
   const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -1944,8 +1833,6 @@ bool TConverter::enter(const Variable* node, RV& rv) {
       noteConvertedSym(node, newDef->sym);*/
     }
   }
-
-  curAList->insertAtTail(info.variableDef);
 
   return false;
 }
