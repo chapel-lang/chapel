@@ -1,5 +1,5 @@
-// ensure that complex functions and math can be done using the GPU locale model
-// using complex in a kernel is tested by `test/gpu/native/mathOps.chpl`
+// ensure that complex functions and math can be done using
+// the GPU locale model from a CPU
 use Math;
 use IO, PrecisionSerializer;
 
