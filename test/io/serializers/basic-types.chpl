@@ -41,7 +41,7 @@ proc test(val, type T = val.type) {
                       if val == nil then val == readVal
                       else val!.equals(readVal)
                     else if isClassType(val.type) then val!.equals(readVal)
-                    else if T == real
+                    else if T == real || T == complex || T == imag
                       then abs(val - readVal) < 1e-5
                       else val == readVal;
       if !compare {
@@ -161,8 +161,8 @@ proc main() {
   test(5);
   test(42.0);
   test(2.71828182845);
-  test(17i);
-  test(32-19i);
+  test(1.12345678i);
+  test(7.12345678 - 9.12345678i);
   test("a-b-c-d-e-f-g");
   test(b"12345");
   test((1, 2, 3));
