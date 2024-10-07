@@ -1110,8 +1110,8 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
 }
 
 ID getSymbolIdFromTopLevelModule(Context* context,
-                                         const char* modName,
-                                         const char* symName) {
+                                 const char* modName,
+                                 const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
