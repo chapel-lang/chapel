@@ -8,7 +8,8 @@ import chpl_llvm
 import chpl_compiler
 import re
 import chpl_tasks
-from utils import error, warning, memoize, run_command, which, is_ver_in_range
+import chpl_home_utils
+from utils import error, warning, memoize, run_command, try_run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
     return _validate_cuda_version_impl()
@@ -48,33 +49,73 @@ def _validate_cuda_llvm_version(gpu: gpu_type):
 def _validate_rocm_llvm_version(gpu: gpu_type):
     return _validate_rocm_llvm_version_impl(gpu)
 
+@memoize
+def _gpu_compiler_version_output(compiler: str, lang: str):
+    dummy_main = "int main() { return 0; }"
+    exists, returncode, stdout, _ = try_run_command([compiler, "-v", "-c", "-x", lang, "-", "-o", "/dev/null"], cmd_input=dummy_main, combine_output=True)
+    if exists and returncode == 0 and stdout:
+        return stdout
+    else:
+        return None
+
+def _find_cuda_sdk_path(compiler: str):
+    out = _gpu_compiler_version_output(compiler, "cu")
+    # #$ TOP=
+
+    # find lib device: #$ NVVMIR_LIBRARY_DIR=
+
+
+# LLVM AMD GPU
+def _find_rocm_sdk_path(compiler: str):
+    out = _gpu_compiler_version_output(compiler, "hip")
+    # InstalledDir
+
+# HIP
+def _find_rocm_include_path(compiler: str):
+    # Found HIP installation
+    pass
+
+def _find_cuda_version(compiler: str):
+    # cuda, we can run nvcc --version
+    # 'Cuda compilation tools, release'
+    pass
+
+def _find_rocm_version(compiler: str):
+    # hip/amd sucks, we have to guess
+    # one of the following regexs in the compiler output, look in this order
+    ' roc-VERSION '
+    '/rocm-VERSION/'
+    '/hip-VERSION/'
+    '/llvm-amdgpu-VERSION/'
+    '/rocm/VERSION/'
+    pass
 
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
-                       sdk_path_env_bitcode="CHPL_CUDA_PATH",
-                       sdk_path_env_include="CHPL_CUDA_PATH",
                        compiler="nvcc",
                        default_arch="sm_60",
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
+                       find_sdk_path=_find_cuda_sdk_path,
+                       find_version=_find_cuda_version,
                        version_validator=_validate_cuda_version,
                        llvm_validator=_validate_cuda_llvm_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
-                    sdk_path_env_bitcode="CHPL_ROCM_BITCODE_PATH",
-                    sdk_path_env_include="CHPL_ROCM_INCLUDE_PATH",
                     compiler="hipcc",
                     default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
+                    find_sdk_path=_find_rocm_sdk_path,
+                    find_version=_find_rocm_version,
                     version_validator=_validate_rocm_version,
                     llvm_validator=_validate_rocm_llvm_version),
     "cpu": gpu_type(sdk_path_env="",
-                    sdk_path_env_bitcode="",
-                    sdk_path_env_include="",
                     compiler="",
                     default_arch="",
                     llvm_target="",
                     runtime_impl="cpu",
+                    find_sdk_path=lambda compiler: None,
+                    find_version=lambda compiler: None,
                     version_validator=lambda: None,
                     llvm_validator=lambda: None),
 }
@@ -158,6 +199,21 @@ def get_arch():
         return 'error'
 
 @memoize
+def get_gpu_compiler():
+    gpu_type = get()
+    sdk_path = get_sdk_path(gpu_type)
+    if sdk_path == 'none':
+        return 'none'
+    
+    name = GPU_TYPES[gpu_type].compiler
+    bin_dir = os.path.join(sdk_path, 'bin')
+    full_path = os.path.join(bin_dir, name)
+    if not os.path.exists(full_path):
+        _reportMissingGpuReq("Could not find {} in {}".format(name, bin_dir))
+    return full_path
+
+
+@memoize
 def get_sdk_path(for_gpu, sdk_type='bitcode'):
     gpu_type = get()
 
@@ -188,20 +244,21 @@ def get_sdk_path(for_gpu, sdk_type='bitcode'):
                                                                       gpu.compiler])
 
     if exists and returncode == 0:
-        # Walk up from directories from the one containing the gpu compiler
-        # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
-        # `runtime_impl` (e.g `cuda` or `rocm`)
-        # TODO: this logic does not seem to work for spack
-        real_path = os.path.realpath(my_stdout.strip()).strip()
-        path_parts = real_path.split("/")
-        chpl_sdk_path = "/"
-        for part in path_parts:
-            if len(part) == 0: continue
-            chpl_sdk_path += part
-            if not part.startswith(gpu.runtime_impl):
-                chpl_sdk_path += "/"
-            else:
-                break
+        pass
+        # # Walk up from directories from the one containing the gpu compiler
+        # # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
+        # # `runtime_impl` (e.g `cuda` or `rocm`)
+        # # TODO: this logic does not seem to work for spack
+        # real_path = os.path.realpath(my_stdout.strip()).strip()
+        # path_parts = real_path.split("/")
+        # chpl_sdk_path = "/"
+        # for part in path_parts:
+        #     if len(part) == 0: continue
+        #     chpl_sdk_path += part
+        #     if not part.startswith(gpu.runtime_impl):
+        #         chpl_sdk_path += "/"
+        #     else:
+        #         break
         
         # validate the SDK path found
         if not (os.path.exists(chpl_sdk_path) and os.path.isdir(chpl_sdk_path)):
