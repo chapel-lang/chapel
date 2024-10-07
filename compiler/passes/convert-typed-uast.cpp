@@ -293,7 +293,7 @@ struct TConverter final : UastConverter {
     printf("\n");
 
     Expr* ret = nullptr;
-    {
+    /*{
       // update the parentExpr and parentSymbol pointers for the new nodes
       auto& back = aListStack.back();
       AList& alist = *back.first;
@@ -303,7 +303,9 @@ struct TConverter final : UastConverter {
         insert_help(ast, parentExpr, parentSymbol);
       }
       ret = parentExpr;
-    }
+    }*/
+
+    ret = aListStack.back().second;
 
     aListStack.pop_back();
     if (aListStack.size() > 0)
@@ -1922,6 +1924,18 @@ void TConverter::exit(const Return* node, RV& rv) {
 
 bool TConverter::enter(const Call* node, RV& rv) {
   printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  if (auto primCall = node->toPrimCall()) {
+    CallExpr* ret = new CallExpr(primCall->prim());
+    curAList->insertAtTail(ret);
+    enterCallActuals(ret);
+    for (auto actual : node->actuals()) {
+      ret->insertAtTail(convertExpr(actual, rv));
+    }
+    exitCallActuals();
+    return false;
+  }
+
 
   const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
   if (re == nullptr) {
