@@ -106,8 +106,6 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
-    ChapelEnv('  CHPL_ROCM_BITCODE_PATH', INTERNAL),
-    ChapelEnv('  CHPL_ROCM_INCLUDE_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
@@ -318,8 +316,6 @@ def compute_internal_values():
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
-    ENV_VALS['  CHPL_ROCM_BITCODE_PATH'] = chpl_gpu.get_sdk_path("amd", sdk_type="bitcode")
-    ENV_VALS['  CHPL_ROCM_INCLUDE_PATH'] = chpl_gpu.get_sdk_path("amd", sdk_type="include")
 
 
 
@@ -374,8 +370,6 @@ def filter_tidy(chpl_env):
     elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
         return gpu == 'nvidia'
     elif chpl_env.name == '  CHPL_ROCM_PATH':
-        return gpu == 'amd'
-    elif chpl_env.name in ('  CHPL_ROCM_BITCODE_PATH', '  CHPL_ROCM_INCLUDE_PATH'):
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
