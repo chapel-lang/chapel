@@ -112,6 +112,16 @@ proc MASON_REGISTRY {
   return registries;
 }
 
+/* Returns the path to use when caching the list of licenses, if provided by the
+   user.  This is useful for systems where internet connectivity can be erratic
+   or slow.
+ */
+proc MASON_LICENSE_CACHE_PATH: string {
+  const licenseCache = getEnv("MASON_LICENSE_CACHE_PATH");
+
+  return licenseCache;
+}
+
 proc masonEnv(args) {
 
   var parser = new argumentParser(helpHandler=new MasonEnvHelpHandler());
