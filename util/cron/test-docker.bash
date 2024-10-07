@@ -51,6 +51,8 @@ update_image() {
   # Use specified release version tag, or 'nightly' if not specified
   local imageName="${baseImageName}:${release_tag:-nightly}"
 
+  log_info "Starting $imageName..."
+
   # Remove any existing image with the tag before building nightly docker image
   if [ -n "$release_tag" ]
   then
@@ -93,6 +95,8 @@ update_image() {
     # Use base image name (without tag) to use Docker's default tag 'latest'
     docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$baseImageName"
   fi
+
+  log_info "Completed $imageName"
 }
 
 # Build, test, and push all Chapel Docker images.
