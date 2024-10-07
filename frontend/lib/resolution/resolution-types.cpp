@@ -1175,6 +1175,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "infer-type";
     case COMPARE:
       return "compare";
+    case RUNTIME_TYPE:
+      return "runtime-type";
     // no default to get a warning if new Actions are added
   }
 

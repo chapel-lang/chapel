@@ -1109,9 +1109,9 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName) {
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
@@ -1125,6 +1125,13 @@ ID getSymbolFromTopLevelModule(Context* context,
   fullPath += symName;
 
   return ID(UniqueString::get(context, fullPath));
+}
+
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  return {getSymbolIdFromTopLevelModule(context, modName, symName),
+          UniqueString::get(context, symName)};
 }
 
 static const Module* const&

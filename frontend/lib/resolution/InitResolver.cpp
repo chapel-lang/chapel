@@ -280,6 +280,57 @@ bool InitResolver::isFinalReceiverStateValid(void) {
   return ret;
 }
 
+// Extract domain type information from _instance substitution
+static const DomainType* domainTypeFromSubsHelper(
+    Context* context, const CompositeType::SubstitutionsMap& subs) {
+  auto genericDomain = DomainType::getGenericDomainType(context);
+
+  // Expect one substitution for _instance
+  if (subs.size() != 1) return genericDomain;
+
+  const QualifiedType instanceQt = subs.begin()->second;
+
+  if (auto instance = instanceQt.type()) {
+    if (auto instanceCt = instance->toClassType()) {
+      if (auto instanceBct = instanceCt->basicClassType()) {
+        // Get BaseRectangularDom parent subs for rectangular domain info
+        if (auto baseDom = instanceBct->parentClassType()) {
+          auto& rf = fieldsForTypeDecl(context, baseDom,
+                                       DefaultsPolicy::IGNORE_DEFAULTS);
+          if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
+            CHPL_ASSERT(rf.numFields() == 3);
+            QualifiedType rank;
+            QualifiedType idxType;
+            QualifiedType strides;
+            for (int i = 0; i < rf.numFields(); i++) {
+              if (rf.fieldName(i) == "rank") {
+                rank = rf.fieldType(i);
+              } else if (rf.fieldName(i) == "idxType") {
+                idxType = rf.fieldType(i);
+              } else if (rf.fieldName(i) == "strides") {
+                strides = rf.fieldType(i);
+              }
+            }
+
+            return DomainType::getRectangularType(context, instanceQt, rank,
+                                                  idxType, strides);
+          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
+            // TODO: support associative domains
+          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
+            // TODO: support sparse domains
+          } else {
+            // not a recognized domain type
+            return genericDomain;
+          }
+        }
+      }
+    }
+  }
+
+  // If we reach here, we weren't able to resolve the domain type
+  return genericDomain;
+}
+
 static const Type* ctFromSubs(Context* context,
                               const Type* receiverType,
                               const BasicClassType* superType,
@@ -313,6 +364,8 @@ static const Type* ctFromSubs(Context* context,
     auto manager = AnyOwnedType::get(context);
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(context, basic, manager, dec);
+  } else if (receiverType->isDomainType()) {
+    ret = domainTypeFromSubsHelper(context, subs);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
@@ -400,9 +453,12 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
   if (initialRecvType_->isClassType()) {
     return QualifiedType::CONST_IN;
-  } else {
-    CHPL_ASSERT(initialRecvType_->isRecordType());
+  } else if (initialRecvType_->isRecordType() ||
+             initialRecvType_->isDomainType()) {
     return QualifiedType::REF;
+  } else {
+    CHPL_ASSERT(false && "Not handled");
+    return QualifiedType::UNKNOWN;
   }
 }
 

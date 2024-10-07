@@ -1992,6 +1992,7 @@ class AssociatedAction {
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
     INFER_TYPE,
     COMPARE,      // == , e.g., for select-statements
+    RUNTIME_TYPE, // create runtime type
   };
 
  private:

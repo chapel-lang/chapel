@@ -2155,19 +2155,23 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     return true;
   }
 
-  // Remove nilability from e.g., 'new C?()' for the init call (or else it
-  // will not resolve because the receiver formal is 'nonnil borrowed').
   const Type* initReceiverType = qtNewExpr.type();
+
   if (auto clsType = qtNewExpr.type()->toClassType()) {
+    // Remove nilability from e.g., 'new C?()' for the init call (or else it
+    // will not resolve because the receiver formal is 'nonnil borrowed').
+
     // always set the receiver to be borrowed non-nil b/c we don't want to
     // call initializers for '_owned' when the receiver is 'owned(MyClass)'
     auto newDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     initReceiverType = clsType->withDecorator(context, newDecor);
-    CHPL_ASSERT(initReceiverType);
+  } else if (auto recordType = qtNewExpr.type()->toRecordType()) {
+    // Rewrite 'new dmap' to 'new _distribution'
+    if (recordType->id().symbolPath() == "ChapelArray.dmap") {
+      initReceiverType = CompositeType::getDistributionType(context);
+    }
   }
-
-  // The 'new' will produce an 'init' call as a side effect.
-  UniqueString name = USTR("init");
+  CHPL_ASSERT(initReceiverType);
 
   /*
   auto cls = qtNewExpr.type()->toClassType();
@@ -2186,12 +2190,11 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   actuals.push_back(std::move(receiverInfo));
 
   // Remaining actuals.
-  if (call->numActuals()) {
-    prepareCallInfoActuals(call, actuals, questionArg);
-    CHPL_ASSERT(!questionArg);
-  }
+  prepareCallInfoActuals(call, actuals, questionArg);
+  CHPL_ASSERT(!questionArg);
 
-  auto ci = CallInfo(name, calledType, isMethodCall,
+  // The 'new' will produce an 'init' call as a side effect.
+  auto ci = CallInfo(USTR("init"), calledType, isMethodCall,
                      /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
@@ -2306,6 +2309,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   auto fnCall = call->toFnCall();
   if (!fnCall->calledExpression()->isIdentifier()) return false;
 
+  auto& r = byPostorder.byAst(call);
+
   auto fnName = fnCall->calledExpression()->toIdentifier()->name();
   if (fnName == "index") {
     auto runResult = context->runAndTrackErrors([&](Context* ctx) {
@@ -2318,7 +2323,6 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
-      auto& r = byPostorder.byAst(call);
       handleResolvedCall(r, call, ci, result);
       return result;
     });
@@ -2331,23 +2335,79 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       CHPL_REPORT(context, InvalidIndexCall, fnCall, firstActual);
     }
     return true;
+  } else if (fnName == "domain") {
+    auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
+    CHPL_ASSERT(rCalledExp.type().hasTypePtr());
+    // Try resolving 'domain(?)' as a special case.
+    if (call->numActuals() == 1 && call->actual(0)->isIdentifier() &&
+        call->actual(0)->toIdentifier()->name() == "?") {
+      // 'domain(?)' is equivalent to just 'domain', the generic domain
+      // type.
+      // Copy the result of resolving 'domain' as the called identifier.
+      r.setType(rCalledExp.type());
+    } else {
+      // Get type by resolving the type of corresponding '_domain' init call
+      // TODO: prohibit associative domain with idxType 'domain'
+      const AstNode* questionArg = nullptr;
+      std::vector<CallInfoActual> actuals;
+      // Set up receiver
+      auto receiverType =
+          QualifiedType(QualifiedType::INIT_RECEIVER, rCalledExp.type().type());
+      auto receiverArg = CallInfoActual(receiverType, USTR("this"));
+      actuals.push_back(std::move(receiverArg));
+      // Set up distribution arg
+      auto defaultDistArg = CallInfoActual(
+          DomainType::getDefaultDistType(context), UniqueString());
+      actuals.push_back(std::move(defaultDistArg));
+      // Remaining given args from domain() call as written
+      prepareCallInfoActuals(call, actuals, questionArg);
+      CHPL_ASSERT(!questionArg);
+
+      auto ci =
+          CallInfo(USTR("init"),
+                   /* calledType */ receiverType,
+                   /* isMethodCall */ true,
+                   /* hasQuestionArg */ false,
+                   /* isParenless */ false,
+                   actuals);
+
+      auto scope = scopeStack.back();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+      auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+        return resolveGeneratedCall(context, call, ci, inScopes);
+      });
+
+      // Use the init call's receiver type as the resulting TYPE
+      QualifiedType receiverTy;
+      if (runResult.ranWithoutErrors()) {
+        auto result = runResult.result();
+        if (auto initMsc = result.mostSpecific().only()) {
+          handleResolvedCall(r, call, ci, result,
+                             {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
+          receiverTy = initMsc.fn()->formalType(0);
+        }
+      }
+      if (!receiverTy.type()) {
+        std::vector<QualifiedType> actualTypesForErr;
+        for (auto it = actuals.begin() + 2; it != actuals.end(); ++it) {
+          actualTypesForErr.push_back(it->type());
+        }
+        receiverTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
+                                     actualTypesForErr);
+      }
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverTy.type()));
+    }
+    return true;
   }
 
   return false;
 }
 
 bool Resolver::resolveSpecialCall(const Call* call) {
-  if (resolveSpecialOpCall(call)) {
-    return true;
-  } else if (resolveSpecialPrimitiveCall(call)) {
-    return true;
-  } else if (resolveSpecialNewCall(call)) {
-    return true;
-  } else if (resolveSpecialKeywordCall(call)) {
-    return true;
-  }
-
-  return false;
+  return resolveSpecialOpCall(call) ||
+         resolveSpecialPrimitiveCall(call) ||
+         resolveSpecialNewCall(call) ||
+         resolveSpecialKeywordCall(call);
 }
 
 static QualifiedType
@@ -3746,10 +3806,55 @@ bool Resolver::enter(const uast::Domain* decl) {
 }
 
 void Resolver::exit(const uast::Domain* decl) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
+  const DomainType* genericDomainType = DomainType::getGenericDomainType(context);
+  if (CompositeType::isMissingBundledRecordType(context, genericDomainType->id())) {
+    // If we don't have the standard library code backing the Domain type, leave
+    // it unresolved.
+    return;
+  }
+
   if (decl->numExprs() == 0) {
+    // Generic domain, as in a generic-domain array
     auto& re = byPostorder.byAst(decl);
-    auto dt = QualifiedType(QualifiedType::CONST_VAR, DomainType::getGenericDomainType(context));
+    auto dt = QualifiedType(QualifiedType::CONST_VAR, genericDomainType);
     re.setType(dt);
+  } else {
+    // Call appropriate domain builder proc. Use ensureDomainExpr when the
+    // domain is declared without curly braces (within an array type).
+    const char* domainBuilderProc = decl->usedCurlyBraces()
+                                        ? "chpl__buildDomainExpr"
+                                        : "chpl__ensureDomainExpr";
+
+    // Add key or range actuals
+    std::vector<CallInfoActual> actuals;
+    for (auto expr : decl->exprs()) {
+      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+    }
+
+    // Add definedConst actual if appropriate
+    if (decl->usedCurlyBraces()) {
+      actuals.emplace_back(
+          QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                        BoolParam::get(context, true)),
+          UniqueString());
+    }
+
+    auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       actuals);
+    auto scope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+    auto c = resolveGeneratedCall(context, decl, ci, inScopes);
+
+    ResolvedExpression& r = byPostorder.byAst(decl);
+    handleResolvedCall(r, decl, ci, c);
   }
 }
 
@@ -3864,6 +3969,8 @@ static const Type* getGenericType(Context* context, const Type* recv) {
     auto m = getGenericType(context, cur->manageableType());
     gen = ClassType::get(context, m->toManageableType(),
                          cur->manager(), cur->decorator());
+  } else if (recv->isDomainType()) {
+    gen = DomainType::getGenericDomainType(context);
   }
   return gen;
 }
@@ -4464,26 +4571,18 @@ static void resolveNewForClass(Resolver& rv, const New* node,
   re.setType(qt);
 }
 
-static void resolveNewForRecord(Resolver& rv, const New* node,
-                                const RecordType* recordType) {
+static void resolveNewForRecordLike(Resolver& rv, const New* node,
+                                const CompositeType* recordLikeType) {
+  CHPL_ASSERT(recordLikeType->isRecordType() ||
+              recordLikeType->isDomainType() ||
+              recordLikeType->isUnionType());
+
   ResolvedExpression& re = rv.byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordType);
+    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordLikeType);
   } else {
-    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordType);
-    re.setType(qt);
-  }
-}
-
-static void resolveNewForUnion(Resolver& rv, const New* node,
-                               const UnionType* unionType) {
-  ResolvedExpression& re = rv.byPostorder.byAst(node);
-
-  if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, unionType);
-  } else {
-    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, unionType);
+    auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordLikeType);
     re.setType(qt);
   }
 }
@@ -4514,18 +4613,14 @@ void Resolver::exit(const New* node) {
     return;
   }
 
-  if (qtTypeExpr.type()->isBasicClassType()) {
+  auto type = qtTypeExpr.type();
+  if (type->isBasicClassType()) {
     CHPL_ASSERT(false && "Expected fully decorated class type");
-
-  } else if (auto classType = qtTypeExpr.type()->toClassType()) {
+  } else if (auto classType = type->toClassType()) {
     resolveNewForClass(*this, node, classType);
-
-  } else if (auto recordType = qtTypeExpr.type()->toRecordType()) {
-    resolveNewForRecord(*this, node, recordType);
-
-  } else if (auto unionType = qtTypeExpr.type()->toUnionType()) {
-    resolveNewForUnion(*this, node, unionType);
-
+  } else if (type->isRecordType() || type->isDomainType() ||
+             type->isUnionType()) {
+    resolveNewForRecordLike(*this, node, type->toCompositeType());
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
       CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());

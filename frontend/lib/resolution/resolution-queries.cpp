@@ -1006,7 +1006,8 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
 
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
-    if (ct->isBasicClassType() || ct->isRecordType() || ct->isUnionType()) {
+    if (ct->isBasicClassType() || ct->isRecordType() || ct->isDomainType() ||
+        ct->isUnionType()) {
       ID ctId = ct->id();
       if (!ctId.isEmpty()) {
         return parsing::aggregateUsesForwarding(context, ctId);
@@ -1637,6 +1638,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     if (t->isBasicClassType() || t->isClassType()) {
       idTag = uast::asttags::Class;
     } else if (t->isRecordType()) {
+      idTag = uast::asttags::Record;
+    } else if (t->isDomainType()) {
       idTag = uast::asttags::Record;
     } else if (t->isUnionType()) {
       idTag = uast::asttags::Union;
@@ -3976,24 +3979,7 @@ static bool resolveFnCallSpecialType(Context* context,
   // the type.
   //
   // TODO: sync, single
-  if (ci.name() == "domain") {
-    // TODO: a compiler-generated type constructor would be simpler, but we
-    // don't support default values on compiler-generated methods because the
-    // default values require existing AST.
-
-    // Note: 'dmapped' is treated like a binary operator at the moment, so
-    // we don't need to worry about distribution type for 'domain(...)' exprs.
-
-    // Transform domain type expressions like `domain(arg1, ...)` into:
-    //   _domain.static_type(arg1, ...)
-    auto genericDom = DomainType::getGenericDomainType(context);
-    auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
-    auto typeCtorName = UniqueString::get(context, "static_type");
-    auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
-
-    result = resolveCall(rc, call, ctorCall, inScopes);
-    return true;
-  } else if (ci.name() == "atomic") {
+  if (ci.name() == "atomic") {
     auto newName = UniqueString::get(context, "chpl__atomicType");
     auto ctorCall = CallInfo::copyAndRename(ci, newName);
     result = resolveCall(rc, call, ctorCall, inScopes);

@@ -25,6 +25,7 @@
 #include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/types/all-types.h"
+#include <cstdlib>
 #include <sstream>
 #include <cstring>
 
@@ -612,6 +613,55 @@ void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
     wr.message("Only classes or class-like types are supported by this conversion.");
   } else {
     wr.heading(kind_, type_, primCall, "invalid use of class cast primitive.");
+  }
+}
+
+void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto actualTypes = std::get<std::vector<types::QualifiedType>>(info_);
+
+  wr.heading(kind_, type_, fnCall, "invalid use of the 'domain' keyword.");
+  wr.codeForLocation(fnCall);
+  wr.message(
+      "The 'domain' keyword should be used with a valid domain type "
+      "expression.");
+
+  if (fnCall->numActuals() == 0) {
+    wr.message("However, 'domain' here did not have any actuals.");
+  } else if (fnCall->numActuals() == 1) {
+    // Could be rectangular or associative. Error if we have an actual type
+    // that's wrong for both.
+    auto qt = actualTypes[0];
+    if (!qt.isType() && !(qt.type() && qt.type()->isIntType())) {
+      wr.message("However, the first actual was ", decayToValue(qt),
+                 " rather than an 'int' (for rectangular) or a type (for "
+                 "associative).");
+      wr.code(fnCall, {fnCall->actual(0)});
+    }
+  } else if (fnCall->numActuals() <= 3) {
+    // Should be rectangular, must have one or more actual type(s) wrong after
+    // the first.
+    wr.message(
+        "This 'domain' call is structured like a rectangular domain type.");
+    bool erroredForIdxType = false;
+    if (fnCall->numActuals() >= 2) {
+      auto idxTypeQt = actualTypes[1];
+      if (!idxTypeQt.isType()) {
+        erroredForIdxType = true;
+        wr.message("However, the second actual ('idxType') was ",
+                   decayToValue(idxTypeQt), " rather than a type as required.");
+        wr.code(fnCall, {fnCall->actual(1)});
+      }
+    }
+    if (fnCall->numActuals() == 3) {
+      auto stridesQt = actualTypes[2];
+      wr.message((erroredForIdxType ? "Additionally" : "However"),
+                 ", the third actual ('strides') was ", decayToValue(stridesQt),
+                 " rather than a 'strideKind' as required.");
+      wr.code(fnCall, {fnCall->actual(2)});
+    }
+  } else {
+    wr.message("However, 'domain' here had too many actuals.");
   }
 }
 
