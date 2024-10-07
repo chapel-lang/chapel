@@ -131,7 +131,8 @@ struct TConverter final : UastConverter {
 
   // What is the module / function we are converting?
   const AstNode* symbol = nullptr; // Module* or Function*
-  Symbol* curSymbol = nullptr; // corresponding to the above
+  FnSymbol* curFnSymbol = nullptr; // corresponding to the above
+  ModuleSymbol* curModuleSymbol = nullptr; // corresponding to the above
   Symbol* rvv = nullptr;
   LabelSymbol* epilogueLabel = nullptr;
 
@@ -297,7 +298,7 @@ struct TConverter final : UastConverter {
       auto& back = aListStack.back();
       AList& alist = *back.first;
       Expr* parentExpr = back.second;
-      Symbol* parentSymbol = curSymbol;
+      Symbol* parentSymbol = curFnSymbol;
       for_alist(ast, alist) {
         insert_help(ast, parentExpr, parentSymbol);
       }
@@ -663,10 +664,9 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   ID id = mod->id();
   const ResolutionResultByPostorderID& resolved = resolveModule(context, id);
   pushBlock(modSym->initFn->body);
-  const AstNode* oldSymbol = symbol;
-  Symbol* oldCurSymbol = curSymbol;
   symbol = mod;
-  curSymbol = modSym->initFn;
+  curFnSymbol = modSym->initFn;
+  curModuleSymbol = modSym;
   moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
   currentResolvedFunction = nullptr;
 
@@ -679,8 +679,9 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   modSym->initFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   // tidy up after traversal
-  symbol = oldSymbol;
-  curSymbol = oldCurSymbol;
+  symbol = nullptr;
+  curFnSymbol = nullptr;
+  curModuleSymbol = nullptr;
   popBlock();
 
   // record any fixups that need to be handled
@@ -711,11 +712,9 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   }
   const Function* fn = ast->toFunction();
   pushBlock(modSym->block);
-  const AstNode* oldSymbol = symbol;
-  const ResolvedFunction* oldFn = currentResolvedFunction;
-  Symbol* oldCurSymbol = curSymbol;
   symbol = fn;
-  curSymbol = nullptr; // to be set later
+  curFnSymbol = nullptr; // to be set later
+  curModuleSymbol = nullptr; // not doing a module init here
   currentResolvedFunction = r;
   moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
   localSyms.clear();
@@ -726,12 +725,13 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   symbol->traverse(rv); // note: this will set curSymbol
 
   // record any fixups that need to be handled
-  noteAllContainedFixups(curSymbol, 0);
+  noteAllContainedFixups(curFnSymbol, 0);
 
   // tidy up after traversal
-  symbol = oldSymbol;
-  curSymbol = oldCurSymbol;
-  currentResolvedFunction = oldFn;
+  symbol = nullptr;
+  curFnSymbol = nullptr;
+  curModuleSymbol = nullptr;
+  currentResolvedFunction = nullptr;
   popBlock();
   localSyms.clear();
 
@@ -1281,16 +1281,16 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
   auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str(),
                               inTupleDecl));
   const bool isTypeVar = node->kind() == uast::Variable::TYPE;
-  if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
-    // is it a module-scope variable?
-    bool moduleScopeVar = false;
-    const uast::Module* mod = nullptr;
-    if (currentResolvedFunction == nullptr) {
+  bool moduleScopeVar = false;
+  const uast::Module* inModule = symbol->toModule();
+
+  { // compute moduleScopeVar
+    if (inModule != nullptr) {
       // is it within a block or within the module directly?
       moduleScopeVar = true;
       // TODO: make this a parsing query
       for (auto ast = parsing::parentAst(context, node);
-           ast != nullptr && ast != mod;
+           ast != nullptr && ast != inModule;
            ast = parsing::parentAst(context, ast)) {
         if (ast->isTupleDecl() || ast->isMultiDecl()) {
           // these are OK and still declare a top-level variable
@@ -1299,7 +1299,12 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
         }
       }
     }
+  }
+
+  if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
+    // is it a module-scope variable?
     // adjust the cname for module-scope variables
+    const uast::Module* mod = symbol->toModule();
     if (moduleScopeVar && mod) {
       varSym->cname = astr(mod->id().symbolPath().c_str(),
                            ".",
@@ -1364,7 +1369,13 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
     CHPL_UNIMPL("remote variable");
   } else {
     def = new DefExpr(varSym);
-    curAList->insertAtTail(def);
+    if (!moduleScopeVar) {
+      curAList->insertAtTail(def);
+    } else {
+      // module variables need to be stored outside of module init fn
+      INT_ASSERT(curModuleSymbol);
+      curModuleSymbol->block->insertAtTail(def);
+    }
 
     CallExpr* move = nullptr;
     if (varSym->isRef()) {
@@ -1517,7 +1528,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   FnSymbol* fn = new FnSymbol("_");
   curAList->insertAtTail(new DefExpr(fn));
-  curSymbol = fn; // for setting child node's parentSymbol
+  curFnSymbol = fn; // for setting child node's parentSymbol
 
   // note the correspondence between the ResolvedFunction & what it converts to
   // (for calls, including recursive calls)
@@ -1893,12 +1904,11 @@ void TConverter::exit(const Return* node, RV& rv) {
 
   CallExpr* ret = exitCallActuals();
 
-  // normalize returns to une the Return Value Variable (RVV)
+  // normalize returns to use the Return Value Variable (RVV)
   if (node->value() != nullptr) {
-    FnSymbol* fn = toFnSymbol(curSymbol);
     Expr* retExpr = ret->get(1)->remove();
     CallExpr* move = nullptr;
-    if (fn->returnsRefOrConstRef()) {
+    if (curFnSymbol->returnsRefOrConstRef()) {
       move = new CallExpr(PRIM_MOVE, rvv, new CallExpr(PRIM_ADDR_OF, retExpr));
     } else {
       move = new CallExpr(PRIM_MOVE, rvv, retExpr);
