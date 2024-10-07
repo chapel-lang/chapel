@@ -72,8 +72,8 @@ LDFLAGS += [
 if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
     if str(chpl_variables.get("CHPL_HOST_PLATFORM")) == "darwin":
         sys.exit(
-            "Cannot use chapel-py on Mac OS when address sanitization is enabled; " +
-            "please unset 'CHPL_SANITIZE' then rebuild Chapel"
+            "Cannot use chapel-py on Mac OS when address sanitization is enabled; "
+            + "please unset 'CHPL_SANITIZE' then rebuild Chapel"
         )
 
     CXXFLAGS += ["-fsanitize=address"]
