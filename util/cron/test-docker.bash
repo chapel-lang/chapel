@@ -122,7 +122,7 @@ update_all_images() {
 if [ -n "$RELEASE_VERSION" ]
 then
   log_info "Building and pushing nightly and release-tagged images for version: $RELEASE_VERSION"
-  local release_branch="release/$RELEASE_VERSION"
+  release_branch="release/$RELEASE_VERSION"
   if [ "$(git rev-parse --abbrev-ref HEAD)" != "$release_branch" ]
   then
     log_error "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
