@@ -2147,16 +2147,6 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto newExpr = call->calledExpression()->toNew();
   auto& re = byPostorder.byAst(call);
   auto& reNewExpr = byPostorder.byAst(newExpr);
-
-  // Rewrite 'new dmap' to 'new _distribution'
-  if (auto rt = reNewExpr.type().type()->toRecordType()) {
-    if (rt->id().symbolPath() == "ChapelArray.dmap") {
-      reNewExpr.setType(QualifiedType(
-          reNewExpr.type().kind(), CompositeType::getDistributionType(context),
-          reNewExpr.type().param()));
-    }
-  }
-
   auto qtNewExpr = reNewExpr.type();
 
 
@@ -2165,16 +2155,23 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     return true;
   }
 
-  // Remove nilability from e.g., 'new C?()' for the init call (or else it
-  // will not resolve because the receiver formal is 'nonnil borrowed').
   const Type* initReceiverType = qtNewExpr.type();
+
   if (auto clsType = qtNewExpr.type()->toClassType()) {
+    // Remove nilability from e.g., 'new C?()' for the init call (or else it
+    // will not resolve because the receiver formal is 'nonnil borrowed').
+
     // always set the receiver to be borrowed non-nil b/c we don't want to
     // call initializers for '_owned' when the receiver is 'owned(MyClass)'
     auto newDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     initReceiverType = clsType->withDecorator(context, newDecor);
-    CHPL_ASSERT(initReceiverType);
+  } else if (auto recordType = qtNewExpr.type()->toRecordType()) {
+    // Rewrite 'new dmap' to 'new _distribution'
+    if (recordType->id().symbolPath() == "ChapelArray.dmap") {
+      initReceiverType = CompositeType::getDistributionType(context);
+    }
   }
+  CHPL_ASSERT(initReceiverType);
 
   /*
   auto cls = qtNewExpr.type()->toClassType();
