@@ -21,6 +21,10 @@
 /* This file supports conversion of uAST+types to the older AST used by
    the rest of the compiler. It uses recursive functions to perform
    the conversion.
+
+   This pass is currently experimental. While it is optional, it should
+   generate AST similar to what the production compiler emits after
+   the callDestructors pass.
  */
 
 #include "convert-uast.h"
@@ -372,6 +376,7 @@ struct TConverter final : UastConverter {
 
   // helpers
   bool typeExistsAtRuntime(const types::Type* t);
+  bool functionExistsAtRuntime(const ResolvedFunction* r);
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
   CallExpr* convertLifetimeIdent(const Identifier* node, RV& rv);
   // Only type expressions that are runtime types need to be converted
@@ -464,6 +469,9 @@ struct TConverter final : UastConverter {
 
   bool enter(const Formal* node, RV& rv);
   void exit(const Formal* node, RV& rv);
+
+  bool enter(const Variable* node, RV& rv);
+  void exit(const Variable* node, RV& rv);
 
   bool enter(const Literal* node, RV& rv);
   void exit(const Literal* node, RV& rv);
@@ -698,7 +706,13 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
 }
 
 void TConverter::convertFunction(const ResolvedFunction* r) {
+  // don't bother with functions that don't need to exist at runtime
+  if (!functionExistsAtRuntime(r)) {
+    return;
+  }
+
   printf("Converting function %s\n", r->id().str().c_str());
+
   // figure out, in which block should we put the DefExpr for the new FnSymbol?
 
   // here we flatten all functions, so we just need to find the appropriate
@@ -727,7 +741,10 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   // traverse
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rv(&rcval, symbol, *this, resolved);
-  symbol->traverse(rv);
+  symbol->traverse(rv); // note: this will set curSymbol
+
+  // record any fixups that need to be handled
+  noteAllContainedFixups(curSymbol, 0);
 
   // tidy up after traversal
   symbol = oldSymbol;
@@ -736,8 +753,6 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   popBlock();
   localSyms.clear();
 
-  // record any fixups that need to be handled
-  noteAllContainedFixups(curSymbol, 0);
 }
 
 Type* TConverter::helpConvertType(const types::Type* t) {
@@ -1200,6 +1215,20 @@ void TConverter::noteTypeFixupNeeded(Symbol* sym) {
 bool TConverter::typeExistsAtRuntime(const types::Type* t) {
   /* TODO */
   return false;
+}
+
+bool TConverter::functionExistsAtRuntime(const ResolvedFunction* r) {
+  const auto& qt = r->returnType();
+  if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+    // a 'type' actual can be left out at this point
+    return false;
+  } else if (qt.isParam()) {
+    // a 'param' actual can be left out at this point
+    return false;
+  }
+
+  // otherwise, there is something to do.
+  return true;
 }
 
 Expr* TConverter::convertLifetimeClause(const uast::AstNode* node, RV& rv) {
@@ -1888,6 +1917,43 @@ void TConverter::exit(const Formal* node, RV& rv) {
   printf("exit formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
+bool TConverter::enter(const Variable* node, RV& rv) {
+  printf("enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  auto info = convertVariable(node, rv, true);
+  INT_ASSERT(info.entireExpr && info.variableDef);
+  auto varSym = toVarSymbol(info.variableDef->sym);
+  INT_ASSERT(varSym);
+
+  // Special handling for extern type variables.
+  const bool isTypeVar = node->kind() == uast::Variable::TYPE;
+  if (isTypeVar) {
+    if (node->linkage() == uast::Decl::EXTERN) {
+      CHPL_UNIMPL("extern type vars");
+      /* TODO
+      INT_ASSERT(!node->isConfig());
+      INT_ASSERT(info.variableDef->sym && isVarSymbol(info.variableDef->sym));
+      auto varSym = toVarSymbol(info.variableDef->sym);
+      auto linkageName = node->linkageName() ? varSym->cname : nullptr;
+      stmts = convertTypesToExtern(stmts, linkageName);
+
+      // fix up convertedSyms since convertTypesToExtern
+      // replaced the DefExpr/Symbol
+      INT_ASSERT(stmts->body.last() && isDefExpr(stmts->body.last()));
+      auto newDef = toDefExpr(stmts->body.last());
+      noteConvertedSym(node, newDef->sym);*/
+    }
+  }
+
+  curAList->insertAtTail(info.variableDef);
+
+  return false;
+}
+void TConverter::exit(const Variable* node, RV& rv) {
+  printf("exit variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
+
 
 bool TConverter::enter(const Literal* node, RV& rv) {
   printf("enter literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
@@ -1983,6 +2049,24 @@ bool TConverter::enter(const Call* node, RV& rv) {
     return false;
   }
 
+  // Consider the return type of the called function.
+  // Do we need to emit this call at all?
+  if (!functionExistsAtRuntime(resolvedFn)) {
+    // don't emit the call, but instead emit a SymExpr for the relevant
+    // type or param.
+    const auto& qt = resolvedFn->returnType();
+    SymExpr* ret = nullptr;
+    if (qt.isType()) {
+      Type* t = convertType(qt.type());
+      ret = new SymExpr(t->symbol);
+    } else {
+      Symbol* p = convertParam(qt);
+      ret = new SymExpr(p);
+    }
+    curAList->insertAtTail(ret);
+    return false;
+  }
+
   Symbol* calledFn = findConvertedFn(resolvedFn);
 
   // set up the call
@@ -2018,8 +2102,6 @@ bool TConverter::enter(const Call* node, RV& rv) {
 
   // done generating actuals
   exitCallActuals();
-
-  curAList->insertAtTail(ret);
 
   return false;
 }
