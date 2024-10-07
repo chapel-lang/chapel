@@ -161,6 +161,8 @@ proc main() {
   test(5);
   test(42.0);
   test(2.71828182845);
+  test(17i);
+  test(32-19i);
   test("a-b-c-d-e-f-g");
   test(b"12345");
   test((1, 2, 3));
