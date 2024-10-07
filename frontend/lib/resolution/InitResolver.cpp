@@ -319,7 +319,8 @@ static const DomainType* domainTypeFromSubsHelper(
           } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
             // TODO: support sparse domains
           } else {
-            CHPL_ASSERT(false && "unexpected type of domain");
+            // not a recognized domain type
+            return genericDomain;
           }
         }
       }
