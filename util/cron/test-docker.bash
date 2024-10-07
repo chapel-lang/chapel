@@ -6,6 +6,8 @@
 #
 # Assumes Docker is already running on the system, logged into an account with
 # appropriate permissions to push the images.
+#
+
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
@@ -37,7 +39,7 @@ EOF
 # Args:
 # - image name without tag
 # - test script location
-# - release version tag to use (optional, just 'nightly' otherwise)
+# - release version tag to use (optional, builds nightly otherwise)
 update_image() {
   local baseImageName="$1"
   local script="$2"
@@ -92,7 +94,7 @@ update_image() {
 
 # Build, test, and push all Chapel Docker images.
 # Args:
-# - release version tag to use (optional, just 'nightly' otherwise)
+# - release version tag to use (optional, builds nightly otherwise)
 update_all_images() {
   local release_tag="$1"
 
@@ -117,8 +119,8 @@ update_all_images() {
 # Build and push nightly images
 update_all_images
 
-# Build and push release images after ALL nightly builds have succeeded, if
-# release tag was specified.
+# Build and push release-tagged images, if RELEASE_VERSION was specified.
+# Runs after all nightly images, to abort if any fail.
 if [ -n "$RELEASE_VERSION" ]
 then
   update_all_images "$RELEASE_VERSION"
