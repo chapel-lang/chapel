@@ -68,6 +68,13 @@ update_image() {
   # Anna, 2024-10-07
   docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
   BUILD_RESULT=$?
+  # Also push as 'latest' tag if this is a release build
+  if [ -n "$release_tag" ]
+  then
+    # Use base image name (without tag) to use Docker's default tag 'latest'
+    docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$baseImageName"
+  fi
+
   if [ $BUILD_RESULT -ne 0 ]
   then
         echo "docker build failed for $imageName image"
@@ -91,13 +98,6 @@ update_image() {
         exit 1
   else
         echo "docker commands succeeded inside chapel $imageName container"
-  fi
-
-  # Also push as 'latest' tag if this is a release build
-  if [ -n "$release_tag" ]
-  then
-    # Use base image name (without tag) to use Docker's default tag 'latest'
-    docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$baseImageName"
   fi
 
   log_info "Completed $imageName"
