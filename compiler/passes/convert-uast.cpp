@@ -117,8 +117,6 @@ struct Converter final : UastConverter {
 
   std::vector<std::pair<SymExpr*, ID>> identFixups;
   std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
-  std::vector<std::pair<SymExpr*,
-                        const resolution::TypedFnSignature*>> callFixups;
 
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
@@ -191,8 +189,6 @@ struct Converter final : UastConverter {
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn);
   Symbol* findConvertedSym(ID id, bool neverTrace=false);
-  Symbol* findConvertedFn(const resolution::TypedFnSignature* sig,
-                          bool neverTrace=false);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
@@ -3857,31 +3853,6 @@ Symbol* Converter::findConvertedSym(ID id, bool neverTrace) {
   return new TemporaryConversionSymbol(id);
 }
 
-Symbol* Converter::findConvertedFn(const resolution::TypedFnSignature* sig,
-                                   bool neverTrace) {
-  if (!canScopeResolve) return nullptr;
-
-  bool doTrace = trace && !neverTrace;
-
-  auto it = fns.find(sig);
-  if (it != fns.end()) {
-    FnSymbol* fn = it->second;
-    // already converted it, so return that
-    if (doTrace) {
-      printf("Found fn %s %s\n",
-             sig->untyped()->name().c_str(),
-             sig->untyped()->id().str().c_str());
-    }
-    return fn;
-  }
-
-  if (doTrace) {
-    printf("Could not find fn %s\n", sig->untyped()->id().str().c_str());
-  }
-
-  return new TemporaryConversionSymbol(sig);
-}
-
 void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
   if (!canScopeResolve) return;
 
@@ -3903,19 +3874,6 @@ void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
   }
 
   moduleFixups.emplace_back(mod, id);
-}
-
-void Converter::noteCallFixupNeeded(SymExpr* se,
-                                    const resolution::TypedFnSignature* sig) {
-  if (!canScopeResolve) return;
-
-  if (trace) {
-    printf("Noting fixup needed [%i] for mention of %s\n",
-           se->id,
-           sig->untyped()->id().str().c_str());
-  }
-
-  callFixups.emplace_back(se, sig);
 }
 
 void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
@@ -3950,9 +3908,7 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
 
   if (SymExpr* se = toSymExpr(ast)) {
     if (auto tcs = toTemporaryConversionSymbol(se->symbol())) {
-      if (tcs->sig != nullptr) {
-        noteCallFixupNeeded(se, tcs->sig);
-      } else {
+      if (!tcs->symId.isEmpty()) {
         noteIdentFixupNeeded(se, tcs->symId);
       }
     }
@@ -4063,28 +4019,6 @@ void Converter::postConvertApplyFixups() {
     m->moduleUseAdd(usedM);
   }
   moduleFixups.clear();
-
-  // Fix up any CallExprs that need to have their calledExpr re-targeted
-  for (const auto& p : callFixups) {
-    SymExpr* se = p.first;
-    const resolution::TypedFnSignature* target = p.second;
-
-    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
-
-    if (target->isCompilerGenerated()) {
-      continue;
-    }
-
-    astlocMarker markAstLoc(target->id());
-
-    Symbol* sym = findConvertedFn(target, /* neverTrace */ true);
-    if (!isFnSymbol(sym)) {
-      INT_FATAL(se, "could not find target function for call fixup %s",
-                target->untyped()->name().c_str());
-    }
-    se->setSymbol(sym);
-  }
-  callFixups.clear();
 
   // Add defPoints that 'getDecoratedClass' was prevented from inserting when
   // the original AggregateType was no longer in the tree.

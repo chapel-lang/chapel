@@ -363,6 +363,7 @@ struct TConverter final : UastConverter {
   void noteTypeFixupNeeded(Symbol* sym);
   void noteAllContainedFixups(BaseAST* ast, int depth);
   Symbol* findConvertedSym(const ID& id);
+  Symbol* findConvertedFn(const ResolvedFunction* rfn);
 
   // helper methods
   bool shouldConvertWithoutTypes(const ResolvedFunction* r) {
@@ -370,6 +371,7 @@ struct TConverter final : UastConverter {
   }
 
   // helpers
+  bool typeExistsAtRuntime(const types::Type* t);
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
   CallExpr* convertLifetimeIdent(const Identifier* node, RV& rv);
   // Only type expressions that are runtime types need to be converted
@@ -472,8 +474,8 @@ struct TConverter final : UastConverter {
   bool enter(const Return* node, RV& rv);
   void exit(const Return* node, RV& rv);
 
-  bool enter(const FnCall* node, RV& rv);
-  void exit(const FnCall* node, RV& rv);
+  bool enter(const Call* node, RV& rv);
+  void exit(const Call* node, RV& rv);
 
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
@@ -1122,9 +1124,8 @@ void TConverter::noteAllContainedFixups(BaseAST* ast, int depth) {
 
   if (SymExpr* se = toSymExpr(ast)) {
     if (auto tcs = toTemporaryConversionSymbol(se->symbol())) {
-      if (tcs->sig != nullptr) {
-        CHPL_UNIMPL("TCS with sig");
-        //noteCallFixupNeeded(se, tcs->sig);
+      if (tcs->rfn != nullptr) {
+        noteCallFixupNeeded(se, tcs->rfn);
       } else {
         noteIdentFixupNeeded(se, tcs->symId);
       }
@@ -1166,6 +1167,16 @@ Symbol* TConverter::findConvertedSym(const ID& id) {
   return new TemporaryConversionSymbol(id);
 }
 
+Symbol* TConverter::findConvertedFn(const ResolvedFunction* rfn) {
+  // check if the function was already converted
+  auto it = fns.find(rfn);
+  if (it != fns.end()) {
+    return it->second;
+  }
+
+  return new TemporaryConversionSymbol(rfn);
+}
+
 void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
   if (currentResolvedFunction == nullptr) {
     globalSyms[ast->id()] = sym;
@@ -1178,8 +1189,17 @@ void TConverter::noteIdentFixupNeeded(SymExpr* se, ID id) {
   identFixups.emplace_back(se, std::move(id));
 }
 
+void TConverter::noteCallFixupNeeded(SymExpr* se, const ResolvedFunction* r) {
+  callFixups.emplace_back(se, r);
+}
+
 void TConverter::noteTypeFixupNeeded(Symbol* sym) {
   typeFixups.push_back(sym);
+}
+
+bool TConverter::typeExistsAtRuntime(const types::Type* t) {
+  /* TODO */
+  return false;
 }
 
 Expr* TConverter::convertLifetimeClause(const uast::AstNode* node, RV& rv) {
@@ -1513,12 +1533,12 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
         sym->qual = q;
 
       // Set the param value for the variable in paramMap, if applicable
-      if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+      /*if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
         if (qt.hasParamPtr()) {
           Symbol* val = convertParam(qt);
           paramMap.put(sym, val);
         }
-      }
+      }*/
     }
   }
 }
@@ -1937,47 +1957,76 @@ void TConverter::exit(const Return* node, RV& rv) {
   ret->replace(new GotoStmt(GOTO_RETURN, epilogueLabel));
 }
 
-bool TConverter::enter(const FnCall* node, RV& rv) {
-  printf("enter fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+bool TConverter::enter(const Call* node, RV& rv) {
+  printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  const uast::AstNode* calledExpression = node->calledExpression();
-  CHPL_ASSERT(calledExpression);
+  const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
+  if (re == nullptr) {
+    return false;
+  }
 
-  // create a CallExpr that we can fill in with the actuals
-  CallExpr* ret = new CallExpr(PRIM_NOOP);
+  const auto& candidate = re->mostSpecific().only();
+  const TypedFnSignature* sig = candidate.fn();
+  if (sig == nullptr) {
+    return false;
+  }
 
+  const ResolvedFunction* resolvedFn = nullptr;
+  if (sig->untyped()->idIsFunction()) {
+    // TODO: do we need to handle nested functions differently here?
+    chpl::resolution::ResolutionContext rcval(context);
+    const PoiScope* poiScope = re->poiScope();
+    resolvedFn = resolveFunction(&rcval, sig, poiScope);
+  }
+
+  if (resolvedFn == nullptr) {
+    return false;
+  }
+
+  Symbol* calledFn = findConvertedFn(resolvedFn);
+
+  // set up the call
+  CallExpr* ret = new CallExpr(calledFn);
   curAList->insertAtTail(ret);
   enterCallActuals(ret);
 
-  // visit the called expression
-  Expr* baseExpr = convertExpr(calledExpression, rv);
-  ret->primitive = nullptr;
-  ret->baseExpr = baseExpr;
-  ret->square = node->callUsedSquareBrackets();
+  // gather the actuals in a way that is consistent with other resolution parts
+  std::vector<const AstNode*> actualAsts;
+  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
+                                         /* raiseErrors */ false,
+                                         &actualAsts);
 
-  // Convert and add the actual arguments.
-  for (int i = 0; i < node->numActuals(); i++) {
-    Expr* actual = convertExpr(node->actual(i), rv);
-    INT_ASSERT(actual);
-    if (node->isNamedActual(i)) {
-      actual = buildNamedActual(node->actualName(i).c_str(), actual);
+  // consider the actual for each Formal
+  auto& formalActualMap = candidate.formalActualMap();
+  for (const FormalActual& fa : formalActualMap.byFormals()) {
+    const types::QualifiedType& qt = fa.formalType();
+    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+      // a 'type' actual can be left out at this point
+    } else if (qt.isParam()) {
+      // a 'param' actual can be left out at this point
+    } else {
+      if (fa.hasDefault()) {
+        CHPL_UNIMPL("default arguments");
+      } else {
+        // it's something that exists at runtime, so include it
+        Expr* actualExpr = convertExpr(actualAsts[fa.actualIdx()], rv);
+        ret->insertAtTail(actualExpr);
+      }
+      // TODO handle associated actions for 'in' 'out', deinit tmp, etc
     }
-    ret->insertAtTail(actual);
   }
+
+  // done generating actuals
+  exitCallActuals();
+
+  curAList->insertAtTail(ret);
 
   return false;
 }
 
-void TConverter::exit(const FnCall* node, RV& rv) {
+void TConverter::exit(const Call* node, RV& rv) {
   printf("exit fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-
-  exitCallActuals();
-
-  //CallExpr* ret = exitCallActuals();
 }
-
-
-// TODO: for variables, noteConvertedSym(decl, conv->sym);
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
   printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
