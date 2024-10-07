@@ -17,4 +17,8 @@ if [ ! -d "$chpl_frontend_py_deps/chapel" ]; then
   exit 1
 fi
 
+if [ "$CHPL_SANITIZE" == "address" ]; then
+  export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
+fi
+
 exec "$1" "${@:2}"

@@ -69,6 +69,10 @@ LDFLAGS += [
     chpl_lib_path,
 ]
 
+if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
+    CXXFLAGS += ["-fsanitize=address"]
+    LDFLAGS += ["-fsanitize=address"]
+
 os.environ["CC"] = host_cc
 os.environ["CXX"] = host_cxx
 setup(
