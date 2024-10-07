@@ -102,11 +102,13 @@ update_all_images() {
   cd "$CHPL_HOME/util/packaging/docker/gasnet"
   dockerfile_nightly_patch
   update_image chapel/chapel-gasnet "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
+  # Clean up after patch changes
   dockerfile_nightly_patch -R
 
   cd "$CHPL_HOME/util/packaging/docker/gasnet-smp"
   dockerfile_nightly_patch
   update_image chapel/chapel-gasnet-smp "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
+  # Clean up after patch changes
   dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
