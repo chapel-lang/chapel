@@ -79,7 +79,7 @@ if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
     CXXFLAGS += ["-fsanitize=address"]
     LDFLAGS += ["-fsanitize=address"]
 
-    if "clang" in str(chpl_variables.get("CHPL_TARGET_COMPILER")):
+    if "clang" in host_cc:
         CXXFLAGS += ["-shared-libasan"]
         LDFLAGS += ["-shared-libasan"]
 
