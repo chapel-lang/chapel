@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 #
-# This script will build, run, and verify chapel, gasnet, and gasnet-smp docker images.
+# This script will build, (sanity) test, and push the chapel, chapel-gasnet, and
+# chapel-gasnet-smp Docker images, using the `nightly` tag.
+#
+# Assumes Docker is already running on the system, logged into an account with
+# appropriate permissions to push the images.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
-# build_image function takes image name and docker script location as arguments.
-# Builds the image with the name from arg$1, runs the container and execute the install and verify script located in the location $2.
-build_image() {
+# update_image takes image name and test script location as arguments.
+update_image() {
   local imageName="$1"
   local script="$2"
   # Remove any existing image with the tag before building docker image
@@ -53,16 +56,16 @@ $nightlypatch
 EOF
 }
 
-# Build chapel Docker images
+# Build and push Chapel Docker images
 cd $CHPL_HOME
-build_image chapel/chapel:nightly  ${CHPL_HOME}/util/cron/docker-chapel.bash
+update_image chapel/chapel:nightly  ${CHPL_HOME}/util/cron/docker-chapel.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet
 dockerfile_nightly_patch
-build_image chapel/chapel-gasnet:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
+update_image chapel/chapel-gasnet:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet-smp
 dockerfile_nightly_patch
-build_image chapel/chapel-gasnet-smp:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
+update_image chapel/chapel-gasnet-smp:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
