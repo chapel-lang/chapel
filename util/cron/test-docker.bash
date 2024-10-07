@@ -15,10 +15,12 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 update_image() {
   local imageName="$1"
   local script="$2"
+
   # Remove any existing image with the tag before building docker image
   docker image rm --force $imageName
 
-  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $imageName
+  # Build image
+  docker buildx build --platform=linux/amd64,linux/arm64 . -t $imageName
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
@@ -26,13 +28,17 @@ update_image() {
         exit 1
   fi
 
-  containerid= docker image ls | grep $imageName | awk '{print$3}'
+  # Set up to test container
   cd ${CHPL_HOME}/util/cron
   echo 'writeln("Hello, world!");' > hello.chpl
 
+  # Run test script inside container
   docker run --rm -i $imageName  <  $script
-
   CONTAINER_RUN=$?
+
+  # Clean up after our scratch test script, whether it succeeded or not
+  rm hello.chpl
+
   if [ $CONTAINER_RUN -ne 0 ]
   then
         echo "docker commands failed inside chapel $imageName container"
@@ -40,6 +46,9 @@ update_image() {
   else
         echo "docker commands succeeded inside chapel $imageName container"
   fi
+
+  # Push image after testing has succeeded
+  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $imageName
 }
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest.
