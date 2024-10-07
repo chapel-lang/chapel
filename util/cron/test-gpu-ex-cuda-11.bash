@@ -6,7 +6,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
 source $CWD/common-hpe-cray-ex.bash
 
-module load cudatoolkit/23.9_11.8
+module load cuda/11.8
 
 # the module loaded above doesn't wire symlinks correctly. I've created a ticket
 # for that, but until that's fixed, we are setting this environment explicitly
