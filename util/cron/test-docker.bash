@@ -97,16 +97,16 @@ update_all_images() {
   local release_tag="$1"
 
   cd $CHPL_HOME
-  update_image chapel/chapel ${CHPL_HOME}/util/cron/docker-chapel.bash release_tag
+  update_image chapel/chapel ${CHPL_HOME}/util/cron/docker-chapel.bash "$release_tag"
 
   cd $CHPL_HOME/util/packaging/docker/gasnet
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet ${CHPL_HOME}/util/cron/docker-gasnet.bash release_tag
+  update_image chapel/chapel-gasnet ${CHPL_HOME}/util/cron/docker-gasnet.bash "$release_tag"
   dockerfile_nightly_patch -R
 
   cd $CHPL_HOME/util/packaging/docker/gasnet-smp
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet-smp ${CHPL_HOME}/util/cron/docker-gasnet.bash release_tag
+  update_image chapel/chapel-gasnet-smp ${CHPL_HOME}/util/cron/docker-gasnet.bash "$release_tag"
   dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
