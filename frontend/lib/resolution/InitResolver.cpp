@@ -297,7 +297,7 @@ static const DomainType* domainTypeFromSubsHelper(
         if (auto baseDom = instanceBct->parentClassType()) {
           auto& rf = fieldsForTypeDecl(context, baseDom,
                                        DefaultsPolicy::IGNORE_DEFAULTS);
-          if (baseDom->name() == "BaseRectangularDom") {
+          if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
             CHPL_ASSERT(rf.numFields() == 3);
             QualifiedType rank;
             QualifiedType idxType;
@@ -314,9 +314,9 @@ static const DomainType* domainTypeFromSubsHelper(
 
             return DomainType::getRectangularType(context, instanceQt, rank,
                                                   idxType, strides);
-          } else if (baseDom->name() == "BaseAssociativeDom") {
+          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
             // TODO: support associative domains
-          } else if (baseDom->name() == "BaseSparseDom") {
+          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
             // TODO: support sparse domains
           } else {
             CHPL_ASSERT(false && "unexpected type of domain");
