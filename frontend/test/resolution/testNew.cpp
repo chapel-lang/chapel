@@ -148,7 +148,7 @@ static void testEmptyRecordCompilerGenInit() {
   auto& associatedActions = reNewCall.associatedActions();
   assert(associatedActions.size() == 1);
   auto initTfs = associatedActions[0].fn();
-  assert(initTfs->id() == r->id());
+  assert(initTfs->untyped()->compilerGeneratedOrigin() == r->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
 
@@ -241,8 +241,7 @@ static void testTertMethodCallCrossModule() {
   assert(tfsInit);
   auto ufsInit = tfsInit->untyped();
   assert(ufsInit);
-  assert(!tfsInit->id().isEmpty());
-  assert(tfsInit->id().symbolPath() == "A.C");
+  assert(tfsInit->untyped()->compilerGeneratedOrigin().symbolPath() == "A.C");
   assert(ufsInit->isCompilerGenerated());
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");

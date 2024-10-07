@@ -1119,7 +1119,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
-    return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+    return CallResolutionResult(candidates,
+                                /* rejectedPossibleIteratorCandidates */ false,
+                                type, poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1817,7 +1819,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
-  return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+  return CallResolutionResult(candidates,
+                              /* rejectedPossibleIteratorCandidates */ false,
+                              type, poi, /* specially handled */ true);
 }
 
 

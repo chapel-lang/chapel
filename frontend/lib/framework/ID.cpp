@@ -141,8 +141,13 @@ ID ID::parentSymbolId(Context* context) const {
     return ID();
   }
 
-  // Otherwise, construct an ID for the parent symbol
-  return ID(parentSymPath, -1, 0);
+  if (this->isFabricatedId() &&
+      this->fabricatedIdKind() == FabricatedIdKind::Generated) {
+    return ID(parentSymPath, ID_GEN_START, 0);
+  } else {
+    // Otherwise, construct an ID for the parent symbol
+    return ID(parentSymPath, -1, 0);
+  }
 }
 
 UniqueString ID::symbolName(Context* context) const {

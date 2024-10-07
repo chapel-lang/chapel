@@ -472,6 +472,8 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   formalsInstantiated.resize(ufs->numFormals());
 
+  bool needsInstantiation = false;
+
   for (int i = 0; i < tfs->numFormals(); i++) {
     if (i == 0) {
       auto qt = QualifiedType(determineReceiverIntent(), newRecvType);
@@ -480,12 +482,15 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
     } else {
       formalTypes.push_back(tfs->formalType(i));
       formalsInstantiated.setBit(i, tfs->formalIsInstantiated(i));
+      if (tfs->formalType(i).genericity() == Type::Genericity::GENERIC) {
+        needsInstantiation = true;
+      }
     }
   }
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              /* needsInstantiation */ false,
+                              needsInstantiation,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated,
@@ -812,8 +817,12 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
-      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
-      state->qt = reRhs.type();
+      auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
+
+      auto param = state->qt.kind() == QualifiedType::PARAM ? rhsType.param() : nullptr;
+      auto qt = QualifiedType(state->qt.kind(), rhsType.type(), param);
+      state->qt = qt;
+
       state->initPointId = node->id();
       state->isInitialized = true;
 

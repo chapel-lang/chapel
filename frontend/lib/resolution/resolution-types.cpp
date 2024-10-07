@@ -704,6 +704,9 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   }
 
   if (!untyped->isTypeConstructor()) {
+    missingIteratorActuals_ = untyped->isIterator();
+    bool validMapping = true;
+
     // Make sure that any remaining formals are matched by name
     // or have a default value.
     // This is left out for type constructors because presently
@@ -713,11 +716,27 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       if (entry.actualIdx_ < 0) {
         if (entry.hasDefault() == false) {
           // formal was not provided and there is no default value
+          validMapping = false;
           failingFormalIdx_ = entry.formalIdx();
-          return false;
+
+          // The mapping is invalid, but if it's an iterator, we should
+          // continue and check if it's only invalid because of
+          // iterKind/followThis. If it's not an iterator, no seeking
+          // is necessary.
+          if (!untyped->isIterator()) {
+            break;
+          }
+
+          if (untyped->formalName(entryIdx) != USTR("tag") &&
+              untyped->formalName(entryIdx) != USTR("followThis")) {
+            missingIteratorActuals_ = false;
+            break;
+          }
         }
       }
     }
+
+    return validMapping;
   }
 
   return true;

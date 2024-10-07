@@ -55,11 +55,13 @@ namespace {
   struct EvaluatedCandidates {
     chpl::resolution::CandidatesAndForwardingInfo matching;
     std::vector<chpl::resolution::ApplicabilityResult> rejected;
+    std::vector<chpl::resolution::ApplicabilityResult> rejectedIteratorsMissingTag;
     bool evaluatedAnyNestedFunction = false;
 
     bool operator==(const EvaluatedCandidates& rhs) const {
       return this->matching == rhs.matching &&
         this->rejected == rhs.rejected &&
+        this->rejectedIteratorsMissingTag == rhs.rejectedIteratorsMissingTag &&
         this->evaluatedAnyNestedFunction == rhs.evaluatedAnyNestedFunction;
     }
     bool operator!=(const EvaluatedCandidates& rhs) const {
@@ -69,6 +71,7 @@ namespace {
       matching.swap(rhs.matching);
       std::swap(rejected, rhs.rejected);
       std::swap(evaluatedAnyNestedFunction, rhs.evaluatedAnyNestedFunction);
+      std::swap(rejectedIteratorsMissingTag, rhs.rejectedIteratorsMissingTag);
     }
     static bool update(EvaluatedCandidates& keep, EvaluatedCandidates& addin) {
       return chpl::defaultUpdate(keep, addin);
@@ -76,9 +79,10 @@ namespace {
     void mark(chpl::Context* context) const {
       matching.mark(context);
       chpl::mark<decltype(rejected)>{}(context, rejected);
+      chpl::mark<decltype(rejectedIteratorsMissingTag)>{}(context, rejectedIteratorsMissingTag);
     }
     size_t hash() const {
-      return chpl::hash(matching, rejected, evaluatedAnyNestedFunction);
+      return chpl::hash(matching, rejected, rejectedIteratorsMissingTag, evaluatedAnyNestedFunction);
     }
   };
 }
@@ -2154,7 +2158,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return ApplicabilityResult::failure(sig->id(), FAIL_FORMAL_ACTUAL_MISMATCH);
+    return ApplicabilityResult::failure(sig->id(), faMap.reason());
   }
 
   // compute the substitutions
@@ -2533,7 +2537,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                       sig->outerVariables());
 
   // May need to resolve the body at this point to compute final TFS.
-  if (result->isInitializer() && !result->isCompilerGenerated()) {
+  if (result->isInitializer()) {
     auto rf = resolveFunction(rc, result, poiScope);
     result = rf->signature();
   }
@@ -2996,7 +3000,7 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
   return QUERY_END(result);
 }
 
-static bool
+static optional<CandidateFailureReason>
 isUntypedSignatureApplicable(Context* context,
                              const UntypedFnSignature* ufs,
                              const FormalActualMap& faMap,
@@ -3008,17 +3012,16 @@ isUntypedSignatureApplicable(Context* context,
   //  * ref-ness
 
   if (!faMap.isValid()) {
-    return false;
+    return faMap.reason();
   }
 
   // TODO: more to check for method-ness?
+  // TODO: better reason failed in this case
   if (!ci.isOpCall() && ci.isMethodCall() != ufs->isMethod()) {
-    return false;
+    return FAIL_CANDIDATE_OTHER;
   }
 
-  // TODO: reason failed
-
-  return true;
+  return empty;
 }
 
 // given a typed function signature, determine if it applies to a call
@@ -3027,8 +3030,8 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
-  if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return ApplicabilityResult::failure(tfs->id(), /* TODO */ FAIL_CANDIDATE_OTHER);
+  if (auto reasonFailed = isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
+    return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
   }
 
   // Next, check that the types are compatible
@@ -3226,6 +3229,8 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
 
     if (s.success()) {
       ret.matching.addCandidate(s.candidate());
+    } else if (s.reason() == FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API) {
+      ret.rejectedIteratorsMissingTag.push_back(s);
     } else if (gatherRejected) {
       ret.rejected.push_back(s);
     }
@@ -4068,15 +4073,26 @@ considerCompilerGeneratedOperators(Context* context,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall()) return nullptr;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
+
+  // Generate assignment operators if the standard library isn't available.
+  bool generateAssign = parsing::bundledModulePath(context).isEmpty() &&
+                        ci.name() == USTR("=");
 
   // Avoid invoking the query if we don't need a binary operation here.
-  if (ci.name() != USTR(":") || ci.numActuals() != 2) return nullptr;
+  if (!(ci.numActuals() == 2 &&
+        (ci.name() == USTR(":") || generateAssign))) {
+    return nullptr;
+  }
 
   auto lhsType = ci.actual(0).type();
   auto rhsType = ci.actual(1).type();
-  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
-      !(rhsType.type() && rhsType.type()->isEnumType())) {
+
+  if (lhsType.type() == nullptr || rhsType.type() == nullptr) return nullptr;
+
+  if (ci.name() == USTR(":") &&
+      !lhsType.type()->isEnumType() &&
+      !rhsType.type()->isEnumType()) {
     return nullptr;
   }
 
@@ -4565,6 +4581,7 @@ static void doGatherCandidates(ResolutionContext* rc,
                                LastResortCandidateGroups& outLrcGroups,
                                CheckedScopes& outVisited,
                                size_t& outFirstPoiCandidateIdx,
+                               bool& outRejectedPossibleIteratorCandidates,
                                const Call* call,
                                const CallInfo& ci,
                                const CallScopeInfo& inScopes,
@@ -4583,6 +4600,8 @@ static void doGatherCandidates(ResolutionContext* rc,
   auto& initial = filter(rc, v, ci, gatherRejections);
   const auto& initialCandidates = initial.matching;
   const auto& initialRejections = initial.rejected;
+  outRejectedPossibleIteratorCandidates =
+    !initial.rejectedIteratorsMissingTag.empty();
 
   if (rejected != nullptr) {
     rejected->insert(rejected->end(),
@@ -4630,6 +4649,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
                           const CallInfo& ci,
                           const CallScopeInfo& inScopes,
                           size_t& firstPoiCandidate,
+                          bool& outRejectedPossibleIteratorCandidates,
                           std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
   CandidatesAndForwardingInfo candidates;
@@ -4651,7 +4671,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   // don't worry about last resort for compiler generated candidates
 
   // look for candidates without using POI.
-  doGatherCandidates(rc, candidates, lrcGroups, visited, firstPoiCandidate,
+  doGatherCandidates(rc, candidates, lrcGroups, visited,
+                     firstPoiCandidate, outRejectedPossibleIteratorCandidates,
                      call, ci, inScopes, rejected, nullptr);
 
   // next, look for candidates using POIs
@@ -4665,7 +4686,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       break;
     }
 
-    doGatherCandidates(rc, candidates, lrcGroups, visited, firstPoiCandidate,
+    doGatherCandidates(rc, candidates, lrcGroups, visited,
+                       firstPoiCandidate, outRejectedPossibleIteratorCandidates,
                        call, ci, inScopes, rejected, curPoi);
   }
 
@@ -4765,6 +4787,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        const CallInfo& ci,
                                        const CallScopeInfo& inScopes,
                                        PoiInfo& poiInfo,
+                                       bool& outRejectedPossibleIteratorCandidates,
                                        std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
 
@@ -4773,6 +4796,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   auto candidates = gatherAndFilterCandidates(rc, astForErr, call, ci,
                                               inScopes,
                                               firstPoiCandidate,
+                                              outRejectedPossibleIteratorCandidates,
                                               rejected);
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -4797,6 +4821,7 @@ resolveFnCall(ResolutionContext* rc,
   Context* context = rc->context();
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
+  bool rejectedPossibleIteratorCandidates = false;
 
   // Note: currently type constructors are not implemented as methods
   if (ci.calledType().kind() == QualifiedType::TYPE &&
@@ -4812,10 +4837,13 @@ resolveFnCall(ResolutionContext* rc,
     // * filter and instantiate
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
-    mostSpecific = resolveFnCallFilterAndFindMostSpecific(rc, astForErr,
-                                                          call, ci,
-                                                          inScopes,
-                                                          poiInfo, rejected);
+    mostSpecific =
+      resolveFnCallFilterAndFindMostSpecific(rc, astForErr,
+                                             call, ci,
+                                             inScopes,
+                                             poiInfo,
+                                             rejectedPossibleIteratorCandidates,
+                                             rejected);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
@@ -4885,7 +4913,9 @@ resolveFnCall(ResolutionContext* rc,
     }
   }
 
-  return CallResolutionResult(mostSpecific, retType, std::move(poiInfo));
+  return CallResolutionResult(mostSpecific,
+                              rejectedPossibleIteratorCandidates,
+                              retType, std::move(poiInfo));
 }
 
 static
@@ -5007,7 +5037,9 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
   MostSpecificCandidates emptyCandidates;
   QualifiedType emptyType;
   PoiInfo emptyPoi;
-  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
+  return CallResolutionResult(emptyCandidates,
+                              /* rejectedPossibleIteratorCandidates */ false,
+                              emptyType, emptyPoi);
 }
 
 CallResolutionResult

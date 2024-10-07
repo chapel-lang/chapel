@@ -96,8 +96,17 @@ void CompositeType::stringify(std::ostream& ss,
     superType = bct->parentClassType();
   }
 
-  //std::string ret = typetags::tagToString(tag());
-  name().stringify(ss, stringKind);
+  if (isStringType()) {
+    ss << "string";
+  } else if (isBytesType()) {
+    ss << "bytes";
+  } else if (isLocaleType()) {
+    ss << "locale";
+  } else if (id().symbolPath() == USTR("ChapelRange._range")) {
+    ss << "range";
+  } else {
+    name().stringify(ss, stringKind);
+  }
 
   auto sorted = sortedSubstitutions();
 
@@ -150,10 +159,8 @@ void CompositeType::stringify(std::ostream& ss,
 }
 
 const RecordType* CompositeType::getStringType(Context* context) {
-  auto id =
-      parsing::getSymbolIdFromTopLevelModule(context, "String", "_string");
-  // note no underscoe prefix
-  auto name = UniqueString::get(context, "string");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "String", "_string");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
@@ -166,18 +173,15 @@ const RecordType* CompositeType::getRangeType(Context* context) {
 }
 
 const RecordType* CompositeType::getBytesType(Context* context) {
-  auto id = parsing::getSymbolIdFromTopLevelModule(context, "Bytes", "_bytes");
-  // note no underscoe prefix
-  auto name = UniqueString::get(context, "bytes");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "Bytes", "_bytes");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleType(Context* context) {
-  auto id = parsing::getSymbolIdFromTopLevelModule(context, "ChapelLocale",
-                                                   "_locale");
-  // note no underscoe prefix
-  auto name = UniqueString::get(context, "locale");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelLocale", "_locale");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());

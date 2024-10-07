@@ -294,24 +294,18 @@ static void test6a() {
   testConstChecking("test6a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           x = 34;
         }
       }
     )"""",
-    {8});
+    {5});
 }
 static void test6b() {
   testConstChecking("test6b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           const ref y = x;
@@ -319,15 +313,12 @@ static void test6b() {
         }
       }
     )"""",
-    {9});
+    {6});
 }
 static void test6c() {
   testConstChecking("test6c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           ref y = x;
@@ -335,7 +326,7 @@ static void test6c() {
         }
       }
     )"""",
-    {8});
+    {5});
 }
 
 static void test7a() {
