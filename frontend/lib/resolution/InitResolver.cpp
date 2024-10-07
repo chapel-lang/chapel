@@ -316,8 +316,10 @@ static const DomainType* domainTypeFromSubsHelper(
                                                   idxType, strides);
           } else if (baseDom->name() == "BaseAssociativeDom") {
             // TODO: support associative domains
+          } else if (baseDom->name() == "BaseSparseDom") {
+            // TODO: support sparse domains
           } else {
-            CHPL_ASSERT(false && "Not handled!");
+            CHPL_ASSERT(false && "unexpected type of domain");
           }
         }
       }
