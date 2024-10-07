@@ -261,16 +261,16 @@ module Math {
   inline proc acos(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cacosf(z: complex(64)): complex(64);
-    return cacosf(x);
+    extern proc chpl_cacosf(z: complex(64)): complex(64);
+    return chpl_cacosf(x);
   }
 
   /* Returns the arc cosine of the argument `x`. */
   inline proc acos(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cacos(z: complex(128)): complex(128);
-    return cacos(x);
+    extern proc chpl_cacos(z: complex(128)): complex(128);
+    return chpl_cacos(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
@@ -296,16 +296,16 @@ module Math {
   inline proc acosh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cacoshf(z: complex(64)): complex(64);
-    return cacoshf(x);
+    extern proc chpl_cacoshf(z: complex(64)): complex(64);
+    return chpl_cacoshf(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`. */
   inline proc acosh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cacosh(z: complex(128)): complex(128);
-    return cacosh(x);
+    extern proc chpl_cacosh(z: complex(128)): complex(128);
+    return chpl_cacosh(x);
   }
 
   /* Returns the arc sine of the argument `x`.
@@ -331,16 +331,16 @@ module Math {
   inline proc asin(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc casinf(z: complex(64)): complex(64);
-    return casinf(x);
+    extern proc chpl_casinf(z: complex(64)): complex(64);
+    return chpl_casinf(x);
   }
 
   /* Returns the arc sine of the argument `x`. */
   inline proc asin(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc casin(z: complex(128)): complex(128);
-    return casin(x);
+    extern proc chpl_casin(z: complex(128)): complex(128);
+    return chpl_casin(x);
   }
 
   /*
@@ -376,16 +376,16 @@ module Math {
   inline proc asinh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc casinhf(z: complex(64)): complex(64);
-    return casinhf(x);
+    extern proc chpl_casinhf(z: complex(64)): complex(64);
+    return chpl_casinhf(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc casinh(z: complex(128)): complex(128);
-    return casinh(x);
+    extern proc chpl_casinh(z: complex(128)): complex(128);
+    return chpl_casinh(x);
   }
 
   /* Returns the arc tangent of the argument `x`.  The result lies in the
@@ -411,8 +411,8 @@ module Math {
   inline proc atan(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc catanf(z: complex(64)): complex(64);
-    return catanf(x);
+    extern proc chpl_catanf(z: complex(64)): complex(64);
+    return chpl_catanf(x);
   }
 
   /* Returns the arc tangent of the argument `x`.  The result lies in the
@@ -421,8 +421,8 @@ module Math {
   inline proc atan(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc catan(z: complex(128)): complex(128);
-    return catan(x);
+    extern proc chpl_catan(z: complex(128)): complex(128);
+    return chpl_catan(x);
   }
 
   /* Returns the arc tangent of the ratio of the two arguments.
@@ -469,16 +469,16 @@ module Math {
   inline proc atanh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc catanhf(z: complex(64)): complex(64);
-    return catanhf(x);
+    extern proc chpl_catanhf(z: complex(64)): complex(64);
+    return chpl_catanhf(x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`. */
   inline proc atanh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc catanh(z: complex(128)): complex(128);
-    return catanh(x);
+    extern proc chpl_catanh(z: complex(128)): complex(128);
+    return chpl_catanh(x);
   }
 
   /*
@@ -514,16 +514,16 @@ module Math {
   inline proc cos(x : complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ccosf(z: complex(64)): complex(64);
-    return ccosf(x);
+    extern proc chpl_ccosf(z: complex(64)): complex(64);
+    return chpl_ccosf(x);
   }
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ccos(z: complex(128)): complex(128);
-    return ccos(x);
+    extern proc chpl_ccos(z: complex(128)): complex(128);
+    return chpl_ccos(x);
   }
 
   /*
@@ -559,16 +559,16 @@ module Math {
   inline proc cosh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ccoshf(z: complex(64)): complex(64);
-    return ccoshf(x);
+    extern proc chpl_ccoshf(z: complex(64)): complex(64);
+    return chpl_ccoshf(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ccosh(z: complex(128)): complex(128);
-    return ccosh(x);
+    extern proc chpl_ccosh(z: complex(128)): complex(128);
+    return chpl_ccosh(x);
   }
 
   /*
@@ -730,8 +730,8 @@ module Math {
   inline proc exp(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cexpf(z: complex(64)): complex(64);
-    return cexpf(x);
+    extern proc chpl_cexpf(z: complex(64)): complex(64);
+    return chpl_cexpf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
@@ -739,8 +739,8 @@ module Math {
   inline proc exp(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cexp(z: complex(128)): complex(128);
-    return cexp(x);
+    extern proc chpl_cexp(z: complex(128)): complex(128);
+    return chpl_cexp(x);
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
@@ -906,16 +906,16 @@ module Math {
   inline proc log(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc clogf(z: complex(64)): complex(64);
-    return clogf(x);
+    extern proc chpl_clogf(z: complex(64)): complex(64);
+    return chpl_clogf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc log(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc clog(z: complex(128)): complex(128);
-    return clog(x);
+    extern proc chpl_clog(z: complex(128)): complex(128);
+    return chpl_clog(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -1217,16 +1217,16 @@ module Math {
   inline proc sin(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csinf(z: complex(64)): complex(64);
-    return csinf(x);
+    extern proc chpl_csinf(z: complex(64)): complex(64);
+    return chpl_csinf(x);
   }
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csin(z: complex(128)): complex(128);
-    return csin(x);
+    extern proc chpl_csin(z: complex(128)): complex(128);
+    return chpl_csin(x);
   }
 
   /*
@@ -1263,16 +1263,16 @@ module Math {
   inline proc sinh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csinhf(z: complex(64)): complex(64);
-    return csinhf(x);
+    extern proc chpl_csinhf(z: complex(64)): complex(64);
+    return chpl_csinhf(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csinh(z: complex(128)): complex(128);
-    return csinh(x);
+    extern proc chpl_csinh(z: complex(128)): complex(128);
+    return chpl_csinh(x);
   }
 
   /*
@@ -1309,16 +1309,16 @@ module Math {
   inline proc tan(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ctanf(z: complex(64)): complex(64);
-    return ctanf(x);
+    extern proc chpl_ctanf(z: complex(64)): complex(64);
+    return chpl_ctanf(x);
   }
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ctan(z: complex(128)): complex(128);
-    return ctan(x);
+    extern proc chpl_ctan(z: complex(128)): complex(128);
+    return chpl_ctan(x);
   }
 
   /*
@@ -1355,16 +1355,16 @@ module Math {
   inline proc tanh(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ctanhf(z: complex(64)): complex(64);
-    return ctanhf(x);
+    extern proc chpl_ctanhf(z: complex(64)): complex(64);
+    return chpl_ctanhf(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc ctanh(z: complex(128)): complex(128);
-    return ctanh(x);
+    extern proc chpl_ctanh(z: complex(128)): complex(128);
+    return chpl_ctanh(x);
   }
 
   /*
