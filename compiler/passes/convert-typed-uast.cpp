@@ -1115,7 +1115,7 @@ void TConverter::noteAllContainedFixups(BaseAST* ast, int depth) {
       // stop if we get to a nested module
       return;
     }
-    if (auto fn = toFnSymbol(ast)) {
+    if (isFnSymbol(ast)) {
       // stop if we get to a function that isn't compiler-generated
       return;
     }
@@ -1278,7 +1278,7 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
 
   bool isStatic = false;
   if (auto ag = node->attributeGroup()) {
-    if (auto attr = ag->getAttributeNamed(USTR("functionStatic"))) {
+    if (ag->getAttributeNamed(USTR("functionStatic"))) {
       CHPL_UNIMPL("function-static variables");
     }
   }
@@ -1614,7 +1614,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
         INT_ASSERT(conv);
 
       // A tuple decl, where components are formals or tuple decls.
-      } else if (auto formal = decl->toTupleDecl()) {
+      } else if (decl->toTupleDecl()) {
         CHPL_UNIMPL("Unhandled tuple formal");
         /*
         auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
