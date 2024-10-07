@@ -19,7 +19,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
 # Assumes the Dockerfile is available at ./Dockerfile.
 # Arguments are forwarded to `patch` command.
 dockerfile_nightly_patch() {
-  local patch_args="$@"
+  local patch_args="$*"
 
   local nightlypatch="
 1c1
@@ -28,7 +28,7 @@ dockerfile_nightly_patch() {
 > FROM chapel/chapel:nightly
 "
 
-  patch $patch_args ./Dockerfile << EOF
+  patch "$patch_args" ./Dockerfile << EOF
 $nightlypatch
 EOF
 }
@@ -49,11 +49,11 @@ update_image() {
   # Remove any existing image with the tag before building nightly docker image
   if [ -n "$release_tag" ]
   then
-    docker image rm --force $baseImageName
+    docker image rm --force "$baseImageName"
   fi
 
   # Build image
-  docker buildx build --platform=linux/amd64,linux/arm64 . -t $imageName
+  docker buildx build --platform=linux/amd64,linux/arm64 . -t "$imageName"
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
@@ -62,11 +62,11 @@ update_image() {
   fi
 
   # Set up to test container
-  cd ${CHPL_HOME}/util/cron
+  cd "${CHPL_HOME}/util/cron"
   echo 'writeln("Hello, world!");' > hello.chpl
 
   # Run test script inside container
-  docker run --rm -i $imageName  <  $script
+  docker run --rm -i "$imageName"  <  "$script"
   CONTAINER_RUN=$?
 
   # Clean up after our scratch test script, whether it succeeded or not
@@ -81,12 +81,12 @@ update_image() {
   fi
 
   # Push image after testing has succeeded
-  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $imageName
+  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$imageName"
   # Also push as 'latest' tag if this is a release build
   if [ -n "$release_tag" ]
   then
-    # Use base image name (without tag) to use Docker's default tag
-    docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $baseImageName
+    # Use base image name (without tag) to use Docker's default tag 'latest'
+    docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$baseImageName"
   fi
 }
 
@@ -96,17 +96,17 @@ update_image() {
 update_all_images() {
   local release_tag="$1"
 
-  cd $CHPL_HOME
-  update_image chapel/chapel ${CHPL_HOME}/util/cron/docker-chapel.bash "$release_tag"
+  cd "$CHPL_HOME"
+  update_image chapel/chapel "${CHPL_HOME}/util/cron/docker-chapel.bash" "$release_tag"
 
-  cd $CHPL_HOME/util/packaging/docker/gasnet
+  cd "$CHPL_HOME/util/packaging/docker/gasnet"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet ${CHPL_HOME}/util/cron/docker-gasnet.bash "$release_tag"
+  update_image chapel/chapel-gasnet "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
   dockerfile_nightly_patch -R
 
-  cd $CHPL_HOME/util/packaging/docker/gasnet-smp
+  cd "$CHPL_HOME/util/packaging/docker/gasnet-smp"
   dockerfile_nightly_patch
-  update_image chapel/chapel-gasnet-smp ${CHPL_HOME}/util/cron/docker-gasnet.bash "$release_tag"
+  update_image chapel/chapel-gasnet-smp "${CHPL_HOME}/util/cron/docker-gasnet.bash" "$release_tag"
   dockerfile_nightly_patch -R
 }
 # END FUNCTIONS
@@ -119,5 +119,5 @@ update_all_images
 # release tag was specified.
 if [ -n "$RELEASE_VERSION" ]
 then
-  update_all_images $RELEASE_VERSION
+  update_all_images "$RELEASE_VERSION"
 fi
