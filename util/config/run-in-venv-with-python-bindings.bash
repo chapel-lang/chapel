@@ -26,7 +26,7 @@ if [ $("$python" "$CHPL_HOME/util/chplenv/chpl_sanitizers.py") == "address" ]; t
     exit 1
   fi
 
-  if [ "$CC" == "clang" ]; then
+  if [ "$CC" == *"clang"* ]; then
     export LD_PRELOAD=$($CC -print-file-name=libclang_rt.asan.so)
   else
     export LD_PRELOAD=$($CC -print-file-name=libasan.so)
