@@ -53,14 +53,20 @@ update_image() {
 
   log_info "Starting $imageName..."
 
-  # Remove any existing image with the tag before building nightly docker image
+  # Remove any existing image with the tag before building
   if [ -n "$release_tag" ]
   then
-    docker image rm --force "$baseImageName"
+    docker image rm --force "$imageName"
   fi
 
-  # Build image
-  docker buildx build --platform=linux/amd64,linux/arm64 . -t "$imageName"
+  # Build and push image
+  # Note: We push before testing due to a limitation of Docker
+  # (https://github.com/docker/buildx/issues/59) which prevents loading a
+  # multi-arch image without pushing. This means we may push a broken nightly
+  # image before erroring out; it's important that release pushes come after
+  # all nightly pushes so we can't push a broken release image.
+  # Anna, 2024-10-07
+  docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
@@ -87,8 +93,6 @@ update_image() {
         echo "docker commands succeeded inside chapel $imageName container"
   fi
 
-  # Push image after testing has succeeded
-  docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$imageName"
   # Also push as 'latest' tag if this is a release build
   if [ -n "$release_tag" ]
   then
