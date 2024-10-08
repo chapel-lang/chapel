@@ -182,7 +182,7 @@ frontend-shared: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 test-frontend: FORCE frontend-tests $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Running the frontend tests..."
-	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-j\2/p'` ; \
 	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 
 frontend-tests: $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
