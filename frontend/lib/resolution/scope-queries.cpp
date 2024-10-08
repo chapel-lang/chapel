@@ -199,6 +199,11 @@ struct GatherDecls {
       //
       // TODO: Remove this once we have replaced those classes.
       skip = true;
+    } else if (d->name() == "eltType" && atFieldLevel &&
+               tagParent == asttags::Class &&
+               (d->id().symbolPath().startsWith("ChapelBase._ddata"))) {
+      // ditto for dummy _ddata class
+      skip = true;
     }
 
     if (skip == false) {

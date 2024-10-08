@@ -17,54 +17,40 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CPTR_TYPE_H
-#define CHPL_TYPES_CPTR_TYPE_H
+#ifndef CHPL_TYPES_HEAPBUFFER_TYPE_H
+#define CHPL_TYPES_HEAPBUFFER_TYPE_H
 
 #include "chpl/types/PtrType.h"
 #include "chpl/types/Type.h"
-#include "chpl/types/QualifiedType.h"
 
 namespace chpl {
 namespace types {
 
-class CPtrType final : public PtrType {
+class HeapBufferType final : public PtrType {
  private:
-  const bool isConst_ = false;
-
-  CPtrType(const CPtrType* instantiatedFrom, const Type* eltType,
-           bool isConst = false)
-      : PtrType(typetags::CPtrType, instantiatedFrom, eltType),
-        isConst_(isConst) {}
+  HeapBufferType(const HeapBufferType* instantiatedFrom, const Type* eltType)
+      : PtrType(typetags::HeapBufferType, instantiatedFrom, eltType) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (CPtrType*)other;
+    auto rhs = (HeapBufferType*)other;
     return instantiatedFrom_ == rhs->instantiatedFrom_ &&
-           eltType_ == rhs->eltType_ && isConst_ == rhs->isConst_;
+           eltType_ == rhs->eltType_;
   }
 
   void markUniqueStringsInner(Context* context) const override {}
 
-  static const owned<CPtrType>& getCPtrType(Context* context,
-                                            const CPtrType* instantiatedFrom,
-                                            const Type* eltType, bool isConst);
+  static const owned<HeapBufferType>& getHeapBufferType(
+      Context* context, const HeapBufferType* instantiatedFrom,
+      const Type* eltType);
 
  public:
-  static const CPtrType* get(Context* context);
-  static const CPtrType* get(Context* context, const Type* eltType);
-  static const CPtrType* getCVoidPtrType(Context* context);
-  static const CPtrType* getConst(Context* context);
-  static const CPtrType* getConst(Context* context, const Type* eltType);
-
+  static const HeapBufferType* get(Context* context);
+  static const HeapBufferType* get(Context* context, const Type* eltType);
   static const ID& getId(Context* context);
-  static const ID& getConstId(Context* context);
 
   const ID& id(Context* context) const override {
-    return isConst() ? getConstId(context) : getId(context);
+    return getId(context);
   }
-
-  const CPtrType* withoutConst(Context* context) const;
-
-  bool isConst() const { return isConst_; }
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
