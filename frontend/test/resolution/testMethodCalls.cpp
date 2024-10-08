@@ -853,6 +853,30 @@ static void test17() {
   }
 }
 
+static void test18() {
+  // test sync var method call isFull
+  printf("test6\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  setupModuleSearchPaths(context, false, false, {}, {});
+
+  std::string program = R"""(
+      var x : sync int;
+      var y = x.isFull;
+    )""";
+
+  auto m = parseModule(context, std::move(program));
+  auto results = resolveModule(context, m->id());
+  auto var = findVariable(m, "y");
+  auto init = var->initExpression();
+  assert(init);
+  auto qt = results.byAst(init).type();
+  assert(qt.type()->isBoolType());
+  assert(guard.numErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -871,6 +895,7 @@ int main() {
   test14b();
   test16();
   test17();
+  test18();
 
   return 0;
 }
