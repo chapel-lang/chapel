@@ -72,7 +72,7 @@ update_image() {
   if [ -n "$release_tag" ]
   then
     # Use base image name (without tag) to use Docker's default tag 'latest'
-    docker buildx build --platform=linux/amd64,linux/arm64 . --push -t "$baseImageName"
+    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$baseImageName"
   fi
 
   if [ $BUILD_RESULT -ne 0 ]
