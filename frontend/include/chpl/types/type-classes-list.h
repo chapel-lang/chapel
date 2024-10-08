@@ -56,11 +56,9 @@ TYPE_END_SUBCLASSES(IteratorType)
 
 
 // TODO:
-// migrate BytesType / StringType to something backed by the modules
-// (if the modules are parsed) and also do the same for array, domain,
-// distribution.
-//
-// c_ptr
+// migrate array and distribution to something backed by the modules
+// (if the modules are parsed)
+
 // c_array
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
