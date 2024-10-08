@@ -146,7 +146,7 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "domain" || name == "eltType") {
       return true;
     }
-  } else if (type->isCPtrType()) {
+  } else if (type->isPtrType()) {
     if (name == "eltType") {
       return true;
     }
@@ -986,11 +986,11 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
 }
 
 static const TypedFnSignature*
-generateCPtrMethod(Context* context, QualifiedType receiverType,
+generatePtrMethod(Context* context, QualifiedType receiverType,
                    UniqueString name) {
-  // Build a basic function signature for methods on a cptr
+  // Build a basic function signature for methods on a PtrType
   // TODO: we should really have a way to just set the return type here
-  const CPtrType* cpt = receiverType.type()->toCPtrType();
+  const PtrType* pt = receiverType.type()->toPtrType();
   const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
@@ -1002,10 +1002,10 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
 
   // Allow calling 'eltType' on either a type or value
   auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
-  formalTypes.push_back(QualifiedType(qual, cpt));
+  formalTypes.push_back(QualifiedType(qual, pt));
 
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ cpt->id(context),
+                        /*id*/ pt->id(context),
                         /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
@@ -1105,8 +1105,8 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       } else {
         CHPL_UNIMPL("record method not implemented yet!");
       }
-    } else if (type->isCPtrType()) {
-      result = generateCPtrMethod(context, receiverType, name);
+    } else if (type->isPtrType()) {
+      result = generatePtrMethod(context, receiverType, name);
     } else if (auto enumType = type->toEnumType()) {
       result = generateEnumMethod(context, enumType, name);
     } else {

@@ -34,6 +34,7 @@
 #include "chpl/types/ErroneousType.h"
 #include "chpl/types/ExternType.h"
 #include "chpl/types/FnIteratorType.h"
+#include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/IteratorType.h"

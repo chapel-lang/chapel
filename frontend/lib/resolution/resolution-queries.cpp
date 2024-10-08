@@ -3574,6 +3574,65 @@ static const Type* getCPtrType(Context* context,
   }
 }
 
+static const Type* getHeapBufferType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  UniqueString name = ci.name();
+
+  auto called = ci.calledType();
+  if (!(called.hasTypePtr() && called.type()->isHeapBufferType())) {
+    return nullptr;
+  }
+  if (name != USTR("_ddata")) {
+    return nullptr;
+  }
+
+  bool useGenericType = false;
+  // There should be 0 or 1 actuals depending on if it is ?
+  if (ci.hasQuestionArg()) {
+    if (ci.numActuals() != 0) {
+      context->error(astForErr, "invalid %s type construction", name.c_str());
+      return ErroneousType::get(context);
+    }
+    useGenericType = true;
+  } else {
+    if (ci.numActuals() != 1) {
+      context->error(astForErr,"invalid %s type construction", name.c_str());
+      return ErroneousType::get(context);
+    }
+
+    QualifiedType qt = ci.actual(0).type();
+    if (qt.type() && qt.type()->isAnyType()) {
+      useGenericType = true;
+    }
+  }
+  if (useGenericType) {
+    return HeapBufferType::get(context);
+  }
+
+  QualifiedType qt;
+  CHPL_ASSERT(ci.numActuals() > 0);
+  qt = ci.actual(0).type();
+
+  const Type* t = qt.type();
+  if (t == nullptr) {
+    // Details not yet known so return UnknownType
+    return UnknownType::get(context);
+  } else if (t->isUnknownType() || t->isErroneousType()) {
+    // Just propagate the Unknown / Erroneous type
+    // without raising any errors
+    return t;
+  }
+
+  if (!qt.isType()) {
+    // raise an error b/c of type mismatch
+    context->error(astForErr, "invalid %s type construction", name.c_str());
+    return ErroneousType::get(context);
+  } else {
+    return HeapBufferType::get(context, t);
+  }
+}
+
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
@@ -3631,6 +3690,10 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
   }
 
   if (auto t = getCPtrType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getHeapBufferType(context, astForErr, ci)) {
     return t;
   }
 

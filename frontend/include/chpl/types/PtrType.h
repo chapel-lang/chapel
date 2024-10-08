@@ -59,6 +59,8 @@ class PtrType : public Type {
   }
 
  public:
+  virtual const ID& id(Context* context) const = 0;
+
   const Type* eltType() const {
     return eltType_;
   }
