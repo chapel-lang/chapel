@@ -1,0 +1,11 @@
+─── error in returnEmptyAndValue.chpl:2 [InvalidReturns] ───
+  Invalid mix of 'return' statements
+  This statement returns something:
+      |
+    2 |   return 1;
+      |
+  This statement does not return anything:
+      |
+    3 |   return;
+      |
+

@@ -394,44 +394,7 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
-  std::vector<CallExpr*> calls;
-  collectMyCallExprs(fn, calls, fn);
-  bool isIterator = fn->isIterator();
-  bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
-  int numVoidReturns = 0, numNonVoidReturns = 0;
-
-  for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN)) {
-      if (notInAFunction)
-        USR_FATAL_CONT(call, "return statement is not in a function or iterator");
-      else {
-        if (call->numActuals() == 0) {
-          numVoidReturns++;
-        } else {
-          SymExpr* sym = toSymExpr(call->get(1));
-          if (sym && sym->symbol() == gVoid)
-            numVoidReturns++;
-          else {
-            if (isIterator)
-              USR_FATAL_CONT(call, "returning a value in an iterator");
-            else
-              numNonVoidReturns++;
-          }
-        }
-      }
-    }
-    else if (call->isPrimitive(PRIM_YIELD)) {
-      if (notInAFunction)
-        USR_FATAL_CONT(call, "yield statement is outside an iterator");
-      else if (!isIterator)
-        USR_FATAL_CONT(call, "yield statement is in a non-iterator function");
-    }
-  }
-
-  if (numVoidReturns != 0 && numNonVoidReturns != 0)
-    USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-
-  if (isIterator) {
+  if (fn->isIterator()) {
     for_formals(formal, fn) {
       if (formal->intent == INTENT_OUT) {
         USR_FATAL_CONT(formal, "out intent is not yet supported for iterators");

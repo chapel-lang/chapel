@@ -275,11 +275,45 @@ static void loadAndConvertModules(UastConverter& c) {
                                                 commandLineModules);
 
 
-  // construct a set of modules to convert
-  c.clearModulesToConvert();
-  for (const auto& id : modulesToConvert) {
-    c.addModuleToConvert(id);
+  // Compute the set of functions to fully resolve when using --dyno.
+  // This allows us to avoid resolving functions that aren't called.
+  if (fDynoCompilerLibrary) {
+    chpl::resolution::CalledFnsSet calledFns;
+
+    for (const auto& id : modulesToConvert) {
+      // Workaround: only use the dyno type resolver for user modules
+      // (and code called from them)
+      bool convertModInitCallsWithTypes = false;
+
+      UniqueString path;
+      bool found = gContext->filePathForId(id, path);
+      INT_ASSERT(found);
+      if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+        convertModInitCallsWithTypes = true;
+      }
+
+      if (convertModInitCallsWithTypes) {
+        gatherTransitiveFnsCalledByModInit(gContext, id, calledFns);
+      }
+    }
+
+    // TODO: debug code
+    std::vector<std::string> v;
+    for (auto kv : calledFns) {
+      v.push_back(kv.first->id().symbolPath().str() +
+                  " depth=" + std::to_string(kv.second));
+    }
+    std::sort(v.begin(), v.end());
+    printf("These are the gathered functions:\n");
+    for (auto p : v) {
+      printf("  %s\n", p.c_str());
+    }
+
+    c.setFunctionsToConvertWithTypes(std::move(calledFns));
   }
+
+  // construct a set of modules to convert
+  c.setModulesToConvert(modulesToConvert);
 
   // construct a set of top-level command-line modules
   std::set<ID> commandLineModulesSet;
@@ -675,6 +709,10 @@ static ID findIdForContainingDecl(ID id) {
 
   auto ret = ID();
   auto up = id;
+
+  // TODO: if ID refers to a Function, perhaps this
+  // function should return the ID unchanged,
+  // instead of causing 'In module ...' to be printed.
 
   while (1) {
     up = chpl::parsing::idToParentId(gContext, up);
@@ -1098,7 +1136,12 @@ void parseAndConvertUast() {
 
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
-  auto converter = UastConverter(gContext);
+  chpl::owned<UastConverter> converter;
+  if (fDynoCompilerLibrary) {
+    converter = createTypedConverter(gContext);
+  } else {
+    converter = createUntypedConverter(gContext);
+  }
 
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
@@ -1108,7 +1151,7 @@ void parseAndConvertUast() {
 
   addDynoLibFiles();
 
-  loadAndConvertModules(converter);
+  loadAndConvertModules(*converter.get());
 
   setupDynoLibFileGeneration();
 
@@ -1125,7 +1168,7 @@ void parseAndConvertUast() {
 
   checkConfigs();
 
-  converter.postConvertApplyFixups();
+  converter->postConvertApplyFixups();
 
   // One last catchall for errors.
   if (dynoRealizeErrors()) USR_STOP();

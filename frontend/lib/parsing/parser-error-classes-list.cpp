@@ -480,6 +480,30 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidReturns::write(ErrorWriterBase& wr) const {
+  const uast::Return* firstReturnSomething = std::get<0>(info_);
+  const uast::Return* firstReturnEmpty = std::get<1>(info_);
+
+  // figure out which appears first syntactically
+  const uast::Return* first = nullptr;
+  const uast::Return* second = nullptr;
+  if (firstReturnSomething->id() < firstReturnEmpty->id()) {
+    first = firstReturnSomething;
+    second = firstReturnEmpty;
+  } else {
+    first = firstReturnEmpty;
+    second = firstReturnSomething;
+  }
+
+  wr.heading(kind_, type_, first, "Invalid mix of 'return' statements");
+  const char* something = "this statement returns something:";
+  const char* nothing = "this statement does not return anything:";
+  wr.note(first, first->value()?something:nothing);
+  wr.code(first);
+  wr.note(second, second->value()?something:nothing);
+  wr.code(second);
+}
+
 void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   auto clause = std::get<0>(info_);
   auto parent = std::get<1>(info_);

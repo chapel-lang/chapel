@@ -66,6 +66,30 @@ bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
     resolution::getTypeGenericity(context, type()) == Type::GENERIC;
 }
 
+bool QualifiedType::operator<(const QualifiedType& other) const {
+  if (kind_ != other.kind_) {
+    return kind_ < other.kind_;
+  }
+
+  bool hasType = (type_ != nullptr);
+  bool otherHasType = (other.type_ != nullptr);
+  if (hasType != otherHasType) {
+    return hasType < otherHasType;
+  }
+
+  // TODO: compare contents of types
+
+  bool hasParam = (param_ != nullptr);
+  bool otherHasParam = (param_ != nullptr);
+  if (hasParam != otherHasParam) {
+    return hasParam < otherHasParam;
+  }
+
+  // TODO: compare contents of params
+
+  return false;
+}
+
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
   return defaultUpdate(keep, addin);
 }
