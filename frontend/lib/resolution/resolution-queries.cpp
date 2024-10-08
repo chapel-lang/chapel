@@ -1255,7 +1255,7 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (t->isUnknownType())
     return Type::MAYBE_GENERIC;
 
-  if (auto pt = t->toCPtrType()) {
+  if (auto pt = t->toPtrType()) {
     // Mimics the fields logic: if any field is non-concrete, the whole
     // type is generic. Logically, the c_ptr has a single field, the element
     // type.

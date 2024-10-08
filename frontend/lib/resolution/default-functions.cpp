@@ -1216,12 +1216,12 @@ generateCastToEnum(Context* context,
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  // Normalize recieverType to allow TYPE methods on c_ptr, and to otherwise
-  // use the VAR Kind. The Param* value is also stripped away to reduce
-  // queries.
+  // Normalize recieverType to allow TYPE methods on c_ptr and _ddata, and to
+  // otherwise use the VAR Kind. The Param* value is also stripped away to
+  // reduce queries.
   auto qt = receiverType;
-  bool isCPtr = qt.hasTypePtr() ? qt.type()->isCPtrType() : false;
-  if (!(qt.isType() && isCPtr)) {
+  bool isPtr = qt.hasTypePtr() ? qt.type()->isPtrType() : false;
+  if (!(qt.isType() && isPtr)) {
     qt = QualifiedType(QualifiedType::VAR, qt.type());
   }
   return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
