@@ -560,7 +560,7 @@ Context::isQueryRunning(
     return false;
   }
 
-  return search2->lastChecked == -1;
+  return search2->lastChecked == -1 || search2->beingTestedForReuse;
 }
 
 template<typename ResultType,
