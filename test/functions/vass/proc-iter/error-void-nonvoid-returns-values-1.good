@@ -1,4 +1,4 @@
 error-void-nonvoid-returns-values-1.chpl:2: In function 'p11e':
-error-void-nonvoid-returns-values-1.chpl:3: error: Invalid mix of 'return's
-error-void-nonvoid-returns-values-1.chpl:3: note: this one does not return anything
-error-void-nonvoid-returns-values-1.chpl:3: note: this one returns something
+error-void-nonvoid-returns-values-1.chpl:3: error: Invalid mix of 'return' statements
+error-void-nonvoid-returns-values-1.chpl:3: note: this statement does not return anything
+error-void-nonvoid-returns-values-1.chpl:3: note: this statement returns something
