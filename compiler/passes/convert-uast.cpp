@@ -5182,6 +5182,10 @@ void Converter::postConvertApplyFixups() {
 
     INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
 
+    if (target->isCompilerGenerated()) {
+      continue;
+    }
+
     astlocMarker markAstLoc(target->id());
 
     Symbol* sym = findConvertedFn(target, /* neverTrace */ true);
