@@ -21,7 +21,7 @@ If you do not, follow the steps `here
 
 .. note::
 
-   This document was last updated for ParallelCluster v3.8.0. Other versions may not have the same features and adjustments may be necessary.
+   This document was last updated for ParallelCluster v3.10.0. Other versions may not have the same features and adjustments may be necessary.
 
 Configuring a ParallelCluster
 -----------------------------
@@ -46,19 +46,12 @@ when configuring a cluster for Chapel.
    The default scheduler is ``slurm``. AWS Batch is also available, but not
    currently supported by Chapel.
 * Operating System
-   The default operating system is ``alinux2``. We recommend using either
-   ``alinux2`` or ``ubuntu2204``.
+   We recommend using either ``alinux2023``, ``ubuntu2204``, or ``rhel9``.
 
    .. note::
 
-      The default AMI for ``alinux2`` does not have the necessary drivers for
+      The default AMI for ``alinux2023`` does not have the necessary drivers for
       GPUs. If you plan to use GPUs, we recommend using ``ubuntu2204``.
-
-   .. note::
-
-      ``Amazon Linux 2023`` is preferred, but is not yet available in
-      ParallelCluster. If a later version of ParallelCluster includes ``Amazon
-      Linux 2023``, we recommend using it.
 
 * Head node instance type
    The default instance type is ``t2.micro``. This is the node that will be
@@ -95,7 +88,7 @@ something like this:
 
    Region: us-west-1
    Image:
-     Os: alinux2
+     Os: alinux2023
    HeadNode:
      InstanceType: t2.medium
      Networking:
@@ -152,7 +145,7 @@ These additional options can be added to the configuration file:
 
    Region: us-west-1
    Image:
-     Os: alinux2
+     Os: alinux2023
    HeadNode:
      InstanceType: t2.medium
      Networking:
@@ -178,9 +171,9 @@ These additional options can be added to the configuration file:
          - SUBNETID
 
 It also possible to use instances with GPUs. We recommend using ``G4dn``,
-``G5``, ``P3``, or ``P4`` instances. We also recommend not using ``alinux2``
-with these instances, as it does not have the necessary drivers for the GPUs.
-Instead, use ``ubuntu2204``.
+``G5``, ``P3``, or ``P4`` instances. For best experience, we recommend using
+``ubuntu2204`` with these instances as it is the easiest path to install the
+proper drivers.
 
 Launching and Connecting
 ------------------------
@@ -217,8 +210,8 @@ using the AWS session manager.
    .. note::
 
       The username may be different depending on the AMI used. The default
-      username for Amazon Linux 2 is ``ec2-user``. The default username for
-      Ubuntu 22.04 is ``ubuntu``.
+      username for Amazon Linux 2023 and Red Hat 9 is ``ec2-user``. The default
+      username for Ubuntu 22.04 is ``ubuntu``.
 
    .. note::
 
@@ -281,6 +274,8 @@ To build Chapel from source for use on the cluster, follow these steps:
       export CHPL_LAUNCHER=slurm-srun
       export CHPL_COMM_OFI_OOB=pmi2
 
+      # these paths may need to be adjusted, for example on some OSes the
+      # EFA path may be "lib" instead of "lib64"
       export CHPL_LIBFABRIC=system
       export PKG_CONFIG_PATH=/opt/amazon/efa/lib64/pkgconfig/
       export CHPL_LD_FLAGS="-L/opt/slurm/lib/ -Wl,-rpath,/opt/slurm/lib/"
