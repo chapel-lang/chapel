@@ -42,6 +42,7 @@
 #include "chpl/types/NothingType.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/PrimitiveType.h"
+#include "chpl/types/PtrType.h"
 #include "chpl/types/PromotionIteratorType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/RealType.h"
