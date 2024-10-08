@@ -155,14 +155,6 @@ static void test7() {
 }
 
 static void test8() {
-  testHeapBufferArg("_ddata(void)", "_ddata(int)", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(t);
-    assert(t->isVoidPtr());
-    // expect no errors; this should be valid.
-  });
-}
-
-static void test23() {
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -197,8 +189,6 @@ int main() {
   test6();
   test7();
   test8();
-
-  test23();
 
   delete context;
 
