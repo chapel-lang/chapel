@@ -81,15 +81,11 @@ update_image() {
         exit 1
   fi
 
-  # Set up to test container
-  cd "${CHPL_HOME}/util/cron"
-  echo 'writeln("Hello, world!");' > hello.chpl
-
   # Run test script inside container
+  echo 'writeln("Hello, world!");' > hello.chpl
   docker run --rm -i "$imageName"  <  "$script"
   CONTAINER_RUN=$?
-
-  # Clean up after our scratch test script, whether it succeeded or not
+  # Clean up scratch chpl file for testing
   rm hello.chpl
 
   if [ $CONTAINER_RUN -ne 0 ]
