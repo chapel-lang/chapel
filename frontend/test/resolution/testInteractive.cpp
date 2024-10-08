@@ -158,6 +158,13 @@ computeAndPrintStuff(ResolutionContext* rc,
       auto sig = a.fn();
       if (sig != nullptr) {
         if (sig->untyped()->idIsFunction()) {
+          if (a.action() == AssociatedAction::ITERATE) {
+            // sometimes, the associated action for iteration uses a different
+            // PoI to resolve the body of a given function. Rather than
+            // try figuring out that PoI, just skip it.
+            continue;
+          }
+
           auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }

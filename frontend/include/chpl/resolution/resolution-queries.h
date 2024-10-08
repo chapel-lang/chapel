@@ -408,7 +408,7 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   as the point-of-instantiation scopes that were used when resolving them.
  */
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::AstNode* astForErr,
+                                          const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
@@ -424,7 +424,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
  */
 CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
-                             const uast::AstNode* astForErr,
+                             const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
@@ -486,6 +486,13 @@ reportInvalidMultipleInheritance(Context* context,
 const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 /**
+  Retrieve the 'param' tag for an iterator constant. If the 'iterKind' enum
+  is not available, this will return an unknown type.
+ */
+const types::QualifiedType&
+getIterKindConstantOrUnknown(Context* context, uast::Function::IteratorKind kind);
+
+/**
   Returns the field in 'ad' (or its parent) that matches 'name'.
 */
 const uast::Decl* findFieldByName(Context* context,
@@ -493,6 +500,22 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
+const MostSpecificCandidate&
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const types::FnIteratorType* fnIter,
+                          uast::Function::IteratorKind iterKind);
+
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind);
+
+CallResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                      const uast::AstNode* iterand,
+                                      const types::QualifiedType& receiverType,
+                                      uast::Function::IteratorKind iterKind,
+                                      const types::QualifiedType& followThis,
+                                      const CallScopeInfo& inScopes);
 
 
 } // end namespace resolution

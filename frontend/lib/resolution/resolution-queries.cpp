@@ -2756,7 +2756,7 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
   // Call the implementation which resolves the function body.
-  auto resolved = resolveFunctionByInfoImpl(rc, sig, std::move(poiInfo));
+  auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
 
   // The final signature should only differ for initializers.
   auto finalSig = resolved->signature();
@@ -3334,13 +3334,13 @@ void accumulatePoisUsedByResolvingBody(ResolutionContext* rc,
 // return the result or ErroneousType.
 // returns nullptr if the class type is not handled here.
 static const Type* getManagedClassType(Context* context,
-                                       const AstNode* astForErr,
+                                       const AstNode* astForErrAndPoi,
                                        const CallInfo& ci) {
   UniqueString name = ci.name();
 
   if (ci.hasQuestionArg()) {
     if (ci.numActuals() != 0) {
-      context->error(astForErr, "invalid class type construction");
+      context->error(astForErrAndPoi, "invalid class type construction");
       return ErroneousType::get(context);
     } else if (name == USTR("owned")) {
       return AnyOwnedType::get(context);
@@ -3384,7 +3384,7 @@ static const Type* getManagedClassType(Context* context,
 
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     if (t != nullptr && !t->isUnknownType()) {
-      context->error(astForErr, "invalid class type construction");
+      context->error(astForErrAndPoi, "invalid class type construction");
     }
     return ErroneousType::get(context);
   }
@@ -3406,7 +3406,7 @@ static const Type* getManagedClassType(Context* context,
 }
 
 static const Type* getNumericType(Context* context,
-                                  const AstNode* astForErr,
+                                  const AstNode* astForErrAndPoi,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
@@ -3420,14 +3420,14 @@ static const Type* getNumericType(Context* context,
     if (ci.hasQuestionArg()) {
       // handle int(?)
       if (ci.numActuals() != 0) {
-        context->error(astForErr, "invalid numeric type construction");
+        context->error(astForErrAndPoi, "invalid numeric type construction");
         return ErroneousType::get(context);
       }
       useGenericType = true;
     } else {
       // handle int(?t) or int(16)
       if (ci.numActuals() != 1) {
-        context->error(astForErr, "invalid numeric type construction");
+        context->error(astForErrAndPoi, "invalid numeric type construction");
         return ErroneousType::get(context);
       }
 
@@ -3477,7 +3477,7 @@ static const Type* getNumericType(Context* context,
 
     if (!t->isIntType() || !qt.param()->isIntParam()) {
       // raise an error b/c of type mismatch
-      context->error(astForErr, "invalid numeric type construction");
+      context->error(astForErrAndPoi, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
 
@@ -3489,7 +3489,7 @@ static const Type* getNumericType(Context* context,
     }
 
     if (ret == nullptr) {
-      context->error(astForErr, "invalid numeric type construction");
+      context->error(astForErrAndPoi, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
 
@@ -3503,7 +3503,7 @@ static const Type* getNumericType(Context* context,
   gets either a c_ptr or c_ptrConst type depending on the name in the CallInfo
 */
 static const Type* getCPtrType(Context* context,
-                               const AstNode* astForErr,
+                               const AstNode* astForErrAndPoi,
                                const CallInfo& ci) {
   UniqueString name = ci.name();
   bool isConst;
@@ -3528,14 +3528,14 @@ static const Type* getCPtrType(Context* context,
   if (ci.hasQuestionArg()) {
     // handle c_ptr(?)/c_ptrConst(?)
     if (ci.numActuals() != 0) {
-      context->error(astForErr, "invalid %s type construction", name.c_str());
+      context->error(astForErrAndPoi, "invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
     useGenericType = true;
   } else {
     // handle c_ptr(?t) or c_ptr(eltT)/c_ptrConst(?t) or c_ptrConst(eltT)
     if (ci.numActuals() != 1) {
-      context->error(astForErr,"invalid %s type construction", name.c_str());
+      context->error(astForErrAndPoi,"invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
 
@@ -3565,7 +3565,7 @@ static const Type* getCPtrType(Context* context,
 
   if (!qt.isType()) {
     // raise an error b/c of type mismatch
-    context->error(astForErr,"invalid %s type construction", name.c_str());
+    context->error(astForErrAndPoi,"invalid %s type construction", name.c_str());
     return ErroneousType::get(context);
   } else {
     return isConst ? CPtrType::getConst(context, t) :
@@ -3597,7 +3597,7 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveBuiltinTypeCtor(Context* context,
-                                          const AstNode* astForErr,
+                                          const AstNode* astForErrAndPoi,
                                           const CallInfo& ci) {
   // none of the special type function calls are methods; we can stop here.
   if (ci.isMethodCall()) return nullptr;
@@ -3621,15 +3621,15 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     }
   }
 
-  if (auto t = getManagedClassType(context, astForErr, ci)) {
+  if (auto t = getManagedClassType(context, astForErrAndPoi, ci)) {
     return t;
   }
 
-  if (auto t = getNumericType(context, astForErr, ci)) {
+  if (auto t = getNumericType(context, astForErrAndPoi, ci)) {
     return t;
   }
 
-  if (auto t = getCPtrType(context, astForErr, ci)) {
+  if (auto t = getCPtrType(context, astForErrAndPoi, ci)) {
     return t;
   }
 
@@ -3668,157 +3668,10 @@ bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
   return true;
 }
 
-static optional<CallResolutionResult>
-resolveIteratorTheseCall(Context* context,
-                         const AstNode* astForErr,
-                         const CallInfo& ci,
-                         const CallScopeInfo& inScopes) {
-  if (ci.name() != USTR("these") || !ci.isMethodCall()) return empty;
-  auto receiver = ci.actual(0).type();
-  auto it = receiver.type() ? receiver.type()->toIteratorType() : nullptr;
-
-  if (!it) return empty;
-
-  // When it's an iterator created from a function, we need to set up
-  // a call with the same name and actuals as the function originally had,
-  // but in the current scope and with potential 'tag' and 'followThis' calls
-  if (auto fnIt = it->toFnIteratorType()) {
-    std::vector<CallInfoActual> actuals;
-
-    auto iterKindType = EnumType::getIterKindType(context);
-
-    // We have a call to an iterator signature, but it may not be the right
-    // overload. So, construct a call with the same name and actuals, with
-    // possibly a different tag or followThis.
-    auto typedSig = fnIt->iteratorFn();
-    auto untypedSig = typedSig->untyped();
-    for (int i = 0; i < typedSig->numFormals(); i++) {
-      auto formalQt = typedSig->formalType(i);
-
-      // We explicitly insert the tag below.
-      if (formalQt.type() == iterKindType) continue;
-
-      actuals.emplace_back(formalQt, untypedSig->formalName(i));
-    }
-
-    // Forward the tag and followThis arguments.
-    //
-    // Performance: if we were sure that FnIterators can only be constructed
-    // without tags, and if we don't find a tag/followThis argument here,
-    // that would mean we are constructing a call info for the same function
-    // that just produced this FnIteratorType, so we could avoid the call
-    // resolution below.
-    for (const auto& actual : ci.actuals()) {
-      if (actual.byName() == USTR("tag") ||
-          actual.byName() == USTR("followThis")) {
-        actuals.push_back(actual);
-      }
-    }
-
-    auto receiverType =
-      untypedSig->isMethod() ?
-      typedSig->formalType(0) :
-      QualifiedType();
-
-    auto genCi = CallInfo(untypedSig->name(),
-                          receiverType,
-                          /* isMethodCall */ typedSig->isMethod(),
-                          /* hasQuestionArg */ false,
-                          /* isParenless */ false,
-                          std::move(actuals));
-
-    auto c = resolveGeneratedCall(context, astForErr, genCi, inScopes);
-    return c;
-  } else if (auto loopIt = it->toLoopExprIteratorType()) {
-    // When resolving the leader iterator of a zippered loop expression,
-    // we only resolve the leader of its first iterand. On the other hand,
-    // we resolve all follower iterators of the loop expression.
-
-    std::vector<QualifiedType> receiverTypes;
-    if (loopIt->isZippered()) {
-      auto receiverQt = loopIt->iterand();
-      CHPL_ASSERT(receiverQt.type()->toTupleType());
-      auto tupleType = receiverQt.type()->toTupleType();
-
-      for (int i = 0; i < tupleType->numElements(); i++) {
-        receiverTypes.push_back(tupleType->elementType(i));
-      }
-    } else {
-      receiverTypes.push_back(loopIt->iterand());
-    }
-
-    // To robustly match the production implementation, we actually need
-    // to re-resolve the loop expr body given the (potentially new)
-    // results of resolving the follower iterators. However, this raises
-    // some challenges (e.g., suddenly loops are closures since they
-    // refer to their surrounding variables). Moreover, consensus at the time
-    // of writing is that allowing follower iterator types to change depending
-    // on usage context is undesirable, and allowing the yielded type to change
-    // is even more undesireable. So, resolve the followers if that's what
-    // we're doing, but return the existig yield instead of re-resolving the body.
-
-    bool leaderOnly = false;
-    bool standalone = false;
-    bool serial = true;
-    for (auto actual : ci.actuals()) {
-      if (actual.byName() == USTR("tag")) {
-        serial = false;
-        if (auto paramValue = actual.type().param()) {
-          if (auto enumValue = paramValue->toEnumParam()) {
-            leaderOnly = enumValue->value().str == "leader";
-            standalone = enumValue->value().str == "standalone";
-          }
-        }
-        break;
-      }
-    }
-
-    // Loop expressions don't have standalone iterators.
-    if (standalone) return empty;
-
-    // the loop was written as a serial loop expression, so no parallel
-    // 'these' calls are allowed.
-    if (!serial && !loopIt->supportsParallel()) return empty;
-
-    bool succeeded = true;
-    for (auto receiverType : receiverTypes) {
-      std::vector<CallInfoActual> actuals;
-      actuals.emplace_back(receiverType, USTR("this"));
-      for (size_t i = 1; i < ci.numActuals(); i++) {
-        actuals.push_back(ci.actual(i));
-      }
-
-      auto genCi = CallInfo(USTR("these"),
-                            receiverType,
-                            /* isMethodCall */ true,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ false,
-                            std::move(actuals));
-
-      auto c = resolveGeneratedCall(context, astForErr, genCi, inScopes);
-
-      if (c.exprType().isUnknownOrErroneous() ||
-          !c.exprType().type()->isIteratorType()) {
-        succeeded = false;
-        break;
-      }
-
-      if (leaderOnly) return c;
-    }
-
-    if (!succeeded) {
-      return empty;
-    }
-
-    return CallResolutionResult(loopIt->yieldType());
-  }
-  return empty;
-}
-
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
-                                 const AstNode* astForErr,
+                                 const AstNode* astForErrAndPoi,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
   // TODO: .borrow()
@@ -3854,20 +3707,20 @@ static bool resolveFnCallSpecial(Context* context,
         }
 
         if (srcEnumType && srcEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErrAndPoi, "from", srcEnumType, dst.type());
           return true;
         } else if (dstEnumType && dstEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstEnumType, src.type());
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErrAndPoi, "to", dstEnumType, src.type());
           return true;
         } else if (srcEnumType && dst.type()->toNothingType()) {
           auto fromName = tagToString(src.type()->tag());
-          context->error(astForErr, "illegal cast from %s to nothing", fromName);
+          context->error(astForErrAndPoi, "illegal cast from %s to nothing", fromName);
           exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                       ErroneousType::get(context));
           return true;
         }
 
-        exprTypeOut = Param::fold(context, astForErr,
+        exprTypeOut = Param::fold(context, astForErrAndPoi,
                                   uast::PrimitiveTag::PRIM_CAST, src, dst);
         return true;
     } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
@@ -3883,7 +3736,7 @@ static bool resolveFnCallSpecial(Context* context,
       // trying to cast to something that's not a type
       auto toName = tagToString(dst.type()->tag());
       auto fromName = tagToString(src.type()->tag());
-      context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
+      context->error(astForErrAndPoi, "illegal cast from %s to %s", fromName, toName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
       return true;
@@ -3912,7 +3765,7 @@ static bool resolveFnCallSpecial(Context* context,
     auto qt = ci.actual(0).type();
     if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
         qt.hasTypePtr() && qt.type()->isBoolType()) {
-      exprTypeOut = qt.param()->fold(context, astForErr,
+      exprTypeOut = qt.param()->fold(context, astForErrAndPoi,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
                                      qt, QualifiedType());
       return true;
@@ -3921,7 +3774,7 @@ static bool resolveFnCallSpecial(Context* context,
 
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
-      context->error(astForErr, "bad call to %s", ci.name().c_str());
+      context->error(astForErrAndPoi, "bad call to %s", ci.name().c_str());
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
       return true;
@@ -3943,7 +3796,7 @@ static bool resolveFnCallSpecial(Context* context,
       auto tup = thisType.type()->toTupleType();
       auto val = second.param()->toIntParam()->value();
       if (val < 0 || val >= tup->numElements()) {
-        CHPL_REPORT(context, TupleIndexOOB, astForErr->toCall(), tup, val);
+        CHPL_REPORT(context, TupleIndexOOB, astForErrAndPoi->toCall(), tup, val);
         exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       } else {
         auto member = tup->elementType(val);
@@ -4123,7 +3976,7 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
 
 static void
 considerCompilerGeneratedCandidates(Context* context,
-                                   const AstNode* astForErr,
+                                   const AstNode* astForErrAndPoi,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
@@ -4168,7 +4021,7 @@ considerCompilerGeneratedCandidates(Context* context,
 
   if (instantiated.candidate()->needsInstantiation()) {
     CHPL_REPORT(context, MissingFormalInstantiation,
-                astForErr,
+                astForErrAndPoi,
                 collectGenericFormals(context, instantiated.candidate()));
     return; // do not push invalid candidate into list
   }
@@ -4337,7 +4190,7 @@ static void filterCandidatesLastResort(
 // when using forwarding.
 static void
 gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
-                                    const AstNode* astForErr,
+                                    const AstNode* astForErrAndPoi,
                                     const Call* call,
                                     const CallInfo& ci,
                                     const CallScopeInfo& inScopes,
@@ -4438,7 +4291,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
-      considerCompilerGeneratedCandidates(context, astForErr, fci,
+      considerCompilerGeneratedCandidates(context, astForErrAndPoi, fci,
                                           inScopes.callScope(), inScopes.poiScope(),
                                           nonPoiCandidates,
                                           rejected);
@@ -4536,7 +4389,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
-            gatherAndFilterCandidatesForwarding(rc, astForErr, call, fci,
+            gatherAndFilterCandidatesForwarding(rc, astForErrAndPoi, call, fci,
                                                 inScopes,
                                                 nonPoiCandidates,
                                                 poiCandidates,
@@ -4644,7 +4497,7 @@ static void doGatherCandidates(ResolutionContext* rc,
 // to the 'this' receiver formal.
 static CandidatesAndForwardingInfo
 gatherAndFilterCandidates(ResolutionContext* rc,
-                          const AstNode* astForErr,
+                          const AstNode* astForErrAndPoi,
                           const Call* call,
                           const CallInfo& ci,
                           const CallScopeInfo& inScopes,
@@ -4662,7 +4515,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   //  the poiInfo from these is not gathered, because such methods should
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
-  considerCompilerGeneratedCandidates(context, astForErr, ci,
+  considerCompilerGeneratedCandidates(context, astForErrAndPoi, ci,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidates,
@@ -4720,7 +4573,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       CandidatesAndForwardingInfo poiCandidates;
 
       gatherAndFilterCandidatesForwarding(
-          rc, astForErr, call, ci, inScopes, nonPoiCandidates,
+          rc, astForErrAndPoi, call, ci, inScopes, nonPoiCandidates,
           poiCandidates, lrcGroups.getForwardingGroups(),
           rejected);
 
@@ -4745,6 +4598,7 @@ static MostSpecificCandidates
 findMostSpecificAndCheck(Context* context,
                          const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
+                         const AstNode* astForErrAndPoi,
                          const Call* call,
                          const CallInfo& ci,
                          const Scope* inScope,
@@ -4763,15 +4617,15 @@ findMostSpecificAndCheck(Context* context,
   }
 
   // note any most-specific candidates from POI in poiInfo.
-  // TODO: This can be the case for generated calls, but is skipping the POI
-  // accumulation safe?
-  if (call != nullptr) {
-    size_t n = candidates.size();
-    for (size_t i = firstPoiCandidate; i < n; i++) {
-      for (const MostSpecificCandidate& candidate : mostSpecific) {
-        if (candidate.fn() == candidates.get(i)) {
-          poiInfo.addIds(call->id(), candidate.fn()->id());
-        }
+  auto id =
+      call != nullptr ? call->id() :
+      astForErrAndPoi != nullptr ? astForErrAndPoi->id() :
+      ID();
+  size_t n = candidates.size();
+  for (size_t i = firstPoiCandidate; i < n; i++) {
+    for (const MostSpecificCandidate& candidate : mostSpecific) {
+      if (candidate.fn() == candidates.get(i)) {
+        poiInfo.addIds(id, candidate.fn()->id());
       }
     }
   }
@@ -4782,7 +4636,7 @@ findMostSpecificAndCheck(Context* context,
 
 static MostSpecificCandidates
 resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
-                                       const AstNode* astForErr,
+                                       const AstNode* astForErrAndPoi,
                                        const Call* call,
                                        const CallInfo& ci,
                                        const CallScopeInfo& inScopes,
@@ -4793,7 +4647,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
 
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
-  auto candidates = gatherAndFilterCandidates(rc, astForErr, call, ci,
+  auto candidates = gatherAndFilterCandidates(rc, astForErrAndPoi, call, ci,
                                               inScopes,
                                               firstPoiCandidate,
                                               outRejectedPossibleIteratorCandidates,
@@ -4802,18 +4656,77 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   // * check signatures
   // * gather POI info
   auto mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate, call, ci,
-                             inScopes.callScope(), inScopes.poiScope(),
-                             poiInfo);
+    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+                             astForErrAndPoi, call, ci, inScopes.callScope(),
+                             inScopes.poiScope(), poiInfo);
 
   return mostSpecific;
+}
+
+static const PoiScope*
+instantiationPoiScopeForMostSpecificCandidates(Context* context,
+                                               MostSpecificCandidates& mostSpecific,
+                                               const CallScopeInfo& inScopes) {
+  const PoiScope* instantiationPoiScope = nullptr;
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
+    if (candidate && candidate.fn()) {
+      instantiationPoiScope =
+          Resolver::poiScopeOrNull(context, candidate.fn(),
+                                   inScopes.callScope(),
+                                   inScopes.poiScope());
+      if (instantiationPoiScope) break;
+    }
+    if (instantiationPoiScope) break;
+  }
+  return instantiationPoiScope;
+}
+
+static void
+accumulatePoiInfoForMostSpecificCandidates(ResolutionContext* rc,
+                                           MostSpecificCandidates& mostSpecific,
+                                           PoiInfo& poiInfo,
+                                           const PoiScope* instantiationPoiScope) {
+  if (instantiationPoiScope) {
+    poiInfo.setPoiScope(instantiationPoiScope);
+    for (const MostSpecificCandidate& candidate : mostSpecific) {
+      if (candidate) {
+        if (candidate.fn()->untyped()->idIsFunction()) {
+          // note: following call returns early if candidate not instantiated
+          accumulatePoisUsedByResolvingBody(rc, candidate.fn(),
+                                            instantiationPoiScope,
+                                            poiInfo);
+        }
+      }
+    }
+  }
+}
+
+static CallResolutionResult
+resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
+                                          const MostSpecificCandidate& msc,
+                                          const CallScopeInfo& inScopes) {
+  auto mscs = MostSpecificCandidates::getOnly(msc);
+
+  PoiInfo poiInfo;
+  auto instantiationPoiScope =
+    instantiationPoiScopeForMostSpecificCandidates(rc->context(), mscs, inScopes);
+  accumulatePoiInfoForMostSpecificCandidates(rc, mscs, poiInfo,
+      instantiationPoiScope);
+  QualifiedType exprType;
+  if (msc.fn()) {
+    exprType = returnType(rc, msc.fn(), instantiationPoiScope);
+  }
+
+  bool rejectedPossibleIteratorCandidates = false;
+  return CallResolutionResult(mscs, rejectedPossibleIteratorCandidates,
+                              exprType, poiInfo);
 }
 
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
 static CallResolutionResult
 resolveFnCall(ResolutionContext* rc,
-              const AstNode* astForErr,
+              const AstNode* astForErrAndPoi,
               const Call* call,
               const CallInfo& ci,
               const CallScopeInfo& inScopes,
@@ -4838,7 +4751,7 @@ resolveFnCall(ResolutionContext* rc,
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
     mostSpecific =
-      resolveFnCallFilterAndFindMostSpecific(rc, astForErr,
+      resolveFnCallFilterAndFindMostSpecific(rc, astForErrAndPoi,
                                              call, ci,
                                              inScopes,
                                              poiInfo,
@@ -4849,31 +4762,12 @@ resolveFnCall(ResolutionContext* rc,
   // fully resolve each candidate function and gather poiScopesUsed.
 
   // figure out the poiScope to use
-  const PoiScope* instantiationPoiScope = nullptr;
-  for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate && candidate.fn()) {
-      instantiationPoiScope =
-          Resolver::poiScopeOrNull(context, candidate.fn(),
-                                   inScopes.callScope(),
-                                   inScopes.poiScope());
-      if (instantiationPoiScope) break;
-    }
-    if (instantiationPoiScope) break;
-  }
+  const PoiScope* instantiationPoiScope =
+    instantiationPoiScopeForMostSpecificCandidates(context, mostSpecific, inScopes);
 
-  if (instantiationPoiScope) {
-    poiInfo.setPoiScope(instantiationPoiScope);
-    for (const MostSpecificCandidate& candidate : mostSpecific) {
-      if (candidate) {
-        if (candidate.fn()->untyped()->idIsFunction()) {
-          // note: following call returns early if candidate not instantiated
-          accumulatePoisUsedByResolvingBody(rc, candidate.fn(),
-                                            instantiationPoiScope,
-                                            poiInfo);
-        }
-      }
-    }
-  }
+  accumulatePoiInfoForMostSpecificCandidates(rc, mostSpecific,
+                                             poiInfo, instantiationPoiScope);
+
 
   // infer types of generic 'out' formals from function bodies
   mostSpecific.inferOutFormals(rc, instantiationPoiScope);
@@ -5065,30 +4959,25 @@ resolveCallInMethod(ResolutionContext* rc,
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const AstNode* astForErr,
+                                          const AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected) {
   QualifiedType tmpRetType;
 
-  // Resolving 'these' is a bit trickier than other compiler-generated calls,
-  // so it's separately handled here instead of inside resolveFnCallSpecial.
-  if (auto cr = resolveIteratorTheseCall(context, astForErr, ci, inScopes)) {
-    return *cr;
-
   // see if the call is handled directly by the compiler
-  } else if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
+  if (resolveFnCallSpecial(context, astForErrAndPoi, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
   const Call* call = nullptr;
   ResolutionContext rcval(context);
-  return resolveFnCall(&rcval, astForErr, call, ci, inScopes, rejected);
+  return resolveFnCall(&rcval, astForErrAndPoi, call, ci, inScopes, rejected);
 }
 
 CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
-                             const AstNode* astForErr,
+                             const AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              QualifiedType implicitReceiver) {
@@ -5097,14 +4986,14 @@ resolveGeneratedCallInMethod(Context* context,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    auto ret = resolveGeneratedCall(context, astForErr, methodCi, inScopes);
+    auto ret = resolveGeneratedCall(context, astForErrAndPoi, methodCi, inScopes);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
     }
   }
 
   // otherwise, resolve a regular function call
-  return resolveGeneratedCall(context, astForErr, ci, inScopes);
+  return resolveGeneratedCall(context, astForErrAndPoi, ci, inScopes);
 }
 
 const TypedFnSignature* tryResolveInitEq(Context* context,
@@ -5592,6 +5481,312 @@ const Decl* findFieldByName(Context* context,
   return ret;
 }
 
+static UniqueString iterKindToUniqueString(Context* context,
+                                           Function::IteratorKind kind) {
+  switch (kind) {
+    case Function::IteratorKind::SERIAL:
+      return UniqueString();
+    case Function::IteratorKind::STANDALONE:
+      return USTR("standalone");
+    case Function::IteratorKind::FOLLOWER:
+      return USTR("follower");
+    case Function::IteratorKind::LEADER:
+      return USTR("leader");
+  }
+  CHPL_ASSERT(false && "unhandled iterator kind");
+  return UniqueString();
+}
+
+const QualifiedType&
+getIterKindConstantOrUnknown(Context* context, Function::IteratorKind iterKind) {
+  QUERY_BEGIN(getIterKindConstantOrUnknown, context, iterKind);
+
+  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
+
+  auto constant = iterKindToUniqueString(context, iterKind);
+  if (!constant.isEmpty()) {
+    auto ik = EnumType::getIterKindType(context);
+    if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
+      auto it = m->find(constant);
+      if (it != m->end()) ret = it->second;
+    }
+  }
+
+  return QUERY_END(ret);
+}
+
+static const MostSpecificCandidate&
+findTaggedIterator(ResolutionContext* rc,
+                   UniqueString name,
+                   QualifiedType receiverType,
+                   std::vector<QualifiedType> argTypes,
+                   Function::IteratorKind tag,
+                   const Scope* callScope,
+                   const Scope* iteratorScope,
+                   const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
+
+  auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
+
+  auto followThisType = QualifiedType();
+  bool isFollower = tag == Function::FOLLOWER;
+  bool isSerial = tag == Function::SERIAL;
+  if (isFollower) {
+    auto candidate = findTaggedIterator(rc, name, receiverType, argTypes,
+                                        Function::LEADER, callScope, iteratorScope, poiScope);
+    if (candidate) {
+      auto retType = returnType(rc, candidate.fn(), poiScope);
+
+      if (!retType.isUnknownOrErroneous() && retType.type()->isFnIteratorType()) {
+        followThisType = retType.type()->toFnIteratorType()->yieldType();
+      }
+    }
+  }
+
+  if (isFollower && followThisType.isUnknownOrErroneous()) {
+    auto ret = MostSpecificCandidate();
+    return CHPL_RESOLUTION_QUERY_END(ret);
+  }
+
+  auto iterKindType = EnumType::getIterKindType(rc->context());
+
+  std::vector<CallInfoActual> actuals;
+  for (auto argType : argTypes) {
+    // We explicitly insert the tag below.
+    if (argType.type() == iterKindType) continue;
+    actuals.push_back(CallInfoActual(argType, UniqueString()));
+  }
+  if (!isSerial) {
+    auto iterKind = getIterKindConstantOrUnknown(rc->context(), tag);
+    if (iterKind.isUnknownOrErroneous()) {
+      auto ret = MostSpecificCandidate();
+      return CHPL_RESOLUTION_QUERY_END(ret);
+    }
+
+    actuals.push_back(CallInfoActual(iterKind, USTR("tag")));
+  }
+
+  if (isFollower) {
+    actuals.push_back(CallInfoActual(followThisType, USTR("followThis")));
+  }
+
+  auto ci = CallInfo(name, receiverType,
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+
+  auto c = resolveGeneratedCall(rc->context(), parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
+  auto ret = c.mostSpecific().only();
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+static CallScopeInfo callScopeInfoForIterator(Context* context,
+                                              const IteratorType* iter) {
+  // The ID of the scope to lookup the other overloads in.
+  ID id;
+  if (auto fnIter = iter->toFnIteratorType()) {
+    id = fnIter->iteratorFn()->id();
+  } else if (auto loopIter = iter->toLoopExprIteratorType()) {
+    id = loopIter->sourceLocation();
+  } else {
+    CHPL_ASSERT(iter->isPromotionIteratorType());
+    id = iter->toPromotionIteratorType()->scalarFn()->id();
+  }
+  auto iteratorScope = scopeForId(context, id);
+  auto callScope = iteratorScope;
+  auto poiScope = iter->poiScope();
+
+  // If the function needs a PoI scope, this scope will capture functions
+  // at the iterator's own point of instantiation; we don't want to include
+  // this scope in the overload search (lookup scope), because that would make
+  // it possible to introduce new overloads of the iterator via PoI, which we do not
+  // want to allow.
+  //
+  // However, we do want to include the functions available at instantiation time
+  // when resolving the bodies of the other overloads, if applicable. So,
+  // change to callScope to unwrap one level from the PoI scope.
+  //
+  // Loop expressions do not create new PoI scopes (should they?) so they
+  // are exempt from this.
+  //
+  // See the comment on CallScopeInfo for details on why three scopes are
+  // necessary for resolving functions.
+  if (poiScope && !iter->isLoopExprIteratorType()) {
+    callScope = poiScope->inScope();
+    poiScope = poiScope->inFnPoi();
+  }
+
+  return CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
+}
+
+const MostSpecificCandidate&
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const FnIteratorType* fnIter,
+                          Function::IteratorKind iterKind) {
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, rc, fnIter, iterKind);
+
+  auto name = fnIter->iteratorFn()->untyped()->name();
+  auto receiverType =
+    fnIter->iteratorFn()->isMethod() ?
+    fnIter->iteratorFn()->formalType(0) :
+    QualifiedType();
+  std::vector<QualifiedType> argTypes;
+  for (int i = 0; i < fnIter->iteratorFn()->numFormals(); i++) {
+    argTypes.push_back(fnIter->iteratorFn()->formalType(i));
+  }
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter);
+
+  auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
+                                inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind) {
+  CHPL_RESOLUTION_QUERY_BEGIN(taggedYieldTypeForType, rc, fnIter, iterKind);
+
+  // building a call resolution result takes care of setting up the
+  // PoI scope and doing type inference using that PoI scope, so do it here.
+  auto msc = findTaggedIteratorForType(rc, fnIter, iterKind);
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter);
+  auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+
+  QualifiedType ret;
+  if (!c.exprType().isUnknownOrErroneous()) {
+    if (auto it = c.exprType().type()->toIteratorType()) {
+      ret = it->yieldType();
+    }
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+static CallResolutionResult
+resolveTheseCallForFnIterator(ResolutionContext* rc,
+                              const FnIteratorType* fnIt,
+                              uast::Function::IteratorKind iterKind,
+                              const types::QualifiedType& followThis) {
+  auto& msc = findTaggedIteratorForType(rc, fnIt, iterKind);
+
+  if (msc && iterKind == Function::FOLLOWER) {
+    // Additionally check that the follower type matches the expected
+    // follower type.
+    for (int i = 0; i < msc.fn()->numFormals(); i++){
+      if (msc.fn()->formalName(i) == USTR("followThis")) {
+        auto formalType = msc.fn()->formalType(i);
+        auto got = canPass(rc->context(), followThis, formalType);
+        if (!got.passes()) {
+          return CallResolutionResult::getEmpty();
+        }
+        break;
+      }
+    }
+  }
+
+  auto inScopes = callScopeInfoForIterator(rc->context(), fnIt);
+  return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+}
+
+static CallResolutionResult
+resolveTheseCallForLoopIterator(ResolutionContext* rc,
+                                const AstNode* astForErrAndPoi,
+                                const LoopExprIteratorType* loopIt,
+                                uast::Function::IteratorKind iterKind,
+                                const types::QualifiedType& followThis) {
+  // When resolving the leader iterator of a zippered loop expression,
+  // we only resolve the leader of its first iterand. On the other hand,
+  // we resolve all follower iterators of the loop expression.
+
+  std::vector<QualifiedType> receiverTypes;
+  if (loopIt->isZippered()) {
+    auto receiverQt = loopIt->iterand();
+    CHPL_ASSERT(receiverQt.type()->toTupleType());
+    auto tupleType = receiverQt.type()->toTupleType();
+
+    for (int i = 0; i < tupleType->numElements(); i++) {
+      receiverTypes.push_back(tupleType->elementType(i));
+    }
+  } else {
+    receiverTypes.push_back(loopIt->iterand());
+  }
+
+  bool leaderOnly = iterKind == Function::LEADER;
+  bool standalone = iterKind == Function::STANDALONE;
+  bool serial = iterKind == Function::SERIAL;
+
+  // Loop expressions don't have standalone iterators.
+  if (standalone)
+    return CallResolutionResult::getEmpty();
+
+  // the loop was written as a serial loop expression, so no parallel
+  // 'these' calls are allowed.
+  if (!serial && !loopIt->supportsParallel())
+    return CallResolutionResult::getEmpty();
+
+  auto inScopes = callScopeInfoForIterator(rc->context(), loopIt);
+  bool succeeded = true;
+  for (auto receiverType : receiverTypes) {
+    auto c = resolveTheseCall(rc, astForErrAndPoi, receiverType,
+                              iterKind, followThis, inScopes);
+
+    if (c.exprType().isUnknownOrErroneous() ||
+        !c.exprType().type()->isIteratorType()) {
+      succeeded = false;
+      break;
+    }
+
+    if (leaderOnly) return c;
+  }
+
+  if (!succeeded) {
+    return CallResolutionResult::getEmpty();
+  }
+
+  return CallResolutionResult(loopIt->yieldType());
+}
+
+CallResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                      const uast::AstNode* astForErrAndPoi,
+                                      const types::QualifiedType& receiverType,
+                                      uast::Function::IteratorKind iterKind,
+                                      const types::QualifiedType& followThis,
+                                      const CallScopeInfo& inScopes) {
+  // Handle 'these' on various iterator types, circumventing the normal
+  // process (since we do not generate 'these' methods).
+  if (receiverType.type()) {
+    if (auto fnIt = receiverType.type()->toFnIteratorType()) {
+      return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
+    } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
+      return resolveTheseCallForLoopIterator(rc, astForErrAndPoi, loopIt, iterKind, followThis);
+    }
+  }
+
+  // Otherwise, just generate a normal 'these' call.
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(receiverType, USTR("this")));
+
+  auto iterKindActual = getIterKindConstantOrUnknown(rc->context(), iterKind);
+  CHPL_ASSERT(iterKind == Function::SERIAL || !iterKindActual.isUnknown());
+  if (!iterKindActual.isUnknown()) {
+    actuals.emplace_back(iterKindActual, USTR("tag"));
+  }
+
+  if (!followThis.isUnknown()) {
+    actuals.emplace_back(followThis, USTR("followThis"));
+  }
+
+  auto ci = CallInfo(USTR("these"),
+                     receiverType,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(actuals));
+  return resolveGeneratedCall(rc->context(), astForErrAndPoi, ci, inScopes);
+}
 
 
 } // end namespace resolution

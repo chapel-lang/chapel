@@ -438,7 +438,6 @@ struct Resolver {
   // Instead, returns 'true' if an error needs to be issued.
   bool handleResolvedCallWithoutError(ResolvedExpression& r,
                                       const uast::AstNode* astForErr,
-                                      const CallInfo& ci,
                                       const CallResolutionResult& c,
                                       optional<ActionAndId> associatedActionAndId = {});
   // Same as handleResolvedCallWithoutError, except actually issues the error.

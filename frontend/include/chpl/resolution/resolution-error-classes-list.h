@@ -53,6 +53,7 @@ ERROR_CLASS(IncompatibleIfBranches, const uast::Conditional*, types::QualifiedTy
 ERROR_CLASS(IncompatibleKinds, types::QualifiedType::Kind, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(IncompatibleRangeBounds, const uast::Range*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(IncompatibleTypeAndInit, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*, const types::Type*, const types::Type*)
+ERROR_CLASS(IncompatibleYieldTypes, const uast::AstNode*, std::vector<std::tuple<uast::Function::IteratorKind, types::QualifiedType, const resolution::TypedFnSignature*>>)
 ERROR_CLASS(InvalidClassCast, const uast::PrimCall*, types::QualifiedType)
 ERROR_CLASS(InvalidDomainCall, const uast::FnCall*, std::vector<types::QualifiedType>)
 ERROR_CLASS(InvalidIndexCall, const uast::FnCall*, types::QualifiedType)

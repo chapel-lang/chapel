@@ -97,6 +97,17 @@ const char* Function::kindToString(Kind kind) {
   return "<unknown>";
 }
 
+const char* Function::iteratorKindToString(IteratorKind kind) {
+  switch (kind) {
+    case Function::SERIAL:     return "serial";
+    case Function::STANDALONE: return "standalone";
+    case Function::LEADER:     return "leader";
+    case Function::FOLLOWER:   return "follower";
+  }
+
+  return "<unknown>";
+}
+
 
 owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<AttributeGroup> attributeGroup,
