@@ -33,7 +33,7 @@ dockerfile_nightly_patch() {
 > FROM chapel/chapel:nightly
 "
 
-  patch "$patch_args" ./Dockerfile << EOF
+  patch $patch_args ./Dockerfile << EOF
 $nightlypatch
 EOF
 }
