@@ -496,8 +496,8 @@ void ErrorInvalidReturns::write(ErrorWriterBase& wr) const {
   }
 
   wr.heading(kind_, type_, first, "Invalid mix of 'return's");
-  const char* something = "this one returns something";
-  const char* nothing = "this one does not return anything";
+  const char* something = "this one returns something:";
+  const char* nothing = "this one does not return anything:";
   wr.note(first, first->value()?something:nothing);
   wr.code(first);
   wr.note(second, second->value()?something:nothing);
