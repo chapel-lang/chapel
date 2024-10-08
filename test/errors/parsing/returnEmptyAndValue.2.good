@@ -1,10 +1,10 @@
 ─── error in returnEmptyAndValue.chpl:2 [InvalidReturns] ───
-  Invalid mix of 'return's
-  This one returns something:
+  Invalid mix of 'return' statements
+  This statement returns something:
       |
     2 |   return 1;
       |
-  This one does not return anything:
+  This statement does not return anything:
       |
     3 |   return;
       |
