@@ -141,6 +141,18 @@ module PrecisionSerializer {
         } else {
           writer.writef("%.*dr", this.precision, val);
         }
+      } else if isComplexType(t) {
+        if this.padding > 0 {
+          writer.writef("%*.*dz", this.padding, this.precision, val);
+        } else {
+          writer.writef("%.*dz", this.precision, val);
+        }
+      } else if isImagType(t) {
+        if this.padding > 0 {
+          writer.writef("%*.*dm", this.padding, this.precision, val);
+        } else {
+          writer.writef("%.*dm", this.precision, val);
+        }
       } else if isIntegralType(t) {
         if this.padding > 0 {
           writer.writef("%*i", this.padding, val);
