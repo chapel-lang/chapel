@@ -34,6 +34,7 @@
 #include "chpl/types/NilType.h"
 #include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
+#include "chpl/types/PtrType.h"
 #include "chpl/types/RealType.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/types/UintType.h"
@@ -188,7 +189,7 @@ bool Type::isLocaleType() const {
 }
 
 bool Type::isNilablePtrType() const {
-  if (isPtrType()) {
+  if (isAnyPtrType()) {
 
     if (auto ct = toClassType()) {
       if (!ct->decorator().isNilable())

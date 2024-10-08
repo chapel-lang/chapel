@@ -230,8 +230,8 @@ class Type {
   }
 
   /** returns true for a type that is a kind of pointer */
-  bool isPtrType() const {
-    return isClassType() || isCFnPtrType() || isCVoidPtrType() || isCPtrType();
+  bool isAnyPtrType() const {
+    return isClassType() || isCFnPtrType() || isCVoidPtrType() || isPtrType();
   }
 
   /** returns true for a pointer type that can store nil */

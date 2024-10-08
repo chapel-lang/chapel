@@ -46,7 +46,10 @@ TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
-TYPE_NODE(CPtrType)
+
+TYPE_BEGIN_SUBCLASSES(PtrType)
+  TYPE_NODE(CPtrType)
+TYPE_END_SUBCLASSES(PtrType)
 
 TYPE_BEGIN_SUBCLASSES(IteratorType)
   TYPE_NODE(LoopExprIteratorType)

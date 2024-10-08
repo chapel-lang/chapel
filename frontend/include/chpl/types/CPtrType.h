@@ -20,59 +20,35 @@
 #ifndef CHPL_TYPES_CPTR_TYPE_H
 #define CHPL_TYPES_CPTR_TYPE_H
 
+#include "chpl/types/PtrType.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
 
 namespace chpl {
 namespace types {
 
-class CPtrType final : public Type {
+class CPtrType final : public PtrType {
  private:
-  const CPtrType* instantiatedFrom_;
-  const Type* eltType_;
   const bool isConst_ = false;
 
-  CPtrType(const CPtrType* instantiatedFrom,
-           const Type* eltType,
+  CPtrType(const CPtrType* instantiatedFrom, const Type* eltType,
            bool isConst = false)
-    : Type(typetags::CPtrType), instantiatedFrom_(instantiatedFrom),
-      eltType_(eltType), isConst_(isConst) {
-    // not an instantiation -> eltType_ should be empty
-    CHPL_ASSERT(instantiatedFrom_ != nullptr || eltType_ == nullptr);
-    // is an instantiation -> eltType should not be empty
-    CHPL_ASSERT(instantiatedFrom_ == nullptr || eltType_ != nullptr);
-  }
+      : PtrType(typetags::CPtrType, instantiatedFrom, eltType),
+        isConst_(isConst) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (CPtrType*) other;
+    auto rhs = (CPtrType*)other;
     return instantiatedFrom_ == rhs->instantiatedFrom_ &&
-           eltType_ == rhs->eltType_ &&
-           isConst_ == rhs->isConst_;
+           eltType_ == rhs->eltType_ && isConst_ == rhs->isConst_;
   }
 
   void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    if (!eltType_) return GENERIC;
-    return eltType_->genericity();
-  }
-
   static const owned<CPtrType>& getCPtrType(Context* context,
                                             const CPtrType* instantiatedFrom,
-                                            const Type* eltType,
-                                            bool isConst);
-
-  const CPtrType* instantiatedFromCPtrType() const {
-    // at present, only expecting a single level of instantiated-from.
-    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
-                instantiatedFrom_->instantiatedFrom_ == nullptr);
-    return instantiatedFrom_;
-  }
-
-  bool isEltTypeInstantiationOf(Context* context, const CPtrType* other) const;
+                                            const Type* eltType, bool isConst);
 
  public:
-
   static const CPtrType* get(Context* context);
   static const CPtrType* get(Context* context, const Type* eltType);
   static const CPtrType* getCVoidPtrType(Context* context);
@@ -86,23 +62,9 @@ class CPtrType final : public Type {
     return isConst() ? getConstId(context) : getId(context);
   }
 
-  const Type* eltType() const {
-    return eltType_;
-  }
-
   const CPtrType* withoutConst(Context* context) const;
 
-  bool isConst() const {
-    return isConst_;
-  }
-
-  bool isVoidPtr() const {
-    if (eltType_ == nullptr) return false;
-    return eltType_->isVoidType();
-  }
-
-  bool isInstantiationOf(Context* context,
-                         const CPtrType* genericType) const;
+  bool isConst() const { return isConst_; }
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;

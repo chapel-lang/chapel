@@ -38,14 +38,6 @@ const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
   return QUERY_END(result);
 }
 
-bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other) const {
-  auto r = resolution::canPass(context,
-                               QualifiedType(QualifiedType::TYPE, eltType_),
-                               QualifiedType(QualifiedType::TYPE, other->eltType_));
-  // instantiation and same-type passing are allowed here
-  return r.passes() && !r.promotes() && !r.converts();
-}
-
 const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
@@ -90,7 +82,7 @@ const ID& CPtrType::getId(Context* context) {
 const CPtrType* CPtrType::withoutConst(Context* context) const {
   const CPtrType* instFrom = nullptr;
   if (instantiatedFrom_) {
-    instFrom = instantiatedFrom_->withoutConst(context);
+    instFrom = instantiatedFrom_->toCPtrType()->withoutConst(context);
   }
 
   return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false).get();
@@ -101,23 +93,6 @@ const ID& CPtrType::getConstId(Context* context) {
   ID result =
       parsing::getSymbolIdFromTopLevelModule(context, "CTypes", "c_ptrConst");
   return QUERY_END(result);
-}
-
-bool CPtrType::isInstantiationOf(Context* context, const CPtrType* genericType) const {
-  auto thisFrom = instantiatedFromCPtrType();
-  auto argFrom = genericType->instantiatedFromCPtrType();
-  if (argFrom == nullptr) {
-    // if genericType is not a partial instantiation
-    return (thisFrom != nullptr && thisFrom == genericType);
-  }
-
-  if (thisFrom == argFrom) {
-    // handle the case of genericType being partly instantiated
-    // (or instantiated with a generic type)
-    return isEltTypeInstantiationOf(context, genericType);
-  }
-
-  return false;
 }
 
 void CPtrType::stringify(std::ostream& ss,
