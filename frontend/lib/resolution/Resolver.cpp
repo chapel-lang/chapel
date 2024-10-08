@@ -3335,20 +3335,33 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
-      // Ensure we error out for redeclarations within the method itself,
-      // which resolution with an implicit 'this' currently does not catch.
       MatchingIdsWithName redeclarations;
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
-      if (!redeclarations.isEmpty()) {
-        LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-        if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
-        issueAmbiguityErrorIfNeeded(ident, inScope, config);
-      } else {
-        // Save result if successful
-        if (handleResolvedCallWithoutError(result, ident, ci, c) &&
-            emitLookupErrors) {
-          issueErrorForFailedCallResolution(ident, ci, c);
+      if (c.mostSpecific().numBest() == 1) {
+        // A local variable would be ambiguous with a paren-less method, so
+        // let's check for redeclarations within the current method.
+        if (!redeclarations.isEmpty()) {
+          auto only = c.mostSpecific().only();
+          bool otherThanParenless = false;
+          for (auto& elt : redeclarations) {
+            if (only.fn()->id() != elt) {
+              otherThanParenless = true;
+              break;
+            }
+          }
+
+          if (otherThanParenless) {
+            LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+            if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+            issueAmbiguityErrorIfNeeded(ident, inScope, config);
+          }
+        } else {
+          // Save result if successful
+          if (handleResolvedCallWithoutError(result, ident, ci, c) &&
+              emitLookupErrors) {
+            issueErrorForFailedCallResolution(ident, ci, c);
+          }
         }
       }
     } else {

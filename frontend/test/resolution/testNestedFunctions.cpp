@@ -454,6 +454,62 @@ static void test10(void) {
 }
 */
 
+static void test11() {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R { }
+
+    proc R.test() {
+      proc foobar(arg: int) { return arg; }
+      proc foobar(arg: real) { return arg; }
+      proc foobar(arg: string) { return arg; }
+
+      return foobar("test");
+    }
+
+    var r : R;
+    var x = r.test();
+    )"""";
+
+  auto vars = resolveTypesOfVariables(ctx, program, {"x"});
+  auto x = vars["x"];
+  assert(x.type()->isStringType());
+}
+
+// TODO: incorrectly chooses method over nested function
+//static void test12() {
+//  // Test ambiguity emitted between nested function and method.
+//  Context ctx;
+//  Context* context = &ctx;
+//  ErrorGuard guard(context);
+//
+//  std::string program = R"""(
+//      class Foo {
+//        proc init() {}
+//
+//        proc asdf() {
+//          return "test";
+//        }
+//
+//        proc doSomething() {
+//          proc asdf() do return 2;
+//          return asdf();
+//        }
+//      }
+//
+//      var f = new Foo();
+//      var x = f.doSomething();
+//      )""";
+//
+//  auto vars = resolveTypesOfVariables(context, program, { "x" });
+//  auto x = vars["x"];
+//  assert(x.type()->isIntType());
+//}
+
 int main() {
   test0();
   test1();
@@ -466,5 +522,6 @@ int main() {
   // test8();
   test9();
   // test10();
+  test11();
   return 0;
 }

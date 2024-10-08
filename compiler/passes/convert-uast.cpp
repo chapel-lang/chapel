@@ -5182,6 +5182,8 @@ void Converter::postConvertApplyFixups() {
 
     INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
 
+    astlocMarker markAstLoc(target->id());
+
     Symbol* sym = findConvertedFn(target, /* neverTrace */ true);
     if (!isFnSymbol(sym)) {
       INT_FATAL(se, "could not find target function for call fixup %s",
