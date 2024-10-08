@@ -640,10 +640,11 @@ if (!($dist eq "")) {
     $testdirs .= " distributions/robust/arithmetic";
 }
 
-# add blog directory to 'testdirs' if '-blog' was used and 'testdirs' is being
-# used to specify test directories as opposed to everything in '$CHPL_HOME/test/'
+# add blog directory to 'testdirs' if '-blogonly' was used
+# OR if '-blog' was used and 'testdirs' is being used to specify test directories
+# as opposed to testing everything in '$CHPL_HOME/test/'
 # to make blog testing work with new flags, make sure they modify 'testdirs' before here
-if ($testblog == 1 && $testdirs ne "") {
+if ($blogonly == 1 || ($testblog == 1 && $testdirs ne "")) {
     $testdirs .= " $testdir/copied-chapel-blog/";
 }
 
