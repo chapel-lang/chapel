@@ -101,6 +101,11 @@ static hwloc_nodeset_t numaSet = NULL;
 
 static hwloc_obj_t myRoot = NULL;
 
+// This is the number of partitions that the resources should be divided into.
+// Typically this is the number of co-locales per node, except for the last
+// node which might have fewer than that.
+static int numPartitions = 1;
+
 // Logical CPU sets for all locales on this node. Entries are NULL if
 // we don't have that info.
 static hwloc_cpuset_t *logAccSets = NULL;
@@ -272,13 +277,14 @@ void chpl_topo_exit(void) {
   }
 
   if (logAccSets != NULL) {
-    for (int i = 0; i < chpl_get_num_locales_on_node(); i++) {
+    for (int i = 0; i < numPartitions; i++) {
       if (logAccSets[i] != NULL) {
         hwloc_bitmap_free(logAccSets[i]);
       }
     }
     sys_free(logAccSets);
     logAccSets = NULL;
+    numPartitions = 1;
   }
   hwloc_topology_destroy(topology);
 }
@@ -531,7 +537,20 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 }
 
 //
-// Partitions resources when running with co-locales.
+// Partition resources when running with co-locales. This is complicated a bit
+// by oversubscription and that the number of locales might not be evenly
+// divisable by the number of nodes. If the number of colocales is zero, then
+// we are oversubscribed and each locale uses all of the resources available
+// to it. Otherwise, the number of locales on the node might be less than the
+// expected number of co-locales because the "remainder" node might not have
+// its full complement of co-locales. To deal with this, the resources are
+// partitioned based on the expected number of co-locales, but then assigned
+// to locales based on the number of co-locales that actually exist. This
+// ensures that all co-locales on all nodes have the same amount of
+// resources. If there are more locales than expected co-locales then the
+// user has launched the program manually; just treat the system as
+// oversubscribed as it isn't clear how to partition resources in this
+// situation.
 //
 
 static void partitionResources(void) {
@@ -576,8 +595,18 @@ static void partitionResources(void) {
   if (numLocalesOnNode > 1) {
     oversubscribed = true;
   }
-  logAccSets = sys_calloc(numLocalesOnNode, sizeof(hwloc_cpuset_t));
-  if (numColocales > 0) {
+  if ((numColocales > 0) && (numLocalesOnNode <= numColocales)){
+    numPartitions = numColocales;
+  }
+  logAccSets = sys_calloc(numPartitions, sizeof(hwloc_cpuset_t));
+  if ((numColocales > 0) && (numLocalesOnNode > numColocales)) {
+    char msg[200];
+    snprintf(msg, sizeof(msg),
+             "The node has more locales (%d) than co-locales (%d).\n"
+             "Considering the node oversubscribed.",
+             numLocalesOnNode, numColocales);
+    chpl_warning(msg, 0, 0);
+  } else if (numColocales > 0) {
     // We get our own socket/NUMA/cache/core object if we have exclusive
     // access to the node, we know our local rank, and the number of locales
     // on the node is less than or equal to the number of objects. It is an
@@ -601,7 +630,7 @@ static void partitionResources(void) {
                                         HWLOC_OBJ_TYPE_MAX};
         for (int i = 0; rootTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
           int numObjs = hwloc_get_nbobjs_by_type(topology, rootTypes[i]);
-          if (numObjs == numColocales) {
+          if (numObjs == numPartitions) {
             myRootType = rootTypes[i];
             break;
           }
@@ -611,15 +640,15 @@ static void partitionResources(void) {
         _DBG_P("myRootType: %s", objTypeString(myRootType));
         int numCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
         int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
-        if (numObjs < numLocalesOnNode) {
+        if (numObjs < numPartitions) {
           char msg[200];
           snprintf(msg, sizeof(msg), "Node only has %d %s(s)", numObjs,
                    objTypeString(myRootType));
           chpl_error(msg, 0, 0);
         }
-        if (numObjs > numLocalesOnNode) {
-          int coresPerLocale = numCores / numObjs;
-          unusedCores = (numObjs - numLocalesOnNode) * coresPerLocale;
+        if (numObjs > numPartitions) {
+          int coresPerPartition = numCores / numObjs;
+          unusedCores = (numObjs - numPartitions) * coresPerPartition;
         }
 
         // Use the object whose logical index corresponds to our local rank.
@@ -628,11 +657,11 @@ static void partitionResources(void) {
 
         _DBG_P("confining ourself to %s %d", objTypeString(myRootType), rank);
 
-        // Compute the accessible PUs for all locales on this node based on
-        // the object each occupies. This is used to determine which NIC each
-        // locale should use.
+        // Compute the accessible PUs for all partitions based on the object
+        // each occupies. This is used to determine which NIC each locale
+        // should use.
 
-        for (int i = 0; i < numLocalesOnNode; i++) {
+        for (int i = 0; i < numPartitions; i++) {
           hwloc_obj_t obj;
           CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
                                   root->cpuset, myRootType, i));
@@ -642,21 +671,21 @@ static void partitionResources(void) {
         }
       } else {
         // Cores not tied to a root object
-        int coresPerLocale = numCPUsPhysAcc / numLocalesOnNode;
-        if (coresPerLocale < 1) {
+        int coresPerPartition = numCPUsPhysAcc / numPartitions;
+        if (coresPerPartition < 1) {
           char msg[200];
           snprintf(msg, sizeof(msg), "Cannot run %d co-locales on %d cores.",
-                   numLocalesOnNode, numCPUsPhysAcc);
+                   numPartitions, numCPUsPhysAcc);
           chpl_error(msg, 0, 0);
         }
-        unusedCores = numCPUsPhysAcc % numLocalesOnNode;
+        unusedCores = numCPUsPhysAcc % numPartitions;
         int count = 0;
         int locale = -1;
         int id;
         hwloc_bitmap_foreach_begin(id, physAccSet) {
           if (count == 0) {
             locale++;
-            if (locale == numLocalesOnNode) {
+            if (locale == numPartitions) {
               break;
             }
             CHK_ERR_ERRNO(logAccSets[locale] = hwloc_bitmap_alloc());
@@ -668,7 +697,7 @@ static void partitionResources(void) {
                                                     HWLOC_OBJ_CORE, pu));
           hwloc_bitmap_or(logAccSets[locale], logAccSets[locale],
                           core->cpuset);
-          count = (count + 1) % coresPerLocale;
+          count = (count + 1) % coresPerPartition;
         } hwloc_bitmap_foreach_end();
       }
       if (unusedCores != 0) {
@@ -697,12 +726,13 @@ static void partitionResources(void) {
       oversubscribed = false;
     }
   } else {
-    // We don't know which PUs other locales on the same node are using,
-    // so just set our own.
+    // The node is oversubscribed. We will use all accessible PUs, and we
+    // don't know which PUs other locales on the same node are using, so just
+    // set our own.
     logAccSets[0] = hwloc_bitmap_dup(logAccSet);
   }
   if (debug) {
-    for (int i = 0; i < numLocalesOnNode; i++) {
+    for (int i = 0; i < numPartitions; i++) {
       char buf[1024];
       if (logAccSets[i] != NULL) {
         hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSets[i]);
@@ -1288,12 +1318,11 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
 
   // Build a distance matrix between locales and objects.
 
-  int numLocales = chpl_get_num_locales_on_node();
-  _DBG_P("numLocales = %d numObjs = %d", numLocales, numObjs);
+  _DBG_P("numPartitions = %d numObjs = %d", numPartitions, numObjs);
 
-  hwloc_obj_t locales[numLocales];
+  hwloc_obj_t locales[numPartitions];
 
-  for (int i = 0; i < numLocales; i++) {
+  for (int i = 0; i < numPartitions; i++) {
     if (logAccSets[i] != NULL) {
       CHK_ERR(locales[i] =  hwloc_get_obj_covering_cpuset(topology,
                                                         logAccSets[i]));
@@ -1315,7 +1344,7 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
   // is NULL then we don't know which PUs that locale is using, so
   // we ignore it by setting its distances to infinite.
 
-  for (int i = 0; i < numLocales; i++) {
+  for (int i = 0; i < numPartitions; i++) {
     for (int j = 0; j < numObjs; j++) {
       if (locales[i] != NULL) {
         distances[i][j] = distance(topology, objs[j], locales[i]);
@@ -1326,7 +1355,7 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
   }
 #ifdef DEBUG
   printf("distances:\n");
-  for (int i = 0; i < numLocales; i++) {
+  for (int i = 0; i < numPartitions; i++) {
     for (int j = 0; j < numObjs; j++) {
       printf("%02d ", distances[i][j]);
     }
@@ -1355,13 +1384,12 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 
   hwloc_obj_t           nic = NULL;
   chpl_topo_pci_addr_t  *result = NULL;
-  int numLocales = chpl_get_num_locales_on_node();
   struct hwloc_pcidev_attr_s *nicAttr;
   int localRank = chpl_get_local_rank();
 
   _DBG_P("chpl_topo_selectNicByType: %04x:%02x:%02x.%x", inAddr->domain,
              inAddr->bus, inAddr->device, inAddr->function);
-  _DBG_P("numLocales %d rank %d", numLocales, localRank);
+  _DBG_P("numPartitions %d rank %d", numPartitions, localRank);
 
   // find the PCI object corresponding to the specified NIC
   nic = hwloc_get_pcidev_by_busid(topology, (unsigned) inAddr->domain,
@@ -1369,7 +1397,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                                   (unsigned) inAddr->device,
                                   (unsigned) inAddr->function);
   if (nic != NULL) {
-    if ((numLocales > 1) && (localRank >= 0)) {
+    if ((numPartitions > 1) && (localRank >= 0)) {
       // Find all the NICS with the same vendor and device as the specified NIC.
       nicAttr = &(nic->attr->pcidev);
       int maxNics = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PCI_DEVICE);
@@ -1395,7 +1423,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
         //
         qsort(nics, numNics, sizeof(*nics), comparePCIObjs);
 
-        int distances[numLocales][numNics];
+        int distances[numPartitions][numNics];
         fillDistanceMatrix(numNics, nics, distances);
 
 
@@ -1406,15 +1434,15 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
         // share NICs, so mark all NICs as unassigned and repeat the
         // process.
 
-        hwloc_obj_t assigned[numLocales]; // NIC assigned to the locale
+        hwloc_obj_t assigned[numPartitions]; // NIC assigned to the locale
         int numAssigned = 0;
 
-        for (int i = 0; i < numLocales; i++) {
+        for (int i = 0; i < numPartitions; i++) {
           assigned[i] = NULL;
         }
 
         chpl_bool finished = false;
-        while (!finished && (numAssigned < numLocales)) {
+        while (!finished && (numAssigned < numPartitions)) {
 
           _DBG_P("outer loop: numAssigned %d", numAssigned);
           // The used array keeps track of NICs that have been assigned in
@@ -1427,12 +1455,12 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
           // assigned a NIC and a NIC that hasn't been assigned in this
           // iteration ("used") and assign that NIC to that locale.
           int numAvail = numNics;
-          while((numAvail > 0) && (numAssigned < numLocales)) {
+          while((numAvail > 0) && (numAssigned < numPartitions)) {
             _DBG_P("inner loop: numAssigned %d numAvail %d", numAssigned, numAvail);
               int minimum = INT32_MAX;
               int minNic = -1;
               int minLoc = -1;
-              for (int i = 0; i < numLocales; i++) {
+              for (int i = 0; i < numPartitions; i++) {
                 _DBG_P("assigned[%d] = %p", i, assigned[i]);
                 _DBG_P("minimum = %d", minimum);
                 if (!assigned[i]) {
@@ -1481,18 +1509,21 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 }
 
 // Given the PCI bus addresses of a set of devices, determine which of those
-// devices the calling locale should use. Each co-locale is assigned the same
-// number of devices and each device is assigned to at most one locale. This
-// function uses a greedy algorithm to assign devices to locales. The
-// distance matrix records the distance between each device and the locale's
-// CPU set. The device/locale pair with the minimum distance are assigned to
-// each other and the device is removed from consideration. The process then
-// repeats until all co-locales have been assigned the proper number of
-// devices.
+// devices the calling locale should use. Devices are assigned to partitions,
+// where the number of partitions is equal to the expected number of
+// co-locales on the device (there may be fewer if the number of nodes
+// doesn't evenly divide the number of locales). Each partition is assigned
+// the same number of devices and each device is assigned to at most one
+// partition. This function uses a greedy algorithm to assign devices to
+// partition. The distance matrix records the distance between each device
+// and the partition's CPU set. The device/partition pair with the minimum
+// distance are assigned to each other and the device is removed from
+// consideration. The process then repeats until all partitions have been
+// assigned the proper number of devices.
 //
-// Note that cores are assigned to co-locales during initialization of the
+// Note that cores are assigned to partitions during initialization of the
 // topology layer before this function is called. As a result, the assignment
-// of cores and devices to co-locales may not be optimal, especially if the
+// of cores and devices to paratitions may not be optimal, especially if the
 // machine topology is asymmetric. For example, if there are two co-locales
 // on a machine with four NUMA domains, one co-locale will be assigned cores
 // in the first two NUMA domains and the other the second two domains. If
@@ -1504,81 +1535,77 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
                               int *count)
 {
   int result = 0;
-  int numLocales = chpl_get_num_locales_on_node();
   _DBG_P("count = %d", *count);
-  _DBG_P("numLocales = %d", numLocales);
-  int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
-  if (numColocales > 1) {
+  _DBG_P("numPartitions = %d", numPartitions);
+  int rank = chpl_get_local_rank();
+  if ((numPartitions > 1) && (rank >= 0)) {
     int numDevs = *count;
-    int owners[numDevs]; // locale that owns each device
+    int owners[numDevs]; // partition to which the device belongs
     hwloc_obj_t objs[numDevs]; // the device objects
-    int devsPerLocale = numDevs / numColocales;
-    _DBG_P("devsPerLocale = %d", devsPerLocale);
-    int owned[numColocales]; // number of devices each co-locale owns
+    int devsPerPartition = numDevs / numPartitions;
+    _DBG_P("devsPerPartition = %d", devsPerPartition);
+    int owned[numPartitions]; // number of devices in each partition
 
     for (int i = 0; i < numDevs; i++) {
       owners[i] = -1;
       objs[i] = NULL;
     }
 
-    for (int i = 0; i < numColocales; i++) {
+    for (int i = 0; i < numPartitions; i++) {
       owned[i] = 0;
     }
 
-    int rank = chpl_get_local_rank();
-    if (rank >= 0) {
-      for (int i = 0; i < numDevs; i++) {
-        hwloc_obj_t obj;
-        // find the PCI object corresponding to the specified bus address
-        obj = hwloc_get_pcidev_by_busid(topology,
-                                        (unsigned) inAddrs[i].domain,
-                                        (unsigned) inAddrs[i].bus,
-                                        (unsigned) inAddrs[i].device,
-                                        (unsigned) inAddrs[i].function);
-        if (obj == NULL) {
-          _DBG_P("Could not find PCI %04x:%02x:%02x.%x", inAddrs[i].domain,
-                 inAddrs[i].bus, inAddrs[i].device, inAddrs[i].function);
-          if (debug) {
-            _DBG_P("PCI devices:");
-            for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
-                 obj != NULL;
-                 obj = hwloc_get_next_pcidev(topology, obj)) {
-              _DBG_P("%04x:%02x:%02x.%x", obj->attr->pcidev.domain,
-                 obj->attr->pcidev.bus, obj->attr->pcidev.dev,
-                 obj->attr->pcidev.func);
-            }
+    for (int i = 0; i < numDevs; i++) {
+      hwloc_obj_t obj;
+      // find the PCI object corresponding to the specified bus address
+      obj = hwloc_get_pcidev_by_busid(topology,
+                                      (unsigned) inAddrs[i].domain,
+                                      (unsigned) inAddrs[i].bus,
+                                      (unsigned) inAddrs[i].device,
+                                      (unsigned) inAddrs[i].function);
+      if (obj == NULL) {
+        _DBG_P("Could not find PCI %04x:%02x:%02x.%x", inAddrs[i].domain,
+               inAddrs[i].bus, inAddrs[i].device, inAddrs[i].function);
+        if (debug) {
+          _DBG_P("PCI devices:");
+          for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+               obj != NULL;
+               obj = hwloc_get_next_pcidev(topology, obj)) {
+            _DBG_P("%04x:%02x:%02x.%x", obj->attr->pcidev.domain,
+               obj->attr->pcidev.bus, obj->attr->pcidev.dev,
+               obj->attr->pcidev.func);
           }
-          result = 1;
-          goto done;
         }
-        objs[i] = obj;
+        result = 1;
+        goto done;
       }
-      int distances[numLocales][numDevs];
-      fillDistanceMatrix(numDevs, objs, distances);
-      while (owned[rank] < devsPerLocale) {
+      objs[i] = obj;
+    }
+    int distances[numPartitions][numDevs];
+    fillDistanceMatrix(numDevs, objs, distances);
+    while (owned[rank] < devsPerPartition) {
 
-        // Find the minimum distance between a locale that needs more devices
-        // and a device that doesn't have an owner and assign that device to
-        // that locale.
+      // Find the minimum distance between a partition that needs more devices
+      // and a device that doesn't have a partition and assign that device to
+      // that partition.
 
-        int minimum = INT32_MAX;
-        int minDev = -1;
-        int minLoc = -1;
-        for (int i = 0; i < numLocales; i++) {
-          if (owned[i] < devsPerLocale) {
-            for (int j = 0; j < numDevs; j++) {
-              if ((owners[j] == -1) && (distances[i][j] <= minimum)) {
-                minimum = distances[i][j];
-                minLoc = i;
-                minDev = j;
-              }
+      int minimum = INT32_MAX;
+      int minDev = -1;
+      int minPart = -1;
+      for (int i = 0; i < numPartitions; i++) {
+        if (owned[i] < devsPerPartition) {
+          for (int j = 0; j < numDevs; j++) {
+            if ((owners[j] == -1) && (distances[i][j] <= minimum)) {
+              minimum = distances[i][j];
+              minPart = i;
+              minDev = j;
             }
           }
         }
-        assert((minDev >= 0) && (minLoc >= 0));
-        owners[minDev] = minLoc;
-        owned[minLoc]++;
       }
+      assert((minDev >= 0) && (minPart >= 0));
+      owners[minDev] = minPart;
+      owned[minPart]++;
     }
     // Return the addresses of our devices
     int j = 0;
@@ -1587,10 +1614,10 @@ int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
           outAddrs[j++] = inAddrs[i];
       }
     }
-    assert(j == devsPerLocale);
-    *count = devsPerLocale;
+    assert(j == devsPerPartition);
+    *count = devsPerPartition;
   } else {
-    // No co-locales, use all the devices.
+    // Use all the devices.
     for (int i = 0; i < *count; i++) {
       outAddrs[i] = inAddrs[i];
     }
