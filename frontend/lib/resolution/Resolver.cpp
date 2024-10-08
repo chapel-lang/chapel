@@ -3339,8 +3339,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
       if (c.mostSpecific().numBest() == 1) {
-        // Ensure we error out for redeclarations within the method itself,
-        // which resolution with an implicit 'this' currently does not catch.
+        // A local variable would be ambiguous with a paren-less method, so
+        // let's check for redeclarations within the current method.
         if (!redeclarations.isEmpty()) {
           auto only = c.mostSpecific().only();
           bool otherThanParenless = false;
@@ -3365,9 +3365,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
         }
       }
     } else {
-    // Can't establish the type. If this is in a function
-    // call, we'll establish it later anyway.
-    result.setType(QualifiedType());
+      // Can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
+      result.setType(QualifiedType());
     }
   } else {
     // just a single match
