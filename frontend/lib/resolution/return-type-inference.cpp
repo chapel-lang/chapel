@@ -985,8 +985,8 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       CHPL_ASSERT(false && "unhandled compiler-generated array method");
     }
       return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
-    auto cpt = sig->formalType(0).type()->toCPtrType();
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isPtrType() && untyped->name() == "eltType") {
+    auto cpt = sig->formalType(0).type()->toPtrType();
     result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
     return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isEnumType()) {
