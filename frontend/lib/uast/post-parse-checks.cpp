@@ -163,6 +163,7 @@ struct Visitor {
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
   void checkIterNames(const Function* node);
+  void checkFunctionReturnsYields(const Function* node);
 
   /*
   TODO
@@ -1750,6 +1751,7 @@ void Visitor::visit(const Function* node) {
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
   checkIterNames(node);
+  checkFunctionReturnsYields(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1966,6 +1968,56 @@ void Visitor::checkIterNames(const Function* node) {
     }
   }
   return;
+}
+
+struct CountReturnsYields {
+  const Function* symbol = nullptr;
+  int nReturnSomething = 0;
+  int nReturnEmpty = 0;
+  const Return* firstReturnSomething = nullptr;
+  const Return* firstReturnEmpty = nullptr;
+
+  CountReturnsYields(const Function* symbol)
+    : symbol(symbol) {
+  }
+
+  bool enter(const Function* fn) {
+    if (fn != symbol) {
+      // don't visit nested functions here
+      return false;
+    }
+    return true;
+  }
+  void exit(const Function* fn) { }
+
+  bool enter(const Return* node) {
+    if (node->value() != nullptr) {
+      nReturnSomething++;
+      if (firstReturnSomething == nullptr) {
+        firstReturnSomething = node;
+      }
+    } else {
+      nReturnEmpty++;
+      if (firstReturnEmpty == nullptr) {
+        firstReturnEmpty = node;
+      }
+    }
+    return true;
+  }
+  void exit(const Return* node) { }
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) { }
+};
+
+void Visitor::checkFunctionReturnsYields(const Function* node) {
+  auto counter = CountReturnsYields(node);
+  node->traverse(counter);
+
+  if (counter.nReturnSomething > 0 && counter.nReturnEmpty > 0) {
+    CHPL_REPORT(context_, InvalidReturns,
+                counter.firstReturnSomething, counter.firstReturnEmpty);
+  }
 }
 
 void Visitor::visit(const Module* node){

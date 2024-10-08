@@ -710,6 +710,10 @@ static ID findIdForContainingDecl(ID id) {
   auto ret = ID();
   auto up = id;
 
+  // TODO: if ID refers to a Function, perhaps this
+  // function should return the ID unchanged,
+  // instead of causing 'In module ...' to be printed.
+
   while (1) {
     up = chpl::parsing::idToParentId(gContext, up);
     if (up.isEmpty()) break;
