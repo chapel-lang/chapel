@@ -297,40 +297,55 @@ static void collectFields(const AstNode* ast,
   }
 }
 
-static void initHelper(Context* context,
+static const BuilderResult& buildInitializer(Context* context, ID typeID);
+
+static bool initHelper(Context* context,
                        Builder* builder,
                        const AggregateDecl* typeDecl,
                        const Location& dummyLoc,
-                       AstList& formals, AstList& superArgs, AstList& stmts,
-                       bool isChild = true) {
-  if (auto cls = typeDecl->toClass()) {
-    if (cls->numInheritExprs() == 1) {
-      ResolutionResultByPostorderID r;
-      auto visitor = Resolver::createForParentClass(context, typeDecl,
-                                                    {}, nullptr, r);
-      cls->inheritExpr(0)->traverse(visitor);
-      auto res = r.byAst(cls->inheritExpr(0));
-      if (auto parentType = res.type().type()) {
-        if (auto pct = parentType->getCompositeType()) {
-          const Type* manager = nullptr;
-          auto borrowedNonnilDecor =
-              ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-          auto parentReceiver =
-            ClassType::get(context, pct->toBasicClassType(), manager, borrowedNonnilDecor);
+                       AstList& formals, AstList& superArgs, AstList& stmts) {
+  // Return 'true' if a super.init call is necessary
+  bool addSuperInit = false;
 
-          // Do not add formals if the parent has a user-defined initializer
-          // TODO: It would be nice to be able to generate a nice error message
-          //   for the user if they try and pass arguments for the parent in
-          //   this case.
-          if (!areOverloadsPresentInDefiningScope(context, parentReceiver, QualifiedType::INIT_RECEIVER, USTR("init"))) {
-            auto parentAst = parsing::idToAst(context, pct->id());
-            if (auto parentDecl = parentAst->toAggregateDecl()) {
-              initHelper(context, builder, parentDecl, dummyLoc,
-                         formals, superArgs, stmts, /*isChild=*/false);
-            }
+  // Check if we need a super.init() call. If the parent has a default
+  // initializer, add arguments to the super.init() and formals to the
+  // current initializer.
+  if (auto cls = typeDecl->toClass()) {
+    auto t = initialTypeForTypeDecl(context, cls->id());
+    auto bct = t->getCompositeType()->toBasicClassType();
+    auto pct = bct->parentClassType();
+
+    if (pct && !pct->isObjectType()) {
+      addSuperInit = true;
+
+      const Type* manager = nullptr;
+      auto borrowedNonnilDecor =
+          ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto parentReceiver =
+        ClassType::get(context, pct->toBasicClassType(), manager, borrowedNonnilDecor);
+      auto userDefinedExists = areOverloadsPresentInDefiningScope(context,
+                                 parentReceiver,
+                                 QualifiedType::INIT_RECEIVER,
+                                 USTR("init"));
+
+      if (!userDefinedExists) {
+        auto& br = buildInitializer(context, pct->id());
+        auto mod = br.topLevelExpression(0)->toModule();
+        auto fn = mod->child(0)->toFunction();
+
+        // Add formals and super.init() arguments
+        for (auto formal : fn->formals()) {
+          if (auto named = formal->toNamedDecl();
+              named && named->name() != USTR("this")) {
+            formals.push_back(formal->copy());
+
+            owned<AstNode> arg = Identifier::build(builder, dummyLoc, named->name());
+            superArgs.push_back(std::move(arg));
           }
         }
       }
+    } else {
+      addSuperInit = false;
     }
   }
 
@@ -358,26 +373,22 @@ static void initHelper(Context* context,
                                           typeExpr ? typeExpr->copy() : nullptr,
                                           initExpr ? initExpr->copy() : nullptr);
 
-    if (isChild) {
-      // Create 'this.field = arg;' statement
-      owned<AstNode> lhs = Dot::build(builder, dummyLoc,
-                                      Identifier::build(builder, dummyLoc, USTR("this")),
-                                      field->name());
-      owned<AstNode> rhs = Identifier::build(builder, dummyLoc, field->name());
-      owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
-                                            std::move(lhs), std::move(rhs));
-      stmts.push_back(std::move(assign));
-    } else {
-      // collect arguments for super.init(...)
-      owned<AstNode> arg = Identifier::build(builder, dummyLoc, field->name());
-      superArgs.push_back(std::move(arg));
-    }
+    // Create 'this.field = arg;' statement
+    owned<AstNode> lhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, USTR("this")),
+                                    field->name());
+    owned<AstNode> rhs = Identifier::build(builder, dummyLoc, field->name());
+    owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
+                                          std::move(lhs), std::move(rhs));
+    stmts.push_back(std::move(assign));
 
     formals.push_back(std::move(formal));
   }
+
+  return addSuperInit;
 }
 
-static const BuilderResult& buildInitializer(Context* context, ID typeID) {
+const BuilderResult& buildInitializer(Context* context, ID typeID) {
   auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
   auto parentMod = parsing::idToParentModule(context, typeID);
   auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + typeDecl->name().str() + "_init";
@@ -393,14 +404,18 @@ static const BuilderResult& buildInitializer(Context* context, ID typeID) {
   AstList formals;
   AstList stmts;
   AstList superArgs;
-  initHelper(context, builder, typeDecl, dummyLoc, formals, superArgs, stmts);
+  bool addSuperInit = initHelper(context, builder, typeDecl, dummyLoc,
+                                 formals, superArgs, stmts);
 
-  if (auto cls = typeDecl->toClass()) {
-    if (cls->numInheritExprs() > 0) {
-      owned<AstNode> dot = Dot::build(builder, dummyLoc, Identifier::build(builder, dummyLoc, USTR("super")), USTR("init"));
-      owned<AstNode> call = FnCall::build(builder, dummyLoc, std::move(dot), std::move(superArgs), false);
-      stmts.insert(stmts.begin(), std::move(call));
-    }
+  if (addSuperInit) {
+    owned<AstNode> dot = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc,
+                                                      USTR("super")),
+                                    USTR("init"));
+    owned<AstNode> call = FnCall::build(builder, dummyLoc,
+                                        std::move(dot), std::move(superArgs),
+                                        /*callUsedSquareBrackets*/false);
+    stmts.insert(stmts.begin(), std::move(call));
   }
 
   auto body = Block::build(builder, dummyLoc, std::move(stmts));
