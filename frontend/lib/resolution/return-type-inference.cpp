@@ -985,16 +985,16 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       CHPL_ASSERT(false && "unhandled compiler-generated array method");
     }
       return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() &&
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isPtrType() &&
              untyped->name() == "eltType") {
-    auto cpt = sig->formalType(0).type()->toPtrType();
-    result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+    auto pt = sig->formalType(0).type()->toPtrType();
+    result = QualifiedType(QualifiedType::TYPE, pt->eltType());
     return true;
   } else if (untyped->isMethod() &&
              sig->formalType(0).type()->isHeapBufferType() &&
              untyped->name() == "this") {
-    auto ty = sig->formalType(0).type()->toHeapBufferType();
-    result = QualifiedType(QualifiedType::REF, ty->eltType());
+    auto pt = sig->formalType(0).type()->toHeapBufferType();
+    result = QualifiedType(QualifiedType::REF, pt->eltType());
     return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isEnumType()) {
     auto enumType = sig->formalType(0).type()->toEnumType();
