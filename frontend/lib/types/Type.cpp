@@ -29,6 +29,7 @@
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
+#include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
@@ -106,6 +107,7 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "chpl_c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
+  gatherType(context, map, "_ddata", HeapBufferType::get(context));
 
   gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
