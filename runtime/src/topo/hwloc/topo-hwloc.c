@@ -1523,7 +1523,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 //
 // Note that cores are assigned to partitions during initialization of the
 // topology layer before this function is called. As a result, the assignment
-// of cores and devices to paratitions may not be optimal, especially if the
+// of cores and devices to partitions may not be optimal, especially if the
 // machine topology is asymmetric. For example, if there are two co-locales
 // on a machine with four NUMA domains, one co-locale will be assigned cores
 // in the first two NUMA domains and the other the second two domains. If
