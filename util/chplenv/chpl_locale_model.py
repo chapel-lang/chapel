@@ -2,12 +2,17 @@
 import sys
 
 import overrides
-from utils import memoize
+from utils import memoize, error
 
 
 @memoize
 def get():
     locale_model_val = overrides.get('CHPL_LOCALE_MODEL', 'flat')
+
+    if locale_model_val != 'flat' and locale_model_val != 'gpu':
+        error('{} is not a valid value for CHPL_LOCALE_MODEL. '
+              'It can only be "flat" or "gpu".'.format(locale_model_val))
+
     return locale_model_val
 
 
