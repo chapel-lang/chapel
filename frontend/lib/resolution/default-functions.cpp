@@ -149,6 +149,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   } else if (type->isPtrType()) {
     if (name == "eltType") {
       return true;
+    } else if (type->isHeapBufferType() && name == "this") {
+      return true;
     }
   } else if (type->isEnumType()) {
     if (name == "size") {
@@ -999,10 +1001,17 @@ generatePtrMethod(Context* context, QualifiedType receiverType,
       UntypedFnSignature::FormalDetail(USTR("this"),
                                        UntypedFnSignature::DK_NO_DEFAULT,
                                        nullptr));
-
   // Allow calling 'eltType' on either a type or value
   auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
   formalTypes.push_back(QualifiedType(qual, pt));
+
+  if (name == "this") {
+    formals.push_back(UntypedFnSignature::FormalDetail(
+        UniqueString::get(context, "i"), UntypedFnSignature::DK_NO_DEFAULT,
+        nullptr));
+    formalTypes.push_back(
+        QualifiedType(QualifiedType::VAR, AnyIntegralType::get(context)));
+  }
 
   auto ufs = UntypedFnSignature::get(context,
                         /*id*/ pt->id(context),
@@ -1081,7 +1090,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isCPtrType() || type->isEnumType());
+    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
