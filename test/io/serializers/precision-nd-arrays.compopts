@@ -1,1 +1,3 @@
--sformat=FormatKind.precision
+-sformat=FormatKind.precision -sT=real # precision-nd-arrays.real.good
+-sformat=FormatKind.precision -sT=complex # precision-nd-arrays.complex.good
+-sformat=FormatKind.precision -sT=imag # precision-nd-arrays.imag.good

@@ -286,6 +286,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   if (ci.numActuals() == 3) {
     auto type = DomainType::getRectangularType(context,
+                                          QualifiedType(),
                                           ci.actual(0).type(),
                                           ci.actual(1).type(),
                                           ci.actual(2).type());
@@ -1118,7 +1119,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
-    return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+    return CallResolutionResult(candidates,
+                                /* rejectedPossibleIteratorCandidates */ false,
+                                type, poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1816,7 +1819,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
 
-  return CallResolutionResult(candidates, type, poi, /* specially handled */ true);
+  return CallResolutionResult(candidates,
+                              /* rejectedPossibleIteratorCandidates */ false,
+                              type, poi, /* specially handled */ true);
 }
 
 

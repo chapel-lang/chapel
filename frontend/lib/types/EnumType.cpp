@@ -61,14 +61,12 @@ const EnumType* EnumType::get(Context* context, ID id, UniqueString name) {
 }
 
 const EnumType* EnumType::getBoundKindType(Context* context) {
-  auto name = UniqueString::get(context, "boundKind");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "boundKind");
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "boundKind");
   return EnumType::get(context, id, name);
 }
 
 const EnumType* EnumType::getIterKindType(Context* context) {
-  auto name = UniqueString::get(context, "iterKind");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelBase", "iterKind");
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(context, "ChapelBase", "iterKind");
   return EnumType::get(context, id, name);
 }
 

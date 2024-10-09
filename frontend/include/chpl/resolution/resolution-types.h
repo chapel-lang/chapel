@@ -1218,6 +1218,8 @@ enum CandidateFailureReason {
   FAIL_CANNOT_PASS,
   /* Not a valid formal-actual mapping for this candidate. */
   FAIL_FORMAL_ACTUAL_MISMATCH,
+  /* Special case of formal/actual mismatch when we tried to call a parallel iterator without a tag. */
+  FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API,
   /* The wrong number of varargs were given to the function. */
   FAIL_VARARG_MISMATCH,
   /* The where clause returned 'false'. */
@@ -1461,6 +1463,11 @@ class FormalActualMap {
   int failingActualIdx_ = -1;
   int failingFormalIdx_ = -1;
 
+  // A standalone iterator will have an extra formal for the iterKind.
+  // If we call foo() and fail to get a formal-actual mapping, but only
+  // because we're missing the iterKind, we should still come back to it.
+  bool missingIteratorActuals_ = false;
+
  public:
 
   using FormalActualIterable = Iterable<std::vector<FormalActual>>;
@@ -1477,7 +1484,8 @@ class FormalActualMap {
            actualIdxToFormalIdx_ == other.actualIdxToFormalIdx_ &&
            mappingIsValid_ == other.mappingIsValid_ &&
            failingActualIdx_ == other.failingActualIdx_ &&
-           failingFormalIdx_ == other.failingFormalIdx_;
+           failingFormalIdx_ == other.failingFormalIdx_ &&
+           missingIteratorActuals_ == other.missingIteratorActuals_;
   }
 
   bool operator!=(const FormalActualMap& other) const {
@@ -1492,15 +1500,26 @@ class FormalActualMap {
     (void) mappingIsValid_; // nothing to mark
     (void) failingActualIdx_; // nothing to mark
     (void) failingFormalIdx_; // nothing to mark
+    (void) missingIteratorActuals_; // nothing to mark
   }
 
   size_t hash() const {
     return chpl::hash(byFormalIdx_, actualIdxToFormalIdx_, mappingIsValid_,
-                      failingActualIdx_, failingFormalIdx_);
+                      failingActualIdx_, failingFormalIdx_,
+                      missingIteratorActuals_);
   }
 
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
+
+  /** Check why the mapping was invalid. */
+  CandidateFailureReason reason() const {
+    CHPL_ASSERT(!mappingIsValid_);
+    if (missingIteratorActuals_) {
+      return FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API;
+    }
+    return FAIL_FORMAL_ACTUAL_MISMATCH;
+  }
 
   /** get the FormalActuals in the order of the formal arguments */
   FormalActualIterable byFormals() const {
@@ -1849,6 +1868,7 @@ class CallResolutionResult {
   // whether the resolution result was handled using some compiler-level logic,
   // which does not correspond to a TypedSignature or AST.
   bool speciallyHandled_ = false;
+  bool rejectedPossibleIteratorCandidates_ = false;
 
  public:
   CallResolutionResult() {}
@@ -1861,13 +1881,15 @@ class CallResolutionResult {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
+                       bool rejectedPossibleIteratorCandidates,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo,
                        bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
       poiInfo_(std::move(poiInfo)),
-      speciallyHandled_(speciallyHandled)
+      speciallyHandled_(speciallyHandled),
+      rejectedPossibleIteratorCandidates_(rejectedPossibleIteratorCandidates)
   {
   }
 
@@ -1883,11 +1905,19 @@ class CallResolutionResult {
   /** whether the resolution result was handled using some compiler-level logic */
   bool speciallyHandled() const { return speciallyHandled_; }
 
+  /** whether we rejected candidates because they expected a tag or followThis.
+      This might indicate that we need to re-resolve with tag to find parallel
+      iterators. */
+  bool rejectedPossibleIteratorCandidates() const {
+    return rejectedPossibleIteratorCandidates_;
+  }
+
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
-           speciallyHandled_ == other.speciallyHandled_;
+           speciallyHandled_ == other.speciallyHandled_ &&
+           rejectedPossibleIteratorCandidates_ == other.rejectedPossibleIteratorCandidates_;
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
@@ -1897,6 +1927,8 @@ class CallResolutionResult {
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
     std::swap(speciallyHandled_, other.speciallyHandled_);
+    std::swap(rejectedPossibleIteratorCandidates_,
+              other.rejectedPossibleIteratorCandidates_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1960,6 +1992,7 @@ class AssociatedAction {
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
     INFER_TYPE,
     COMPARE,      // == , e.g., for select-statements
+    RUNTIME_TYPE, // create runtime type
   };
 
  private:

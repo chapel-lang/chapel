@@ -46,7 +46,8 @@ void ArrayType::stringify(std::ostream& ss,
 }
 
 static ID getArrayID(Context* context) {
-  return parsing::getSymbolFromTopLevelModule(context, "ChapelArray", "_array");
+  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelArray",
+                                                "_array");
 }
 
 const owned<ArrayType>&
@@ -61,8 +62,8 @@ ArrayType::getArrayTypeQuery(Context* context, ID id, UniqueString name,
 
 const ArrayType*
 ArrayType::getGenericArrayType(Context* context) {
-  auto name = UniqueString::get(context, "_array");
   auto id = getArrayID(context);
+  auto name = id.symbolName(context);
   SubstitutionsMap subs;
   const ArrayType* instantiatedFrom = nullptr;
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
@@ -75,8 +76,8 @@ ArrayType::getArrayType(Context* context,
   SubstitutionsMap subs;
   subs.emplace(ArrayType::domainId, domainType);
   subs.emplace(ArrayType::eltTypeId, eltType);
-  auto name = UniqueString::get(context, "_array");
   auto id = getArrayID(context);
+  auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }

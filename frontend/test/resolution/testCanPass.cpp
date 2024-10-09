@@ -606,12 +606,14 @@ static void test9() {
         var x;
       }
 
-      var a : Bar(int);
+      type t = Bar(int);
       var b = new Bar(3);
-      )""", {"a", "b"});
+      )""", {"t", "b"});
 
   CanPassResult r;
-  r = canPass(context, vars.at("b"), vars.at("a")); assert(passesAsIs(r));
+  QualifiedType t = vars.at("t");
+  auto formal = QualifiedType(QualifiedType::IN, t.type());
+  r = canPass(context, vars.at("b"), formal); assert(passesAsIs(r));
 }
 
 int main() {

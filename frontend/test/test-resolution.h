@@ -24,6 +24,12 @@
 
 #include "chpl/resolution/resolution-types.h"
 
+#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
+
 // forward declare classes and namespaces
 namespace chpl {
   namespace resolution {

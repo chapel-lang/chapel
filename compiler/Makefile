@@ -40,32 +40,15 @@ ALL_HEADERS= */*.h ../frontend/include/chpl/*/*.h
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(ALL_HEADERS)) || echo "$(CHPL_TAGS_UTIL) not available"
-EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) $(ALL_HEADERS)) || echo "ebrowse not available"
+$(info Gathering source files for ctags/etags)
+COMPILER_SOURCES=$(shell find . -name '*.h' -or -name '*.cpp' -or -name '*.c')
+FRONTEND_SOURCES=$(shell find ../frontend/lib -name '*.h' -or -name '*.cpp' -or -name '*.c')
+FRONTEND_HEADERS=$(shell find ../frontend/include -name '*.h')
+ALL_SOURCES=$(COMPILER_SOURCES) $(FRONTEND_SOURCES) $(FRONTEND_HEADERS)
+# create the TAGS_COMMAND and EBROWSE_COMMAND variables for use later
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SOURCES)) || echo "$(CHPL_TAGS_UTIL) not available"
+EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SOURCES)) || echo "ebrowse not available"
 endif
-
-#
-# include source subdirectories here
-# include these subdirs so ETAGS builds tags for .cpp files too
-include ../frontend/lib/immediates/Makefile.include
-include ../frontend/lib/parsing/Makefile.include
-include ../frontend/lib/framework/Makefile.include
-include ../frontend/lib/resolution/Makefile.include
-include ../frontend/lib/types/Makefile.include
-include ../frontend/lib/uast/Makefile.include
-include ../frontend/lib/util/Makefile.include
-
-include adt/Makefile.include
-include AST/Makefile.include
-include backend/Makefile.include
-include codegen/Makefile.include
-include llvm/Makefile.include
-include main/Makefile.include
-include optimizations/Makefile.include
-include passes/Makefile.include
-include resolution/Makefile.include
-include util/Makefile.include
-
 
 TARGETS = $(CHPL)
 
@@ -182,7 +165,7 @@ frontend-shared: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 test-frontend: FORCE frontend-tests $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Running the frontend tests..."
-	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n -E 's/.*(-j|--jobs=) *([0-9][0-9]*).*/-j\2/p'` ; \
 	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 
 frontend-tests: $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
