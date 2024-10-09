@@ -1,3 +1,3 @@
-0 (gpu 0): stream.chpl:10: kernel launch (block size: 512x1x1)
-0 (gpu 0): stream.chpl:11: kernel launch (block size: 512x1x1)
+0 (gpu 0): stream.chpl:12: kernel launch (block size: 512x1x1)
 0 (gpu 0): stream.chpl:13: kernel launch (block size: 512x1x1)
+0 (gpu 0): stream.chpl:15: kernel launch (block size: 512x1x1)
