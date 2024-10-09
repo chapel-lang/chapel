@@ -9599,7 +9599,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
 
 static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
   if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
-      rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+      (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) && rhs->qualType().isRef()) ||
       rhs->isPrimitive(PRIM_ADDR_OF))
   {
     if (SymExpr* rhsBase = toSymExpr(rhs->get(1))) {
