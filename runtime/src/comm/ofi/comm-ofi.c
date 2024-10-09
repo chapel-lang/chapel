@@ -5533,7 +5533,6 @@ static inline
 chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
                        int32_t commID, int ln, int32_t fn) {
 
-  chpl_bool proceed = false;
   retireDelayedAmDone(false /*taskIsEnding*/);
 
   //
@@ -5543,12 +5542,12 @@ chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
   CHK_TRUE(raddr != NULL);
 
   if (size == 0) {
-    goto done;
+    return false;
   }
 
   if (node == chpl_nodeID) {
     memmove(raddr, addr, size);
-    goto done;
+    return false;
   }
 
   // Communications callback support
@@ -5561,9 +5560,7 @@ chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
 
   chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
-  proceed = true;
-done:
-  return proceed;
+  return true;
 }
 
 /*
@@ -5625,7 +5622,7 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
   chpl_bool completed = false; // at least one new completion detected
   chpl_bool pending = false;  // there is an uncompleted handle
   if ((handles == NULL) || (nhandles == 0)) {
-    goto done;
+    return false;
   }
   struct perTxCtxInfo_t* tcip = NULL;
   while (true) {
@@ -5675,7 +5672,6 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
   if (tcip) {
     tciFree(tcip);
   }
-done:
   return completed;
 }
 
