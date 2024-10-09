@@ -77,7 +77,6 @@ varNames = {
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
     State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
-    State.GASNET_VERSION:   'CHPL_GASNET_VERSION'
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are
