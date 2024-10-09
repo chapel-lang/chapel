@@ -178,6 +178,21 @@ static void test8() {
   assert(vars["x"].type()->isIntType());
 }
 
+static void test9() {
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  module M {
+    var ptr : _ddata(int);
+    type x = ptr.eltType;
+  }
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"ptr", "x"});
+  assert(vars["ptr"].type()->isHeapBufferType());
+  assert(vars["x"].type()->isIntType());
+}
+
 int main() {
   setupContext();
 
@@ -189,6 +204,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   delete context;
 
