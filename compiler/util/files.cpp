@@ -91,7 +91,23 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
       colon++;                            // and advance to the next
     }
 
-    pathvec->push_back(astr(dirString));
+    // FIXME (Maybe?)
+    // Following the precedent of $PATH on Unix, we should
+    // treat empty strings between colons like  :: or trailing/leading
+    // colons as meaning to add the current directory to the path.
+    // If we don't include the current directory in the CHPL_LIB_PATH by
+    // default, this behavior below is incorrect, and instead of ignoring
+    // empty strings, it should figure out the current directory and add
+    // that to the path.
+    // Alternatively, we can alter the compiler to throw -L . when
+    // CHPL_LIB_PATH has empty strings in between colons.
+    // However, if we do include the current directory in CHPL_LIB_PATH
+    // by default, then this doesn't need fixing, delete this FIXME.
+
+    // ignore empty strings
+    if (dirString && *dirString) {
+      pathvec->push_back(astr(dirString));
+    }
 
     dirString = colon;                     // advance dirString
   } while (colon != NULL);
