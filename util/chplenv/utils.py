@@ -70,8 +70,9 @@ def try_run_command(command, cmd_input=None, combine_output=False):
         return (False, 0, None, None)
     byte_cmd_input = str.encode(cmd_input, "utf-8") if cmd_input else None
     output = process.communicate(input=byte_cmd_input)
-    return (True, process.returncode, output[0].decode("utf-8"),
-            output[1].decode("utf-8"))
+    my_stdout = output[0].decode("utf-8")
+    my_sterr = output[1].decode("utf-8") if combine_output and output[1] else None
+    return (True, process.returncode, my_stdout, my_sterr)
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):

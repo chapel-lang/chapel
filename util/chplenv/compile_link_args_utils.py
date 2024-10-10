@@ -50,7 +50,7 @@ def get_runtime_includes_and_defines():
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_COMM_DEBUG")
 
-    gpu_bundled, gpu_system = chpl_gpu.get_runtime_includes_and_defines()
+    gpu_bundled, gpu_system = chpl_gpu.get_runtime_compile_args()
     bundled.extend(gpu_bundled)
     system.extend(gpu_system)
 

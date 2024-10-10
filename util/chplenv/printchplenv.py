@@ -107,6 +107,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_LLVM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_AMDGCN_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
@@ -205,6 +207,8 @@ def compute_all_values():
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
     ENV_VALS['  CHPL_GPU_SDK_VERSION'] = chpl_gpu.get_sdk_version()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
+    ENV_VALS['  CHPL_ROCM_LLVM_PATH'] = chpl_gpu.get_rocm_llvm_path()
+    ENV_VALS['  CHPL_ROCM_AMDGCN_PATH'] = chpl_gpu.get_rocm_amdgcn_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
@@ -369,6 +373,10 @@ def filter_tidy(chpl_env):
         return gpu == 'nvidia'
     elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
         return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_ROCM_LLVM_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_ROCM_AMDGCN_PATH':
+        return gpu == 'amd'
     elif chpl_env.name == '  CHPL_ROCM_PATH':
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
