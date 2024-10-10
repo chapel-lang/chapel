@@ -1340,10 +1340,13 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // will ignore arrays in this case
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
@@ -1386,10 +1389,13 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // will ignore arrays in this case
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.

@@ -119,6 +119,9 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
                      int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), arrays are
+  // not used in this case anyways
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
@@ -126,8 +129,8 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
 
   int *srcdisp, *dstdisp;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -420,14 +423,17 @@ void strd_common_call(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                                       /* ln */ int, /* fn */ int32_t),
                       int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), arrays are
+  // not used in this case anyways
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   //Only count[0] and strides are measured in number of bytes.
