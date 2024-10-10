@@ -194,7 +194,6 @@ module ChplConfig {
   param CHPL_GPU_SDK_VERSION:string;
   CHPL_GPU_SDK_VERSION = __primitive("get compiler variable", "CHPL_GPU_SDK_VERSION");
 
-
   @chpldoc.nodoc
   @unstable("'ChplConfig.CHPL_LIB_PIC' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_LIB_PIC: string;
