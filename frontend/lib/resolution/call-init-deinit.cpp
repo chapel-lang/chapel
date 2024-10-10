@@ -899,11 +899,13 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
 
   // check for use of deinited variables
   processMentions(ast, rv);
-
+  
+  bool isIniting = splitInited;
+  isIniting |= resolver.initResolver && resolver.initResolver->initPoints.count(ast) > 0;
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
-  } else if (splitInited) {
+  } else if (isIniting) {
     processInit(frame, ast, lhsType, rhsType, rv);
   } else {
     // it is assignment, so resolve the '=' call

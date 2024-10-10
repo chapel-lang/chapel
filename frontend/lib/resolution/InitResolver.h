@@ -129,6 +129,9 @@ class InitResolver {
 
 public:
 
+  //initialization points to guide handling `=` operators 
+  std::set<const uast::AstNode*> initPoints;
+
   static owned<InitResolver>
   create(Context* context, Resolver& visitor, const uast::Function* fn);
 
