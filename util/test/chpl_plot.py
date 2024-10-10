@@ -296,7 +296,7 @@ class Plot:
         self._bars
   """
 
-  def __init__(self, table, title=None, xlabel=None, ylabel=None, lineStyles=None, kind=None, includeLegend=True, better=None, mpl_legend_args=None):
+  def __init__(self, table, title=None, xlabel=None, ylabel=None, lineStyles=None, kind=None, includeLegend=True, better=None, labelFormat="%s", excludeFirstXLabel=False, mpl_legend_args=None):
     self._x_data = table.xData
     self._y_datas = []
     self._png_file_name = _computePngFilename(table)
@@ -346,7 +346,12 @@ class Plot:
       self.ax.grid(axis='y', linestyle='dashed', linewidth=3, zorder=1)
       self.ax.set_xlim((self._x_data[0], self._x_data[-1]))
       self.ax.xaxis.set_major_locator(ticker.FixedLocator(self._x_data))
-      self.ax.set_xticklabels([str(x) for x in self._x_data])
+      stringifiedLabels = [labelFormat % (x) for x in self._x_data]
+      if excludeFirstXLabel:
+        stringifiedLabels[0] = ''
+      self.ax.set_xticklabels(stringifiedLabels)
+      print("XTICK LABELS: ", stringifiedLabels)
+
       tickAxis = 'both'
     elif self.plotKind is PlotKind.BAR:
       plt.setp(self.ax.get_xticklabels(), rotation=45, horizontalalignment='right')
