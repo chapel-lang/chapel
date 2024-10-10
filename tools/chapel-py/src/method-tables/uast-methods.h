@@ -66,6 +66,8 @@ CLASS_BEGIN(AstNode)
                std::optional<ScopeObject*>,
 
                return ScopeObject::tryCreate(contextObject, resolution::scopeForId(context, node->id())))
+  PLAIN_GETTER(AstNode, creates_scope, "Returns true if this AST node creates a scope",
+               bool, return chpl::resolution::createsScope(node->tag()))
   PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
                std::optional<QualifiedTypeTuple>,
 
