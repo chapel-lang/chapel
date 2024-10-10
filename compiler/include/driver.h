@@ -153,6 +153,8 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_ROCM_LLVM_PATH;
+extern const char* CHPL_ROCM_AMDGCN_PATH;
 extern const char* CHPL_GPU;
 extern const char* CHPL_GPU_ARCH;
 
