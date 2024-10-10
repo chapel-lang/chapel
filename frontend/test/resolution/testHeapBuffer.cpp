@@ -32,18 +32,14 @@
 
 #include <sstream>
 
-static Context* context;
-
 // Use a single context with revisions to get this test running faster.
-static void setupContext() {
-  auto config = getConfigWithHome();
-  context = new Context(config);
-}
+static Context* context;
 
 template <typename F>
 void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
   context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  if (!context->chplHome().empty())
+    setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::stringstream ss;
@@ -155,6 +151,9 @@ static void test7() {
 }
 
 static void test8() {
+  context->advanceToNextRevision(false);
+  if (!context->chplHome().empty())
+    setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -176,9 +175,14 @@ static void test8() {
   auto vars = resolveTypesOfVariables(context, program, {"ptr", "x"});
   assert(vars["ptr"].type()->isHeapBufferType());
   assert(vars["x"].type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
 }
 
 static void test9() {
+  context->advanceToNextRevision(false);
+  if (!context->chplHome().empty())
+    setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -191,11 +195,11 @@ static void test9() {
   auto vars = resolveTypesOfVariables(context, program, {"ptr", "x"});
   assert(vars["ptr"].type()->isHeapBufferType());
   assert(vars["x"].type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
 }
 
-int main() {
-  setupContext();
-
+static void runAllTests() {
   test1();
   test2();
   test3();
@@ -205,8 +209,22 @@ int main() {
   test7();
   test8();
   test9();
+}
 
-  delete context;
+int main() {
+  // With stdlib
+  {
+    context = new Context(getConfigWithHome());
+    runAllTests();
+    delete context;
+  }
+
+  // Without stdlib
+  {
+    context = new Context();
+    runAllTests();
+    delete context;
+  }
 
   return 0;
 }
