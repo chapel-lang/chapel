@@ -59,7 +59,7 @@ def skipif():
 class SrunTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        pass;
+        pass
 
     def setUp(self):
         if skipReason is not None:
@@ -70,7 +70,7 @@ class SrunTests(unittest.TestCase):
         self.env.pop('CHPL_LAUNCHER_USE_SBATCH', None)
 
     def runCmd(self, cmd):
-        output = runCmd(cmd, self.env);
+        output = runCmd(cmd, self.env)
         return output
 
     def test_00_base(self):
@@ -145,7 +145,7 @@ class SbatchTests(SrunTests):
         output = super().runCmd(cmd)
         batch = output.split()[-1]
         with open(batch) as fd:
-            output = fd.read();
+            output = fd.read()
         os.unlink(batch)
         return output
 
@@ -178,7 +178,7 @@ def getDir(compiler):
 
     # If $CHPL_HOME is not set, use the base installation of the compiler
 
-    chpl_home=os.getenv('CHPL_HOME', chpl_base);
+    chpl_home=os.getenv('CHPL_HOME', chpl_base)
     chpl_home=os.path.normpath(chpl_home)
 
     # Find the test directory
@@ -189,7 +189,7 @@ def getDir(compiler):
             Fatal('Cannot find test directory '+chpl_home+'/test or '+testdir)
     # Needed for MacOS mount points
     testdir = os.path.realpath(testdir)
-    # sys.stdout.write('testdir='+testdir+'\n');
+    # sys.stdout.write('testdir='+testdir+'\n')
 
     # If user specified a different test directory (e.g. with --test-root flag on
     # start_test), use it instead.

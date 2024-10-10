@@ -25,8 +25,8 @@ def approximateDiff(file_name_1, file_name_2, tolerance):
     
     if not(difference):
         for i in range(len(lines_1)):
-            s1 = lines_1[i].split();
-            s2 = lines_2[i].split();
+            s1 = lines_1[i].split()
+            s2 = lines_2[i].split()
             difference = False
       
             #==== Compare line lengths ====

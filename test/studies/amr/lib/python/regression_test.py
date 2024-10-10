@@ -52,8 +52,8 @@ def approximateDiff(file_name_1, file_name_2, tolerance):
     # they begin to diverge.
     #----------------------------------------------------------------------
     for i in range(min(len(lines_1), len(lines_2))):
-        split_1 = lines_1[i].split();
-        split_2 = lines_2[i].split();
+        split_1 = lines_1[i].split()
+        split_2 = lines_2[i].split()
   
         if len(split_1) == len(split_2):
             #-----------------------------------------------------------
@@ -91,7 +91,7 @@ output_file_name = sys.argv[1]
 
 if output_file_name.endswith(".comp.out.tmp"):
     output_file = open(output_file_name, 'w')
-    output_file.write("Compilation failed!\n");
+    output_file.write("Compilation failed!\n")
     output_file.write("See the errors in the file "+output_file_name+".save\n")
     output_file.close()
     exit(0)

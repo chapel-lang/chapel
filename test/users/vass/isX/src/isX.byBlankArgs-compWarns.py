@@ -90,7 +90,7 @@ for pred in predList:
   say("  report(", pred, "Value(arg), \"",      pred, "Value\");")
   say("  report(", pred,  "Type(arg.type), \"", pred,  "Type\");")
 
-say("  if isTuple(arg) {");
+say("  if isTuple(arg) {")
 say("    report(isHomogeneousTuple(arg),\"isHomogeneousTuple\");")
 say("    report(isHomogeneousTupleValue(arg),\"isHomogeneousTupleValue\");")
 say("    report(isHomogeneousTupleType(arg.type),\"isHomogeneousTupleType\");")

@@ -83,7 +83,7 @@ class AccessibleTests(unittest.TestCase):
     def runCmd(self, cmd, env=None):
         if env is None:
             env = self.env
-        output = runCmd(cmd, env=env, check=False);
+        output = runCmd(cmd, env=env, check=False)
         return output
 
     def getCores(self, base=0):

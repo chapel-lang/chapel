@@ -40,7 +40,7 @@ def checkLauncherArg(prog, outputFile, outputContent=None, delete=False):
                 else:
                     fGood.write(content)
             else:
-                fGood.write('Launcher argument missing: ' +  arg);
+                fGood.write('Launcher argument missing: ' +  arg)
         if delete:
             # Delete the output file. Its name isn't fixed and .cleanfiles doesn't do globbing.
             os.unlink(outputFile)
