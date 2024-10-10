@@ -760,6 +760,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
       auto& reRhs = initResolver_.byPostorder.byAst(rhs);
+      auto& reLhs = initResolver_.byPostorder.byId(lhs->id());
       state->qt = reRhs.type();
       state->initPointId = node->id();
       state->isInitialized = true;
@@ -769,7 +770,6 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       // field doesn't contribute to the receiver type.
       updateResolverVisibleReceiverType();
 
-      auto& reLhs = initResolver_.byPostorder.byId(lhs->id());
       auto lhsQt = reLhs.type();
       auto lhsKind = lhsQt.kind();
       if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM && isConstQualifier(lhsKind)) {
@@ -891,6 +891,10 @@ void InitResolver::checkEarlyReturn(const Return* ret) {
       (size_t)currentFieldIndex_ < fieldIdsByOrdinal_.size()) {
     ctx_->error(ret, "cannot return from initializer before initialization is complete");
   }
+}
+
+bool InitResolver::isInitPoint(const uast::AstNode* node) {
+  return initPoints.find(node) != initPoints.end();
 }
 
 } // end namespace resolution

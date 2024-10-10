@@ -158,6 +158,9 @@ public:
   const TypedFnSignature* finalize(void);
 
   void checkEarlyReturn(const uast::Return* ret);
+
+  // Returns true if the AST node is an initialization point
+  bool isInitPoint(const uast::AstNode* node);
 };
 
 } // end namespace resolution

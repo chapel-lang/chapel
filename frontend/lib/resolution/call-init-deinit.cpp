@@ -901,7 +901,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   processMentions(ast, rv);
   
   bool isIniting = splitInited;
-  isIniting |= resolver.initResolver && resolver.initResolver->initPoints.count(ast) > 0;
+  isIniting |= resolver.initResolver && resolver.initResolver->isInitPoint(ast);
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
