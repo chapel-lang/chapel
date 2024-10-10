@@ -2504,8 +2504,10 @@ arkouda: &arkouda-base
 
 arkouda-string:
   <<: *arkouda-base
+
 arkouda-bigint:
   <<: *arkouda-base
+  09/27/24:
     - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
 
 arkouda-comp:
