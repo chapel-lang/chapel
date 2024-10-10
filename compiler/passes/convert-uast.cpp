@@ -320,7 +320,7 @@ struct Converter {
   // type conversion helpers
   Type* helpConvertType(types::QualifiedType qt);
   Type* convertClassType(const types::QualifiedType qt);
-  Type* convertCPtrType(const types::CPtrType* t);
+  Type* convertPtrType(const types::PtrType* t);
   Type* convertEnumType(const types::QualifiedType qt);
   Type* convertExternType(const types::QualifiedType qt);
   Type* convertFunctionType(const types::QualifiedType qt);
@@ -4584,7 +4584,8 @@ Type* Converter::helpConvertType(types::QualifiedType qt) {
     case typetags::IntType:        return convertIntType(qt);
     case typetags::RealType:       return convertRealType(qt);
     case typetags::UintType:       return convertUintType(qt);
-    case typetags::CPtrType:       return convertCPtrType(t->toCPtrType());
+    case typetags::CPtrType:       return convertPtrType(t->toPtrType());
+    case typetags::HeapBufferType: return convertPtrType(t->toPtrType());
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -4599,6 +4600,8 @@ Type* Converter::helpConvertType(types::QualifiedType qt) {
     case typetags::END_PrimitiveType:
     case typetags::START_IteratorType:
     case typetags::END_IteratorType:
+    case typetags::START_PtrType:
+    case typetags::END_PtrType:
     case typetags::NUM_TYPE_TAGS:
       INT_FATAL("should not be reachable");
       return dtUnknown;
@@ -4610,11 +4613,17 @@ Type* Converter::helpConvertType(types::QualifiedType qt) {
   return nullptr;
 }
 
-Type* Converter::convertCPtrType(const types::CPtrType* t) {
-  // find the C pointer type to instantiate
-  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+Type* Converter::convertPtrType(const types::PtrType* t) {
+  // find the pointer type to instantiate
+  AggregateType* base = nullptr;
+  if (auto ct = t->toCPtrType()) {
+    base = ct->isConst() ? dtCPointerConst : dtCPointer;
+  } else {
+    INT_ASSERT(t->toHeapBufferType());
+    base = dtHeapBuffer;
+  }
 
-  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  // handle ptr without an element type
   if (t->eltType() == nullptr) {
     return base;
   }
@@ -4622,7 +4631,7 @@ Type* Converter::convertCPtrType(const types::CPtrType* t) {
   auto qt = types::QualifiedType(types::QualifiedType::TYPE, t);
 
   if (base->numFields() == 0) {
-    // the proper AST for CPointer hasn't been created yet,
+    // the proper AST for the pointer type hasn't been created yet,
     // and we need it to proceed, so return a temporary conversion symbol.
     Type* t = new TemporaryConversionType(qt);
     return t;

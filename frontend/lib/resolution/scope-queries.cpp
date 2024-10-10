@@ -190,6 +190,9 @@ struct GatherDecls {
       // TODO: can we remove this at some point when TupleType becomes close
       // enough to the _tuple record?
       skip = true;
+    } else if (d->isClass() && d->name() == "_ddata") {
+      // ditto for _ddata
+      skip = true;
     } else if (d->name() == "eltType" &&
                atFieldLevel && tagParent == asttags::Class &&
                (d->id().symbolPath().startsWith("CTypes.c_ptr") ||

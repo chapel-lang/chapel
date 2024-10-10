@@ -35,6 +35,7 @@ target_sources(ChplFrontend-obj
                ErroneousType.cpp
                ExternType.cpp
                FnIteratorType.cpp
+               HeapBufferType.cpp
                ImagType.cpp
                IntType.cpp
                LoopExprIteratorType.cpp
@@ -42,6 +43,7 @@ target_sources(ChplFrontend-obj
                NothingType.cpp
                Param.cpp
                PrimitiveType.cpp
+               PtrType.cpp
                PromotionIteratorType.cpp
                QualifiedType.cpp
                RealType.cpp
