@@ -1761,6 +1761,48 @@ static void test29(Context* context) {
   }
 }
 
+// This bug is hard to replicate with queries alone, but does seem to show
+// up in some cases of the query system.
+static void testInfiniteCycleBug() {
+  auto context = buildStdContext();
+  auto ctx = context.get();
+
+  ctx->advanceToNextRevision(false);
+  setupModuleSearchPaths(ctx, false, false, {}, {});
+
+  CompilerFlags flags;
+  flags.set(CompilerFlags::WARN_UNSTABLE, true);
+  setCompilerFlags(ctx, std::move(flags));
+
+  std::string program0 =
+    R""""(
+    proc foo() {
+      var x = 0;
+      proc bar() { return x; }
+      return bar();
+    }
+    var x = foo();
+    )"""";
+
+  std::ignore = resolveQualifiedTypeOfX(ctx, program0);
+
+  ctx->advanceToNextRevision(false);
+  setupModuleSearchPaths(ctx, false, false, {}, {});
+
+  std::string program1 =
+    R""""(
+    proc baz() {
+      var x = 0;
+      proc ding() { return x; }
+      return bar();
+    }
+    var x = baz();
+    )"""";
+
+  std::ignore = resolveQualifiedTypeOfX(ctx, program1);
+}
+
+
 int main() {
   test1();
   test2();
@@ -1793,6 +1835,8 @@ int main() {
   auto ctx = buildStdContext();
   test28(ctx.get());
   test29(ctx.get());
+
+  testInfiniteCycleBug();
 
   return 0;
 }

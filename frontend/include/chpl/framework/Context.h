@@ -227,6 +227,10 @@ class Context {
       context_ = nullptr;
     }
 
+    bool isCleared() {
+      return context_ == nullptr;
+    }
+
     ~RecomputeMarker() {
       restore();
     }

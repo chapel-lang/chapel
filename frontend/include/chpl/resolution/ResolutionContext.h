@@ -454,8 +454,14 @@ class ResolutionContext::GlobalQuery {
     }
 
     // Otherwise we are computing, so set the recompute marker.
+    // We don't want it to go out of scope now (since that undoes the mark),
+    // but this is just the 'begin' function; we do want it to go out of scope
+    // when the query is done (when 'end' is called). So, marker it in a field.
     const bool isRecomputing = false;
     auto activeRecomputeMarker = context_->markRecomputing(isRecomputing);
+
+    // We better not be saving another marker, since we only have room to save one.
+    CHPL_ASSERT(recomputeMarker_.isCleared());
     std::swap(recomputeMarker_, activeRecomputeMarker);
 
     // Set the stopwatch if it is compile-time enabled.
