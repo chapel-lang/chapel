@@ -495,6 +495,56 @@ module Zarr {
 
 
   /*
+
+
+  */ 
+  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain: domain(dimCount), 
+                            bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
+    var md = getMetadata(directoryPath);
+    validateMetadata(md, dtype, dimCount);
+    // Size and shape tuples
+    var totalShape, chunkShape : dimCount*int;
+    var chunkCounts: dimCount*int;
+    var totalRanges,chunkRanges: dimCount*range(int);
+    for i in 0..<dimCount {
+      totalShape[i] = md.shape[i];
+      chunkShape[i] = md.chunks[i];
+      chunkCounts[i] = ceil(totalShape[i]:real / chunkShape[i]:real) : int;
+      totalRanges[i] = 0..<totalShape[i];
+      chunkRanges[i] = 0..<chunkCounts[i];
+    }
+    const fullChunkDomain: domain(dimCount) = chunkRanges;
+
+
+    // Initialize the distributed domain and array
+    const undistD : domain(dimCount) = totalRanges;
+    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
+    const D = Dist.createDomain(partialDomain);
+    var A: [D] dtype;
+
+    coforall loc in Locales do on loc {
+      blosc_init();
+      blosc_set_nthreads(bloscThreads);
+      const hereD = A.localSubdomain();
+      ref hereA = A[hereD];
+
+      const localChunks = getLocalChunks(D, hereD, chunkShape);
+      forall chunkIndex in localChunks {
+
+        const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
+
+        const thisChunkDomain = getChunkDomain(chunkShape, chunkIndex);
+        const thisChunkHere = hereD[thisChunkDomain];
+
+        ref thisChunkSlice = hereA.localSlice(thisChunkHere);
+        readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+      }
+      blosc_destroy();
+    }
+    return A;
+  }
+
+  /*
     Reads a v2.0 zarr store from storage using a single locale, returning a
     locally allocated array. This method assumes a shared filesystem
     where the current locale can access the store directory.
