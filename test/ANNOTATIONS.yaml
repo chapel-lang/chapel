@@ -1230,6 +1230,8 @@ mandelbrot:
     - Mandelbrot tweaks (#5188)
   05/08/24:
     - Remove complex math function wrappers for LLVM 16+ (#25019)
+  10/10/24:
+    - Fix complex support with CHPL_LOCALE_MODEL=gpu (#26048)
 
 
 mandelbrot-extras:
@@ -1669,6 +1671,8 @@ nbody:
     - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
   04/03/24:
     - Change param-based nbody to foreach-based (#24745)
+  10/06/24:
+    - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
 
 no-op:
   02/24/17:
@@ -1790,6 +1794,8 @@ ra.ml-perf:
     - machine changes, cannot reproduce old numbers
   02/28/20:
     - Use localAccess for ra-on (#15001)
+  10/9/24:
+    - Non-blocking PUT in CHPL_COMM=ofi (#25977)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -2493,11 +2499,16 @@ arkouda: &arkouda-base
     - Array transfer perf fix (Bears-R-Us/arkouda#3671)
   8/27/24:
     - Fix performance regression in to_ndarray (Bears-R-Us/arkouda#3697)
+  09/27/24:
+    - Use Chapel 2.2 for Arkouda "release" nightly testing (#26014)
 
 arkouda-string:
   <<: *arkouda-base
+
 arkouda-bigint:
   <<: *arkouda-base
+  09/27/24:
+    - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
 
 arkouda-comp:
   <<: *arkouda-base
