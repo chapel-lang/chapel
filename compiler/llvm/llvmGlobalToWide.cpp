@@ -50,6 +50,7 @@
 #if HAVE_LLVM_VER >= 170
 #include "llvm/IR/AttributeMask.h"
 #endif
+#include "llvm/IR/Module.h"
 
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Intrinsics.h"
@@ -152,6 +153,31 @@ namespace {
     return a.starts_with(b);
 #else
     return a.startswith(b);
+#endif
+  }
+
+  // removeInvalidRetAttrs and removeInvalidParamAttrs are
+  // templated to add overloads for `Function*` and `CallBase*`.
+  // this template will only be active for `Function`, `CallBase`, and
+  // their child classes.
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidRetAttrs(BaseTy* V, Type* type) {
+    auto mask = AttributeFuncs::typeIncompatible(type);
+#if HAVE_LLVM_VER >= 140
+    V->removeRetAttrs(mask);
+#else
+    V->removeAttributes(AttributeList::ReturnIndex, mask);
+#endif
+  }
+  template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
+                             std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
+  void removeInvalidParamAttrs(BaseTy* V, size_t idx, Type* type) {
+    auto mask = AttributeFuncs::typeIncompatible(type);
+#if HAVE_LLVM_VER >= 140
+    V->removeParamAttrs(idx, mask);
+#else
+    V->removeAttributes(idx+1, mask);
 #endif
   }
 
@@ -1139,12 +1165,17 @@ namespace {
         }
 #endif
         // Create a new GetElementPtrConstantExpr while changing the types
+#if HAVE_LLVM_VER >= 190
+        auto inRangeIdx = gepOp->getInRange();
+#else
+        auto inRangeIdx = gepOp->getInRangeIndex();
+#endif
         auto C1 = ConstantExpr::getGetElementPtr(
                      newSrcTy,
                      cast<Constant>(gepOp->getPointerOperand()),
                      idxList,
                      gepOp->isInBounds(),
-                     gepOp->getInRangeIndex());
+                     inRangeIdx);
         // Use MapValue to change the operands
         Constant* ret = MapValue(C1, VM, Flags, TypeMapper);
         if( ! ret ) ret = C1;
@@ -1557,22 +1588,11 @@ bool GlobalToWide::run(Module &M) {
 
         if (update_return) {
           // if it's no longer a pointer, remove pointer-based attributes
-#if HAVE_LLVM_VER >= 140
-          NF->removeRetAttrs(AttributeFuncs::typeIncompatible(RetTy));
-#else
-          NF->removeAttributes(AttributeList::ReturnIndex,
-                               AttributeFuncs::typeIncompatible(RetTy));
-#endif
+          removeInvalidRetAttrs(NF, RetTy);
         }
         if (update_parameters) {
           for (size_t i = 0; i < Params.size(); i++ ) {
-#if HAVE_LLVM_VER >= 140
-            NF->removeParamAttrs(i,
-                                 AttributeFuncs::typeIncompatible(Params[i]));
-#else
-            NF->removeAttributes(i+1,
-                                 AttributeFuncs::typeIncompatible(Params[i]));
-#endif
+            removeInvalidParamAttrs(NF, i, Params[i]);
           }
         }
 
@@ -1618,15 +1638,25 @@ bool GlobalToWide::run(Module &M) {
               New = InvokeInst::Create(NF, II->getNormalDest(), II->getUnwindDest(),
                                        Args, "", Call);
               trackLLVMValue(New);
-              cast<InvokeInst>(New)->setCallingConv(CB->getCallingConv());
-              cast<InvokeInst>(New)->setAttributes(CB->getAttributes());
+              auto NewII = cast<InvokeInst>(New);
+              NewII->setCallingConv(CB->getCallingConv());
+              NewII->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < NewII->arg_size(); i++) {
+                auto argTy = NewII->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(NewII, i, argTy);
+              }
             } else {
               New = CallInst::Create(NF, Args, "", Call);
               trackLLVMValue(New);
-              cast<CallInst>(New)->setCallingConv(CB->getCallingConv());
-              cast<CallInst>(New)->setAttributes(CB->getAttributes());
+              auto NewCI = cast<CallInst>(New);
+              NewCI->setCallingConv(CB->getCallingConv());
+              NewCI->setAttributes(CB->getAttributes());
+              for(size_t i = 0; i < NewCI->arg_size(); i++) {
+                auto argTy = NewCI->getArgOperand(i)->getType();
+                removeInvalidParamAttrs(NewCI, i, argTy);
+              }
               if (cast<CallInst>(Call)->isTailCall())
-                cast<CallInst>(New)->setTailCall();
+                NewCI->setTailCall();
             }
 
             // replace_with wideToGlobal if needed on result
