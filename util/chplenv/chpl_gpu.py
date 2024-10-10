@@ -107,7 +107,7 @@ def determine_gpu_type():
     error("Unable to determine GPU type%s, assign 'CHPL_GPU' to one of: [%s]" %
       ("" if len(typesFound) == 0 else " (detected: [%s])" %  ", ".join(typesFound),
        ", ".join(GPU_TYPES.keys())))
-    return None;
+    return None
 
 def get_llvm_override():
     if get() == 'amd':
@@ -129,7 +129,7 @@ def get():
         else:
             return chpl_gpu_env
     else:
-        return determine_gpu_type();
+        return determine_gpu_type()
 
 @memoize
 def get_arch():

@@ -129,7 +129,7 @@ def add_vars_to_paths_helper(s, tofix):
 
             for kv in tofix:
               key = kv[0]
-              val = kv[1];
+              val = kv[1]
 
               if path.startswith(val):
                 rel = os.path.relpath(path, val)

@@ -97,7 +97,7 @@ doc_args_dimensions_regex = re.compile( r"(\w+)[- ]by[- ](\w+)(?: coefficient)? 
 
 # Parses the human documentation of the fortran base of scalar ints to determine how (if at all) they relate to matrix arrays
 # Captures: [1,what] the semantic information of relation (order, rows, columns, rank) [2,who] an unbroken sentence of names referring to matrices/arrays
-scalar_matrix_relation_regex = re.compile( r"(?:number\s+of\s+)?(?P<what>\w+)\s+(?:(?:of)|(?:in))\s+(?:the\s+)?(?:input\s+)?(?:(?:matrix)|(?:matrices)|(?:submatrix))?(?:\s+)?(?P<who>(?:(?:(?:\w+\( \w+ \))|(?:\w+))\s*)+)" );
+scalar_matrix_relation_regex = re.compile( r"(?:number\s+of\s+)?(?P<what>\w+)\s+(?:(?:of)|(?:in))\s+(?:the\s+)?(?:input\s+)?(?:(?:matrix)|(?:matrices)|(?:submatrix))?(?:\s+)?(?P<who>(?:(?:(?:\w+\( \w+ \))|(?:\w+))\s*)+)" )
 
 # Parses the function purpose documentation from the documentation
 # Captures: [1,body] the human readable text documenting the purpose of the function
@@ -322,7 +322,7 @@ class LAPACKFunctionDefinePass ( Pass ):
           proc_node.set( "return-type", proc_decl.group( "type" ) )
         #print "\t", proc_decl.group("name")
         
-        arguments = proc_decl.group( "arguments" ).split( "," );
+        arguments = proc_decl.group( "arguments" ).split( "," )
         if len( arguments ) >= 1 and arguments[0] != "":
           args_node = SubElement( proc_node, "arguments-list" )
           arg_counter = 0
@@ -545,7 +545,7 @@ class AssociateArgsToArrayPass ( Pass ):
         proc_info[ proc_name ] = {}
       '''
       base_name = proc_name.lower()
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       if match == None:
         #print proc_name, "(", base_name, ") does not match regex"
         continue
@@ -849,7 +849,7 @@ class AssociateFunctionsLAPACKtoLAPACKEPass ( Pass ):
       '''
       misses = [] 
       for f_arg in lapack_f_proc.findall( "./arguments-list/argument" ):
-        f_arg_name = f_arg.get( "name" );
+        f_arg_name = f_arg.get( "name" )
         c_arg = lapack_c_proc.find( "./arguments-list/argument/[@name='" + f_arg_name.lower() + "']" )
         
         # skip non-analogous args.
@@ -965,7 +965,7 @@ class EasyAssociateArgsPass ( Pass ):
         #continue
 
       for f_arg in f_proc.findall( "./arguments-list/argument" ):
-        f_arg_name = f_arg.get( "name" );
+        f_arg_name = f_arg.get( "name" )
         c_arg = c_proc.find( "./arguments-list/argument/[@name='" + f_arg_name.lower() + "']" )
         
         # skip non-analogous args.
@@ -1477,7 +1477,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
     Pass.resolve( selfname, xml_tree ) 
     print "[",selfname,"]"
 
-    chapel_module = xml_tree.find( "./chapel-module" );
+    chapel_module = xml_tree.find( "./chapel-module" )
     chapel_procedures = chapel_module.find( "./procedures" )
     
     for proc in chapel_procedures.findall( "./procedure" ):
@@ -1487,7 +1487,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
       
       base_name = proc_name.replace( "LAPACKE_", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       
       if match == None:
         #print proc_name, "(", base_name, ") does not match regex"
@@ -1586,7 +1586,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
             if associate_array in args_names:
               array = associate_array
               field = fields[ arrays.index( array ) ]
-              break;
+              break
           
           if field == "rows":
             pass_through[ arg.get("name") ] = "(if matrix_order == lapack_memory_order.row_major then " + array + ".domain.dim(1).size else " + array + ".domain.dim(2).size) : c_int"
@@ -1782,7 +1782,7 @@ class ChapelModuleExternProcPass ( Pass ):
     module_root = xml_tree.find( "./chapel-module" )
     module_procs = module_root.find( "./procedures" )
     
-    proc_count = 0;
+    proc_count = 0
     
     for proc in module_procs.findall( "./procedure" ):
           
@@ -1802,7 +1802,7 @@ class ChapelModuleExternProcPass ( Pass ):
       ordered_args = [None] * len( proc_args )
       
       for arg in proc_args:
-        ordered_args[ int( arg.get( "position" ) ) ] = arg;
+        ordered_args[ int( arg.get( "position" ) ) ] = arg
 
       def_code = SegmentProducer( "extern proc " + proc_name )
       args_code = ListProducer( ", ", "(", ")" )
@@ -1872,7 +1872,7 @@ class ChapelModuleStringToCharWraperProcPass ( Pass ):
       
       char_flag = False
       for arg in proc_args:
-        ordered_args[ int( arg.get( "position" ) ) ] = arg;
+        ordered_args[ int( arg.get( "position" ) ) ] = arg
         char_flag = arg.get( "type" ) == "c_char" or char_flag
       
       # skip procedures that dont have char arguments
@@ -1951,7 +1951,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
       
       base_name = proc.get("name").replace( "LAPACKE_", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       if match == None:
         #print proc.get("name"), "(", base_name, ") does not match regex"
         continue
@@ -2006,7 +2006,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
         ordered_args = [None] * len( proc_args )
     
         for arg in proc_args:
-          ordered_args[ int( arg.get( "position" ) ) ] = arg;
+          ordered_args[ int( arg.get( "position" ) ) ] = arg
     
         code.append( SegmentProducer( "inline proc " + proc_name ) )
         
@@ -2385,7 +2385,7 @@ class BucketLAPACKFunctionGroupsPass ( Pass ):
       
       base_name = proc_name.replace( "LAPACKE_", "" ) #.replace( "_work", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       
       if match == None:
         print proc_name, "(", base_name, ") does not match regex"
@@ -2477,7 +2477,7 @@ class ImportAbstractLAPACKFunctionsPass ( Pass ):
         for arg in config.findall( "./analogue-arguments-list/argument" ):
           arg_name = arg.get("name")
           arg_relates[ arg_name ] = config.find( "./arguments-relationships/argument/[@name='" + arg_name + "']" )
-          ana_args.append( arg );
+          ana_args.append( arg )
         
       
         for type in config.findall("./types/type"):
@@ -2556,9 +2556,9 @@ class CommonArgumentCollectionPass ( Pass ):
         
         func_args_type = {} # {func_name} => {arg_name} => type_name
         for type_func in config_node.findall( "./types/type" ):
-          type_name = type_func.get( "name" );
-          all_funcs.add( type_name );
-          func_args_type[ type_name ]  = {};
+          type_name = type_func.get( "name" )
+          all_funcs.add( type_name )
+          func_args_type[ type_name ]  = {}
           
           chapel_func = xml_tree.find( type_func.get( "analogue" ) )
           
@@ -2635,9 +2635,9 @@ class DropAttemptedAssociations ( Pass ):
     Pass.resolve( selfname, xml_tree ) 
     print "[",selfname,"]"
     
-    output_xml = ET.Element( "pass" );
+    output_xml = ET.Element( "pass" )
     output_xml.set( "name", "DropAttemptedAssociations" )
-    output_procs = SubElement( output_xml, "procedures" );
+    output_procs = SubElement( output_xml, "procedures" )
     
     for chpl_proc in xml_tree.findall( "./chapel-module/procedures/procedure" ):
       proc_name = chpl_proc.get( "name" )
@@ -2646,7 +2646,7 @@ class DropAttemptedAssociations ( Pass ):
       
       base_name = proc_name.replace( "LAPACKE_", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       
       if match == None:
         print proc_name, "(", base_name, ") does not match regex"
@@ -2747,7 +2747,7 @@ class DropAttemptedAssociations ( Pass ):
             if associate_array in args_names:
               array = associate_array
               field = fields[ arrays.index( array ) ]
-              break;
+              break
           
           if field == "rows":
             pass_through[ arg.get("name") ] = "if matrix_order == LAPACK_ROW_MAJOR then " + array + ".domain.dim(1).size else " + array + ".domain.dim(2).size "
@@ -2859,7 +2859,7 @@ class AbstractDropAttemptedAssociations ( Pass ):
           for i in range( len( method_args ) ):
             if method_args[i].get("name") == rm:
               method_args.remove( method_args[i] )
-              break;
+              break
           
         interface_node = SubElement( config_node, "method-arguments" )   
         for arg in method_args :
@@ -3833,13 +3833,13 @@ class FindLAPACKFunctionGroups ( Pass ):
       proc_name = proc.get( "name" )
       base_name = proc_name.replace( "LAPACK_", "" ).replace( "LAPACKE_", "" ).replace( "_work", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       
       if match == None:
         print proc_name, "ie", base_name, "does not match regex"
         continue
       
-      #names.add( base_name );
+      #names.add( base_name )
       func = match.group( "function" )
       config = match.group( "mtype" )
       
@@ -3906,7 +3906,7 @@ class PrintArgDoc ( Pass ):
     text_node = lapack_node.find( "./text" )
     procs_node = lapack_node.find( "./procedures" )
     
-    doc_set = set();
+    doc_set = set()
     total = 0
     docked = 0
     arg="A"
@@ -4077,7 +4077,7 @@ class SolveArgsUnionFor ( Pass ):
     unique = set()
     co = set()
     non = set()
-    unset = True;
+    unset = True
     for group_node in abstract_lapack.findall( "./group" ):
       for config_node in group_node.findall( "./matrix-configuration" ):
         print config_node.get( "name" ) + group_node.get( "name" )
@@ -4097,7 +4097,7 @@ class SolveArgsUnionFor ( Pass ):
           co |= array_args
           if unset:
             unique |= array_args
-            unset = False;
+            unset = False
           else:
             unique &= array_args
           print unique, "\n"
@@ -4125,7 +4125,7 @@ class FindDifferentLengthCalls ( Pass ):
         continue
       base_name = proc.get("name").replace( "LAPACKE_", "" )
       
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       if match == None:
         #print proc.get("name"), "(", base_name, ") does not match regex"
         continue
@@ -4169,7 +4169,7 @@ class IsNOrMEverTheSame ( Pass ):
       proc_name = proc_node.get( "name" )
       '''
       base_name = proc_name.lower()
-      match = func_name_group_regex.search( base_name );
+      match = func_name_group_regex.search( base_name )
       if match == None:
         #print proc_name, "(", base_name, ") does not match regex"
         continue
@@ -4345,7 +4345,7 @@ class TestInputGroupsGen ( Pass ):
         for arg in config.findall( "./analogue-arguments-list/argument" ):
           arg_name = arg.get("name")
           arg_relates[ arg_name ] = config.find( "./arguments-relationships/argument/[@name='" + arg_name + "']" )
-          ana_args.append( arg );
+          ana_args.append( arg )
         
       
         for type in config.findall("./types/type"):

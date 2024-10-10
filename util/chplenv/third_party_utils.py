@@ -124,7 +124,7 @@ def pkgconfig_get_system_compile_args(pkg):
     if not pkgconfig_system_has_package(pkg):
         return (None, None)
     # run pkg-config to get the cflags
-    cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
+    cflags_line = run_command(['pkg-config', '--cflags'] + [pkg])
     cflags = cflags_line.split()
     return ([ ], cflags)
 
@@ -210,7 +210,7 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     if static:
       static_arg = ['--static']
 
-    libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pkg]);
+    libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pkg])
     libs = libs_line.split()
     return ([ ], libs)
 
