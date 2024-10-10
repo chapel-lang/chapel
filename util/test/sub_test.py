@@ -231,11 +231,11 @@ def LauncherTimeoutArgs(seconds):
 
 # Escape all special characters
 def ShellEscape(arg):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', arg)
+    return re.sub(r'([\\!@#$%^&*()?;\'"|<>[\]{} ])', r'\\\1', arg)
 
 # Escape all special characters but leave spaces alone
 def ShellEscapeCommand(arg):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', arg)
+    return re.sub(r'([\\!@#$%^&*()?;\'"|<>[\]{}])', r'\\\1', arg)
 
 
 # Grabs the start and end of the output and replaces non-printable chars with ~
@@ -812,7 +812,7 @@ def get_util_dir():
 def get_config_dir(util_dir):
     return os.path.join(util_dir, 'config')
 
-def main(): 
+def main():
     # Start of sub_test proper
     #
     global utildir, chpl_base, chpl_home, machine, envCompopts, platform
