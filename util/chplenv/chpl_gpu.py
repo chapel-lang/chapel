@@ -1,7 +1,5 @@
-import utils
 import os
 import glob
-import json
 import chpl_locale_model
 import chpl_platform
 import chpl_llvm
@@ -9,7 +7,7 @@ import chpl_compiler
 import re
 import chpl_tasks
 import chpl_home_utils
-from utils import error, warning, memoize, run_command, try_run_command, which, is_ver_in_range
+from utils import error, warning, memoize, try_run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
     return _validate_cuda_version_impl()
@@ -104,7 +102,7 @@ def _find_cuda_version(compiler: str):
     # 'Cuda compilation tools, release'
     regex = r"Cuda compilation tools, release ([\d\.]+)"
 
-    exists, returncode, out, _ = utils.try_run_command([compiler, "--version"])
+    exists, returncode, out, _ = try_run_command([compiler, "--version"])
     if not (exists and returncode == 0):
         return None
     
@@ -281,7 +279,7 @@ def get_sdk_path(for_gpu):
         # TODO: for now, just do a simple validation that checks if the path exists
         return (os.path.exists(p) and os.path.isdir(p))
 
-    # use user specify if given
+    # use user specified if given
     chpl_sdk_path = os.environ.get(gpu.sdk_path_env)
     if chpl_sdk_path:
         if for_gpu == get() and not validate_path(chpl_sdk_path):
@@ -375,7 +373,6 @@ def get_runtime_link_args():
 
 def get_cuda_libdevice_path():
     if get() == 'nvidia':
-        # TODO:  # find lib device: #$ NVVMIR_LIBRARY_DIR=
         # TODO this only makes sense when we are generating for nvidia
         chpl_cuda_path = get_sdk_path('nvidia')
         print(chpl_cuda_path)
@@ -435,7 +432,7 @@ def validateLlvmBuiltForTgt(expectedTgt):
     if chpl_llvm.get() == 'bundled':
         return True
 
-    exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+    exists, returncode, my_stdout, _ = try_run_command(
         [chpl_llvm.get_llvm_config(), "--targets-built"])
 
     if not exists or returncode != 0:
@@ -511,13 +508,11 @@ def _validate_cuda_version_impl():
     return True
 
 def get_sdk_version():
-
     gpu = GPU_TYPES[get()]
     if not gpu.real_gpu:
         return 'none'
     version = gpu.find_version(get_gpu_compiler())
-    # TODO add validation for if the compiler matches what the user set CHPL_GPU_SDK_VERSION?
-
+    # TODO: add validation for if the compiler matches what the user set CHPL_GPU_SDK_VERSION?
     version = version.strip() if version is not None else 'none'
     return version
 
@@ -567,11 +562,5 @@ def validate(chplLocaleModel):
               "CHPL_TARGET_COMPILER=llvm.")
 
     gpu.validate_llvm()
-
-    for depr_env in ("CHPL_GPU_CODEGEN", "CHPL_GPU_RUNTIME"):
-        if os.environ.get(depr_env):
-            warning(depr_env + " is deprecated and now ignored. Please use " +
-                    "'CHPL_GPU=[nvidia|amd|cpu]' to choose a GPU target " +
-                    "explicitly.")
 
     return True
