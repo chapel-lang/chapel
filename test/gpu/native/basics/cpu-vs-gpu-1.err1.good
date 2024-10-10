@@ -1,0 +1,23 @@
+{ start 'on'
+'on' on gpu
+'on' on gpu
+'on' on gpu
+'on' on gpu
+'on' on gpu
+compiler generated error
+notRunOnGPUs()
+} finish 'on'
+{ start either()
+either() on gpu
+either() on gpu
+either() on gpu
+either() on gpu
+either() on gpu
+} finish either()
+{ start either()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+} finish either()

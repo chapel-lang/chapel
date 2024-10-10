@@ -148,8 +148,11 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
   return var;
 }
 
-
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
+  // shortcut for global variables
+  if (isModuleSymbol(sym->defPoint->parentSymbol))
+    return false;
+
   LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
   while (curLoop) {
     if (curLoop == loop) {
@@ -542,6 +545,12 @@ public:
     assertionReporter_.reportNotGpuizable(loop_, ast, msg);
   }
 
+  inline void reportNotGpuizableFnCall(CallExpr* call, FnSymbol* fn, const char* msg) {
+    assertionReporter_.pushCall(call);
+    assertionReporter_.reportNotGpuizable(loop_, fn, msg);
+    assertionReporter_.popCall();
+  }
+
 private:
   CallExpr* findCompileTimeGpuAssertions();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
@@ -558,7 +567,7 @@ private:
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
-                                   std::set<FnSymbol*> visitedFns);
+                                   std::set<FnSymbol*>& visitedFns);
 
   FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
@@ -675,7 +684,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      assertionReporter_.reportNotGpuizable(loop_, cur, "parent function disallows execution on a GPU");
+      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -767,22 +776,37 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   return true;
 }
 
+// Given a 'cpuCall', replace it with this conditional:
+//  if gCpuVsGpuToken then cpuCall; else call gpuFn();
+static void setupCpuVsGpuCalls(CallExpr* cpuCall, FnSymbol* gpuFn) {
+  // handling non-statement-level calls is t.b.d.
+  if (! cpuCall->isStmtExpr())
+    USR_FATAL(cpuCall, "such calls to %s are currently not implemented",
+              gpuFn->name);
+
+  SET_LINENO(cpuCall);
+  CallExpr* gpuCall = cpuCall->copy();
+  gpuCall->setResolvedFunction(gpuFn);
+  BlockStmt* thenBlock = new BlockStmt();
+  CondStmt* cond = new CondStmt(new SymExpr(gCpuVsGpuToken),
+                                thenBlock, gpuCall);
+  cpuCall->replace(cond);
+  thenBlock->insertAtTail(cpuCall);
+}
+
 FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
   SET_LINENO(fn);
 
   // set up the new function
   FnSymbol* gpuCopy = fn->copy();
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+  gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
   fn->defPoint->insertBefore(new DefExpr(gpuCopy));
 
   // modify its body
   BlockStmt* gpuCopyBody = new BlockStmt();
-  VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
-
   gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
-  gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
-  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
-
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   gpuCopy->body->replace(gpuCopyBody);
 
   return gpuCopy;
@@ -796,18 +820,18 @@ bool GpuizableLoop::callsInBodyAreGpuizable() {
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                                 std::set<FnSymbol*>& okFns,
-                                                std::set<FnSymbol*> visitedFns) {
-  FnSymbol* fn = blk->getFunction();
+                                           std::set<FnSymbol*>& visitedFns) {
+  FnSymbol* parentFn = blk->getFunction();
   if (debugPrintGPUChecks) {
-    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
-           fn->fname(), fn->linenum(), fn->name, fn->id);
+    printf("%*s%s: %s[%d]\n", indentGPUChecksLevel, "",
+           debugLoc(parentFn), parentFn->name, parentFn->id);
   }
 
-  if (visitedFns.count(blk->getFunction()) != 0) {
+  if (visitedFns.count(parentFn) != 0) {
     return true; // allow recursive functions
   }
 
-  visitedFns.insert(blk->getFunction());
+  visitedFns.insert(parentFn);
 
   std::vector<CallExpr*> calls;
 
@@ -825,7 +849,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
-        assertionReporter_.reportNotGpuizable(loop_, call, "call to a primitive that is not fast and local");
+        reportNotGpuizable(call, "call to a primitive that is not fast and local");
         return false;
       }
     } else if (call->isResolved()) {
@@ -844,16 +868,16 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // GPU-driven communication.
       if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU)) {
         FnSymbol* gpuCopy = createErroringStubForGpu(fn);
-        call->setResolvedFunction(gpuCopy);
+        // Set up the AST so that the call invokes different functions
+        // when executing on CPU vs. GPU
+        setupCpuVsGpuCalls(call, gpuCopy);
 
         // now, this call is safe
         continue;
       }
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        assertionReporter_.pushCall(call);
-        assertionReporter_.reportNotGpuizable(loop_, fn, "function is marked as not eligible for GPU execution");
-        assertionReporter_.popCall();
+        reportNotGpuizableFnCall(call, fn, "function is marked as not eligible for GPU execution");
         return false;
       }
 
@@ -864,30 +888,31 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         std::string msg = "function calls out to extern function (";
         msg += fn->name;
         msg += "), which is not marked as GPU eligible";
-        assertionReporter_.reportNotGpuizable(loop_, fn, msg.c_str());
+        reportNotGpuizable(fn, msg.c_str());
         return false;
       }
 
       if (hasOuterVarAccesses(fn)) {
-        assertionReporter_.pushCall(call);
-        assertionReporter_.reportNotGpuizable(loop_, fn, "called function has outer var access");
-        assertionReporter_.popCall();
+        reportNotGpuizableFnCall(call, fn, "called function has outer var access");
         return false;
       }
 
-      indentGPUChecksLevel += 2;
-      bool ok = okFns.count(fn) != 0;
-      if (!ok) {
+      if (okFns.count(fn) == 0) {
+        indentGPUChecksLevel += 2;
         assertionReporter_.pushCall(call);
-        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
+        bool ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
         assertionReporter_.popCall();
-      }
-      if (ok) {
         indentGPUChecksLevel -= 2;
-        okFns.insert(fn);
-      } else {
-        indentGPUChecksLevel -= 2;
-        return false;
+        if (ok) {
+          // If this is a recursive call to 'fn', 'ok' will be true and we will
+          // okFns.insert(fn) even though we are not done analyzing 'fn'.
+          // This avoids re-analyzing any subsequent calls to 'fn'.
+          // We will still see bad calls in 'fn', if any, while working
+          // through the first encountered call to 'fn'.
+          okFns.insert(fn);
+        } else {
+          return false;
+        }
       }
     }
   }
@@ -922,7 +947,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
-    assertionReporter_.reportNotGpuizable(loop_, loop_, "loop indices do not match expected pattern for GPU execution");
+    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -949,7 +974,7 @@ bool GpuizableLoop::extractUpperBound() {
   }
 
   if(upperBound_ == nullptr) {
-    assertionReporter_.reportNotGpuizable(loop_, loop_, "upper bound does not match expected pattern for GPU execution");
+    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
     return false;
   }
   return true;
@@ -1770,10 +1795,8 @@ void GpuKernel::populateBody() {
       for_vector(SymExpr, symExpr, symExprsInBody) {
         Symbol* sym = symExpr->symbol();
 
-        if (handledSymbols.count(sym) == 1) {
-          continue;
-        }
-        handledSymbols.insert(sym);
+        if (!  handledSymbols.insert(sym).second)
+          continue; // sym was already in the set
 
         if (isDefinedInTheLoop(sym, loopForBody)) {
           // looks like this symbol was declared within the loop body,
@@ -1796,6 +1819,10 @@ void GpuKernel::populateBody() {
         }
         else if (sym->name == astr("chpl_privateObjects")) {
           // we are covering this elsewhere
+        }
+        else if (sym == gCpuVsGpuToken) {
+          // codegen will never reference gCpuVsGpuToken
+          // we could generalize this check to 'sym->hasFlag(FLAG_NO_CODEGEN)'
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -2141,6 +2168,21 @@ void GpuKernel::generateKernelLaunch() {
   launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
 }
 
+// Check that all references to gCpuVsGpuToken occur only within conditionals.
+// We could do it in the front end for earlier detection, however doing it here
+// allows us to catch compiler-introduced bugs as well.
+static void checkUsesOf_cpuVsGpuToken() {
+  for_SymbolSymExprs(se, gCpuVsGpuToken) {
+    bool useOK = false;
+    if (CondStmt* cond = toCondStmt(se->parentExpr))
+      if (se == cond->condExpr)
+        useOK = true;
+    if (! useOK)
+      USR_FATAL_CONT(se, "%s is used outside of an if-condition",
+                     gCpuVsGpuToken->name);
+  }
+}
+
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
   if (loop->body.length > 0) {
     if (auto callExpr = toCallExpr(loop->body.get(1))) {
@@ -2223,6 +2265,8 @@ static void doGpuTransforms() {
       cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     }
   }
+
+  checkUsesOf_cpuVsGpuToken();
 }
 
 static void logGpuizableLoops() {
