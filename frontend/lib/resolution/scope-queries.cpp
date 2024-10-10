@@ -190,6 +190,9 @@ struct GatherDecls {
       // TODO: can we remove this at some point when TupleType becomes close
       // enough to the _tuple record?
       skip = true;
+    } else if (d->isClass() && d->name() == "_ddata") {
+      // ditto for _ddata
+      skip = true;
     } else if (d->name() == "eltType" &&
                atFieldLevel && tagParent == asttags::Class &&
                (d->id().symbolPath().startsWith("CTypes.c_ptr") ||
@@ -198,11 +201,6 @@ struct GatherDecls {
       // since we're representing those types entirely within the frontend.
       //
       // TODO: Remove this once we have replaced those classes.
-      skip = true;
-    } else if (d->name() == "eltType" && atFieldLevel &&
-               tagParent == asttags::Class &&
-               (d->id().symbolPath().startsWith("ChapelBase._ddata"))) {
-      // ditto for dummy _ddata class
       skip = true;
     }
 
