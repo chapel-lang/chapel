@@ -1,0 +1,1 @@
+../ChAI/test/multiLocaleInfSharded.chpl
