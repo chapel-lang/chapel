@@ -45,6 +45,11 @@ class IteratorType : public Type {
    */
   const resolution::PoiScope* poiScope_;
 
+  bool iteratorTypeContentsMatchInner(const IteratorType* other) const {
+    return yieldType_ == other->yieldType_ &&
+           poiScope_ == other->poiScope_;
+  }
+
   IteratorType(typetags::TypeTag tag, QualifiedType yieldType,
                const resolution::PoiScope* poiScope)
     : Type(tag), yieldType_(std::move(yieldType)), poiScope_(poiScope) {}

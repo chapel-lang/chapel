@@ -45,8 +45,7 @@ class FnIteratorType final : public IteratorType {
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (FnIteratorType*) other;
-    return this->yieldType_ == rhs->yieldType_ &&
-           this->poiScope_ == rhs->poiScope_ &&
+    return iteratorTypeContentsMatchInner(rhs) &&
            this->iteratorFn_ == rhs->iteratorFn_;
   }
 

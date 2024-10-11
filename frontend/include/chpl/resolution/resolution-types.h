@@ -1894,11 +1894,7 @@ class CallResolutionResult {
   }
 
   static CallResolutionResult getEmpty() {
-    return CallResolutionResult(
-        MostSpecificCandidates::getEmpty(),
-        /* rejectedPossibleIteratorCandidates */ false,
-        types::QualifiedType(),
-        PoiInfo());
+    return CallResolutionResult();
   }
 
   /** get the most specific candidates for return-intent overloading */
