@@ -1,2 +1,2 @@
 pytest==8.3.3
-pytest-lsp==0.4.1
+pytest-lsp==0.4.3
