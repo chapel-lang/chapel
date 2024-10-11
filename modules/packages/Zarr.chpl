@@ -483,8 +483,8 @@ module Zarr {
 
     :arg targetLocales: The locales to use for reading the array in the shape the
       array will be distributed
-  */ 
-  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain, 
+  */
+  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain,
                             bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
