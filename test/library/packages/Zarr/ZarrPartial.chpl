@@ -2,10 +2,12 @@ use Zarr;
 use IO;
 use FileSystem;
 use Random;
+use BlockDist;
 
 proc test3D() {
-  const fullD: domain(3) = {0..10, 0..10, 0..10};
-  const partialD: domain(3) = {0..5, 0..5, 0..5};
+  const dist = new blockDist(boundingBox={0..10, 0..10, 0..10});
+  const fullD = dist.createDomain({0..10, 0..10, 0..10});
+  const partialD = dist.createDomain({0..0, 0..0, 0..10});
 
   var ones: [fullD] real(32) = 1;
   var twos: [fullD] real(32) = 2;

@@ -465,7 +465,7 @@ module Zarr {
 
 
   */ 
-  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain: domain(dimCount), 
+  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain, 
                             bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
