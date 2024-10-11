@@ -4836,8 +4836,6 @@ resolveIterTypeWithTag(Resolver& rv,
   auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto iterandType = iterandRE.type();
 
-  // If the user explicitly provided a tag, this is an error: tags
-  // are automatically provided by the compiler. Report an error.
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 

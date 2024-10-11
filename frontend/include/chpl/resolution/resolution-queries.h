@@ -315,6 +315,15 @@ types::QualifiedType returnType(ResolutionContext* rc,
                                 const PoiScope* poiScope);
 
 /**
+  An iterator-specific variant of 'returnType' which does not wrap the
+  function's return in an IterableType, returning instead the type of values
+  yielded by the function.
+ */
+types::QualifiedType yieldType(ResolutionContext* rc,
+                               const TypedFnSignature* sig,
+                               const PoiScope* poiScope);
+
+/**
   Compute the types for any generic 'out' formal types after instantiation
   of any other generic arguments.
 

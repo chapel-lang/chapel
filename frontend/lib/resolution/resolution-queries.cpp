@@ -5539,12 +5539,8 @@ findTaggedIterator(ResolutionContext* rc,
   if (isFollower) {
     auto candidate = findTaggedIterator(rc, name, receiverType, argTypes,
                                         Function::LEADER, callScope, iteratorScope, poiScope);
-    if (candidate) {
-      auto retType = returnType(rc, candidate.fn(), poiScope);
-
-      if (!retType.isUnknownOrErroneous() && retType.type()->isFnIteratorType()) {
-        followThisType = retType.type()->toFnIteratorType()->yieldType();
-      }
+    if (candidate && candidate.fn()->isIterator()) {
+      followThisType = yieldType(rc, candidate.fn(), poiScope);
     }
   }
 
