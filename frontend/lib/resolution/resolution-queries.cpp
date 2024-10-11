@@ -193,6 +193,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
+            child->isInterface() ||
             child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||

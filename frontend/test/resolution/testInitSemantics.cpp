@@ -1596,6 +1596,27 @@ static void testInheritance() {
     check(z2);
     check(z3);
   }
+
+  // Make sure that existence of an interface in the inherit-exprs list
+  // does not cause a super.init call to be generated.
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      interface myInterface {}
+
+      class C : myInterface {
+        var x : string;
+      }
+
+      var c = new C();
+      )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
 }
 
 static void testImplicitSuperInit() {
