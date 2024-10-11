@@ -500,16 +500,35 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  overload (e.g., leader, follower).
+ */
 const MostSpecificCandidate&
 findTaggedIteratorForType(ResolutionContext* rc,
                           const types::FnIteratorType* fnIter,
                           uast::Function::IteratorKind iterKind);
 
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  and determine its yield type.
+ */
 const types::QualifiedType&
 taggedYieldTypeForType(ResolutionContext* rc,
                        const types::FnIteratorType* fnIter,
                        uast::Function::IteratorKind iterKind);
 
+/**
+  Resolve a call to the special 'these' iterator method. For certain types,
+  this circumvents the normal call resolution process, since iterating over
+  these types is handled by the compiler.
+
+  * the 'iterand' is an AST node to use as an anchor for errors etc.
+  * the 'receiverType' is the type of the receiver on which `these` is being invoked
+  * the 'iterKind' is the kind of iterator being requested (leader, follower, etc.)
+  * the 'followThis' is the type of 'followThis' for the follower iterator, if any
+  * the 'inScopes' is the scope information for the call
+ */
 CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                                       const uast::AstNode* iterand,
                                       const types::QualifiedType& receiverType,
