@@ -275,8 +275,6 @@ class QueryMapResultBase {
   // extra boolean is fine.
   mutable bool beingTestedForReuse = false;
 
-  mutable QueryDependencyVec dependencies;
-
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
@@ -287,6 +285,8 @@ class QueryMapResultBase {
   // This is not too strongly connected to emittedErrors (which tracks whether
   // errors --- if any --- were shown to the user for this query result only)
   mutable bool errorsPresentInSelfOrDependencies = false;
+
+  mutable QueryDependencyVec dependencies;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
