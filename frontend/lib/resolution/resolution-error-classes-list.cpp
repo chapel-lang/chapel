@@ -766,6 +766,30 @@ void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto call = node->toCall();
+  auto candidate = std::get<const resolution::TypedFnSignature*>(info_);
+  auto& rejected = std::get<std::vector<const resolution::TypedFnSignature*>>(info_);
+
+  UniqueString name = candidate->untyped()->name();
+
+  wr.heading(kind_, type_, node, "found potentially compatible iterator overloads in other scopes.");
+  wr.message("While resolving the call to iterator '", name ,"' here:");
+  wr.codeForLocation(call);
+  if (candidate) {
+    wr.message("The following iterator was determined to match the given call:");
+    wr.codeForLocation(candidate->id());
+  }
+  wr.message("However, other candidates were found in different scopes.");
+  wr.message("");
+
+  for (auto rejectedCandidate : rejected) {
+    wr.note(rejectedCandidate->id(), "one candidate was found here:");
+    wr.codeForLocation(rejectedCandidate->id());
+  }
+}
+
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   auto newCall = std::get<const uast::New*>(info_);
   auto type = std::get<const types::Type*>(info_);

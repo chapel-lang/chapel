@@ -4160,31 +4160,33 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   return c;
 }
 
-static void emitWarningForIteratorDefinedElsewhere(Resolver& rv,
+static void noteWarningForIteratorDefinedElsewhere(Resolver& rv,
                                                    const uast::Call* callForErr,
                                                    const Scope* expectedScope,
                                                    const Scope* callScope,
                                                    const FnIteratorType* fnIterType,
-                                                   Function::IteratorKind iterKind) {
+                                                   Function::IteratorKind iterKind,
+                                                   std::vector<const TypedFnSignature*>& warningCauses) {
   auto otherIter = findTaggedIteratorForType(rv.rc, fnIterType, iterKind, callScope);
   if (otherIter) {
     auto otherScope = scopeForId(rv.context, otherIter.fn()->id())->parentScope();
     if (expectedScope != otherScope) {
-      rv.context->warning(callForErr, "cannot use iterator from another scope");
+      warningCauses.push_back(otherIter.fn());
     }
   }
 }
 
 static void
-issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
-                                           const uast::Call* call,
-                                           const CallScopeInfo& inScopes,
-                                           const CallResolutionResult& c) {
+issueIteratorDiagnosticsIfNeeded(Resolver& rv,
+                                 const uast::Call* call,
+                                 const CallScopeInfo& inScopes,
+                                 const CallResolutionResult& c) {
   const FnIteratorType* iterType = nullptr;
   if (!c.exprType().isUnknownOrErroneous() &&
       (iterType = c.exprType().type()->toFnIteratorType())) {
     const Scope* myScope =
       scopeForId(rv.context, iterType->iteratorFn()->id())->parentScope();
+    std::vector<const TypedFnSignature*> ignoredItersInCallScope;
 
     std::vector<std::tuple<Function::IteratorKind, QualifiedType, const TypedFnSignature*>> yieldTypes;
     static const Function::IteratorKind iterKinds[] =
@@ -4198,16 +4200,18 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
 
       // Also try finding tagged iterator in the current scope, to warn about
       // invalid overloading (you can't change iterator groups in other scopes).
-      emitWarningForIteratorDefinedElsewhere(rv, call, myScope,
+      noteWarningForIteratorDefinedElsewhere(rv, call, myScope,
                                              inScopes.callScope(),
-                                             iterType, iterKind);
+                                             iterType, iterKind,
+                                             ignoredItersInCallScope);
     }
 
     // We don't check the leader for yield types, but we do warn about
     // leaders defined out-of-scope.
-    emitWarningForIteratorDefinedElsewhere(rv, call, myScope,
+    noteWarningForIteratorDefinedElsewhere(rv, call, myScope,
                                            inScopes.callScope(),
-                                           iterType, Function::LEADER);
+                                           iterType, Function::LEADER,
+                                           ignoredItersInCallScope);
 
     bool incompatibleYieldTypes = false;
     if (yieldTypes.size() > 1) {
@@ -4225,6 +4229,11 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
           findTaggedIteratorForType(rv.rc, iterType, std::get<0>(foundIter)).fn();
       }
       CHPL_REPORT(rv.context, IncompatibleYieldTypes, call, std::move(yieldTypes));
+    }
+
+    if (!ignoredItersInCallScope.empty()) {
+      CHPL_REPORT(rv.context, IteratorsInOtherScopes, call, iterType->iteratorFn(),
+                  std::move(ignoredItersInCallScope));
     }
   }
 }
@@ -4305,7 +4314,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
 
     // issue errors for iterator groups where e.g. serial/standalone types mismatch
-    issueIteratorIncompatibilityErrorsIfNeeded(*this, call, inScopes, c);
+    issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c);
 
     if (initResolver) {
       initResolver->handleResolvedCall(call, &c);

@@ -395,7 +395,8 @@ static void testLoopExprIteratorPoi(Context* context) {
 }
 
 static void testNewShadowCandidates(Context* context) {
-  // tests that PoI is not used to find new iterator overloads
+  // tests that PoI is not used to find new iterator overloads,
+  // and that if we do find others, we error.
 
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   ErrorGuard guard(context);
@@ -421,7 +422,7 @@ static void testNewShadowCandidates(Context* context) {
   assert(vars.at("i").type());
   assert(vars.at("i").type()->isIntType());
 
-  assert(guard.realizeErrors(/* countWarnings = */ false) == 0);
+  assert(guard.realizeErrors() == 1);
 }
 
 int main() {
