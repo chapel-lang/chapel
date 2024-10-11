@@ -105,7 +105,7 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
     // by default, then this doesn't need fixing, delete this FIXME.
 
     // ignore empty strings
-    if (dirString && *dirString) {
+    if (dirString && strlen(dirString) > 0) {
       pathvec->push_back(astr(dirString));
     }
 
