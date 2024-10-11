@@ -367,6 +367,10 @@ module Zarr {
 
     :arg dimCount: Dimensionality of the zarr array
 
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
   */
   proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
@@ -460,10 +464,25 @@ module Zarr {
     }
   }
 
-
   /*
+    Reads part of a v2.0 zarr store from storage using all locales, returning a
+    block distributed array. Each locale reads and decompresses the chunks
+    with elements in its subdomain. This method assumes a shared filesystem
+    where all nodes can access the store directory.
 
+    :arg directoryPath: Relative or absolute path to the root of the zarr
+      store. The store is expected to contain a '.zarray' metadata file
 
+    :arg dtype: Chapel type of the store's data
+
+    :arg dimCount: Dimensionality of the zarr array
+
+    :arg partialDomain: The domain of the elements of the array that should be read
+
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
   */ 
   proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain, 
                             bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
