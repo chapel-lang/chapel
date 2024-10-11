@@ -344,8 +344,6 @@ static bool initHelper(Context* context,
           }
         }
       }
-    } else {
-      addSuperInit = false;
     }
   }
 
