@@ -4776,11 +4776,11 @@ static IterDetails resolveIterDetails(Resolver& rv,
   return ret;
 }
 
-static QualifiedType resolveTheseMethod(Resolver& rv,
-                                        const AstNode* iterand,
-                                        const QualifiedType& iterandType,
-                                        Function::IteratorKind iterKind,
-                                        const QualifiedType& followThisType) {
+static CallResolutionResult resolveTheseMethod(Resolver& rv,
+                                               const AstNode* iterand,
+                                               const QualifiedType& iterandType,
+                                               Function::IteratorKind iterKind,
+                                               const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterand);
   auto inScope = rv.scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
@@ -4789,7 +4789,7 @@ static QualifiedType resolveTheseMethod(Resolver& rv,
   rv.handleResolvedCallWithoutError(iterandRe, iterand, c,
       { { AssociatedAction::ITERATE, iterand->id() } });
 
-  return c.exprType();
+  return c;
 }
 
 static bool isExplicitlyTaggedIteratorCall(Context* context,
@@ -4870,16 +4870,16 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
+  auto c = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
+  auto qt = c.exprType();
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
 
     iteratingOver = qt.type()->toIteratorType();
     outIterPieces = { iteratingOver };
-    return iteratingOver->yieldType();
   }
-  return qt;
+  return c.yieldedType();
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {

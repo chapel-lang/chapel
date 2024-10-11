@@ -5772,7 +5772,8 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
     return CallResolutionResult::getEmpty();
   }
 
-  return CallResolutionResult(loopIt->yieldType());
+  return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
+                              loopIt->yieldType());
 }
 
 CallResolutionResult resolveTheseCall(ResolutionContext* rc,

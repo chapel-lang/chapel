@@ -1878,8 +1878,11 @@ class CallResolutionResult {
   // for simple cases where mostSpecific and poiInfo are irrelevant.
   // Since the result was handled using some compiler-level logic (hence no
   // 'mostSpecific'), the result is marked as specially handled.
-  CallResolutionResult(types::QualifiedType exprType)
-    : exprType_(std::move(exprType)), speciallyHandled_(true) {
+  CallResolutionResult(types::QualifiedType exprType,
+                       types::QualifiedType yieldedType = types::QualifiedType())
+    : exprType_(std::move(exprType)),
+      yieldedType_(std::move(yieldedType)),
+      speciallyHandled_(true) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
