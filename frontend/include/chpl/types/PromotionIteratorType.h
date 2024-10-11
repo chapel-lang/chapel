@@ -41,11 +41,10 @@ class PromotionIteratorType final : public IteratorType {
    */
   const resolution::SubstitutionsMap promotedFormals_;
 
-  PromotionIteratorType(QualifiedType yieldType,
-                        const resolution::PoiScope* poiScope,
+  PromotionIteratorType(const resolution::PoiScope* poiScope,
                         const resolution::TypedFnSignature* scalarFn,
                         resolution::SubstitutionsMap promotedFormals)
-    : IteratorType(typetags::PromotionIteratorType, std::move(yieldType), poiScope),
+    : IteratorType(typetags::PromotionIteratorType, poiScope),
       scalarFn_(scalarFn),
       promotedFormals_(std::move(promotedFormals)) {}
 
@@ -60,14 +59,12 @@ class PromotionIteratorType final : public IteratorType {
 
   static const owned<PromotionIteratorType>&
   getPromotionIteratorType(Context* context,
-                           QualifiedType yieldType,
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
                            resolution::SubstitutionsMap promotedFormals);
 
  public:
   static const PromotionIteratorType* get(Context* context,
-                                          QualifiedType yieldType,
                                           const resolution::PoiScope* poiScope,
                                           const resolution::TypedFnSignature* scalarFn,
                                           resolution::SubstitutionsMap promotedFormals);

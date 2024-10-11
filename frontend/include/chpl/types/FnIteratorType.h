@@ -37,10 +37,9 @@ class FnIteratorType final : public IteratorType {
    */
   const resolution::TypedFnSignature* iteratorFn_;
 
-  FnIteratorType(QualifiedType yieldType,
-                 const resolution::PoiScope* poiScope,
+  FnIteratorType(const resolution::PoiScope* poiScope,
                  const resolution::TypedFnSignature* iteratorFn)
-    : IteratorType(typetags::FnIteratorType, std::move(yieldType), poiScope),
+    : IteratorType(typetags::FnIteratorType, poiScope),
       iteratorFn_(iteratorFn) {}
 
   bool contentsMatchInner(const Type* other) const override {
@@ -53,13 +52,11 @@ class FnIteratorType final : public IteratorType {
 
   static const owned <FnIteratorType>&
   getFnIteratorType(Context* context,
-                    QualifiedType yieldType,
                     const resolution::PoiScope* poiScope,
                     const resolution::TypedFnSignature* iteratorFn);
 
  public:
   static const FnIteratorType* get(Context* context,
-                                   QualifiedType yieldType,
                                    const resolution::PoiScope* poiScope,
                                    const resolution::TypedFnSignature* iteratorFn);
 

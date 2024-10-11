@@ -25,26 +25,23 @@ namespace chpl {
 namespace types {
 
 void FnIteratorType::markUniqueStringsInner(Context* context) const {
-  yieldType_.mark(context);
   iteratorFn_->mark(context);
 }
 
 const owned<FnIteratorType>&
 FnIteratorType::getFnIteratorType(Context* context,
-                                  QualifiedType yieldType,
                                   const resolution::PoiScope* poiScope,
                                   const resolution::TypedFnSignature* iteratorFn) {
-  QUERY_BEGIN(getFnIteratorType, context, yieldType, poiScope, iteratorFn);
-  auto result = toOwned(new FnIteratorType(std::move(yieldType), poiScope, iteratorFn));
+  QUERY_BEGIN(getFnIteratorType, context, poiScope, iteratorFn);
+  auto result = toOwned(new FnIteratorType(poiScope, iteratorFn));
   return QUERY_END(result);
 }
 
 const FnIteratorType*
 FnIteratorType::get(Context* context,
-                    QualifiedType yieldType,
                     const resolution::PoiScope* poiScope,
                     const resolution::TypedFnSignature* iteratorFn) {
-  return getFnIteratorType(context, yieldType, poiScope, iteratorFn).get();
+  return getFnIteratorType(context, poiScope, iteratorFn).get();
 }
 
 }  // end namespace types

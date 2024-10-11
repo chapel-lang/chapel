@@ -1143,9 +1143,9 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
   Context* context = rc->context();
   auto result = returnTypeWithoutIterableQuery(rc, sig, poiScope);
 
-  if (sig->isIterator()) {
+  if (sig->isIterator() && !result.isUnknownOrErroneous()) {
     result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, result, poiScope, sig));
+                           FnIteratorType::get(context, poiScope, sig));
 
   }
 
