@@ -1862,6 +1862,8 @@ class CallResolutionResult {
   MostSpecificCandidates mostSpecific_;
   // what is the type of the call expression?
   types::QualifiedType exprType_;
+  // if the called expression is an iterator, what is the yielded type?
+  types::QualifiedType yieldedType_;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo_;
@@ -1883,10 +1885,12 @@ class CallResolutionResult {
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        bool rejectedPossibleIteratorCandidates,
                        types::QualifiedType exprType,
+                       types::QualifiedType yieldedType,
                        PoiInfo poiInfo,
                        bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
+      yieldedType_(std::move(yieldedType)),
       poiInfo_(std::move(poiInfo)),
       speciallyHandled_(speciallyHandled),
       rejectedPossibleIteratorCandidates_(rejectedPossibleIteratorCandidates)
@@ -1902,6 +1906,9 @@ class CallResolutionResult {
 
   /** type of the call expression */
   const types::QualifiedType& exprType() const { return exprType_; }
+
+  /** type of the yielded expression, if the call expression is an iterator */
+  const types::QualifiedType& yieldedType() const { return yieldedType_; }
 
   /** point-of-instantiation scopes used when resolving signature or body */
   const PoiInfo& poiInfo() const { return poiInfo_; }
@@ -1919,6 +1926,7 @@ class CallResolutionResult {
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
+           yieldedType_ == other.yieldedType_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
            speciallyHandled_ == other.speciallyHandled_ &&
            rejectedPossibleIteratorCandidates_ == other.rejectedPossibleIteratorCandidates_;
@@ -1929,6 +1937,7 @@ class CallResolutionResult {
   void swap(CallResolutionResult& other) {
     mostSpecific_.swap(other.mostSpecific_);
     exprType_.swap(other.exprType_);
+    yieldedType_.swap(other.yieldedType_);
     poiInfo_.swap(other.poiInfo_);
     std::swap(speciallyHandled_, other.speciallyHandled_);
     std::swap(rejectedPossibleIteratorCandidates_,

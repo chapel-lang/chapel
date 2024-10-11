@@ -4718,13 +4718,17 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   accumulatePoiInfoForMostSpecificCandidates(rc, mscs, poiInfo,
       instantiationPoiScope);
   QualifiedType exprType;
+  QualifiedType yieldedType;
   if (msc.fn()) {
     exprType = returnType(rc, msc.fn(), instantiationPoiScope);
+    if (msc.fn()->isIterator()) {
+      yieldedType = yieldType(rc, msc.fn(), instantiationPoiScope);
+    }
   }
 
   bool rejectedPossibleIteratorCandidates = false;
   return CallResolutionResult(mscs, rejectedPossibleIteratorCandidates,
-                              exprType, poiInfo);
+                              exprType, yieldedType, poiInfo);
 }
 
 // call can be nullptr. in that event ci.name() will be used to find
@@ -4796,25 +4800,49 @@ resolveFnCall(ResolutionContext* rc,
   }
 
   // compute the return types
-  QualifiedType retType;
-  bool retTypeSet = false;
+  optional<QualifiedType> retType;
+  optional<QualifiedType> yieldedType;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate.fn() != nullptr) {
-      QualifiedType t = returnType(rc, candidate.fn(),
-                                   instantiationPoiScope);
-      if (retTypeSet && retType.type() != t.type()) {
-        context->error(candidate.fn(),
-                       nullptr,
-                       "return intent overload type does not match");
+      bool isIterator = candidate.fn()->isIterator();
+      QualifiedType rt = returnType(rc, candidate.fn(),
+                                    instantiationPoiScope);
+
+      if (retType && retType->type() != rt.type()) {
+        // The actual iterator type for each overload will be different
+        // since it includes the TypedFnSignature, and different overloads
+        // are different TypedFnSignatures. Don't error, though.
+        //
+        // TODO: how do iterators + iterator groups work with return intent
+        // overloading?
+        if (!isIterator) {
+          context->error(candidate.fn(),
+                         nullptr,
+                         "return intent overload type does not match");
+        }
+      } else if (!retType) {
+        retType = rt;
       }
-      retType = t;
-      retTypeSet = true;
+
+      if (isIterator) {
+        QualifiedType yt = yieldType(rc, candidate.fn(),
+                                     instantiationPoiScope);
+        if (yieldedType && yieldedType->type() != yt.type()) {
+          context->error(candidate.fn(),
+                         nullptr,
+                         "return intent overload type does not match");
+        } else if (!yieldedType) {
+          yieldedType = yt;
+        }
+      }
     }
   }
 
   return CallResolutionResult(mostSpecific,
                               rejectedPossibleIteratorCandidates,
-                              retType, std::move(poiInfo));
+                              ((bool) retType) ? *retType : QualifiedType(),
+                              ((bool) yieldedType) ? *yieldedType : QualifiedType(),
+                              std::move(poiInfo));
 }
 
 static
@@ -4938,7 +4966,7 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
   PoiInfo emptyPoi;
   return CallResolutionResult(emptyCandidates,
                               /* rejectedPossibleIteratorCandidates */ false,
-                              emptyType, emptyPoi);
+                              emptyType, emptyType, emptyPoi);
 }
 
 CallResolutionResult
@@ -5656,10 +5684,8 @@ taggedYieldTypeForType(ResolutionContext* rc,
   auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 
   QualifiedType ret;
-  if (!c.exprType().isUnknownOrErroneous()) {
-    if (auto it = c.exprType().type()->toIteratorType()) {
-      ret = it->yieldType();
-    }
+  if (!c.yieldedType().isUnknownOrErroneous()) {
+    ret = c.yieldedType();
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
