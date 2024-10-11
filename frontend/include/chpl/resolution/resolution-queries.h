@@ -516,16 +516,23 @@ const uast::Decl* findFieldByName(Context* context,
 const MostSpecificCandidate&
 findTaggedIteratorForType(ResolutionContext* rc,
                           const types::FnIteratorType* fnIter,
-                          uast::Function::IteratorKind iterKind);
+                          uast::Function::IteratorKind iterKind,
+                          const Scope* overrideLookupScope = nullptr);
 
 /**
   Given a an iterator type produced by an `iter` proc, find the given iterator
   and determine its yield type.
+
+  If 'overrideLookupScope' is provided, instead of using the fnIterator's
+  scope, the provided scope will be used to look up the tagged iterator. This
+  can be used to see if under the old rules, we could've found competing
+  overloads.
  */
 const types::QualifiedType&
 taggedYieldTypeForType(ResolutionContext* rc,
                        const types::FnIteratorType* fnIter,
-                       uast::Function::IteratorKind iterKind);
+                       uast::Function::IteratorKind iterKind,
+                       const Scope* overrideLookupScope = nullptr);
 
 const types::QualifiedType&
 yieldTypeForIterator(ResolutionContext* rc,

@@ -394,7 +394,7 @@ static void testLoopExprIteratorPoi(Context* context) {
   assert(vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
 }
 
-static void test34(Context* context) {
+static void testNewShadowCandidates(Context* context) {
   // tests that PoI is not used to find new iterator overloads
 
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
@@ -420,6 +420,8 @@ static void test34(Context* context) {
 
   assert(vars.at("i").type());
   assert(vars.at("i").type()->isIntType());
+
+  assert(guard.realizeErrors(/* countWarnings = */ false) == 0);
 }
 
 int main() {
@@ -430,5 +432,5 @@ int main() {
   testIteratorFnPoi(ctx.get());
   testIteratorFnPoiIgnoresIterationScope(ctx.get());
   testLoopExprIteratorPoi(ctx.get());
-  test34(ctx.get());
+  testNewShadowCandidates(ctx.get());
 }

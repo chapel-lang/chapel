@@ -4160,6 +4160,21 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   return c;
 }
 
+static void emitWarningForIteratorDefinedElsewhere(Resolver& rv,
+                                                   const uast::Call* callForErr,
+                                                   const Scope* expectedScope,
+                                                   const Scope* callScope,
+                                                   const FnIteratorType* fnIterType,
+                                                   Function::IteratorKind iterKind) {
+  auto otherIter = findTaggedIteratorForType(rv.rc, fnIterType, iterKind, callScope);
+  if (otherIter) {
+    auto otherScope = scopeForId(rv.context, otherIter.fn()->id())->parentScope();
+    if (expectedScope != otherScope) {
+      rv.context->warning(callForErr, "cannot use iterator from another scope");
+    }
+  }
+}
+
 static void
 issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
                                            const uast::Call* call,
@@ -4168,6 +4183,8 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
   const FnIteratorType* iterType = nullptr;
   if (!c.exprType().isUnknownOrErroneous() &&
       (iterType = c.exprType().type()->toFnIteratorType())) {
+    const Scope* myScope =
+      scopeForId(rv.context, iterType->iteratorFn()->id())->parentScope();
 
     std::vector<std::tuple<Function::IteratorKind, QualifiedType, const TypedFnSignature*>> yieldTypes;
     static const Function::IteratorKind iterKinds[] =
@@ -4178,7 +4195,19 @@ issueIteratorIncompatibilityErrorsIfNeeded(Resolver& rv,
       if (!qt.isUnknownOrErroneous()) {
         yieldTypes.emplace_back(iterKind, qt, nullptr);
       }
+
+      // Also try finding tagged iterator in the current scope, to warn about
+      // invalid overloading (you can't change iterator groups in other scopes).
+      emitWarningForIteratorDefinedElsewhere(rv, call, myScope,
+                                             inScopes.callScope(),
+                                             iterType, iterKind);
     }
+
+    // We don't check the leader for yield types, but we do warn about
+    // leaders defined out-of-scope.
+    emitWarningForIteratorDefinedElsewhere(rv, call, myScope,
+                                           inScopes.callScope(),
+                                           iterType, Function::LEADER);
 
     bool incompatibleYieldTypes = false;
     if (yieldTypes.size() > 1) {
