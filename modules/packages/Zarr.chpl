@@ -367,50 +367,21 @@ module Zarr {
 
     :arg dimCount: Dimensionality of the zarr array
 
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
   */
   proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
-    // Size and shape tuples
-    var totalShape, chunkShape : dimCount*int;
-    var chunkCounts: dimCount*int;
-    var totalRanges,chunkRanges: dimCount*range(int);
+    var totalRanges: dimCount*range(int);
     for i in 0..<dimCount {
-      totalShape[i] = md.shape[i];
-      chunkShape[i] = md.chunks[i];
-      chunkCounts[i] = ceil(totalShape[i]:real / chunkShape[i]:real) : int;
-      totalRanges[i] = 0..<totalShape[i];
-      chunkRanges[i] = 0..<chunkCounts[i];
+      totalRanges[i] = 0..<md.shape[i];
     }
-    const fullChunkDomain: domain(dimCount) = chunkRanges;
+    const fullDomain: domain(dimCount) = totalRanges;
 
-    // Initialize the distributed domain and array
-    const undistD : domain(dimCount) = totalRanges;
-    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
-    const D = Dist.createDomain(undistD);
-    var A: [D] dtype;
-
-
-    coforall loc in Locales do on loc {
-      blosc_init();
-      blosc_set_nthreads(bloscThreads);
-      const hereD = A.localSubdomain();
-      ref hereA = A[hereD];
-
-      const localChunks = getLocalChunks(D, hereD, chunkShape);
-      forall chunkIndex in localChunks {
-
-        const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
-
-        const thisChunkDomain = getChunkDomain(chunkShape, chunkIndex);
-        const thisChunkHere = hereD[thisChunkDomain];
-
-        ref thisChunkSlice = hereA.localSlice(thisChunkHere);
-        readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
-      }
-      blosc_destroy();
-    }
-    return A;
+    return readZarrArrayPartial(directoryPath, dtype, dimCount, fullDomain, bloscThreads=bloscThreads, targetLocales=targetLocales);
   }
 
 
@@ -493,6 +464,72 @@ module Zarr {
     }
   }
 
+  /*
+    Reads part of a v2.0 zarr store from storage using all locales, returning a
+    block distributed array. Each locale reads and decompresses the chunks
+    with elements in its subdomain. This method assumes a shared filesystem
+    where all nodes can access the store directory.
+
+    :arg directoryPath: Relative or absolute path to the root of the zarr
+      store. The store is expected to contain a '.zarray' metadata file
+
+    :arg dtype: Chapel type of the store's data
+
+    :arg dimCount: Dimensionality of the zarr array
+
+    :arg partialDomain: The domain of the elements of the array that should be read
+
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
+  */
+  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain,
+                            bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
+    var md = getMetadata(directoryPath);
+    validateMetadata(md, dtype, dimCount);
+    // Size and shape tuples
+    var totalShape, chunkShape : dimCount*int;
+    var chunkCounts: dimCount*int;
+    var totalRanges,chunkRanges: dimCount*range(int);
+    for i in 0..<dimCount {
+      totalShape[i] = md.shape[i];
+      chunkShape[i] = md.chunks[i];
+      chunkCounts[i] = ceil(totalShape[i]:real / chunkShape[i]:real) : int;
+      totalRanges[i] = 0..<totalShape[i];
+      chunkRanges[i] = 0..<chunkCounts[i];
+    }
+    const fullChunkDomain: domain(dimCount) = chunkRanges;
+
+    // Initialize the distributed domain and array
+    const undistD : domain(dimCount) = totalRanges;
+    if ! undistD.contains(partialDomain) then
+      throw new IllegalArgumentError("Partial domain is out of bounds of the array domain.");
+    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
+    const D = Dist.createDomain(partialDomain);
+    var A: [D] dtype;
+
+    coforall loc in Locales do on loc {
+      blosc_init();
+      blosc_set_nthreads(bloscThreads);
+      const hereD = A.localSubdomain();
+      ref hereA = A[hereD];
+
+      const localChunks = getLocalChunks(D, hereD, chunkShape);
+      forall chunkIndex in localChunks {
+
+        const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
+
+        const thisChunkDomain = getChunkDomain(chunkShape, chunkIndex);
+        const thisChunkHere = hereD[thisChunkDomain];
+
+        ref thisChunkSlice = hereA.localSlice(thisChunkHere);
+        readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+      }
+      blosc_destroy();
+    }
+    return A;
+  }
 
   /*
     Reads a v2.0 zarr store from storage using a single locale, returning a
