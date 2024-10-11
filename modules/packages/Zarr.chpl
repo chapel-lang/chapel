@@ -484,6 +484,8 @@ module Zarr {
 
     // Initialize the distributed domain and array
     const undistD : domain(dimCount) = totalRanges;
+    if ! undistD.contains(partialDomain) then
+      throw new IllegalArgumentError("Partial domain is out of bounds of the array domain.");
     const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
     const D = Dist.createDomain(partialDomain);
     var A: [D] dtype;
