@@ -4859,7 +4859,7 @@ resolveIterTypeWithTag(Resolver& rv,
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
     outIterPieces = { iteratingOver };
-    return iteratingOver->yieldType();
+    return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
 
   // There's nothing to do in this case, so error out.
   } else if (needSerial && !wasIterandTypeResolved) {

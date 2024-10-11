@@ -5691,6 +5691,25 @@ taggedYieldTypeForType(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
+const types::QualifiedType&
+yieldTypeForIterator(ResolutionContext* rc,
+                     const types::IteratorType* iter) {
+  CHPL_RESOLUTION_QUERY_BEGIN(yieldTypeForIterator, rc, iter);
+
+  QualifiedType ret;
+  if (auto fnIter = iter->toFnIteratorType()) {
+    ret = yieldType(rc, fnIter->iteratorFn(), iter->poiScope());
+  } else if (auto loopIter = iter->toLoopExprIteratorType()) {
+    ret = loopIter->yieldType();
+  } else {
+    CHPL_ASSERT(iter->isPromotionIteratorType());
+    auto promoIter = iter->toPromotionIteratorType();
+    ret = returnType(rc, promoIter->scalarFn(), promoIter->poiScope());
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
 static CallResolutionResult
 resolveTheseCallForFnIterator(ResolutionContext* rc,
                               const FnIteratorType* fnIt,

@@ -527,6 +527,10 @@ taggedYieldTypeForType(ResolutionContext* rc,
                        const types::FnIteratorType* fnIter,
                        uast::Function::IteratorKind iterKind);
 
+const types::QualifiedType&
+yieldTypeForIterator(ResolutionContext* rc,
+                     const types::IteratorType* iter);
+
 /**
   Resolve a call to the special 'these' iterator method. For certain types,
   this circumvents the normal call resolution process, since iterating over
