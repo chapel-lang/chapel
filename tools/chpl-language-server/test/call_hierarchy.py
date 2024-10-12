@@ -6,7 +6,11 @@ and references
 import sys
 
 from lsprotocol.types import ClientCapabilities
-from lsprotocol.types import CallHierarchyPrepareParams, CallHierarchyOutgoingCallsParams, CallHierarchyItem
+from lsprotocol.types import (
+    CallHierarchyPrepareParams,
+    CallHierarchyOutgoingCallsParams,
+    CallHierarchyItem,
+)
 from lsprotocol.types import InitializeParams
 import pytest
 import pytest_lsp
@@ -37,52 +41,78 @@ async def client(lsp_client: LanguageClient):
     # Teardown
     await lsp_client.shutdown_session()
 
+
 class CallTree:
     def __init__(self, item_id: str, children: typing.List["CallTree"]):
         self.item_id = item_id
         self.children = children
 
-async def collect_call_tree(client: LanguageClient, item: CallHierarchyItem, depth: int) -> typing.Optional[CallTree]:
+
+async def collect_call_tree(
+    client: LanguageClient, item: CallHierarchyItem, depth: int
+) -> typing.Optional[CallTree]:
     if depth <= 0:
         return None
 
-    assert(isinstance(item.data, list))
-    assert(len(item.data) == 3)
+    assert isinstance(item.data, list)
+    assert len(item.data) == 3
     item_id = item.data[0]
 
     children = []
-    outgoing = await client.call_hierarchy_outgoing_calls_async(CallHierarchyOutgoingCallsParams(item))
+    outgoing = await client.call_hierarchy_outgoing_calls_async(
+        CallHierarchyOutgoingCallsParams(item)
+    )
     if outgoing is not None:
         for outgoing_call in outgoing:
-            new_tree = await collect_call_tree(client, outgoing_call.to, depth - 1)
+            new_tree = await collect_call_tree(
+                client, outgoing_call.to, depth - 1
+            )
             if new_tree is not None:
                 children.append(new_tree)
 
     return CallTree(item_id, children)
 
 
-async def compute_call_hierarchy(client: LanguageClient, doc: TextDocumentIdentifier, position: Position, depth: int) -> typing.Optional[CallTree]:
-    items = await client.text_document_prepare_call_hierarchy_async(CallHierarchyPrepareParams(text_document=doc, position=position))
+async def compute_call_hierarchy(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    position: Position,
+    depth: int,
+) -> typing.Optional[CallTree]:
+    items = await client.text_document_prepare_call_hierarchy_async(
+        CallHierarchyPrepareParams(text_document=doc, position=position)
+    )
     if items is None:
         return None
 
-    assert(len(items) == 1)
+    assert len(items) == 1
     return await collect_call_tree(client, items[0], depth)
 
+
 def verify_call_hierarchy(tree: CallTree, expected: CallTree):
-    assert(tree.item_id == expected.item_id)
-    assert(len(tree.children) == len(expected.children))
+    assert tree.item_id == expected.item_id
+    assert len(tree.children) == len(expected.children)
     for i in range(len(tree.children)):
         verify_call_hierarchy(tree.children[i], expected.children[i])
 
-async def check_call_hierarchy(client: LanguageClient, doc: TextDocumentIdentifier, position: Position, expected: CallTree, depth: int = 10) -> typing.Optional[CallTree]:
-    items = await client.text_document_prepare_call_hierarchy_async(CallHierarchyPrepareParams(text_document=doc, position=position))
-    assert(items is not None)
-    assert(len(items) == 1)
+
+async def check_call_hierarchy(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    position: Position,
+    expected: CallTree,
+    depth: int = 10,
+) -> typing.Optional[CallTree]:
+    items = await client.text_document_prepare_call_hierarchy_async(
+        CallHierarchyPrepareParams(text_document=doc, position=position)
+    )
+    assert items is not None
+    assert len(items) == 1
     tree = await collect_call_tree(client, items[0], depth)
-    assert(tree is not None)
+    assert tree is not None
     verify_call_hierarchy(tree, expected)
     return tree
+
 
 @pytest.mark.asyncio
 async def test_call_hierarchy_basic(client: LanguageClient):
@@ -93,8 +123,9 @@ async def test_call_hierarchy_basic(client: LanguageClient):
            """
 
     async with source_file(client, file) as doc:
-        expect = CallTree("main.bar", [ CallTree("main.foo", []) ])
+        expect = CallTree("main.bar", [CallTree("main.foo", [])])
         await check_call_hierarchy(client, doc, pos((2, 0)), expect)
+
 
 @pytest.mark.asyncio
 async def test_call_hierarchy_overloads(client: LanguageClient):
@@ -111,6 +142,7 @@ async def test_call_hierarchy_overloads(client: LanguageClient):
         expect_bool = CallTree("main.foo#1", [])
         await check_call_hierarchy(client, doc, pos((3, 0)), expect_bool)
 
+
 @pytest.mark.asyncio
 async def test_call_hierarchy_recursive(client: LanguageClient):
     file = """
@@ -119,8 +151,9 @@ async def test_call_hierarchy_recursive(client: LanguageClient):
            """
 
     async with source_file(client, file) as doc:
-        expect = CallTree("main.foo", [ CallTree("main.foo", []) ])
+        expect = CallTree("main.foo", [CallTree("main.foo", [])])
         await check_call_hierarchy(client, doc, pos((1, 0)), expect, depth=2)
+
 
 @pytest.mark.asyncio
 async def test_call_hierarchy_across_files(client: LanguageClient):
@@ -150,8 +183,24 @@ async def test_call_hierarchy_across_files(client: LanguageClient):
             }
             """
 
-    async with unrelated_source_files(client, A=fileA, B=fileB, C=fileC) as docs:
-        expected_int = CallTree("B.doSomething", [ CallTree("A.someImplementationDetail", []), CallTree("B.toString", []) ])
+    async with unrelated_source_files(
+        client, A=fileA, B=fileB, C=fileC
+    ) as docs:
+        expected_int = CallTree(
+            "B.doSomething",
+            [
+                CallTree("A.someImplementationDetail", []),
+                CallTree("B.toString", []),
+            ],
+        )
         await check_call_hierarchy(client, docs("C"), pos((3, 2)), expected_int)
-        expected_real = CallTree("B.doSomething", [ CallTree("A.someImplementationDetail", []), CallTree("B.toString#1", []) ])
-        await check_call_hierarchy(client, docs("C"), pos((4, 2)), expected_real)
+        expected_real = CallTree(
+            "B.doSomething",
+            [
+                CallTree("A.someImplementationDetail", []),
+                CallTree("B.toString#1", []),
+            ],
+        )
+        await check_call_hierarchy(
+            client, docs("C"), pos((4, 2)), expected_real
+        )
