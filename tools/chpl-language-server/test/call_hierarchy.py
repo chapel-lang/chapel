@@ -183,24 +183,31 @@ async def test_call_hierarchy_across_files(client: LanguageClient):
             }
             """
 
+    expected_int = CallTree(
+        "B.doSomething",
+        [
+            CallTree("A.someImplementationDetail", []),
+            CallTree("B.toString", []),
+        ],
+    )
+    expected_real = CallTree(
+        "B.doSomething",
+        [
+            CallTree("A.someImplementationDetail", []),
+            CallTree("B.toString#1", []),
+        ],
+    )
+
+    async def check(docs):
+        await check_call_hierarchy(client, docs("C"), pos((3, 2)), expected_int)
+        await check_call_hierarchy(client, docs("C"), pos((4, 2)), expected_real)
+
     async with unrelated_source_files(
         client, A=fileA, B=fileB, C=fileC
     ) as docs:
-        expected_int = CallTree(
-            "B.doSomething",
-            [
-                CallTree("A.someImplementationDetail", []),
-                CallTree("B.toString", []),
-            ],
-        )
-        await check_call_hierarchy(client, docs("C"), pos((3, 2)), expected_int)
-        expected_real = CallTree(
-            "B.doSomething",
-            [
-                CallTree("A.someImplementationDetail", []),
-                CallTree("B.toString#1", []),
-            ],
-        )
-        await check_call_hierarchy(
-            client, docs("C"), pos((4, 2)), expected_real
-        )
+        await check(docs)
+
+    async with source_files(
+        client, A=fileA, B=fileB, C=fileC
+    ) as docs:
+        await check(docs)
