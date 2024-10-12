@@ -73,7 +73,12 @@ def get_base_client() -> LanguageClient:
 
 
 class SourceFilesContext:
-    def __init__(self, client: LanguageClient, files: typing.Dict[str, str]):
+    def __init__(
+        self,
+        client: LanguageClient,
+        files: typing.Dict[str, str],
+        build_cls_commands: bool = True,
+    ):
         self.tempdir = tempfile.TemporaryDirectory()
         self.client = client
 
@@ -96,8 +101,9 @@ class SourceFilesContext:
             commands[filepath] = [{"module_dirs": [], "files": allfiles}]
 
         commandspath = os.path.join(self.tempdir.name, ".cls-commands.json")
-        with open(commandspath, "w") as f:
-            json.dump(commands, f)
+        if build_cls_commands:
+            with open(commandspath, "w") as f:
+                json.dump(commands, f)
 
     def _get_doc(self, name: str) -> TextDocumentIdentifier:
         return TextDocumentIdentifier(
@@ -157,6 +163,14 @@ def source_files(client: LanguageClient, **files: str):
     language server to connect the files together in the workspace.
     """
     return SourceFilesContext(client, files)
+
+
+def unrelated_source_files(client: LanguageClient, **files: str):
+    """
+    Same as 'source_files', but doesn't create a .cls-commands.json file that
+    would cause the files to be treated as "connected" and resolved together.
+    """
+    return SourceFilesContext(client, files, build_cls_commands=False)
 
 
 def source_file(
