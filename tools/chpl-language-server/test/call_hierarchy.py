@@ -202,11 +202,13 @@ async def test_call_hierarchy_across_files(client: LanguageClient):
         await check_call_hierarchy(client, docs("C"), pos((3, 2)), expected_int)
         await check_call_hierarchy(client, docs("C"), pos((4, 2)), expected_real)
 
+    # Ensure that call hierarchy works without .cls-commands.json...
     async with unrelated_source_files(
         client, A=fileA, B=fileB, C=fileC
     ) as docs:
         await check(docs)
 
+    # ...and with .cls-commands.json
     async with source_files(
         client, A=fileA, B=fileB, C=fileC
     ) as docs:
