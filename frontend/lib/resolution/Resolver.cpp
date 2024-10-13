@@ -3967,9 +3967,11 @@ static const Type* getGenericType(Context* context, const Type* recv) {
     gen = cur->instantiatedFromCompositeType();
     if (gen == nullptr) gen = cur;
   } else if (auto bct = recv->toBasicClassType()) {
-    if (bct->parentClassType()->instantiatedFromCompositeType()) {
-      auto pt = getGenericType(context, bct->parentClassType())->toBasicClassType();
-      bct = BasicClassType::get(context, bct->id(), bct->name(), pt, bct->instantiatedFrom(), bct->substitutions());
+    if (auto pct = bct->parentClassType()) {
+      if (pct->instantiatedFromCompositeType()) {
+        auto pt = getGenericType(context, pct)->toBasicClassType();
+        bct = BasicClassType::get(context, bct->id(), bct->name(), pt, bct->instantiatedFrom(), bct->substitutions());
+      }
     }
 
     gen = bct->instantiatedFromCompositeType();
