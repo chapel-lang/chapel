@@ -17,7 +17,7 @@ class Chapel < Formula
   depends_on "jemalloc"
   depends_on "llvm@18"
   depends_on "pkg-config"
-  depends_on "python@3.12"
+  depends_on "python@3.13"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
@@ -28,8 +28,8 @@ class Chapel < Formula
 
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
-    python = "python3.12"
-    # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
+    python = "python3.13"
+    # It should be noted that this will expand to: 'for cmd in python3.13 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
     inreplace "third-party/chpl-venv/Makefile", "python3 -c ", "#{python} -c "
