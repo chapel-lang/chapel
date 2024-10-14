@@ -16,10 +16,6 @@ if QTHREAD_TIMER_TYPE_GETTIMEOFDAY
 libqthread_la_SOURCES += qtimer/gettimeofday.c
 endif
 
-if QTHREAD_TIMER_TYPE_ALTIX
-libqthread_la_SOURCES += qtimer/altix.c
-endif
-
 if QTHREAD_TIMER_TYPE_GETTIME
 libqthread_la_SOURCES += qtimer/gettime.c
 endif

@@ -25,11 +25,9 @@ TESTS = \
 		qdqueue \
 		allpairs \
 		subteams \
-		qt_dictionary
-
-if COMPILE_EUREKAS
-TESTS += eureka
-endif
+		qt_dictionary \
+		cxx_qt_loop \
+		cxx_qt_loop_balance
 
 if HAVE_GUARD_PAGES
 TESTS += guard_pages
@@ -37,18 +35,9 @@ endif
 
 EXTRA_PROGRAMS = wavefront
 
-if ENABLE_CXX_TESTS
-TESTS += cxx_qt_loop \
-		 cxx_qt_loop_balance
-endif
-
 check_PROGRAMS = $(TESTS)
 
 TESTS_ENVIRONMENT =
-
-if HAVE_PROG_TIMELIMIT
-TESTS_ENVIRONMENT += @timelimit_path@ -T 2
-endif
 
 if WANT_SINGLE_WORKER_SCHEDULER
 TESTS_ENVIRONMENT += env QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1
@@ -109,5 +98,3 @@ cxx_qt_loop_SOURCES = cxx_qt_loop.cpp
 cxx_qt_loop_balance_SOURCES = cxx_qt_loop_balance.cpp
 
 wavefront_SOURCES = wavefront.c
-
-eureka_SOURCES = eureka.c

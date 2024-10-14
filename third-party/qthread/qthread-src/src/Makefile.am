@@ -16,7 +16,6 @@ libqthread_la_SOURCES = \
 	feb.c \
 	hazardptrs.c \
 	io.c \
-	performance.c \
 	locks.c \
 	qalloc.c \
 	qloop.c \
@@ -45,29 +44,10 @@ else
 libqthread_la_SOURCES += hashmap.c
 endif
 
-if COMPILE_SPAWNCACHE
-libqthread_la_SOURCES += spawncache.c
-endif
-
-if COMPILE_EUREKAS
-libqthread_la_SOURCES += eurekas.c
-endif
-
-if COMPILE_COMPAT_ATOMIC
-libqthread_la_SOURCES += compat_atomics.c
-endif
-
 include qtimer/Makefile.inc
 include ds/Makefile.inc
 include patterns/Makefile.inc
 include syscalls/Makefile.inc
-
-if COMPILE_MULTINODE
-libqthread_la_SOURCES += spr.c
-
-include net/Makefile.inc
-include net/portals4/Makefile.inc
-endif
 
 # version-info fields are:
 # 1. the current interface revision number (i.e. whenever arguments of existing
@@ -94,12 +74,8 @@ endif
 
 EXTRA_DIST += \
 			 threadqueues/distrib_threadqueues.c \
-			 threadqueues/lifo_threadqueues.c \
 			 threadqueues/nemesis_threadqueues.c \
-			 threadqueues/mutexfifo_threadqueues.c \
-			 threadqueues/mtsfifo_threadqueues.c \
 			 threadqueues/sherwood_threadqueues.c \
-			 threadqueues/nottingham_threadqueues.c \
 			 sincs/donecount.c \
 			 sincs/donecount_cas.c \
 			 sincs/original.c \
@@ -118,7 +94,6 @@ EXTRA_DIST += \
 			 affinity/libnuma.c \
 			 affinity/libnumaV2.c \
 			 affinity/mach.c \
-			 affinity/tilera.c \
 			 affinity/plpa.c \
 			 affinity/lgrp.c \
 			 affinity/shepcomp.h
