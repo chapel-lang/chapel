@@ -582,3 +582,19 @@ AggregateTag convertAggregateDeclTag(const uast::AggregateDecl* node) {
   INT_FATAL("Should not reach here!");
   return AGGREGATE_CLASS;
 }
+
+// compute the ModTag for a module stored at file 'path'
+ModTag getModuleTag(Context* context, UniqueString path) {
+  ModTag modTag = MOD_USER;
+  if (chpl::parsing::filePathIsInInternalModule(context, path)) {
+    modTag = MOD_INTERNAL;
+  } else if (chpl::parsing::filePathIsInStandardModule(context, path)) {
+    modTag = MOD_STANDARD;
+  } else if (chpl::parsing::filePathIsInBundledModule(context, path)) {
+    // TODO: this considers code in modules/packages as MOD_STANDARD but
+    // we would like this to be MOD_USER.
+    // See also issue #24998.
+    modTag = MOD_STANDARD;
+  }
+  return modTag;
+}

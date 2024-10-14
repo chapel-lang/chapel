@@ -49,6 +49,8 @@
 #include "view.h"
 #endif
 
+#include "convert-help.h"
+
 #include <cstdlib>
 #include <fstream>
 
@@ -320,17 +322,7 @@ static void loadAndConvertModules(UastConverter& c) {
       checkFilenameNotTooLong(path);
 
       // compute the modTag
-      ModTag modTag = MOD_USER;
-      if (chpl::parsing::filePathIsInInternalModule(gContext, path)) {
-        modTag = MOD_INTERNAL;
-      } else if (chpl::parsing::filePathIsInStandardModule(gContext, path)) {
-        modTag = MOD_STANDARD;
-      } else if (chpl::parsing::filePathIsInBundledModule(gContext, path)) {
-        // TODO: this considers code in modules/packages as MOD_STANDARD but
-        // we would like this to be MOD_USER.
-        // See also issue #24998.
-        modTag = MOD_STANDARD;
-      }
+      ModTag modTag = getModuleTag(gContext, path);
 
       // convert it from uAST to AST
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;

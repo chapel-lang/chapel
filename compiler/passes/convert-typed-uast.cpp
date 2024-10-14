@@ -593,17 +593,7 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
   INT_ASSERT(found);
 
   // compute the modTag
-  ModTag modTag = MOD_USER;
-  if (chpl::parsing::filePathIsInInternalModule(context, path)) {
-    modTag = MOD_INTERNAL;
-  } else if (chpl::parsing::filePathIsInStandardModule(context, path)) {
-    modTag = MOD_STANDARD;
-  } else if (chpl::parsing::filePathIsInBundledModule(context, path)) {
-    // TODO: this considers code in modules/packages as MOD_STANDARD but
-    // we would like this to be MOD_USER.
-    // See also issue #24998.
-    modTag = MOD_STANDARD;
-  }
+  ModTag modTag = getModuleTag(context, path);
 
   const AstNode* ast = parsing::idToAst(context, modId);
   if (ast == nullptr || !ast->isModule()) {
