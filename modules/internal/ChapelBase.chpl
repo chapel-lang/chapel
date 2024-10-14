@@ -2314,7 +2314,7 @@ module ChapelBase {
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
-    return __primitive("cast", t, x);
+    return _to_unmanaged(x);
   }
 
   // casting to unmanaged, no class downcast
@@ -2322,7 +2322,7 @@ module ChapelBase {
   inline operator :(x:borrowed class?, type t:unmanaged class)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
-    return __primitive("cast", t, x);
+    return _to_nonnil(_to_unmanaged(x));
   }
 
   // casting to unmanaged, no class downcast
@@ -2330,7 +2330,7 @@ module ChapelBase {
   inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
-    return __primitive("cast", t, x);
+    return _to_nonnil(_to_unmanaged(x));
   }
 
   // casting to unmanaged, no class downcast
@@ -2338,7 +2338,7 @@ module ChapelBase {
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nilable(_to_unmanaged(x.type)),t)
   {
-    return __primitive("cast", t, x);
+    return _to_unmanaged(x);
   }
 
   // casting away nilability, no class downcast

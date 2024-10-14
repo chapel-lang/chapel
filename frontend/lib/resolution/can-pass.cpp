@@ -461,7 +461,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalNily.isUnknownNilability())
       instantiates = true;   // instantiating with passed nilability
     else if (actualNily.isUnknownNilability() && formalNily.isNilable())
-      instantiates = true;   // instantiating generic-nilability as nilable
+      instantiates = true;   // instantiate unknown nilability as nilable
     else if (actualNily.isNonNilable() && formalNily.isNilable())
       conversion = SUBTYPE;  // non-nil to nil conversion
     else
