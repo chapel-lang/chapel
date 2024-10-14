@@ -131,7 +131,6 @@ class UntypedFnSignature {
     bool operator!=(const FormalDetail& other) const {
       return !(*this == other);
     }
-    bool operator<(const FormalDetail& other) const;
     size_t hash() const {
       return chpl::hash(name, defaultKind, decl, isVarArgs);
     }
@@ -253,7 +252,6 @@ class UntypedFnSignature {
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
   }
-  bool operator<(const UntypedFnSignature& other) const;
 
   static bool update(owned<UntypedFnSignature>& keep,
                      owned<UntypedFnSignature>& addin) {
@@ -799,7 +797,6 @@ class PoiInfo {
   bool operator!=(const PoiInfo& other) const {
     return !(*this == other);
   }
-  bool operator<(const PoiInfo& other) const;
 
   void mark(Context* context) const {
     context->markPointer(poiScope_);
@@ -944,7 +941,6 @@ class TypedFnSignature {
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
-  bool operator<(const TypedFnSignature& other) const;
 
   static bool update(owned<TypedFnSignature>& keep,
                      owned<TypedFnSignature>& addin) {
@@ -2370,7 +2366,6 @@ class ResolvedFunction {
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
   }
-  bool operator<(const ResolvedFunction& other) const;
 
   void swap(ResolvedFunction& other) {
     std::swap(signature_, other.signature_);

@@ -46,32 +46,6 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-bool
-UntypedFnSignature::FormalDetail::operator<(const FormalDetail& other) const {
-  if (name != other.name) {
-    return name < other.name;
-  }
-
-  if (defaultKind != other.defaultKind) {
-    return defaultKind < other.defaultKind;
-  }
-
-  bool hasDecl = (decl != nullptr);
-  bool otherHasDecl = (other.decl != nullptr);
-  if (hasDecl != otherHasDecl) {
-    return hasDecl < otherHasDecl;
-  }
-  if (decl && other.decl && decl != other.decl) {
-    return decl->id() < other.decl->id();
-  }
-
-  if (isVarArgs != other.isVarArgs) {
-    return isVarArgs < other.isVarArgs;
-  }
-
-  return false;
-}
-
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -115,50 +89,6 @@ UntypedFnSignature::get(Context* context, ID id,
                                isCompilerGenerated, throws, idTag, kind,
                                std::move(formals), whereClause,
                                compilerGeneratedOrigin).get();
-}
-
-bool UntypedFnSignature::operator<(const UntypedFnSignature& other) const {
-  if (id_ != other.id_) {
-    return id_ < other.id_;
-  }
-  if (name_ != other.name_) {
-    return name_ < other.name_;
-  }
-  if (isMethod_ != other.isMethod_) {
-    return isMethod_ < other.isMethod_;
-  }
-  if (isTypeConstructor_ != other.isTypeConstructor_) {
-    return isTypeConstructor_ < other.isTypeConstructor_;
-  }
-  if (isCompilerGenerated_ != other.isCompilerGenerated_) {
-    return isCompilerGenerated_ < other.isCompilerGenerated_;
-  }
-  if (throws_ != other.throws_) {
-    return throws_ < other.throws_;
-  }
-  if (idTag_ != other.idTag_) {
-    return idTag_ < other.idTag_;
-  }
-  if (kind_ != other.kind_) {
-    return kind_ < other.kind_;
-  }
-  if (formals_ != other.formals_) {
-    return formals_ < other.formals_;
-  }
-
-  bool hasWhereClause = (whereClause_ != nullptr);
-  bool otherHasWhereClause = (other.whereClause_ != nullptr);
-  if (hasWhereClause != otherHasWhereClause) {
-    return hasWhereClause < otherHasWhereClause;
-  }
-
-  // assuming where clause itself is just based on the ID, so not comparing
-
-  if (compilerGeneratedOrigin_ != other.compilerGeneratedOrigin_) {
-    return compilerGeneratedOrigin_ < other.compilerGeneratedOrigin_;
-  }
-
-  return false;
 }
 
 static const UntypedFnSignature*
@@ -812,35 +742,6 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-bool ResolvedFunction::operator<(const ResolvedFunction& other) const {
-  bool hasSignature = (signature_ != nullptr);
-  bool otherHasSignature = (signature_ != nullptr);
-  if (hasSignature != otherHasSignature) {
-    return hasSignature < otherHasSignature;
-  }
-
-  if (signature_ && other.signature_ &&
-      signature_ != other.signature_) {
-    return *signature_ < *other.signature_;
-  }
-
-  if (returnIntent_ != other.returnIntent_) {
-    return returnIntent_ < other.returnIntent_;
-  }
-
-  // assumption: resolutionById_ is determined by other fields
-
-  if (poiInfo_ != other.poiInfo_) {
-    return poiInfo_ < other.poiInfo_;
-  }
-
-  if (returnType_ != other.returnType_) {
-    return returnType_ < other.returnType_;
-  }
-
-  return false;
-}
-
 static bool
 syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
                                            const CompositeType* ct,
@@ -1027,47 +928,6 @@ TypedFnSignature::getInferred(
                              inferredFrom->outerVariables()).get();
 }
 
-bool TypedFnSignature::operator<(const TypedFnSignature& other) const {
-  if (untypedSignature_ != other.untypedSignature_) {
-    return *untypedSignature_ < *other.untypedSignature_;
-  }
-  if (formalTypes_ != other.formalTypes_) {
-    return formalTypes_ < other.formalTypes_;
-  }
-  if (whereClauseResult_ != other.whereClauseResult_) {
-    return whereClauseResult_ < other.whereClauseResult_;
-  }
-  if (needsInstantiation_ != other.needsInstantiation_) {
-    return needsInstantiation_ < other.needsInstantiation_;
-  }
-  if (isRefinementOnly_ != other.isRefinementOnly_) {
-    return isRefinementOnly_ < other.isRefinementOnly_;
-  }
-  bool hasInstantiatedFrom = (instantiatedFrom_ != nullptr);
-  bool otherHasInstantiatedFrom = (other.instantiatedFrom_ != nullptr);
-  if (hasInstantiatedFrom != otherHasInstantiatedFrom) {
-    return hasInstantiatedFrom < otherHasInstantiatedFrom;
-  }
-
-  if (instantiatedFrom_ && other.instantiatedFrom_ &&
-      instantiatedFrom_ != other.instantiatedFrom_) {
-    return *instantiatedFrom_ < *other.instantiatedFrom_;
-  }
-
-  bool hasParentFn = (parentFn_ != nullptr);
-  bool otherHasParentFn = (other.parentFn_ != nullptr);
-  if (hasParentFn != otherHasParentFn) {
-    return hasParentFn < otherHasParentFn;
-  }
-
-  if (parentFn_ && other.parentFn_ &&
-      parentFn_ != other.parentFn_) {
-    return *parentFn_ < *other.parentFn_;
-  }
-
-  return formalsInstantiated_ < other.formalsInstantiated_;
-}
-
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
 
@@ -1207,26 +1067,6 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
 
   // Performance TODO: consider function names etc -- see PR #16261
   return false;
-}
-
-bool PoiInfo::operator<(const PoiInfo& other) const {
-  if (resolved_ != other.resolved_) {
-    return resolved_ < other.resolved_;
-  }
-
-  bool hasPoiScope = (poiScope_ != nullptr);
-  bool otherHasPoiScope = (other.poiScope_ != nullptr);
-  if (hasPoiScope != otherHasPoiScope) {
-    return hasPoiScope < otherHasPoiScope;
-  }
-
-  if (poiScope_ && other.poiScope_ && poiScope_ != other.poiScope_) {
-    return *poiScope_ < *other.poiScope_;
-  }
-
-  // assumption: recursiveFnsUsed_ is determined from other fields
-
-  return poiFnIdsUsed_ < other.poiFnIdsUsed_;
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,

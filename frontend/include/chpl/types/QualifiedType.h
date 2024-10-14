@@ -231,7 +231,6 @@ class QualifiedType final {
   bool operator!=(const QualifiedType& other) const {
     return !(*this == other);
   }
-  bool operator<(const QualifiedType& other) const;
 
   void swap(QualifiedType& other) {
     std::swap(this->kind_, other.kind_);

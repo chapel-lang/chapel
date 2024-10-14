@@ -536,31 +536,6 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
   }
 }
 
-bool PoiScope::operator<(const PoiScope& other) const {
-  bool hasScope = (inScope_ != nullptr);
-  bool otherHasScope = (other.inScope_ != nullptr);
-  if (hasScope != otherHasScope) {
-    return hasScope < otherHasScope;
-  }
-
-  if (inScope_ && other.inScope_ &&
-      inScope_->id() != other.inScope_->id()) {
-    return inScope_->id() < other.inScope_->id();
-  }
-
-  bool hasPoi = (inFnPoi_ != nullptr);
-  bool otherHasPoi = (other.inFnPoi_ != nullptr);
-  if (hasPoi != otherHasPoi) {
-    return hasPoi < otherHasPoi;
-  }
-
-  if (inFnPoi_ && other.inFnPoi_ && inFnPoi_ != other.inFnPoi_) {
-    return *inFnPoi_ < *other.inFnPoi_;
-  }
-
-  return false;
-}
-
 void ModulePublicSymbols::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   ss << "ModulePublicSymbols {";
