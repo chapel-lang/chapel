@@ -1734,18 +1734,18 @@ QualifiedType getInstantiationType(Context* context,
         manager = actualCt->manager();
       }
 
-      // which BasicClassType to use?
-      const BasicClassType* bct;
+      // which ManageableType to use?
+      const ManageableType* mt;
       auto formalBct = formalCt->basicClassType();
       if (formalBct && getTypeGenericity(context, formalBct) == Type::CONCRETE) {
-        bct = formalBct;
+        mt = formalBct;
       } else {
         CHPL_ASSERT(formalCt->manageableType()->toManageableType());
-        bct = actualCt->basicClassType();
+        mt = actualCt->manageableType();
       }
 
       // now construct the ClassType
-      auto ct = ClassType::get(context, bct, manager, dec);
+      auto ct = ClassType::get(context, mt, manager, dec);
       return QualifiedType(formalType.kind(), ct);
     }
 

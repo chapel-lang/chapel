@@ -460,8 +460,9 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
   if (actualNily != formalNily) {
     if (formalNily.isUnknownNilability())
       instantiates = true; // instantiating with passed nilability
-    else if (actualNily.isNonNilable() && formalNily.isNilable())
-      conversion = SUBTYPE;  // non-nil to nil conversion
+    else if ((actualNily.isNonNilable() || actualNily.isUnknownNilability()) &&
+             formalNily.isNilable())
+      conversion = SUBTYPE;  // non-nil or unknown nily to nil conversion
     else
       fails = FAIL_INCOMPATIBLE_NILABILITY; // all other nilability cases
   }
@@ -548,8 +549,6 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         // nilability is involved.
         instantiates = true;
         pass = true;
-      } else if (actualCt->manageableType()->isAnyClassType()) {
-        CHPL_ASSERT(false && "probably shouldn't happen");
       } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
