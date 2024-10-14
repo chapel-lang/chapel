@@ -1,6 +1,5 @@
 """
-Tests basic functionality, including autocompletion, go-to-definition, hover,
-and references
+Test the call hierarchy feature, which computes calls between functions.
 """
 
 import sys
