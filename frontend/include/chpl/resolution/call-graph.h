@@ -29,35 +29,44 @@ namespace chpl {
 namespace resolution {
 
 
+struct CalledFnOrder {
+  int depth; // depth of call graph at which this one was added
+  int index; // index in the call graph at which this one was added
+};
+
 // key: a ResolvedFunction* that was called
 // value: the depth at which that ResolvedFunction was added
-using CalledFnsSet = std::unordered_map<const ResolvedFunction*, int>;
+using CalledFnsSet = std::unordered_map<const ResolvedFunction*, CalledFnOrder>;
 
 /* Gather ResolvedFunctions called directly by this function into a set.
-   This function does not consider transitive calls. */
-void gatherFnsCalledByFn(Context* context,
-                         const ResolvedFunction* fn,
-                         int depth,
-                         CalledFnsSet& called);
+   This function does not consider transitive calls.
+   Returns the number of functions gathered. */
+int gatherFnsCalledByFn(Context* context,
+                        const ResolvedFunction* fn,
+                        CalledFnOrder order,
+                        CalledFnsSet& called);
 
-/* Gather ResolvedFunctions called transitively by this function into a set. */
-void gatherTransitiveFnsCalledByFn(Context* context,
-                                   const ResolvedFunction* fn,
-                                   int depth,
-                                   CalledFnsSet& called);
+/* Gather ResolvedFunctions called transitively by this function into a set.
+   Returns the number of functions gathered. */
+int gatherTransitiveFnsCalledByFn(Context* context,
+                                  const ResolvedFunction* fn,
+                                  CalledFnOrder order,
+                                  CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called directly by module initialization code
    for this module into a set.
-   This function does not consider transitive calls. */
-void gatherFnsCalledByModInit(Context* context,
-                              ID moduleId,
-                              CalledFnsSet& called);
+   This function does not consider transitive calls.
+   Returns the number of functions gathered. */
+int gatherFnsCalledByModInit(Context* context,
+                             ID moduleId,
+                             CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called transitively by module initialization code
-   for this module into a set. */
-void gatherTransitiveFnsCalledByModInit(Context* context,
-                                        ID moduleId,
-                                        CalledFnsSet& called);
+   for this module into a set.
+   Returns the number of functions gathered. */
+int gatherTransitiveFnsCalledByModInit(Context* context,
+                                       ID moduleId,
+                                       CalledFnsSet& called);
 
 
 } // end namespace resolution

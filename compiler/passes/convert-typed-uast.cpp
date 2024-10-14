@@ -547,6 +547,7 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
 void TConverter::postConvertApplyFixups() {
   untypedConverter->postConvertApplyFixups();
 
+
   // TODO: apply fixups from this converter
 }
 
@@ -561,14 +562,14 @@ void TConverter::setupModulesToConvert() {
 }
 
 struct SortCalledFnsDeeperFirst {
-  bool operator()(const std::pair<const ResolvedFunction*, int>& a,
-                  const std::pair<const ResolvedFunction*, int>& b) {
+  bool operator()(const std::pair<const ResolvedFunction*, CalledFnOrder>& a,
+                  const std::pair<const ResolvedFunction*, CalledFnOrder>& b) {
     // reverse sort by depth
-    if (a.second > b.second) return true;
-    if (a.second < b.second) return false;
+    if (a.second.depth > b.second.depth) return true;
+    if (a.second.depth < b.second.depth) return false;
 
-    // regular sort by ResolvedFunction
-    return *a.first < *b.first;
+    // regular sort by index encountered in call graph
+    return a.second.index < b.second.index;
   }
 };
 
@@ -577,7 +578,7 @@ void TConverter::convertFunctionsToConvert() {
   // 1. in descending order by depth (higher depths first)
   // 2. by ID
 
-  auto v = std::vector<std::pair<const ResolvedFunction*, int>>(
+  auto v = std::vector<std::pair<const ResolvedFunction*, CalledFnOrder>>(
                                        functionsToConvertWithTypes.begin(),
                                        functionsToConvertWithTypes.end());
 
@@ -586,7 +587,8 @@ void TConverter::convertFunctionsToConvert() {
 
   printf("Will convert functions in this order:\n");
   for (auto pair : v) {
-    printf("  %s depth=%i\n", pair.first->id().str().c_str(), pair.second);
+    printf("  %s depth=%i index=%i\n", pair.first->id().str().c_str(),
+           pair.second.depth, pair.second.index);
   }
 
   for (auto pair : v) {

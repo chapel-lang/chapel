@@ -41,7 +41,7 @@ struct CalledFnCollector {
   Context* context;
   const AstNode* symbol = nullptr; // Module* or Function*
   const ResolvedFunction* resolvedFunction = nullptr; // set if not module
-  int depth = 0;
+  CalledFnOrder order;
 
   // output
   CalledFnsSet& called;
@@ -49,20 +49,22 @@ struct CalledFnCollector {
   CalledFnCollector(Context* context,
                     const AstNode* symbol,
                     const ResolvedFunction* resolvedFunction,
-                    int depth,
+                    CalledFnOrder order,
                     CalledFnsSet& called)
     : context(context),
       symbol(symbol),
       resolvedFunction(resolvedFunction),
-      depth(depth),
+      order(order),
       called(called)
   {
   }
 
   // helper to run the visitor on something
   void process();
+  // collect a single call
+  void collect(const ResolvedFunction* fn);
   // collect calls from the ResolvedExpression
-  void collect(const ResolvedExpression* re);
+  void collectCalls(const ResolvedExpression* re);
 
   bool enter(const Module* mod, RV& rv) {
     return mod == symbol; // only proceed if it's the module requested
@@ -84,7 +86,7 @@ struct CalledFnCollector {
 
   bool enter(const AstNode* ast, RV& rv) {
     if (auto re = rv.byPostorder().byAstOrNull(ast)) {
-      collect(re);
+      collectCalls(re);
     }
     return true;
   }
@@ -112,7 +114,15 @@ void CalledFnCollector::process() {
   }
 }
 
-void CalledFnCollector::collect(const ResolvedExpression* re) {
+void CalledFnCollector::collect(const ResolvedFunction* fn) {
+  auto pair = called.insert({fn, order});
+  if (pair.second) {
+    // insertion took place, so increment the index
+    order.index++;
+  }
+}
+
+void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
   const PoiScope* poiScope = re->poiScope();
 
   // consider the return-intent overloads
@@ -121,7 +131,7 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
       if (sig->untyped()->idIsFunction()) {
         chpl::resolution::ResolutionContext rcval(context);
         const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
-        called.insert({fn, depth});
+        collect(fn);
       }
     }
   }
@@ -134,28 +144,33 @@ void CalledFnCollector::collect(const ResolvedExpression* re) {
       if (sig->untyped()->idIsFunction()) {
         chpl::resolution::ResolutionContext rcval(context);
         const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
-        called.insert({fn, depth});
+        collect(fn);
       }
     }
   }
 }
 
-void gatherFnsCalledByFn(Context* context,
-                         const ResolvedFunction* fn,
-                         int depth,
-                         CalledFnsSet& called) {
+int gatherFnsCalledByFn(Context* context,
+                        const ResolvedFunction* fn,
+                        CalledFnOrder order,
+                        CalledFnsSet& called) {
   const AstNode* symbol = parsing::idToAst(context, fn->id());
   CHPL_ASSERT(symbol && symbol->isFunction());
-  auto v = CalledFnCollector(context, symbol, fn, depth, called);
+  auto v = CalledFnCollector(context, symbol, fn, order, called);
   v.process();
+  return v.order.index - order.index;
 }
 
-void gatherTransitiveFnsCalledByFn(Context* context,
-                                   const ResolvedFunction* fn,
-                                   int depth,
-                                   CalledFnsSet& called) {
+int gatherTransitiveFnsCalledByFn(Context* context,
+                                  const ResolvedFunction* fn,
+                                  CalledFnOrder order,
+                                  CalledFnsSet& called) {
+  // gather the direct calls into a set
   CalledFnsSet directCalls;
-  gatherFnsCalledByFn(context, fn, depth, directCalls);
+  int directCount = gatherFnsCalledByFn(context, fn, order, directCalls);
+
+  // used for recording the order value for transitive calls
+  CalledFnOrder newOrder = {order.depth + 1, directCount};
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
@@ -164,29 +179,36 @@ void gatherTransitiveFnsCalledByFn(Context* context,
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
-                                    /* depth */ kv.second + 1, called);
+      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+                                            newOrder, called);
+      // include the count for subsequent calls
+      newOrder.index += c;
     }
   }
+  return newOrder.index;
 }
 
-void gatherFnsCalledByModInit(Context* context,
+int gatherFnsCalledByModInit(Context* context,
                               ID moduleId,
                               CalledFnsSet& called) {
   const AstNode* symbol = parsing::idToAst(context, moduleId);
   CHPL_ASSERT(symbol && symbol->isModule());
+  CalledFnOrder order = {0, 0};
   auto v = CalledFnCollector(context, symbol,
                              /* resolvedFunction */ nullptr,
-                             /* depth */ 0,
-                             called);
+                             order, called);
   v.process();
+  return v.order.index - order.index;
 }
 
-void gatherTransitiveFnsCalledByModInit(Context* context,
+int gatherTransitiveFnsCalledByModInit(Context* context,
                                         ID moduleId,
                                         CalledFnsSet& called) {
   CalledFnsSet directCalls;
-  gatherFnsCalledByModInit(context, moduleId, directCalls);
+  int directCount = gatherFnsCalledByModInit(context, moduleId, directCalls);
+
+  // used for recording the order value for transitive calls
+  CalledFnOrder newOrder = {1, directCount};
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
@@ -195,10 +217,13 @@ void gatherTransitiveFnsCalledByModInit(Context* context,
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
-                                    /* depth */ kv.second + 1, called);
+      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+                                            newOrder, called);
+      // include the count for subsequent calls
+      newOrder.index += c;
     }
   }
+  return newOrder.index;
 }
 
 
