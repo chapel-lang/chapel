@@ -499,6 +499,8 @@ class ContextContainer:
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
         self.global_uses: Dict[str, List[References]] = defaultdict(list)
+        self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
+        self.instantiation_id_counter = 0
 
         if config:
             file_config = config.for_file(file)
@@ -507,6 +509,27 @@ class ContextContainer:
                 self.file_paths = file_config["files"]
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
+
+    def register_signature(self, sig: chapel.TypedSignature) -> str:
+        """
+        The language server can't send over typed signatures directly for
+        situations such as call hierarchy items (but we need to reason about
+        instantiations). Instead, keep a global unique ID for each signature,
+        and use that to identify them.
+        """
+        if sig in self.instantiation_ids:
+            return self.instantiation_ids[sig]
+
+        self.instantiation_id_counter += 1
+        uid = str(self.instantiation_id_counter)
+        self.instantiation_ids[sig] = uid
+        return uid
+
+    def retrieve_signature(self, uid: str) -> Optional[chapel.TypedSignature]:
+        for sig, sig_uid in self.instantiation_ids.items():
+            if sig_uid == uid:
+                return sig
+        return None
 
     def new_file_info(
         self, uri: str, use_resolver: bool
@@ -1007,7 +1030,9 @@ class ChapelLanguageServer(LanguageServer):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
-        self.file_infos: Dict[str, FileInfo] = {}
+        self.context_ids: Dict[ContextContainer, str] = {}
+        self.context_id_counter = 0
+        self.file_infos: Dict[Tuple[str, Optional[str]], FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
 
         self.use_resolver: bool = config.get("resolver")
@@ -1107,8 +1132,16 @@ class ChapelLanguageServer(LanguageServer):
         for file in context.file_paths:
             self.contexts[file] = context
         self.contexts[path] = context
+        self.context_id_counter += 1
+        self.context_ids[context] = str(self.context_id_counter)
 
         return context
+
+    def retrieve_context(self, context_id: str) -> Optional[ContextContainer]:
+        for ctx, cid in self.context_ids.items():
+            if cid == context_id:
+                return ctx
+        return None
 
     def eagerly_process_all_files(self, context: ContextContainer):
         cfg = context.config
@@ -1117,7 +1150,10 @@ class ChapelLanguageServer(LanguageServer):
                 self.get_file_info("file://" + file, do_update=False)
 
     def get_file_info(
-        self, uri: str, do_update: bool = False
+        self,
+        uri: str,
+        do_update: bool = False,
+        context_id: Optional[str] = None,
     ) -> Tuple[FileInfo, List[Any]]:
         """
         The language server maintains a FileInfo object per file. The FileInfo
@@ -1128,19 +1164,34 @@ class ChapelLanguageServer(LanguageServer):
         creating one if it doesn't exist. If do_update is set to True,
         then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
+
+        Most of the time, we will create a new context for a given URI. When
+        requested, however, context_id will be used to create a FileInfo
+        for a specific context. This is useful if e.g., file A wants to display
+        an instantiation in file B.
         """
 
         errors = []
 
-        if uri in self.file_infos:
-            file_info = self.file_infos[uri]
+        fi_key = (uri, context_id)
+        if fi_key in self.file_infos:
+            file_info = self.file_infos[fi_key]
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = self.get_context(uri).new_file_info(
-                uri, self.use_resolver
-            )
-            self.file_infos[uri] = file_info
+            if context_id:
+                context = self.retrieve_context(context_id)
+                assert context
+            else:
+                context = self.get_context(uri)
+
+            file_info, errors = context.new_file_info(uri, self.use_resolver)
+            self.file_infos[fi_key] = file_info
+
+            # Also make this the "default" context for this file in case we
+            # open it.
+            if (uri, None) not in self.file_infos:
+                self.file_infos[(uri, None)] = file_info
 
         # filter out errors that are not related to the file
         cur_path = uri[len("file://") :]
@@ -1396,7 +1447,8 @@ class ChapelLanguageServer(LanguageServer):
         """
         loc = location_to_location(sym.location())
 
-        inst_idx = -1
+        inst_id = None
+        context_id = None
 
         return CallHierarchyItem(
             name=sym.name(),
@@ -1405,11 +1457,11 @@ class ChapelLanguageServer(LanguageServer):
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(sym.name_location()),
-            data=[sym.unique_id(), inst_idx],
+            data=[sym.unique_id(), inst_id, context_id],
         )
 
     def fn_to_call_hierarchy_item(
-        self, sig: chapel.TypedSignature
+        self, sig: chapel.TypedSignature, caller_context: ContextContainer
     ) -> CallHierarchyItem:
         """
         Like sym_to_call_hierarchy_item, but for function instantiations.
@@ -1419,8 +1471,8 @@ class ChapelLanguageServer(LanguageServer):
         """
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
-        fi, _ = self.get_file_info(item.uri)
-        item.data[1] = fi.index_of_instantiation(fn, sig)
+        item.data[1] = caller_context.register_signature(sig)
+        item.data[2] = self.context_ids[caller_context]
 
         return item
 
@@ -1433,16 +1485,17 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], int)
+            or not isinstance(item.data[1], Optional[str])
+            or not isinstance(item.data[2], Optional[str])
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
                 MessageType.Error,
             )
             return None
-        uid, idx = item.data
+        uid, inst_id, ctx = item.data
 
-        fi, _ = self.get_file_info(item.uri)
+        fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
         # TODO: Performance:
         # Once the Python bindings supports it, we can use the
@@ -1456,11 +1509,7 @@ class ChapelLanguageServer(LanguageServer):
             # We don't handle that here.
             return None
 
-        instantiation = None
-        if idx != -1:
-            instantiation = fi.instantiation_at_index(fn, idx)
-        else:
-            instantiation = fi.concrete_instantiation_for(fn)
+        instantiation = fi.context.retrieve_signature(inst_id)
 
         return (fi, fn, instantiation)
 
@@ -2000,7 +2049,10 @@ def run_lsp():
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
-        return next(([ls.fn_to_call_hierarchy_item(sig)] for sig in sigs), [])
+        return next(
+            ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
+            [],
+        )
 
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
@@ -2046,7 +2098,7 @@ def run_lsp():
             if isinstance(called_fn, str):
                 item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
             else:
-                item = ls.fn_to_call_hierarchy_item(called_fn)
+                item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
 
             to_return.append(
                 CallHierarchyIncomingCall(
@@ -2070,7 +2122,7 @@ def run_lsp():
         if unpacked is None:
             return None
 
-        _, fn, instantiation = unpacked
+        fi, fn, instantiation = unpacked
 
         outgoing_calls: Dict[chapel.TypedSignature, List[chapel.FnCall]] = (
             defaultdict(list)
@@ -2093,7 +2145,7 @@ def run_lsp():
 
         to_return = []
         for called_fn, calls in outgoing_calls.items():
-            item = ls.fn_to_call_hierarchy_item(called_fn)
+            item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
             to_return.append(
                 CallHierarchyOutgoingCall(
                     item,
