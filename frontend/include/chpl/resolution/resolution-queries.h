@@ -303,7 +303,9 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
                                                       ID id);
 
 /**
-  Compute the return/yield type for a function.
+  Compute the return type for a function. If the function is an iterator,
+  the return type will be an `IteratorType`. To compute the yield type,
+  see `yieldType`.
 
   TODO: If the function returns a param, the param's value may not
   be available. This is because the function body is not resolved when
@@ -313,6 +315,15 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
 types::QualifiedType returnType(ResolutionContext* rc,
                                 const TypedFnSignature* sig,
                                 const PoiScope* poiScope);
+
+/**
+  An iterator-specific variant of 'returnType' which does not wrap the
+  function's return in an `IterableType`, returning instead the type of values
+  yielded by the function.
+ */
+types::QualifiedType yieldType(ResolutionContext* rc,
+                               const TypedFnSignature* sig,
+                               const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -408,7 +419,7 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   as the point-of-instantiation scopes that were used when resolving them.
  */
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::AstNode* astForErr,
+                                          const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
@@ -424,7 +435,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
  */
 CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
-                             const uast::AstNode* astForErr,
+                             const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
@@ -486,6 +497,13 @@ reportInvalidMultipleInheritance(Context* context,
 const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 /**
+  Retrieve the 'param' tag for an iterator constant. If the 'iterKind' enum
+  is not available, this will return an unknown type.
+ */
+const types::QualifiedType&
+getIterKindConstantOrUnknown(Context* context, uast::Function::IteratorKind kind);
+
+/**
   Returns the field in 'ad' (or its parent) that matches 'name'.
 */
 const uast::Decl* findFieldByName(Context* context,
@@ -493,6 +511,52 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  overload (e.g., leader, follower).
+ */
+const MostSpecificCandidate&
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const types::FnIteratorType* fnIter,
+                          uast::Function::IteratorKind iterKind,
+                          const Scope* overrideLookupScope = nullptr);
+
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  and determine its yield type.
+
+  If 'overrideLookupScope' is provided, instead of using the fnIterator's
+  scope, the provided scope will be used to look up the tagged iterator. This
+  can be used to see if under the old rules, we could've found competing
+  overloads.
+ */
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind,
+                       const Scope* overrideLookupScope = nullptr);
+
+const types::QualifiedType&
+yieldTypeForIterator(ResolutionContext* rc,
+                     const types::IteratorType* iter);
+
+/**
+  Resolve a call to the special 'these' iterator method. For certain types,
+  this circumvents the normal call resolution process, since iterating over
+  these types is handled by the compiler.
+
+  * the 'iterand' is an AST node to use as an anchor for errors etc.
+  * the 'receiverType' is the type of the receiver on which `these` is being invoked
+  * the 'iterKind' is the kind of iterator being requested (leader, follower, etc.)
+  * the 'followThis' is the type of 'followThis' for the follower iterator, if any
+  * the 'inScopes' is the scope information for the call
+ */
+CallResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                      const uast::AstNode* iterand,
+                                      const types::QualifiedType& receiverType,
+                                      uast::Function::IteratorKind iterKind,
+                                      const types::QualifiedType& followThis,
+                                      const CallScopeInfo& inScopes);
 
 
 } // end namespace resolution

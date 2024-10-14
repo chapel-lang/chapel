@@ -30,6 +30,15 @@ namespace types {
 class LoopExprIteratorType final : public IteratorType {
  private:
   /*
+    The type produced by this iterator. E.g., in a loop such
+    as the right hand side in the below assignment:
+
+       var A = foreach i in 1..10 do (i,i);
+
+    the yield type is (int, int).
+   */
+  QualifiedType yieldType_;
+  /*
      Whether the loop expression is zippered. In production, zippered
      loop expressions contain all of their iterands and separately invoke
      leader/follower iterators on each one
@@ -58,11 +67,13 @@ class LoopExprIteratorType final : public IteratorType {
   ID sourceLocation_;
 
   LoopExprIteratorType(QualifiedType yieldType,
+                       const resolution::PoiScope* poiScope,
                        bool isZippered,
                        bool supportsParallel,
                        QualifiedType iterand,
                        ID sourceLocation)
-    : IteratorType(typetags::LoopExprIteratorType, std::move(yieldType)),
+    : IteratorType(typetags::LoopExprIteratorType, poiScope),
+      yieldType_(std::move(yieldType)),
       isZippered_(isZippered), supportsParallel_(supportsParallel),
       iterand_(std::move(iterand)), sourceLocation_(std::move(sourceLocation)) {
     if (isZippered_) {
@@ -72,7 +83,7 @@ class LoopExprIteratorType final : public IteratorType {
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (LoopExprIteratorType*) other;
-    return yieldType_ == rhs->yieldType_ &&
+    return iteratorTypeContentsMatchInner(rhs) &&
            isZippered_ == rhs->isZippered_ &&
            supportsParallel_ == rhs->supportsParallel_ &&
            iterand_ == rhs->iterand_ &&
@@ -88,6 +99,7 @@ class LoopExprIteratorType final : public IteratorType {
   static const owned<LoopExprIteratorType>&
   getLoopExprIteratorType(Context* context,
                           QualifiedType yieldType,
+                          const resolution::PoiScope* poiScope,
                           bool isZippered,
                           bool supportsParallel,
                           QualifiedType iterand,
@@ -96,10 +108,15 @@ class LoopExprIteratorType final : public IteratorType {
  public:
   static const LoopExprIteratorType* get(Context* context,
                                          QualifiedType yieldType,
+                                         const resolution::PoiScope* poiScope,
                                          bool isZippered,
                                          bool supportsParallel,
                                          QualifiedType iterand,
                                          ID sourceLocation);
+
+  const QualifiedType& yieldType() const {
+    return yieldType_;
+  }
 
   bool isZippered() const {
     return isZippered_;

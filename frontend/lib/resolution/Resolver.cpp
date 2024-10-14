@@ -92,9 +92,6 @@ namespace {
   };
 }
 
-static const QualifiedType&
-getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant);
-
 // Helper to resolve a specified iterator signature and its yield type.
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
@@ -102,7 +99,7 @@ resolveIterTypeWithTag(Resolver& rv,
                        const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       UniqueString iterKindStr,
+                       Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal);
 
 // Resolve iterators according to the policy set in 'mask' (see the type
@@ -1766,7 +1763,6 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 
 bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
                                               const uast::AstNode* astForErr,
-                                              const CallInfo& ci,
                                               const CallResolutionResult& c,
                                               optional<ActionAndId> actionAndId) {
 
@@ -1806,7 +1802,7 @@ void Resolver::handleResolvedCall(ResolvedExpression& r,
                                   const CallInfo& ci,
                                   const CallResolutionResult& c,
                                   optional<ActionAndId> actionAndId) {
-  if (handleResolvedCallWithoutError(r, astForErr, ci, c, std::move(actionAndId))) {
+  if (handleResolvedCallWithoutError(r, astForErr, c, std::move(actionAndId))) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   }
 }
@@ -1820,7 +1816,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  optional<ActionAndId> actionAndId) {
   bool wasCallGenerated = (bool) actionAndId;
   CHPL_ASSERT(!wasCallGenerated || receiverType.isUnknown());
-  if (handleResolvedCallWithoutError(r, call, ci, c, std::move(actionAndId))) {
+  if (handleResolvedCallWithoutError(r, call, c, std::move(actionAndId))) {
     if (c.mostSpecific().isEmpty() &&
         !c.mostSpecific().isAmbiguous()) {
       // The call isn't ambiguous; it might be that we rejected all the candidates
@@ -3354,7 +3350,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
         } else {
           // Save result if successful
-          if (handleResolvedCallWithoutError(result, ident, ci, c) &&
+          if (handleResolvedCallWithoutError(result, ident, c) &&
               emitLookupErrors) {
             issueErrorForFailedCallResolution(ident, ci, c);
           }
@@ -4080,11 +4076,11 @@ static const bool& warnForMissingIterKindEnum(Context* context,
 static const QualifiedType&
 getIterKindConstantOrWarn(Context* context,
                           const AstNode* astForErr,
-                          UniqueString iterKindStr) {
-  QUERY_BEGIN(getIterKindConstantOrWarn, context, astForErr, iterKindStr);
+                          Function::IteratorKind iterKind) {
+  QUERY_BEGIN(getIterKindConstantOrWarn, context, astForErr, iterKind);
 
-  auto iterKindActual = getIterKindConstantOrUnknownQuery(context, iterKindStr);
-  bool needSerial = iterKindStr.isEmpty();
+  auto iterKindActual = getIterKindConstantOrUnknown(context, iterKind);
+  bool needSerial = iterKind == Function::SERIAL;
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
@@ -4101,8 +4097,8 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              QualifiedType receiverType,
-                             UniqueString iterKindStr) {
-  auto iterKindActual = getIterKindConstantOrWarn(rc->context(), call, iterKindStr);
+                             uast::Function::IteratorKind iterKind) {
+  auto iterKindActual = getIterKindConstantOrWarn(rc->context(), call, iterKind);
   if (iterKindActual.isUnknown()) return empty;
 
   std::vector<CallInfoActual> actuals;
@@ -4150,16 +4146,94 @@ resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
   if (c.mostSpecific().isEmpty() && c.rejectedPossibleIteratorCandidates()) {
     if (auto standalone =
           rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
-                                       USTR("standalone"))) {
+                                       Function::STANDALONE)) {
       return *standalone;
     }
     if (auto parallel =
         rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
-                                     USTR("leader"))) {
+                                     Function::LEADER)) {
       return *parallel;
     }
   }
   return c;
+}
+
+static void noteWarningForIteratorDefinedElsewhere(Resolver& rv,
+                                                   const uast::Call* callForErr,
+                                                   const Scope* expectedScope,
+                                                   const Scope* callScope,
+                                                   const FnIteratorType* fnIterType,
+                                                   Function::IteratorKind iterKind,
+                                                   std::vector<const TypedFnSignature*>& warningCauses) {
+  auto otherIter = findTaggedIteratorForType(rv.rc, fnIterType, iterKind, callScope);
+  if (otherIter) {
+    auto otherScope = scopeForId(rv.context, otherIter.fn()->id())->parentScope();
+    if (expectedScope != otherScope) {
+      warningCauses.push_back(otherIter.fn());
+    }
+  }
+}
+
+static void
+issueIteratorDiagnosticsIfNeeded(Resolver& rv,
+                                 const uast::Call* call,
+                                 const CallScopeInfo& inScopes,
+                                 const CallResolutionResult& c) {
+  const FnIteratorType* iterType = nullptr;
+  if (!c.exprType().isUnknownOrErroneous() &&
+      (iterType = c.exprType().type()->toFnIteratorType())) {
+    const Scope* myScope =
+      scopeForId(rv.context, iterType->iteratorFn()->id())->parentScope();
+    std::vector<const TypedFnSignature*> ignoredItersInCallScope;
+
+    std::vector<std::tuple<Function::IteratorKind, QualifiedType, const TypedFnSignature*>> yieldTypes;
+    static const Function::IteratorKind iterKinds[] =
+      { Function::SERIAL, Function::STANDALONE, Function::FOLLOWER };
+
+    for (auto iterKind : iterKinds) {
+      auto qt = taggedYieldTypeForType(rv.rc, iterType, iterKind);
+      if (!qt.isUnknownOrErroneous()) {
+        yieldTypes.emplace_back(iterKind, qt, nullptr);
+      }
+
+      // Also try finding tagged iterator in the current scope, to warn about
+      // invalid overloading (you can't change iterator groups in other scopes).
+      noteWarningForIteratorDefinedElsewhere(rv, call, myScope,
+                                             inScopes.callScope(),
+                                             iterType, iterKind,
+                                             ignoredItersInCallScope);
+    }
+
+    // We don't check the leader for yield types, but we do warn about
+    // leaders defined out-of-scope.
+    noteWarningForIteratorDefinedElsewhere(rv, call, myScope,
+                                           inScopes.callScope(),
+                                           iterType, Function::LEADER,
+                                           ignoredItersInCallScope);
+
+    bool incompatibleYieldTypes = false;
+    if (yieldTypes.size() > 1) {
+      for (size_t i = 1; i < yieldTypes.size(); i++) {
+        if (std::get<1>(yieldTypes[i]) != std::get<1>(yieldTypes[0])) {
+          incompatibleYieldTypes = true;
+          break;
+        }
+      }
+    }
+
+    if (incompatibleYieldTypes) {
+      for (auto& foundIter : yieldTypes) {
+        std::get<2>(foundIter) =
+          findTaggedIteratorForType(rv.rc, iterType, std::get<0>(foundIter)).fn();
+      }
+      CHPL_REPORT(rv.context, IncompatibleYieldTypes, call, std::move(yieldTypes));
+    }
+
+    if (!ignoredItersInCallScope.empty()) {
+      CHPL_REPORT(rv.context, IteratorsInOtherScopes, call, iterType->iteratorFn(),
+                  std::move(ignoredItersInCallScope));
+    }
+  }
 }
 
 void Resolver::handleCallExpr(const uast::Call* call) {
@@ -4236,6 +4310,9 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+
+    // issue errors for iterator groups where e.g. serial/standalone types mismatch
+    issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c);
 
     if (initResolver) {
       initResolver->handleResolvedCall(call, &c);
@@ -4641,23 +4718,6 @@ void Resolver::exit(const New* node) {
   }
 }
 
-static const QualifiedType&
-getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
-  QUERY_BEGIN(getIterKindConstantOrUnknownQuery, context, constant);
-
-  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
-
-  if (!constant.isEmpty()) {
-    auto ik = EnumType::getIterKindType(context);
-    if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
-      auto it = m->find(constant);
-      if (it != m->end()) ret = it->second;
-    }
-  }
-
-  return QUERY_END(ret);
-}
-
 // This helper resolves by priority order as described in 'IterDetails'.
 static IterDetails
 resolveIterDetailsInPriorityOrder(Resolver& rv,
@@ -4670,7 +4730,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   bool computedLeaderYieldType = false;
   if (mask & IterDetails::STANDALONE) {
     ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, iteratingOver, astForErr,
-                                         iterand, USTR("standalone"), {});
+                                         iterand, Function::STANDALONE, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -4679,7 +4739,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   if (mask & IterDetails::LEADER_FOLLOWER) {
     ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, iteratingOver, astForErr,
-                                                 iterand, USTR("leader"),
+                                                 iterand, Function::LEADER,
                                                  {});
     computedLeaderYieldType = true;
   } else if (mask & IterDetails::FOLLOWER) {
@@ -4690,7 +4750,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
       mask & IterDetails::FOLLOWER) {
     if (!ret.leaderYieldType.isUnknownOrErroneous()) {
       ret.idxType = resolveIterTypeWithTag(rv, ret.follower, iteratingOver, astForErr,
-                                           iterand, USTR("follower"),
+                                           iterand, Function::FOLLOWER,
                                            ret.leaderYieldType);
       if (!ret.idxType.isUnknownOrErroneous()) {
         ret.succeededAt = computedLeaderYieldType
@@ -4703,7 +4763,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   if (mask & IterDetails::SERIAL) {
     ret.idxType = resolveIterTypeWithTag(rv, ret.serial, iteratingOver, astForErr,
-                                         iterand, {}, {});
+                                         iterand, Function::SERIAL, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::SERIAL;
     }
@@ -4752,40 +4812,20 @@ static IterDetails resolveIterDetails(Resolver& rv,
   return ret;
 }
 
-static QualifiedType resolveTheseMethod(Resolver& rv,
-                                        const AstNode* iterand,
-                                        const QualifiedType& iterandType,
-                                        const QualifiedType& tagType,
-                                        const QualifiedType& followThisType) {
+static CallResolutionResult resolveTheseMethod(Resolver& rv,
+                                               const AstNode* iterand,
+                                               const QualifiedType& iterandType,
+                                               Function::IteratorKind iterKind,
+                                               const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterand);
-  std::vector<CallInfoActual> actuals;
-
-  actuals.push_back(CallInfoActual(iterandType, USTR("this")));
-
-  if (!tagType.isUnknown()) {
-    actuals.emplace_back(tagType, USTR("tag"));
-  }
-
-  if (!followThisType.isUnknown()) {
-    actuals.emplace_back(followThisType, USTR("followThis"));
-  }
-
-  auto ci = CallInfo(USTR("these"),
-                     iterandType,
-                     /* isMethodCall */ true,
-                     /* hasQuestionArg */ false,
-                     /* isParenless */ false,
-                     /* actuals */ std::move(actuals));
-
   auto inScope = rv.scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
-  auto c = resolveGeneratedCall(rv.context, iterand, ci, inScopes);
 
-  rv.handleResolvedCallWithoutError(iterandRe, iterand, ci, c,
-      { { AssociatedAction::ITERATE,
-      iterand->id() } });
+  auto c = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
+  rv.handleResolvedCallWithoutError(iterandRe, iterand, c,
+      { { AssociatedAction::ITERATE, iterand->id() } });
 
-  return c.exprType();
+  return c;
 }
 
 static bool isExplicitlyTaggedIteratorCall(Context* context,
@@ -4811,17 +4851,17 @@ resolveIterTypeWithTag(Resolver& rv,
                        const IteratorType* iteratingOver,
                        const AstNode* astForErr,
                        const AstNode* iterand,
-                       UniqueString iterKindStr,
+                       Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal) {
   Context* context = rv.context;
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKindStr);
-  bool needSerial = iterKindStr.isEmpty();
-  bool needStandalone = iterKindStr == USTR("standalone");
-  bool needLeader = iterKindStr == USTR("leader");
-  bool needFollower = iterKindStr == USTR("follower");
+  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKind);
+  bool needSerial = iterKind == Function::SERIAL;
+  bool needStandalone = iterKind == Function::STANDALONE;
+  bool needLeader = iterKind == Function::LEADER;
+  bool needFollower = iterKind == Function::FOLLOWER;
 
   // Exit early if we need a parallel iterator and don't have the enum.
   if (!needSerial && iterKindActual.isUnknown()) {
@@ -4832,8 +4872,6 @@ resolveIterTypeWithTag(Resolver& rv,
   auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto iterandType = iterandRE.type();
 
-  // If the user explicitly provided a tag, this is an error: tags
-  // are automatically provided by the compiler. Report an error.
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 
@@ -4857,7 +4895,7 @@ resolveIterTypeWithTag(Resolver& rv,
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
     outIterPieces = { iteratingOver };
-    return iteratingOver->yieldType();
+    return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
 
   // There's nothing to do in this case, so error out.
   } else if (needSerial && !wasIterandTypeResolved) {
@@ -4868,16 +4906,16 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto qt = resolveTheseMethod(rv, iterand, iterandType, iterKindActual, followThisFormal);
+  auto c = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
+  auto qt = c.exprType();
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
 
     iteratingOver = qt.type()->toIteratorType();
     outIterPieces = { iteratingOver };
-    return iteratingOver->yieldType();
   }
-  return qt;
+  return c.yieldedType();
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
@@ -5120,7 +5158,7 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
     if (!iterandType.isUnknownOrErroneous()) {
       bool supportsParallel = loop->isForall() || loop->isBracketLoop();
       auto loopExprType =
-        LoopExprIteratorType::get(rv.context, bodyType, isZippered,
+        LoopExprIteratorType::get(rv.context, bodyType, rv.poiScope, isZippered,
                                   supportsParallel, iterandType, loop->id());
       loopType = QualifiedType(QualifiedType::CONST_VAR, loopExprType);
     }

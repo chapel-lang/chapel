@@ -26,23 +26,25 @@ namespace types {
 const owned<LoopExprIteratorType>&
 LoopExprIteratorType::getLoopExprIteratorType(Context* context,
                                               QualifiedType yieldType,
+                                              const resolution::PoiScope* poiScope,
                                               bool isZippered,
                                               bool supportsParallel,
                                               QualifiedType iterand,
                                               ID sourceLocation) {
-  QUERY_BEGIN(getLoopExprIteratorType, context, yieldType, isZippered, supportsParallel, iterand, sourceLocation);
-  auto result = toOwned(new LoopExprIteratorType(std::move(yieldType), isZippered, supportsParallel, std::move(iterand), std::move(sourceLocation)));
+  QUERY_BEGIN(getLoopExprIteratorType, context, yieldType, poiScope, isZippered, supportsParallel, iterand, sourceLocation);
+  auto result = toOwned(new LoopExprIteratorType(std::move(yieldType), poiScope, isZippered, supportsParallel, std::move(iterand), std::move(sourceLocation)));
   return QUERY_END(result);
 }
 
 const LoopExprIteratorType*
 LoopExprIteratorType::get(Context* context,
                           QualifiedType yieldType,
+                          const resolution::PoiScope* poiScope,
                           bool isZippered,
                           bool supportsParallel,
                           QualifiedType iterand,
                           ID sourceLocation) {
-  return getLoopExprIteratorType(context, std::move(yieldType), isZippered, supportsParallel, std::move(iterand), std::move(sourceLocation)).get();
+  return getLoopExprIteratorType(context, std::move(yieldType), poiScope, isZippered, supportsParallel, std::move(iterand), std::move(sourceLocation)).get();
 }
 
 }  // end namespace types

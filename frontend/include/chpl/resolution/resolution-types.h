@@ -1862,6 +1862,8 @@ class CallResolutionResult {
   MostSpecificCandidates mostSpecific_;
   // what is the type of the call expression?
   types::QualifiedType exprType_;
+  // if the called expression is an iterator, what is the yielded type?
+  types::QualifiedType yieldedType_;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo_;
@@ -1876,21 +1878,30 @@ class CallResolutionResult {
   // for simple cases where mostSpecific and poiInfo are irrelevant.
   // Since the result was handled using some compiler-level logic (hence no
   // 'mostSpecific'), the result is marked as specially handled.
-  CallResolutionResult(types::QualifiedType exprType)
-    : exprType_(std::move(exprType)), speciallyHandled_(true) {
+  CallResolutionResult(types::QualifiedType exprType,
+                       types::QualifiedType yieldedType = types::QualifiedType())
+    : exprType_(std::move(exprType)),
+      yieldedType_(std::move(yieldedType)),
+      speciallyHandled_(true) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        bool rejectedPossibleIteratorCandidates,
                        types::QualifiedType exprType,
+                       types::QualifiedType yieldedType,
                        PoiInfo poiInfo,
                        bool speciallyHandled = false)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
+      yieldedType_(std::move(yieldedType)),
       poiInfo_(std::move(poiInfo)),
       speciallyHandled_(speciallyHandled),
       rejectedPossibleIteratorCandidates_(rejectedPossibleIteratorCandidates)
   {
+  }
+
+  static CallResolutionResult getEmpty() {
+    return CallResolutionResult();
   }
 
   /** get the most specific candidates for return-intent overloading */
@@ -1898,6 +1909,9 @@ class CallResolutionResult {
 
   /** type of the call expression */
   const types::QualifiedType& exprType() const { return exprType_; }
+
+  /** type of the yielded expression, if the call expression is an iterator */
+  const types::QualifiedType& yieldedType() const { return yieldedType_; }
 
   /** point-of-instantiation scopes used when resolving signature or body */
   const PoiInfo& poiInfo() const { return poiInfo_; }
@@ -1915,6 +1929,7 @@ class CallResolutionResult {
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
            exprType_ == other.exprType_ &&
+           yieldedType_ == other.yieldedType_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
            speciallyHandled_ == other.speciallyHandled_ &&
            rejectedPossibleIteratorCandidates_ == other.rejectedPossibleIteratorCandidates_;
@@ -1925,6 +1940,7 @@ class CallResolutionResult {
   void swap(CallResolutionResult& other) {
     mostSpecific_.swap(other.mostSpecific_);
     exprType_.swap(other.exprType_);
+    yieldedType_.swap(other.yieldedType_);
     poiInfo_.swap(other.poiInfo_);
     std::swap(speciallyHandled_, other.speciallyHandled_);
     std::swap(rejectedPossibleIteratorCandidates_,
@@ -1969,6 +1985,9 @@ class CallScopeInfo {
   static CallScopeInfo forNormalCall(const Scope* scope, const PoiScope* poiScope);
   static CallScopeInfo forQualifiedCall(Context* context, const ID& moduleId,
                                         const Scope* scope, const PoiScope* poiScope);
+  static CallScopeInfo forIteratorOverloadSearch(const Scope* callScope,
+                                                 const Scope* lookupScope,
+                                                 const PoiScope* poiScope);
 
   const Scope* callScope() const { return callScope_; }
   const Scope* lookupScope() const { return lookupScope_; }
@@ -2906,6 +2925,7 @@ CHPL_DEFINE_STD_HASH_(FormalActualMap, (key.hash()));
 CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
+CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std

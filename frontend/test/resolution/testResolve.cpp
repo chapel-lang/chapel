@@ -1708,59 +1708,6 @@ static void test27() {
   assert(guard.realizeErrors() == 0);
 }
 
-static void test28(Context* context) {
-  // Test that if we fail to resolve a call to an iterator, but there's
-  // a tagged overload (e.g., a leader or a follower), that we find the tagged
-  // overload instead.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-  ErrorGuard guard(context);
-
-  std::string prog =
-    R"""(
-      iter foo(param tag) where tag == iterKind.standalone {
-        yield 1;
-        yield 2;
-        yield 3;
-      }
-      var loop = foo();
-      forall i in loop {}
-      forall j in foo() {}
-    )""";
-
-  auto vars = resolveTypesOfVariables(context, prog, {"loop", "i", "j"});
-
-  CHPL_ASSERT(vars.at("loop").type());
-  CHPL_ASSERT(vars.at("loop").type()->isIteratorType());
-  CHPL_ASSERT(vars.at("i").type());
-  CHPL_ASSERT(vars.at("i").type()->isIntType());
-  CHPL_ASSERT(vars.at("i").type()->toIntType()->isDefaultWidth());
-  CHPL_ASSERT(vars.at("i") == vars.at("j"));
-}
-
-static void test29(Context* context) {
-  // Test that if we fail to resolve a call to a non-iterator, but there's
-  // a tagged overload (e.g., a leader or a follower), that we _don't_ find
-  // the tagged overload, since procs can't be tagged.
-  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
-
-  std::string prog =
-    R"""(
-      proc foo(param tag) where tag == iterKind.standalone {
-        yield 1;
-        yield 2;
-        yield 3;
-      }
-      var loop = foo();
-      forall i in loop {}
-      forall j in foo() {}
-    )""";
-
-  auto vars = resolveTypesOfVariables(context, prog, {"loop", "i", "j"});
-  for (auto var : vars) {
-    CHPL_ASSERT(var.second.isUnknownOrErroneous());
-  }
-}
-
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -1802,7 +1749,6 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(ctx, program1);
 }
 
-
 int main() {
   test1();
   test2();
@@ -1831,10 +1777,6 @@ int main() {
   test25();
   test26();
   test27();
-
-  auto ctx = buildStdContext();
-  test28(ctx.get());
-  test29(ctx.get());
 
   testInfiniteCycleBug();
 

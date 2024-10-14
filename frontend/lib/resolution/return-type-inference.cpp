@@ -1108,10 +1108,11 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   return false;
 }
 
-static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
-                                            const TypedFnSignature* sig,
-                                            const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
+static const QualifiedType&
+returnTypeWithoutIterableQuery(ResolutionContext* rc,
+                               const TypedFnSignature* sig,
+                               const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeWithoutIterableQuery, rc, sig, poiScope);
 
   Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
@@ -1131,9 +1132,21 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
     }
   }
 
-  if (sig->isIterator()) {
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
+                                            const TypedFnSignature* sig,
+                                            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
+
+  Context* context = rc->context();
+  auto result = returnTypeWithoutIterableQuery(rc, sig, poiScope);
+
+  if (sig->isIterator() && !result.isUnknownOrErroneous()) {
     result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, result, sig));
+                           FnIteratorType::get(context, poiScope, sig));
+
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1143,6 +1156,13 @@ QualifiedType returnType(ResolutionContext* rc,
                          const TypedFnSignature* sig,
                          const PoiScope* poiScope) {
   return returnTypeQuery(rc, sig, poiScope);
+}
+
+QualifiedType yieldType(ResolutionContext* rc,
+                        const TypedFnSignature* sig,
+                        const PoiScope* poiScope) {
+  CHPL_ASSERT(sig->isIterator());
+  return returnTypeWithoutIterableQuery(rc, sig, poiScope);
 }
 
 static const TypedFnSignature* const&

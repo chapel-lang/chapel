@@ -579,6 +579,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorIncompatibleYieldTypes::write(ErrorWriterBase& wr) const {
+  auto call = std::get<0>(info_);
+  auto& yieldTypes = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "incompatible yield types in iterator group.");
+  wr.message("Encountered while resolving the following call:");
+  wr.codeForLocation(call);
+  wr.message("All versions of the iterator except the leader should yield the same type.");
+
+  for (auto& data : yieldTypes) {
+    wr.message("");
+    auto iterKindStr = uast::Function::iteratorKindToString(std::get<0>(data));
+    auto qt = std::get<1>(data);
+    auto fn = std::get<2>(data);
+
+    wr.note(fn->id(), "the ", iterKindStr, " version of the iterator '", fn->untyped()->name() ,"' yields values of type '", qt.type(), "'.");
+    wr.codeForLocation(fn->id());
+  }
+}
+
 void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   auto primCall = std::get<const uast::PrimCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
@@ -743,6 +763,30 @@ void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
     wr.message("If you meant to declare '", recordType->name(), "' as a class ",
                "instead, you can do that by writing 'class ", recordType->name(),
                "' instead of 'record ", recordType->name(), "'.");
+  }
+}
+
+void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto call = node->toCall();
+  auto candidate = std::get<const resolution::TypedFnSignature*>(info_);
+  auto& rejected = std::get<std::vector<const resolution::TypedFnSignature*>>(info_);
+
+  UniqueString name = candidate->untyped()->name();
+
+  wr.heading(kind_, type_, node, "found potentially compatible iterator overloads in other scopes.");
+  wr.message("While resolving the call to iterator '", name ,"' here:");
+  wr.codeForLocation(call);
+  if (candidate) {
+    wr.message("The following iterator was determined to match the given call:");
+    wr.codeForLocation(candidate->id());
+  }
+  wr.message("However, other candidates were found in different scopes.");
+  wr.message("");
+
+  for (auto rejectedCandidate : rejected) {
+    wr.note(rejectedCandidate->id(), "one candidate was found here:");
+    wr.codeForLocation(rejectedCandidate->id());
   }
 }
 

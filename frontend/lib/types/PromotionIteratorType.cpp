@@ -25,7 +25,6 @@ namespace chpl {
 namespace types {
 
 void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
-  yieldType_.mark(context);
   scalarFn_->mark(context);
   for (const auto& pair : promotedFormals_) {
     pair.second.mark(context);
@@ -34,20 +33,20 @@ void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
 
 const owned<PromotionIteratorType>&
 PromotionIteratorType::getPromotionIteratorType(Context* context,
-                                                QualifiedType yieldType,
+                                                const resolution::PoiScope* poiScope,
                                                 const resolution::TypedFnSignature* scalarFn,
                                                 resolution::SubstitutionsMap promotedFormals) {
-  QUERY_BEGIN(getPromotionIteratorType, context, yieldType, scalarFn, promotedFormals);
-  auto result = toOwned(new PromotionIteratorType(scalarFn, std::move(promotedFormals), std::move(yieldType)));
+  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, promotedFormals);
+  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(promotedFormals)));
   return QUERY_END(result);
 }
 
 const PromotionIteratorType*
 PromotionIteratorType::get(Context* context,
-                           QualifiedType yieldType,
+                           const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
                            resolution::SubstitutionsMap promotedFormals) {
-  return getPromotionIteratorType(context, std::move(yieldType), scalarFn, std::move(promotedFormals)).get();
+  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(promotedFormals)).get();
 }
 
 }  // end namespace types

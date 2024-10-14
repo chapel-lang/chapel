@@ -1121,7 +1121,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     }
     return CallResolutionResult(candidates,
                                 /* rejectedPossibleIteratorCandidates */ false,
-                                type, poi, /* specially handled */ true);
+                                type, /* yielded type */ QualifiedType(),
+                                poi, /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1821,7 +1822,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
   return CallResolutionResult(candidates,
                               /* rejectedPossibleIteratorCandidates */ false,
-                              type, poi, /* specially handled */ true);
+                              type, /* yielded type */ QualifiedType(),
+                              poi, /* specially handled */ true);
 }
 
 

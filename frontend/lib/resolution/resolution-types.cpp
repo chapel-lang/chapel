@@ -1153,6 +1153,12 @@ CallScopeInfo CallScopeInfo::forQualifiedCall(Context* context, const ID& module
   return CallScopeInfo(scope, moduleScope, poiScope);
 }
 
+CallScopeInfo CallScopeInfo::forIteratorOverloadSearch(const Scope* callScope,
+                                                       const Scope* iteratorDefinitionScope,
+                                                       const PoiScope* poiScope) {
+  return CallScopeInfo(callScope, iteratorDefinitionScope, poiScope);
+}
+
 const char* AssociatedAction::kindToString(Action a) {
   switch (a) {
     case ASSIGN:
