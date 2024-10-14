@@ -596,8 +596,8 @@ static void test7() {
   r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
 
   // check passing to generic class type from generic-nilability class type
-  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNilTypeQt); assert(passesInstantiatesSubtype(r));
-  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNonNilTypeQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNilTypeQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNonNilTypeQt); assert(doesNotPass(r));
   r = canPass(c, unmanagedGenericNonNilTypeQt, unmanagedGenericNilTypeQt); assert(passesInstantiatesSubtype(r));
 }
 
