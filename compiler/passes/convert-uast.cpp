@@ -166,7 +166,6 @@ struct Converter final : UastConverter {
       if (r->signature()->instantiatedFrom() == nullptr) {
         // it's concrete, so don't convert it
         // instead, rely on the TConverter to do it
-        printf("Will ignore %s\n", r->id().str().c_str());
         functionsToIgnore.insert(r->id());
       }
     }

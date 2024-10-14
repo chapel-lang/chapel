@@ -50,12 +50,9 @@
 #include "metadata.h"
 #include "optimizations.h"
 #include "parser.h"
-//#include "passes.h"
 #include "resolution.h"
 #include "stmt.h"
-
-
-#include "view.h" // DEBUG only
+#include "view.h"
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
@@ -73,6 +70,9 @@
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <iostream>
+
+// If defined, include debug output about TConverter
+//#define DEBUG_TRACE 1
 
 using namespace chpl;
 using namespace resolution;
@@ -143,7 +143,12 @@ struct TConverter final : UastConverter {
   // put new nodes?
   AList* curAList = nullptr;
 
-  bool trace = false;
+#ifdef DEBUG_TRACE
+  static const bool trace = true;
+#else
+  static const bool trace = false;
+#endif
+
   bool haveSetupModules = false;
   bool haveConvertedFunctions = false;
   // these are updated as we are converting different things
@@ -207,14 +212,17 @@ struct TConverter final : UastConverter {
 
   // supporting UastConverter methods
   void setModulesToConvert(const std::vector<ID>& vec) override {
-    printf("in setModulesToConvert with %i modules\n", (int)vec.size());
+    if (trace)
+      printf("in setModulesToConvert with %i modules\n", (int)vec.size());
 
     modulesToConvert.clear();
     // save the vector
     modulesToConvertVec = vec;
     // add the modules to the set
     for (const ID& id : modulesToConvertVec) {
-      printf("Will convert module %s\n", id.str().c_str());
+      if (trace)
+        printf("Will convert module %s\n", id.str().c_str());
+
       modulesToConvert.insert(id);
     }
 
@@ -224,8 +232,9 @@ struct TConverter final : UastConverter {
 
   void setFunctionsToConvertWithTypes(const CalledFnsSet& calledFns) override
   {
-    printf("in setFunctionsToConvertWithTypes with %i functions\n",
-           (int)calledFns.size());
+    if (trace)
+      printf("in setFunctionsToConvertWithTypes with %i functions\n",
+             (int)calledFns.size());
 
     functionsToConvertWithTypes = calledFns;
     // also tell the untyped converter about them so it can ignore them!
@@ -290,17 +299,21 @@ struct TConverter final : UastConverter {
 
   // aListStack helpers
   void pushAList(AList* lst, Expr* expr) {
-    printf("push ");
-    nprint_view(expr);
-    printf("\n");
+    if (trace) {
+      printf("push ");
+      nprint_view(expr);
+      printf("\n");
+    }
     aListStack.push_back({lst, expr});
     curAList = lst;
   }
   Expr* popAList() {
     CHPL_ASSERT(aListStack.size() > 0);
-    printf("pop ");
-    nprint_view(aListStack.back().second);
-    printf("\n");
+    if (trace) {
+      printf("pop ");
+      nprint_view(aListStack.back().second);
+      printf("\n");
+    }
 
     Expr* ret = nullptr;
     ret = aListStack.back().second;
@@ -574,10 +587,12 @@ void TConverter::convertFunctionsToConvert() {
   std::sort(v.begin(), v.end(), SortCalledFnsDeeperFirst());
 
 
-  printf("Will convert functions in this order:\n");
-  for (auto pair : v) {
-    printf("  %s depth=%i index=%i\n", pair.first->id().str().c_str(),
-           pair.second.depth, pair.second.index);
+  if (trace) {
+    printf("Will convert functions in this order:\n");
+    for (auto pair : v) {
+      printf("  %s depth=%i index=%i\n", pair.first->id().str().c_str(),
+             pair.second.depth, pair.second.index);
+    }
   }
 
   for (auto pair : v) {
@@ -651,8 +666,9 @@ ModuleSymbol* TConverter::findOrSetupModule(ID modId) {
 }
 
 void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
-  printf("Converting module init for %s[%i]\n",
-         mod->id().str().c_str(), modSym->id);
+  if (trace)
+    printf("Converting module init for %s[%i]\n",
+           mod->id().str().c_str(), modSym->id);
 
   // create the module init function
   modSym->initFn = new FnSymbol(astr("chpl__init_", modSym->name));
@@ -703,7 +719,8 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
     return;
   }
 
-  printf("Converting function %s\n", r->id().str().c_str());
+  if (trace)
+    printf("Converting function %s\n", r->id().str().c_str());
 
   // figure out, in which block should we put the DefExpr for the new FnSymbol?
 
@@ -1489,21 +1506,22 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
 }
 
 bool TConverter::enter(const Module* node, RV& rv) {
-  printf("enter module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace)
+    printf("enter module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (modulesToConvert.count(node->id()) == 0) {
     // this module should not be converted.
-    printf("Not in modules to convert\n");
+    if (trace) printf("Not in modules to convert\n");
     return false;
   }
 
   if (node == symbol) {
     // we are visiting it to convert the module initialization function
     // so proceed with the traversal
-    printf("Proceeding with module converting\n");
+    if (trace) printf("Proceeding with module converting\n");
     return true;
   } else {
-    printf("Recording a submodule\n");
+    if (trace) printf("Recording a submodule\n");
     submodulesEncountered.push_back(node);
 
     return false;
@@ -1511,11 +1529,13 @@ bool TConverter::enter(const Module* node, RV& rv) {
   return true;
 }
 void TConverter::exit(const Module* node, RV& rv) {
-  printf("exit module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace)
+    printf("exit module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const Function* node, RV& rv) {
-  printf("enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace)
+    printf("enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
 
   if (node != symbol) {
@@ -1525,7 +1545,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     return false;
   }
 
-  printf("Really converting Function\n");
+  if (trace) printf("Really converting Function\n");
 
   astlocMarker markAstLoc(node->id());
 
@@ -1576,7 +1596,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   // Convert the formals
   if (node->numFormals() > 0) {
-    printf("Converting formals\n");
+    if (trace) printf("Converting formals\n");
     enterFormals(fn);
     for (auto decl : node->formals()) {
       DefExpr* conv = nullptr;
@@ -1694,7 +1714,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   Expr* lifetimeConstraints = nullptr;
   if (node->numLifetimeClauses() > 0) {
-    printf("Converting lifetime clause\n");
+    if (trace) printf("Converting lifetime clause\n");
     // create a new AList for the lifetime clause
     pushNewBlock();
 
@@ -1734,7 +1754,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   // visit the body to convert
   if (node->body()) {
-    printf("Converting body into %i\n", fn->body->id);
+    if (trace) printf("Converting body into %i\n", fn->body->id);
     pushBlock(fn->body);
 
     if (fn->retType != dtVoid) {
@@ -1774,15 +1794,13 @@ bool TConverter::enter(const Function* node, RV& rv) {
     popBlock();
   }
 
-  printf("Fn is now ");
-  nprint_view(fn);
-  printf("\n");
-
-  printf("simplifying epilogue\n");
   simplifyEpilogue(fn);
-  printf("after simplifying fn is now ");
-  nprint_view(fn);
-  printf("\n");
+
+  if (trace) {
+    printf("converted to: ");
+    nprint_view(fn);
+    printf("\n");
+  }
 
   // clear return variables so they can't be confused
   curRetVar = nullptr;
@@ -1791,11 +1809,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
   return false;
 }
 void TConverter::exit(const Function* node, RV& rv) {
-  printf("exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const Formal* node, RV& rv) {
-  printf("enter formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   IntentTag intentTag = convertFormalIntent(node->intent());
 
@@ -1819,11 +1837,11 @@ bool TConverter::enter(const Formal* node, RV& rv) {
   return false;
 }
 void TConverter::exit(const Formal* node, RV& rv) {
-  printf("exit formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const Variable* node, RV& rv) {
-  printf("enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   VarSymbol* varSym = convertVariable(node, rv, true);
   INT_ASSERT(varSym);
@@ -1853,13 +1871,13 @@ bool TConverter::enter(const Variable* node, RV& rv) {
   return false;
 }
 void TConverter::exit(const Variable* node, RV& rv) {
-  printf("exit variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 
 
 bool TConverter::enter(const Literal* node, RV& rv) {
-  printf("enter literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
 
   Expr* se = untypedConverter->convertAST(node);
@@ -1868,11 +1886,11 @@ bool TConverter::enter(const Literal* node, RV& rv) {
   return false;
 }
 void TConverter::exit(const Literal* node, RV& rv) {
-  printf("exit literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const Identifier* node, RV& rv) {
-  printf("enter identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   const ResolvedExpression* re = rv.byAstOrNull(node);
   if (re != nullptr) {
@@ -1890,12 +1908,12 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
   return false;
 }
 void TConverter::exit(const Identifier* node, RV& rv) {
-  printf("exit identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 
 bool TConverter::enter(const Return* node, RV& rv) {
-  printf("enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   CallExpr* ret = new CallExpr(PRIM_RETURN);
 
@@ -1905,7 +1923,7 @@ bool TConverter::enter(const Return* node, RV& rv) {
   return true;
 }
 void TConverter::exit(const Return* node, RV& rv) {
-  printf("exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   CallExpr* ret = exitCallActuals();
 
@@ -1927,7 +1945,7 @@ void TConverter::exit(const Return* node, RV& rv) {
 }
 
 bool TConverter::enter(const Call* node, RV& rv) {
-  printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (auto primCall = node->toPrimCall()) {
     CallExpr* ret = new CallExpr(primCall->prim());
@@ -2022,15 +2040,15 @@ bool TConverter::enter(const Call* node, RV& rv) {
 }
 
 void TConverter::exit(const Call* node, RV& rv) {
-  printf("exit fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
-  printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   return true;
 }
 void TConverter::exit(const AstNode* node, RV& rv) {
-  printf("exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
