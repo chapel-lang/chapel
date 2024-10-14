@@ -135,7 +135,8 @@ struct TConverter final : UastConverter {
   const AstNode* symbol = nullptr; // Module* or Function*
   FnSymbol* curFnSymbol = nullptr; // corresponding to the above
   ModuleSymbol* curModuleSymbol = nullptr; // corresponding to the above
-  Symbol* rvv = nullptr; // the return value variable from the current function
+  Symbol* curRetVar = nullptr; // the return value variable (RVV)
+                               // within the current function
   LabelSymbol* epilogueLabel = nullptr;
 
   // When converting an expression or a statement, where should we
@@ -1760,14 +1761,14 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
     if (fn->retType != dtVoid) {
       // construct the RVV
-      rvv = newTemp("ret", fn->retType);
-      rvv->addFlag(FLAG_RVV);
+      curRetVar = newTemp("ret", fn->retType);
+      curRetVar->addFlag(FLAG_RVV);
 
-      if (fn->retTag == RET_PARAM)      rvv->addFlag(FLAG_PARAM);
-      if (fn->retTag == RET_TYPE)       rvv->addFlag(FLAG_TYPE_VARIABLE);
-      if (fn->hasFlag(FLAG_MAYBE_TYPE)) rvv->addFlag(FLAG_MAYBE_TYPE);
+      if (fn->retTag == RET_PARAM)      curRetVar->addFlag(FLAG_PARAM);
+      if (fn->retTag == RET_TYPE)       curRetVar->addFlag(FLAG_TYPE_VARIABLE);
+      if (fn->hasFlag(FLAG_MAYBE_TYPE)) curRetVar->addFlag(FLAG_MAYBE_TYPE);
 
-      fn->insertAtHead(new DefExpr(rvv));
+      fn->insertAtHead(new DefExpr(curRetVar));
     }
 
     // construct the epilogue label
@@ -1789,7 +1790,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     if (fn->retType == dtVoid) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     } else {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, rvv));
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, curRetVar));
     }
 
     popBlock();
@@ -1806,7 +1807,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
   printf("\n");
 
   // clear return variables so they can't be confused
-  rvv = nullptr;
+  curRetVar = nullptr;
   epilogueLabel = nullptr;
 
   return false;
@@ -1935,9 +1936,10 @@ void TConverter::exit(const Return* node, RV& rv) {
     Expr* retExpr = ret->get(1)->remove();
     CallExpr* move = nullptr;
     if (curFnSymbol->returnsRefOrConstRef()) {
-      move = new CallExpr(PRIM_MOVE, rvv, new CallExpr(PRIM_ADDR_OF, retExpr));
+      move = new CallExpr(PRIM_MOVE,
+                          curRetVar, new CallExpr(PRIM_ADDR_OF, retExpr));
     } else {
-      move = new CallExpr(PRIM_MOVE, rvv, retExpr);
+      move = new CallExpr(PRIM_MOVE, curRetVar, retExpr);
     }
     ret->insertBefore(move);
   }
