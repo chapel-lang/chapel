@@ -389,7 +389,6 @@ def get_runtime_link_args():
 
 def get_cuda_libdevice_path():
     if get() == 'nvidia':
-        # TODO this only makes sense when we are generating for nvidia
         compiler = get_gpu_compiler()
         libdevice = find_cuda_libdevice_path(compiler)
         if not libdevice:
