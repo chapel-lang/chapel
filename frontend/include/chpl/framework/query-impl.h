@@ -233,7 +233,9 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     //  printf("Found result %p %s\n", savedElement, queryMap->queryName);
   }
 
-  if (newElementWasAdded == false && savedElement->lastChecked == -1) {
+  if (newElementWasAdded == false &&
+      (savedElement->lastChecked == -1 ||
+       savedElement->beingTestedForReuse)) {
     // A recursion error was encountered. We will try to gracefully handle
     // this error by adding it to the set of recursion errors on this
     // result.
@@ -560,7 +562,7 @@ Context::isQueryRunning(
     return false;
   }
 
-  return search2->lastChecked == -1;
+  return search2->lastChecked == -1 || search2->beingTestedForReuse;
 }
 
 template<typename ResultType,

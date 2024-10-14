@@ -1515,6 +1515,108 @@ static void testInheritance() {
     xt->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
     assert(ss.str() == "owned B(int(64), real(64))");
   }
+
+  // Default initializer when parent has user-defined initializer
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class A {
+        var x : int;
+
+        proc init(x: int = 0) {
+          this.x = x;
+        }
+      }
+
+      class B : A {
+        var y : string;
+      }
+
+      var b1 = new B();
+      var b2 = new B("test");
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"b1", "b2"});
+    auto b1 = vars["b1"].type();
+    auto b2 = vars["b2"].type();
+
+    auto check = [] (const Type* type) {
+      std::stringstream ss;
+      type->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+      assert(ss.str() == "owned B");
+    };
+
+    check(b1);
+    check(b2);
+  }
+
+  // Default initializer when grandparent has user-defined initializer
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      class X {
+        var one : int;
+
+        proc init(one: int = 0) {
+          this.one = one;
+        }
+      }
+
+      class Y : X {
+        var two : real;
+      }
+
+      class Z : Y {
+        var three : string;
+      }
+
+      var z1 = new Z();
+      var z2 = new Z(42.0);
+      var z3 = new Z(42.0, "test");
+      )""";
+
+    auto vars = resolveTypesOfVariables(context, program, {"z1", "z2", "z3"});
+    auto z1 = vars["z1"].type();
+    auto z2 = vars["z2"].type();
+    auto z3 = vars["z3"].type();
+
+    auto check = [] (const Type* type) {
+      std::stringstream ss;
+      type->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+      assert(ss.str() == "owned Z");
+    };
+
+    check(z1);
+    check(z2);
+    check(z3);
+  }
+
+  // Make sure that existence of an interface in the inherit-exprs list
+  // does not cause a super.init call to be generated.
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = R"""(
+      interface myInterface {}
+
+      class C : myInterface {
+        var x : string;
+      }
+
+      var c = new C();
+      )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
 }
 
 static void testImplicitSuperInit() {

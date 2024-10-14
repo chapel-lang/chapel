@@ -326,6 +326,32 @@ class Ex2Tests(TestCases.TestCase):
         output = self.runCmd("./colocales -r 0 -n 17")
         self.assertIn("warning: 9 cores are unused\n", output);
 
+    def test_13_remainder_node(self):
+        """
+        Remainder node has fewer co-locales.
+        However, they should not get more than their allotment of cores.
+        """
+        for i in range(0, 3):
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -n %d -a 3 -N %s" %
+                                     (i, 16, self.nics[0]))
+                cpus = stringify([i*8+j for j in range(0, 8)])
+                self.assertIn("Physical CPUs: %s\n" % cpus, output)
+
+    def test_14_oversubscribed(self):
+        """
+        All locales get all cores when oversubscribed.
+        """
+        for i in range(0, 4):
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -a 4 -N %s" %
+                                     (i, self.nics[0]))
+                cpus = stringify(self.getSocketCores("all"))
+                self.assertIn("Physical CPUs: %s\n" % cpus, output)
+                cpus = stringify(self.getSocketThreads("all"))
+                self.assertIn("Logical CPUs: %s\n" % cpus, output)
+
+
 class Ex3Tests(TestCases.TestCase):
     """
     HPE Cray EX. One sockets, four NUMA domains per socket, 64 cores per
@@ -366,17 +392,30 @@ class Ex3Tests(TestCases.TestCase):
         Each co-locale gets the two GPUs closest to it
         """
         for i in range(0, 2):
-            output = self.runCmd("./colocales -r %d -n 2" % i);
-            x = i * 2
-            self.assertIn("GPUS: " + ' '.join(self.gpus[x:x+1]), output)
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -n 2" % i);
+                x = i * 2
+                self.assertIn("GPUS: " + ' '.join(self.gpus[x:x+1]), output)
 
     def test_12_four_colocales(self):
         """
         Each co-locale gets the GPU closest to it
         """
         for i in range(0, 4):
-            output = self.runCmd("./colocales -r %d -n 4" % i);
-            self.assertIn("GPUS: " + self.gpus[i], output)
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -n 4" % i);
+                self.assertIn("GPUS: " + self.gpus[i], output)
+
+    def test_13_oversubscribed(self):
+        """
+        All locales get all GPUs when oversubscribed.
+        """
+        for i in range(0, 4):
+            with self.subTest(i=i):
+                output = self.runCmd("./colocales -r %d -a 4" % i);
+                self.assertIn("GPUS: " + ' '.join(self.gpus), output)
+
+
 
 class Hpc6aTests(TestCases.TestCase):
     """

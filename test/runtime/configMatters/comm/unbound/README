@@ -1,0 +1,2 @@
+Tests for CHPL_COMM=ofi with unbound endpoints. This is accomplished by
+setting CHPL_RT_COMM_OFI_EP_CNT to a small value.

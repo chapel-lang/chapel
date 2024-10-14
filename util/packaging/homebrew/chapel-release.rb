@@ -1,19 +1,20 @@
 class Chapel < Formula
+  include Language::Python::Shebang
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
   url "https://github.com/chapel-lang/chapel/releases/download/2.2.0/chapel-2.2.0.tar.gz"
   sha256 "bb16952a87127028031fd2b56781bea01ab4de7c3466f7b6a378c4d8895754b6"
   license "Apache-2.0"
-  revision 1
+  revision 2
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_sequoia: "8d89a038eccaf6554f234a24b31d142b37043e3cb6bbffe5d11d60dac34eb163"
-    sha256 arm64_sonoma:  "a8e2a5cc575a16cc513cbdc19edd212a115e689b5d7df2f62f80d7cc08140da4"
-    sha256 arm64_ventura: "68752adba8c728b86fea019bc7080ee255f3ba81705c54db60d80d34d33db19b"
-    sha256 sonoma:        "97ab1744ea1f5e61a445a3c907d381f3b8e9a5d78f5503520a9ad89b22304dc3"
-    sha256 ventura:       "afeb776fbe3475093841eb26731f54b8533724de9c96dce750b738a22b848289"
-    sha256 x86_64_linux:  "6dcaabe4a79be7ed91b6f89c5725fa421f661b0f70baeec065872bb8fb83dfaa"
+    sha256 arm64_sequoia: "14a251ee7322a074dad39a8cc7dd0db9bf68458526ba5905c36508c4d9ee28f5"
+    sha256 arm64_sonoma:  "929ce6c154e9d54d9c795b8f869f1247cbdc0d9b5a9a30e7614842dfd7a660f0"
+    sha256 arm64_ventura: "478587cf8190effca0543bacfac22d66a9672194e73fe184408795792a209a25"
+    sha256 sonoma:        "ce4da24faa3e5723998c9dc33dfe23c32f3a31e7d47f75f30a189567b4532a90"
+    sha256 ventura:       "30295a6d3dc7218295f247445a4a9cbc3f2d58b32d07e32faf5684108676bf35"
+    sha256 x86_64_linux:  "2cfa7cbf0c3fbb43c3bc78f9b7b99e90a2a2b52aec2186256cfef0e70a804377"
   end
 
   depends_on "cmake"
@@ -37,6 +38,12 @@ class Chapel < Formula
     # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+    inreplace "third-party/chpl-venv/Makefile", "python3 -c ", "#{python} -c "
+
+    # a lot of scripts have a python3 or python shebang, which does not point to python3.12 anymore
+    Pathname.glob("**/*.py") do |pyfile|
+      rewrite_shebang detected_python_shebang, pyfile
+    end
 
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -44,6 +51,7 @@ class Chapel < Formula
     ENV["CHPL_GMP"] = "system"
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
+    ENV["CHPL_CMAKE_PYTHON"] = python
 
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC

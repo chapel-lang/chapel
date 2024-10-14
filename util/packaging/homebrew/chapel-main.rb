@@ -1,4 +1,5 @@
 class Chapel < Formula
+  include Language::Python::Shebang
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
   url "<url-placeholder-value-injected-during-testing>"
@@ -31,6 +32,12 @@ class Chapel < Formula
     # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+    inreplace "third-party/chpl-venv/Makefile", "python3 -c ", "#{python} -c "
+
+    # a lot of scripts have a python3 or python shebang, which does not point to python3.12 anymore
+    Pathname.glob("**/*.py") do |pyfile|
+      rewrite_shebang detected_python_shebang, pyfile
+    end
 
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
@@ -38,6 +45,7 @@ class Chapel < Formula
     ENV["CHPL_GMP"] = "system"
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
+    ENV["CHPL_CMAKE_PYTHON"] = python
 
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC

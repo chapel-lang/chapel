@@ -686,6 +686,8 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) { }
+
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING

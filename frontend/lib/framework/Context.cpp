@@ -1018,6 +1018,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   // changed since the last revision in which we computed this?
   // If so, compute it again.
   bool useSaved = true;
+  resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
     const QueryMapResultBase* dependencyQuery = dependency.query;
     if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
@@ -1042,6 +1043,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
       }
     }
   }
+  resultEntry->beingTestedForReuse = false;
 
   if (useSaved == false) {
     auto marker = markRecomputing(true);
@@ -1124,6 +1126,7 @@ bool Context::queryCanUseSavedResult(
     useSaved = false;
   } else {
     useSaved = true;
+    resultEntry->beingTestedForReuse = true;
     for (auto& dependency: resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
 
@@ -1142,6 +1145,7 @@ bool Context::queryCanUseSavedResult(
         break;
       }
     }
+    resultEntry->beingTestedForReuse = false;
     if (useSaved == true) {
       updateForReuse(resultEntry);
     }
@@ -1339,15 +1343,17 @@ void queryArgsPrintSep(std::ostream& s) {
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
+                   bool beingTestedForReuse,
                    bool emittedErrors,
                    bool errorsPresentInSelfOrDependencies,
                    std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
-    dependencies(),
+    beingTestedForReuse(beingTestedForReuse),
     emittedErrors(emittedErrors),
     errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
+    dependencies(),
     recursionErrors(std::move(recursionErrors)),
     errors(),
     parentQueryMap(parentQueryMap) {

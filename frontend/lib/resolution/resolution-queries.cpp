@@ -193,6 +193,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
+            child->isInterface() ||
             child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
@@ -2149,8 +2150,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   const TypedFnSignature* parentSignature = sig->parentFn();
   if (parentSignature) {
     for (auto up = parentSignature; up; up = up->parentFn()) {
-      CHPL_ASSERT(!up->needsInstantiation());
       if (up->needsInstantiation()) {
+        CHPL_UNIMPL("parent function needs instantiation");
         return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
       }
     }

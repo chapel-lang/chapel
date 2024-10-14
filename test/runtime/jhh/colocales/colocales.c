@@ -19,7 +19,8 @@ void Usage(char *name) {
   fprintf(stderr, "Usage: %s [-m mask] [-N nic] [-n numColocales] [-r rank]\n", name);
   fprintf(stderr, "\t-m <mask>\tMask off accessible PUs\n");
   fprintf(stderr, "\t-N <nic>\tNIC bus address\n");
-  fprintf(stderr, "\t-n <numLocales>\tNumber of locales on node\n");
+  fprintf(stderr, "\t-n <num>\tExpected number of co-locales on node\n");
+  fprintf(stderr, "\t-a <num>\tActual number of locales on node\n");
   fprintf(stderr, "\t-r <rank>\tLocal rank\n");
   fprintf(stderr, "\t-h\t\tPrint this message\n");
 }
@@ -31,18 +32,22 @@ int main(int argc, char* argv[]) {
   int *cpus = NULL;
   char *mask = NULL;
   int rank = -1;
-  int numLocales = 1;
-  char *numLocalesStr = "1";
+  int numCoLocales = -1;
+  char *numCoLocalesStr = NULL;
+  int numLocales = -1;
   char *nic = NULL;
 
-  while ((opt = getopt(argc, argv, "m:N:n:r:v")) != -1) {
+  while ((opt = getopt(argc, argv, "a:m:N:n:r:v")) != -1) {
     switch(opt) {
+      case 'a':
+        numLocales = atoi(optarg);
+        break;
       case 'm':
         mask = optarg;
         break;
       case 'n':
-        numLocales = atoi(optarg);
-        numLocalesStr = optarg;
+        numCoLocales = atoi(optarg);
+        numCoLocalesStr = optarg;
         break;
       case 'r':
         rank = atoi(optarg);
@@ -68,11 +73,28 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  if (rank >= numLocales) {
-    fprintf(stderr, "Rank must be less than number of locales on node.\n");
+  if (numCoLocales == -1) {
+    numCoLocales = 1;
+    numCoLocalesStr = "1";
+  }
+
+  if (numLocales == -1) {
+    numLocales = numCoLocales;
+  }
+
+  if (numLocales < 1) {
+    fprintf(stderr, "There must be > 0 locales on the node\n");
     exit(1);
   }
-  setenv("CHPL_RT_LOCALES_PER_NODE", numLocalesStr, 1);
+  if (rank >= numLocales) {
+    fprintf(stderr,
+            "Rank (%d) must be less than number of locales on node (%d).\n",
+            rank, numLocales);
+    exit(1);
+  }
+  if (numCoLocales > 0) {
+    setenv("CHPL_RT_LOCALES_PER_NODE", numCoLocalesStr, 1);
+  }
   chpl__init_colocales(0, 0); // unsure why this is needed
   chpl_topo_pre_comm_init(mask);
   chpl_comm_init(NULL, NULL);

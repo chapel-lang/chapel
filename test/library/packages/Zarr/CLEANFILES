@@ -8,3 +8,5 @@ LocalIOStore_*
 TestLocal
 TestTargetLocale
 TestNoCompressorSpecified
+ones
+twos
