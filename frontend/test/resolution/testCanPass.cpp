@@ -78,6 +78,13 @@ static bool passesInstantiates(CanPassResult r) {
          !r.converts() &&
          r.conversionKind() == CanPassResult::NONE;
 }
+static bool passesInstantiatesSubtype(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::SUBTYPE;
+}
 
 static bool passesInstantiatesBorrowing(CanPassResult r) {
   return r.passes() &&
@@ -416,6 +423,7 @@ static void test7() {
 
   auto borrowed = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
   auto borrowedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
+  auto unmanagedUnknown = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED);
   auto unmanaged = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED_NONNIL);
   auto unmanagedQ = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED_NILABLE);
   auto owned = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
@@ -434,6 +442,16 @@ static void test7() {
   auto unmanagedGenericRefQt = QualifiedType(
       QualifiedType::REF,
       ClassType::get(context, AnyClassType::get(context), nullptr, unmanagedQ));
+
+  auto unmanagedGenericTypeQt = QualifiedType(
+      QualifiedType::TYPE, ClassType::get(context, AnyClassType::get(context),
+                                          nullptr, unmanagedUnknown));
+  auto unmanagedGenericNonNilTypeQt = QualifiedType(
+      QualifiedType::TYPE, ClassType::get(context, AnyClassType::get(context),
+                                          nullptr, unmanaged));
+  auto unmanagedGenericNilTypeQt = QualifiedType(
+      QualifiedType::TYPE, ClassType::get(context, AnyClassType::get(context),
+                                          nullptr, unmanagedQ));
 
   auto ownedMgmt = AnyOwnedType::get(context);
 
@@ -576,6 +594,11 @@ static void test7() {
   // check passing to generic class type
   r = canPass(c, unmanagedChildQ, unmanagedGenericRefQt); assert(passesInstantiates(r));
   r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
+
+  // check passing to generic class type from generic-nilability class type
+  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNilTypeQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedGenericTypeQt, unmanagedGenericNonNilTypeQt); assert(doesNotPass(r));
+  r = canPass(c, unmanagedGenericNonNilTypeQt, unmanagedGenericNilTypeQt); assert(passesInstantiatesSubtype(r));
 }
 
 static void test8() {
