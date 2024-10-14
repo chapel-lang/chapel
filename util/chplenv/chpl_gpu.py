@@ -280,7 +280,7 @@ def get_gpu_compiler():
     bin_dir = os.path.join(sdk_path, 'bin')
     full_path = os.path.join(bin_dir, name)
     if not os.path.exists(full_path):
-        _reportMissingGpuReq("Could not find {} in {}".format(name, bin_dir))
+        _reportMissingGpuReq("Can't find {} in '{}'".format(name, bin_dir))
     return full_path
 
 
@@ -300,8 +300,8 @@ def get_sdk_path(for_gpu):
     if chpl_sdk_path:
         if for_gpu == get() and not validate_path(chpl_sdk_path):
             _reportMissingGpuReq(
-                "CHPL_GPU={} specified but SDK path '{}' does not exist."
-                .format(for_gpu, chpl_sdk_path))
+                "{}='{}' does not exist. Make sure the toolkit path is correct."
+                .format(gpu.sdk_path_env, chpl_sdk_path))
             return 'error'
         return chpl_sdk_path
 
@@ -310,8 +310,8 @@ def get_sdk_path(for_gpu):
     if sdk_path:
         if not validate_path(sdk_path):
             _reportMissingGpuReq(
-                "Can't find {} SDK path from '{}'. Try setting {}."
-                .format(for_gpu, gpu.compiler, gpu.sdk_path_env))
+                "Inferred {} toolkit is not valid. Try setting {}."
+                .format(gpu.runtime_impl, gpu.sdk_path_env))
             return 'error'
         return sdk_path
     elif for_gpu == get():
@@ -319,7 +319,12 @@ def get_sdk_path(for_gpu):
               .format(gpu.runtime_impl, gpu.compiler, gpu.sdk_path_env))
         return 'error'
     else:
-        return ''
+        return 'none'
+
+@memoize
+def is_sdk_path_user_specified(for_gpu):
+    return os.environ.get(GPU_TYPES[for_gpu].sdk_path_env) is not None
+
 
 def get_gpu_mem_strategy():
     memtype = os.environ.get("CHPL_GPU_MEM_STRATEGY")
@@ -392,7 +397,7 @@ def get_cuda_libdevice_path():
         compiler = get_gpu_compiler()
         libdevice = find_cuda_libdevice_path(compiler)
         if not libdevice:
-            _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is " "set such that CHPL_CUDA_PATH points to the CUDA installation.")
+            _reportMissingGpuReq("Can't determine libdevice path from {}".format(compiler))
             return 'error'
         return libdevice
     return "none"
@@ -402,7 +407,7 @@ def get_rocm_llvm_path():
         compiler = get_gpu_compiler()
         llvm_path = find_llvm_amd_bin_path(compiler)
         if not llvm_path:
-            _reportMissingGpuReq("Could not find llvm-amd in {}".format(compiler))
+            _reportMissingGpuReq("Can't determine AMD LLVM path from {}".format(compiler))
             return 'error'
         # strip bin path component (and trailing /)
         return os.path.dirname(llvm_path)
@@ -413,7 +418,7 @@ def get_rocm_amdgcn_path():
         compiler = get_gpu_compiler()
         amdgcn_path = find_amdgcn_path(compiler)
         if not amdgcn_path:
-            _reportMissingGpuReq("Could not find amdgcn in {}".format(compiler))
+            _reportMissingGpuReq("Can't determine amdgcn path from {}".format(compiler))
             return 'error'
         return amdgcn_path
     return 'none'
