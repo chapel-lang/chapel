@@ -399,13 +399,11 @@ int main() {
   testRectangular(context, "domain(2, int(8))", 2, "int(8)", "one");
   testRectangular(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
   testRectangular(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
-  context->collectGarbage();
 
   // TODO: re-enable associative
   // testAssociative(context, "domain(int)", "int", true);
   // testAssociative(context, "domain(int, false)", "int", false);
   // testAssociative(context, "domain(string)", "string", true);
-  // context->collectGarbage();
 
   testBadPass(context, "domain(1)", "domain(2)");
   testBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
@@ -414,7 +412,6 @@ int main() {
   // TODO: re-enable associative badPass
   // testBadPass(context, "domain(int)", "domain(string)");
   // testBadPass(context, "domain(1)", "domain(int)");
-  context->collectGarbage();
 
   testIndex(context, "domain(1)", "int");
   testIndex(context, "domain(2)", "2*int");
@@ -423,7 +420,6 @@ int main() {
   // TODO: re-enable associative indexes
   // testIndex(context, "domain(int)", "int");
   // testIndex(context, "domain(string)", "string");
-  context->collectGarbage();
 
   testBadDomain(context, "domain()");
   testBadDomain(context, "domain(1, 2, 3, 4)");

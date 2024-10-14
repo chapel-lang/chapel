@@ -943,22 +943,26 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         return instantiate();
       }
     }
-  } else if (auto actualPt = actualT->toCPtrType()) {
-    if (auto formalPt = formalT->toCPtrType()) {
+  } else if (auto actualPt = actualT->toPtrType()) {
+    if (auto formalPt = formalT->toPtrType()) {
       // Check first if they're direct instantiations (c_ptr(int(?w)) <- c_ptr(int)).
       if (actualPt->isInstantiationOf(context, formalPt)) {
         return instantiate();
       }
 
-      // Instantiation might still be possible, together with a coercion, if
-      // the formal is const but the actual isn't.
-      formalPt = formalPt->withoutConst(context);
+      if (auto actualCPt = actualPt->toCPtrType()) {
+        if (auto formalCPt = formalPt->toCPtrType()) {
+          // Instantiation might still be possible, together with a coercion, if
+          // the formal is const but the actual isn't.
+          formalCPt = formalCPt->withoutConst(context);
 
-      if (actualPt->isInstantiationOf(context, formalPt)) {
-        return CanPassResult(/* no fail reason, passes */ {},
-                             /* instantiates */ true,
-                             /* promotes */ false,
-                             /* converts */ ConversionKind::OTHER);
+          if (actualCPt->isInstantiationOf(context, formalCPt)) {
+            return CanPassResult(/* no fail reason, passes */ {},
+                                 /* instantiates */ true,
+                                 /* promotes */ false,
+                                 /* converts */ ConversionKind::OTHER);
+          }
+        }
       }
     }
   }
