@@ -448,7 +448,6 @@ class ScopedNodeAndRange:
         return ScopedNodeAndRange(node, scopes)
 
     @property
-    @functools.cache
     def rng(self):
         return location_to_range(self.node.location())
 
