@@ -6,7 +6,7 @@ from utils import memoize
 @memoize
 def get_uniq_cfg_path():
     def_uniq_cfg = third_party_utils.default_uniq_cfg_path()
-    lm = chpl_locale_model.get();
+    lm = chpl_locale_model.get()
     target_mem = chpl_mem.get('target')
     hwloc = chpl_hwloc.get()
     return '{0}-{1}-{2}-{3}'.format(def_uniq_cfg, lm, target_mem, hwloc)

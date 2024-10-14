@@ -81,7 +81,7 @@ class TestFramework(unittest.TestCase):
     def runCmd(self, cmd, env=None):
         if env is None:
             env = self.env
-        output = runCmd(cmd, env=env, check=False);
+        output = runCmd(cmd, env=env, check=False)
         return output
 
     # Returns a list of cores in the specified partition
@@ -324,7 +324,7 @@ class Ex2Tests(TestCases.TestCase):
         Warn about unused cores
         """
         output = self.runCmd("./colocales -r 0 -n 17")
-        self.assertIn("warning: 9 cores are unused\n", output);
+        self.assertIn("warning: 9 cores are unused\n", output)
 
     def test_13_remainder_node(self):
         """
@@ -384,7 +384,7 @@ class Ex3Tests(TestCases.TestCase):
         """
         Single locale gets all the GPUs
         """
-        output = self.runCmd("./colocales -r 0 -n 1");
+        output = self.runCmd("./colocales -r 0 -n 1")
         self.assertIn("GPUS: " + ' '.join(self.gpus), output)
 
     def test_11_two_colocales(self):
@@ -393,7 +393,7 @@ class Ex3Tests(TestCases.TestCase):
         """
         for i in range(0, 2):
             with self.subTest(i=i):
-                output = self.runCmd("./colocales -r %d -n 2" % i);
+                output = self.runCmd("./colocales -r %d -n 2" % i)
                 x = i * 2
                 self.assertIn("GPUS: " + ' '.join(self.gpus[x:x+1]), output)
 
@@ -403,7 +403,7 @@ class Ex3Tests(TestCases.TestCase):
         """
         for i in range(0, 4):
             with self.subTest(i=i):
-                output = self.runCmd("./colocales -r %d -n 4" % i);
+                output = self.runCmd("./colocales -r %d -n 4" % i)
                 self.assertIn("GPUS: " + self.gpus[i], output)
 
     def test_13_oversubscribed(self):
@@ -412,7 +412,7 @@ class Ex3Tests(TestCases.TestCase):
         """
         for i in range(0, 4):
             with self.subTest(i=i):
-                output = self.runCmd("./colocales -r %d -a 4" % i);
+                output = self.runCmd("./colocales -r %d -a 4" % i)
                 self.assertIn("GPUS: " + ' '.join(self.gpus), output)
 
 

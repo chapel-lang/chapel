@@ -28,9 +28,9 @@ def typeDecl2Chapel(decl, varname=None, isArray=False, isPtr=False):
     if not isinstance(decl, c_ast.TypeDecl):
         decl.show()
         raise c_parser.ParseError("Unable to parse type declaration at %s"%decl.coord)
-    tmp = decl.type;
+    tmp = decl.type
     if varname is None :
-        varname = decl.declname;
+        varname = decl.declname
     if not isinstance(tmp, c_ast.IdentifierType):
         decl.show()
         raise c_parser.ParseError("Unable to parse type declaration at %s"%decl.coord)

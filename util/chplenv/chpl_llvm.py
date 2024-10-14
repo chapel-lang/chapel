@@ -182,7 +182,7 @@ def check_llvm_packages(llvm_config):
                     contents = f.read()
                     if llvm_version in contents:
                         usr_include_clang_ok = True
-                        clang_include_ok = True;
+                        clang_include_ok = True
 
     llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
 
@@ -195,16 +195,16 @@ def check_llvm_packages(llvm_config):
         clang_lib_name = 'libclang-cpp.so'
 
     if os.path.isdir(llvm_lib_dir):
-        clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name);
+        clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name)
         clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
         if usr_include_clang_ok and not clang_cpp_lib_ok:
             # use e.g. /usr/lib/libclang-cpp.so
-            clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name);
+            clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name)
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
         if usr_include_clang_ok and not clang_cpp_lib_ok:
             # use e.g. /usr/lib64/libclang-cpp.so
-            clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name);
+            clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name)
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
     s = ''
@@ -822,7 +822,7 @@ def get_system_llvm_built_sdkroot():
 def get_clang_basic_args():
     clang_args = [ ]
 
-    gcc_install_dir = get_gcc_install_dir();
+    gcc_install_dir = get_gcc_install_dir()
     if gcc_install_dir:
         clang_args.append('--gcc-install-dir=' + gcc_install_dir)
     else:

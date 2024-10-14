@@ -23,7 +23,7 @@ def get_runtime_includes_and_defines():
 
     incl = chpl_home_utils.get_chpl_runtime_incl()
     locale_model = chpl_locale_model.get()
-    comm = chpl_comm.get();
+    comm = chpl_comm.get()
     tasks = chpl_tasks.get()
     atomics = chpl_atomics.get()
     mem = chpl_mem.get('target')
