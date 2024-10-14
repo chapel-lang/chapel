@@ -187,6 +187,10 @@ struct TConverter final : UastConverter {
   // stores a mapping from chpl::Type* to Type*
   std::unordered_map<const types::Type*, Type*> convertedTypes;
 
+  // so that TConverter can process one module (or function) at a time,
+  // encountering a submodule, if it is to be converted, add it to this
+  // list for processing just after the current module.
+  std::vector<const uast::Module*> submodulesEncountered;
 
   /// Methods ///
 
@@ -244,6 +248,9 @@ struct TConverter final : UastConverter {
 
   ModuleSymbol* convertToplevelModule(const Module* mod,
                                       ModTag modTag) override;
+
+  ModuleSymbol* convertModule(const Module* mod);
+
 
   void postConvertApplyFixups() override;
 
@@ -505,17 +512,34 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
     haveConvertedFunctions = true;
   }
 
+  topLevelModTag = modTag;
+  return convertModule(mod);
+}
+
+
+ModuleSymbol* TConverter::convertModule(const Module* mod) {
   astlocMarker markAstLoc(mod->id());
 
   ModuleSymbol* modSym = findOrSetupModule(mod->id());
 
   // TODO: remove this block once the resolver is fully operational
   if (modSym->modTag != MOD_USER) {
-    return untypedConverter->convertToplevelModule(mod, modTag);
+    return untypedConverter->convertToplevelModule(mod, modSym->modTag);
   }
 
-  topLevelModTag = modTag;
+  // convert the module init while gathering submodules
+  submodulesEncountered.clear();
   convertModuleInit(mod, modSym);
+
+  // Additionally, convert any submodules encontered.
+  // This is handled as a follow-on step in order to avoid storing
+  // various pieces of TConverter state in a stack.
+  for (const uast::Module* submod : submodulesEncountered) {
+    ModuleSymbol* subSym = convertModule(submod);
+    // add the DefExpr now (to match the untyped Converter)
+    modSym->block->insertAtHead(new DefExpr(subSym));
+  }
+  submodulesEncountered.clear();
 
   return modSym;
 }
@@ -628,8 +652,8 @@ ModuleSymbol* TConverter::setupModule(ID modId) {
   // This code does not add a DefExpr for the new module
   // * for toplevel modules, that happens in the code calling
   //   convertToplevelModule
-  // * for submodules, that happens in the visit function for a Module.
-  //
+  // * for submodules, that happens in convertModule for
+  //   the containing module.
 
   return modSym;
 }
@@ -1498,22 +1522,11 @@ bool TConverter::enter(const Module* node, RV& rv) {
     printf("Proceeding with module converting\n");
     return true;
   } else {
-    printf("Converting a submodule\n");
-
-    // it is a submodule.
-    // Set up to convert the submodule's module init function
-    // with a separate call to traverse.
-    ModuleSymbol* modSym = findOrSetupModule(node->id());
-    convertModuleInit(node, modSym);
-
-    // add the DefExpr now (to match the untyped Converter)
-    ID parentModuleId = parsing::idToParentModule(context, node->id());
-    ModuleSymbol* parentModule = findOrSetupModule(parentModuleId);
-    parentModule->block->insertAtHead(new DefExpr(modSym));
+    printf("Recording a submodule\n");
+    submodulesEncountered.push_back(node);
 
     return false;
   }
-
   return true;
 }
 void TConverter::exit(const Module* node, RV& rv) {
