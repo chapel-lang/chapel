@@ -2312,7 +2312,7 @@ module ChapelBase {
   // casting to unmanaged?, no class downcast
   pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class?)
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+    where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
@@ -2328,7 +2328,7 @@ module ChapelBase {
   // casting to unmanaged, no class downcast
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class)
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+    where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
@@ -2336,7 +2336,7 @@ module ChapelBase {
   // casting to unmanaged, no class downcast
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+    where isSubtype(_to_nilable(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
   }
@@ -2355,17 +2355,6 @@ module ChapelBase {
   // casting away nilability, no class downcast
   inline operator :(x:borrowed class?, type t:borrowed class)  throws
     where isSubtype(_to_nonnil(x.type),t)
-  {
-    if x == nil {
-      throw new owned NilClassError();
-    }
-    return __primitive("cast", t, x);
-  }
-
-  // casting away nilability, no class downcast
-  pragma "last resort"
-  inline operator :(x:borrowed class?, type t:unmanaged class)  throws
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
       throw new owned NilClassError();
