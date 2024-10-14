@@ -709,7 +709,7 @@ uint64_t qthread_syncvar_incrF(syncvar_t *restrict operand, uint64_t inc);
 
 Q_ENDCXX /* */
 
-#ifndef __cplusplus
+#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
 
 #define qthread_incr(ADDR, INCVAL) __sync_fetch_and_add(ADDR, INCVAL)
 
