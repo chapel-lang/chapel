@@ -303,18 +303,6 @@ struct TConverter final : UastConverter {
     printf("\n");
 
     Expr* ret = nullptr;
-    /*{
-      // update the parentExpr and parentSymbol pointers for the new nodes
-      auto& back = aListStack.back();
-      AList& alist = *back.first;
-      Expr* parentExpr = back.second;
-      Symbol* parentSymbol = curFnSymbol;
-      for_alist(ast, alist) {
-        insert_help(ast, parentExpr, parentSymbol);
-      }
-      ret = parentExpr;
-    }*/
-
     ret = aListStack.back().second;
 
     aListStack.pop_back();
