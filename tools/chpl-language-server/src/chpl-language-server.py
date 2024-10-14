@@ -1165,7 +1165,7 @@ class ChapelLanguageServer(LanguageServer):
         then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
 
-        Most of the tiem, we will create a new context for a given URI. When
+        Most of the time, we will create a new context for a given URI. When
         requested, however, context_id will be used to create a FileInfo
         for a specific context. This is useful if e.g., file A wants to display
         an instantiation in file B.
@@ -1493,7 +1493,7 @@ class ChapelLanguageServer(LanguageServer):
                 MessageType.Error,
             )
             return None
-        uid, idx, ctx = item.data
+        uid, inst_id, ctx = item.data
 
         fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
@@ -1509,7 +1509,7 @@ class ChapelLanguageServer(LanguageServer):
             # We don't handle that here.
             return None
 
-        instantiation = fi.context.retrieve_signature(idx)
+        instantiation = fi.context.retrieve_signature(inst_id)
 
         return (fi, fn, instantiation)
 
