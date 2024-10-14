@@ -2318,6 +2318,7 @@ module ChapelBase {
   }
 
   // casting to unmanaged, no class downcast
+  pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
@@ -2325,6 +2326,7 @@ module ChapelBase {
   }
 
   // casting to unmanaged, no class downcast
+  pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
