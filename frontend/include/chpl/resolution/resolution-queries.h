@@ -303,7 +303,9 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
                                                       ID id);
 
 /**
-  Compute the return/yield type for a function.
+  Compute the return type for a function. If the function is an iterator,
+  the return type will be an `IteratorType`. To compute the yield type,
+  see `yieldType`.
 
   TODO: If the function returns a param, the param's value may not
   be available. This is because the function body is not resolved when
@@ -316,7 +318,7 @@ types::QualifiedType returnType(ResolutionContext* rc,
 
 /**
   An iterator-specific variant of 'returnType' which does not wrap the
-  function's return in an IterableType, returning instead the type of values
+  function's return in an `IterableType`, returning instead the type of values
   yielded by the function.
  */
 types::QualifiedType yieldType(ResolutionContext* rc,
