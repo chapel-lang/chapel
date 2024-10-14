@@ -139,6 +139,7 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
         await check_goto_decl_def_module(client, doc, pos((1, 10)), mod_Map)
         await check_goto_decl_def_module(client, doc, pos((2, 8)), mod_Time)
 
+
 @pytest.mark.asyncio
 async def test_go_to_definition_use_across_modules(client: LanguageClient):
     """
@@ -162,7 +163,9 @@ async def test_go_to_definition_use_across_modules(client: LanguageClient):
         docB = docs("B")
 
         await check_goto_decl_def_module(client, docB, pos((1, 6)), docA)
-        await check_goto_decl_def(client, docB, pos((2, 10)), (docA, pos((1, 6))))
+        await check_goto_decl_def(
+            client, docB, pos((2, 10)), (docA, pos((1, 6)))
+        )
 
     async with source_files(client, A=fileA, B=fileB) as docs:
         await check(docs)
