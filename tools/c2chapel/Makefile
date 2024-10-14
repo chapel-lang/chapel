@@ -35,7 +35,7 @@ link=$(bdir)/c2chapel
 
 # Note, this version is used only for the fake headers,
 # but it should probably match third-party/chpl-venv/c2chapel-requirements.txt
-VERSION=2.20
+VERSION=2.22
 TAR=release_v$(VERSION).tar.gz
 
 RELEASE=https://github.com/eliben/pycparser/archive/$(TAR)

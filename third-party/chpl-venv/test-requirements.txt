@@ -1,4 +1,4 @@
 PyYAML==6.0.2
-filelock==3.12.2
-argcomplete==3.1.2
-setuptools==68.0.0
+filelock==3.16.1
+argcomplete==3.5.1
+setuptools==75.1.0
