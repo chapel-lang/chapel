@@ -156,7 +156,6 @@ bool isVirtualIterator(FnSymbol* iterFn);
 // normalize.cpp
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
-//void normalizeReturns(FnSymbol* fn);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);

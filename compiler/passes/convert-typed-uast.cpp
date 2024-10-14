@@ -86,6 +86,8 @@ struct TConverter final : UastConverter {
 
   // State required to mimic the desugaring of multi-declarations into
   // regular ones.
+  // TODO: this is a copy from the untyped converter and needs to be
+  // modified when multi-decls are supported in the typed converter.
   struct MultiDeclState {
     // The result of computing the target locale, stored in a temp, used
     // for remote variables.
@@ -133,7 +135,7 @@ struct TConverter final : UastConverter {
   const AstNode* symbol = nullptr; // Module* or Function*
   FnSymbol* curFnSymbol = nullptr; // corresponding to the above
   ModuleSymbol* curModuleSymbol = nullptr; // corresponding to the above
-  Symbol* rvv = nullptr;
+  Symbol* rvv = nullptr; // the return value variable from the current function
   LabelSymbol* epilogueLabel = nullptr;
 
   // When converting an expression or a statement, where should we

@@ -49,8 +49,12 @@ class UastConverter {
   virtual void
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
-  // This function helps the TConverter to work with a Converter
-  virtual void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) = 0;
+  // This function helps the TConverter to work with an untyped Converter.
+  // It informs the untyped Converter about the ModuleSymbol* for the
+  // given module ID. This allows it to update a map to support mentions
+  // of that module in code that is converted in an untyped way.
+  virtual void useModuleWhenConverting(const chpl::ID& modId,
+                                       ModuleSymbol* modSym) = 0;
 
   // convert a toplevel module
   virtual ModuleSymbol*

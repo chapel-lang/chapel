@@ -1970,14 +1970,14 @@ void Visitor::checkIterNames(const Function* node) {
   return;
 }
 
-struct CountReturnsYields {
+struct CountReturns {
   const Function* symbol = nullptr;
   int nReturnSomething = 0;
   int nReturnEmpty = 0;
   const Return* firstReturnSomething = nullptr;
   const Return* firstReturnEmpty = nullptr;
 
-  CountReturnsYields(const Function* symbol)
+  CountReturns(const Function* symbol)
     : symbol(symbol) {
   }
 
@@ -2011,7 +2011,7 @@ struct CountReturnsYields {
 };
 
 void Visitor::checkFunctionReturnsYields(const Function* node) {
-  auto counter = CountReturnsYields(node);
+  auto counter = CountReturns(node);
   node->traverse(counter);
 
   if (counter.nReturnSomething > 0 && counter.nReturnEmpty > 0) {

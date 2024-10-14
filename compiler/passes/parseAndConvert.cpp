@@ -297,18 +297,6 @@ static void loadAndConvertModules(UastConverter& c) {
       }
     }
 
-    // TODO: debug code
-    std::vector<std::string> v;
-    for (auto kv : calledFns) {
-      v.push_back(kv.first->id().symbolPath().str() +
-                  " depth=" + std::to_string(kv.second));
-    }
-    std::sort(v.begin(), v.end());
-    printf("These are the gathered functions:\n");
-    for (auto p : v) {
-      printf("  %s\n", p.c_str());
-    }
-
     c.setFunctionsToConvertWithTypes(std::move(calledFns));
   }
 
