@@ -66,6 +66,22 @@ def _find_cuda_sdk_path(compiler: str):
     match = re.search(regex, out, re.MULTILINE)
     return match.group(1) if match else None
 
+def find_cuda_libdevice_path(compiler: str):
+    out = gpu_compiler_basic_compile(compiler, "cu")
+    if not out:
+        return None
+    regex = r"^#\$ NVVMIR_LIBRARY_DIR=(.+)$"
+    match = re.search(regex, out, re.MULTILINE)
+    if not match:
+        return None
+    libdevice_path = match.group(1)
+    # there can be multiple libdevices for multiple compute architectures. Not
+    # sure how realistic that is, nor I see multiple instances in the systems I
+    # have access to. They are always named `libdevice.10.bc`, but I just want
+    # to be sure here.
+    libdevices = glob.glob(os.path.join(libdevice_path, "libdevice.*.bc"))
+    return libdevices[0] if len(libdevices) > 0 else None
+
 
 def find_llvm_amd_bin_path(compiler: str):
     out = gpu_compiler_basic_compile(compiler, "hip")
@@ -375,29 +391,11 @@ def get_cuda_libdevice_path():
     if get() == 'nvidia':
         # TODO this only makes sense when we are generating for nvidia
         compiler = get_gpu_compiler()
-        out = gpu_compiler_basic_compile(compiler, "cu")
-        if not out:
+        libdevice = find_cuda_libdevice_path(compiler)
+        if not libdevice:
             _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is " "set such that CHPL_CUDA_PATH points to the CUDA installation.")
-            return "error"
-        regex = r"^#\$ NVVMIR_LIBRARY_DIR=(.+)$"
-        match = re.search(regex, out, re.MULTILINE)
-        if not match:
-            _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
-                  "set such that CHPL_CUDA_PATH points to the CUDA installation.")
-            return 'error' 
-        libdevice_path = match.group(1)
-        # there can be multiple libdevices for multiple compute architectures. Not
-        # sure how realistic that is, nor I see multiple instances in the systems I
-        # have access to. They are always named `libdevice.10.bc`, but I just want
-        # to be sure here.
-        libdevices = glob.glob(os.path.join(libdevice_path, "libdevice.*.bc"))
-        if len(libdevices) == 0:
-            _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
-                  "set such that CHPL_CUDA_PATH{} exists.")
             return 'error'
-        else:
-            return libdevices[0]
-
+        return libdevice
     return "none"
 
 def get_rocm_llvm_path():
