@@ -210,6 +210,11 @@ public:
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byPostorder_.byAst(ast);
   }
+  /** Return the ResolvedExpression for a particular uAST node,
+      or nullptr if none is present*/
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return byPostorder_.byAstOrNull(ast);
+  }
   /** Returns if the ResolutionResultByPostorderID has a result for
       a particular ID */
   bool hasId(const ID& id) const {

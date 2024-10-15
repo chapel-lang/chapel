@@ -66,6 +66,9 @@ class Bitmap {
   bool operator!=(const Bitmap& other) const {
     return !(*this == other);
   }
+  bool operator<(const Bitmap& other) const {
+    return bits_ < other.bits_;
+  }
   void swap(Bitmap& other) {
     bits_.swap(other.bits_);
   }

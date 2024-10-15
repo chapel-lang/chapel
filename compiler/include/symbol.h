@@ -669,10 +669,10 @@ public:
 class TemporaryConversionSymbol final : public Symbol {
 public:
   chpl::ID symId;
-  const chpl::resolution::TypedFnSignature* sig;
+  const chpl::resolution::ResolvedFunction* rfn;
 
   explicit TemporaryConversionSymbol(chpl::ID symId);
-  explicit TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+  explicit TemporaryConversionSymbol(const chpl::resolution::ResolvedFunction* rfn);
 
   void  verify()                                          override;
   void  accept(AstVisitor* visitor)                       override;

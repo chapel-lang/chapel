@@ -928,7 +928,6 @@ TypedFnSignature::getInferred(
                              inferredFrom->outerVariables()).get();
 }
 
-
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
 
@@ -1066,7 +1065,8 @@ void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
 bool PoiInfo::canReuse(const PoiInfo& check) const {
   CHPL_ASSERT(resolved_ && !check.resolved_);
 
-  return false; // TODO -- consider function names etc -- see PR #16261
+  // Performance TODO: consider function names etc -- see PR #16261
+  return false;
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
