@@ -394,3 +394,32 @@ else()
   install(TARGETS chpldoc OPTIONAL
           RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()
+
+set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+if (${CHPL_OFFICIAL_RELEASE})
+  set(RELEASE_FLAG "--official-release")
+else()
+  set(RELEASE_FLAG "")
+endif()
+add_custom_target(update-release-and-version-info ALL
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/util/config/update-release-and-version-info
+          ${CHPL_MAJOR_VERSION}
+          ${CHPL_MINOR_VERSION}
+          ${CHPL_PATCH_VERSION}
+          "--files"
+          ${SRC_DIR}/doc/rst/conf.py
+          ${SRC_DIR}/man/confchpl.rst
+          ${SRC_DIR}/man/confchpldoc.rst
+          ${SRC_DIR}/doc/rst/language/archivedSpecs.rst
+          ${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst
+          ${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh
+          ${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh
+          ${SRC_DIR}/doc/util/versionButton.php
+          ${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart
+          ${RELEASE_FLAG}
+  COMMENT "checking sensitive files for version changes..."
+  VERBATIM)
+add_dependencies(chpl update-release-and-version-info)
+add_dependencies(chpldoc update-release-and-version-info)
+add_dependencies(ChplFrontend-obj update-release-and-version-info)
