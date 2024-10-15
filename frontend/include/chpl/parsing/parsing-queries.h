@@ -184,6 +184,11 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path);
 const std::vector<ID>& toplevelModulesInFile(Context* context,
                                              UniqueString path);
 
+/** Given a module ID, returns the ID of a 'main' function
+    provided in that module, or the empty ID if none was present.
+ */
+ID findProcMainInModule(Context* context, ID modId);
+
 /**
   Given the modules from files named on the command line,
   determine which module is the main module, and return it.

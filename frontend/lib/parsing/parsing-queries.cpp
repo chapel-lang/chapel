@@ -351,23 +351,50 @@ struct FindMain {
         !fn->isMethod()) {
       mainProcsFound.push_back(fn);
     }
-    return true;
+    // no need to consider nested functions or
+    // modules nested within functions
+    return false;
   }
   void exit(const Function* fn) { }
 
   bool enter(const Module* mod) {
     modulesFound.push_back(mod);
-    return true;
+    return true; // to look for submodules or main functions
   }
   void exit(const Module* mod) { }
 
-  // traverse through anything else
   bool enter(const AstNode* ast) {
-    return true;
+    return false;
   }
   void exit(const AstNode* ast) { }
 };
 
+static const ID& findProcMainInModuleImpl(Context* context, ID modId) {
+  QUERY_BEGIN(findProcMainInModuleImpl, context, modId);
+
+  ID result;
+
+  auto findMain = FindMain(context);
+  if (const AstNode* ast = idToAst(context, modId)) {
+    if (auto mod = ast->toModule()) {
+      mod->traverse(findMain);
+    }
+  }
+
+  if (findMain.mainProcsFound.size() > 0) {
+    result = findMain.mainProcsFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findProcMainInModule(Context* context, ID modId) {
+  if (modId.isEmpty()) {
+    return ID();
+  }
+
+  return findProcMainInModuleImpl(context, modId);
+}
 
 static const ID& findMainModuleImpl(Context* context,
                                     std::vector<ID> commandLineModules,
