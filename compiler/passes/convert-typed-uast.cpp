@@ -553,6 +553,32 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
   }
   submodulesEncountered.clear();
 
+  // handle 'proc main' and 'chpl_gen_main'
+  if (mod->id() == mainModuleId) {
+    // if 'proc main' was not provided, generate an empty 'proc main'.
+    //
+    // (if there was a main function there, we would have already converted it,
+    //  since it needed to be included in the call graph).
+    ID mainFnId = parsing::findProcMainInModule(context, mainModuleId);
+    FnSymbol* mainFn = nullptr;
+    if (mainFnId.isEmpty()) {
+      // there wasn't a 'proc main' so we need to generate one.
+      SET_LINENO(modSym);
+      mainFn = new FnSymbol("main");
+      mainFn->addFlag(FLAG_RESOLVED);
+      mainFn->retType = dtVoid;
+      mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+      modSym->block->insertAtTail(new DefExpr(mainFn));
+    } else {
+      const ResolvedFunction* resolvedMain =
+        resolveConcreteFunction(context, mainFnId);
+      mainFn = toFnSymbol(fns[resolvedMain]);
+      INT_ASSERT(mainFn);
+    }
+
+    // TODO: handle generating 'chpl_gen_main'
+  }
+
   return modSym;
 }
 
@@ -692,6 +718,8 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   modSym->block->insertAtHead(new DefExpr(modSym->initFn));
 
   // TODO: handle module deinit functions
+  // TODO: call module init functions for other modules
+
 
   // convert module-level statements into module's init function
 
