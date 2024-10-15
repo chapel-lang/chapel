@@ -29,11 +29,13 @@
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
+#include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
 #include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
+#include "chpl/types/PtrType.h"
 #include "chpl/types/RealType.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/types/UintType.h"
@@ -105,6 +107,7 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "chpl_c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
+  gatherType(context, map, "_ddata", HeapBufferType::get(context));
 
   gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
@@ -188,7 +191,7 @@ bool Type::isLocaleType() const {
 }
 
 bool Type::isNilablePtrType() const {
-  if (isPtrType()) {
+  if (isPointerLikeType()) {
 
     if (auto ct = toClassType()) {
       if (!ct->decorator().isNilable())

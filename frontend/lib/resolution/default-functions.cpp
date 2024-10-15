@@ -146,8 +146,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "domain" || name == "eltType") {
       return true;
     }
-  } else if (type->isCPtrType()) {
+  } else if (type->isPtrType()) {
     if (name == "eltType") {
+      return true;
+    } else if (type->isHeapBufferType() && name == "this") {
       return true;
     }
   } else if (type->isEnumType()) {
@@ -986,11 +988,11 @@ generateRecordComparison(Context* context, const CompositeType* lhsType) {
 }
 
 static const TypedFnSignature*
-generateCPtrMethod(Context* context, QualifiedType receiverType,
+generatePtrMethod(Context* context, QualifiedType receiverType,
                    UniqueString name) {
-  // Build a basic function signature for methods on a cptr
+  // Build a basic function signature for methods on a PtrType
   // TODO: we should really have a way to just set the return type here
-  const CPtrType* cpt = receiverType.type()->toCPtrType();
+  const PtrType* pt = receiverType.type()->toPtrType();
   const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
@@ -999,13 +1001,20 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
       UntypedFnSignature::FormalDetail(USTR("this"),
                                        UntypedFnSignature::DK_NO_DEFAULT,
                                        nullptr));
-
   // Allow calling 'eltType' on either a type or value
   auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
-  formalTypes.push_back(QualifiedType(qual, cpt));
+  formalTypes.push_back(QualifiedType(qual, pt));
+
+  if (name == "this") {
+    formals.push_back(UntypedFnSignature::FormalDetail(
+        UniqueString::get(context, "i"), UntypedFnSignature::DK_NO_DEFAULT,
+        nullptr));
+    formalTypes.push_back(
+        QualifiedType(QualifiedType::VAR, AnyIntegralType::get(context)));
+  }
 
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ cpt->id(context),
+                        /*id*/ pt->id(context),
                         /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
@@ -1081,7 +1090,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isCPtrType() || type->isEnumType());
+    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -1105,8 +1114,8 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       } else {
         CHPL_UNIMPL("record method not implemented yet!");
       }
-    } else if (type->isCPtrType()) {
-      result = generateCPtrMethod(context, receiverType, name);
+    } else if (type->isPtrType()) {
+      result = generatePtrMethod(context, receiverType, name);
     } else if (auto enumType = type->toEnumType()) {
       result = generateEnumMethod(context, enumType, name);
     } else {
@@ -1216,12 +1225,12 @@ generateCastToEnum(Context* context,
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  // Normalize recieverType to allow TYPE methods on c_ptr, and to otherwise
-  // use the VAR Kind. The Param* value is also stripped away to reduce
-  // queries.
+  // Normalize recieverType to allow TYPE methods on c_ptr and _ddata, and to
+  // otherwise use the VAR Kind. The Param* value is also stripped away to
+  // reduce queries.
   auto qt = receiverType;
-  bool isCPtr = qt.hasTypePtr() ? qt.type()->isCPtrType() : false;
-  if (!(qt.isType() && isCPtr)) {
+  bool isPtr = qt.hasTypePtr() ? qt.type()->isPtrType() : false;
+  if (!(qt.isType() && isPtr)) {
     qt = QualifiedType(QualifiedType::VAR, qt.type());
   }
   return getCompilerGeneratedMethodQuery(context, qt, name, parenless);

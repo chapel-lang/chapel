@@ -40,7 +40,7 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
       t->isOpaqueType() || t->isTaskIdType()  || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
-      t->isNothingType() || t->isVoidType() || t->isCPtrType())
+      t->isNothingType() || t->isVoidType() || t->isPtrType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
@@ -72,7 +72,7 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
 
   if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
       t->isOpaqueType() || t->isTaskIdType() ||  t->isNilType() ||
-      t->isCStringType() || t->isCVoidPtrType() || t->isCPtrType() ||
+      t->isCStringType() || t->isCVoidPtrType() || t->isPtrType() ||
       t->isCFnPtrType() || t->isNothingType() || t->isVoidType())
     return QualifiedType::CONST_IN;
 

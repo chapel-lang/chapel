@@ -278,7 +278,7 @@ struct TConverter final : UastConverter {
   // type conversion helpers
   Type* helpConvertType(const types::Type* t);
   Type* convertClassType(const types::ClassType* t);
-  Type* convertCPtrType(const types::CPtrType* t);
+  Type* convertPtrType(const types::PtrType* t);
   Type* convertEnumType(const types::EnumType* t);
   Type* convertExternType(const types::ExternType* t);
   Type* convertFunctionType(const types::FunctionType* t);
@@ -833,13 +833,14 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::UnionType:       return convertUnionType(t->toUnionType());
 
     // primitive types
-    case typetags::BoolType:     return convertBoolType(t->toBoolType());
-    case typetags::ComplexType:  return convertComplexType(t->toComplexType());
-    case typetags::ImagType:     return convertImagType(t->toImagType());
-    case typetags::IntType:      return convertIntType(t->toIntType());
-    case typetags::RealType:     return convertRealType(t->toRealType());
-    case typetags::UintType:     return convertUintType(t->toUintType());
-    case typetags::CPtrType:     return convertCPtrType(t->toCPtrType());
+    case typetags::BoolType:       return convertBoolType(t->toBoolType());
+    case typetags::ComplexType:    return convertComplexType(t->toComplexType());
+    case typetags::ImagType:       return convertImagType(t->toImagType());
+    case typetags::IntType:        return convertIntType(t->toIntType());
+    case typetags::RealType:       return convertRealType(t->toRealType());
+    case typetags::UintType:       return convertUintType(t->toUintType());
+    case typetags::CPtrType:       return convertPtrType(t->toPtrType());
+    case typetags::HeapBufferType: return convertPtrType(t->toPtrType());
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -854,6 +855,8 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::END_PrimitiveType:
     case typetags::START_IteratorType:
     case typetags::END_IteratorType:
+    case typetags::START_PtrType:
+    case typetags::END_PtrType:
     case typetags::NUM_TYPE_TAGS:
       INT_FATAL("should not be reachable");
       return dtUnknown;
@@ -892,11 +895,17 @@ Type* TConverter::convertClassType(const types::ClassType* t) {
   return nullptr;
 }
 
-Type* TConverter::convertCPtrType(const types::CPtrType* t) {
-  // find the C pointer type to instantiate
-  AggregateType* base = t->isConst() ? dtCPointerConst : dtCPointer;
+Type* TConverter::convertPtrType(const types::PtrType* t) {
+  // find the pointer type to instantiate
+  AggregateType* base = nullptr;
+  if (auto ct = t->toCPtrType()) {
+    base = ct->isConst() ? dtCPointerConst : dtCPointer;
+  } else {
+    INT_ASSERT(t->toHeapBufferType());
+    base = dtHeapBuffer;
+  }
 
-  // handle 'c_ptr' and 'c_ptrConst' without an element type
+  // handle ptr without an element type
   if (t->eltType() == nullptr) {
     return base;
   }
@@ -904,7 +913,7 @@ Type* TConverter::convertCPtrType(const types::CPtrType* t) {
   auto qt = types::QualifiedType(types::QualifiedType::TYPE, t);
 
   if (base->numFields() == 0) {
-    // the proper AST for CPointer hasn't been created yet,
+    // the proper AST for the pointer type hasn't been created yet,
     // and we need it to proceed, so return a temporary conversion symbol.
     return new TemporaryConversionType(qt);
   }

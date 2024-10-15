@@ -1542,7 +1542,7 @@ ReceiverScopeTypedHelper::methodLookupForType(Context* context,
                                               QualifiedType type) const {
   if (const Type* typePtr = type.type()) {
     if (typePtr->getCompositeType() ||
-        typePtr->isCPtrType() ||
+        typePtr->isPtrType() ||
         typePtr->isExternType()) {
       // OK, it's a type that we need to gather receiver scopes for
 

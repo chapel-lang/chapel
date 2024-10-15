@@ -55,6 +55,7 @@ AggregateType* dtTuple;
 // these are only used when the dyno resolver is active
 AggregateType* dtCPointer;
 AggregateType* dtCPointerConst;
+AggregateType* dtHeapBuffer;
 
 Type* dt_c_int;
 Type* dt_c_uint;
@@ -201,6 +202,7 @@ static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
   { "_tuple",     nullptr,        &dtTuple,         false },
   { "c_ptr",      "c_ptr",        &dtCPointer,      true },
   { "c_ptrConst", "c_ptrConst",   &dtCPointerConst, true },
+  { "_ddata",     "_ddata",       &dtHeapBuffer,    true },
 };
 
 struct WellKnownType

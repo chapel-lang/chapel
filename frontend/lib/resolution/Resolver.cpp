@@ -887,12 +887,13 @@ static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
   return false;
 }
 
-static bool isCallToCPtr(const AstNode* formalTypeExpr) {
+static bool isCallToPtr(const AstNode* formalTypeExpr) {
   if (auto call = formalTypeExpr->toFnCall()) {
     if (auto calledAst = call->calledExpression()) {
       if (auto calledIdent = calledAst->toIdentifier()) {
         UniqueString n = calledIdent->name();
-        if (n == USTR("c_ptr") || n == USTR("c_ptrConst")) {
+        if (n == USTR("c_ptr") || n == USTR("c_ptrConst") ||
+            n == USTR("_ddata")) {
           return true;
         }
       }
@@ -976,12 +977,12 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           }
         }
       }
-    } else if (isCallToCPtr(formalTypeExpr)) {
+    } else if (isCallToPtr(formalTypeExpr)) {
       // If it is e.g. c_ptr(TypeQuery), resolve the type query to the eltType
       // Set the type that we know (since it was passed in)
       if (call->numActuals() == 1) {
         if (auto tq = call->actual(0)->toTypeQuery()) {
-          if (auto pt = actualTypePtr->toCPtrType()) {
+          if (auto pt = actualTypePtr->toPtrType()) {
             ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedElt);
@@ -2441,12 +2442,14 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
-  // Intercept the standard library `c_ptr` and `c_ptrConst` and turn them into
-  // the builtin type.
+  // Intercept the standard library `c_ptr`, `c_ptrConst`, and `_ddata`, and
+  // turn them into the appropriate builtin type.
   if (id == CPtrType::getId(context)) {
     return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
   } else if (id == CPtrType::getConstId(context)) {
     return QualifiedType(QualifiedType::TYPE, CPtrType::getConst(context));
+  } else if (id == HeapBufferType::getId(context)) {
+    return QualifiedType(QualifiedType::TYPE, HeapBufferType::get(context));
   }
 
   // if the id is contained within this symbol,
