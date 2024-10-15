@@ -45,7 +45,6 @@ chplvars = [
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
-             'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
              'CHPL_COMM_OFI_OOB',
 
