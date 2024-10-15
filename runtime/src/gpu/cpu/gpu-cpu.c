@@ -202,10 +202,8 @@ void chpl_gpu_impl_host_unregister(void* var) { }
 
 #undef DEF_ONE_SORT
 
-void chpl_gpu_impl_name(int dev, char **result) {
-  char* name = (char *)chpl_mem_alloc(0xFF, CHPL_RT_MD_IO_BUFFER, __LINE__, 0);
-  strcpy(name, "chapel-cpu-as-device-gpu");
-  *result = name;
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  strcpy(resultBuffer, "chapel-cpu-as-device-gpu");
 }
 
 const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = 0;
@@ -253,8 +251,8 @@ const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = 41;
 const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = 42;
 
 int chpl_gpu_impl_query_attribute(int dev, int attribute) {
-  chpl_internal_error(
-    "querying gpu attributes is currently unsupported in cpu-as-device mode.");
+  chpl_warning(
+    "querying gpu attributes is currently unsupported in cpu-as-device mode.",0,0);
   return -1;
 }
 
