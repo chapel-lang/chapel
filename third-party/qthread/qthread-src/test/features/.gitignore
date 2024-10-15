@@ -3,7 +3,6 @@ barrier
 cxx_futurelib
 cxx_qt_loop
 cxx_qt_loop_balance
-eureka
 qarray
 qarray_accum
 qdqueue

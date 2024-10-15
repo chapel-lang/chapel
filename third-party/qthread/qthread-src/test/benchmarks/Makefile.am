@@ -25,10 +25,8 @@ generic_benchmarks = \
 
 thesis_benchmarks = \
                     time_allpairs \
-                    time_wavefront
-if HAVE_LIBM
-thesis_benchmarks += time_qutil_qsort
-endif
+                    time_wavefront \
+                    time_qutil_qsort
 
 pmea09_benchmarks = \
                     time_qarray \
@@ -52,16 +50,13 @@ mtaap08_benchmarks = \
                      time_thrcrt_bench_pthread \
                      time_cncthr_bench \
                      time_cncthr_bench_pthread
-uts_benchmarks =
-if HAVE_LIBM
-uts_benchmarks += \
+uts_benchmarks = \
                  time_uts_syncvar \
                  time_uts_aligned \
                  time_uts_sinc \
                  time_uts_donecount \
                  time_uts_donecount2 \
                  time_uts_donecount3
-endif
 mt_benchmarks = \
                 time_task_spawn \
                 time_eager_future \
@@ -70,11 +65,8 @@ mt_benchmarks = \
 sc12_benchmarks = \
                   spawn_sequential_qthreads \
                   spawn_parallel_qthreads \
-                  fib_qthreads
-
-if HAVE_LIBM
-sc12_benchmarks += uts_qthreads
-endif
+                  fib_qthreads \
+                  uts_qthreads
 
 if COMPILE_OMP_BENCHMARKS
 generic_benchmarks += time_threading.omp
@@ -86,10 +78,8 @@ mt_benchmarks += \
 sc12_benchmarks += \
                    spawn_sequential_omp \
                    spawn_parallel_omp \
-                   fib_omp
-if HAVE_LIBM
-sc12_benchmarks += uts_omp
-endif
+                   fib_omp \
+                   uts_omp
 endif
 
 if COMPILE_TBB_BENCHMARKS
@@ -104,10 +94,8 @@ mt_benchmarks += \
 sc12_benchmarks += \
                    spawn_sequential_tbb \
                    spawn_parallel_tbb \
-                   fib_tbb
-if HAVE_LIBM
-sc12_benchmarks += uts_tbb
-endif
+                   fib_tbb \
+                   uts_tbb
 endif
 
 if COMPILE_CILK_BENCHMARKS
@@ -119,10 +107,8 @@ mt_benchmarks += \
 sc12_benchmarks += \
                    spawn_sequential_cilk \
                    spawn_parallel_cilk \
-                   fib_cilk
-if HAVE_LIBM
-sc12_benchmarks += uts_cilk
-endif
+                   fib_cilk \
+                   uts_cilk
 endif
 
 benchmarks = \
@@ -161,10 +147,8 @@ time_allpairs_SOURCES = thesis/time_allpairs.c
 
 time_wavefront_SOURCES = thesis/time_wavefront.c
 
-if HAVE_LIBM
 time_qutil_qsort_SOURCES = thesis/time_qutil_qsort.c
 time_qutil_qsort_LDADD = -lm $(qthreadlib)
-endif
 
 time_qarray_SOURCES = pmea09/time_qarray.c
 
@@ -257,7 +241,6 @@ time_qt_loops_SOURCES = generic/time_qt_loops.c
 
 time_qt_loopaccums_SOURCES = generic/time_qt_loopaccums.c
 
-if HAVE_LIBM
 if COMPILE_OMP_BENCHMARKS
 time_uts_omp_SOURCES = uts/time_uts_omp.c
 time_uts_omp_LDADD = $(LDADD) -lm $(utils_rnglib)
@@ -292,7 +275,6 @@ time_uts_donecount2_LDADD = $(LDADD) -lm $(utils_rnglib)
 
 time_uts_donecount3_SOURCES = uts/time_uts_donecount3.c
 time_uts_donecount3_LDADD = $(LDADD) -lm $(utils_rnglib)
-endif
 
 time_task_spawn_SOURCES = mt/time_task_spawn.c
 
@@ -333,10 +315,8 @@ spawn_parallel_qthreads_SOURCES = sc12/spawn_parallel_qthreads.c
 
 fib_qthreads_SOURCES = sc12/fib_qthreads.c
 
-if HAVE_LIBM
 uts_qthreads_SOURCES = sc12/uts_qthreads.c
 uts_qthreads_LDADD = $(LDADD) -lm $(utils_rnglib)
-endif
 
 if COMPILE_OMP_BENCHMARKS
 time_omp_eager_future_SOURCES = mt/time_omp_eager_future.c
@@ -351,11 +331,9 @@ spawn_parallel_omp_CFLAGS = @OPENMP_CFLAGS@
 fib_omp_SOURCES = sc12/fib_omp.c
 fib_omp_CFLAGS = @OPENMP_CFLAGS@
 
-if HAVE_LIBM
 uts_omp_SOURCES = sc12/uts_omp.c
 uts_omp_LDADD = $(LDADD) -lm $(utils_rnglib)
 uts_omp_CFLAGS = @OPENMP_CFLAGS@
-endif
 endif
 
 if COMPILE_TBB_BENCHMARKS
@@ -368,11 +346,9 @@ spawn_parallel_tbb_LDFLAGS = @TBB_LIBS@
 fib_tbb_SOURCES = sc12/fib_tbb.cc
 fib_tbb_LDFLAGS = @TBB_LIBS@
 
-if HAVE_LIBM
 uts_tbb_SOURCES = sc12/uts_tbb.cc
 uts_tbb_LDADD = $(LDADD) -lm $(utils_rnglib)
 uts_tbb_LDFLAGS = @TBB_LIBS@
-endif
 endif
 
 if COMPILE_CILK_BENCHMARKS
@@ -382,10 +358,8 @@ spawn_parallel_cilk_SOURCES = sc12/spawn_parallel_cilk.c
 
 fib_cilk_SOURCES = sc12/fib_cilk.c
 
-if HAVE_LIBM
 uts_cilk_SOURCES = sc12/uts_cilk.c
 uts_cilk_LDADD = $(LDADD) -lm $(utils_rnglib)
-endif
 endif
 
 # vim: set expandtab

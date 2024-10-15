@@ -1,10 +1,10 @@
+#include "argparsing.h"
+#include <assert.h>
 #include <math.h>
+#include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <unistd.h>
-#include <qthread/qthread.h>
-#include "argparsing.h"
 
 #include <inttypes.h>
 
@@ -12,8 +12,8 @@
  * Chapel compiler. This is a demonstration generated in an attempt to figure
  * out whether a given race condition is in qthreads on in Chapel */
 
-static uint64_t bufferSize = 1024;      /* size of the circular buffer */
-static uint64_t numItems;       /* number of items to write to buffer */
+static uint64_t bufferSize = 1024; /* size of the circular buffer */
+static uint64_t numItems;          /* number of items to write to buffer */
 
 /*
  * Circular buffer of synchronization variables, which store
@@ -28,86 +28,78 @@ static syncvar_t *buff = NULL;
  * buffer starting at location 0 and wrapping around when it hits the end of
  * the buffer. It then writes the value -1 as a sentinel to the next position.
  */
-static aligned_t producer(void *arg)
-{
-    for (unsigned int i = 0; i < numItems; ++i) {
-        const unsigned int buffInd = i % bufferSize;
-        qthread_syncvar_writeEF_const(&buff[buffInd], i);
-        iprintf("producer wrote value #%u\n", i);
-    }
-    qthread_syncvar_writeEF_const(&buff[numItems % bufferSize],
-                                  INT64TOINT60(-1));
-    iprintf("producer wrote terminus value #%"PRIu64"\n", INT64TOINT60(-1));
+static aligned_t producer(void *arg) {
+  for (unsigned int i = 0; i < numItems; ++i) {
+    unsigned int const buffInd = i % bufferSize;
+    qthread_syncvar_writeEF_const(&buff[buffInd], i);
+    iprintf("producer wrote value #%u\n", i);
+  }
+  qthread_syncvar_writeEF_const(&buff[numItems % bufferSize], INT64TOINT60(-1));
+  iprintf("producer wrote terminus value #%" PRIu64 "\n", INT64TOINT60(-1));
 
-    return 0;
+  return 0;
 }
 
 /*
  * The readFromBuff() iterator simply reads values from the shared buffer
  * starting at the 0th position and yields them.
  */
-static int64_t readFromBuff(void)
-{
-    static unsigned int ind = 0;
-    uint64_t readVal;
-    int64_t nextVal;
+static int64_t readFromBuff(void) {
+  static unsigned int ind = 0;
+  uint64_t readVal;
+  int64_t nextVal;
 
-    qthread_syncvar_readFE(&readVal, &buff[ind]);
-    nextVal = INT60TOINT64(readVal);
-    if (nextVal != -1) {
-        ind = (ind + 1) % bufferSize;
-    }
-    return nextVal;
+  qthread_syncvar_readFE(&readVal, &buff[ind]);
+  nextVal = INT60TOINT64(readVal);
+  if (nextVal != -1) { ind = (ind + 1) % bufferSize; }
+  return nextVal;
 }
 
 /*
  * the consumer invokes an iterator to control its loop and yield values from
  * the shared buffer. It writes them out to the console.
  */
-static aligned_t consumer(void *arg)
-{
-    int64_t buffVal;
+static aligned_t consumer(void *arg) {
+  int64_t buffVal;
 
-    while ((buffVal = readFromBuff()) != -1) {
-        iprintf("Consumer got: %li\n", (long)buffVal);
-    }
+  while ((buffVal = readFromBuff()) != -1) {
+    iprintf("Consumer got: %li\n", (long)buffVal);
+  }
 
-    return 0;
+  return 0;
 }
 
 /*
  * The main procedure simply creates a producer and a consumer task to run in
  * parallel
  */
-int main(int argc,
-         char *argv[])
-{
-    aligned_t t[2];
+int main(int argc, char *argv[]) {
+  aligned_t t[2];
 
-    assert(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
 
-    CHECK_VERBOSE();
-    NUMARG(bufferSize, "BUFFERSIZE");
-    numItems = 8 * bufferSize;
-    NUMARG(numItems, "NUMITEMS");
+  CHECK_VERBOSE();
+  NUMARG(bufferSize, "BUFFERSIZE");
+  numItems = 8 * bufferSize;
+  NUMARG(numItems, "NUMITEMS");
 
-    iprintf("%i threads...\n", qthread_num_shepherds());
+  iprintf("%i threads...\n", qthread_num_shepherds());
 
-    buff = malloc(sizeof(syncvar_t) * bufferSize);
-    for (unsigned int i = 0; i < bufferSize; ++i) {
-        buff[i] = SYNCVAR_EMPTY_INITIALIZER;
-    }
+  buff = malloc(sizeof(syncvar_t) * bufferSize);
+  for (unsigned int i = 0; i < bufferSize; ++i) {
+    buff[i] = SYNCVAR_EMPTY_INITIALIZER;
+  }
 
-    qthread_fork(consumer, NULL, &t[0]);
-    qthread_fork(producer, NULL, &t[1]);
-    qthread_readFF(NULL, &t[0]);
-    qthread_readFF(NULL, &t[1]);
+  qthread_fork(consumer, NULL, &t[0]);
+  qthread_fork(producer, NULL, &t[1]);
+  qthread_readFF(NULL, &t[0]);
+  qthread_readFF(NULL, &t[1]);
 
-    free(buff);
+  free(buff);
 
-    iprintf("Success!\n");
+  iprintf("Success!\n");
 
-    return 0;
+  return 0;
 }
 
 /* vim:set expandtab */
