@@ -49,6 +49,9 @@ class UastConverter {
   virtual void
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
+  // Indicate which module is the main module
+  virtual void setMainModule(chpl::ID mainModule) = 0;
+
   // This function helps the TConverter to work with an untyped Converter.
   // It informs the untyped Converter about the ModuleSymbol* for the
   // given module ID. This allows it to update a map to support mentions

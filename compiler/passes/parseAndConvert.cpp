@@ -277,6 +277,9 @@ static void loadAndConvertModules(UastConverter& c) {
                                                 commandLineModules);
 
 
+  // note the main module
+  c.setMainModule(mainModule);
+
   // Compute the set of functions to fully resolve when using --dyno.
   // This allows us to avoid resolving functions that aren't called.
   if (fDynoCompilerLibrary) {
@@ -298,6 +301,10 @@ static void loadAndConvertModules(UastConverter& c) {
         gatherTransitiveFnsCalledByModInit(gContext, id, calledFns);
       }
     }
+
+    // also gather functions called from 'proc main'
+    ID mainFnId = parsing::findProcMainInModule(gContext, mainModule);
+    gatherTransitiveFnsForFnId(gContext, mainFnId, calledFns);
 
     c.setFunctionsToConvertWithTypes(std::move(calledFns));
   }

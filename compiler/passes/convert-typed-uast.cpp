@@ -166,6 +166,9 @@ struct TConverter final : UastConverter {
   // which functions to convert with types
   CalledFnsSet functionsToConvertWithTypes;
 
+  // the main module
+  ID mainModuleId;
+
   // keeps track of which block/formals list/actuals list we are currently
   // in the process of creating
   //
@@ -239,6 +242,13 @@ struct TConverter final : UastConverter {
     functionsToConvertWithTypes = calledFns;
     // also tell the untyped converter about them so it can ignore them!
     untypedConverter->setFunctionsToConvertWithTypes(calledFns);
+  }
+
+  void setMainModule(ID mainModule) override {
+    if (trace)
+      printf("in setMainModule with %s\n", mainModule.str().c_str());
+
+    mainModuleId = mainModule;
   }
 
   void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {

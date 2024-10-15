@@ -156,6 +156,10 @@ struct Converter final : UastConverter {
     }
   }
 
+  void setMainModule(ID mainModule) override {
+    // no action needed here
+  }
+
   void setFunctionsToConvertWithTypes(const resolution::CalledFnsSet& calledFns) override
   {
     // the concrete functions that are converted with types should be
