@@ -680,7 +680,7 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
 #ifndef GPU_RUNTIME_CPU
   if (!chpl_gpu_can_reduce()) {
     chpl_internal_error("The runtime is built with a software stack that does "
-                        "not support reductions (e.g. ROCm 4.x). `reduce` "
+                        "not support reductions. `reduce` "
                         "expressions and intents are not supported");
   }
 #endif
