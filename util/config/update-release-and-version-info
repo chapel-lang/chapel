@@ -61,10 +61,11 @@ class ArchivedSpecUpdater(FileUpdater):
           lines = self.read_file()
           archive_string = "* `Chapel {}.{} <https://chapel-lang.org/docs/{}.{}/index.html>`_\n".format(self.major_version, self.minor_version - 1, self.major_version, self.minor_version - 1)
           any_changed = False
-          for i, line in enumerate(lines):
-            if line.startswith('Online Documentation Archives') and not line[i+2] == archive_string.strip():
-              lines.insert(i + 2, archive_string)
-              any_changed = True
+          if not archive_string in lines:
+            for i, line in enumerate(lines):
+              if line.startswith('Online Documentation Archives'):
+                lines.insert(i + 2, archive_string)
+                any_changed = True
           if any_changed:
               self.write_file(lines)
 
@@ -132,7 +133,6 @@ class VersionHelpUpdater(FileUpdater):
             elif line.startswith("echo \"\""):
                 lines[i] = "# {}".format(line)
                 any_changed = True
-
         if any_changed:
           self.write_file(lines)
 
@@ -184,7 +184,7 @@ def main():
       else:
           raise ValueError("Unrecognized file name: {}".format(fpath))
 
-    updater.update()
+      updater.update()
 
 if __name__ == "__main__":
     main()
