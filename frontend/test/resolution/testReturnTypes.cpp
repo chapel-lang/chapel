@@ -1141,6 +1141,36 @@ static void testCPtrEltType() {
     assert(qt.type()->toUintType()->bitwidth() == 8);
   }
 }
+
+static void testChildClasses() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string program = R"""(
+  class Parent {}
+
+  class A : Parent {}
+  class B : Parent {}
+
+  proc test(cond : bool = false) : Parent {
+    if cond then return new A();
+    else return new B();
+  }
+
+  var x = test();
+  )""";
+
+  auto qt = resolveTypeOfXInit(context, program);
+
+  auto ct = qt.type()->toClassType();
+  assert(ct);
+  auto mt = ct->manageableType();
+  assert(mt);
+  auto bct = mt->toBasicClassType();
+  assert(bct);
+  assert(bct->name() == "Parent");
+}
+
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -1192,5 +1222,8 @@ int main() {
   testSelectParams();
 
   testCPtrEltType();
+
+  testChildClasses();
+
   return 0;
 }
