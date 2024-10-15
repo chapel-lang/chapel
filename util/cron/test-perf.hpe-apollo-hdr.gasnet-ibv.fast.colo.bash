@@ -24,7 +24,4 @@ export CHPL_GASNET_MORE_CFG_OPTIONS=--enable-pshm
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ibv-fast-colo -numtrials 1 -sync-dir-suffix colocales"
 
-# Remove this for production
-export CHPL_NIGHTLY_TEST_DIRS=release/examples/benchmarks
-
 $CWD/nightly -cron ${perf_args} ${perf_hpe_apollo_args} ${nightly_args}
