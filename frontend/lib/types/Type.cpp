@@ -191,7 +191,7 @@ bool Type::isLocaleType() const {
 }
 
 bool Type::isNilablePtrType() const {
-  if (isAnyPtrType()) {
+  if (isPointerLikeType()) {
 
     if (auto ct = toClassType()) {
       if (!ct->decorator().isNilable())

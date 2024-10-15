@@ -230,7 +230,7 @@ class Type {
   }
 
   /** returns true for a type that is a kind of pointer */
-  bool isAnyPtrType() const {
+  bool isPointerLikeType() const {
     return isClassType() || isCFnPtrType() || isCVoidPtrType() || isPtrType();
   }
 
