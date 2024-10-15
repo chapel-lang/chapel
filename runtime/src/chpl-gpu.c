@@ -1583,7 +1583,10 @@ GPU_CUB_WRAP(DEF_ONE_SORT, keys)
 #undef DEF_ONE_SORT
 
 void chpl_gpu_name(int dev, char **result) {
-  chpl_gpu_impl_name(dev, result);
+  const int BUFFER_SIZE = 0xFF;
+  char* resultBuffer = (char *)chpl_mem_alloc(BUFFER_SIZE, CHPL_RT_MD_IO_BUFFER, __LINE__, 0);
+  chpl_gpu_impl_name(dev, resultBuffer, BUFFER_SIZE);
+  *result = resultBuffer;
 }
 
 int chpl_gpu_query_attribute(int dev, int attribute) {

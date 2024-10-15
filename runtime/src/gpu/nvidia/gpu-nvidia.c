@@ -461,10 +461,8 @@ void chpl_gpu_impl_host_unregister(void* var) {
   CUDA_CALL(cuMemHostUnregister(var));
 }
 
-void chpl_gpu_impl_name(int dev, char **result) {
-  char* name = (char *)chpl_mem_alloc(0xFF, CHPL_RT_MD_IO_BUFFER, __LINE__, 0);
-  CUDA_CALL(cuDeviceGetName(name, 0xFF, chpl_gpu_devices[dev]));
-  *result = name;
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  CUDA_CALL(cuDeviceGetName(resultBuffer, bufferSize, chpl_gpu_devices[dev]));
 }
 
 const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK;
