@@ -156,33 +156,33 @@ class GoodStartUpdater(FileUpdater):
 
 def main():
     parser = argparse.ArgumentParser(description='Update the version and release/pre-release info in files')
-    parser.add_argument('file', help='The file to update')
+    parser.add_argument('-f', '--files', nargs="+", help='The file(s) to update')
     parser.add_argument('major_version', type=int, help='The major version of Chapel')
     parser.add_argument('minor_version', type=int, help='The minor version of Chapel')
     parser.add_argument('patch_version', type=int, help='The patch version of Chapel')
     parser.add_argument('--official-release', dest='release', action="store_true", help='Is this an official release?')
 
     args = parser.parse_args()
-
-    # Determine which updater to use based on the file name or other criteria
-    if args.file.endswith('conf.py'):
-        updater = ConfPyUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('confchpl.rst') or args.file.endswith('confchpldoc.rst'):
-        updater = ManConfUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('archivedSpecs.rst'):
-        updater = ArchivedSpecUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('QUICKSTART.rst'):
-        updater = QuickStartUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('chplenv.rst'):
-        updater = ChplEnvUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('versionhelp.sh') or args.file.endswith('versionhelp-chpldoc.sh'):
-        updater = VersionHelpUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('versionButton.php'):
-        updater = VersionButtonUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    elif args.file.endswith('version.goodstart'):
-        updater = GoodStartUpdater(args.file, args.major_version, args.minor_version, args.patch_version, args.release)
-    else:
-        raise ValueError("Unrecognized file name: {}".format(args.file))
+    for fpath in args.files:
+      # Determine which updater to use based on the file name or other criteria
+      if fpath.endswith('conf.py'):
+          updater = ConfPyUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('confchpl.rst') or fpath.endswith('confchpldoc.rst'):
+          updater = ManConfUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('archivedSpecs.rst'):
+          updater = ArchivedSpecUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('QUICKSTART.rst'):
+          updater = QuickStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('chplenv.rst'):
+          updater = ChplEnvUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('versionhelp.sh') or fpath.endswith('versionhelp-chpldoc.sh'):
+          updater = VersionHelpUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('versionButton.php'):
+          updater = VersionButtonUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('version.goodstart'):
+          updater = GoodStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      else:
+          raise ValueError("Unrecognized file name: {}".format(fpath))
 
     updater.update()
 
