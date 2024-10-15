@@ -1,0 +1,5 @@
+nested-method-implicit-field-access.chpl:19: In method 'outer':
+nested-method-implicit-field-access.chpl:21: error: unresolved call 'Y.x'
+nested-method-implicit-field-access.chpl:4: note: this candidate did not match: X.x
+nested-method-implicit-field-access.chpl:21: note: because method call receiver with type 'Y'
+nested-method-implicit-field-access.chpl:4: note: is passed to formal 'ref this: X'
