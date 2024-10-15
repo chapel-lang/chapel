@@ -2311,45 +2311,41 @@ module ChapelBase {
 
   // casting to unmanaged?, no class downcast
   pragma "last resort"
-  inline operator :(x:borrowed class?, type t:unmanaged class?)
-    where isSubtype(_to_unmanaged(x.type),t)
+  inline operator :(xn:borrowed class?, type tn:unmanaged class?)
+    where isNilableClass(xn) && isNilableClass(tn) && isSubtype(_to_unmanaged(xn.type),tn)
   {
     return __primitive("to nilable class",
-        (__primitive("to unmanaged class",
-        (__primitive("cast", t, x)))));
+        __primitive("to unmanaged class", xn));
   }
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
-  inline operator :(x:borrowed class?, type t:unmanaged class) throws
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+  inline operator :(xn:borrowed class?, type t:unmanaged class) throws
+    where isNilableClass(xn) && isNonNilableClass(t) && isSubtype(_to_nonnil(_to_unmanaged(xn.type)),t)
   {
-    if x == nil {
+    if xn == nil {
       throw new owned NilClassError();
     }
     return __primitive("to non nilable class",
-        (__primitive("to unmanaged class",
-        (__primitive("cast", t, x)))));
+        __primitive("to unmanaged class", xn));
   }
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class)
-    where isSubtype(_to_unmanaged(x.type),t)
+    where isNonNilableClass(x) && isNonNilableClass(t) && isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("to non nilable class",
-        (__primitive("to unmanaged class",
-        (__primitive("cast", t, x)))));
+        __primitive("to unmanaged class", x));
   }
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
-  inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isSubtype(_to_nilable(_to_unmanaged(x.type)),t)
+  inline operator :(x:borrowed class, type tn:unmanaged class?)
+    where isNonNilableClass(x) && isNilableClass(tn) && isSubtype(_to_nilable(_to_unmanaged(x.type)),tn)
   {
     return __primitive("to nilable class",
-        (__primitive("to unmanaged class",
-        (__primitive("cast", t, x)))));
+        __primitive("to unmanaged class", x));
   }
 
   // casting away nilability, no class downcast
