@@ -162,7 +162,7 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version between 4.x and 5.4 or between ROCm 6.0 and 6.2 must be
+  * ROCm version between 5.0 and 5.4 or between ROCm 6.0 and 6.2 must be
     installed.
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
@@ -512,7 +512,7 @@ its own.
 
 For AMD
 ^^^^^^^
-The ROCm 4.x and 5.x versions we support do not support enabling
+The ROCm 5.x versions we support do not support enabling
 peer-to-peer communication in the way above. However, for optimum bandwidth
 between two devices ``export HSA_ENABLE_SDMA=0`` can be used. This will enable
 using multiple Infinity Fabric links between GPUs/GCDs. However, note that it
@@ -669,7 +669,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: MI60*, MI100 and MI250X*
 
-  * Software:ROCm 4.2*, 4.4, 5.4*, 6.0, 6.1, 6.2*
+  * Software:ROCm 5.4*, 6.0, 6.1, 6.2*
 
 
 GPU Support on Windows Subsystem for Linux

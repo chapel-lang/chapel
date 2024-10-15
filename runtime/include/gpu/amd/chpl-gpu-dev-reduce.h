@@ -27,10 +27,8 @@
 #include <hip/hip_runtime.h>
 #include "gpu/amd/rocm-utils.h"
 
-#if ROCM_VERSION_MAJOR >= 5
 // if we include this all the time, we get unused function errors
 #include <hipcub/hipcub.hpp>
-#endif
 
 //
 // TODO use chpl-gpu-reduce-util instead, or add these there
@@ -56,7 +54,6 @@
   GPU_DEV_REDUCE_SPECS(MACRO, impl_kind, chpl_kind, _real64) \
 
 
-#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_DEV_SUM_REDUCE(impl_kind, chpl_kind, data_type, block_size) \
 __device__ static inline void \
 chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
@@ -69,22 +66,13 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
     interim_res[blockIdx.x] = res; \
   } \
 }
-#else
-// we don't produce an error message here, because the final reduction will
-// trigger the error. On device, the best we could do is printf, which would
-// result in a wall of text
-#define DEF_ONE_DEV_SUM_REDUCE(impl_kind, chpl_kind, data_type, block_size) \
-__device__ static inline void \
-chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
-                                                              data_type* interim_res) { \
-}
-#endif
+
 
 GPU_DEV_REDUCE(DEF_ONE_DEV_SUM_REDUCE, Sum, sum);
 
 #undef DEF_ONE_DEV_SUM_REDUCE
 
-#if ROCM_VERSION_MAJOR >= 5
+
 #define DEF_ONE_DEV_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type, block_size) \
 __device__ static inline void \
 chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
@@ -97,17 +85,6 @@ chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_v
     interim_res[blockIdx.x] = res; \
   } \
 }
-#else
-// we don't produce an error message here, because the final reduction will
-// trigger the error. On device, the best we could do is printf, which would
-// result in a wall of text
-#define DEF_ONE_DEV_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type, block_size) \
-__device__ static inline void \
-chpl_gpu_dev_##chpl_kind##_breduce_##data_type##_##block_size(data_type thread_val, \
-                                                              data_type* interim_res) { \
-\
-}
-#endif
 
 GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Min, min);
 GPU_DEV_REDUCE(DEF_ONE_DEV_REDUCE_RET_VAL, Max, max);
