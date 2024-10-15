@@ -26,7 +26,7 @@ namespace chpl {
 namespace {
   std::string buildSphinxMarkupRegexp() {
     // See documentation on inline Sphinx markup here:
-    // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+    // https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
     // There are some details involved in this, but the main idea is to match
     // strings of the form:
     // 
