@@ -3741,28 +3741,30 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  // explicit param casts are resolved here
+  // special casts including explicit param casts are resolved here
   if (ci.isOpCall() && ci.name() == USTR(":")) {
-    auto src = ci.actual(0).type();
-    auto dst = ci.actual(1).type();
+    auto srcQt = ci.actual(0).type();
+    auto dstQt = ci.actual(1).type();
+    auto srcTy = srcQt.type();
+    auto dstTy = dstQt.type();
 
-    auto targetParamGuess = Param::tryGuessParamTagFromType(dst.type());
-    if (!targetParamGuess) {
+    auto targetParamGuess = Param::tryGuessParamTagFromType(dstQt.type());
+    if (srcQt.isParam() && !targetParamGuess) {
       // We're casting a param value, but the destination type can't be
       // a param. This should be treated as a non-special cast.
       return false;
     }
 
-    bool isDstType = dst.kind() == QualifiedType::TYPE;
-    bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
+    bool isDstType = dstQt.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = srcQt.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
-        auto srcEnumType = src.type()->toEnumType();
-        auto dstEnumType = dst.type()->toEnumType();
+        auto srcQtEnumType = srcTy->toEnumType();
+        auto dstQtEnumType = dstTy->toEnumType();
 
-        if (srcEnumType && dst.type()->isStringType()) {
+        if (srcQtEnumType && dstTy->isStringType()) {
           std::ostringstream oss;
-          src.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+          srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
           auto ustr = UniqueString::get(context, oss.str());
           exprTypeOut = QualifiedType(QualifiedType::PARAM,
                                       RecordType::getStringType(context),
@@ -3770,14 +3772,14 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         }
 
-        if (srcEnumType && srcEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
+        if (srcQtEnumType && srcQtEnumType->isAbstract()) {
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
           return true;
-        } else if (dstEnumType && dstEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstEnumType, src.type());
+        } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
           return true;
-        } else if (srcEnumType && dst.type()->toNothingType()) {
-          auto fromName = tagToString(src.type()->tag());
+        } else if (srcQtEnumType && dstTy->toNothingType()) {
+          auto fromName = tagToString(srcTy->tag());
           context->error(astForErr, "illegal cast from %s to nothing", fromName);
           exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                       ErroneousType::get(context));
@@ -3785,21 +3787,35 @@ static bool resolveFnCallSpecial(Context* context,
         }
 
         exprTypeOut = Param::fold(context, astForErr,
-                                  uast::PrimitiveTag::PRIM_CAST, src, dst);
+                                  uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
         return true;
-    } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+    } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
       // handle casting a type name to a string
       std::ostringstream oss;
-      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       auto ustr = UniqueString::get(context, oss.str());
       exprTypeOut = QualifiedType(QualifiedType::PARAM,
                                   RecordType::getStringType(context),
                                   StringParam::get(context, ustr));
       return true;
+    } else if (srcTy->isClassType() && dstTy->isClassType()) {
+      // cast (borrowed class) : unmanaged
+      auto srcClass = srcTy->toClassType();
+      auto dstClass = dstTy->toClassType();
+      if (srcClass->decorator().isBorrowed() &&
+          dstClass->manageableType()->isAnyClassType() &&
+          dstClass->decorator().isUnmanaged()) {
+        auto decorator = ClassTypeDecorator(ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED);
+        decorator = decorator.copyNilabilityFrom(srcClass->decorator());
+        auto outTy = ClassType::get(context, srcClass->manageableType(),
+                                    nullptr, decorator);
+        exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+        return true;
+      }
     } else if (!isDstType) {
       // trying to cast to something that's not a type
-      auto toName = tagToString(dst.type()->tag());
-      auto fromName = tagToString(src.type()->tag());
+      auto toName = tagToString(dstTy->tag());
+      auto fromName = tagToString(srcTy->tag());
       context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
