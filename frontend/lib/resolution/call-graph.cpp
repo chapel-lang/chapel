@@ -193,14 +193,16 @@ int gatherTransitiveFnsForFnId(Context* context,
                                CalledFnsSet& called) {
   const ResolvedFunction* fn = resolveConcreteFunction(context, fnId);
 
-  CalledFnOrder order = {0, 0};
-  auto pair = called.insert({fn, order});
-  if (pair.second) {
-    // insertion took place, so increment the index
-    order.index++;
-    // gather the transitive calls
-    order.depth = 1;
-    return 1 + gatherTransitiveFnsCalledByFn(context, fn, order, called);
+  if (fn != nullptr) {
+    CalledFnOrder order = {0, 0};
+    auto pair = called.insert({fn, order});
+    if (pair.second) {
+      // insertion took place, so increment the index
+      order.index++;
+      // gather the transitive calls
+      order.depth = 1;
+      return 1 + gatherTransitiveFnsCalledByFn(context, fn, order, called);
+    }
   }
 
   return 0;
