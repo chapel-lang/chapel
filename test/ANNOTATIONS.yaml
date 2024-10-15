@@ -1230,9 +1230,10 @@ mandelbrot:
     - Mandelbrot tweaks (#5188)
   05/08/24:
     - Remove complex math function wrappers for LLVM 16+ (#25019)
-  10/10/24:
+  10/08/24:
     - Fix complex support with CHPL_LOCALE_MODEL=gpu (#26048)
-
+  10/14/24:
+    - Resolve performance regression with complex math functions (#26080)
 
 mandelbrot-extras:
   01/03/14:
@@ -2499,8 +2500,12 @@ arkouda: &arkouda-base
     - Array transfer perf fix (Bears-R-Us/arkouda#3671)
   8/27/24:
     - Fix performance regression in to_ndarray (Bears-R-Us/arkouda#3697)
+  09/26/24:
+    - Closes 3757 ak.array gives unexpected results on a transposed numpy multi dimensional array (Bears-R-Us/arkouda#3761)
   09/27/24:
     - Use Chapel 2.2 for Arkouda "release" nightly testing (#26014)
+  10/09/24:
+    - Fix array transfer performance regression (Bears-R-Us/arkouda#3826)
 
 arkouda-string:
   <<: *arkouda-base
