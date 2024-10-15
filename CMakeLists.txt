@@ -404,66 +404,19 @@ endif()
 add_custom_target(update-release-and-version-info ALL
   COMMAND ${CHPL_CMAKE_PYTHON}
           ${SRC_DIR}/util/config/update-release-and-version-info
+          ${CHPL_MAJOR_VERSION}
+          ${CHPL_MINOR_VERSION}
+          ${CHPL_PATCH_VERSION}
+          "--files"
           ${SRC_DIR}/doc/rst/conf.py
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/man/confchpl.rst
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/man/confchpldoc.rst
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/doc/rst/language/archivedSpecs.rst
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/doc/util/versionButton.php
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
-          ${RELEASE_FLAG}
-  COMMAND ${CHPL_CMAKE_PYTHON}
-          ${SRC_DIR}/util/config/update-release-and-version-info
           ${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart
-          ${CHPL_MAJOR_VERSION}
-          ${CHPL_MINOR_VERSION}
-          ${CHPL_PATCH_VERSION}
           ${RELEASE_FLAG}
   COMMENT "checking sensitive files for version changes..."
   VERBATIM)
