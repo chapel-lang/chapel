@@ -676,7 +676,7 @@ def get_gcc_prefix_dir():
         else:
             # Try to figure out the GCC prefix by running gcc
             out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
-            out = out + err
+            out = (out or '') + (err or '')
 
             # look for the --prefix= specified when GCC was configured
             words = out.split()

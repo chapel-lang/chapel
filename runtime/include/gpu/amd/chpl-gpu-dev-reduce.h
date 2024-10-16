@@ -25,7 +25,6 @@
 #include "chpltypes.h"
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
-#include "gpu/amd/rocm-version.h"
 #include "gpu/amd/rocm-utils.h"
 
 #if ROCM_VERSION_MAJOR >= 5

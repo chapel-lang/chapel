@@ -30,7 +30,6 @@
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
 #include "gpu/amd/rocm-utils.h"
-#include "gpu/amd/rocm-version.h"
 #include "chpl-topo.h"
 
 #include <assert.h>
