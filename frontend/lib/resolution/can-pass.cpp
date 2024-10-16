@@ -1285,6 +1285,9 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
 static optional<QualifiedType> findByAncestor(
     Context* context, const std::vector<QualifiedType>& types,
     const KindRequirement& requiredKind) {
+  // Disallow subtype conversion for ref intent.
+  if (requiredKind && isRefQualifier(*requiredKind)) return chpl::empty;
+
   std::vector<QualifiedType> parentTypes;
   for (const auto& type : types) {
     auto ct = type.type()->toClassType();
