@@ -1230,8 +1230,10 @@ mandelbrot:
     - Mandelbrot tweaks (#5188)
   05/08/24:
     - Remove complex math function wrappers for LLVM 16+ (#25019)
-  10/10/24:
+  10/9/24:
     - Fix complex support with CHPL_LOCALE_MODEL=gpu (#26048)
+  10/15/24:
+    - Resolve performance issue with complex support (#26080)
 
 
 mandelbrot-extras:
