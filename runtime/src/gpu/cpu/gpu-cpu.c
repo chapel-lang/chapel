@@ -34,10 +34,17 @@
 #include <stdbool.h>
 
 
-void chpl_gpu_impl_init(int* num_devices) {
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   CHPL_GPU_DEBUG("Initializing none GPU layer.\n");
   *num_devices = 1;
 }
+
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {}
+
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {}
+
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {}
 
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
                                size_t* size) {
