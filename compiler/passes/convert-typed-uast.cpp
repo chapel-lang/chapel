@@ -312,21 +312,11 @@ struct TConverter final : UastConverter {
 
   // aListStack helpers
   void pushAList(AList* lst, Expr* expr) {
-    if (trace) {
-      printf("push ");
-      nprint_view(expr);
-      printf("\n");
-    }
     aListStack.push_back({lst, expr});
     curAList = lst;
   }
   Expr* popAList() {
     CHPL_ASSERT(aListStack.size() > 0);
-    if (trace) {
-      printf("pop ");
-      nprint_view(aListStack.back().second);
-      printf("\n");
-    }
 
     Expr* ret = nullptr;
     ret = aListStack.back().second;
