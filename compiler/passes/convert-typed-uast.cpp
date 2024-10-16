@@ -59,6 +59,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
@@ -266,16 +267,13 @@ struct TConverter final : UastConverter {
     return convertExpr(node, rv);
   }
 
+  ModuleSymbol* convertModule(const Module* mod);
+
   ModuleSymbol* convertToplevelModule(const Module* mod,
                                       ModTag modTag) override;
 
-  ModuleSymbol* convertModule(const Module* mod);
-
-
   void postConvertApplyFixups() override;
 
-
-  // main entry points for converting
   void setupModulesToConvert();
   void convertFunctionsToConvert();
 
@@ -284,6 +282,11 @@ struct TConverter final : UastConverter {
 
   void convertModuleInit(const Module* mod, ModuleSymbol* modSym);
   void convertFunction(const ResolvedFunction* r);
+  FnSymbol* findOrConvertFunction(const ResolvedFunction* r);
+
+  FnSymbol* convertFunctionForGeneratedCall(resolution::CallInfo ci,
+                                            const uast::Module* inMod);
+  void createMainFunctions() override;
 
   // type conversion helpers
   Type* helpConvertType(const types::Type* t);
@@ -510,25 +513,6 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv) {
   return curAList->last()->remove();
 }
 
-ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
-                                                ModTag modTag) {
-  if (!haveSetupModules) {
-    // create empty modules so we have somewhere to put the functions!
-    setupModulesToConvert();
-    haveSetupModules = true;
-  }
-
-  if (!haveConvertedFunctions) {
-    // convert the functions!
-    convertFunctionsToConvert();
-    haveConvertedFunctions = true;
-  }
-
-  topLevelModTag = modTag;
-  return convertModule(mod);
-}
-
-
 ModuleSymbol* TConverter::convertModule(const Module* mod) {
   astlocMarker markAstLoc(mod->id());
 
@@ -553,33 +537,25 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
   }
   submodulesEncountered.clear();
 
-  // handle 'proc main' and 'chpl_gen_main'
-  if (mod->id() == mainModuleId) {
-    // if 'proc main' was not provided, generate an empty 'proc main'.
-    //
-    // (if there was a main function there, we would have already converted it,
-    //  since it needed to be included in the call graph).
-    ID mainFnId = parsing::findProcMainInModule(context, mainModuleId);
-    FnSymbol* mainFn = nullptr;
-    if (mainFnId.isEmpty()) {
-      // there wasn't a 'proc main' so we need to generate one.
-      SET_LINENO(modSym);
-      mainFn = new FnSymbol("main");
-      mainFn->addFlag(FLAG_RESOLVED);
-      mainFn->retType = dtVoid;
-      mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      modSym->block->insertAtTail(new DefExpr(mainFn));
-    } else {
-      const ResolvedFunction* resolvedMain =
-        resolveConcreteFunction(context, mainFnId);
-      mainFn = toFnSymbol(fns[resolvedMain]);
-      INT_ASSERT(mainFn);
-    }
+  return modSym;
+}
 
-    // TODO: handle generating 'chpl_gen_main'
+ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
+                                                ModTag modTag) {
+  if (!haveSetupModules) {
+    // create empty modules so we have somewhere to put the functions!
+    setupModulesToConvert();
+    haveSetupModules = true;
   }
 
-  return modSym;
+  if (!haveConvertedFunctions) {
+    // convert the functions!
+    convertFunctionsToConvert();
+    haveConvertedFunctions = true;
+  }
+
+  topLevelModTag = modTag;
+  return convertModule(mod);
 }
 
 void TConverter::postConvertApplyFixups() {
@@ -798,7 +774,234 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   currentResolvedFunction = nullptr;
   popBlock();
   localSyms.clear();
+}
 
+FnSymbol* TConverter::findOrConvertFunction(const ResolvedFunction* r) {
+  // if it was already converted, return that
+  auto it = fns.find(r);
+  if (it != fns.end()) {
+    return it->second;
+  }
+
+  // otherwise, convert the function now
+  convertFunction(r);
+  FnSymbol* ret = fns[r];
+  INT_ASSERT(ret);
+  return ret;
+}
+
+// This runs the resolver to figure out which function to call &
+// converts that function.
+// It does not convert the call itself.
+// It works as though the generated call were in the module initializer.
+FnSymbol* TConverter::convertFunctionForGeneratedCall(resolution::CallInfo ci,
+                                                      const uast::Module* inMod)
+{
+  auto modScope = scopeForModule(context, inMod->id());
+  const PoiScope* poiScope = nullptr;
+  auto scopeInfo = CallScopeInfo::forNormalCall(modScope, poiScope);
+  auto r = resolveGeneratedCall(context, inMod, ci, scopeInfo);
+  const auto& candidate = r.mostSpecific().only();
+  const TypedFnSignature* sig = candidate.fn();
+  INT_ASSERT(sig);
+  INT_ASSERT(sig->untyped()->idIsFunction());
+
+  chpl::resolution::ResolutionContext rcval(context);
+  const ResolvedFunction* resolvedFn = resolveFunction(&rcval, sig, poiScope);
+  INT_ASSERT(resolvedFn);
+
+  return findOrConvertFunction(resolvedFn);
+}
+
+void TConverter::createMainFunctions() {
+  const AstNode* ast = parsing::idToAst(context, mainModuleId);
+  INT_ASSERT(ast);
+  const Module* mainMod = ast->toModule();
+  ModuleSymbol* mainModule = findOrSetupModule(mainModuleId);
+
+  // if 'proc main' was not provided, generate an empty 'proc main'.
+  //
+  // (if there was a main function there, we would have already converted it,
+  //  since it needed to be included in the call graph).
+  ID mainFnId = parsing::findProcMainInModule(context, mainModuleId);
+  FnSymbol* mainFn = nullptr;
+  if (mainFnId.isEmpty()) {
+    // there wasn't a 'proc main' so we need to generate one.
+    SET_LINENO(mainModule);
+    mainFn = new FnSymbol("main");
+    mainFn->addFlag(FLAG_RESOLVED);
+    mainFn->retType = dtVoid;
+    mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    mainModule->block->insertAtTail(new DefExpr(mainFn));
+  } else {
+    // otherwise, we should have already converted 'proc main'
+    // (since it was added to the call graph). Get the converted version.
+    const ResolvedFunction* resolvedMain =
+      resolveConcreteFunction(context, mainFnId);
+    mainFn = toFnSymbol(fns[resolvedMain]);
+    INT_ASSERT(mainFn);
+  }
+
+  // adjust cname for 'proc main'
+  chplUserMain = mainFn;
+  chplUserMain->cname = astr("chpl_user_main");
+  if (fIdBasedMunging && !mainModule->astloc.id().isEmpty()) {
+    const char* cname = astr(mainModule->astloc.id().symbolPath().c_str(),
+                             ".main");
+    chplUserMain->cname = cname;
+  }
+
+  // generate chpl_gen_main
+
+  bool mainReturnsSomething = mainFn->retType != dtVoid;
+
+  //
+  // chpl_gen_main is the entry point for the compiler-generated code.
+  // It invokes the user's code.
+  //
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
+
+  chpl_gen_main          = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->retType = dtInt[INT_SIZE_64];
+  chpl_gen_main->cname   = astr("chpl_gen_main");
+
+  chpl_gen_main->insertFormalAtTail(arg);
+
+  chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
+  chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
+  chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
+  chpl_gen_main->addFlag(FLAG_GEN_MAIN_FUNC);
+
+  mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+
+  VarSymbol* main_ret = newTemp("ret", dtInt[INT_SIZE_64]);
+  main_ret->addFlag(FLAG_RVV);
+  VarSymbol* endCount = NULL;
+
+  chpl_gen_main->insertAtTail(new DefExpr(main_ret));
+
+  //
+  // In --minimal-modules compilation mode, we won't have any
+  // parallelism, so no need for end counts (or atomic/sync types to
+  // support them).
+  //
+  if (fMinimalModules == false) {
+    // figure out _endCountAlloc
+    auto falseQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                        types::BoolType::get(context),
+                                        types::BoolParam::get(context, false));
+    auto ci = resolution::CallInfo(UniqueString::get(context, "_endCountAlloc"),
+                                   /* calledType */ types::QualifiedType(),
+                                   /* isMethodCall */ false,
+                                   /* hasQuestionArg */ false,
+                                   /* isParenless */ false,
+                                   {CallInfoActual(falseQt)});
+    FnSymbol* endCountAlloc = convertFunctionForGeneratedCall(ci, mainMod);
+
+    endCount = newTemp("_endCount");
+
+    chpl_gen_main->insertAtTail(new DefExpr(endCount));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             endCount,
+                                             new CallExpr(endCountAlloc)));
+
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
+
+  // We have to initialize the main module explicitly.
+  // It will initialize all the modules it uses, recursively.
+  if (!fMultiLocaleInterop) {
+    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+    // also init other modules mentioned on command line
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+          mod != mainModule) {
+        chpl_gen_main->insertAtTail(new CallExpr(mod->initFn));
+      }
+    }
+
+  } else {
+    // Create an extern definition for the multilocale library server's main
+    // function.  chpl_gen_main needs to call it in the course of its run, so
+    // that we correctly set up the runtime.
+    FnSymbol* chpl_mli_smain = new FnSymbol("chpl_mli_smain");
+    chpl_mli_smain->addFlag(FLAG_EXTERN);
+    chpl_mli_smain->addFlag(FLAG_LOCAL_ARGS);
+    // Takes the connection information
+    ArgSymbol* setup_conn = new ArgSymbol(INTENT_BLANK, "setup_conn",
+                                          dtStringC);
+    chpl_mli_smain->insertFormalAtTail(setup_conn);
+
+    mainModule->block->insertAtTail(new DefExpr(chpl_mli_smain));
+
+    VarSymbol* connection = newTemp("setup_conn");
+    chpl_gen_main->insertAtTail(new DefExpr(connection));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, connection,
+                                             new CallExpr("chpl_get_mli_connection",
+                                                          arg)));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_mli_smain", connection));
+    //normalize(chpl_mli_smain);
+  }
+
+  bool main_ret_set = false;
+
+  if (!fLibraryCompile && !fDynoGenStdLib) {
+    SET_LINENO(chpl_gen_main);
+
+    if (mainHasArgs == true) {
+      VarSymbol* converted_args = newTemp("_main_args");
+
+      converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+      chpl_gen_main->insertAtTail(new DefExpr(converted_args));
+      chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                               converted_args,
+                                               new CallExpr("chpl_convert_args", arg)));
+
+      if (mainReturnsSomething) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                 main_ret,
+                                                 new CallExpr("main", converted_args)));
+        main_ret_set = true;
+
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main", converted_args));
+      }
+
+    } else {
+      if (mainReturnsSomething) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                 main_ret,
+                                                 new CallExpr("main")));
+        main_ret_set = true;
+
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main"));
+      }
+    }
+  }
+
+  if (!main_ret_set) {
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             main_ret,
+                                             new_IntSymbol(0, INT_SIZE_64)));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
+
+  //
+  // In --minimal-modules compilation mode, we won't be waiting on an
+  // endcount (see comment above)
+  //
+  if (fMinimalModules == false) {
+    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
 }
 
 Type* TConverter::helpConvertType(const types::Type* t) {

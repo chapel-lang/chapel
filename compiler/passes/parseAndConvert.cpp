@@ -1140,6 +1140,10 @@ void parseAndConvertUast() {
 
   loadAndConvertModules(*converter.get());
 
+  if (fDynoCompilerLibrary) {
+    converter->createMainFunctions();
+  }
+
   setupDynoLibFileGeneration();
 
   reorderInternalModules();

@@ -184,6 +184,9 @@ struct Converter final : UastConverter {
 
   void postConvertApplyFixups() override;
 
+  void createMainFunctions() override {
+    // no action needed here
+  }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node) override;

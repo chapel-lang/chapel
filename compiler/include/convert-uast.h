@@ -69,11 +69,13 @@ class UastConverter {
   // apply fixups to fix SymExprs to refer to Symbols that
   // might have been created in a different order.
   virtual void postConvertApplyFixups() = 0;
+
+  // Generate main functions (for use with TConverter)
+  virtual void createMainFunctions() = 0;
 };
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context);
-
 
 #endif
