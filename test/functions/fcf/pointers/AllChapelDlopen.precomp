@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+
+libname__="SomeCLibrary"
+
+echo building shared library $libname__.so
+gcc -shared -fPIC -o $libname__.so $libname__.c
