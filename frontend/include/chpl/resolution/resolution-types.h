@@ -467,8 +467,12 @@ class CallInfoActual {
   UniqueString byName_;
 
  public:
+  explicit CallInfoActual(types::QualifiedType type)
+    : type_(std::move(type)) {
+  }
   CallInfoActual(types::QualifiedType type, UniqueString byName)
-      : type_(std::move(type)), byName_(byName) {}
+    : type_(std::move(type)), byName_(byName) {
+  }
 
   /** return the qualified type */
   const types::QualifiedType& type() const { return type_; }
@@ -544,12 +548,26 @@ class CallInfo {
     isOpCall_ = uast::isOpName(name);
   }
 
+  /** Construct a CallInfo with no arguments, for calling a regular function
+      by name. Does not handle methods. */
+  static CallInfo createSimple(UniqueString calledFnName);
+
+  /** Construct a CallInfo with one argument, for calling a regular function
+      by name. Does not handle methods. */
+  static CallInfo createSimple(UniqueString calledFnName,
+                               types::QualifiedType arg1type);
+  /** Construct a CallInfo with two arguments,
+      for calling a regular function by name. Does not handle methods. */
+  static CallInfo createSimple(UniqueString calledFnName,
+                               types::QualifiedType arg1type,
+                               types::QualifiedType arg2type);
+
   /** Construct a CallInfo with unknown types for the actuals
       that can be used for FormalActualMap but not much else.
       Assumes that the calledExpression is an identifier
       and that it is a function name (vs a method invocation).
       */
-  static CallInfo createSimple(const uast::FnCall* call);
+  static CallInfo createUnknown(const uast::FnCall* call);
 
   /** Construct a CallInfo from a Call and optionally
       raise errors that occur when doing so.
