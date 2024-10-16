@@ -1,0 +1,190 @@
+import argparse
+
+# Represents a file or maybe a group of similar files that are updated the same way
+class FileUpdater:
+    def __init__(self, file_path, major_version, minor_version, patch_version, release):
+        self.file_path = file_path
+        self.major_version = major_version
+        self.minor_version = minor_version
+        self.patch_version = patch_version
+        self.release = release
+
+    def read_file(self):
+        with open(self.file_path, 'r') as f:
+            return f.readlines()
+
+    def write_file(self, lines):
+        with open(self.file_path, 'w') as f:
+            f.writelines(lines)
+
+    def update(self):
+        raise NotImplementedError("Subclasses should implement this method")
+
+# Handles conf.py
+class ConfPyUpdater(FileUpdater):
+    def update(self):
+        lines = self.read_file()
+        version_string = "chplversion = '{}.{}'\n".format(self.major_version, self.minor_version)
+        release_string = "release = '{}.{}.{} {}'\n".format(self.major_version, self.minor_version, self.patch_version, "" if self.release else "(pre-release)")
+        any_changed = False
+        for i, line in enumerate(lines):
+            if line.startswith('chplversion = \'') and not line == version_string:
+                lines[i] = version_string
+                any_changed = True
+            elif line.startswith('release = \'') and not line.strip() == release_string.strip():
+                lines[i] = release_string
+                any_changed = True
+        if any_changed:
+            self.write_file(lines)
+
+# Handles man/confchpl.rst and man/confchpldoc.rst
+class ManConfUpdater(FileUpdater):
+    def update(self):
+        lines = self.read_file()
+        if self.patch_version > 0:
+          release_string = ":Version: {}.{}.{} {}\n".format(self.major_version, self.minor_version, self.patch_version, "" if self.release else "pre-release")
+        else:
+          release_string = ":Version: {}.{} {}\n".format(self.major_version, self.minor_version, "" if self.release else "pre-release")
+        any_changed = False
+        for i, line in enumerate(lines):
+            if line.startswith(':Version: ') and not line.strip() == release_string.strip():
+                lines[i] = release_string
+                any_changed = True
+        if any_changed:
+            self.write_file(lines)
+
+# Updates the archivedSpecs.rst file only when moving to an official release
+class ArchivedSpecUpdater(FileUpdater):
+    def update(self):
+        # TODO: this needs the OLD version number to be able to update the archive without messing up
+        if self.release:
+          lines = self.read_file()
+          archive_string = "* `Chapel {}.{} <https://chapel-lang.org/docs/{}.{}/index.html>`_\n".format(self.major_version, self.minor_version - 1, self.major_version, self.minor_version - 1)
+          any_changed = False
+          if not archive_string in lines:
+            for i, line in enumerate(lines):
+              if line.startswith('Online Documentation Archives'):
+                lines.insert(i + 2, archive_string)
+                any_changed = True
+          if any_changed:
+              self.write_file(lines)
+
+# Updates the QUICKSTART.rst file only when moving to an official release
+class QuickStartUpdater(FileUpdater):
+    def update(self):
+        if self.release:
+          lines = self.read_file()
+          version_string = "1) If you don't already have the Chapel {}.{} source release, see\n".format(self.major_version, self.minor_version)
+          tar_string = "         tar xzf chapel-{}.{}.{}.tar.gz\n".format(self.major_version, self.minor_version, self.patch_version)
+          cd_string =  "         cd chapel-{}.{}.{}\n".format(self.major_version, self.minor_version, self.patch_version)
+          any_changed = False
+          for i, line in enumerate(lines):
+              if line.startswith('1) If you don\'t already have the Chapel ') and not line.strip() == version_string.strip():
+                  lines[i] = version_string
+                  any_changed = True
+              elif line.startswith("         tar xzf chapel-") and not line.strip() == tar_string.strip():
+                  lines[i] = tar_string
+                  any_changed = True
+              elif line.startswith("         cd chapel-") and not line.strip() == cd_string.strip():
+                  lines[i] = cd_string
+                  any_changed = True
+          if any_changed:
+              self.write_file(lines)
+
+# Updates the chplenv.rst file only when moving to an official release
+class ChplEnvUpdater(FileUpdater):
+    def update(self):
+        if self.release:
+          lines = self.read_file()
+          export_string = "        export CHPL_HOME=~/chapel-{}.{}.{}\n".format(self.major_version, self.minor_version, self.patch_version)
+          any_changed = False
+          for i, line in enumerate(lines):
+              if line.startswith('        export CHPL_HOME=~/chapel-') and not line.strip() == export_string.strip():
+                  lines[i] = export_string
+                  any_changed = True
+          if any_changed:
+              self.write_file(lines)
+
+# Updates the versionhelp.sh and versionhelp-chpldoc.sh files when moving to an official release
+# and again when moving to a pre-release with a version bump
+class VersionHelpUpdater(FileUpdater):
+    def update(self):
+        any_changed = False
+        lines = self.read_file()
+        if self.release:
+          for i, line in enumerate(lines):
+            if line.startswith('diff $CWD/../../../../compiler/main/BUILD_VERSION $CWD/zero.txt'):
+                lines[i] = "# {}".format(line)
+                any_changed = True
+            elif line.startswith("  { echo -n \" pre-release (\" &&"):
+                lines[i] = "# {}".format(line)
+                any_changed = True
+            elif line.startswith("# echo \"\""):
+                lines[i] = "{}".format(line[2:])
+                any_changed = True
+        else:
+          for i, line in enumerate(lines):
+            if line.startswith('# diff $CWD/../../../../compiler/main/BUILD_VERSION $CWD/zero.txt'):
+                lines[i] = "{}".format(line[2:])
+                any_changed = True
+            elif line.startswith("#   { echo -n \" pre-release (\" &&"):
+                lines[i] = "{}".format(line[2:])
+                any_changed = True
+            elif line.startswith("echo \"\""):
+                lines[i] = "# {}".format(line)
+                any_changed = True
+        if any_changed:
+          self.write_file(lines)
+
+# TODO: Implement the VersionButtonUpdater with specific rules for updating the version here
+class VersionButtonUpdater(FileUpdater):
+    def update(self):
+        pass
+
+# Updates the version in the version.goodstart file
+class GoodStartUpdater(FileUpdater):
+    def update(self):
+        lines = self.read_file()
+        version_string = " version {}.{}.{}".format(self.major_version, self.minor_version, self.patch_version)
+        any_changed = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith('version') and not line.strip() == version_string.strip():
+                lines[i] = version_string
+                any_changed = True
+        if any_changed:
+            self.write_file(lines)
+
+def main():
+    parser = argparse.ArgumentParser(description='Update the version and release/pre-release info in files')
+    parser.add_argument('-f', '--files', nargs="+", help='The file(s) to update')
+    parser.add_argument('major_version', type=int, help='The major version of Chapel')
+    parser.add_argument('minor_version', type=int, help='The minor version of Chapel')
+    parser.add_argument('patch_version', type=int, help='The patch version of Chapel')
+    parser.add_argument('--official-release', dest='release', action="store_true", help='Is this an official release?')
+
+    args = parser.parse_args()
+    for fpath in args.files:
+      # Determine which updater to use based on the file name or other criteria
+      if fpath.endswith('conf.py'):
+          updater = ConfPyUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('confchpl.rst') or fpath.endswith('confchpldoc.rst'):
+          updater = ManConfUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('archivedSpecs.rst'):
+          updater = ArchivedSpecUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('QUICKSTART.rst'):
+          updater = QuickStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('chplenv.rst'):
+          updater = ChplEnvUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('versionhelp.sh') or fpath.endswith('versionhelp-chpldoc.sh'):
+          updater = VersionHelpUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('versionButton.php'):
+          updater = VersionButtonUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      elif fpath.endswith('version.goodstart'):
+          updater = GoodStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+      else:
+          raise ValueError("Unrecognized file name: {}".format(fpath))
+
+      updater.update()
+
+if __name__ == "__main__":
+    main()
