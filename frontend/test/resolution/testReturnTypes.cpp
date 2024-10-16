@@ -1149,11 +1149,11 @@ static void testChildClasses() {
     Context* context = &ctx;
     ErrorGuard guard(context);
 
-    std::string program = R"""(
+    std::string program = ops + R"""(
     class Parent {}
     class A : Parent {}
     class B : Parent {}
-    proc test(cond : bool = false) : Parent {
+    proc test(cond : bool = false) {
       if cond then return new A();
       else return new B();
     }
@@ -1178,7 +1178,7 @@ static void testChildClasses() {
     Context* context = &ctx;
     ErrorGuard guard(context);
 
-    std::string program = R"""(
+    std::string program = ops + R"""(
     class A {}
     class B {}
     proc test(cond : bool = false) {
@@ -1192,6 +1192,101 @@ static void testChildClasses() {
     assert(qt.isErroneousType());
 
     assert(guard.realizeErrors() == 1);
+  }
+
+  // Some but not all shared parent
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Parent {}
+    class A : Parent {}
+    class B : Parent {}
+    class C {}
+    proc test(x : int = 0) {
+      select x {
+        when 0 do return new A();
+        when 1 do return new B();
+        otherwise do return new C();
+      }
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
+  }
+
+  // Shared ancestor, but different depths in inheritance tree
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Grandparent {}
+    class Parent : Grandparent {}
+    class A : Parent {}
+    class B : Parent {}
+    class C : Grandparent {}
+    proc test(x : int = 0) {
+      select x {
+        when 0 do return new A();
+        when 1 do return new B();
+        otherwise do return new C();
+      }
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == "Grandparent");
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Multiple shared ancestors (should pick closest relation)
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Grandparent {}
+    class Parent : Grandparent {}
+    class A : Parent {}
+    class B : Parent {}
+    class C : Parent {}
+    proc test(x : int = 0) {
+      select x {
+        when 0 do return new A();
+        when 1 do return new B();
+        otherwise do return new C();
+      }
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == "Parent");
+
+    assert(guard.realizeErrors() == 0);
   }
 }
 
