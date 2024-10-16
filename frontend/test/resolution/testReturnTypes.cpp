@@ -1164,6 +1164,7 @@ static void testChildClasses() {
     auto ct = qt.type()->toClassType();
     assert(ct);
     assert(ct->manager() && ct->manager()->isAnyOwnedType());
+    assert(ct->decorator().isNonNilable());
     auto mt = ct->manageableType();
     assert(mt);
     auto bct = mt->toBasicClassType();
@@ -1313,6 +1314,37 @@ static void testChildClasses() {
     assert(qt.isErroneousType());
 
     assert(guard.realizeErrors() == 1);
+  }
+
+  // Shared parent, need nilability
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Parent {}
+    class A : Parent {}
+    class B : Parent {}
+    proc test(cond : bool = false) {
+      if cond then return new A();
+      else return new B()?;
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
+    assert(ct->decorator().isNilable());
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == "Parent");
+
+    assert(guard.realizeErrors() == 0);
   }
 }
 
