@@ -1143,32 +1143,56 @@ static void testCPtrEltType() {
 }
 
 static void testChildClasses() {
-  Context ctx;
-  Context* context = &ctx;
+  // Shared direct parent
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-  std::string program = R"""(
-  class Parent {}
+    std::string program = R"""(
+    class Parent {}
+    class A : Parent {}
+    class B : Parent {}
+    proc test(cond : bool = false) : Parent {
+      if cond then return new A();
+      else return new B();
+    }
+    var x = test();
+    )""";
 
-  class A : Parent {}
-  class B : Parent {}
+    auto qt = resolveTypeOfXInit(context, program);
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == "Parent");
 
-  proc test(cond : bool = false) : Parent {
-    if cond then return new A();
-    else return new B();
+    assert(guard.realizeErrors() == 0);
   }
 
-  var x = test();
-  )""";
+  // No shared parent
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
 
-  auto qt = resolveTypeOfXInit(context, program);
+    std::string program = R"""(
+    class A {}
+    class B {}
+    proc test(cond : bool = false) {
+      if cond then return new A();
+      else return new B();
+    }
+    var x = test();
+    )""";
 
-  auto ct = qt.type()->toClassType();
-  assert(ct);
-  auto mt = ct->manageableType();
-  assert(mt);
-  auto bct = mt->toBasicClassType();
-  assert(bct);
-  assert(bct->name() == "Parent");
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
+  }
 }
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
