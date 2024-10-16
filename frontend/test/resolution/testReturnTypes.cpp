@@ -1163,6 +1163,7 @@ static void testChildClasses() {
     auto qt = resolveTypeOfXInit(context, program);
     auto ct = qt.type()->toClassType();
     assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
     auto mt = ct->manageableType();
     assert(mt);
     auto bct = mt->toBasicClassType();
@@ -1246,6 +1247,7 @@ static void testChildClasses() {
     auto qt = resolveTypeOfXInit(context, program);
     auto ct = qt.type()->toClassType();
     assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
     auto mt = ct->manageableType();
     assert(mt);
     auto bct = mt->toBasicClassType();
@@ -1280,6 +1282,7 @@ static void testChildClasses() {
     auto qt = resolveTypeOfXInit(context, program);
     auto ct = qt.type()->toClassType();
     assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
     auto mt = ct->manageableType();
     assert(mt);
     auto bct = mt->toBasicClassType();
@@ -1287,6 +1290,29 @@ static void testChildClasses() {
     assert(bct->name() == "Parent");
 
     assert(guard.realizeErrors() == 0);
+  }
+
+  // Shared ancestor, but ref intent
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Parent {}
+    class A : Parent {}
+    class B : Parent {}
+    proc test(cond : bool = false) ref {
+      if cond then return new A();
+      else return new B();
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
   }
 }
 

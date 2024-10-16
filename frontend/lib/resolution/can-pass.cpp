@@ -1283,30 +1283,27 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
 
 // Try finding a common ancestor type between class types
 static optional<QualifiedType> findByAncestor(
-    Context* context, const std::vector<QualifiedType>& types) {
+    Context* context, const std::vector<QualifiedType>& types,
+    const KindRequirement& requiredKind) {
   std::vector<QualifiedType> parentTypes;
   for (const auto& type : types) {
-    auto classTy = type.type()->toClassType();
-    if (!classTy) return chpl::empty;
-    auto bct = classTy->basicClassType();
+    auto ct = type.type()->toClassType();
+    if (!ct) return chpl::empty;
+    auto bct = ct->basicClassType();
     if (!bct) return chpl::empty;
     auto pct = bct->parentClassType();
     // don't consider the root of the class hierarchy for a common type
     if (!pct || pct->isObjectType()) return chpl::empty;
 
-    // TODO: fix decorator and intent
-    auto parentCt = ClassType::get(
-        context, pct, nullptr,
-        ClassTypeDecorator(
-            ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED_NILABLE));
-    parentTypes.emplace_back(
-        QualifiedType(QualifiedType::DEFAULT_INTENT, parentCt));
+    auto parentCt =
+        ClassType::get(context, pct, ct->manager(), ct->decorator());
+    parentTypes.emplace_back(QualifiedType(type.kind(), parentCt));
   }
 
   if (parentTypes.empty()) {
     return chpl::empty;
   } else {
-    return commonType(context, parentTypes, /* KindRequirement */ chpl::empty);
+    return commonType(context, parentTypes, requiredKind);
   }
 }
 
@@ -1380,7 +1377,7 @@ commonType(Context* context,
     return commonType;
   }
 
-  commonType = findByAncestor(context, adjustedTypes);
+  commonType = findByAncestor(context, adjustedTypes, requiredKind);
   if (commonType) {
     return commonType;
   }
