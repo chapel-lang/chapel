@@ -1294,6 +1294,7 @@ static optional<QualifiedType> findByAncestor(
     // don't consider the root of the class hierarchy for a common type
     if (!pct || pct->isObjectType()) return chpl::empty;
 
+    // decorator and intent should be irrelevant
     auto parentCt = ClassType::get(
         context, pct, nullptr,
         ClassTypeDecorator(
