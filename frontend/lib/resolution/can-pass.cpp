@@ -1290,15 +1290,16 @@ static optional<QualifiedType> findByParents(
     if (!classTy) return chpl::empty;
     auto bct = classTy->basicClassType();
     if (!bct) return chpl::empty;
+    auto pct = bct->parentClassType();
+    // don't consider the root of the class hierarchy for a common type
+    if (!pct || pct->isObjectType()) return chpl::empty;
 
-    if (auto pct = bct->parentClassType()) {
-      auto parentCt = ClassType::get(
-          context, pct, nullptr,
-          ClassTypeDecorator(
-              ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED_NILABLE));
-      parentTypes.emplace_back(
-          QualifiedType(QualifiedType::DEFAULT_INTENT, parentCt));
-    }
+    auto parentCt = ClassType::get(
+        context, pct, nullptr,
+        ClassTypeDecorator(
+            ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED_NILABLE));
+    parentTypes.emplace_back(
+        QualifiedType(QualifiedType::DEFAULT_INTENT, parentCt));
   }
 
   if (parentTypes.empty()) {
