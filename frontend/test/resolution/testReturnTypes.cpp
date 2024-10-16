@@ -1346,6 +1346,61 @@ static void testChildClasses() {
 
     assert(guard.realizeErrors() == 0);
   }
+
+  // Shared generic parent, matching type
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Parent { param x : int; }
+    class A : Parent(?) {}
+    class B : Parent(?) {}
+    proc test(cond : bool = false) {
+      if cond then return new A(1);
+      else return new B(1);
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
+    assert(ct->decorator().isNonNilable());
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == "Parent");
+    ensureParamInt(bct->sortedSubstitutions().front().second, 1);
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  // Shared generic parent, non matching type
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    class Parent { param x : int; }
+    class A : Parent(?) {}
+    class B : Parent(?) {}
+    proc test(cond : bool = false) {
+      if cond then return new A(1);
+      else return new B(2);
+    }
+    var x = test();
+    )""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
+  }
 }
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
