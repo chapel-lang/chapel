@@ -1142,265 +1142,155 @@ static void testCPtrEltType() {
   }
 }
 
+static void testChildClassesHelper(const char* decls,
+                                   const std::vector<const char*>& classTypes,
+                                   const char* commonParent,
+                                   bool withNilable = false,
+                                   const char* intent = "",
+                                   int checkParam = -1) {
+  // Construct test program
+  std::ostringstream oss;
+  oss << ops;
+  oss << decls << "\n";
+  oss << "proc test(x : int = 0) " << intent << " {\n";
+  oss << "select x {\n";
+  for (size_t i = 0; i < classTypes.size(); i++) {
+    const char* classType = classTypes[i];
+    // Skip adding parens to 'new' call if already present
+    const char* parensPart = strchr(classType, '(') ? "" : "()";
+    if (i < classTypes.size() - 1) {
+      oss << "\twhen " << i << " do return new " << classType << parensPart
+          << ";\n";
+    } else {
+      oss << "\totherwise do return new " << classType << parensPart
+          << (withNilable ? "?" : "") << ";\n";
+    }
+  }
+  oss << R"""(
+  }
+}
+var x = test();
+        )""";
+  std::string program = oss.str();
+
+  // Print test program for debugging purposes
+  std::cout << "\nTest program:\n";
+  std::cout << program << "\n";
+  if (commonParent)
+    std::cout << "Expecting common parent '" << commonParent << "'\n";
+  else
+    std::cout << "Expecting no common parent (error)\n";
+
+  // Setup to test
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // Resolve program and test expected results
+  auto qt = resolveTypeOfXInit(context, program);
+  if (commonParent) {
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
+    if (withNilable) {
+      assert(ct->decorator().isNilable());
+    } else {
+      assert(ct->decorator().isNonNilable());
+    }
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == commonParent);
+    if (checkParam >= 0)
+      ensureParamInt(bct->sortedSubstitutions().front().second, checkParam);
+
+    assert(guard.realizeErrors() == 0);
+  } else {
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
+  }
+
+  std::cout << "success\n";
+}
+
 static void testChildClasses() {
   // Shared direct parent
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Parent {}
-    class A : Parent {}
-    class B : Parent {}
-    proc test(cond : bool = false) {
-      if cond then return new A();
-      else return new B();
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    auto ct = qt.type()->toClassType();
-    assert(ct);
-    assert(ct->manager() && ct->manager()->isAnyOwnedType());
-    assert(ct->decorator().isNonNilable());
-    auto mt = ct->manageableType();
-    assert(mt);
-    auto bct = mt->toBasicClassType();
-    assert(bct);
-    assert(bct->name() == "Parent");
-
-    assert(guard.realizeErrors() == 0);
-  }
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, "Parent");
 
   // No shared parent
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class A {}
-    class B {}
-    proc test(cond : bool = false) {
-      if cond then return new A();
-      else return new B();
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    assert(qt.isErroneousType());
-
-    assert(guard.realizeErrors() == 1);
-  }
+  testChildClassesHelper(R"""(
+                         class A {}
+                         class B {}
+                         )""",
+                         {"A", "B"}, nullptr);
 
   // Some but not all shared parent
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C {}
+                         )""",
+                         {"A", "B", "C"}, nullptr);
 
-    std::string program = ops + R"""(
-    class Parent {}
-    class A : Parent {}
-    class B : Parent {}
-    class C {}
-    proc test(x : int = 0) {
-      select x {
-        when 0 do return new A();
-        when 1 do return new B();
-        otherwise do return new C();
-      }
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    assert(qt.isErroneousType());
-
-    assert(guard.realizeErrors() == 1);
-  }
-
-  // Shared ancestor, but different depths in inheritance tree
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Grandparent {}
-    class Parent : Grandparent {}
-    class A : Parent {}
-    class B : Parent {}
-    class C : Grandparent {}
-    proc test(x : int = 0) {
-      select x {
-        when 0 do return new A();
-        when 1 do return new B();
-        otherwise do return new C();
-      }
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    auto ct = qt.type()->toClassType();
-    assert(ct);
-    assert(ct->manager() && ct->manager()->isAnyOwnedType());
-    auto mt = ct->manageableType();
-    assert(mt);
-    auto bct = mt->toBasicClassType();
-    assert(bct);
-    assert(bct->name() == "Grandparent");
-
-    assert(guard.realizeErrors() == 0);
-  }
+  // Shared ancestor at different depths in inheritance tree
+  testChildClassesHelper(R"""(
+                         class Grandparent {}
+                         class Parent : Grandparent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C : Grandparent {}
+                         )""",
+                         {"A", "B", "C"}, "Grandparent");
 
   // Multiple shared ancestors (should pick closest relation)
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Grandparent {}
-    class Parent : Grandparent {}
-    class A : Parent {}
-    class B : Parent {}
-    class C : Parent {}
-    proc test(x : int = 0) {
-      select x {
-        when 0 do return new A();
-        when 1 do return new B();
-        otherwise do return new C();
-      }
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    auto ct = qt.type()->toClassType();
-    assert(ct);
-    assert(ct->manager() && ct->manager()->isAnyOwnedType());
-    auto mt = ct->manageableType();
-    assert(mt);
-    auto bct = mt->toBasicClassType();
-    assert(bct);
-    assert(bct->name() == "Parent");
-
-    assert(guard.realizeErrors() == 0);
-  }
+  testChildClassesHelper(R"""(
+                         class Grandparent {}
+                         class Parent : Grandparent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C : Parent {}
+                         )""",
+                         {"A", "B", "C"}, "Parent");
 
   // Shared ancestor, but ref intent
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Parent {}
-    class A : Parent {}
-    class B : Parent {}
-    proc test(cond : bool = false) ref {
-      if cond then return new A();
-      else return new B();
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    assert(qt.isErroneousType());
-
-    assert(guard.realizeErrors() == 1);
-  }
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, nullptr, false, "ref");
 
   // Shared parent, need nilability
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Parent {}
-    class A : Parent {}
-    class B : Parent {}
-    proc test(cond : bool = false) {
-      if cond then return new A();
-      else return new B()?;
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    auto ct = qt.type()->toClassType();
-    assert(ct);
-    assert(ct->manager() && ct->manager()->isAnyOwnedType());
-    assert(ct->decorator().isNilable());
-    auto mt = ct->manageableType();
-    assert(mt);
-    auto bct = mt->toBasicClassType();
-    assert(bct);
-    assert(bct->name() == "Parent");
-
-    assert(guard.realizeErrors() == 0);
-  }
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, "Parent", true);
 
   // Shared generic parent, matching type
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Parent { param x : int; }
-    class A : Parent(?) {}
-    class B : Parent(?) {}
-    proc test(cond : bool = false) {
-      if cond then return new A(1);
-      else return new B(1);
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    auto ct = qt.type()->toClassType();
-    assert(ct);
-    assert(ct->manager() && ct->manager()->isAnyOwnedType());
-    assert(ct->decorator().isNonNilable());
-    auto mt = ct->manageableType();
-    assert(mt);
-    auto bct = mt->toBasicClassType();
-    assert(bct);
-    assert(bct->name() == "Parent");
-    ensureParamInt(bct->sortedSubstitutions().front().second, 1);
-
-    assert(guard.realizeErrors() == 0);
-  }
+  testChildClassesHelper(R"""(
+                         class Parent { param x : int; }
+                         class A : Parent(?) {}
+                         class B : Parent(?) {}
+                         )""",
+                         {"A(1)", "B(1)"}, "Parent", false, "", 1);
 
   // Shared generic parent, non matching type
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    class Parent { param x : int; }
-    class A : Parent(?) {}
-    class B : Parent(?) {}
-    proc test(cond : bool = false) {
-      if cond then return new A(1);
-      else return new B(2);
-    }
-    var x = test();
-    )""";
-
-    auto qt = resolveTypeOfXInit(context, program);
-    assert(qt.isErroneousType());
-
-    assert(guard.realizeErrors() == 1);
-  }
+  testChildClassesHelper(R"""(
+                         class Parent { param x : int; }
+                         class A : Parent(?) {}
+                         class B : Parent(?) {}
+                         )""",
+                         {"A(1)", "B(2)"}, nullptr);
 }
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
