@@ -1281,6 +1281,33 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
   return props.toKind();
 }
 
+// Try finding a common type between parents of class types
+static optional<QualifiedType> findByParents(
+    Context* context, const std::vector<QualifiedType>& types) {
+  std::vector<QualifiedType> parentTypes;
+  for (const auto& type : types) {
+    auto classTy = type.type()->toClassType();
+    if (!classTy) return chpl::empty;
+    auto bct = classTy->basicClassType();
+    if (!bct) return chpl::empty;
+
+    if (auto pct = bct->parentClassType()) {
+      auto parentCt = ClassType::get(
+          context, pct, nullptr,
+          ClassTypeDecorator(
+              ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED_NILABLE));
+      parentTypes.emplace_back(
+          QualifiedType(QualifiedType::DEFAULT_INTENT, parentCt));
+    }
+  }
+
+  if (parentTypes.empty()) {
+    return chpl::empty;
+  } else {
+    return commonType(context, parentTypes, /* KindRequirement */ chpl::empty);
+  }
+}
+
 static optional<QualifiedType>
 findByPassing(Context* context,
               const std::vector<QualifiedType>& types) {
@@ -1347,6 +1374,11 @@ commonType(Context* context,
   // Performance: if the types vector ever becomes very long,
   // it might be worth using a unique'd vector here.
   auto commonType = findByPassing(context, adjustedTypes);
+  if (commonType) {
+    return commonType;
+  }
+
+  commonType = findByParents(context, adjustedTypes);
   if (commonType) {
     return commonType;
   }
