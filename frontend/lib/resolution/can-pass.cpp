@@ -1281,8 +1281,8 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
   return props.toKind();
 }
 
-// Try finding a common type between parents of class types
-static optional<QualifiedType> findByParents(
+// Try finding a common ancestor type between class types
+static optional<QualifiedType> findByAncestor(
     Context* context, const std::vector<QualifiedType>& types) {
   std::vector<QualifiedType> parentTypes;
   for (const auto& type : types) {
@@ -1379,7 +1379,7 @@ commonType(Context* context,
     return commonType;
   }
 
-  commonType = findByParents(context, adjustedTypes);
+  commonType = findByAncestor(context, adjustedTypes);
   if (commonType) {
     return commonType;
   }
