@@ -1795,7 +1795,7 @@ ra.ml-perf:
     - machine changes, cannot reproduce old numbers
   02/28/20:
     - Use localAccess for ra-on (#15001)
-  10/9/24:
+  10/09/24:
     - Non-blocking PUT in CHPL_COMM=ofi (#25977)
 
 ra-atomics.ml-perf:
