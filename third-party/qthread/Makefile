@@ -146,6 +146,13 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
+# only do this on M1+ Macs
+ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
+  CHPL_QTHREAD_CFG_OPTIONS += --with-cacheline-width=128
+endif
+endif
+
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 
