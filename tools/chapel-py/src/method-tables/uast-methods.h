@@ -343,6 +343,10 @@ CLASS_END(Use)
 CLASS_BEGIN(VisibilityClause)
   PLAIN_GETTER(VisibilityClause, symbol, "Get the symbol referenced by this VisibilityClause node",
                const chpl::uast::AstNode*, return node->symbol())
+  PLAIN_GETTER(VisibilityClause, limitation_kind, "Get the limitation kind of this VisibilityClause node",
+               const char*, return VisibilityClause::limitationKindToString(node->limitationKind()))
+  PLAIN_GETTER(VisibilityClause, limitations, "Get the limitations of this VisibilityClause node",
+               IterAdapterBase*, return mkIterPair(node->limitations()))
 CLASS_END(VisibilityClause)
 
 CLASS_BEGIN(WithClause)
