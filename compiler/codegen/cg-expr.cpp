@@ -2068,7 +2068,11 @@ GenRet codegenNeg(GenRet a)
     } else {
       bool av_signed = false;
       if(av.chplType) av_signed = is_signed(av.chplType);
-      ret.val = info->irBuilder->CreateNeg(value, "", false, av_signed);
+#if HAVE_LLVM_VER >= 190
+      ret.val = info->irBuilder->CreateNeg(value, "", /*NSW*/av_signed);
+#else
+      ret.val = info->irBuilder->CreateNeg(value, "", /*NUW*/false, /*NSW*/av_signed);
+#endif
       trackLLVMValue(ret.val);
     }
     ret.isUnsigned = false;

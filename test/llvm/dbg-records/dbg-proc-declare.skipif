@@ -1,0 +1,3 @@
+# under newer LLVM versions, `x` is entirely optimized away
+# and no `call void @llvm.dbg.declare` appears in the IR.
+COMPOPTS <= --fast
