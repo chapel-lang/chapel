@@ -52,11 +52,10 @@ def _validate_rocm_llvm_version(gpu: gpu_type):
 @memoize
 def gpu_compiler_basic_compile(compiler: str, lang: str):
     dummy_main = "int main() { return 0; }"
-    exists, returncode, stdout, _ = try_run_command([compiler, "-v", "-c", "-x", lang, "-", "-o", "/dev/null"], cmd_input=dummy_main, combine_output=True)
-    if exists and returncode == 0 and stdout:
-        return stdout
-    else:
-        return None
+    _, _, stdout, _ = try_run_command([compiler, "-v", "-c", "-x", lang, "-", "-o", "/dev/null"], cmd_input=dummy_main, combine_output=True)
+    # NOTE: this code does not check if the code compiled properly,
+    # all we care about is the output
+    return stdout
 
 def _find_cuda_sdk_path(compiler: str):
     out = gpu_compiler_basic_compile(compiler, "cu")
