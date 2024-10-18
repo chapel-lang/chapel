@@ -73,7 +73,7 @@
 #include <iostream>
 
 // If defined, include debug output about TConverter
-//#define DEBUG_TRACE 1
+#define DEBUG_TRACE 1
 
 using namespace chpl;
 using namespace resolution;
@@ -241,8 +241,10 @@ struct TConverter final : UastConverter {
              (int)calledFns.size());
 
     functionsToConvertWithTypes = calledFns;
-    // also tell the untyped converter about them so it can ignore them!
-    untypedConverter->setFunctionsToConvertWithTypes(calledFns);
+  }
+
+  void setSymbolsToIgnore(std::unordered_set<ID> ignore) override {
+    INT_FATAL("TConverter::setSymbolsToIgnore not implemented");
   }
 
   void setMainModule(ID mainModule) override {
@@ -289,24 +291,26 @@ struct TConverter final : UastConverter {
   void createMainFunctions() override;
 
   // type conversion helpers
+  // note: these do not check if the type has already been converted;
+  // or update the 'convertedTypes' map; that happens in convertType.
   Type* helpConvertType(const types::Type* t);
-  Type* convertClassType(const types::ClassType* t);
-  Type* convertPtrType(const types::PtrType* t);
-  Type* convertEnumType(const types::EnumType* t);
-  Type* convertExternType(const types::ExternType* t);
-  Type* convertFunctionType(const types::FunctionType* t);
-  Type* convertBasicClassType(const types::BasicClassType* t);
-  Type* convertRecordType(const types::RecordType* t);
-  Type* convertTupleType(const types::TupleType* t);
-  Type* convertUnionType(const types::UnionType* t);
-  Type* convertBoolType(const types::BoolType* t);
-  Type* convertComplexType(const types::ComplexType* t);
-  Type* convertImagType(const types::ImagType* t);
-  Type* convertIntType(const types::IntType* t);
-  Type* convertRealType(const types::RealType* t);
-  Type* convertUintType(const types::UintType* t);
+  Type* helpConvertClassType(const types::ClassType* t);
+  Type* helpConvertPtrType(const types::PtrType* t);
+  Type* helpConvertEnumType(const types::EnumType* t);
+  Type* helpConvertExternType(const types::ExternType* t);
+  Type* helpConvertFunctionType(const types::FunctionType* t);
+  Type* helpConvertBasicClassType(const types::BasicClassType* t);
+  Type* helpConvertRecordType(const types::RecordType* t);
+  Type* helpConvertTupleType(const types::TupleType* t);
+  Type* helpConvertUnionType(const types::UnionType* t);
+  Type* helpConvertBoolType(const types::BoolType* t);
+  Type* helpConvertComplexType(const types::ComplexType* t);
+  Type* helpConvertImagType(const types::ImagType* t);
+  Type* helpConvertIntType(const types::IntType* t);
+  Type* helpConvertRealType(const types::RealType* t);
+  Type* helpConvertUintType(const types::UintType* t);
 
-  // general functions for converting types/params
+  // general functions for converting types/params including re-using existing
   Type* convertType(const types::Type* t);
   Symbol* convertParam(types::QualifiedType qt);
 
@@ -366,11 +370,6 @@ struct TConverter final : UastConverter {
   Symbol* findConvertedSym(const ID& id);
   Symbol* findConvertedFn(const ResolvedFunction* rfn);
 
-  // helper methods
-  bool shouldConvertWithoutTypes(const ResolvedFunction* r) {
-    return functionsToConvertWithTypes.count(r) == 0;
-  }
-
   // helpers
   bool typeExistsAtRuntime(const types::Type* t);
   bool functionExistsAtRuntime(const ResolvedFunction* r);
@@ -388,6 +387,7 @@ struct TConverter final : UastConverter {
                              bool useLinkageName,
                              MultiDeclState* multiState = nullptr);
   void simplifyEpilogue(FnSymbol* fn);
+  ::Qualifier convertQualifier(types::QualifiedType::Kind kind);
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym, RV& rv);
 
   // helpers we might want to bring back from convert-uast.cpp
@@ -600,6 +600,18 @@ void TConverter::convertFunctionsToConvert() {
   for (auto pair : v) {
     convertFunction(pair.first);
   }
+
+  // convert also main and create chpl_gen_main
+  createMainFunctions();
+
+  // tell the untyped converter about which functions to ignore
+  // this is whatever functions we have converted already here
+  CalledFnsSet ignore;
+  for (auto pair: fns) {
+    const ResolvedFunction* fn = pair.first;
+    ignore.insert({fn, CalledFnOrder()}); // order not needed here
+  }
+  untypedConverter->setFunctionsToConvertWithTypes(ignore);
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
@@ -807,7 +819,10 @@ void TConverter::createMainFunctions() {
   const AstNode* ast = parsing::idToAst(context, mainModuleId);
   INT_ASSERT(ast);
   const Module* mainMod = ast->toModule();
+  INT_ASSERT(mainMod);
   ModuleSymbol* mainModule = findOrSetupModule(mainModuleId);
+  INT_ASSERT(mainModule);
+  SET_LINENO(mainModule);
 
   // if 'proc main' was not provided, generate an empty 'proc main'.
   //
@@ -817,7 +832,6 @@ void TConverter::createMainFunctions() {
   FnSymbol* mainFn = nullptr;
   if (mainFnId.isEmpty()) {
     // there wasn't a 'proc main' so we need to generate one.
-    SET_LINENO(mainModule);
     mainFn = new FnSymbol("main");
     mainFn->addFlag(FLAG_RESOLVED);
     mainFn->retType = dtVoid;
@@ -842,7 +856,8 @@ void TConverter::createMainFunctions() {
   }
 
   // generate chpl_gen_main
-
+  // TODO: expand this after we have 'class C' and 'record R' converting
+#if 0
   bool mainReturnsSomething = mainFn->retType != dtVoid;
 
   //
@@ -992,6 +1007,7 @@ void TConverter::createMainFunctions() {
   }
 
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
+#endif
 }
 
 Type* TConverter::helpConvertType(const types::Type* t) {
@@ -1043,10 +1059,10 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::AnyUninstantiatedType:        return dtUninstantiated;
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
     // declared types
-    case typetags::ClassType:   return convertClassType(t->toClassType());
-    case typetags::EnumType:    return convertEnumType(t->toEnumType());
-    case typetags::ExternType:  return convertExternType(t->toExternType());
-    case typetags::FunctionType:return convertFunctionType(t->toFunctionType());
+    case typetags::ClassType:   return helpConvertClassType(t->toClassType());
+    case typetags::EnumType:    return helpConvertEnumType(t->toEnumType());
+    case typetags::ExternType:  return helpConvertExternType(t->toExternType());
+    case typetags::FunctionType:return helpConvertFunctionType(t->toFunctionType());
 
     case typetags::ArrayType:
        CHPL_UNIMPL("convert array type");
@@ -1056,22 +1072,22 @@ Type* TConverter::helpConvertType(const types::Type* t) {
       return dtUnknown; // TODO
 
     case typetags::BasicClassType:
-      return convertBasicClassType(t->toBasicClassType());
+      return helpConvertBasicClassType(t->toBasicClassType());
 
     case typetags::AnyClassType:    return dtAnyManagementNonNilable;
-    case typetags::RecordType:      return convertRecordType(t->toRecordType());
-    case typetags::TupleType:       return convertTupleType(t->toTupleType());
-    case typetags::UnionType:       return convertUnionType(t->toUnionType());
+    case typetags::RecordType:      return helpConvertRecordType(t->toRecordType());
+    case typetags::TupleType:       return helpConvertTupleType(t->toTupleType());
+    case typetags::UnionType:       return helpConvertUnionType(t->toUnionType());
 
     // primitive types
-    case typetags::BoolType:       return convertBoolType(t->toBoolType());
-    case typetags::ComplexType:    return convertComplexType(t->toComplexType());
-    case typetags::ImagType:       return convertImagType(t->toImagType());
-    case typetags::IntType:        return convertIntType(t->toIntType());
-    case typetags::RealType:       return convertRealType(t->toRealType());
-    case typetags::UintType:       return convertUintType(t->toUintType());
-    case typetags::CPtrType:       return convertPtrType(t->toPtrType());
-    case typetags::HeapBufferType: return convertPtrType(t->toPtrType());
+    case typetags::BoolType:       return helpConvertBoolType(t->toBoolType());
+    case typetags::ComplexType:    return helpConvertComplexType(t->toComplexType());
+    case typetags::ImagType:       return helpConvertImagType(t->toImagType());
+    case typetags::IntType:        return helpConvertIntType(t->toIntType());
+    case typetags::RealType:       return helpConvertRealType(t->toRealType());
+    case typetags::UintType:       return helpConvertUintType(t->toUintType());
+    case typetags::CPtrType:       return helpConvertPtrType(t->toPtrType());
+    case typetags::HeapBufferType: return helpConvertPtrType(t->toPtrType());
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -1099,7 +1115,7 @@ Type* TConverter::helpConvertType(const types::Type* t) {
   return nullptr;
 }
 
-Type* TConverter::convertClassType(const types::ClassType* t) {
+Type* TConverter::helpConvertClassType(const types::ClassType* t) {
   if (auto mt = t->manageableType()) {
     if (mt->isAnyClassType()) {
       // The production compiler represents these as special builtins
@@ -1122,11 +1138,33 @@ Type* TConverter::convertClassType(const types::ClassType* t) {
     }
   }
 
-  CHPL_UNIMPL("Unhandled class type");
-  return nullptr;
+  const types::BasicClassType* bct = t->basicClassType();
+
+  // convert the basic class type
+  Type* gotT = convertType(bct);
+  if (isTemporaryConversionType(gotT)) {
+    return new TemporaryConversionType(t);
+  }
+
+  AggregateType* at = toAggregateType(gotT);
+  INT_ASSERT(at);
+
+  Type* ret = dtUnknown;
+
+  const types::RecordType* manager = t->managerRecordType(context);
+  if (manager == nullptr) {
+    ret = at; // unamanged / borrowed is just the class type at this point
+  //} else if (isTemporaryConversionType(manager)) {
+  //  ret = new TemporaryConversionType(t);
+  } else {
+    // TODO: convert managed class type
+    CHPL_UNIMPL("convert managed class type");
+  }
+
+  return ret;
 }
 
-Type* TConverter::convertPtrType(const types::PtrType* t) {
+Type* TConverter::helpConvertPtrType(const types::PtrType* t) {
   // find the pointer type to instantiate
   AggregateType* base = nullptr;
   if (auto ct = t->toCPtrType()) {
@@ -1166,27 +1204,91 @@ Type* TConverter::convertPtrType(const types::PtrType* t) {
   return ret;
 }
 
-Type* TConverter::convertEnumType(const types::EnumType* t) {
+Type* TConverter::helpConvertEnumType(const types::EnumType* t) {
   CHPL_UNIMPL("convertEnumType");
   return nullptr;
 }
 
-Type* TConverter::convertExternType(const types::ExternType* t) {
+Type* TConverter::helpConvertExternType(const types::ExternType* t) {
   CHPL_UNIMPL("convertExternType");
   return nullptr;
 }
 
-Type* TConverter::convertFunctionType(const types::FunctionType* t) {
+Type* TConverter::helpConvertFunctionType(const types::FunctionType* t) {
   CHPL_UNIMPL("convertExternType");
   return nullptr;
 }
 
-Type* TConverter::convertBasicClassType(const types::BasicClassType* t) {
-  CHPL_UNIMPL("convertExternType");
-  return nullptr;
+Type* TConverter::helpConvertBasicClassType(const types::BasicClassType* bct) {
+
+  const ResolvedFields& rf =
+    fieldsForTypeDecl(context, bct, DefaultsPolicy::USE_DEFAULTS);
+
+  // check that the super class and fields can be converted
+  // before we create an AggregateType.
+  // TODO: could we save the field-less class type earlier in the map
+  // and avoid TemporaryConversionType entirely?
+  if (auto parentClassType = bct->parentClassType()) {
+    Type* pt = convertType(parentClassType);
+    if (isTemporaryConversionType(pt)) {
+      return new TemporaryConversionType(bct);
+    }
+  }
+  int nFields = rf.numFields();
+  for (int i = 0; i < nFields; i++) {
+    types::QualifiedType qt = rf.fieldType(i);
+    Type* ft = convertType(qt.type());
+    if (isTemporaryConversionType(ft)) {
+      return new TemporaryConversionType(bct);
+    }
+  }
+
+  AggregateType* ct = new AggregateType(AGGREGATE_CLASS);
+  TypeSymbol* ts = nullptr;
+
+  const char* name = astr(bct->name());
+  if (AggregateType* dt = shouldWireWellKnownType(name)) {
+    ct = installInternalType(ct, dt);
+    ts = ct->symbol;
+  }
+  if (ts == nullptr) {
+    ts = new TypeSymbol(name, ct);
+  }
+
+  // add the DefExpr to the module containing the type
+  ID inModuleId = parsing::idToParentModule(context, bct->id());
+  ModuleSymbol* inModule = findOrSetupModule(inModuleId);
+  inModule->block->insertAtTail(new DefExpr(ts));
+
+  // convert the superclass as a field 'super'
+  if (auto parentClassType = bct->parentClassType()) {
+    Type* pt = convertType(parentClassType);
+    VarSymbol* v = new VarSymbol("super", pt);
+    v->qual = QUAL_VAL;
+  }
+
+  // convert the fields
+  for (int i = 0; i < nFields; i++) {
+    types::QualifiedType qt = rf.fieldType(i);
+    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+      // a 'type' field can be left out at this point
+      continue;
+    } else if (qt.isParam()) {
+      // a 'param' field can be left out at this point
+      continue;
+    }
+    Type* ft = convertType(qt.type());
+    UniqueString name = rf.fieldName(i);
+    VarSymbol* v = new VarSymbol(astr(name), ft);
+    v->qual = convertQualifier(qt.kind());
+    v->makeField();
+    ct->fields.insertAtTail(new DefExpr(v));
+  }
+
+  return ct;
 }
 
-Type* TConverter::convertRecordType(const types::RecordType* t) {
+Type* TConverter::helpConvertRecordType(const types::RecordType* t) {
   if (t->isStringType()) {
     return dtString;
   } else if (t->isBytesType()) {
@@ -1199,17 +1301,17 @@ Type* TConverter::convertRecordType(const types::RecordType* t) {
   return nullptr;
 }
 
-Type* TConverter::convertTupleType(const types::TupleType* t) {
+Type* TConverter::helpConvertTupleType(const types::TupleType* t) {
   CHPL_UNIMPL("convertTupleType");
   return nullptr;
 }
 
-Type* TConverter::convertUnionType(const types::UnionType* t) {
+Type* TConverter::helpConvertUnionType(const types::UnionType* t) {
   CHPL_UNIMPL("convertUnionType");
   return nullptr;
 }
 
-Type* TConverter::convertBoolType(const types::BoolType* t) {
+Type* TConverter::helpConvertBoolType(const types::BoolType* t) {
   return dtBool;
 }
 
@@ -1225,7 +1327,7 @@ static IF1_complex_type getComplexSize(const types::ComplexType* t) {
   return COMPLEX_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertComplexType(const types::ComplexType* t) {
+Type* TConverter::helpConvertComplexType(const types::ComplexType* t) {
   return dtComplex[getComplexSize(t)];
 }
 
@@ -1241,7 +1343,7 @@ static IF1_float_type getImagSize(const types::ImagType* t) {
   return FLOAT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertImagType(const types::ImagType* t) {
+Type* TConverter::helpConvertImagType(const types::ImagType* t) {
   return dtImag[getImagSize(t)];
 }
 
@@ -1259,7 +1361,7 @@ static IF1_int_type getIntSize(const types::IntType* t) {
   return INT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertIntType(const types::IntType* t) {
+Type* TConverter::helpConvertIntType(const types::IntType* t) {
   return dtInt[getIntSize(t)];
 }
 
@@ -1275,7 +1377,7 @@ static IF1_float_type getRealSize(const types::RealType* t) {
   return FLOAT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertRealType(const types::RealType* t) {
+Type* TConverter::helpConvertRealType(const types::RealType* t) {
   return dtReal[getRealSize(t)];
 }
 
@@ -1293,7 +1395,7 @@ static IF1_int_type getUintSize(const types::UintType* t) {
   return INT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertUintType(const types::UintType* t) {
+Type* TConverter::helpConvertUintType(const types::UintType* t) {
   return dtUInt[getUintSize(t)];
 }
 
@@ -1704,7 +1806,7 @@ void TConverter::simplifyEpilogue(FnSymbol* fn) {
   }
 }
 
-static ::Qualifier convertQualifier(types::QualifiedType::Kind kind) {
+::Qualifier TConverter::convertQualifier(types::QualifiedType::Kind kind) {
   ::Qualifier q = QUAL_UNKNOWN;
   if      (kind == types::QualifiedType::VAR)       q = QUAL_VAL;
   else if (kind == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;

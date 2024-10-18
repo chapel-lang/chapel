@@ -108,7 +108,7 @@ struct Converter final : UastConverter {
 
   // which modules / submodules to convert
   std::unordered_set<chpl::ID> modulesToConvert;
-  std::unordered_set<chpl::ID> functionsToIgnore;
+  std::unordered_set<chpl::ID> symbolsToIgnore;
 
   // to keep track of symbols that have been converted & fixups needed
   std::unordered_map<ID, ModuleSymbol*> modSyms;
@@ -162,17 +162,11 @@ struct Converter final : UastConverter {
 
   void setFunctionsToConvertWithTypes(const resolution::CalledFnsSet& calledFns) override
   {
-    // the concrete functions that are converted with types should be
-    // ignored by this converter.
-    functionsToIgnore.clear();
-    for (const auto& pair : calledFns) {
-      const resolution::ResolvedFunction* r = pair.first;
-      if (r->signature()->instantiatedFrom() == nullptr) {
-        // it's concrete, so don't convert it
-        // instead, rely on the TConverter to do it
-        functionsToIgnore.insert(r->id());
-      }
-    }
+    // no action needed here
+  }
+
+  void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) override {
+    symbolsToIgnore.swap(ignore);
   }
 
   void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
@@ -2946,7 +2940,7 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (functionsToIgnore.count(node->id()) != 0) {
+    if (symbolsToIgnore.count(node->id()) != 0) {
       printf("Ignoring %s\n", node->id().str().c_str());
       return nullptr;
     }
