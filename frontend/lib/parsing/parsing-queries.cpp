@@ -1285,6 +1285,36 @@ bool idIsModule(Context* context, ID id) {
   return asttags::isModule(tag);
 }
 
+static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsModuleScopeVarQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isVariable(tag)) {
+    result = true;
+    for (ID p = idToParentId(context, id);
+         !p.isEmpty();
+         p = idToParentId(context, p)) {
+      tag = idToTag(context, p);
+      if (asttags::isModule(tag)) {
+        break; // exit, result is true
+      } else if (asttags::isTupleDecl(tag) || asttags::isMultiDecl(tag)) {
+        // these are OK and still declare a top-level variable
+      } else {
+        result = false;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsModuleScopeVar(Context* context, ID id) {
+  return idIsModuleScopeVarQuery(context, id);
+}
+
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
 

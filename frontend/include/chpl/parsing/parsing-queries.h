@@ -493,6 +493,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsModule(Context* context, ID id);
 
 /**
+  Returns true if the ID is a module-scope variable.
+ */
+bool idIsModuleScopeVar(Context* context, ID id);
+
+/**
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
