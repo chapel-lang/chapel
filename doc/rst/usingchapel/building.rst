@@ -128,7 +128,7 @@ installed during the ``make install`` step. Specifically:
   This technique is designed to install Chapel using a standard
   directory structure for the purposes of integrating it into a
   standard location that is already in your path, such as
-  ``/usr/local/`` or ``~/``.  Note that elevated privileges are likely
+  ``/usr/local/``.  Note that elevated privileges are likely
   to be required for any system-wide installation locations.
 
   Please note that for any prefix-installed version of Chapel, the meaning of
