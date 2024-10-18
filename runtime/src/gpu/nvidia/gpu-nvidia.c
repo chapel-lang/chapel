@@ -49,7 +49,7 @@ static CUdevice  *chpl_gpu_devices;
 
 static int numAllDevices = -1;
 static int numDevices = -1;
-static int *deviceIDToIndex;
+static int *dev_pid_to_lid_table;
 
 // array indexed by device ID (we load the same module once for each GPU).
 static CUmodule *chpl_gpu_cuda_modules;
@@ -69,8 +69,8 @@ static bool chpl_gpu_has_context(void) {
   }
 }
 
-static void switch_context(int dev_id) {
-  CUcontext next_context = chpl_gpu_primary_ctx[dev_id];
+static void switch_context(int dev_lid) {
+  CUcontext next_context = chpl_gpu_primary_ctx[dev_lid];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -90,15 +90,27 @@ static void switch_context(int dev_id) {
   }
 }
 
+// Maps the "physical" device ID used by the CUDA library to the "logical"
+// device ID used by this locale. The two may differ due to co-locales.
+// Logical device IDs start with zero in each co-locale and are equal to the
+// sublocale ID. Physical device IDs are the same for all co-locales on the
+// machine.
+
+static int dev_pid_to_lid(int32_t dev_pid) {
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  int dev_lid = dev_pid_to_lid_table[dev_pid];
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  return dev_lid;
+}
+
+
 static CUmodule get_module(void) {
   CUdevice device;
   CUmodule module;
 
   CUDA_CALL(cuCtxGetDevice(&device));
-  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
-  int index = deviceIDToIndex[(int)device];
-  assert((index >= 0) && (index < numDevices));
-  module = chpl_gpu_cuda_modules[index];
+  int dev_lid = dev_pid_to_lid((int32_t) device);
+  module = chpl_gpu_cuda_modules[dev_lid];
   return module;
 }
 
@@ -106,7 +118,7 @@ extern c_nodeid_t chpl_nodeID;
 
 // we can put this logic in chpl-gpu.c. However, it needs to execute
 // per-context/module. That's currently too low level for that layer.
-static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_lid, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
 
@@ -131,8 +143,8 @@ void* chpl_gpu_impl_load_function(const char* kernel_name) {
   return (void*)function;
 }
 
-void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
-  switch_context(dev_id);
+void chpl_gpu_impl_use_device(c_sublocid_t dev_lid) {
+  switch_context(dev_lid);
 }
 
 void chpl_gpu_impl_init(int* num_devices) {
@@ -179,15 +191,16 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 
   // Allocate the GPU data structures. Note that the CUDA API, specifically
-  // cuCtxGetDevice, returns the global device ID so we need deviceIDToIndex
-  // to map from the global device ID to an array index.
+  // cuCtxGetDevice, returns the global device ID so we need
+  // dev_pid_to_lid_table to map from the global device ID to the logical
+  // device ID.
 
   numDevices = numAddrs;
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*numDevices);
   chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*numDevices);
   chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*numDevices);
   deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
-  deviceIDToIndex = chpl_malloc(sizeof(int) * numAllDevices);
+  dev_pid_to_lid_table = chpl_malloc(sizeof(int) * numAllDevices);
 
   // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
   // and find the corresponding GPUs. Initialize each GPU and its array
@@ -215,7 +228,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
         chpl_gpu_devices[i] = device;
         chpl_gpu_primary_ctx[i] = context;
-        deviceIDToIndex[j] = i; // map device ID to array index
+        dev_pid_to_lid_table[j] = i; // map device ID to array index
 
         // TODO can we refactor some of this to chpl-gpu to avoid duplication
         // between runtime layers?
@@ -354,11 +367,14 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 
     // see note in chpl_gpu_mem_free
-    int64_t dev_id = c_sublocid_none;
-    CUDA_CALL(cuPointerGetAttribute((void*)&dev_id,
+    int32_t dev_pid = -1;
+    CUDA_CALL(cuPointerGetAttribute((void*)&dev_pid,
                                     CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
                                     (CUdeviceptr)memAlloc));
-    switch_context(dev_id);
+    if (dev_pid != -1) {
+      int dev_lid = dev_pid_to_lid(dev_pid);
+      switch_context(dev_lid);
+    }
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
@@ -395,19 +411,19 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
-bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+bool chpl_gpu_impl_can_access_peer(int dev_lid1, int dev_lid2) {
   int p2p;
-  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev1],
-    chpl_gpu_devices[dev2]));
+  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev_lid1],
+    chpl_gpu_devices[dev_lid2]));
   return p2p != 0;
 }
 
-void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  switch_context(dev1);
+void chpl_gpu_impl_set_peer_access(int dev_lid1, int dev_lid2, bool enable) {
+  switch_context(dev_lid1);
   if(enable) {
-    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
+    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev_lid2], 0));
   } else {
-    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]));
+    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev_lid2]));
   }
 }
 
