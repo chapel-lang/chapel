@@ -1182,6 +1182,12 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  // Allow 'c_ptr(void)' conversions to function types at compile-time
+  // (even if the conversion is potentially unsafe).
+  if (isFunctionType(formalType)) {
+    if (isCVoidPtr(actualType)) return true;
+  }
+
   return false;
 }
 
