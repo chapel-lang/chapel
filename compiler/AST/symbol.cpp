@@ -74,12 +74,13 @@ Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gCpuVsGpuToken = NULL;
+VarSymbol *gIteratorBreakToken = NULL;
 
 llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 

@@ -1,0 +1,2 @@
+# compiling under GPU=cpu does not produce "on GPU" messages
+CHPL_GPU==cpu

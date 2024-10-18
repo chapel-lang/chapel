@@ -187,11 +187,26 @@ GenRet BlockStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+// If this is 'if gCpuVsGpuToken then ... else ...'
+// then return the approrpiate branch, else nil.
+static BlockStmt* chooseCpuVsGpuBranch(CondStmt* cond) {
+  if (SymExpr* se = toSymExpr(cond->condExpr))
+    if (se->symbol() == gCpuVsGpuToken)
+      return gCodegenGPU ? cond->elseStmt : cond->thenStmt;
+  return nullptr;
+}
+
 GenRet
 CondStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
   GenRet   ret;
+
+  if (BlockStmt* chosenBlock = chooseCpuVsGpuBranch(this)) {
+    for_alist(node, chosenBlock->body)
+      node->codegen();
+    return ret;
+  }
 
   codegenStmt(this);
 

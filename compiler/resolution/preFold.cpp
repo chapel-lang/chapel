@@ -2598,6 +2598,45 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
 }
 
 
+// helper for inlineArgIntoCond()
+static bool tempIsUsedOnlyInMoveAndCond(Symbol* temp,
+                                        CallExpr* move, CondStmt* cond) {
+  for_SymbolSymExprs(se, temp)
+    if (se != move->get(1) && se != cond->condExpr)
+      return false;
+  return true;
+}
+
+//
+// This helps replace:
+//   def temp
+//   move temp <- _cond_test(argSym)
+//   if temp then ....
+// with
+//   if argSym then ....
+// in the context of its caller.
+//
+// Why not use this on all eligible boolean 'argSym'? That would break code
+// that expects the 'move', ex. test/functions/vass/ref-intent-bug-2big.chpl
+// with --no-local and test/classes/nilability/if-object-2.chpl.
+//
+static void inlineArgIntoCond(CallExpr*& call, Expr*& retval) {
+  if (CallExpr* move = toCallExpr(call->parentExpr))
+   if (CondStmt* cond = toCondStmt(move->next))
+    if (move->isPrimitive(PRIM_MOVE))
+     if (Symbol* temp = toSymExpr(move->get(1))->symbol())
+      if (call == move->get(2))
+       if (tempIsUsedOnlyInMoveAndCond(temp, move, cond))
+        {
+          temp->defPoint->remove();
+          cond->condExpr->replace(retval);
+          // set up for 'call->replace(retval)' in caller
+          // to replace 'move' with a no-op
+          call = move;
+          retval = new CallExpr(PRIM_NOOP);
+        }
+}
+
 static bool isMethodCall(CallExpr* call) {
   // The first argument could be DefExpr for a query expr, see
   //   test/arrays/formals/queryArrOfArr2.chpl
@@ -2953,6 +2992,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (argType == dtBool) {
           // use the argument directly
           retval = argSE->remove();
+          if (argSym == gCpuVsGpuToken)
+            inlineArgIntoCond(call, retval); // modifies call, retval
 
         } else if (argType == dtBool->refType) {
           // dereference it so later passes get a value

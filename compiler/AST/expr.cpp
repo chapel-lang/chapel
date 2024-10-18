@@ -195,29 +195,11 @@ bool Expr::isStmtExpr() const {
 }
 
 Expr* Expr::getStmtExpr() {
-  for (Expr* expr = this; expr; expr = expr->parentExpr) {
-    if (expr->isStmt() == true) {
+  for (Expr* expr = this; expr; expr = expr->parentExpr)
+    if (expr->isStmtExpr())
       return expr;
 
-    // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
-    // but needs special handling
-    } else if (WhileStmt* parent = toWhileStmt(expr->parentExpr)) {
-      if (parent->condExprGet() != expr) {
-        return expr;
-      }
-
-    // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
-    // but needs special handling
-    } else if (ForLoop* parent = toForLoop(parentExpr)) {
-      if (parent->indexGet() != this && parent->iteratorGet() != this)
-        return expr;
-
-    } else if (isBlockStmt(expr->parentExpr)) {
-      return expr;
-    }
-  }
-
-  return NULL;
+  return nullptr;
 }
 
 Expr* Expr::getNextExpr(Expr* expr) {

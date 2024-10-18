@@ -1179,6 +1179,9 @@ void initPrimitiveTypes() {
   dtAnyRecord = createInternalType("record", "_anyRecord");
   dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
+  gCpuVsGpuToken = createSymbol(dtBool, "chpl_cpuVsGpuToken");
+  gCpuVsGpuToken->addFlag(FLAG_NO_CODEGEN);
+
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
 
@@ -1213,8 +1216,6 @@ void initPrimitiveTypes() {
   gNan->immediate->v_float64 = NAN;
   gNan->immediate->const_kind = NUM_KIND_REAL;
   gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
-
-
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
