@@ -2614,9 +2614,9 @@ static bool tempIsUsedOnlyInMoveAndCond(Symbol* temp,
 //   if temp then ....
 // with
 //   if argSym then ....
-// in the context of its caller.
+// where replacement is done by caller. 'argSym' is in 'retval'.
 //
-// Why not use this on all eligible boolean 'argSym'? That would break code
+// Why not use this on all eligible boolean 'argSym's? That would break code
 // that expects the 'move', ex. test/functions/vass/ref-intent-bug-2big.chpl
 // with --no-local and test/classes/nilability/if-object-2.chpl.
 //
