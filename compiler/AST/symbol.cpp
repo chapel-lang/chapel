@@ -1787,19 +1787,14 @@ VarSymbol *new_CStringSymbol(const char *str) {
 
 
 VarSymbol* new_BoolSymbol(bool b) {
-  Immediate imm;
-  imm.v_bool = b;
-  imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = BOOL_SIZE_SYS;
-  VarSymbol *s;
-  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
-  // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBool;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  // Why not just return these? test: studies/bale/indexgather/ig-variants
+  VarSymbol* proto = b ? gTrue : gFalse;
+  VarSymbol* s = new VarSymbol(
+    astr("_", proto->name, "_", istr(literal_id++)), dtBool);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
-  *s->immediate = imm;
+  *s->immediate = *proto->immediate;
   return s;
 }
 
