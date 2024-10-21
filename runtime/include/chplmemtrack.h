@@ -33,6 +33,12 @@
 extern "C" {
 #endif
 
+int get_hashsize(void);
+void* get_memtable_entry(int idx);
+void* get_next_memtable_entry(void* entry);
+uint64_t get_memtable_entry_addr(void* entry);
+uint64_t get_memtable_entry_size(void* entry);
+
 // Memory tracking activated?
 extern int chpl_memTrack;
 extern int chpl_verbose_mem;      // set via startVerboseMem

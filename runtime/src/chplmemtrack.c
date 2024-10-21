@@ -521,6 +521,28 @@ void chpl_printMemAllocs(int64_t threshold, int32_t lineno, int32_t filename) {
   printMemAllocs(-1, threshold, lineno, filename);
 }
 
+int get_hashsize(void) {
+  return hashSize;
+}
+
+void* get_memtable_entry(int idx) {
+  /*printf("hashSize %d\n", hashSize);*/
+  return memTable[idx];
+}
+
+void* get_next_memtable_entry(void* entry) {
+  return (void*)(((memTableEntry*)entry)->nextInBucket);
+}
+
+uint64_t get_memtable_entry_addr(void* entry) {
+  return (uint64_t)(((memTableEntry*)entry)->memAlloc);
+}
+
+uint64_t get_memtable_entry_size(void* entry) {
+  memTableEntry* _entry = (memTableEntry*)entry;
+  return (uint64_t)(_entry->size*_entry->number);
+}
+
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
                int32_t lineno, int32_t filename) {
