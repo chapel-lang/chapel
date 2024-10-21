@@ -18,4 +18,4 @@ Active rules:
   UnusedLoopIndex              Warn for unused index variables in loops.
   UnusedTaskIntent             Warn for unused task intents in functions.
   UnusedTupleUnpack            Warn for unused tuple unpacking, such as '(_, _)'.
-  UnusedTypeQueries            Warn for unused type queries in functions.
+  UnusedTypeQuery              Warn for unused type queries in functions.
