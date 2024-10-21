@@ -3,3 +3,5 @@
 # the error behavior is subject to change / improvement
 --err1=5 # cpu-vs-gpu-1.err1.good
 --err2=5 # cpu-vs-gpu-1.err2.good
+--err3=5 # cpu-vs-gpu-1.err3.good
+--err4=5 # cpu-vs-gpu-1.err4.good

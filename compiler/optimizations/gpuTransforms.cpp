@@ -776,22 +776,44 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   return true;
 }
 
-// Given a 'cpuCall', replace it with this conditional:
-//  if gCpuVsGpuToken then cpuCall; else call gpuFn();
+// Given a statement-level 'cpuCall', replace it with this conditional:
+//  if gCpuVsGpuToken { cpuCall; } else { call gpuFn(); }
+// If 'cpuCall' is within a 'move', set up a similar conditional
+// whose 'else' contains a copy of the 'move' with 'cpuCall' replaced.
 static void setupCpuVsGpuCalls(CallExpr* cpuCall, FnSymbol* gpuFn) {
-  // handling non-statement-level calls is t.b.d.
-  if (! cpuCall->isStmtExpr())
-    USR_FATAL(cpuCall, "such calls to %s are currently not implemented",
-              gpuFn->name);
-
   SET_LINENO(cpuCall);
-  CallExpr* gpuCall = cpuCall->copy();
+  CallExpr* cpuStmt = nullptr;
+  CallExpr* gpuStmt = nullptr;
+  CallExpr* gpuCall = nullptr;
+
+  if (cpuCall->isStmtExpr()) {
+    cpuStmt = cpuCall;
+    gpuCall = cpuCall->copy();
+    gpuStmt = gpuCall;
+  } else {
+    if (CallExpr* move = toCallExpr(cpuCall->parentExpr)) {
+      if (move->isPrimitive(PRIM_MOVE)) {
+        cpuStmt = move;
+        gpuStmt = cpuStmt->copy();
+        gpuCall = toCallExpr(gpuStmt->get(2));
+      }
+    }
+  }
+  if (gpuCall == nullptr)
+    USR_FATAL_CONT(cpuCall, "such calls to %s are currently not implemented",
+                   gpuFn->name);
+
   gpuCall->setResolvedFunction(gpuFn);
+
   BlockStmt* thenBlock = new BlockStmt();
+  BlockStmt* elseBlock = new BlockStmt();
   CondStmt* cond = new CondStmt(new SymExpr(gCpuVsGpuToken),
-                                thenBlock, gpuCall);
-  cpuCall->replace(cond);
-  thenBlock->insertAtTail(cpuCall);
+                                thenBlock, elseBlock);
+  cpuStmt->replace(cond);
+  thenBlock->insertAtTail(cpuStmt);
+  elseBlock->insertAtTail(gpuStmt);
+  nprint_view(cond); //wass
+  gdbShouldBreakHere(); //wass
 }
 
 FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
@@ -799,14 +821,19 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
 
   // set up the new function
   FnSymbol* gpuCopy = fn->copy();
+  gpuCopy->name = astr(gpuCopy->name, "_gpuError");
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
   gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
   fn->defPoint->insertBefore(new DefExpr(gpuCopy));
 
   // modify its body
   BlockStmt* gpuCopyBody = new BlockStmt();
+  VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
+
   gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
-  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
+  gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
+
   gpuCopy->body->replace(gpuCopyBody);
 
   return gpuCopy;
