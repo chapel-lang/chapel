@@ -252,6 +252,12 @@ proc stopVerboseMemHere() {
   chpl_stopVerboseMemHere();
 }
 
+/*
+  Yield (address, size) pairs for all individual dynamic memory allocations
+  that are still allocated on this locale. ``minSize`` can be passed to limit
+  the size of the yielded elements. Note that some allocations may have larger
+  sizes than expected due to padding.
+*/
 iter allocations(minSize: integral = 0) {
   use CTypes;
 
