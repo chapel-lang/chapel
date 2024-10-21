@@ -905,9 +905,7 @@ CallExpr* CondStmt::foldConstantCondition(bool addEndOfStatement) {
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
     if (VarSymbol* var = toVarSymbol(cond->symbol())) {
-      bool foldGpuCondition = var == gCpuVsGpuToken && ! usingGpuLocaleModel();
-      if (foldGpuCondition ||
-          (var->immediate && var->immediate->const_kind == NUM_KIND_BOOL)) {
+      if (var->immediate && var->immediate->const_kind == NUM_KIND_BOOL) {
 
         SET_LINENO(this);
 
@@ -932,8 +930,7 @@ CallExpr* CondStmt::foldConstantCondition(bool addEndOfStatement) {
         if (addEndOfStatement)
           addCondMentionsToEndOfStatement(this, ifExpr);
 
-        if (foldGpuCondition ||
-            var->immediate->bool_value() == gTrue->immediate->bool_value()) {
+        if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();

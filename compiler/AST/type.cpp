@@ -1428,6 +1428,12 @@ void initCompilerGlobals() {
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
+  if (! usingGpuLocaleModel()) {
+    // gCpuVsGpuToken is param true for non-gpu compiles
+    gCpuVsGpuToken->immediate = new Immediate;
+   *gCpuVsGpuToken->immediate = *gTrue->immediate;
+  }
+
   initForTaskIntents();
 }
 
