@@ -22,9 +22,9 @@ on here.gpus[0] {
   @assertOnGpu
   forall i in space {
     chpl_gpu_printf0("'on' on gpu - 2\n");
-    if i == err2 then chpl_gpu_printf1("gpu: cpuInteger=%d\n", cpuInteger());
+    if i == err2 then printArg(n, cpuInteger("gpu4"));// error if invoked
   }
-  writeln("cpuInteger = ", cpuInteger());
+  writeln("cpuInteger = ", cpuInteger("cpu-5"));
 
   writeln("} finish 'on'");
 }
@@ -40,21 +40,23 @@ proc either() {
 
   forall i in space {
     if chpl_cpuVsGpuToken {
-      notRunOnGPUs(); // on cpu - should be OK
+      notRunOnGPUs(); // on cpu - runs OK
     } else {
       chpl_gpu_printf0("either() on gpu - 1\n");
       if i == err3 then notRunOnGPUs(); // error if invoked
     }
   }
+  notRunOnGPUs();
 
   forall i in space {
     if chpl_cpuVsGpuToken {
-      printf("cpu: cpuInteger=%d\n", cpuInteger()); // on cpu - should be OK
+      chpl_gpu_printf1("cpu: cpuInteger=%d\n", cpuInteger("1")); // on cpu - OK
     } else {
       chpl_gpu_printf0("either() on gpu - 2\n");
-      if i == err4 then chpl_gpu_printf1("gpu: cpuInteger=%d\n", cpuInteger());
+      if i == err4 then printArg(n, cpuInteger("gpu-5")); // error if invoked
     }
   }
+  writeln("cpuInteger = ", cpuInteger("cpu--6"));
 
   writeln("} finish either()");
 }
@@ -66,8 +68,16 @@ proc notRunOnGPUs() {
 }
 
 pragma "not called from gpu"
-proc cpuInteger() {
-  return 12345;
+proc cpuInteger(arg: string) {
+  return arg.size;
+}
+
+proc printArg(n: int, arg: int) {
+  // Our error stub currently returns garbage.
+  // (This is OK -- it is not supposed to return at all.)
+  // Ensure it is invoked, then drop the result.
+  var toPrint = if n > 0 then 0 else arg;
+  chpl_gpu_printf1("gpu: cpuInteger %d\n", toPrint);
 }
 
 extern proc printf(args...);

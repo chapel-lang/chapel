@@ -812,8 +812,6 @@ static void setupCpuVsGpuCalls(CallExpr* cpuCall, FnSymbol* gpuFn) {
   cpuStmt->replace(cond);
   thenBlock->insertAtTail(cpuStmt);
   elseBlock->insertAtTail(gpuStmt);
-  nprint_view(cond); //wass
-  gdbShouldBreakHere(); //wass
 }
 
 FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
