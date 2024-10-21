@@ -511,5 +511,58 @@ void chpl_gpu_impl_host_unregister(void* var) {
   ROCM_CALL(hipHostUnregister(var));
 }
 
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, indexToDeviceID[dev]));
+}
+
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = hipDeviceAttributeMaxThreadsPerBlock;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X = hipDeviceAttributeMaxBlockDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y = hipDeviceAttributeMaxBlockDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z = hipDeviceAttributeMaxBlockDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X = hipDeviceAttributeMaxGridDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y = hipDeviceAttributeMaxGridDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z = hipDeviceAttributeMaxGridDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK = hipDeviceAttributeMaxSharedMemoryPerBlock;
+const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY = hipDeviceAttributeTotalConstantMemory;
+const int CHPL_GPU_ATTRIBUTE__WARP_SIZE = hipDeviceAttributeWarpSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_PITCH = hipDeviceAttributeMaxPitch;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH = hipDeviceAttributeMaxTexture1DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH = hipDeviceAttributeMaxTexture2DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT = hipDeviceAttributeMaxTexture2DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH = hipDeviceAttributeMaxTexture3DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT = hipDeviceAttributeMaxTexture3DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH = hipDeviceAttributeMaxTexture3DDepth;
+const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK = hipDeviceAttributeMaxRegistersPerBlock;
+const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE = hipDeviceAttributeClockRate;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT = hipDeviceAttributeTextureAlignment;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT = hipDeviceAttributeTexturePitchAlignment;
+const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT = hipDeviceAttributeMultiprocessorCount;
+const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT = hipDeviceAttributeKernelExecTimeout;
+const int CHPL_GPU_ATTRIBUTE__INTEGRATED = hipDeviceAttributeIntegrated;
+const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY = hipDeviceAttributeCanMapHostMemory;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE = hipDeviceAttributeComputeMode;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS = hipDeviceAttributeConcurrentKernels;
+const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED = hipDeviceAttributeEccEnabled;
+const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID = hipDeviceAttributePciBusId;
+const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID = hipDeviceAttributePciDeviceId;
+const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE = hipDeviceAttributeMemoryClockRate;
+const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH = hipDeviceAttributeMemoryBusWidth;
+const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE = hipDeviceAttributeL2CacheSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR = hipDeviceAttributeMaxThreadsPerMultiProcessor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR = hipDeviceAttributeComputeCapabilityMajor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR = hipDeviceAttributeComputeCapabilityMinor;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = hipDeviceAttributeMaxSharedMemoryPerMultiprocessor;
+const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY = hipDeviceAttributeManagedMemory;
+const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD = hipDeviceAttributeIsMultiGpuBoard;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS = hipDeviceAttributePageableMemoryAccess;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = hipDeviceAttributeConcurrentManagedAccess;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = hipDeviceAttributePageableMemoryAccessUsesHostPageTables;
+const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = hipDeviceAttributeDirectManagedMemAccessFromHost;
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+  int res;
+  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, indexToDeviceID[dev]));
+  return res;
+}
 
 #endif // HAS_GPU_LOCALE
