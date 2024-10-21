@@ -920,7 +920,7 @@ def register_rules(driver: LintDriver):
     @driver.advanced_rule
     def MissingInIntent(_, root: chapel.AstNode):
         """
-        formals assigned to fields in an 'init' function should have an 'in' intent.
+        Warn for formals used to initialize fields that are missing an 'in' intent.
         """
         if isinstance(root, chapel.Comment):
             return
