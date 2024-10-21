@@ -916,3 +916,72 @@ def register_rules(driver: LintDriver):
             prev_depth = depth
             prev = child
             prev_line = line
+
+    @driver.advanced_rule
+    def MissingInIntent(_, root: chapel.AstNode):
+        """
+        formals assigned to fields in an 'init' function should have an 'in' intent.
+        """
+        if isinstance(root, chapel.Comment):
+            return
+
+        for agg, _ in chapel.each_matching(root, chapel.AggregateDecl):
+            assert isinstance(agg, chapel.AggregateDecl)
+            fields: Dict[str, chapel.Variable] = {}
+            inits: List[chapel.Function] = []
+            for nd in agg:
+                if isinstance(nd, chapel.Variable) and nd.is_field():
+                    fields[nd.unique_id()] = nd
+                if isinstance(nd, chapel.Function) and nd.name() in ("init", "init="):
+                    inits.append(nd)
+
+            for init in inits:
+                formals: Dict[str, chapel.Formal] = {}
+                for f, _ in chapel.each_matching(init, chapel.Formal):
+                    assert isinstance(f, chapel.Formal)
+                    if f.intent() != "<default-intent>":
+                        continue
+                    formals[f.unique_id()] = f
+
+                for stmt in chapel.preorder(init):
+                    if isinstance(stmt, chapel.Init):
+                        break
+
+                    if not isinstance(stmt, chapel.OpCall):
+                        continue
+
+                    if stmt.op() != "=":
+                        continue
+
+                    lhs = stmt.actual(0)
+                    lhs_is_field = False
+                    if isinstance(lhs, (chapel.Identifier, chapel.Dot)):
+                        to = lhs.to_node()
+                        if to and to.unique_id() in fields:
+                            lhs_is_field = True
+                    rhs = stmt.actual(1)
+                    rhs_is_formal = None
+                    if isinstance(rhs, chapel.Identifier):
+                        to = rhs.to_node()
+                        if to and to.unique_id() in formals:
+                            rhs_is_formal = to
+
+                    if lhs_is_field and rhs_is_formal:
+                        yield AdvancedRuleResult(rhs_is_formal)
+
+
+    @driver.fixit(MissingInIntent)
+    def FixMissingInIntent(context: Context, result: AdvancedRuleResult):
+        """
+        Add the 'in' intent to the formal parameter.
+        """
+        assert isinstance(result.node, chapel.Formal)
+        lines = chapel.get_file_lines(context, result.node)
+
+        fixit = Fixit.build(
+            Edit.build(
+                result.node.location(),
+                "in " + range_to_text(result.node.location(), lines),
+            )
+        )
+        return [fixit]
