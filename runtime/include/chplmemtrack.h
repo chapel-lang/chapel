@@ -33,12 +33,6 @@
 extern "C" {
 #endif
 
-int get_hashsize(void);
-void* get_memtable_entry(int idx);
-void* get_next_memtable_entry(void* entry);
-uint64_t get_memtable_entry_addr(void* entry);
-uint64_t get_memtable_entry_size(void* entry);
-
 // Memory tracking activated?
 extern int chpl_memTrack;
 extern int chpl_verbose_mem;      // set via startVerboseMem
@@ -62,6 +56,11 @@ void chpl_stopVerboseMem(void);
 void chpl_startVerboseMemHere(void);
 void chpl_stopVerboseMemHere(void);
 
+int chpl_memtable_size(void);
+void* chpl_memtable_entry(int idx);
+void* chpl_memtable_next_entry(void* entry);
+uint64_t chpl_memtable_entry_addr(void* entry);
+uint64_t chpl_memtable_entry_size(void* entry);
 
 ///// These entry points are the essential memory tracking interface, called
 //    at memory allocation and deallocation points.
