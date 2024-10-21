@@ -698,6 +698,29 @@ def register_rules(driver: LintDriver):
         return [fixit] if fixit else []
 
     @driver.advanced_rule
+    def UnusedTypeQueries(context: Context, root: AstNode):
+        """
+        Warn for unused type queries in functions.
+        """
+        if isinstance(root, Comment):
+            return
+
+        typequeries = dict()
+        uses = set()
+
+        for tq, _ in chapel.each_matching(root, TypeQuery):
+
+            typequeries[tq.unique_id()] = tq
+
+        for use, _ in chapel.each_matching(root, Identifier):
+            refersto = use.to_node()
+            if refersto:
+                uses.add(refersto.unique_id())
+
+        for unused in typequeries.keys() - uses:
+            yield AdvancedRuleResult(typequeries[unused])
+
+    @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
         """
         Warn for unused index variables in loops.
