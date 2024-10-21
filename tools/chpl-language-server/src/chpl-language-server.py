@@ -378,8 +378,10 @@ class PositionList(Generic[EltT]):
         start, end = self._get_range(rng)
         self.elts[start:end] = [elt]
 
-    def remove_if(self, pred: Callable[[EltT], bool]):
-        self.elts = [x for x in self.elts if not pred(x)]
+    def overwrite_range(self, rng: Range, other: 'PositionList[EltT]'):
+        start, end = self._get_range(rng)
+        other_start, other_end = other._get_range(rng)
+        self.elts[start:end] = other.elts[other_start:other_end]
 
     def clear(self):
         self.elts.clear()
@@ -678,11 +680,10 @@ class FileInfo:
         self.scope_segments.append(s)
 
 
-    def _note_call(
+    def _resolve_call(
         self,
         node: chapel.FnCall,
         via: Optional[chapel.TypedSignature],
-        include_in_segments: bool = True,
     ) -> Optional[Tuple[chapel.Function, chapel.TypedSignature]]:
         """
         Given a function call node, note the call in the call segment table,
@@ -701,13 +702,6 @@ class FileInfo:
         fn = sig.ast()
         if not fn or not isinstance(fn, chapel.Function):
             return None
-
-        if include_in_segments:
-            self.call_segments.append(
-                ResolvedPair(
-                    NodeAndRange(node.called_expression()), NodeAndRange(fn)
-                )
-            )
 
         return (fn, sig)
 
@@ -884,17 +878,22 @@ class FileInfo:
             if not isinstance(node, chapel.FnCall):
                 continue
 
+            resolved = self._resolve_call(node, via)
+            if not resolved:
+                continue
+            fn, sig = resolved
+
             # Only store the call in the segment table if this is a concrete
             # functions. There may be multiple instantiations per file,
             # and until the user has selected one, we shouldn't enable go-to-def
             # on calls within then.
             include_in_segments = via is None
-            noted = self._note_call(
-                node, via, include_in_segments=include_in_segments
-            )
-            if not noted:
-                continue
-            fn, sig = noted
+            if include_in_segments:
+                self.call_segments.append(
+                    ResolvedPair(
+                        NodeAndRange(node.called_expression()), NodeAndRange(fn)
+                    )
+                )
 
             # Even if we don't descend into it (and even if it's not an
             # instantiation), track the call that invoked this function.
@@ -943,24 +942,32 @@ class FileInfo:
     ):
         self.call_segments.clear_range(rng)
         start, end = self.instantiation_segments._get_range(rng)
+
         for i in range(start, end):
             inst, sig = self.instantiation_segments.elts[i]
 
-            # In case this instantiation overlaps another instantiation from
-            # this list (e.g., this is a function nested in another function),
-            # clear the calls from the overlapping instantiation so that
-            # we don't create duplicates.
-            self.call_segments.clear_range(inst.rng)
-
-            # Note all calls specific to this instantiation.
+            # Note all calls specific to this instantiation in a temp list.
+            new_calls = PositionList[ResolvedPair](lambda x: x.ident.rng)
             for node in chapel.preorder(inst.node):
                 if not isinstance(node, chapel.FnCall):
                     continue
 
-                self._note_call(node, via=sig)
+                resolved = self._resolve_call(node, via=sig)
+                if not resolved:
+                    continue
+                fn, sig = resolved
 
-        # Call segments are currently appended (not inserted); perform sort now.
-        self.call_segments.sort()
+                new_calls.append(
+                    ResolvedPair(
+                        NodeAndRange(node.called_expression()), NodeAndRange(fn)
+                    )
+                )
+
+            # Call segments are currently appended (not inserted); perform sort now.
+            new_calls.sort()
+
+            # Only copy the calls if they're part of this instantiation segment.
+            self.call_segments.overwrite_range(inst.rng, new_calls)
 
     def rebuild_index(self):
         """
