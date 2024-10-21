@@ -2,12 +2,6 @@ use MemDiagnostics;
 use CTypes;
 use Image;
 
-extern proc get_hashsize(): c_int;
-extern proc get_memtable_entry(idx: c_int): c_ptr(void);
-extern proc get_next_memtable_entry(entry): c_ptr(void);
-extern proc get_memtable_entry_addr(entry): uint;
-extern proc get_memtable_entry_size(entry): uint;
-
 config var niter = 100;
 config var arrSize = 1000;
 
@@ -84,6 +78,8 @@ iter allocsToRender(granularity=0:uint) {
   }
 }
 
+config const memSpaceInGigs = 64;
+
 
 proc recordMemoryMap() {
   var smallestAddr = max(uint);
@@ -91,7 +87,7 @@ proc recordMemoryMap() {
 
   var color: [0..<height, 0..<width] int;
 
-  for (addr, size) in allocsToRender() {
+  for (addr, size) in MemDiagnostics.allocations() {
     if addr<smallestAddr then smallestAddr = addr;
     if addr>largestAddr then largestAddr = addr;
   }
@@ -99,12 +95,12 @@ proc recordMemoryMap() {
   /*writeln(smallestAddr);*/
   /*writeln(largestAddr);*/
 
-  const granularity = (32*(1024**3)/width);
+  const granularity = (memSpaceInGigs*(1024**3)/width);
 
   /*writeln(granularity);*/
 
 
-  for (addr, size) in allocsToRender(granularity) {
+  for (addr, size) in MemDiagnostics.allocations(granularity) {
     const start = (largestAddr-addr)/granularity;
     const numLines = size/granularity;
 

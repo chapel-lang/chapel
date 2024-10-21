@@ -252,4 +252,27 @@ proc stopVerboseMemHere() {
   chpl_stopVerboseMemHere();
 }
 
+iter allocations(minSize: integral = 0) {
+  use CTypes;
+
+  extern proc get_hashsize(): c_int;
+  extern proc get_memtable_entry(idx: c_int): c_ptr(void);
+  extern proc get_next_memtable_entry(entry): c_ptr(void);
+  extern proc get_memtable_entry_addr(entry): uint;
+  extern proc get_memtable_entry_size(entry): uint;
+
+  const hashSize = get_hashsize();
+  for i in 0..<hashSize {
+    var entry = get_memtable_entry(i);
+    while entry != nil {
+      var addr = get_memtable_entry_addr(entry);
+      var size = get_memtable_entry_size(entry);
+
+      if size >= minSize then yield (addr,size);
+
+      entry = get_next_memtable_entry(entry);
+    }
+  }
+}
+
 }
