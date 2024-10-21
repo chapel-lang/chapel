@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Iterable
 import chapel
 from dataclasses import dataclass
 import enum
@@ -148,7 +148,7 @@ def _get_symbol_signature(node: chapel.AstNode) -> List[Component]:
     return [_wrap_str(node.name())]
 
 
-def _node_to_string(node: chapel.AstNode) -> List[Component]:
+def _node_to_string(node: chapel.AstNode, sep="") -> List[Component]:
     """
     General helper method to convert an AstNode to a string representation. If
     it doesn't know how to convert the node, it returns "<...>"
@@ -157,6 +157,11 @@ def _node_to_string(node: chapel.AstNode) -> List[Component]:
         return _get_symbol_signature(node)
     elif isinstance(node, chapel.Identifier):
         return [_wrap_str(node.name())]
+    elif isinstance(node, chapel.Dot):
+        return _node_to_string(node.receiver()) + [
+            _wrap_str("."),
+            _wrap_str(node.field()),
+        ]
     elif isinstance(node, chapel.BoolLiteral):
         return [_wrap_str("true" if node.value() else "false")]
     elif isinstance(
@@ -175,6 +180,17 @@ def _node_to_string(node: chapel.AstNode) -> List[Component]:
         return [_wrap_str('c"' + node.value() + '"')]
     elif isinstance(node, chapel.FnCall):
         return _fncall_to_string(node)
+    elif isinstance(node, chapel.OpCall):
+        return _opcall_to_string(node)
+    elif isinstance(node, chapel.IndexableLoop):
+        return _indexable_loop_to_string(node)
+    elif isinstance(node, chapel.Domain):
+        return _domain_to_string(node)
+    elif isinstance(node, chapel.Range):
+        return _range_to_string(node)
+    elif isinstance(node, chapel.Block):
+        return _list_to_string(node.stmts(), sep)
+
     return [Component(ComponentTag.PLACEHOLDER, None)]
 
 
@@ -327,5 +343,115 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
             assert isinstance(a, chapel.AstNode)
             comps.extend(_node_to_string(a))
     comps.append(_wrap_str(closebr))
+
+    return comps
+
+
+def _opcall_to_string(call: chapel.OpCall) -> List[Component]:
+    """
+    Convert a call to a string
+    """
+
+    def op_to_string(op: str) -> str:
+        special = {"#": "#", ":": ": "}
+        return special.get(op, f" {op} ")
+
+    comps = []
+    if call.is_unary_op():
+        comps.append(_wrap_str(call.op()))
+        comps.extend(_node_to_string(call.actual(0)))
+    else:
+        comps.extend(_node_to_string(call.actual(0)))
+        comps.append(_wrap_str(op_to_string(call.op())))
+        comps.extend(_node_to_string(call.actual(1)))
+    return comps
+
+
+def _range_to_string(range: chapel.Range) -> List[Component]:
+    """
+    Convert a range to a string
+    """
+    comps = []
+    low = range.lower_bound()
+    if low:
+        comps.extend(_node_to_string(low))
+    comps.append(_wrap_str(range.op_kind()))
+    high = range.upper_bound()
+    if high:
+        comps.extend(_node_to_string(high))
+    return comps
+
+
+def _domain_to_string(domain: chapel.Domain) -> List[Component]:
+    """
+    Convert a domain to a string
+    """
+    comps = []
+    if domain.used_curly_braces():
+        comps.append(_wrap_str("{"))
+    do_comma = False
+    for e in domain.exprs():
+        if do_comma:
+            comps.append(_wrap_str(", "))
+        do_comma = True
+        comps.extend(_node_to_string(e))
+    if domain.used_curly_braces():
+        comps.append(_wrap_str("}"))
+    return comps
+
+
+def _list_to_string(
+    elms: Iterable[chapel.AstNode], sep=None, prefix=None, postfix=None
+) -> List[Component]:
+    """
+    Convert a list of nodes to a string
+    """
+    comps = []
+    if prefix:
+        comps.append(_wrap_str(prefix))
+    do_sep = False
+    for e in elms:
+        if sep and do_sep:
+            comps.append(_wrap_str(sep))
+        do_sep = True
+        comps.extend(_node_to_string(e))
+    if postfix:
+        comps.append(_wrap_str(postfix))
+    return comps
+
+
+def _indexable_loop_to_string(loop: chapel.IndexableLoop) -> List[Component]:
+    """
+    Convert an indexable loop to a string
+    """
+
+    if not loop.is_expression_level():
+        # we only support expression-level loops for now
+        return [Component(ComponentTag.PLACEHOLDER, None)]
+
+    parts = {
+        chapel.BracketLoop: ("[", "]", " "),
+        chapel.For: ("for ", "", " do "),
+    }
+    part = parts.get(type(loop))
+    if part is None:
+        return [Component(ComponentTag.PLACEHOLDER, None)]
+
+    comps = []
+    comps.append(_wrap_str(part[0]))
+    idx = loop.index()
+    if idx:
+        comps.extend(_node_to_string(idx))
+        comps.append(_wrap_str(" in "))
+    comps.extend(_node_to_string(loop.iterand()))
+    with_ = loop.with_clause()
+    if with_:
+        comps.append(_wrap_str(" with "))
+        comps.extend(_node_to_string(with_))
+
+    comps.append(_wrap_str(part[1]))
+
+    comps.append(_wrap_str(part[2]))
+    comps.extend(_node_to_string(loop.body()))
 
     return comps
