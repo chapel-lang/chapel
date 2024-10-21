@@ -282,7 +282,7 @@ static void loadAndConvertModules(UastConverter& c) {
 
   // Compute the set of functions to fully resolve when using --dyno.
   // This allows us to avoid resolving functions that aren't called.
-  if (fDynoCompilerLibrary) {
+  if (fDynoResolver) {
     chpl::resolution::CalledFnsSet calledFns;
 
     for (const auto& id : modulesToConvert) {
@@ -1124,7 +1124,7 @@ void parseAndConvertUast() {
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   chpl::owned<UastConverter> converter;
-  if (fDynoCompilerLibrary) {
+  if (fDynoResolver) {
     converter = createTypedConverter(gContext);
   } else {
     converter = createUntypedConverter(gContext);
@@ -1140,7 +1140,7 @@ void parseAndConvertUast() {
 
   loadAndConvertModules(*converter.get());
 
-  if (fDynoCompilerLibrary) {
+  if (fDynoResolver) {
     converter->createMainFunctions();
   }
 
