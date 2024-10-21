@@ -932,7 +932,10 @@ def register_rules(driver: LintDriver):
             for nd in agg:
                 if isinstance(nd, chapel.Variable) and nd.is_field():
                     fields[nd.unique_id()] = nd
-                if isinstance(nd, chapel.Function) and nd.name() in ("init", "init="):
+                if isinstance(nd, chapel.Function) and nd.name() in (
+                    "init",
+                    "init=",
+                ):
                     inits.append(nd)
 
             for init in inits:
@@ -968,7 +971,6 @@ def register_rules(driver: LintDriver):
 
                     if lhs_is_field and rhs_is_formal:
                         yield AdvancedRuleResult(rhs_is_formal)
-
 
     @driver.fixit(MissingInIntent)
     def FixMissingInIntent(context: Context, result: AdvancedRuleResult):
