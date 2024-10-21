@@ -698,7 +698,7 @@ def register_rules(driver: LintDriver):
         return [fixit] if fixit else []
 
     @driver.advanced_rule
-    def UnusedTypeQueries(context: Context, root: AstNode):
+    def UnusedTypeQuery(context: Context, root: AstNode):
         """
         Warn for unused type queries in functions.
         """
