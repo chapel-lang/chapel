@@ -369,6 +369,10 @@ class PositionList(Generic[EltT]):
         )
         return (start, end)
 
+    def clear_range(self, rng: Range):
+        start, end = self._get_range(rng)
+        self.elts[start:end] = []
+
     def overwrite(self, elt: EltT):
         rng = self.get_range(elt)
         start, end = self._get_range(rng)
@@ -605,6 +609,7 @@ class FileInfo:
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
     scope_segments: PositionList[ScopedNodeAndRange] = field(init=False)
+    call_segments: PositionList[ResolvedPair] = field(init=False)
     instantiation_segments: PositionList[
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
@@ -619,6 +624,7 @@ class FileInfo:
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
         self.scope_segments = PositionList(lambda x: x.rng)
+        self.call_segments = PositionList(lambda x: x.ident.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
         self.rebuild_index()
@@ -670,6 +676,40 @@ class FileInfo:
         if not s:
             return
         self.scope_segments.append(s)
+
+
+    def _note_call(
+        self,
+        node: chapel.FnCall,
+        via: Optional[chapel.TypedSignature],
+        include_in_segments: bool = True,
+    ) -> Optional[Tuple[chapel.Function, chapel.TypedSignature]]:
+        """
+        Given a function call node, note the call in the call segment table,
+        and return the function and signature it refers to.
+        """
+
+        rr = node.resolve_via(via) if via else node.resolve()
+        if not rr:
+            return None
+
+        candidate = rr.most_specific_candidate()
+        if not candidate:
+            return None
+
+        sig = candidate.function()
+        fn = sig.ast()
+        if not fn or not isinstance(fn, chapel.Function):
+            return None
+
+        if include_in_segments:
+            self.call_segments.append(
+                ResolvedPair(
+                    NodeAndRange(node.called_expression()), NodeAndRange(fn)
+                )
+            )
+
+        return (fn, sig)
 
     @enter
     def _enter_AstNode(self, node: chapel.AstNode):
@@ -819,7 +859,7 @@ class FileInfo:
             return visible_nodes
 
         visible_nodes = []
-        segment = self.scope_at_position(pos)
+        segment = self.get_scope_segment_at_position(pos)
 
         if segment:
             vns = visible_nodes_for_scopes(segment.node, segment.scopes)
@@ -844,18 +884,17 @@ class FileInfo:
             if not isinstance(node, chapel.FnCall):
                 continue
 
-            rr = node.resolve_via(via) if via else node.resolve()
-            if not rr:
+            # Only store the call in the segment table if this is a concrete
+            # functions. There may be multiple instantiations per file,
+            # and until the user has selected one, we shouldn't enable go-to-def
+            # on calls within then.
+            include_in_segments = via is None
+            noted = self._note_call(
+                node, via, include_in_segments=include_in_segments
+            )
+            if not noted:
                 continue
-
-            candidate = rr.most_specific_candidate()
-            if not candidate:
-                continue
-
-            sig = candidate.function()
-            fn = sig.ast()
-            if not fn or not isinstance(fn, chapel.Function):
-                continue
+            fn, sig = noted
 
             # Even if we don't descend into it (and even if it's not an
             # instantiation), track the call that invoked this function.
@@ -868,6 +907,60 @@ class FileInfo:
                 continue
 
             self._search_instantiations(fn, via=sig)
+
+    def find_decl_by_unique_id(self, unique_id) -> Optional[NodeAndRange]:
+        """
+        Traverse the (location-key'ed) definition segment table and
+        find the definition segment with the given ID, or none.
+        """
+        return next(
+            (
+                decl
+                for decl in self.def_segments.elts
+                if decl.node.unique_id() == unique_id
+            ),
+            None,
+        )
+
+    def find_instantiation_by_unique_id(
+        self, unique_id
+    ) -> Optional[Tuple[NodeAndRange, chapel.TypedSignature]]:
+        """
+        Traverse the (location-key'ed) definition segment table and
+        find the definition segment with the given ID, or none.
+        """
+        return next(
+            (
+                decl
+                for decl in self.instantiation_segments.elts
+                if decl[0].node.unique_id() == unique_id
+            ),
+            None,
+        )
+
+    def update_call_segments_from_instantiations(
+        self, rng: Range
+    ):
+        self.call_segments.clear_range(rng)
+        start, end = self.instantiation_segments._get_range(rng)
+        for i in range(start, end):
+            inst, sig = self.instantiation_segments.elts[i]
+
+            # In case this instantiation overlaps another instantiation from
+            # this list (e.g., this is a function nested in another function),
+            # clear the calls from the overlapping instantiation so that
+            # we don't create duplicates.
+            self.call_segments.clear_range(inst.rng)
+
+            # Note all calls specific to this instantiation.
+            for node in chapel.preorder(inst.node):
+                if not isinstance(node, chapel.FnCall):
+                    continue
+
+                self._note_call(node, via=sig)
+
+        # Call segments are currently appended (not inserted); perform sort now.
+        self.call_segments.sort()
 
     def rebuild_index(self):
         """
@@ -886,9 +979,12 @@ class FileInfo:
         self.use_segments.clear()
         self.def_segments.clear()
         self.scope_segments.clear()
+        self.call_segments.clear()
         self.visit(asts)
         self.use_segments.sort()
         self.def_segments.sort()
+        self.scope_segments.sort()
+        self.call_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
 
@@ -948,6 +1044,18 @@ class FileInfo:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
 
+    def get_scope_segment_at_position(
+        self, position: Position
+    ) -> Optional[ScopedNodeAndRange]:
+        """lookup a scope segment based upon a Position, likely a user mouse location"""
+        return self.scope_segments.find(position)
+
+    def get_call_segment_at_position(
+        self, position: Position
+    ) -> Optional[ResolvedPair]:
+        """lookup a call segment based upon a Position, likely a user mouse location"""
+        return self.call_segments.find(position)
+
     def get_inst_segment_at_position(
         self, position: Position
     ) -> Optional[chapel.TypedSignature]:
@@ -957,7 +1065,7 @@ class FileInfo:
             return segment[1]
         return None
 
-    def get_use_or_def_segment_at_position(
+    def get_target_segment_at_position(
         self, position: Position
     ) -> Optional[NodeAndRange]:
         """
@@ -969,29 +1077,19 @@ class FileInfo:
         a reference when it can, and falls back to definition otherwise.
         """
 
+        segment = self.get_call_segment_at_position(position)
+        if segment:
+            return segment.resolved_to
+
         segment = self.get_use_segment_at_position(position)
         if segment:
             return segment.resolved_to
-        else:
-            segment = self.get_def_segment_at_position(position)
-            if segment:
-                return segment
+
+        segment = self.get_def_segment_at_position(position)
+        if segment:
+            return segment
 
         return None
-
-    def scope_at_position(
-        self, position: Position
-    ) -> Optional[ScopedNodeAndRange]:
-        """
-        Given a position, return the scope that contains it.
-        """
-        found = None
-        for s in self.scope_segments.elts:
-            if s.rng.start <= position <= s.rng.end:
-                found = s
-            if s.rng.start > position:
-                break
-        return found
 
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
@@ -1754,7 +1852,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-        segment = fi.get_use_or_def_segment_at_position(params.position)
+        segment = fi.get_target_segment_at_position(params.position)
         if segment:
             return segment.get_location()
         return None
@@ -1765,7 +1863,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        node_and_loc = fi.get_target_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -1789,7 +1887,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        node_and_loc = fi.get_target_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -1843,7 +1941,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
-        segment = fi.get_use_or_def_segment_at_position(params.position)
+        segment = fi.get_target_segment_at_position(params.position)
         instantiation = fi.get_inst_segment_at_position(params.position)
         if not segment:
             return None
@@ -1936,7 +2034,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        node_and_loc = fi.get_target_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -2003,7 +2101,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        node_and_loc = fi.get_target_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -2092,14 +2190,7 @@ def run_lsp():
         uri, unique_id, i = data
 
         fi, _ = ls.get_file_info(uri)
-        decl = next(
-            (
-                decl
-                for decl in fi.def_segments.elts
-                if decl.node.unique_id() == unique_id
-            ),
-            None,
-        )
+        decl = fi.find_decl_by_unique_id(unique_id)
 
         if decl is None:
             return
@@ -2109,9 +2200,9 @@ def run_lsp():
             return
 
         inst = fi.instantiation_at_index(node, i)
-        fi.instantiation_segments.overwrite(
-            (NodeAndRange.for_entire_node(decl.node), inst)
-        )
+        node_and_range = NodeAndRange.for_entire_node(decl.node)
+        fi.instantiation_segments.overwrite((node_and_range, inst))
+        fi.update_call_segments_from_instantiations(node_and_range.rng)
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
@@ -2121,9 +2212,13 @@ def run_lsp():
         uri, unique_id = data
 
         fi, _ = ls.get_file_info(uri)
-        fi.instantiation_segments.remove_if(
-            lambda x: x[0].node.unique_id() == unique_id
-        )
+        decl = fi.find_instantiation_by_unique_id(unique_id)
+        if decl is None:
+            return
+
+        affected_range = decl[0].rng
+        fi.instantiation_segments.clear_range(affected_range)
+        fi.update_call_segments_from_instantiations(affected_range)
 
         ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
         ls.lsp.send_request_async(WORKSPACE_SEMANTIC_TOKENS_REFRESH)
