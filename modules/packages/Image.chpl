@@ -322,7 +322,7 @@ module Image {
 
   private import Subprocess as sp;
   /*
-  Represents a ffmpeg stream that frame data can be written to to produce a mp4.
+    Represents an ffmpeg stream that frame data can be written to to produce a mp4.
   */
   record mediaPipe {
     @chpldoc.nodoc
@@ -372,12 +372,24 @@ module Image {
     Write a frame into the media pipe.
     */
     proc writeFrame(pixelData: [] pixelType) throws {
-      writeImage(process.stdin, imageType.bmp, pixelData);
+      try {
+        writeImage(process.stdin, imageType.bmp, pixelData);
+      } catch e: FileNotFoundError {
+        halt("ffmpeg not found. Please install ffmpeg to use Image.mediaPipe.");
+      } catch e {
+        throw e;
+      }
     }
     proc ref finish() throws {
       if !finished {
-        process.wait();
-        finished = true;
+        try {
+          defer finished = true;
+          process.wait();
+        } catch e: FileNotFoundError {
+          halt("ffmpeg not found. Please install ffmpeg to use Image.mediaPipe.");
+        } catch e {
+          throw e;
+        }
       }
     }
   }
