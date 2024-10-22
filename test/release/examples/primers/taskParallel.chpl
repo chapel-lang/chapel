@@ -1,10 +1,12 @@
 // Task Parallelism
 
 //
-// This primer illustrates Chapel's parallel tasking features,
+// This primer illustrates Chapel's task-parallel features,
 // namely the ``begin``, ``cobegin``, and ``coforall`` statements.
-
-config const n = 10; // Used for the coforall loop
+// In Chapel, a `task` is a computation in the program that can,
+// and typically will, run in parallel with respect to other tasks.
+// These three statements are the only ways to create new tasks
+// within a Chapel program.
 
 /*
 .. index::
@@ -14,15 +16,16 @@ config const n = 10; // Used for the coforall loop
 
 Begin Statements
 ----------------
-The ``begin`` statement spawns a thread of execution that is independent
-of the current (main) thread of execution.
+The ``begin`` statement creates a new parallel task that's independent
+of the original one encountering the ``begin``.
 */
-writeln("1: ### The begin statement ###");
 
+writeln("1: ### The begin statement ###");
 begin writeln("1: output from spawned task");
 
-// The main thread of execution continues on to the next statement.
-// There is no guarantee as to which statement will execute first.
+// The original task continues on to the next statement.  In this
+// example, there is no guarantee which statement will execute first
+// since they can run in parallel and are not synchronized.
 writeln("1: output from main task");
 
 
@@ -34,9 +37,7 @@ writeln("1: output from main task");
 Cobegin Statements
 ------------------
 For more structured behavior, the ``cobegin`` statement can be used to
-spawn a block of tasks, one for each statement.  Control continues
-after the ``cobegin`` block, but only after all the tasks within the
-``cobegin`` block have completed.
+spawn a block of tasks, one for each statement.
 */
 writeln("2: ### The cobegin statement ###");
 
@@ -45,14 +46,19 @@ cobegin {
   writeln("2: output from spawned task 2");
 }
 
-// The output from within the ``cobegin`` statement will always precede the
-// following output from the main thread of execution.
+// The original task continues execution after the ``cobegin`` block,
+// but only after all the child tasks created by the ``cobegin`` block
+// have completed.  As a result, in this example, the output from
+// within the ``cobegin`` statement will always precede the following
+// output from the original task:
+
 writeln("2: output from main task");
 
 
-// If any ``begin`` statements are used within a ``cobegin`` statement,
-// the thread of execution does not wait for those ``begin`` statements
-// to complete.
+// If any ``begin`` statements are used within a ``cobegin``
+// statement's tasks, the original task does not wait for those
+// ``begin`` tasks to complete.  That is, the original task only waits
+// on the `cobegin`'s child tasks, not all of their descendent tasks.
 
 writeln("3: ### The cobegin statement with nested begin statements ###");
 
@@ -74,31 +80,38 @@ writeln("3: output from main task");
 
 Coforall Loops
 --------------
-Another more structured form of task parallelism is the
-``coforall`` loop.  This loop form is like a ``for`` loop in which
+Another structured form of task parallelism is the
+``coforall`` loop.  This loop form is like a ``for`` loop, except that
 each iteration of the loop is executed by a distinct task.  Similar
-to the ``cobegin`` statement, the main thread of execution does not
+to the ``cobegin`` statement, the original task does not
 continue until the tasks created for each iteration have completed.
 */
 writeln("4: ### The coforall loop ###");
 
+config const n = 10;
+
 coforall i in 1..n {
-  writeln("4: output from spawned task 1 (iteration ", i, ")");
-  writeln("4: output from spawned task 2 (iteration ", i, ")");
+  writeln("4: output 1 from spawned task ", i);
+  writeln("4: output 2 from spawned task ", i);
 }
 
-// While the order of output within an iteration is deterministic (``1``
-// executes before ``2``), the order of output relative to other
-// iterations is not defined.  As with the ``cobegin`` statement, the output
-// from within the ``coforall`` loop will always precede the following
-// output.
+// While the statements within the loop body will execute in the
+// normal way (so in this case, the first ``writeln()`` will execute
+// before the second), the order of execution relative to other
+// iterations is undefined.
+
+// As with the ``cobegin`` statement, the original task will wait
+// until the ``coforall``'s child tasks have completed before
+// proceeding.  As a result, in this example, all output from within
+// the ``coforall`` loop will precede the following output:
+
 writeln("4: output from main task");
 
 
 
-// As with the ``cobegin`` statement, any ``begin`` statements spawned within
-// a ``coforall`` loop are not guaranteed to be complete before the main
-// thread of execution continues.
+// Also like the ``cobegin`` statement, the orignal task will not wait
+// for any ``begin`` tasks spawned by its child tasks.
+
 writeln("5: ### The coforall loop with nested begin statements ###");
 coforall i in 1..n {
   begin writeln("5: output from spawned task 1 (iteration ", i, ")");
