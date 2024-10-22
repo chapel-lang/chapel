@@ -494,15 +494,14 @@ class PositionList(Generic[EltT]):
     def find(self, pos: Position) -> Optional[EltT]:
         idx = bisect_left(self.segments, pos, key=lambda x: x[0])
 
-        # In some cases, we may be on the boundary between two segments.
-        # Then, return the leftmost non-None segment.
         if idx >= 1 and self.segments[idx - 1][1] is not None:
             return self.segments[idx - 1][1]
-        elif (
-            idx < len(self.segments)
-            and self.segments[idx][1] is not None
-            and self.segments[idx][0] == pos
-        ):
+
+
+        # In some cases, we may be on the boundary between two segments.
+        # In this case, the next segment's start position is the same as
+        # the current position, and we should return the next segment.
+        if idx < len(self.segments) and self.segments[idx][0] == pos:
             return self.segments[idx][1]
 
         return None
