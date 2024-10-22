@@ -361,9 +361,14 @@ def _opcall_to_string(call: chapel.OpCall) -> List[Component]:
         comps.append(_wrap_str(call.op()))
         comps.extend(_node_to_string(call.actual(0)))
     else:
+        paren = call.parenth_location()
+        if paren:
+            comps.append(_wrap_str("("))
         comps.extend(_node_to_string(call.actual(0)))
         comps.append(_wrap_str(op_to_string(call.op())))
         comps.extend(_node_to_string(call.actual(1)))
+        if paren:
+            comps.append(_wrap_str(")"))
     return comps
 
 
