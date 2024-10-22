@@ -322,7 +322,7 @@ module Image {
 
   private import Subprocess as sp;
   /*
-    Represents a ffmpeg stream that frame data can be written to to produce a mp4.
+    Represents an ffmpeg stream that frame data can be written to to produce a mp4.
   */
   record mediaPipe {
     @chpldoc.nodoc
