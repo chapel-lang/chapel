@@ -738,6 +738,11 @@ static void buildChplEntryPoints() {
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
   if (chplUserMain == nullptr) {
     chplUserMain = chplGenMainExists();
+  } else if (chplUserMain->hasFlag(FLAG_RESOLVED_EARLY)) {
+    // set mainReturnsSomething according to the return type of main
+    if (chplUserMain->retType && chplUserMain->retType != dtUnknown) {
+      mainReturnsSomething = true;
+    }
   }
 
   if (fLibraryCompile == true && chplUserMain != NULL) {
