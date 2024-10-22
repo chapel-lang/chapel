@@ -102,7 +102,7 @@ coforall i in 1..n {
 
 // As with the ``cobegin`` statement, the original task will wait
 // until the ``coforall``'s child tasks have completed before
-// proceeding.  As a result, in this example, all output from within
+// proceeding.  For this example, this means that all output from within
 // the ``coforall`` loop will precede the following output:
 
 writeln("4: output from main task");
