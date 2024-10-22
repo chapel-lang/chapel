@@ -5,5 +5,4 @@ if [[ "$CHPL_COMM" != "none" && -n "$CHPL_COMM" ]]; then
   NL="-nl 1"
 fi
 
-echo "./deviceAttributes $NL --runBaseline=true"
-#./deviceAttributes $NL --runBaseline=true > deviceAttributes.good
+./deviceAttributes $NL --runBaseline=true > deviceAttributes.good
