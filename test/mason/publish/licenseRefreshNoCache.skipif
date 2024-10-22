@@ -2,7 +2,7 @@
 
 import os
 
-if os.getenv("REPO_CACHE_PATH") == None:
+if os.getenv("REPO_CACHE_PATH") != None:
    print(True)
 else:
    print(False)
