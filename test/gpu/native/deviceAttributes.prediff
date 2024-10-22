@@ -1,3 +1,9 @@
 #!/bin/sh
 
-./deviceAttributes --runBaseline=true > deviceAttributes.good
+NL=""
+if [[ "$CHPL_COMM" != "none" && -n "$CHPL_COMM" ]]; then
+  NL="-nl 1"
+fi
+
+echo "./deviceAttributes $NL --runBaseline=true"
+#./deviceAttributes $NL --runBaseline=true > deviceAttributes.good
