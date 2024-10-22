@@ -677,13 +677,6 @@ void chpl_gpu_arg_pass(void* _cfg, void* arg) {
 
 void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
                          reduce_wrapper_fn_t wrapper) {
-#ifndef GPU_RUNTIME_CPU
-  if (!chpl_gpu_can_reduce()) {
-    chpl_internal_error("The runtime is built with a software stack that does "
-                        "not support reductions. `reduce` "
-                        "expressions and intents are not supported");
-  }
-#endif
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
   if (cfg_can_reduce(cfg)) {
     // pass the argument normally
@@ -729,23 +722,16 @@ void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
 }
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
-  if (chpl_gpu_can_reduce()) {
-    for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
-      CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
-                     cfg->reduce_vars[i].buffer,
-                     cfg->reduce_vars[i].outer_var,
-                     cfg->reduce_vars[i].wrapper);
+  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
+                    cfg->reduce_vars[i].buffer,
+                    cfg->reduce_vars[i].outer_var,
+                    cfg->reduce_vars[i].wrapper);
 
-      cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
-                                  cfg->grd_dim_x,
-                                  cfg->reduce_vars[i].outer_var,
-                                  NULL); // no minloc/maxloc, yet
-    }
-  }
-  else {
-    // we can hit this only with cpu-as-device today, where this function will
-    // be called, but the reduction is actually handled by the loop as normal
-    // so, we don't do anything
+    cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
+                                cfg->grd_dim_x,
+                                cfg->reduce_vars[i].outer_var,
+                                NULL); // no minloc/maxloc, yet
   }
 }
 
@@ -1520,14 +1506,6 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2) {
 
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
-}
-
-bool chpl_gpu_can_reduce(void) {
-  return chpl_gpu_impl_can_reduce();
-}
-
-bool chpl_gpu_can_sort(void) {
-  return chpl_gpu_impl_can_sort();
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\

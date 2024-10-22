@@ -489,14 +489,6 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return true;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return chpl_gpu_impl_can_reduce();
-}
-
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
   ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
   void *dev_var;
