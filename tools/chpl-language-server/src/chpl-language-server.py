@@ -352,15 +352,111 @@ EltT = TypeVar("EltT")
 @dataclass
 class PositionList(Generic[EltT]):
     get_range: Callable[[EltT], Range]
+    """
+    The function that retrieves the range of an element in the list.
+    """
+
     elts: List[EltT] = field(default_factory=list)
+    """
+    A list of elements in the list, sorted by their start positions. Example
+    list of items:
+
+        |------------| A
+               |-------------| B
+                       |--| C
+                                  |---------| D
+    """
+
+    segments: List[Tuple[Position, Optional[EltT], int]] = field(
+        default_factory=list
+    )
+    """
+    A flattened representation of the list of elements, where each element
+    represents the beginning of a new item that continues until the next
+    element in the list. The following segments are equivalent to the above
+    list of items:
+
+        |------|-------|--|--|----|---------|
+         A      B       C  B  None D
+
+    Note that 'B' occurs twice, and there's a 'None' in the middle. The
+    'None' serves to clear the segment that was started by 'B'.
+
+    This representation makes it easy to find the exact item at a given
+    position in logarithmic time.
+    """
+
+    def _rebuild_segments(self):
+        self.segments.clear()
+
+        # A list of not-yet-closed segments, sorted descending by their end positions
+        # (so that we can pop the last one to close it).
+        ongoing: List[Tuple[Position, EltT, int]] = []
+
+        # To be able to insert ongoing segments in descending order.
+        def get_negated_pos(pos):
+            return (-pos.line, -pos.character)
+
+        def push_segment(pos, elt, idx):
+            # Don't create duplicate segments for the same position.
+            while len(self.segments) > 0 and self.segments[-1][0] == pos:
+                self.segments.pop()
+            self.segments.append((pos, elt, idx))
+
+        # Close any ongoing segments that we need to clos.
+        #
+        # When we close the segment, we switch to the one underneath.
+        def push_segment_from_ongoing(pos):
+            # If there's a segment underneath, restart it.
+            if len(ongoing) > 0:
+                push_segment(pos, ongoing[-1][1], ongoing[-1][2])
+            # No segment underneath; just clear the current one.
+            else:
+                push_segment(pos, None, -1)
+
+        for idx, elt in enumerate(self.elts):
+            rng = self.get_range(elt)
+
+            # Close segments that end before this element starts.
+            while len(ongoing) > 0 and ongoing[-1][0] <= rng.start:
+                pos, _, _ = ongoing.pop()
+
+                # We maintain the invariant that no ongoing segments end
+                # in the same place, so the segment underneath at the top after
+                # popping is the one we want to continue.
+                push_segment_from_ongoing(pos)
+
+            # Start a new segment for this element.
+            push_segment(rng.start, elt, idx)
+
+            # Remove all segments from 'ongoing' that end before this element.
+            ongoing = [x for x in ongoing if x[0] > rng.end]
+
+            # Add this element to 'ongoing' so that we can close or continue it later.
+            idx = bisect_right(
+                ongoing,
+                get_negated_pos(rng.end),
+                key=lambda x: get_negated_pos(x[0]),
+            )
+            ongoing.insert(idx, (rng.end, elt, idx))
+
+        # Close all remaining segments.
+        while len(ongoing) > 0:
+            pos, _, _ = ongoing.pop()
+            push_segment_from_ongoing(pos)
 
     def sort(self):
+        """
+        Re-ensure this segment list has its invariants upheld, by sorting
+        the list of items and re-building the segments.
+        """
         self.elts.sort(key=lambda x: self.get_range(x).start)
+        self._rebuild_segments()
 
     def append(self, elt: EltT):
         self.elts.append(elt)
 
-    def _get_range(self, rng: Range):
+    def _get_elt_range(self, rng: Range):
         start = bisect_left(
             self.elts, rng.start, key=lambda x: self.get_range(x).start
         )
@@ -369,35 +465,51 @@ class PositionList(Generic[EltT]):
         )
         return (start, end)
 
+    def _get_segment_range(self, rng: Range):
+        start = bisect_left(self.segments, rng.start, key=lambda x: x[0])
+        end = bisect_right(self.segments, rng.end, key=lambda x: x[0])
+        return (start, end)
+
     def clear_range(self, rng: Range):
-        start, end = self._get_range(rng)
-        self.elts[start:end] = []
+        elt_start, elt_end = self._get_elt_range(rng)
+        self.elts[elt_start:elt_end] = []
+        self._rebuild_segments()
 
     def overwrite(self, elt: EltT):
         rng = self.get_range(elt)
-        start, end = self._get_range(rng)
+        start, end = self._get_elt_range(rng)
         self.elts[start:end] = [elt]
+        self._rebuild_segments()
 
-    def overwrite_range(self, rng: Range, other: 'PositionList[EltT]'):
-        start, end = self._get_range(rng)
-        other_start, other_end = other._get_range(rng)
+    def overwrite_range(self, rng: Range, other: "PositionList[EltT]"):
+        start, end = self._get_elt_range(rng)
+        other_start, other_end = other._get_elt_range(rng)
         self.elts[start:end] = other.elts[other_start:other_end]
+        self._rebuild_segments()
 
     def clear(self):
         self.elts.clear()
+        self.segments.clear()
 
     def find(self, pos: Position) -> Optional[EltT]:
-        idx = bisect_right(
-            self.elts, pos, key=lambda x: self.get_range(x).start
-        )
-        idx -= 1
-        if idx < 0 or pos > self.get_range(self.elts[idx]).end:
-            return None
-        return self.elts[idx]
+        idx = bisect_left(self.segments, pos, key=lambda x: x[0])
+
+        # In some cases, we may be on the boundary between two segments.
+        # Then, return the leftmost non-None segment.
+        if idx >= 1 and self.segments[idx - 1][1] is not None:
+            return self.segments[idx - 1][1]
+        elif (
+            idx < len(self.segments)
+            and self.segments[idx][1] is not None
+            and self.segments[idx][0] == pos
+        ):
+            return self.segments[idx][1]
+
+        return None
 
     def range(self, rng: Range) -> List[EltT]:
-        start, end = self._get_range(rng)
-        return self.elts[start:end]
+        start, end = self._get_segment_range(rng)
+        return [x[1] for x in self.segments[start:end] if x[1] is not None]
 
 
 @dataclass
@@ -937,11 +1049,9 @@ class FileInfo:
             None,
         )
 
-    def update_call_segments_from_instantiations(
-        self, rng: Range
-    ):
+    def update_call_segments_from_instantiations(self, rng: Range):
         self.call_segments.clear_range(rng)
-        start, end = self.instantiation_segments._get_range(rng)
+        start, end = self.instantiation_segments._get_elt_range(rng)
 
         for i in range(start, end):
             inst, sig = self.instantiation_segments.elts[i]
@@ -991,7 +1101,6 @@ class FileInfo:
         self.use_segments.sort()
         self.def_segments.sort()
         self.scope_segments.sort()
-        self.call_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
 
@@ -1000,6 +1109,7 @@ class FileInfo:
             # this should be removed once the resolver is finished
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
+                self.call_segments.sort()
 
     def called_function_at_position(
         self, position: Position
