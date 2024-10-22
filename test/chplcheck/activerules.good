@@ -11,6 +11,7 @@ Active rules:
   IncorrectIndentation         Warn for inconsistent or missing indentation
   MethodsAfterFields           Warn for classes or records that mix field and method definitions.
   MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
+  MissingInIntent              Warn for formals used to initialize fields that are missing an 'in' intent.
   PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   PascalCaseModules            Warn for modules that are not 'PascalCase'.
   SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
