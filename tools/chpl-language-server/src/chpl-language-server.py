@@ -386,9 +386,7 @@ class PositionList(Generic[EltT]):
     position in logarithmic time.
     """
 
-    def _rebuild_segments(self):
-        self.segments.clear()
-
+    def _elements_to_segments(self, elts: List[EltT], into: List[Tuple[Position, Optional[EltT], int]]):
         # A list of not-yet-closed segments, sorted descending by their end positions
         # (so that we can pop the last one to close it).
         ongoing: List[Tuple[Position, EltT, int]] = []
@@ -399,9 +397,9 @@ class PositionList(Generic[EltT]):
 
         def push_segment(pos, elt, idx):
             # Don't create duplicate segments for the same position.
-            while len(self.segments) > 0 and self.segments[-1][0] == pos:
-                self.segments.pop()
-            self.segments.append((pos, elt, idx))
+            while len(into) > 0 and into[-1][0] == pos:
+                into.pop()
+            into.append((pos, elt, idx))
 
         # Close any ongoing segments that we need to clos.
         #
@@ -414,7 +412,7 @@ class PositionList(Generic[EltT]):
             else:
                 push_segment(pos, None, -1)
 
-        for idx, elt in enumerate(self.elts):
+        for idx, elt in enumerate(elts):
             rng = self.get_range(elt)
 
             # Close segments that end before this element starts.
@@ -445,6 +443,10 @@ class PositionList(Generic[EltT]):
             pos, _, _ = ongoing.pop()
             push_segment_from_ongoing(pos)
 
+    def _rebuild_segments(self):
+        self.segments.clear()
+        self._elements_to_segments(self.elts, self.segments)
+
     def sort(self):
         """
         Re-ensure this segment list has its invariants upheld, by sorting
@@ -467,25 +469,57 @@ class PositionList(Generic[EltT]):
 
     def _get_segment_range(self, rng: Range):
         start = bisect_left(self.segments, rng.start, key=lambda x: x[0])
-        end = bisect_right(self.segments, rng.end, key=lambda x: x[0])
+        end = bisect_left(self.segments, rng.end, key=lambda x: x[0])
         return (start, end)
+
+    def _update_segments(self, rng: Range, new_segments: List[Tuple[Position, EltT, int]]):
+        new_segments = [seg for seg in new_segments if rng.start <= seg[0] < rng.end]
+
+        seg_start, seg_end = self._get_segment_range(rng)
+        if seg_end > 0:
+            after_value, after_idx = self.segments[seg_end - 1][1:]
+        else:
+            after_value, after_idx = None, -1
+
+        to_insert = []
+
+        # If the segments start halfway through the range, insert a new segment,
+        # ensure that between rng.start and the start of the first segment, there
+        # is a 'None' segment to clear the preceding segment.
+        if len(new_segments) == 0 or new_segments[0][0] > rng.start:
+            to_insert.append((rng.start, None, -1))
+
+        # Insert the new segments.
+        to_insert.extend(new_segments)
+
+        # Resume whatever was continuing after the range, unless the next
+        # segment starts right after the range.
+        if seg_end >= len(self.segments) or self.segments[seg_end][0] > rng.end:
+            to_insert.append((rng.end, after_value, after_idx))
+
+        self.segments[seg_start:seg_end] = to_insert
+
 
     def clear_range(self, rng: Range):
         elt_start, elt_end = self._get_elt_range(rng)
         self.elts[elt_start:elt_end] = []
-        self._rebuild_segments()
+
+        self._update_segments(rng, [])
+
+    def _set_range(self, rng: Range, elts: List[EltT]):
+        start, end = self._get_elt_range(rng)
+        self.elts[start:end] = elts
+
+        elt_segs = []
+        self._elements_to_segments(elts, elt_segs)
+        self._update_segments(rng, elt_segs)
 
     def overwrite(self, elt: EltT):
-        rng = self.get_range(elt)
-        start, end = self._get_elt_range(rng)
-        self.elts[start:end] = [elt]
-        self._rebuild_segments()
+        self._set_range(self.get_range(elt), [elt])
 
     def overwrite_range(self, rng: Range, other: "PositionList[EltT]"):
-        start, end = self._get_elt_range(rng)
         other_start, other_end = other._get_elt_range(rng)
-        self.elts[start:end] = other.elts[other_start:other_end]
-        self._rebuild_segments()
+        self._set_range(rng, other.elts[other_start:other_end])
 
     def clear(self):
         self.elts.clear()
@@ -1050,13 +1084,22 @@ class FileInfo:
 
     def update_call_segments_from_instantiations(self, rng: Range):
         self.call_segments.clear_range(rng)
-        start, end = self.instantiation_segments._get_elt_range(rng)
+        start, end = self.instantiation_segments._get_segment_range(rng)
+
+        # Note all calls specific to this range in a temp list.
+        new_calls = PositionList[ResolvedPair](lambda x: x.ident.rng)
 
         for i in range(start, end):
-            inst, sig = self.instantiation_segments.elts[i]
+            begin_pos, value_at_segment, _ = self.instantiation_segments.segments[i]
+            end_pos = rng.end
+            if i + 1 < len(self.instantiation_segments.segments):
+                next_pos, _, _ = self.instantiation_segments.segments[i + 1]
+                end_pos = min(end_pos, next_pos)
 
-            # Note all calls specific to this instantiation in a temp list.
-            new_calls = PositionList[ResolvedPair](lambda x: x.ident.rng)
+            if value_at_segment is None:
+                continue
+            (inst, sig) = value_at_segment
+
             for node in chapel.preorder(inst.node):
                 if not isinstance(node, chapel.FnCall):
                     continue
@@ -1066,17 +1109,18 @@ class FileInfo:
                     continue
                 fn, sig = resolved
 
-                new_calls.append(
-                    ResolvedPair(
-                        NodeAndRange(node.called_expression()), NodeAndRange(fn)
-                    )
-                )
+                # Only note calls in the current instantiation segment's range
+                call_and_range = NodeAndRange(node.called_expression())
+                if call_and_range.rng.start < begin_pos or call_and_range.rng.end > end_pos:
+                    continue
 
-            # Call segments are currently appended (not inserted); perform sort now.
-            new_calls.sort()
+                new_calls.append(ResolvedPair(call_and_range, NodeAndRange(fn)))
 
-            # Only copy the calls if they're part of this instantiation segment.
-            self.call_segments.overwrite_range(inst.rng, new_calls)
+        # Call segments are currently appended (not inserted); perform sort now.
+        new_calls.sort()
+
+        # Only copy the calls if they're part of this instantiation segment.
+        self.call_segments.overwrite_range(rng, new_calls)
 
     def rebuild_index(self):
         """
