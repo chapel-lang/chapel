@@ -464,6 +464,10 @@ static void preNormalizeHandleStaticVars() {
 static void insertModuleInit() {
   // Insert an init function into every module
   forv_Vec(ModuleSymbol, mod, allModules) {
+    if (mod->initFn != nullptr) {
+      continue;
+    }
+
     SET_LINENO(mod);
 
     mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
@@ -1884,6 +1888,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 
 static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+  if (fn->hasFlag(FLAG_RESOLVED_EARLY)) return;
 
   SET_LINENO(fn);
 

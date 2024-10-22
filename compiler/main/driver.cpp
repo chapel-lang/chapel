@@ -1200,7 +1200,7 @@ void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
 static
 void setMainModuleName(const ArgumentDescription* desc, const char* arg) {
   gMainModuleName = arg;
-  ModuleSymbol::mainModuleNameSet(desc, arg);
+  ModuleSymbol::setMainModuleName(desc, arg);
 }
 
 /*

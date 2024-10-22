@@ -395,6 +395,7 @@ struct TConverter final : UastConverter {
                              MultiDeclState* multiState = nullptr);
   void simplifyEpilogue(FnSymbol* fn);
   ::Qualifier convertQualifier(types::QualifiedType::Kind kind);
+  IntentTag convertFormalIntentQt(types::QualifiedType::Kind kind);
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym, RV& rv);
 
   // helpers we might want to bring back from convert-uast.cpp
@@ -698,10 +699,20 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
 
   modSym->initFn->addFlag(FLAG_MODULE_INIT);
   modSym->initFn->addFlag(FLAG_RESOLVED);
+  modSym->initFn->addFlag(FLAG_RESOLVED_EARLY);
   modSym->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
 
   // add the init function to the module
   modSym->block->insertAtHead(new DefExpr(modSym->initFn));
+
+
+  // If the module has the EXPORT_INIT flag then
+  // propagate it to the module's init function
+  if (modSym->hasFlag(FLAG_EXPORT_INIT) ||
+      (fLibraryCompile && modSym->modTag == MOD_USER)) {
+    modSym->initFn->addFlag(FLAG_EXPORT);
+    modSym->initFn->addFlag(FLAG_LOCAL_ARGS);
+  }
 
   // TODO: handle module deinit functions
   // TODO: call module init functions for other modules
@@ -836,6 +847,7 @@ void TConverter::createMainFunctions() {
     // there wasn't a 'proc main' so we need to generate one.
     mainFn = new FnSymbol("main");
     mainFn->addFlag(FLAG_RESOLVED);
+    mainFn->addFlag(FLAG_RESOLVED_EARLY);
     mainFn->retType = dtVoid;
     mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     mainModule->block->insertAtTail(new DefExpr(mainFn));
@@ -848,8 +860,12 @@ void TConverter::createMainFunctions() {
     INT_ASSERT(mainFn);
   }
 
-  // adjust cname for 'proc main'
+  // set the main module global var for later phases of compilation
+  // and also the chplUserMain global.
+  ModuleSymbol::setMainModule(mainModule);
   chplUserMain = mainFn;
+
+  // adjust cname for 'proc main'
   chplUserMain->cname = astr("chpl_user_main");
   if (fIdBasedMunging && !mainModule->astloc.id().isEmpty()) {
     const char* cname = astr(mainModule->astloc.id().symbolPath().c_str(),
@@ -1896,13 +1912,38 @@ void TConverter::simplifyEpilogue(FnSymbol* fn) {
   return q;
 }
 
+
+IntentTag TConverter::convertFormalIntentQt(types::QualifiedType::Kind kind)
+{
+  IntentTag t = INTENT_BLANK;
+
+  if      (kind == types::QualifiedType::VAR)            t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_VAR)      t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_REF)      t = INTENT_CONST_REF;
+  else if (kind == types::QualifiedType::REF)            t = INTENT_REF;
+  else if (kind == types::QualifiedType::IN)             t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_IN)       t = INTENT_CONST_IN;
+  else if (kind == types::QualifiedType::OUT)            t = INTENT_OUT;
+  else if (kind == types::QualifiedType::INOUT)          t = INTENT_INOUT;
+  else if (kind == types::QualifiedType::PARAM)          t = INTENT_PARAM;
+  else if (kind == types::QualifiedType::TYPE)           t = INTENT_TYPE;
+  else if (kind == types::QualifiedType::DEFAULT_INTENT) t = INTENT_BLANK;
+
+  return t;
+}
+
 void TConverter::setVariableType(const uast::VarLikeDecl* v,
                                  Symbol* sym,
                                  RV& rv) {
+  printf("setVariableType %s\n", v->id().str().c_str());
+
   // Get the type of the variable itself
   if (const resolution::ResolvedExpression* rr = rv.byAstOrNull(v)) {
     types::QualifiedType qt = rr->type();
     if (!qt.isUnknown()) {
+      printf("qt is \n");
+      qt.dump();
+
       // Set a type for the variable
       sym->type = convertType(qt.type());
 
@@ -1910,6 +1951,14 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
       auto q = convertQualifier(qt.kind());
       if (q != QUAL_UNKNOWN)
         sym->qual = q;
+
+      // If it's a Formal / ArgSymbol, also set the intent and originalIntent
+      ArgSymbol* arg = toArgSymbol(sym);
+      const uast::Formal* fml = v->toFormal();
+      if (arg != nullptr && fml != nullptr) {
+        arg->originalIntent = convertFormalIntent(fml->intent());
+        arg->intent = convertFormalIntentQt(qt.kind());
+      }
 
       // Set the param value for the variable in paramMap, if applicable
       /*if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
@@ -2001,6 +2050,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
   }
 
   fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_RESOLVED_EARLY);
 
   if (currentResolvedFunction->signature()->instantiatedFrom() != nullptr) {
     // generic instantiations are "invisible"
@@ -2041,8 +2091,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         // Special handling for implicit receiver formal.
         if (fml->name() == USTR("this")) {
           INT_ASSERT(convertedReceiver == nullptr);
-
-          thisTag = convertFormalIntent(fml->intent());
 
           convertedReceiver = arg;
           INT_ASSERT(convertedReceiver);

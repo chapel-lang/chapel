@@ -466,26 +466,16 @@ const char* constructUserString(const uast::FunctionSignature* node) {
 
 IntentTag convertFormalIntent(uast::Formal::Intent intent) {
   switch (intent) {
-    case uast::Formal::DEFAULT_INTENT:
-      return INTENT_BLANK;
-    case uast::Formal::CONST:
-      return INTENT_CONST;
-    case uast::Formal::CONST_REF:
-      return INTENT_CONST_REF;
-    case uast::Formal::REF:
-      return INTENT_REF;
-    case uast::Formal::IN:
-      return INTENT_IN;
-    case uast::Formal::CONST_IN:
-      return INTENT_CONST_IN;
-    case uast::Formal::OUT:
-      return INTENT_OUT;
-    case uast::Formal::INOUT:
-      return INTENT_INOUT;
-    case uast::Formal::PARAM:
-      return INTENT_PARAM;
-    case uast::Formal::TYPE:
-      return INTENT_TYPE;
+    case uast::Formal::DEFAULT_INTENT: return INTENT_BLANK;
+    case uast::Formal::CONST:          return INTENT_CONST;
+    case uast::Formal::CONST_REF:      return INTENT_CONST_REF;
+    case uast::Formal::REF:            return INTENT_REF;
+    case uast::Formal::IN:             return INTENT_IN;
+    case uast::Formal::CONST_IN:       return INTENT_CONST_IN;
+    case uast::Formal::OUT:            return INTENT_OUT;
+    case uast::Formal::INOUT:          return INTENT_INOUT;
+    case uast::Formal::PARAM:          return INTENT_PARAM;
+    case uast::Formal::TYPE:           return INTENT_TYPE;
   }
 
   CHPL_UNIMPL("Unhandled formal intent");

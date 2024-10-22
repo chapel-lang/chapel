@@ -1140,9 +1140,9 @@ void parseAndConvertUast() {
 
   loadAndConvertModules(*converter.get());
 
-  if (fDynoResolver) {
+  /*if (fDynoResolver) {
     converter->createMainFunctions();
-  }
+  }*/
 
   setupDynoLibFileGeneration();
 

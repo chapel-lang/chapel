@@ -92,7 +92,11 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
 *                                                                             *
 ************************************** | *************************************/
 
-void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
+void ModuleSymbol::setMainModule(ModuleSymbol* mainModule) {
+  sMainModule = mainModule;
+}
+
+void ModuleSymbol::setMainModuleName(const ArgumentDescription* desc,
                                      const char*                arg) {
   sMainModuleName = arg;
 }
