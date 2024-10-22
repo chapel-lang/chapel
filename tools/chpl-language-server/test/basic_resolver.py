@@ -53,6 +53,7 @@ async def test_go_to_record_def(client: LanguageClient):
         await check_goto_type_def(client, doc, pos((2, 4)), pos((0, 7)))
         await check_goto_type_def(client, doc, pos((3, 9)), pos((0, 7)))
 
+
 @pytest.mark.asyncio
 async def test_go_to_call_basic(client: LanguageClient):
     """
@@ -69,6 +70,7 @@ async def test_go_to_call_basic(client: LanguageClient):
     async with source_file(client, file) as doc:
         await check_goto_decl_def(client, doc, pos((2, 0)), pos((0, 5)))
         await check_goto_decl_def(client, doc, pos((3, 0)), pos((1, 5)))
+
 
 @pytest.mark.asyncio
 async def test_go_to_call_generic(client: LanguageClient):
@@ -112,6 +114,7 @@ async def test_go_to_call_generic(client: LanguageClient):
         await select_inst(0, "Show Generic")
         await check_goto_decl_def(client, doc, pos((2, 15)), None)
         await check_goto_decl_def(client, doc, pos((2, 19)), pos((2, 9)))
+
 
 @pytest.mark.asyncio
 @pytest.mark.xfail

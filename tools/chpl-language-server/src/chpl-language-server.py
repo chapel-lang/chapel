@@ -386,7 +386,9 @@ class PositionList(Generic[EltT]):
     position in logarithmic time.
     """
 
-    def _elements_to_segments(self, elts: List[EltT], into: List[Tuple[Position, Optional[EltT], int]]):
+    def _elements_to_segments(
+        self, elts: List[EltT], into: List[Tuple[Position, Optional[EltT], int]]
+    ):
         # A list of not-yet-closed segments, sorted descending by their end positions
         # (so that we can pop the last one to close it).
         ongoing: List[Tuple[Position, EltT, int]] = []
@@ -472,8 +474,12 @@ class PositionList(Generic[EltT]):
         end = bisect_left(self.segments, rng.end, key=lambda x: x[0])
         return (start, end)
 
-    def _update_segments(self, rng: Range, new_segments: List[Tuple[Position, EltT, int]]):
-        new_segments = [seg for seg in new_segments if rng.start <= seg[0] < rng.end]
+    def _update_segments(
+        self, rng: Range, new_segments: List[Tuple[Position, EltT, int]]
+    ):
+        new_segments = [
+            seg for seg in new_segments if rng.start <= seg[0] < rng.end
+        ]
 
         seg_start, seg_end = self._get_segment_range(rng)
         if seg_end > 0:
@@ -498,7 +504,6 @@ class PositionList(Generic[EltT]):
             to_insert.append((rng.end, after_value, after_idx))
 
         self.segments[seg_start:seg_end] = to_insert
-
 
     def clear_range(self, rng: Range):
         elt_start, elt_end = self._get_elt_range(rng)
@@ -530,7 +535,6 @@ class PositionList(Generic[EltT]):
 
         if idx >= 1 and self.segments[idx - 1][1] is not None:
             return self.segments[idx - 1][1]
-
 
         # In some cases, we may be on the boundary between two segments.
         # In this case, the next segment's start position is the same as
@@ -824,7 +828,6 @@ class FileInfo:
             return
         self.scope_segments.append(s)
 
-
     def _resolve_call(
         self,
         node: chapel.FnCall,
@@ -1090,7 +1093,9 @@ class FileInfo:
         new_calls = PositionList[ResolvedPair](lambda x: x.ident.rng)
 
         for i in range(start, end):
-            begin_pos, value_at_segment, _ = self.instantiation_segments.segments[i]
+            begin_pos, value_at_segment, _ = (
+                self.instantiation_segments.segments[i]
+            )
             end_pos = rng.end
             if i + 1 < len(self.instantiation_segments.segments):
                 next_pos, _, _ = self.instantiation_segments.segments[i + 1]
@@ -1111,7 +1116,10 @@ class FileInfo:
 
                 # Only note calls in the current instantiation segment's range
                 call_and_range = NodeAndRange(node.called_expression())
-                if call_and_range.rng.start < begin_pos or call_and_range.rng.end > end_pos:
+                if (
+                    call_and_range.rng.start < begin_pos
+                    or call_and_range.rng.end > end_pos
+                ):
                     continue
 
                 new_calls.append(ResolvedPair(call_and_range, NodeAndRange(fn)))
