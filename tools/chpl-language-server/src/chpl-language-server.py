@@ -1090,6 +1090,7 @@ class FileInfo:
         start, end = self.instantiation_segments._get_segment_range(rng)
 
         segments_for_elt = {}
+
         def process_instantiation_segment(value_at_segment, elt_idx):
             if elt_idx in segments_for_elt:
                 return segments_for_elt[elt_idx]
@@ -1114,7 +1115,6 @@ class FileInfo:
             segments_for_elt[elt_idx] = calls_in_inst
             return calls_in_inst
 
-
         for i in range(start, end):
             # Find the segment and where it starts
             begin_pos, value_at_segment, elt_idx = (
@@ -1129,7 +1129,6 @@ class FileInfo:
                 next_pos, _, _ = self.instantiation_segments.segments[i + 1]
                 end_pos = min(end_pos, next_pos)
 
-
             # Figure out the calls in this instantiation. The same instantiation
             # can appear in multiple segments, since it could be interrupted
             # by a nested instantiation.
@@ -1137,8 +1136,7 @@ class FileInfo:
                 value_at_segment, elt_idx
             )
             self.call_segments.overwrite_range(
-                Range(begin_pos, end_pos),
-                calls_in_inst
+                Range(begin_pos, end_pos), calls_in_inst
             )
 
     def rebuild_index(self):
