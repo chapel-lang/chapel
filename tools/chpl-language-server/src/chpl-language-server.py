@@ -1089,21 +1089,13 @@ class FileInfo:
         self.call_segments.clear_range(rng)
         start, end = self.instantiation_segments._get_segment_range(rng)
 
-        # Note all calls specific to this range in a temp list.
-        new_calls = PositionList[ResolvedPair](lambda x: x.ident.rng)
+        segments_for_elt = {}
+        def process_instantiation_segment(value_at_segment, elt_idx):
+            if elt_idx in segments_for_elt:
+                return segments_for_elt[elt_idx]
 
-        for i in range(start, end):
-            begin_pos, value_at_segment, _ = (
-                self.instantiation_segments.segments[i]
-            )
-            end_pos = rng.end
-            if i + 1 < len(self.instantiation_segments.segments):
-                next_pos, _, _ = self.instantiation_segments.segments[i + 1]
-                end_pos = min(end_pos, next_pos)
-
-            if value_at_segment is None:
-                continue
-            (inst, sig) = value_at_segment
+            inst, sig = value_at_segment
+            calls_in_inst = PositionList[ResolvedPair](lambda x: x.ident.rng)
 
             for node in chapel.preorder(inst.node):
                 if not isinstance(node, chapel.FnCall):
@@ -1114,21 +1106,40 @@ class FileInfo:
                     continue
                 fn, sig = resolved
 
-                # Only note calls in the current instantiation segment's range
-                call_and_range = NodeAndRange(node.called_expression())
-                if (
-                    call_and_range.rng.start < begin_pos
-                    or call_and_range.rng.end > end_pos
-                ):
-                    continue
+                new_call = NodeAndRange(node.called_expression())
+                calls_in_inst.append(ResolvedPair(new_call, NodeAndRange(fn)))
 
-                new_calls.append(ResolvedPair(call_and_range, NodeAndRange(fn)))
+            # Call segments are currently appended (not inserted); perform sort now.
+            calls_in_inst.sort()
+            segments_for_elt[elt_idx] = calls_in_inst
+            return calls_in_inst
 
-        # Call segments are currently appended (not inserted); perform sort now.
-        new_calls.sort()
 
-        # Only copy the calls if they're part of this instantiation segment.
-        self.call_segments.overwrite_range(rng, new_calls)
+        for i in range(start, end):
+            # Find the segment and where it starts
+            begin_pos, value_at_segment, elt_idx = (
+                self.instantiation_segments.segments[i]
+            )
+            if value_at_segment is None:
+                continue
+
+            # Find where the segment ends as far as the range-to-update is concerned
+            end_pos = rng.end
+            if i + 1 < len(self.instantiation_segments.segments):
+                next_pos, _, _ = self.instantiation_segments.segments[i + 1]
+                end_pos = min(end_pos, next_pos)
+
+
+            # Figure out the calls in this instantiation. The same instantiation
+            # can appear in multiple segments, since it could be interrupted
+            # by a nested instantiation.
+            calls_in_inst = process_instantiation_segment(
+                value_at_segment, elt_idx
+            )
+            self.call_segments.overwrite_range(
+                Range(begin_pos, end_pos),
+                calls_in_inst
+            )
 
     def rebuild_index(self):
         """
