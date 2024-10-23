@@ -43,6 +43,7 @@
 
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
+extern const uint64_t chpl_gpuBinarySize;
 
 static CUcontext *chpl_gpu_primary_ctx;
 static CUdevice  *chpl_gpu_devices;
@@ -207,7 +208,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
         CUDA_CALL(cuCtxSetCurrent(context));
         // load the module and setup globals within
-        CUmodule module = chpl_gpu_load_module(chpl_gpuBinary);
+        CUmodule module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
         chpl_gpu_cuda_modules[i] = module;
 
         cuDeviceGetAttribute(&deviceClockRates[i],

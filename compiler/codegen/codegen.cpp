@@ -351,6 +351,21 @@ static void genGlobalInt32(const char *cname, int value) {
 #endif
   }
 }
+static void genGlobalUInt64(const char *cname, uint64_t value) {
+  GenInfo *info = gGenInfo;
+  if (info->cfile) {
+    fprintf(info->cfile, "const uint64_t %s = %" PRIu64 ";\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt =
+        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->irBuilder->getInt64(value));
+    globalInt->setConstant(true);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+#endif
+  }
+}
 
 static bool
 isObjectOrSubclass(Type* t)
@@ -2636,6 +2651,7 @@ static void embedGpuCode() {
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
+  genGlobalUInt64("chpl_gpuBinarySize", uint64_t(buffer.length()));
 }
 
 static void codegenGpuGlobals() {

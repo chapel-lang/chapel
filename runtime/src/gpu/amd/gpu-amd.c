@@ -21,6 +21,7 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chplsys.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
@@ -43,6 +44,7 @@
 
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
+extern const uint64_t chpl_gpuBinarySize;
 
 static int numAllDevices = -1;
 static int numDevices = -1;
@@ -55,11 +57,22 @@ static hipModule_t *chpl_gpu_rocm_modules;
 static int *deviceClockRates;
 
 static inline
-void* chpl_gpu_load_module(const char* fatbin_data) {
+void* chpl_gpu_load_module(const char* fatbin_data, const uint64_t fatbin_size) {
   hipModule_t rocm_module;
 
-  ROCM_CALL(hipModuleLoadData(&rocm_module, fatbin_data));
+  const char* buffer = fatbin_data;
+  chpl_bool has_huge_pages = chpl_getHeapPageSize() > chpl_getSysPageSize();
+  if (has_huge_pages) {
+    // ROCm and huge pages don't play well together.
+    // Make a temporary copy of the fatbin
+    buffer = chpl_malloc(fatbin_size);
+    memcpy((void*)buffer, fatbin_data, fatbin_size);
+  }
+
+  ROCM_CALL(hipModuleLoadData(&rocm_module, buffer));
   assert(rocm_module);
+
+  if (has_huge_pages) chpl_free((void*)buffer);
 
   return (void*)rocm_module;
 }
@@ -230,7 +243,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
         ROCM_CALL(hipSetDevice(device));
 #endif
-        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
+        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
         chpl_gpu_rocm_modules[i] = module;
 
         hipDeviceGetAttribute(&deviceClockRates[i],
