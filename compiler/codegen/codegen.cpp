@@ -351,6 +351,10 @@ static void genGlobalInt32(const char *cname, int value) {
 #endif
   }
 }
+
+// this is currently only used for GPU compilation, and gets unused function
+// warnings without HAVE_LLVM
+#ifdef HAVE_LLVM
 static void genGlobalUInt64(const char *cname, uint64_t value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
@@ -366,6 +370,7 @@ static void genGlobalUInt64(const char *cname, uint64_t value) {
 #endif
   }
 }
+#endif
 
 static bool
 isObjectOrSubclass(Type* t)
