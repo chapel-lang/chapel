@@ -226,7 +226,7 @@ unset:
 	@echo "  2) 'bundled' to build with the LLVM packaged in the third-party directory"
 	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
 	@echo "     Currently supported LLVM versions are: $(CHPL_LLVM_SUPPORTED_VERSIONS)"
-	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
+	@echo "See: https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-llvm"
 	@exit 1
 
 FORCE:

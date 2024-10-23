@@ -461,7 +461,7 @@ const char* Symbol::getUnstableMsg() const {
 // When printing the deprecation message to the console we typically
 // want to filter out inline markup used for Sphinx (which is useful
 // for when generating the docs). See:
-// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
