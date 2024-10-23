@@ -294,18 +294,20 @@ static void test6a() {
   testConstChecking("test6a",
     R""""(
       module M {
+        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           x = 34;
         }
       }
     )"""",
-    {5});
+    {6});
 }
 static void test6b() {
   testConstChecking("test6b",
     R""""(
       module M {
+        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           const ref y = x;
@@ -313,12 +315,13 @@ static void test6b() {
         }
       }
     )"""",
-    {6});
+    {7});
 }
 static void test6c() {
   testConstChecking("test6c",
     R""""(
       module M {
+        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           ref y = x;
@@ -326,7 +329,7 @@ static void test6c() {
         }
       }
     )"""",
-    {5});
+    {6});
 }
 
 static void test7a() {

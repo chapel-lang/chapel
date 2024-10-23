@@ -643,6 +643,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -697,6 +699,8 @@ static void testCompilerGeneratedGenericNew() {
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -778,6 +782,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
     class C {
       param flag : bool;
       var x : if flag then int else real;
@@ -836,6 +842,8 @@ static void testCompilerGeneratedGenericNewClass() {
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
     class C {
       param flag : bool;
       var x : if flag then int else real;

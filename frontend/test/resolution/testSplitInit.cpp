@@ -47,7 +47,10 @@ static void testSplitInit(const char* test,
   std::string testname = test;
   testname += ".chpl";
   auto path = UniqueString::get(context, testname);
-  std::string contents = program;
+  std::string contents = "module M {\n";
+  contents += "operator =(ref lhs: int, const rhs: int) {}\n";
+  contents += program;
+  contents += "}";
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
@@ -120,11 +123,9 @@ static void testSplitInit(const char* test,
 static void test1() {
   testSplitInit("test1",
     R""""(
-      module M {
         proc test() {
           var x:int = 0;
         }
-      }
     )"""",
     {});
 }
@@ -132,12 +133,10 @@ static void test1() {
 static void test2() {
   testSplitInit("test2",
     R""""(
-      module M {
         proc test() {
           var yes1;
           yes1 = 1;
         }
-      }
     )"""",
     {"yes1"});
 }
@@ -145,12 +144,10 @@ static void test2() {
 static void test3() {
   testSplitInit("test3",
     R""""(
-      module M {
         proc test() {
           var yes1:int;
           yes1 = 1;
         }
-      }
     )"""",
     {"yes1"});
 }
@@ -159,7 +156,6 @@ static void test3() {
 static void test4() {
   testSplitInit("test4",
     R""""(
-      module M {
         proc test() {
           var x:int = 0;
           var yes2;
@@ -168,7 +164,6 @@ static void test4() {
             yes2 = 2;
           }
         }
-      }
     )"""",
     {"yes2"});
 }
@@ -176,7 +171,6 @@ static void test4() {
 static void test5() {
   testSplitInit("test5",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x:int = 0;
           var yes3;
@@ -196,7 +190,6 @@ static void test5() {
             no = 22;
           }
         }
-      }
     )"""",
     {"yes3"});
 }
@@ -204,7 +197,6 @@ static void test5() {
 static void test6() {
   testSplitInit("test6",
     R""""(
-      module M {
         proc test(cond: bool, otherCond: bool) {
           var yes5;
           if cond {
@@ -215,7 +207,6 @@ static void test6() {
             yes5 = 555;
           }
         }
-      }
     )"""",
     {"yes5"});
 }
@@ -223,12 +214,10 @@ static void test6() {
 static void test7() {
   testSplitInit("test7",
     R""""(
-      module M {
         proc test() {
           var no1 = 4;
           no1 = 5;
         }
-      }
     )"""",
     {});
 }
@@ -236,7 +225,6 @@ static void test7() {
 static void test8() {
   testSplitInit("test8",
     R""""(
-      module M {
         proc test() {
           {
             var no2:int;
@@ -244,7 +232,6 @@ static void test8() {
             no2 = 57;
           }
         }
-      }
     )"""",
     {});
 }
@@ -252,7 +239,6 @@ static void test8() {
 static void test9() {
   testSplitInit("test9",
     R""""(
-      module M {
         proc test() {
           {
             var no3:int;
@@ -260,7 +246,6 @@ static void test9() {
             no3 = 57;
           }
         }
-      }
     )"""",
     {});
 }
@@ -268,14 +253,12 @@ static void test9() {
 static void test10() {
   testSplitInit("test10",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x;
           if cond then
             return;
           x = 11;
         }
-      }
     )"""",
     {"x"});
 }
@@ -283,14 +266,12 @@ static void test10() {
 static void test11() {
   testSplitInit("test11",
     R""""(
-      module M {
         proc test(cond: bool) throws {
           var x;
           if cond then
             throw nil;
           x = 11;
         }
-      }
     )"""",
     {"x"});
 }
@@ -298,7 +279,6 @@ static void test11() {
 static void test12() {
   testSplitInit("test12",
     R""""(
-      module M {
         proc test() {
           var x:int;
           try {
@@ -309,7 +289,6 @@ static void test12() {
             return;
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -317,7 +296,6 @@ static void test12() {
 static void test13() {
   testSplitInit("test13",
     R""""(
-      module M {
         proc test() {
           var x:int;
           try {
@@ -327,7 +305,6 @@ static void test13() {
           } catch {
           }
         }
-      }
     )"""",
     {});
 }
@@ -335,7 +312,6 @@ static void test13() {
 static void test14() {
   testSplitInit("test14",
     R""""(
-      module M {
         proc test() {
           var x:int;
           try {
@@ -346,7 +322,6 @@ static void test14() {
             x = 1;
           }
         }
-      }
     )"""",
     {});
 }
@@ -354,7 +329,6 @@ static void test14() {
 static void test15() {
   testSplitInit("test15",
     R""""(
-      module M {
         proc test() {
           var x:int;
           try {
@@ -362,7 +336,6 @@ static void test15() {
             x = 1;
           }
         }
-      }
     )"""",
     {});
 }
@@ -370,11 +343,9 @@ static void test15() {
 static void test16() {
   testSplitInit("test16",
     R""""(
-      module M {
         proc test(out formal: int) {
           formal = 4;
         }
-      }
     )"""",
     {"formal"});
 }
@@ -382,13 +353,11 @@ static void test16() {
 static void test17() {
   testSplitInit("test17",
     R""""(
-      module M {
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
           var x:int;
           fOut(x);
         }
-      }
     )"""",
     {"x"});
 }
@@ -396,13 +365,11 @@ static void test17() {
 static void test18() {
   testSplitInit("test18",
     R""""(
-      module M {
         proc fOut(out formal: int) { formal = 4; }
         proc test() {
           var x;
           fOut(x);
         }
-      }
     )"""",
     {"x"});
 }
@@ -410,14 +377,12 @@ static void test18() {
 static void test19() {
   testSplitInit("test19",
     R""""(
-      module M {
         proc int.fOut(out formal: int) { formal = 4; }
         proc test() {
           var myInt = 4;
           var x;
           myInt.fOut(x);
         }
-      }
     )"""",
     {"x"});
 }
@@ -426,7 +391,6 @@ static void test19() {
 static void test20() {
   testSplitInit("test20",
     R""""(
-      module M {
         proc fOut(out formals:int...) {
           formals = (4,);
         }
@@ -434,7 +398,6 @@ static void test20() {
           var x;
           fOut(x);
         }
-      }
     )"""",
     {"x"},
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
@@ -442,7 +405,6 @@ static void test20() {
 static void test21() {
   testSplitInit("test21",
     R""""(
-      module M {
         proc fOut(out formals:int...) {
           formals = (4,5);
         }
@@ -451,7 +413,6 @@ static void test21() {
           var y;
           fOut(x, y);
         }
-      }
     )"""",
     {"x", "y"},
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
@@ -461,7 +422,6 @@ static void test21() {
 static void test22() {
   testSplitInit("test22",
     R""""(
-      module M {
         proc fOut(out formals...) {
           formals = (4,);
         }
@@ -469,7 +429,6 @@ static void test22() {
           var x:int;
           fOut(x);
         }
-      }
     )"""",
     {"x"});
 }
@@ -477,7 +436,6 @@ static void test22() {
 static void test23() {
   testSplitInit("test23",
     R""""(
-      module M {
         proc fOut(out formals...) {
           formals = (4,5);
         }
@@ -486,7 +444,6 @@ static void test23() {
           var y:int;
           fOut(x, y);
         }
-      }
     )"""",
     {"x", "y"});
 }
@@ -494,7 +451,6 @@ static void test23() {
 static void test24() {
   testSplitInit("test24",
     R""""(
-      module M {
         proc fOut(out formals...) {
           formals = (4,);
         }
@@ -502,14 +458,12 @@ static void test24() {
           var x;
           fOut(x);
         }
-      }
     )"""",
     {"x"});
 }
 static void test25() {
   testSplitInit("test25",
     R""""(
-      module M {
         proc fOut(out formals...) {
           formals = (4,5);
         }
@@ -518,7 +472,6 @@ static void test25() {
           var y;
           fOut(x, y);
         }
-      }
     )"""",
     {"x", "y"});
 }*/
@@ -526,7 +479,6 @@ static void test25() {
 static void test26a() {
   testSplitInit("test26a",
     R""""(
-      module M {
         proc test(r: bool) {
           var x;
           if r {
@@ -535,7 +487,6 @@ static void test26a() {
             x = 3.0i;
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
 }
@@ -543,7 +494,6 @@ static void test26a() {
 static void test26b() {
   testSplitInit("test26b",
     R""""(
-      module M {
         proc test(r: bool) {
           var x;
           if r {
@@ -552,7 +502,6 @@ static void test26b() {
             x = 3.0;
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
 }
@@ -560,7 +509,6 @@ static void test26b() {
 static void test26c() {
   testSplitInit("test26c",
     R""""(
-      module M {
         proc test(r: bool) {
           var x;
           if r {
@@ -570,7 +518,6 @@ static void test26c() {
             x = myInt8;
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
 }
@@ -578,14 +525,12 @@ static void test26c() {
 static void test27() {
   testSplitInit("test27",
     R""""(
-      module M {
         proc test(ref arg: int) {
           var x:int;
           on arg {
             x = 52;
           }
         }
-      }
     )"""",
     {});
 }
@@ -593,14 +538,12 @@ static void test27() {
 static void test28() {
   testSplitInit("test28",
     R""""(
-      module M {
         proc test() {
           var x:int;
           local {
             x = 52;
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -608,14 +551,12 @@ static void test28() {
 static void test29() {
   testSplitInit("test29",
     R""""(
-      module M {
         proc test() {
           var x:int;
           serial {
             x = 52;
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -623,7 +564,6 @@ static void test29() {
 static void test30() {
   testSplitInit("test30",
     R""""(
-      module M {
         proc test(r: bool) {
           var x, y;
           if r {
@@ -634,7 +574,6 @@ static void test30() {
             x = 6;
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
 }
@@ -643,7 +582,6 @@ static void test30() {
 static void test31() {
   testSplitInit("test31",
     R""""(
-      module M {
         proc test() {
           var x: int;
           inner1();
@@ -652,7 +590,6 @@ static void test31() {
             x;
           }
         }
-      }
     )"""",
     {});
 }
@@ -660,7 +597,6 @@ static void test31() {
 static void test32() {
   testSplitInit("test32",
     R""""(
-      module M {
         proc test() {
           var x: int;
           proc inner1() {
@@ -669,7 +605,6 @@ static void test32() {
           x = 1;
           inner1();
         }
-      }
     )"""",
     {});
 }
@@ -677,7 +612,6 @@ static void test32() {
 static void test33() {
   testSplitInit("test33",
     R""""(
-      module M {
         proc test() {
           var x: int;
           inner1();
@@ -686,7 +620,6 @@ static void test33() {
             x = 44;
           }
         }
-      }
     )"""",
     {});
 }
@@ -694,7 +627,6 @@ static void test33() {
 static void test34() {
   testSplitInit("test34",
     R""""(
-      module M {
         proc test() {
           var x: int;
           proc inner1() {
@@ -703,7 +635,6 @@ static void test34() {
           x;
           inner1();
         }
-      }
     )"""",
     {});
 }
@@ -713,7 +644,6 @@ static void test34() {
 static void test35() {
   testSplitInit("test35",
     R""""(
-      module M {
         var g: int;
         proc f(out x: int) const ref { return g; }
         proc f(    x: int)       ref { return g; }
@@ -721,7 +651,6 @@ static void test35() {
           var x;
           f(x);
         }
-      }
     )"""",
     {});
 }
@@ -729,7 +658,6 @@ static void test35() {
 static void test36() {
   testSplitInit("test36",
     R""""(
-      module M {
         var g: int;
         proc f(out x: int,     y: int) const ref { return g; }
         proc f(    x: int, out y: int)       ref { return g; }
@@ -737,7 +665,6 @@ static void test36() {
           var x, y;
           f(x, y);
         }
-      }
     )"""",
     {});
 }
@@ -746,14 +673,12 @@ static void test36() {
 static void test37() {
   testSplitInit("test37",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x;
           if cond then
             return x;
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -761,7 +686,6 @@ static void test37() {
 static void test38() {
   testSplitInit("test38",
     R""""(
-      module M {
         proc test() {
           var x:int;
           if x {
@@ -770,7 +694,6 @@ static void test38() {
             x = 11;
           }
         }
-      }
     )"""",
     {});
 }
@@ -778,13 +701,11 @@ static void test38() {
 static void test39() {
   testSplitInit("test39",
     R""""(
-      module M {
         proc test() {
           var x:int;
           var y = x;
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -792,7 +713,6 @@ static void test39() {
 static void test40() {
   testSplitInit("test40",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x:int;
           if cond {
@@ -800,7 +720,6 @@ static void test40() {
           }
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -808,7 +727,6 @@ static void test40() {
 static void test41() {
   testSplitInit("test41",
     R""""(
-      module M {
         proc test() {
           var x:int;
           {
@@ -816,7 +734,6 @@ static void test41() {
           }
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -824,7 +741,6 @@ static void test41() {
 static void test42() {
   testSplitInit("test42",
     R""""(
-      module M {
         proc test() throws {
           var x:int;
           try {
@@ -832,7 +748,6 @@ static void test42() {
           }
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -840,7 +755,6 @@ static void test42() {
 static void test43() {
   testSplitInit("test43",
     R""""(
-      module M {
         proc test() {
           var x:int;
           try {
@@ -849,7 +763,6 @@ static void test43() {
           }
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -857,7 +770,6 @@ static void test43() {
 static void test44() {
   testSplitInit("test44",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x:int;
           if cond {
@@ -870,7 +782,6 @@ static void test44() {
             }
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -878,7 +789,6 @@ static void test44() {
 static void test45() {
   testSplitInit("test45",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x:int;
           if cond {
@@ -889,7 +799,6 @@ static void test45() {
             }
           }
         }
-      }
     )"""",
     {});
 }
@@ -897,7 +806,6 @@ static void test45() {
 static void test46() {
   testSplitInit("test46",
     R""""(
-      module M {
         proc test(cond: bool) {
           var x:int;
           if cond {
@@ -910,7 +818,6 @@ static void test46() {
             }
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -922,7 +829,6 @@ static void test46() {
 static void test47() {
   testSplitInit("test47",
     R""""(
-      module M {
         config var cond = true;
 
         proc test(out x: int) {
@@ -932,7 +838,6 @@ static void test47() {
             x = 5;
           }
         }
-      }
     )"""",
     {});
 }
@@ -941,14 +846,12 @@ static void test47() {
 static void test48() {
   testSplitInit("test48",
     R""""(
-      module M {
         proc test(out x: int) {
           try {
           } catch {
             return;
           }
         }
-      }
     )"""",
     {});
 }
@@ -956,12 +859,10 @@ static void test48() {
 static void test49() {
   testSplitInit("test49",
     R""""(
-      module M {
         proc test(out x: int) {
           return;
           x = 23;
         }
-      }
     )"""",
     {});
 }
@@ -974,7 +875,6 @@ static void test49() {
 static void test50() {
   testSplitInit("test50",
     R""""(
-      module M {
         config var cond = false;
 
         proc test(out x: int) throws {
@@ -984,14 +884,12 @@ static void test50() {
             x = 5;
           }
         }
-      }
     )"""",
     {"x"});
 }
 static void test51() {
   testSplitInit("test51",
     R""""(
-      module M {
         proc test(out x: int) throws {
           try {
             x = 5;
@@ -999,7 +897,6 @@ static void test51() {
             throw nil;
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -1007,12 +904,10 @@ static void test51() {
 static void test52() {
   testSplitInit("test52",
     R""""(
-      module M {
         proc test(out x: int) throws {
           throw nil;
           x = 23;
         }
-      }
     )"""",
     {});
 }
@@ -1020,7 +915,6 @@ static void test52() {
 static void test53() {
   testSplitInit("test53",
     R""""(
-      module M {
         config var cond = false;
 
         proc test() throws {
@@ -1032,7 +926,6 @@ static void test53() {
           }
           x;
         }
-      }
     )"""",
     {});
 }
@@ -1040,14 +933,12 @@ static void test53() {
 static void test54() {
   testSplitInit("test54",
     R""""(
-      module M {
         proc test() {
           var x;
           if true then
             return;
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -1055,14 +946,12 @@ static void test54() {
 static void test55() {
   testSplitInit("test55",
     R""""(
-      module M {
         proc test() {
           var x;
           if false then
             return;
           x = 11;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1070,7 +959,6 @@ static void test55() {
 static void test56() {
   testSplitInit("test56",
     R""""(
-      module M {
         proc test() {
           type T = int;
           var x;
@@ -1078,7 +966,6 @@ static void test56() {
             return;
           x = 11;
         }
-      }
     )"""",
     {});
 }
@@ -1086,14 +973,12 @@ static void test56() {
 static void test57() {
   testSplitInit("test57",
     R""""(
-      module M {
         proc test() {
           var x;
           if false then
             return;
           x = 11;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1102,7 +987,6 @@ static void test57() {
 static void test58() {
   testSplitInit("test58",
     R""""(
-      module M {
         proc test() {
           var x;
           if true then
@@ -1112,7 +996,6 @@ static void test58() {
           x = 3;
           return;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1120,7 +1003,6 @@ static void test58() {
 static void test59() {
   testSplitInit("test59",
     R""""(
-      module M {
         proc test() {
           var x;
           if false then
@@ -1130,7 +1012,6 @@ static void test59() {
           x = 3;
           return;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1138,7 +1019,6 @@ static void test59() {
 static void test60() {
   testSplitInit("test60",
     R""""(
-      module M {
         config const cond: bool = true;
         proc test() {
           var x;
@@ -1149,7 +1029,6 @@ static void test60() {
           x = 3;
           return;
         }
-      }
     )"""",
     {});
 }
@@ -1157,7 +1036,6 @@ static void test60() {
 static void test61() {
   testSplitInit("test61",
     R""""(
-      module M {
         config const cond: bool = true;
         proc test() {
           var x;
@@ -1168,7 +1046,6 @@ static void test61() {
           x = 3;
           return;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1176,7 +1053,6 @@ static void test61() {
 static void test62() {
   testSplitInit("test62",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1196,7 +1072,6 @@ static void test62() {
           }
           return;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1204,7 +1079,6 @@ static void test62() {
 static void test63() {
   testSplitInit("test63",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1221,7 +1095,6 @@ static void test63() {
           }
           return;
         }
-      }
     )"""",
     {});
 }
@@ -1229,7 +1102,6 @@ static void test63() {
 static void test64() {
   testSplitInit("test64",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1249,7 +1121,6 @@ static void test64() {
           }
           return;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1258,7 +1129,6 @@ static void test64() {
 static void test65() {
   testSplitInit("test65",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1277,7 +1147,6 @@ static void test65() {
           x = 3;
           return;
         }
-      }
     )"""",
     {});
 }
@@ -1286,7 +1155,6 @@ static void test65() {
 static void test66() {
   testSplitInit("test66",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1307,7 +1175,6 @@ static void test66() {
           x = 2;
           return;
         }
-      }
     )"""",
     {});
 }
@@ -1315,7 +1182,6 @@ static void test66() {
 static void test67() {
   testSplitInit("test67a",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1329,12 +1195,10 @@ static void test67() {
             otherwise { y = 1; x = 2; }
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
   testSplitInit("test67b",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1348,12 +1212,10 @@ static void test67() {
             otherwise { z = 0; y = 1; x = 2; }
           }
         }
-      }
     )"""",
     {}, ERRORS_EXPECTED);
   testSplitInit("test67c",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1367,12 +1229,10 @@ static void test67() {
             otherwise { z = 0; y = 1; x = 2; }
           }
         }
-      }
     )"""",
     {"z", "y", "x"});
   testSplitInit("test67d",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1386,7 +1246,6 @@ static void test67() {
             otherwise {z = 1; x = 4; return;}
           }
         }
-      }
     )"""",
     {"z", "x", "y"});
 }
@@ -1395,7 +1254,6 @@ static void test67() {
 static void testParamTrueWhen() {
   testSplitInit("testFirstParamTrueWhenNoOtherwise",
     R""""(
-      module M {
         proc test() {
           type T = int;
           var x;
@@ -1408,12 +1266,10 @@ static void testParamTrueWhen() {
             }
           }
         }
-      }
     )"""",
     {"x"});
     testSplitInit("testSecondParamTrueWhenNoOtherwise",
     R""""(
-      module M {
         proc test() {
           type T = real;
           var x: int;
@@ -1425,12 +1281,10 @@ static void testParamTrueWhen() {
             }
           }
         }
-      }
     )"""",
     {});
     testSplitInit("testNoParamTrueWhenNoOtherwise",
     R""""(
-      module M {
         proc test() {
           type T = string;
           var x: int;
@@ -1443,12 +1297,10 @@ static void testParamTrueWhen() {
           }
           x = 3;
         }
-      }
     )"""",
     {"x"});
     testSplitInit("testNoParamTrueWhenYesOtherwise",
     R""""(
-      module M {
         proc test() {
           type T = string;
           var x: int;
@@ -1463,14 +1315,12 @@ static void testParamTrueWhen() {
           }
           x = 3;
         }
-      }
     )"""",
     {"x"});
 }
 static void test64a() {
   testSplitInit("test64a_passing",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1488,12 +1338,10 @@ static void test64a() {
           }
           x = 12;
         }
-      }
     )"""",
     {"x"});
     testSplitInit("test64a",
     R""""(
-      module M {
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1511,7 +1359,6 @@ static void test64a() {
           }
           x = 12;
         }
-      }
     )"""",
     {"x"});
 }
@@ -1520,7 +1367,6 @@ static void test64a() {
 static void test65a() {
   testSplitInit("test65a",
     R""""(
-      module M {
         proc test() {
           type T = int;
           var x;
@@ -1533,7 +1379,6 @@ static void test65a() {
             }
           }
         }
-      }
     )"""",
     {"x"});
 }
@@ -1542,7 +1387,6 @@ static void test65a() {
 static void test68() {
   testSplitInit("test68",
     R""""(
-      module M {
         proc test() {
           param x:int;
           x = 5;
@@ -1560,7 +1404,6 @@ static void test68() {
             }
           }
         }
-      }
     )"""",
     {"x", "y"});
 }

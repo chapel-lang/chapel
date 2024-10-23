@@ -133,6 +133,7 @@ static void test4() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) {}
       operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
@@ -167,6 +168,7 @@ static void test5a() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) {}
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -205,6 +207,7 @@ static void test5b() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) {}
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -253,6 +256,7 @@ static void test6a() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) {}
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -305,6 +309,7 @@ static void test6b() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) {}
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
