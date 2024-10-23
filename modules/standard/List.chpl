@@ -64,6 +64,7 @@ module List {
   import ChapelLocks;
   private use HaltWrappers;
   private use Math;
+  private import Reflection.getRoutineName;
 
   //
   // TODO: remove me when `list.sort` is removed
@@ -78,6 +79,7 @@ module List {
 
   @chpldoc.nodoc
   private param _sanityChecks = false;
+
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -1291,7 +1293,7 @@ module List {
     // call this from `pop`, but I added `unlockBeforeHalt` all the same.
     //
     @chpldoc.nodoc
-    proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
+    proc ref _popAtIndex(idx: int, param caller: string, unlockBeforeHalt=true): eltType {
 
       //
       // TODO: We would like to put this in an on statement, but we can't yet
@@ -1304,13 +1306,13 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        boundsCheckHalt("Called \"list.getAndRemove\" on an empty list.");
+        boundsCheckHalt("Called \"list."+ caller + "\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        const msg = "Index for \"list.getAndRemove\" out of bounds: " + idx:string;
+        const msg = "Index for \"list." + caller + "\" out of bounds: " + idx:string;
         boundsCheckHalt(msg);
       }
 
@@ -1346,7 +1348,7 @@ module List {
     */
     proc ref popBack(): eltType {
       _enter();
-      var result = _popAtIndex(_size-1);
+      var result = _popAtIndex(_size-1, getRoutineName());
       _leave();
       return result;
     }
@@ -1375,7 +1377,7 @@ module List {
     */
     proc ref getAndRemove(idx: int): eltType {
       _enter();
-      var result = _popAtIndex(idx);
+      var result = _popAtIndex(idx, getRoutineName());
       _leave();
       return result;
     }
