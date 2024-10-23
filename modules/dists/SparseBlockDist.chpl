@@ -60,7 +60,8 @@ record targetLocaleComparator: keyComparator {
   var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
-      if sparseLayoutType == cscLayout then
+      if sparseLayoutType == cscLayout(true) ||
+         sparseLayoutType == cscLayout(false) then
         return (dist.targetLocsIdx(a), a[1], a[0]);
       else
         return (dist.targetLocsIdx(a), a[0], a[1]);
