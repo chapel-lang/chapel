@@ -55,6 +55,7 @@
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
   macro(FunctionType) sep                          \
+  macro(TemporaryConversionType)  sep              \
   macro(DecoratedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
@@ -100,6 +101,7 @@ class Expr;
 class GenRet;
 class LcnSymbol;
 class Symbol;
+class TemporaryConversionType;
 class Type;
 
 class BlockStmt;
@@ -189,7 +191,8 @@ enum AstTag {
   E_EnumType,
   E_AggregateType,
   E_FunctionType,
-  E_DecoratedClassType
+  E_TemporaryConversionType,
+  E_DecoratedClassType,
 };
 
 static inline bool isExpr(AstTag tag)
@@ -360,6 +363,7 @@ def_is_ast(FunctionType)
 def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
+def_is_ast(TemporaryConversionType)
 def_is_ast(DecoratedClassType)
 #undef def_is_ast
 
@@ -419,6 +423,7 @@ def_to_ast(FunctionType)
 def_to_ast(ConstrainedType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
+def_to_ast(TemporaryConversionType)
 def_to_ast(DecoratedClassType)
 def_to_ast(Type)
 
@@ -481,6 +486,7 @@ def_less_ast(PrimitiveType)
 def_less_ast(ConstrainedType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
+def_less_ast(TemporaryConversionType)
 def_less_ast(DecoratedClassType)
 def_less_ast(Type)
 

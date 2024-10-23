@@ -6189,6 +6189,9 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 }
 
 
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) { }
+
+
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
   // This call asks if a future GET is safe, but we can't know that in the case

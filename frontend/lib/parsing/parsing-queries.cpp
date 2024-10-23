@@ -214,6 +214,7 @@ parseFileContainingIdToBuilderResult(Context* context,
       symbolPath = id.symbolPath();
     } else {
       symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+      if (symbolPath.isEmpty()) return nullptr;
 
       // Assumption: The generated module goes only one symbol deep.
       CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
@@ -1108,9 +1109,9 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName) {
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
@@ -1124,6 +1125,13 @@ ID getSymbolFromTopLevelModule(Context* context,
   fullPath += symName;
 
   return ID(UniqueString::get(context, fullPath));
+}
+
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  return {getSymbolIdFromTopLevelModule(context, modName, symName),
+          UniqueString::get(context, symName)};
 }
 
 static const Module* const&
@@ -1246,7 +1254,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  if (!id.isFabricatedId()) {
+  if (!id.isFabricatedId() ||
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
@@ -1297,8 +1306,9 @@ bool idIsParenlessFunction(Context* context, ID id) {
 
 bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsFunction(context, up)) return true;
   }
   return false;
 }
@@ -1451,6 +1461,16 @@ const ID& idToParentId(Context* context, ID id) {
   }
 
   return QUERY_END(result);
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    // Get the first parent function (a parent could be a record/class/etc).
+    if (parsing::idIsFunction(context, up)) return up;
+  }
+  return {};
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {

@@ -201,7 +201,7 @@ def SuckOutputWithTimeout(stream, timeout):
         now = time.time()
         if end_time <= now:
             # Maybe return partial result instead?
-            raise ReadTimeoutException('Teh tiem iz out!');
+            raise ReadTimeoutException('Teh tiem iz out!')
         ready_set = select.select([stream], [], [], end_time - now)[0]
         if stream in ready_set:
             bytes = stream.read()
@@ -231,11 +231,11 @@ def LauncherTimeoutArgs(seconds):
 
 # Escape all special characters
 def ShellEscape(arg):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', arg)
+    return re.sub(r'([\\!@#$%^&*()?;\'"|<>[\]{} ])', r'\\\1', arg)
 
 # Escape all special characters but leave spaces alone
 def ShellEscapeCommand(arg):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', arg)
+    return re.sub(r'([\\!@#$%^&*()?;\'"|<>[\]{}])', r'\\\1', arg)
 
 
 # Grabs the start and end of the output and replaces non-printable chars with ~
@@ -464,7 +464,7 @@ def printTestVariation(compoptsnum, compoptslist,
         printExecOpts = False
 
     if (not printCompOpts) and (not printExecOpts):
-        return;
+        return
 
     sys.stdout.write(' (')
     if printCompOpts:
@@ -759,9 +759,9 @@ def get_chpl_base(compiler):
 def get_chpl_home(chpl_base):
     """Returns the normalized path to the Chapel installation."""
     # If $CHPL_HOME is not set, use the base installation of the compiler
-    chpl_home=os.getenv('CHPL_HOME', chpl_base);
+    chpl_home=os.getenv('CHPL_HOME', chpl_base)
     chpl_home=os.path.normpath(chpl_home)
-    # sys.stdout.write('CHPL_HOME='+chpl_home+'\n');
+    # sys.stdout.write('CHPL_HOME='+chpl_home+'\n')
     return chpl_home
 
 def get_test_dir(chpl_home):
@@ -773,7 +773,7 @@ def get_test_dir(chpl_home):
             Fatal('Cannot find test directory '+chpl_home+'/test or '+testdir)
     # Needed for MacOS mount points
     testdir = os.path.realpath(testdir)
-    # sys.stdout.write('testdir='+testdir+'\n');
+    # sys.stdout.write('testdir='+testdir+'\n')
 
     # If user specified a different test directory (e.g. with --test-root flag on
     # start_test), use it instead.
@@ -800,19 +800,19 @@ def get_local_dir(test_dir):
 def get_util_dir():
     """Find the test util directory -- set this in start_test to use
         a version of start_test other than the one in CHPL_HOME."""
-    utildir=os.getenv('CHPL_TEST_UTIL_DIR');
+    utildir=os.getenv('CHPL_TEST_UTIL_DIR')
     if utildir is None or not os.path.isdir(utildir):
         Fatal('Cannot find test util directory {0}'.format(utildir))
 
     # Needed for MacOS mount points
     utildir = os.path.realpath(utildir)
-    # sys.stdout.write('utildir='+utildir+'\n');
+    # sys.stdout.write('utildir='+utildir+'\n')
     return utildir
 
 def get_config_dir(util_dir):
     return os.path.join(util_dir, 'config')
 
-def main(): 
+def main():
     # Start of sub_test proper
     #
     global utildir, chpl_base, chpl_home, machine, envCompopts, platform
@@ -873,7 +873,7 @@ def main():
         timedexec=utildir+'/test/timedexec'
         if not os.access(timedexec,os.R_OK|os.X_OK):
             Fatal('Cannot execute timedexec script \''+timedexec+'\'')
-    # sys.stdout.write('timedexec='+timedexec+'\n');
+    # sys.stdout.write('timedexec='+timedexec+'\n')
 
     # HW platform
     platform = run_process([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE)[1]
@@ -1032,12 +1032,12 @@ def main():
         compstdin='/dev/null'
     # sys.stdout.write('compstdin=%s\n'%(compstdin))
 
-    globalLastcompopts=list();
+    globalLastcompopts=list()
     if os.access('./LASTCOMPOPTS',os.R_OK):
         globalLastcompopts+=run_process(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE)[1].strip().split()
     # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
-    globalLastexecopts=list();
+    globalLastexecopts=list()
     if os.access('./LASTEXECOPTS',os.R_OK):
         globalLastexecopts+=run_process(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE)[1].strip().split()
     # sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
@@ -1272,10 +1272,10 @@ def main():
             execname += '.{0}'.format(os.getpid())
         # print test_filename
 
-        is_c_test = testname.endswith(".test.c");
-        is_ml_c_test = testname.endswith(".ml-test.c");
-        is_cpp_test = testname.endswith(".test.cpp");
-        is_ml_cpp_test = testname.endswith(".ml-test.cpp");
+        is_c_test = testname.endswith(".test.c")
+        is_ml_c_test = testname.endswith(".ml-test.c")
+        is_cpp_test = testname.endswith(".test.cpp")
+        is_ml_cpp_test = testname.endswith(".ml-test.cpp")
         is_c_or_cpp_test = (is_c_test or is_cpp_test)
         is_ml_c_or_cpp_test = (is_ml_c_test or is_ml_cpp_test)
         c_or_cpp = None
@@ -1720,7 +1720,7 @@ def main():
             # remember to add the cleaner solution soon.
             #
             comptimeout = 4*timeout
-            cmd=ShellEscapeCommand(cmd);
+            cmd=ShellEscapeCommand(cmd)
             sys.stdout.write('[Executing compiler %s'%(cmd))
             if args:
                 sys.stdout.write(' %s'%(' '.join(args)))
@@ -1736,7 +1736,7 @@ def main():
                 if status == 222:
                     sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                      (futuretest, localdir, test_filename))
-                    printTestVariation(compoptsnum, compoptslist);
+                    printTestVariation(compoptsnum, compoptslist)
                     sys.stdout.write(']\n')
                     sys.stdout.write('[Compilation output was as follows:]\n')
                     sys.stdout.write(trim_output(output))
@@ -1754,7 +1754,7 @@ def main():
                 except ReadTimeoutException:
                     sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                      (futuretest, localdir, test_filename))
-                    printTestVariation(compoptsnum, compoptslist);
+                    printTestVariation(compoptsnum, compoptslist)
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
                     cleanup(execname)
@@ -1781,11 +1781,11 @@ def main():
                   # remove lines like
                   # somefile.c:
                   # that some C compilers emit when compiling multiple files
-                  output = output.replace(arg + ":\n", "");
+                  output = output.replace(arg + ":\n", "")
 
             if (status!=0 or not executebin):
                 # Save original output
-                origoutput = output;
+                origoutput = output
                 dealWithBinary = False
 
                 # Compare compiler output with expected program output
@@ -1878,7 +1878,7 @@ def main():
                     sys.stdout.write('%s[Error '%(futuretest))
                 sys.stdout.write('matching compiler output for %s/%s'%
                                      (localdir, test_filename))
-                printTestVariation(compoptsnum, compoptslist);
+                printTestVariation(compoptsnum, compoptslist)
                 sys.stdout.write(']\n')
 
                 # If there was a prediff it may have hidden the compilation
@@ -1895,14 +1895,14 @@ def main():
                     if os.access(badfile, os.R_OK):
                         badresult = DiffBadFiles(badfile, complog)
                         if badresult==0:
-                            os.unlink(complog);
+                            os.unlink(complog)
                             sys.stdout.write('[Clean match against .bad file ')
                         else:
                             # bad file doesn't match, which is bad
                             sys.stdout.write('[Error matching .bad file ')
                         sys.stdout.write('for %s/%s'%(localdir, test_filename))
-                        printTestVariation(compoptsnum, compoptslist);
-                        sys.stdout.write(']\n');
+                        printTestVariation(compoptsnum, compoptslist)
+                        sys.stdout.write(']\n')
 
                 cleanup(execname)
                 cleanup(printpassesfile)
@@ -1994,7 +1994,7 @@ def main():
                         sys.stdout.write('[Success finding compiler performance keys for %s/%s]\n'% (localdir, test_filename))
                     else:
                         sys.stdout.write('[Error finding compiler performance keys for %s/%s.]\n'% (localdir, test_filename))
-                        printTestVariation(compoptsnum, compoptslist);
+                        printTestVariation(compoptsnum, compoptslist)
                         sys.stdout.write('computePerfStats output was:\n%s\n'%(compkeysOutput))
                         sys.stdout.flush()
                         sys.stdout.write('Deleting .dat files for %s/%s because of failure to find all keys\n'%(localdir, test_filename))
@@ -2038,7 +2038,7 @@ def main():
                 execopts = tlist[0].strip()
 
                 if numlocexecopts != None:
-                    execopts += numlocexecopts;
+                    execopts += numlocexecopts
                 if len(tlist) > 1:
                     # Ignore everything after the first token
                     explicitexecgoodfile = tlist[1].strip().split()[0]
@@ -2174,7 +2174,7 @@ def main():
                       # come from and checking for '<' would have to be factored out or duplicated
                       print('[Skipping test with stdin redirection ("<") in execopts since '
                             '-nostdinredirect is given {0}/{1}]'.format(localdir, test_filename))
-                      break;
+                      break
                   elif redirectin == "/dev/null":
                     if os.access(execOptRedirect, os.R_OK):
                       redirectin = execOptRedirect
@@ -2224,7 +2224,7 @@ def main():
                                 sys.stdout.write('%s[Error: %s %s/%s'%
                                                 (futuretest, launcher_error, localdir, test_filename))
                                 printTestVariation(compoptsnum, compoptslist,
-                                                   execoptsnum, execoptslist);
+                                                   execoptsnum, execoptslist)
                                 sys.stdout.write(']\n')
                                 sys.stdout.write('[Execution output was as follows:]\n')
                                 sys.stdout.write(trim_output(output))
@@ -2247,7 +2247,7 @@ def main():
                                 sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                                 (futuretest, localdir, test_filename))
                                 printTestVariation(compoptsnum, compoptslist,
-                                                   execoptsnum, execoptslist);
+                                                   execoptsnum, execoptslist)
                                 sys.stdout.write(']\n')
                                 sys.stdout.write('[Execution output was as follows:]\n')
                                 sys.stdout.write(trim_output(output))
@@ -2278,7 +2278,7 @@ def main():
                                 sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                                 (futuretest, localdir, test_filename))
                                 printTestVariation(compoptsnum, compoptslist,
-                                                   execoptsnum, execoptslist);
+                                                   execoptsnum, execoptslist)
                                 sys.stdout.write(']\n')
                                 KillProc(p, killtimeout)
 
@@ -2413,7 +2413,7 @@ def main():
                                             (localdir, test_filename))
                             if result!=0:
                                 printTestVariation(compoptsnum, compoptslist,
-                                                   execoptsnum, execoptslist);
+                                                   execoptsnum, execoptslist)
                             sys.stdout.write(']\n')
 
                             if (result != 0 and futuretest != ''):
@@ -2421,14 +2421,14 @@ def main():
                                 if os.access(badfile, os.R_OK):
                                     badresult = DiffFiles(badfile, execlog)
                                     if badresult==0:
-                                        os.unlink(execlog);
+                                        os.unlink(execlog)
                                         sys.stdout.write('[Clean match against .bad file ')
                                     else:
                                         # bad file doesn't match, which is bad
                                         sys.stdout.write('[Error matching .bad file ')
                                     sys.stdout.write('for %s/%s'%(localdir, test_filename))
-                                    printTestVariation(compoptsnum, compoptslist);
-                                    sys.stdout.write(']\n');
+                                    printTestVariation(compoptsnum, compoptslist)
+                                    sys.stdout.write(']\n')
 
 
                     if perftest:
@@ -2474,7 +2474,7 @@ def main():
                                                 (localdir, test_filename))
                                 if status!=0:
                                     printTestVariation(compoptsnum, compoptslist,
-                                                    execoptsnum, execoptslist);
+                                                    execoptsnum, execoptslist)
                                 sys.stdout.write(']\n')
                         # only notify for a failed execution if launching the test was successful
                         elif (not launcher_error):

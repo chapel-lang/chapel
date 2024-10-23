@@ -124,9 +124,23 @@ def pkgconfig_get_system_compile_args(pkg):
     if not pkgconfig_system_has_package(pkg):
         return (None, None)
     # run pkg-config to get the cflags
-    cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
+    cflags_line = run_command(['pkg-config', '--cflags'] + [pkg])
     cflags = cflags_line.split()
     return ([ ], cflags)
+
+# helper function to determine if we need to warn about 'Requires'/'Requires.private'
+# these fields list other packages that are required to link with this package
+# however, this only matters if the required package is not listed in
+# 'Libs'/'Libs.private' already
+# see https://people.freedesktop.org/~dbn/pkg-config-guide.html
+def _pkgconfig_should_warn_for_requires(d, private=False):
+    libs = d['Libs' if not private else 'Libs.private'].split()
+    requires = d['Requires' if not private else 'Requires.private'].split()
+    for req in requires:
+        lib_name = '-l' + req
+        if lib_name not in libs:
+            return True
+    return False
 
 #
 # Return compiler arguments required to use a bundled library
@@ -154,8 +168,16 @@ def pkgconfig_get_bundled_compile_args(pkg, ucp='', pcfile=''):
         return ([ ], [ ])
 
     if 'Requires' in d and d['Requires']:
-        warning("Simple pkg-config parser does not handle Requires")
-        warning("in {0}".format(pcpath))
+        warn = False
+        if 'Libs' in d:
+            warn = _pkgconfig_should_warn_for_requires(d)
+        else:
+            # no Libs, so no way to check if the required package is already included
+            warn = True
+
+        if warn:
+            warning("Simple pkg-config parser does not handle Requires")
+            warning("in {0}".format(pcpath))
 
     cflags = [ ]
 
@@ -188,7 +210,7 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     if static:
       static_arg = ['--static']
 
-    libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pkg]);
+    libs_line = run_command(['pkg-config', '--libs'] + static_arg + [pkg])
     libs = libs_line.split()
     return ([ ], libs)
 
@@ -236,11 +258,15 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     if d == None:
         return ([ ], [ ])
 
-    if 'Requires' in d and d['Requires']:
+    if d.get('Requires') and _pkgconfig_should_warn_for_requires(d):
         warning("Simple pkg-config parser does not handle Requires")
         warning("in {0}".format(pcpath))
 
-    if static and 'Requires.private' in d and d['Requires.private']:
+    if (
+        static
+        and d.get("Requires.private")
+        and _pkgconfig_should_warn_for_requires(d, private=True)
+    ):
         warning("Simple pkg-config parser does not handle Requires.private")
         warning("in {0}".format(pcpath))
 
@@ -445,3 +471,4 @@ def could_not_find_pkgconfig_pkg(pkg, envname):
     else:
         install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
         error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))
+

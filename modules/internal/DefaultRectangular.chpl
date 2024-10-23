@@ -143,15 +143,7 @@ module DefaultRectangular {
 
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
-      // FIXME benharsh: Here's what we want to do:
-      //   defaultDist = new dmap(new DefaultDist());
-      // The problem is that the LHS of the "proc =" for _distributions
-      // loses its ref intent in the removeWrapRecords pass.
-      //
-      // The code below is copied from the contents of the "proc =".
-      const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(),
-                                                      definedConst=false));
+      defaultDist = new dmap(new DefaultDist());
     }
   }
 
@@ -1315,15 +1307,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
         }
 
-        if !localeModelPartitionsIterationOnSublocales {
-          data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
-        } else {
-          data = _ddata_allocate_noinit(eltType, size,
-                                        callPostAlloc,
-                                        subloc = (if here._getChildCount() > 1
-                                                  then c_sublocid_all
-                                                  else c_sublocid_none));
-        }
+        data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
 
         if initElts {
           init_elts(data, size, eltType);

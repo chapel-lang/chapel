@@ -12,15 +12,15 @@ module DoKeywordAndBlock {
   var A: [1..10] int;
 
   @chplcheck.ignore("UnusedLoopIndex")
-  forall i in 1..10 with (ref A) do {}
+  forall i in 1..10 with (ref A) do { A; }
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..10 with (ref A) do
-  {}
+  { A; }
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in 1..10 with (ref A) do {
-
+    A;
   }
 
   @chplcheck.ignore("UnusedLoopIndex")
@@ -49,8 +49,8 @@ module DoKeywordAndBlock {
     do {}
   for 1..10 do{
   }
-  forall 1..10 with (ref A)do{}
-  forall 1..10 with (ref A)do {}
+  forall 1..10 with (ref A)do{ A; }
+  forall 1..10 with (ref A)do { A; }
 
   on Locales[0] do {}
 

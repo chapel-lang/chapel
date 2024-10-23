@@ -1558,6 +1558,197 @@ static void test25() {
   }
 }
 
+static void test26() {
+  // Test resolving a generic type field usage in a method signature.
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    // 'this' qualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type field
+    std::string prog =
+      R"""(
+        class Foo {
+          type myType = string;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc, concrete receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc, concrete receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          proc myType type do return int;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo();
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // 'this' qualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : this.myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+
+  {
+    // unqualified, type parenless proc, generic receiver
+    std::string prog =
+      R"""(
+        class Foo {
+          type idxType;
+          proc myType type do return idxType;
+          proc doSomething(x : myType) param do return 1;
+        }
+
+        var myFoo = new Foo(int);
+        var x = myFoo.doSomething(1);
+      )""";
+
+    auto t = resolveTypeOfXInit(context, prog);
+    ensureParamInt(t, 1);
+    assert(guard.realizeErrors() == 0);
+
+    context->advanceToNextRevision(false);
+  }
+}
+
+// Make sure that 'extern' functions still have 'ResolvedFunction' entries.
+static void test27() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // 'this' qualified, type field
+  std::string prog =
+    R"""(
+      extern proc foo(): int;
+    )""";
+
+  auto m = parseModule(context, prog);
+  auto f = m->stmt(0)->toFunction();
+  assert(f && f->linkage() == Decl::EXTERN);
+  auto rf = resolveConcreteFunction(context, f->id());
+  assert(rf->returnType().type()->isIntType());
+  assert(guard.realizeErrors() == 0);
+}
+
+// This bug is hard to replicate with queries alone, but does seem to show
+// up in some cases of the query system.
+static void testInfiniteCycleBug() {
+  auto context = buildStdContext();
+  auto ctx = context.get();
+
+  ctx->advanceToNextRevision(false);
+  setupModuleSearchPaths(ctx, false, false, {}, {});
+
+  CompilerFlags flags;
+  flags.set(CompilerFlags::WARN_UNSTABLE, true);
+  setCompilerFlags(ctx, std::move(flags));
+
+  std::string program0 =
+    R""""(
+    proc foo() {
+      var x = 0;
+      proc bar() { return x; }
+      return bar();
+    }
+    var x = foo();
+    )"""";
+
+  std::ignore = resolveQualifiedTypeOfX(ctx, program0);
+
+  ctx->advanceToNextRevision(false);
+  setupModuleSearchPaths(ctx, false, false, {}, {});
+
+  std::string program1 =
+    R""""(
+    proc baz() {
+      var x = 0;
+      proc ding() { return x; }
+      return bar();
+    }
+    var x = baz();
+    )"""";
+
+  std::ignore = resolveQualifiedTypeOfX(ctx, program1);
+}
+
 int main() {
   test1();
   test2();
@@ -1584,6 +1775,10 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+
+  testInfiniteCycleBug();
 
   return 0;
 }

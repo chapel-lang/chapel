@@ -4,11 +4,8 @@
 #
 
 SUBDIRS = basics features stress utils
-if COMPILE_MULTINODE
-SUBDIRS += multinode
-endif
 
-DIST_SUBDIRS = $(SUBDIRS) multinode benchmarks
+DIST_SUBDIRS = $(SUBDIRS) benchmarks
 
 basictests:
 	$(MAKE) -C basics buildtests
@@ -16,13 +13,10 @@ basictests:
 featuretests:
 	$(MAKE) -C features buildtests
 
-multinodetests:
-	$(MAKE) -C multinode buildtests
-
 stresstests:
 	$(MAKE) -C stress buildtests
 
-tests: basictests featuretests stresstests multinodetests
+tests: basictests featuretests stresstests
 
 buildtests: tests
 

@@ -791,3 +791,25 @@ void chpl_startVerboseMemHere(void) {
 void chpl_stopVerboseMemHere(void) {
   chpl_verbose_mem = 0;
 }
+
+int chpl_memtable_size(void) {
+  return hashSize;
+}
+
+void* chpl_memtable_entry(int idx) {
+  return memTable[idx];
+}
+
+void* chpl_memtable_next_entry(void* entry) {
+  return (void*)(((memTableEntry*)entry)->nextInBucket);
+}
+
+uint64_t chpl_memtable_entry_addr(void* entry) {
+  return (uint64_t)(((memTableEntry*)entry)->memAlloc);
+}
+
+uint64_t chpl_memtable_entry_size(void* entry) {
+  memTableEntry* _entry = (memTableEntry*)entry;
+  return (uint64_t)(_entry->size*_entry->number);
+}
+

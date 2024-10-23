@@ -6,7 +6,7 @@ file = open("out", "rb")
 messageObj.ParseFromString(file.read())
 file.close()
 
-lst = [];
+lst = []
 lst.append(1)
 lst.append(2445464)
 if messageObj.ui64 != lst:
@@ -14,7 +14,7 @@ if messageObj.ui64 != lst:
 else:
     print("true")
 
-lst = [];
+lst = []
 lst.append(1)
 lst.append(24454)
 if messageObj.ui32 != lst:
@@ -22,7 +22,7 @@ if messageObj.ui32 != lst:
 else:
     print("true")
     
-lst = [];
+lst = []
 lst.append(-100)
 lst.append(244540000000)
 if messageObj.i64 != lst:
@@ -30,23 +30,23 @@ if messageObj.i64 != lst:
 else:
     print("true")
     
-lst = [];
-lst.append(-500);
-lst.append(2445489);
+lst = []
+lst.append(-500)
+lst.append(2445489)
 if messageObj.i32 != lst:
     print("false")
 else:
     print("true")
     
-lst = [];
-lst.append(True);
-lst.append(False);
+lst = []
+lst.append(True)
+lst.append(False)
 if messageObj.bo != lst:
     print("false")
 else:
     print("true")
     
-lst = [];
+lst = []
 lst.append(-500)
 lst.append(-24454890000)
 if messageObj.si64 != lst:
@@ -54,7 +54,7 @@ if messageObj.si64 != lst:
 else:
     print("true")
     
-lst = [];
+lst = []
 lst.append(-50)
 lst.append(-2445489)
 if messageObj.si32 != lst:

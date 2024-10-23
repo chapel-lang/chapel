@@ -45,6 +45,7 @@ prefixes = {
     'cpu':          'CHPL_TARGET_CPU',
     'loc':          'CHPL_LOCALE_MODEL',
     'gpu':          'CHPL_GPU',
+    'gpu_vers':     'CHPL_GPU_SDK_VERSION',
     'gpu_mem':      'CHPL_GPU_MEM_STRATEGY',
     'comm':         'CHPL_COMM',
     'tasks':        'CHPL_TASKS',
@@ -77,7 +78,6 @@ varNames = {
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
     State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
-    State.GASNET_VERSION:   'CHPL_GASNET_VERSION'
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are

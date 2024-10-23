@@ -143,6 +143,12 @@ from lsprotocol.types import (
 
 import argparse
 import configargparse
+import sys
+import functools
+
+
+def log(*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
 
 
 class ChplcheckProxy:
@@ -229,12 +235,12 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
             return SymbolKind.Method
         else:
             return SymbolKind.Function
-    elif isinstance(decl, chapel.Variable):
+    elif isinstance(decl, chapel.VarLikeDecl):
         if decl.intent() == "type":
             return SymbolKind.TypeParameter
         elif decl.intent() == "param":
             return SymbolKind.Constant
-        elif decl.is_field():
+        elif isinstance(decl, chapel.Variable) and decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
@@ -264,15 +270,12 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.NamedDecl, override_name: Optional[str] = None
+    decl: chapel.NamedDecl,
+    override_name: Optional[str] = None,
+    override_sort: Optional[str] = None,
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
-        return None
-
-    # For now, we show completion for global symbols (not x.<complete>),
-    # so it seems like we ought to rule out methods.
-    if kind == SymbolKind.Method:
         return None
 
     # We don't want to show operators in completion lists, as they're
@@ -281,11 +284,12 @@ def completion_item_for_decl(
         return None
 
     name_to_use = override_name if override_name else decl.name()
+    sort_text = override_sort if override_sort else name_to_use
     return CompletionItem(
         label=name_to_use,
         kind=decl_kind_to_completion_kind(kind),
         insert_text=name_to_use,
-        sort_text=name_to_use,
+        sort_text=sort_text,
     )
 
 
@@ -428,6 +432,27 @@ class ResolvedPair:
 
 
 @dataclass
+class ScopedNodeAndRange:
+    node: chapel.AstNode
+    scopes: List[chapel.Scope] = field(default_factory=list)
+
+    @staticmethod
+    def create(node: chapel.AstNode) -> Optional["ScopedNodeAndRange"]:
+        scopes = []
+        scope = node.scope()
+        while scope:
+            scopes.append(scope)
+            scope = scope.parent_scope()
+        if len(scopes) == 0:
+            return None
+        return ScopedNodeAndRange(node, scopes)
+
+    @property
+    def rng(self):
+        return location_to_range(self.node.location())
+
+
+@dataclass
 class References:
     in_file: "FileInfo"
     uses: List[NodeAndRange]
@@ -499,6 +524,8 @@ class ContextContainer:
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
         self.global_uses: Dict[str, List[References]] = defaultdict(list)
+        self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
+        self.instantiation_id_counter = 0
 
         if config:
             file_config = config.for_file(file)
@@ -507,6 +534,27 @@ class ContextContainer:
                 self.file_paths = file_config["files"]
 
         self.context.set_module_paths(self.module_paths, self.file_paths)
+
+    def register_signature(self, sig: chapel.TypedSignature) -> str:
+        """
+        The language server can't send over typed signatures directly for
+        situations such as call hierarchy items (but we need to reason about
+        instantiations). Instead, keep a global unique ID for each signature,
+        and use that to identify them.
+        """
+        if sig in self.instantiation_ids:
+            return self.instantiation_ids[sig]
+
+        self.instantiation_id_counter += 1
+        uid = str(self.instantiation_id_counter)
+        self.instantiation_ids[sig] = uid
+        return uid
+
+    def retrieve_signature(self, uid: str) -> Optional[chapel.TypedSignature]:
+        for sig, sig_uid in self.instantiation_ids.items():
+            if sig_uid == uid:
+                return sig
+        return None
 
     def new_file_info(
         self, uri: str, use_resolver: bool
@@ -556,6 +604,7 @@ class FileInfo:
     use_resolver: bool
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
+    scope_segments: PositionList[ScopedNodeAndRange] = field(init=False)
     instantiation_segments: PositionList[
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
@@ -565,11 +614,11 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
+        self.scope_segments = PositionList(lambda x: x.rng)
         self.instantiation_segments = PositionList(lambda x: x[0].rng)
         self.uses_here = {}
         self.rebuild_index()
@@ -614,6 +663,18 @@ class FileInfo:
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
 
+    def _note_scope(self, node: chapel.AstNode):
+        if not node.creates_scope():
+            return
+        s = ScopedNodeAndRange.create(node)
+        if not s:
+            return
+        self.scope_segments.append(s)
+
+    @enter
+    def _enter_AstNode(self, node: chapel.AstNode):
+        self._note_scope(node)
+
     @enter
     def _enter_Identifier(self, node: chapel.Identifier):
         self._note_reference(node)
@@ -628,6 +689,7 @@ class FileInfo:
         _ = node.scope_resolve()
 
         self.def_segments.append(NodeAndRange(node))
+        self._note_scope(node)
 
     @enter
     def _enter_Function(self, node: chapel.Function):
@@ -635,66 +697,143 @@ class FileInfo:
         _ = node.scope_resolve()
 
         self.def_segments.append(NodeAndRange(node))
+        self._note_scope(node)
 
     @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
+        self._note_scope(node)
 
-    def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
-        self.visible_decls = []
-        for ast in asts:
-            if isinstance(ast, chapel.Comment):
-                continue
+    def get_visible_nodes(
+        self, pos: Position
+    ) -> List[Tuple[str, chapel.AstNode, int]]:
+        """
+        Returns the visible nodes at a given position.
+        """
 
-            scope = ast.scope()
-            if not scope:
-                continue
+        def visible_nodes_for_scope(
+            name: str, nodes: List[chapel.AstNode], in_bundled_module: bool
+        ) -> Optional[Tuple[str, chapel.AstNode]]:
+            """
+            Narrow the list of visible nodes to those that are actually visible
 
-            file = ast.location().path()
-            in_bundled_module = self.context.context.is_bundled_path(file)
+            The heuristic here is to avoid showing internal symbols to the user,
+            i.e. those that start with 'chpl_' or '_'. We also avoid showing nodes
+            with the @chpldoc.nodoc attribute.
+            """
+            # Don't show internal symbols to the user, even if they
+            # are technically in scope. The exception is if we're currently
+            # editing a standard file.
+            skip_prefixes = ["chpl_", "chpldev_", "_"]
+            if any(name.startswith(prefix) for prefix in skip_prefixes):
+                if not in_bundled_module:
+                    return None
 
-            for name, nodes in scope.visible_nodes():
-                # Don't show internal symbols to the user, even if they
-                # are technically in scope. The exception is if we're currently
-                # editing a standard file.
-                skip_prefixes = ["chpl_", "chpldev_", "_"]
-                if any(name.startswith(prefix) for prefix in skip_prefixes):
-                    if not in_bundled_module:
-                        continue
-
-                # Only show nodes without @chpldoc.nodoc. The exception
-                # about standard files applies here too.
-                documented_nodes = []
-                for node in nodes:
-                    # apply aforementioned exception
-                    if in_bundled_module:
-                        documented_nodes.append(node)
-                        continue
-
-                    # avoid nodes with nodoc attribute.
-                    ag = node.attribute_group()
-                    show = False
-                    if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
-                        show = True
-                    elif name in _ALLOWED_NODOC_DECLS:
-                        # If users declare variables like 'here' themselves,
-                        # we will not show them if they're @chpldoc.nodoc,
-                        # since they're not special.
-                        decl_file = node.location().path()
-                        is_standard_decl = self.context.context.is_bundled_path(
-                            decl_file
-                        )
-                        show = is_standard_decl
-
-                    if show:
-                        documented_nodes.append(node)
-
-                if len(documented_nodes) == 0:
+            # Only show nodes without @chpldoc.nodoc. The exception
+            # about standard files applies here too.
+            documented_nodes = []
+            for node in nodes:
+                # apply aforementioned exception
+                if in_bundled_module:
+                    documented_nodes.append(node)
                     continue
 
-                # Just take the first value to avoid showing N entries for
-                # overloaded functions.
-                self.visible_decls.append((name, documented_nodes[0]))
+                # avoid nodes with nodoc attribute.
+                ag = node.attribute_group()
+                show = False
+                if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
+                    show = True
+                elif name in _ALLOWED_NODOC_DECLS:
+                    # If users declare variables like 'here' themselves,
+                    # we will not show them if they're @chpldoc.nodoc,
+                    # since they're not special.
+                    decl_file = node.location().path()
+                    is_standard_decl = self.context.context.is_bundled_path(
+                        decl_file
+                    )
+                    show = is_standard_decl
+
+                if show:
+                    documented_nodes.append(node)
+
+            if len(documented_nodes) == 0:
+                return None
+
+            # Just take the first value to avoid showing N entries for
+            # overloaded functions.
+            return name, documented_nodes[0]
+
+        @functools.cache
+        def files_named_in_use_or_import(scope: chapel.Scope) -> Set[str]:
+            files = set()
+            for m in scope.modules_named_in_use_or_import():
+                files.add(m.location().path())
+            return files
+
+        def apply_depth_heuristic(
+            scope: chapel.Scope,
+            name: str,
+            node: chapel.AstNode,
+            original_depth: int,
+            cur_file: str,
+        ) -> Tuple[str, chapel.AstNode, int]:
+            """
+            Heuristic to provide results in a more useful order, since
+            most clients will sort alphabetically. We can provide a
+            depth that is used to sort the results, so that the most
+            relevant results are shown first.
+            """
+            depth = original_depth
+            vis_path = node.location().path()
+            if vis_path != cur_file:
+                # if from a different file, increase the depth by 1
+                depth += 1
+                # if from a bundled path increase the depth by 1
+                depth += int(self.context.context.is_bundled_path(vis_path))
+                # if not explicitly used, increase the depth by 1
+                files_named_in_use = files_named_in_use_or_import(scope)
+                depth += int(vis_path not in files_named_in_use)
+            return (name, node, depth)
+
+        def visible_nodes_for_scopes(
+            node: chapel.AstNode, scopes: List[chapel.Scope]
+        ):
+            visible_nodes = []
+            cur_file = node.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(cur_file)
+            # for each scope of the node
+            for depth, scope in enumerate(scopes):
+                # for all of the visible nodes in the scope
+                for name, nodes in scope.visible_nodes():
+                    # narrow the list of visible nodes to those that are
+                    # actually visible to the user (i.e. not nodoc/internal)
+                    visible_node = visible_nodes_for_scope(
+                        name, nodes, in_bundled_module
+                    )
+                    if visible_node is None:
+                        continue
+                    vn = apply_depth_heuristic(
+                        scope, *visible_node, depth, cur_file
+                    )
+                    visible_nodes.append(vn)
+            return visible_nodes
+
+        visible_nodes = []
+        segment = self.scope_at_position(pos)
+
+        if segment:
+            vns = visible_nodes_for_scopes(segment.node, segment.scopes)
+            visible_nodes.extend(vns)
+        else:
+            # no segment found, use the top level nodes
+            for a in self.get_asts():
+                if isinstance(a, chapel.Comment):
+                    continue
+                s = a.scope()
+                if s:
+                    visible_nodes.extend(visible_nodes_for_scopes(a, [s]))
+
+        return visible_nodes
 
     def _search_instantiations(
         self,
@@ -746,12 +885,12 @@ class FileInfo:
             refs.clear()
         self.use_segments.clear()
         self.def_segments.clear()
+        self.scope_segments.clear()
         self.visit(asts)
         self.use_segments.sort()
         self.def_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
-        self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
             # TODO: suppress resolution errors due to false-positives
@@ -839,6 +978,20 @@ class FileInfo:
                 return segment
 
         return None
+
+    def scope_at_position(
+        self, position: Position
+    ) -> Optional[ScopedNodeAndRange]:
+        """
+        Given a position, return the scope that contains it.
+        """
+        found = None
+        for s in self.scope_segments.elts:
+            if s.rng.start <= position <= s.rng.end:
+                found = s
+            if s.rng.start > position:
+                break
+        return found
 
     def file_lines(self) -> List[str]:
         file_text = self.context.context.get_file_text(
@@ -1007,7 +1160,9 @@ class ChapelLanguageServer(LanguageServer):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
-        self.file_infos: Dict[str, FileInfo] = {}
+        self.context_ids: Dict[ContextContainer, str] = {}
+        self.context_id_counter = 0
+        self.file_infos: Dict[Tuple[str, Optional[str]], FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
 
         self.use_resolver: bool = config.get("resolver")
@@ -1107,8 +1262,16 @@ class ChapelLanguageServer(LanguageServer):
         for file in context.file_paths:
             self.contexts[file] = context
         self.contexts[path] = context
+        self.context_id_counter += 1
+        self.context_ids[context] = str(self.context_id_counter)
 
         return context
+
+    def retrieve_context(self, context_id: str) -> Optional[ContextContainer]:
+        for ctx, cid in self.context_ids.items():
+            if cid == context_id:
+                return ctx
+        return None
 
     def eagerly_process_all_files(self, context: ContextContainer):
         cfg = context.config
@@ -1117,7 +1280,10 @@ class ChapelLanguageServer(LanguageServer):
                 self.get_file_info("file://" + file, do_update=False)
 
     def get_file_info(
-        self, uri: str, do_update: bool = False
+        self,
+        uri: str,
+        do_update: bool = False,
+        context_id: Optional[str] = None,
     ) -> Tuple[FileInfo, List[Any]]:
         """
         The language server maintains a FileInfo object per file. The FileInfo
@@ -1128,19 +1294,34 @@ class ChapelLanguageServer(LanguageServer):
         creating one if it doesn't exist. If do_update is set to True,
         then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
+
+        Most of the time, we will create a new context for a given URI. When
+        requested, however, context_id will be used to create a FileInfo
+        for a specific context. This is useful if e.g., file A wants to display
+        an instantiation in file B.
         """
 
         errors = []
 
-        if uri in self.file_infos:
-            file_info = self.file_infos[uri]
+        fi_key = (uri, context_id)
+        if fi_key in self.file_infos:
+            file_info = self.file_infos[fi_key]
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = self.get_context(uri).new_file_info(
-                uri, self.use_resolver
-            )
-            self.file_infos[uri] = file_info
+            if context_id:
+                context = self.retrieve_context(context_id)
+                assert context
+            else:
+                context = self.get_context(uri)
+
+            file_info, errors = context.new_file_info(uri, self.use_resolver)
+            self.file_infos[fi_key] = file_info
+
+            # Also make this the "default" context for this file in case we
+            # open it.
+            if (uri, None) not in self.file_infos:
+                self.file_infos[(uri, None)] = file_info
 
         # filter out errors that are not related to the file
         cur_path = uri[len("file://") :]
@@ -1396,7 +1577,8 @@ class ChapelLanguageServer(LanguageServer):
         """
         loc = location_to_location(sym.location())
 
-        inst_idx = -1
+        inst_id = None
+        context_id = None
 
         return CallHierarchyItem(
             name=sym.name(),
@@ -1405,11 +1587,11 @@ class ChapelLanguageServer(LanguageServer):
             uri=loc.uri,
             range=loc.range,
             selection_range=location_to_range(sym.name_location()),
-            data=[sym.unique_id(), inst_idx],
+            data=[sym.unique_id(), inst_id, context_id],
         )
 
     def fn_to_call_hierarchy_item(
-        self, sig: chapel.TypedSignature
+        self, sig: chapel.TypedSignature, caller_context: ContextContainer
     ) -> CallHierarchyItem:
         """
         Like sym_to_call_hierarchy_item, but for function instantiations.
@@ -1419,8 +1601,8 @@ class ChapelLanguageServer(LanguageServer):
         """
         fn: chapel.Function = sig.ast()
         item = self.sym_to_call_hierarchy_item(fn)
-        fi, _ = self.get_file_info(item.uri)
-        item.data[1] = fi.index_of_instantiation(fn, sig)
+        item.data[1] = caller_context.register_signature(sig)
+        item.data[2] = self.context_ids[caller_context]
 
         return item
 
@@ -1433,16 +1615,17 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], int)
+            or not isinstance(item.data[1], Optional[str])
+            or not isinstance(item.data[2], Optional[str])
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",
                 MessageType.Error,
             )
             return None
-        uid, idx = item.data
+        uid, inst_id, ctx = item.data
 
-        fi, _ = self.get_file_info(item.uri)
+        fi, _ = self.get_file_info(item.uri, context_id=ctx)
 
         # TODO: Performance:
         # Once the Python bindings supports it, we can use the
@@ -1456,11 +1639,7 @@ class ChapelLanguageServer(LanguageServer):
             # We don't handle that here.
             return None
 
-        instantiation = None
-        if idx != -1:
-            instantiation = fi.instantiation_at_index(fn, idx)
-        else:
-            instantiation = fi.concrete_instantiation_for(fn)
+        instantiation = fi.context.retrieve_signature(inst_id)
 
         return (fi, fn, instantiation)
 
@@ -1674,18 +1853,32 @@ def run_lsp():
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=segment.get_location().range)
 
+    # TODO: can we make use of 'trigger_character' to provide completions?
+    # since we can't parse 'foo.', can we use the presence of a trigger '.' to
+    # read a identifier from the file buffer, lookup the scope for that name,
+    # and provide completions based on that scope?
     @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
     async def complete(ls: ChapelLanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
+        names = set()
         items = []
-        for name, decl in fi.visible_decls:
-            if isinstance(decl, chapel.NamedDecl):
-                items.append(completion_item_for_decl(decl, override_name=name))
-
-        items = [item for item in items if item]
+        for name, node, depth in fi.get_visible_nodes(params.position):
+            if not isinstance(node, chapel.NamedDecl):
+                continue
+            # if name is already suggested, skip it
+            if name in names:
+                continue
+            # use the depth to sort the suggestions, lower depths first
+            sort_name = f"{depth:03d}{name}"
+            item = completion_item_for_decl(
+                node, override_name=name, override_sort=sort_name
+            )
+            if item:
+                items.append(item)
+                names.add(name)
 
         return CompletionList(is_incomplete=False, items=items)
 
@@ -2000,7 +2193,10 @@ def run_lsp():
 
         # Oddly, returning multiple here makes for no child nodes in the VSCode
         # UI. Just take one signature for now.
-        return next(([ls.fn_to_call_hierarchy_item(sig)] for sig in sigs), [])
+        return next(
+            ([ls.fn_to_call_hierarchy_item(sig, fi.context)] for sig in sigs),
+            [],
+        )
 
     @server.feature(CALL_HIERARCHY_INCOMING_CALLS)
     async def call_hierarchy_incoming(
@@ -2046,7 +2242,7 @@ def run_lsp():
             if isinstance(called_fn, str):
                 item = ls.sym_to_call_hierarchy_item(hack_id_to_node[called_fn])
             else:
-                item = ls.fn_to_call_hierarchy_item(called_fn)
+                item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
 
             to_return.append(
                 CallHierarchyIncomingCall(
@@ -2070,7 +2266,7 @@ def run_lsp():
         if unpacked is None:
             return None
 
-        _, fn, instantiation = unpacked
+        fi, fn, instantiation = unpacked
 
         outgoing_calls: Dict[chapel.TypedSignature, List[chapel.FnCall]] = (
             defaultdict(list)
@@ -2093,7 +2289,7 @@ def run_lsp():
 
         to_return = []
         for called_fn, calls in outgoing_calls.items():
-            item = ls.fn_to_call_hierarchy_item(called_fn)
+            item = ls.fn_to_call_hierarchy_item(called_fn, fi.context)
             to_return.append(
                 CallHierarchyOutgoingCall(
                     item,

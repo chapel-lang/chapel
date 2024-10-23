@@ -10,7 +10,7 @@ There are two main approaches for using Chapel on Mac OS X:
    quickest way to get up and running, but it results in a copy of
    Chapel that only supports shared-memory (single-locale) executions.
 
-2) Build Chapel from source, as with any other UN*X
+2) Build Chapel from source, as with any other UNIX
    system.  This is slightly more involved, but supports Chapel's full
    feature set.
 

@@ -206,7 +206,7 @@ for subpath in subdirs:
 
 tab = { }
 
-i = 0;
+i = 0
 while i < len(subdirs):
   subpath = subdirs[i]
   names = [ ]

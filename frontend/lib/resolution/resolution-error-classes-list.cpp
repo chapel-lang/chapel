@@ -25,6 +25,7 @@
 #include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/types/all-types.h"
+#include <cstdlib>
 #include <sstream>
 #include <cstring>
 
@@ -578,6 +579,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorIncompatibleYieldTypes::write(ErrorWriterBase& wr) const {
+  auto call = std::get<0>(info_);
+  auto& yieldTypes = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "incompatible yield types in iterator group.");
+  wr.message("Encountered while resolving the following call:");
+  wr.codeForLocation(call);
+  wr.message("All versions of the iterator except the leader should yield the same type.");
+
+  for (auto& data : yieldTypes) {
+    wr.message("");
+    auto iterKindStr = uast::Function::iteratorKindToString(std::get<0>(data));
+    auto qt = std::get<1>(data);
+    auto fn = std::get<2>(data);
+
+    wr.note(fn->id(), "the ", iterKindStr, " version of the iterator '", fn->untyped()->name() ,"' yields values of type '", qt.type(), "'.");
+    wr.codeForLocation(fn->id());
+  }
+}
+
 void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   auto primCall = std::get<const uast::PrimCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
@@ -612,6 +633,55 @@ void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
     wr.message("Only classes or class-like types are supported by this conversion.");
   } else {
     wr.heading(kind_, type_, primCall, "invalid use of class cast primitive.");
+  }
+}
+
+void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto actualTypes = std::get<std::vector<types::QualifiedType>>(info_);
+
+  wr.heading(kind_, type_, fnCall, "invalid use of the 'domain' keyword.");
+  wr.codeForLocation(fnCall);
+  wr.message(
+      "The 'domain' keyword should be used with a valid domain type "
+      "expression.");
+
+  if (fnCall->numActuals() == 0) {
+    wr.message("However, 'domain' here did not have any actuals.");
+  } else if (fnCall->numActuals() == 1) {
+    // Could be rectangular or associative. Error if we have an actual type
+    // that's wrong for both.
+    auto qt = actualTypes[0];
+    if (!qt.isType() && !(qt.type() && qt.type()->isIntType())) {
+      wr.message("However, the first actual was ", decayToValue(qt),
+                 " rather than an 'int' (for rectangular) or a type (for "
+                 "associative).");
+      wr.code(fnCall, {fnCall->actual(0)});
+    }
+  } else if (fnCall->numActuals() <= 3) {
+    // Should be rectangular, must have one or more actual type(s) wrong after
+    // the first.
+    wr.message(
+        "This 'domain' call is structured like a rectangular domain type.");
+    bool erroredForIdxType = false;
+    if (fnCall->numActuals() >= 2) {
+      auto idxTypeQt = actualTypes[1];
+      if (!idxTypeQt.isType()) {
+        erroredForIdxType = true;
+        wr.message("However, the second actual ('idxType') was ",
+                   decayToValue(idxTypeQt), " rather than a type as required.");
+        wr.code(fnCall, {fnCall->actual(1)});
+      }
+    }
+    if (fnCall->numActuals() == 3) {
+      auto stridesQt = actualTypes[2];
+      wr.message((erroredForIdxType ? "Additionally" : "However"),
+                 ", the third actual ('strides') was ", decayToValue(stridesQt),
+                 " rather than a 'strideKind' as required.");
+      wr.code(fnCall, {fnCall->actual(2)});
+    }
+  } else {
+    wr.message("However, 'domain' here had too many actuals.");
   }
 }
 
@@ -693,6 +763,30 @@ void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
     wr.message("If you meant to declare '", recordType->name(), "' as a class ",
                "instead, you can do that by writing 'class ", recordType->name(),
                "' instead of 'record ", recordType->name(), "'.");
+  }
+}
+
+void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto call = node->toCall();
+  auto candidate = std::get<const resolution::TypedFnSignature*>(info_);
+  auto& rejected = std::get<std::vector<const resolution::TypedFnSignature*>>(info_);
+
+  UniqueString name = candidate->untyped()->name();
+
+  wr.heading(kind_, type_, node, "found potentially compatible iterator overloads in other scopes.");
+  wr.message("While resolving the call to iterator '", name ,"' here:");
+  wr.codeForLocation(call);
+  if (candidate) {
+    wr.message("The following iterator was determined to match the given call:");
+    wr.codeForLocation(candidate->id());
+  }
+  wr.message("However, other candidates were found in different scopes.");
+  wr.message("");
+
+  for (auto rejectedCandidate : rejected) {
+    wr.note(rejectedCandidate->id(), "one candidate was found here:");
+    wr.codeForLocation(rejectedCandidate->id());
   }
 }
 

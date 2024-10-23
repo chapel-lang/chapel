@@ -6,9 +6,9 @@ echo -n `basename $compiler`
 cat $CWD/version.goodstart
 # During pre-release mode
 diff $CWD/../../../../compiler/main/BUILD_VERSION $CWD/zero.txt > /dev/null 2>&1 && echo "" || \
- { echo -n " pre-release (" && cat $CWD/../../../../compiler/main/BUILD_VERSION | tr -d \"\\n && echo ")" ; }
+  { echo -n " pre-release (" && cat $CWD/../../../../compiler/main/BUILD_VERSION | tr -d \"\\n && echo ")" ; }
 # During release mode:
-# echo ""
+#echo ""
 
 if [ "$CHPL_LLVM" != "none" ]
 then

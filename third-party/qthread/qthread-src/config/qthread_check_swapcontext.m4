@@ -15,19 +15,6 @@ AC_ARG_ENABLE([fastcontext],
                                version.])])
 AC_MSG_CHECKING([whether we have a fast context swap for this system])
 case "$host" in
-  *-solaris2.8)
-    AC_DEFINE([EXTRA_MAKECONTEXT_ARGC], [1], 
-			  [solaris 8 requires argc be one larger than the actual count of
-			   arguments])
-	AC_DEFINE([INVERSE_STACK_POINTER], [1], 
-			  [make the ss_sp member of uc_stack be the high-address of the
-			  stack, rather than the low-address of the stack])
-    qt_host_based_enable_fastcontext=no
-	;;
-  *-solaris2.9|*-solaris2.10)
-    AC_DEFINE([__MAKECONTEXT_V2_SOURCE], [1], [force the Sun makecontext to behave correctly])
-    qt_host_based_enable_fastcontext=no
-	;;
   powerpc-*|powerpc64-*|x86-*|x86_64-*|tile-*)
     # Yes, we have these platforms
     qt_host_based_enable_fastcontext=yes

@@ -1,0 +1,20 @@
+{id = 2}
+deinit C id=2
+{id = 4}
+deinit C id=4
+(id = 2)
+deinit R id=2
+deinit R id=2
+deinit R id=1
+(id = 4)
+deinit R id=4
+deinit R id=4
+deinit R id=3
+
+=================================================== Memory Leaks ====================================================
+Allocated Memory (Bytes)             Number   Size     Total    Description                      Address             
+=====================================================================================================================
+iter-memory-leak-unpack.chpl:26      1        16       16       C                                prediffed  
+iter-memory-leak-unpack.chpl:26      1        16       16       C                                prediffed  
+=====================================================================================================================
+

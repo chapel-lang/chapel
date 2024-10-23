@@ -79,6 +79,10 @@ const ResolvedExpression*
 resolvedExpressionForAst(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly) {
+  // TODO: Use 'inFn' to reconstruct the correct 'ResolutionContext' state.
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
     int postorder = ast->id().postOrderId();
@@ -104,9 +108,12 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
               auto rFn = scopeResolveFunction(context, parentFn->id());
               return &rFn->resolutionById().byAst(ast);
             } else {
-              auto typed = typedSignatureInitial(context, untyped);
+              auto typed = typedSignatureInitial(rc, untyped);
               if (!typed->needsInstantiation()) {
-                auto rFn = resolveFunction(context, typed, nullptr);
+                // TODO: Detect if this is an interior call or not.
+                // If it's not, we can rewind frames.
+                ResolutionContext rcval(context);
+                auto rFn = resolveFunction(&rcval, typed, nullptr);
                 return &rFn->resolutionById().byAst(ast);
               }
             }
@@ -311,4 +318,17 @@ Context::Configuration getConfigWithHome() {
   config.chplHome = chpl_home;
 
   return config;
+}
+
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                             const ResolvedExpression& r) {
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+  auto msc = r.mostSpecific().only();
+  if (!msc) return nullptr;
+
+  const TypedFnSignature* sig = msc.fn();
+  const PoiScope* poiScope = r.poiScope();
+
+  return resolveFunction(rc, sig, poiScope);
 }

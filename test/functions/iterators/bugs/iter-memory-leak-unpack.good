@@ -1,0 +1,16 @@
+{id = 2}
+deinit C id=2
+deinit C id=1
+{id = 4}
+deinit C id=4
+deinit C id=3
+(id = 2)
+deinit R id=2
+deinit R id=1
+deinit R id=2
+deinit R id=1
+(id = 4)
+deinit R id=4
+deinit R id=3
+deinit R id=4
+deinit R id=3

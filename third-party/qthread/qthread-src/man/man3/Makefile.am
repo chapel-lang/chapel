@@ -109,7 +109,6 @@ man_MANS = \
 		   qthread_cacheline.3 \
 		   qthread_cas.3 \
 		   qthread_cas_ptr.3 \
-		   qthread_debuglevel.3 \
 		   qthread_dincr.3 \
 		   qthread_disable_shepherd.3 \
 		   qthread_disable_worker.3 \

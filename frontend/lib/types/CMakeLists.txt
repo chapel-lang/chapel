@@ -34,12 +34,17 @@ target_sources(ChplFrontend-obj
                EnumType.cpp
                ErroneousType.cpp
                ExternType.cpp
+               FnIteratorType.cpp
+               HeapBufferType.cpp
                ImagType.cpp
                IntType.cpp
+               LoopExprIteratorType.cpp
                NilType.cpp
                NothingType.cpp
                Param.cpp
                PrimitiveType.cpp
+               PtrType.cpp
+               PromotionIteratorType.cpp
                QualifiedType.cpp
                RealType.cpp
                RecordType.cpp

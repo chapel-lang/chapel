@@ -1,0 +1,49 @@
+Name: @@{BASENAME}
+Version: @@{CHAPEL_VERSION}
+Release: @@{PACKAGE_VERSION}%{?dist}
+ExclusiveArch: %{_arch}
+Summary: Chapel
+
+License: Apache-2.0
+Source0: chapel-%{version}.tar.gz
+
+Requires: bash perl git llvm18-devel clang18 clang18-devel python3 python3-devel make
+
+%description
+Chapel Programming Language
+
+%global debug_package %{nil}
+
+%prep
+%setup -q -n chapel-%{version}
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}/%{_prefix}
+mkdir -p %{buildroot}/%{_prefix}/bin
+mkdir -p %{buildroot}/%{_prefix}/lib
+mkdir -p %{buildroot}/%{_prefix}/share
+
+# Binaries
+cp %{_prefix}/bin/chpl %{buildroot}/%{_prefix}/bin/chpl
+cp %{_prefix}/bin/chpldoc %{buildroot}/%{_prefix}/bin/chpldoc
+cp %{_prefix}/bin/mason %{buildroot}/%{_prefix}/bin/mason
+cp %{_prefix}/bin/chplcheck %{buildroot}/%{_prefix}/bin/chplcheck
+cp %{_prefix}/bin/chpl-language-server %{buildroot}/%{_prefix}/bin/chpl-language-server
+# Libraries
+cp -r %{_prefix}/lib/chapel %{buildroot}/%{_prefix}/lib/chapel
+# CHPL_HOME
+cp -r %{_prefix}/share/chapel %{buildroot}/%{_prefix}/share/chapel
+
+%files
+%{_prefix}/bin/chpl
+%{_prefix}/bin/chpldoc
+%{_prefix}/bin/mason
+%{_prefix}/bin/chplcheck
+%{_prefix}/bin/chpl-language-server
+%{_prefix}/lib/chapel/*
+%{_prefix}/share/chapel/*
+
+%changelog

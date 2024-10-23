@@ -1,33 +1,34 @@
 #ifndef QT_MACROS_H
 #define QT_MACROS_H
 
+// Work around OSX currently refusing to support threads.h
+#if 201112L <= __STDC_VERSION__ && __STDC_VERSION__ < 202311L
+#ifndef __STDC_NO_THREADS__
+#include <threads.h>
+#else
+#define thread_local _Thread_local
+#endif
+#elif __STDC_VERSION__ < 201112L
+#error "C11 is required"
+#endif
+
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 
-#ifdef HAVE_UNUSED
-# define QUNUSED(x) UNUSED_ ## x __attribute__((unused))
+#ifdef __GNUC__
+#define Q_UNUSED(x) __attribute__((unused)) x
 #else
-# define QUNUSED(x) UNUSED_ ## x
+#define Q_UNUSED(x) x
 #endif
 
-#ifdef TLS
-# define TLS_DECL(type, name)      TLS type name
-# define TLS_DECL_INIT(type, name) TLS type name = 0
-# define TLS_GET(name)             name
-# define TLS_SET(name, val)        name = (val)
-# define TLS_INIT(name)
-# define TLS_INIT2(name, func)
-# define TLS_DELETE(name)          name = 0
-#else
-# define TLS_DECL(type, name)      pthread_key_t name
-# define TLS_DECL_INIT(type, name) pthread_key_t name
-# define TLS_GET(name)             pthread_getspecific(name)
-# define TLS_SET(name, val)        qassert(pthread_setspecific((name), (void *)(val)), 0)
-# define TLS_INIT(name)            qassert(pthread_key_create(&(name), NULL), 0)
-# define TLS_INIT2(name, func)     qassert(pthread_key_create(&(name), (func)), 0)
-# define TLS_DELETE(name)          qassert(pthread_key_delete(name), 0)
-#endif // ifdef TLS
+#define TLS_DECL(type, name) thread_local type name
+#define TLS_DECL_INIT(type, name) thread_local type name = 0
+#define TLS_GET(name) name
+#define TLS_SET(name, val) name = (val)
+#define TLS_INIT(name)
+#define TLS_INIT2(name, func)
+#define TLS_DELETE(name) name = 0
 
 #endif // ifndef QT_MACROS_H
 /* vim:set expandtab: */

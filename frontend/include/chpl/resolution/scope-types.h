@@ -1112,6 +1112,7 @@ class PoiScope {
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
+
   static bool update(owned<PoiScope>& keep,
                      owned<PoiScope>& addin) {
     return defaultUpdateOwned(keep, addin);

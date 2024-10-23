@@ -34,12 +34,6 @@
 
 #include <map>
 
-#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
-  do { \
-    ctx__->advanceToNextRevision(false); \
-    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
-  } while (0)
-
 static auto myiter = std::string(R""""(
 iter myiter() {
   yield 1;
@@ -315,6 +309,8 @@ static void testCForLoop() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   auto iterText = R""""(
                    iter myIter() {
@@ -340,7 +336,7 @@ static void testCForLoop() {
   assert(idx.type().type() == IntType::get(context, 0));
 
   const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only().fn();
-  auto fn = resolveFunction(context, sig, nullptr);
+  auto fn = resolveFunction(rc, sig, nullptr);
   auto rf = fn->resolutionById();
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
   auto cond = rf.byAst(whileLoop->condition());
@@ -352,7 +348,7 @@ static void testParamFor() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
-
+  ResolutionContext rcval(context);
   //
   // Test iteration over an iterator call
   //
@@ -369,7 +365,7 @@ static void testParamFor() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  ResolvedVisitor<ParamCollector> rv(&rcval, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
@@ -397,6 +393,8 @@ static void testNestedParamFor() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   auto loopText = R"""(
   var sum = 0;
@@ -415,7 +413,7 @@ static void testNestedParamFor() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(context, m, pc, rr);
+  ResolvedVisitor<ParamCollector> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
@@ -511,10 +509,10 @@ static void testIterSigDetection(Context* context) {
     R""""(
 
     iter i1() { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i2(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
     iter i2(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
-    iter i2() { yield false; }
+    iter i2() { yield ""; }
 
     for a in i1() do;
     forall b in i1() do;
@@ -550,9 +548,64 @@ static void testIterSigDetection(Context* context) {
     assert(m["a"].kind() == QualifiedType::CONST_VAR);
     assert(m["a"].type()->isRealType());
     assert(m["b"].kind() == QualifiedType::CONST_VAR);
+    assert(m["b"].type()->isRealType());
+    assert(m["c"].kind() == QualifiedType::CONST_VAR);
+    assert(m["c"].type()->isStringType());
+    assert(m["d"].kind() == QualifiedType::CONST_VAR);
+    assert(m["d"].type()->isStringType());
+}
+
+static void testExplicitTaggedIter(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  std::string program =
+    R""""(
+
+    iter i1() { yield 0.0; }
+    iter i2(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i3(param tag: iterKind) where tag == iterKind.leader { yield (0.0,0.0); }
+    iter i4(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
+
+    for a in i1() do;
+    for b in i2(tag=iterKind.standalone) do;
+    for c in i3(tag=iterKind.leader) do;
+    for d in i4(tag=iterKind.follower, followThis="") do;
+    )"""";
+
+    auto mod = parseModule(context, program);
+    auto& rr = resolveModule(context, mod->id());
+    assert(!guard.realizeErrors());
+
+    auto aLoop = parentAst(context, findVariable(mod, "a"))->toIndexableLoop();
+    assert(rr.byAst(aLoop->iterand()).associatedActions().empty());
+    auto aSig1 = rr.byAst(aLoop->iterand()).mostSpecific().only().fn();
+    assert(aSig1->isSerialIterator(context));
+
+    auto bLoop = parentAst(context, findVariable(mod, "b"))->toIndexableLoop();
+    assert(rr.byAst(bLoop->iterand()).associatedActions().empty());
+    auto bSig1 = rr.byAst(bLoop->iterand()).mostSpecific().only().fn();
+    assert(bSig1->isParallelStandaloneIterator(context));
+
+    auto cLoop = parentAst(context, findVariable(mod, "c"))->toIndexableLoop();
+    assert(rr.byAst(cLoop->iterand()).associatedActions().empty());
+    auto cSig1 = rr.byAst(cLoop->iterand()).mostSpecific().only().fn();
+    assert(cSig1->isParallelLeaderIterator(context));
+
+    auto dLoop = parentAst(context, findVariable(mod, "d"))->toIndexableLoop();
+    assert(rr.byAst(dLoop->iterand()).associatedActions().empty());
+    auto dSig1 = rr.byAst(dLoop->iterand()).mostSpecific().only().fn();
+    assert(dSig1->isParallelFollowerIterator(context));
+
+    auto m = resolveTypesOfVariables(context, program, { "a", "b", "c", "d"});
+    assert(!guard.realizeErrors());
+    assert(m["a"].kind() == QualifiedType::CONST_VAR);
+    assert(m["a"].type()->isRealType());
+    assert(m["b"].kind() == QualifiedType::CONST_VAR);
     assert(m["b"].type()->isIntType());
     assert(m["c"].kind() == QualifiedType::CONST_VAR);
-    assert(m["c"].type()->isBoolType());
+    assert(m["c"].type()->isTupleType());
     assert(m["d"].kind() == QualifiedType::CONST_VAR);
     assert(m["d"].type()->isStringType());
 }
@@ -834,6 +887,179 @@ static void testForallLeaderFollowerRedirect(Context* context) {
   assert(!guard.realizeErrors());
 }
 
+// Invoke an iterator in a loop expression, yielding a tuple of the iterator's
+// yield values, then invoke the loop expression in a regular loop and ensure
+// the index variable is as expected.
+//
+//
+// Note: this test will need to be updated when we have support for 
+// "precipitating" loop expressions into arrays. Right now, it assumes
+// the ability to store loop expressions into variables.
+template <typename Predicate>
+static void pairIteratorInLoopExpression(
+    Context* context, const char* iterators, const char* iterCall,
+    std::array<const char*, 2> loopExprType, std::array<const char*, 2> loopType,
+    Predicate&& pred, int expectErrors = 0) {
+  ErrorGuard guard(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+
+  std::string program = std::string(iterators) + "\n";
+  program = program + "var r1 = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
+  program = program + loopType[0] + " j in r1 "  + loopType[1] + " j;\n";
+
+  printf("===== Resolving program =====\n");
+  printf("%s\n", program.c_str());
+  printf("=============================\n\n");
+
+  auto vars = resolveTypesOfVariables(context, program, { "r1", "j" });
+
+  assert(guard.realizeErrors() == expectErrors);
+  if (expectErrors) return;
+
+  assert(vars.at("r1").kind() == QualifiedType::VAR);
+  assert(vars.at("r1").type()->isLoopExprIteratorType());
+  assert(vars.at("r1").type()->toLoopExprIteratorType()->yieldType().type());
+
+  auto yieldedType = vars.at("r1").type()->toLoopExprIteratorType()->yieldType();
+  assert(yieldedType.type()->isTupleType());
+  assert(yieldedType.type()->toTupleType()->isStarTuple());
+  assert(yieldedType.type()->toTupleType()->numElements() == 2);
+  assert(pred(yieldedType.type()->toTupleType()->starType()));
+
+  assert(vars.at("j") == yieldedType);
+}
+
+static void testForLoopExpression(Context* context) {
+
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionStandalone(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionLeaderFollower(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionStandalone(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionLeaderFollower(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionSerial(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForLoopExpressionInForall(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  // You can't iterate in paralell over a serial loop expression, even if
+  // the overloads for the iterands are present.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return true; },
+                               /* expectErrors */ 1);
+}
+
+static void testForLoopExpressionInBracketLoop(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  // Bracket loop falls back to serial, so it's okay to give it a for expression.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"for", "do"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+// At this time, because parallel loops require a serial overload, you can
+// fall back to the serial iterator even if you're using a forall expression.
+// However, since we are not liking the idea of changing the return type based
+// on context, the loop yield type is still the one from the parallel loop.
+// This probably won't compile if we were to add type compatibility checks.
+static void testForallExpressionInForLoop(Context* context) {
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  // Bracket loop falls back to serial, so it's okay to give it a for expression.
+  pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->toRealType(); });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -856,12 +1082,23 @@ int main() {
   auto ctx = buildStdContext();
   Context* context = ctx.get();
   testIterSigDetection(context);
+  testExplicitTaggedIter(context);
   testSerialZip(context);
   testParallelZip(context);
   testForallStandaloneThese(context);
   testForallStandaloneRedirect(context);
   testForallLeaderFollowerThese(context);
   testForallLeaderFollowerRedirect(context);
+
+  testForLoopExpression(context);
+  testForallLoopExpressionStandalone(context);
+  testForallLoopExpressionLeaderFollower(context);
+  testBracketLoopExpressionStandalone(context);
+  testBracketLoopExpressionLeaderFollower(context);
+  testBracketLoopExpressionSerial(context);
+  testForLoopExpressionInForall(context);
+  testForLoopExpressionInBracketLoop(context);
+  testForallExpressionInForLoop(context);
 
   return 0;
 }

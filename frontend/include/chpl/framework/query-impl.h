@@ -233,7 +233,9 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     //  printf("Found result %p %s\n", savedElement, queryMap->queryName);
   }
 
-  if (newElementWasAdded == false && savedElement->lastChecked == -1) {
+  if (newElementWasAdded == false &&
+      (savedElement->lastChecked == -1 ||
+       savedElement->beingTestedForReuse)) {
     // A recursion error was encountered. We will try to gracefully handle
     // this error by adding it to the set of recursion errors on this
     // result.
@@ -560,7 +562,7 @@ Context::isQueryRunning(
     return false;
   }
 
-  return search2->lastChecked == -1;
+  return search2->lastChecked == -1 || search2->beingTestedForReuse;
 }
 
 template<typename ResultType,
@@ -594,11 +596,10 @@ Context::querySetterUpdateResult(
 
 } // end namespace chpl
 
-#define QUERY_BEGIN_INNER(isInput, func, context, ...) \
+#define QUERY_BEGIN_INNER(isInput, func, funcName, context, ...) \
   auto* BEGIN_QUERY_FUNCTION = func; \
   Context* BEGIN_QUERY_CONTEXT = context; \
-  const char* BEGIN_QUERY_FUNC_NAME = #func; \
-  CHPL_ASSERT(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
+  const char* BEGIN_QUERY_FUNC_NAME = (funcName); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \
@@ -628,7 +629,6 @@ Context::querySetterUpdateResult(
 
 #endif
 
-
 /**
   Use QUERY_BEGIN at the start of the implementation of a particular query.
   It checks to see if an earlier result can be used and in that event returns
@@ -638,7 +638,7 @@ Context::querySetterUpdateResult(
   class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
-  QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
@@ -655,7 +655,7 @@ Context::querySetterUpdateResult(
   for input queries.
  */
 #define QUERY_BEGIN_INPUT(func, context, ...) \
-  QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
+  QUERY_BEGIN_INNER(true, func, #func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
@@ -684,7 +684,6 @@ Context::querySetterUpdateResult(
                                  std::move(result), \
                                  BEGIN_QUERY_FUNC_NAME))
 
-
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:
@@ -703,7 +702,6 @@ Context::querySetterUpdateResult(
                                    std::move(result), \
                                    #func, \
                                    false)
-
 
 /**
   Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.

@@ -1,6 +1,6 @@
 import enums_pb2
 
-messageObj = enums_pb2.enumTest();
+messageObj = enums_pb2.enumTest()
 
 messageObj.a = enums_pb2.color.blue
 

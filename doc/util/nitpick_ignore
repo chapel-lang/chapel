@@ -28,6 +28,7 @@ cpp:identifier querydetail::QueryMapResultBase
 cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>
 cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>::MapType
 cpp:identifier UniqueString
+cpp:identifier Resolver
 cpp:identifier ID
 cpp:identifier Location
 cpp:identifier AstTag
@@ -49,6 +50,7 @@ cpp:identifier int8_t
 cpp:identifier va_list
 cpp:identifier ErrorNote
 cpp:identifier ErrorCodeSnippet
+cpp:identifier RetByVal
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ErrorParseErr
 cpp:identifier ParamTag
@@ -65,6 +67,7 @@ cpp:identifier types::UintParam
 cpp:identifier WHERE_TBD
 cpp:identifier ZERO
 cpp:identifier SYMBOL_ONLY
+cpp:identifier DK_NO_DEFAULT
 cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
 cpp:identifier VisibilitySymbols::REGULAR_SCOPE

@@ -111,16 +111,16 @@ ID lookupEnumElementByNumericValue(Context* context,
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
-const TypedFnSignature*
-typedSignatureInitial(Context* context,
-                      const UntypedFnSignature* untypedSig);
+const TypedFnSignature* const&
+typedSignatureInitial(ResolutionContext* rc, const UntypedFnSignature* untyped);
 
 /**
   Compute a initial TypedFnSignature for an ID.
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
-const TypedFnSignature* typedSignatureInitialForId(Context* context, ID id);
+const TypedFnSignature*
+typedSignatureInitialForId(ResolutionContext* rc, ID id);
 
 /**
   Returns a Type that represents the initial type provided by a TypeDecl
@@ -262,7 +262,7 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
    * a CallInfo describing the types at the call site, and
    * a point-of-instantiation scope representing the POI scope of the call
  */
-ApplicabilityResult instantiateSignature(Context* context,
+ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                          const TypedFnSignature* sig,
                                          const CallInfo& call,
                                          const PoiScope* poiScope);
@@ -271,41 +271,23 @@ ApplicabilityResult instantiateSignature(Context* context,
   Compute a ResolvedFunction given a TypedFnSignature.
   Checks the generic cache for potential for reuse. When reuse occurs,
   the ResolvedFunction might point to a different TypedFnSignature.
-
-  This function will resolve a nested function if it does not refer to
-  any outer variables.
  */
-const ResolvedFunction* resolveFunction(Context* context,
+const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
-
-/**
-  Compute a ResolvedFunction given a TypedFnSignature for an initializer.
-  The difference between this and 'resolveFunction' is that it is
-  possible for the type of the receiver to still be generic (as the
-  initializer body must be resolved before the concrete type is known).
-*/
-const ResolvedFunction* resolveInitializer(Context* context,
-                                           const TypedFnSignature* sig,
-                                           const PoiScope* poiScope);
 
 /**
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
-const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
+const ResolvedFunction*
+resolveConcreteFunction(Context* context, ID id);
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature, but don't
   do full resolution of types or paren-ful calls in the body.
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
-
-/**
-  Compute the set of outer variables referenced by this function. Will return
-  'nullptr' if there are no outer variables.
-  */
-const OuterVariables* computeOuterVariables(Context* context, ID id);
 
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions
@@ -321,25 +303,27 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
                                                       ID id);
 
 /**
-  Returns the ResolvedFunction called by a particular
-  ResolvedExpression, if there was exactly one candidate.
-  Otherwise, it returns nullptr.
-
-  This function does not handle return intent overloading.
- */
-const ResolvedFunction* resolveOnlyCandidate(Context* context,
-                                             const ResolvedExpression& r);
-/**
-  Compute the return/yield type for a function.
+  Compute the return type for a function. If the function is an iterator,
+  the return type will be an `IteratorType`. To compute the yield type,
+  see `yieldType`.
 
   TODO: If the function returns a param, the param's value may not
   be available. This is because the function body is not resolved when
   the return type is explicitly declared. We probably still want to compute
   the value in such cases, though.
  */
-const types::QualifiedType& returnType(Context* context,
-                                       const TypedFnSignature* sig,
-                                       const PoiScope* poiScope);
+types::QualifiedType returnType(ResolutionContext* rc,
+                                const TypedFnSignature* sig,
+                                const PoiScope* poiScope);
+
+/**
+  An iterator-specific variant of 'returnType' which does not wrap the
+  function's return in an `IterableType`, returning instead the type of values
+  yielded by the function.
+ */
+types::QualifiedType yieldType(ResolutionContext* rc,
+                               const TypedFnSignature* sig,
+                               const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -354,7 +338,7 @@ const types::QualifiedType& returnType(Context* context,
 
   The returned TypedFnSignature* will have the inferred out formal types.
  */
-const TypedFnSignature* inferOutFormals(Context* context,
+const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
@@ -365,7 +349,7 @@ const TypedFnSignature* inferOutFormals(Context* context,
   'nullptr'. In that case, the caller is responsible for attempting this
   again later once the current set of recursive functions is resolved.
  */
-const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
 
@@ -376,7 +360,7 @@ const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
   candidate functions from a list of visible functions.
  */
 const CandidatesAndForwardingInfo&
-filterCandidatesInitial(Context* context,
+filterCandidatesInitial(ResolutionContext* rc,
                         MatchingIdsWithName lst,
                         CallInfo call);
 
@@ -390,7 +374,7 @@ filterCandidatesInitial(Context* context,
 
  */
 void
-filterCandidatesInstantiating(Context* context,
+filterCandidatesInstantiating(ResolutionContext* rc,
                               const CandidatesAndForwardingInfo& lst,
                               const CallInfo& call,
                               const Scope* inScope,
@@ -407,11 +391,11 @@ filterCandidatesInstantiating(Context* context,
   'resolveCallInMethod' should be used instead when resolving a non-method call
   within a method.
  */
-CallResolutionResult resolveCall(Context* context,
+CallResolutionResult resolveCall(ResolutionContext* rc,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected = nullptr);
+                                 std::vector<ApplicabilityResult>* rejected=nullptr);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -421,12 +405,12 @@ CallResolutionResult resolveCall(Context* context,
 
   If implicitReceiver.type() == nullptr, it will be ignored.
  */
-CallResolutionResult resolveCallInMethod(Context* context,
+CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
                                          const uast::Call* call,
                                          const CallInfo& ci,
                                          const CallScopeInfo& inScopes,
                                          types::QualifiedType implicitReceiver,
-                                         std::vector<ApplicabilityResult>* rejected = nullptr);
+                                         std::vector<ApplicabilityResult>* rejected=nullptr);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
@@ -435,7 +419,7 @@ CallResolutionResult resolveCallInMethod(Context* context,
   as the point-of-instantiation scopes that were used when resolving them.
  */
 CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::AstNode* astForErr,
+                                          const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
                                           std::vector<ApplicabilityResult>* rejected = nullptr);
@@ -451,7 +435,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
  */
 CallResolutionResult
 resolveGeneratedCallInMethod(Context* context,
-                             const uast::AstNode* astForErr,
+                             const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
                              types::QualifiedType implicitReceiver);
@@ -513,6 +497,13 @@ reportInvalidMultipleInheritance(Context* context,
 const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 /**
+  Retrieve the 'param' tag for an iterator constant. If the 'iterKind' enum
+  is not available, this will return an unknown type.
+ */
+const types::QualifiedType&
+getIterKindConstantOrUnknown(Context* context, uast::Function::IteratorKind kind);
+
+/**
   Returns the field in 'ad' (or its parent) that matches 'name'.
 */
 const uast::Decl* findFieldByName(Context* context,
@@ -520,6 +511,52 @@ const uast::Decl* findFieldByName(Context* context,
                                   const types::CompositeType* ct,
                                   UniqueString name);
 
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  overload (e.g., leader, follower).
+ */
+const MostSpecificCandidate&
+findTaggedIteratorForType(ResolutionContext* rc,
+                          const types::FnIteratorType* fnIter,
+                          uast::Function::IteratorKind iterKind,
+                          const Scope* overrideLookupScope = nullptr);
+
+/**
+  Given a an iterator type produced by an `iter` proc, find the given iterator
+  and determine its yield type.
+
+  If 'overrideLookupScope' is provided, instead of using the fnIterator's
+  scope, the provided scope will be used to look up the tagged iterator. This
+  can be used to see if under the old rules, we could've found competing
+  overloads.
+ */
+const types::QualifiedType&
+taggedYieldTypeForType(ResolutionContext* rc,
+                       const types::FnIteratorType* fnIter,
+                       uast::Function::IteratorKind iterKind,
+                       const Scope* overrideLookupScope = nullptr);
+
+const types::QualifiedType&
+yieldTypeForIterator(ResolutionContext* rc,
+                     const types::IteratorType* iter);
+
+/**
+  Resolve a call to the special 'these' iterator method. For certain types,
+  this circumvents the normal call resolution process, since iterating over
+  these types is handled by the compiler.
+
+  * the 'iterand' is an AST node to use as an anchor for errors etc.
+  * the 'receiverType' is the type of the receiver on which `these` is being invoked
+  * the 'iterKind' is the kind of iterator being requested (leader, follower, etc.)
+  * the 'followThis' is the type of 'followThis' for the follower iterator, if any
+  * the 'inScopes' is the scope information for the call
+ */
+CallResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                      const uast::AstNode* iterand,
+                                      const types::QualifiedType& receiverType,
+                                      uast::Function::IteratorKind iterKind,
+                                      const types::QualifiedType& followThis,
+                                      const CallScopeInfo& inScopes);
 
 
 } // end namespace resolution

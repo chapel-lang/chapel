@@ -1,10 +1,10 @@
 #ifdef HAVE_CONFIG_H
-# include "config.h" /* for _GNU_SOURCE */
+#include "config.h" /* for _GNU_SOURCE */
 #endif
 
 #include <assert.h>
-#include <stdio.h>
 #include <omp.h>
+#include <stdio.h>
 
 #include <qthread/qthread.h>
 #include <qthread/qtimer.h>
@@ -13,49 +13,44 @@
 #include "argparsing.h"
 #include "log.h"
 
-static aligned_t null_task(void *args_)
-{
-    return 0;
-}
+static aligned_t null_task(void *args_) { return 0; }
 
-int main(int   argc,
-         char *argv[])
-{
-    uint64_t      count    = 1048576;
-    unsigned long threads  = 1;
+int main(int argc, char *argv[]) {
+  uint64_t count = 1048576;
+  unsigned long threads = 1;
 
-    qtimer_t timer;
-    double   total_time = 0.0;
+  qtimer_t timer;
+  double total_time = 0.0;
 
-    CHECK_VERBOSE();
+  CHECK_VERBOSE();
 
-    NUMARG(count, "MT_COUNT");
-    assert(0 != count);
+  NUMARG(count, "MT_COUNT");
+  assert(0 != count);
 
 #pragma omp parallel
 #pragma omp single
-    {
-        timer   = qtimer_create();
-        threads = omp_get_num_threads();
+  {
+    timer = qtimer_create();
+    threads = omp_get_num_threads();
 
-        qtimer_start(timer);
+    qtimer_start(timer);
 #pragma omp task untied
-        for (uint64_t i = 0; i < count; i++) {
+    for (uint64_t i = 0; i < count; i++) {
 #pragma omp task untied
-            null_task(NULL);
-        }
-#pragma omp taskwait
-        qtimer_stop(timer);
+      null_task(NULL);
     }
+#pragma omp taskwait
+    qtimer_stop(timer);
+  }
 
-    total_time = qtimer_secs(timer);
+  total_time = qtimer_secs(timer);
 
-    qtimer_destroy(timer);
+  qtimer_destroy(timer);
 
-    LOG_SPAWN_SEQUENTIAL_YAML(count, total_time)
-    LOG_ENV_OMP_YAML(threads)
+  LOG_SPAWN_SEQUENTIAL_YAML(count, total_time)
+  LOG_ENV_OMP_YAML(threads)
 
-    return 0;
+  return 0;
 }
 
 /* vim:set expandtab */

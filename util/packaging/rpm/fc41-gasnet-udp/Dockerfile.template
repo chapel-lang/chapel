@@ -1,0 +1,25 @@
+FROM fedora:41 AS build
+
+@@{ARGUMENTS}
+
+@@{INJECT_BEFORE_DEPS}
+
+RUN dnf upgrade -y && \
+    dnf install -y \
+      gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake \
+      which diffutils wget vim \
+      llvm18-devel clang18 clang18-devel \
+      rpm-build rpm-devel rpmlint coreutils patch rpmdevtools chrpath
+
+@@{USER_CREATION}
+
+@@{GET_CHAPEL}
+
+@@{BUILD_DEFAULT}
+@@{BUILD_GASNET_UDP}
+
+@@{INSTALL}
+
+@@{PACKAGE_SETUP}
+
+@@{PACKAGE_BUILD}

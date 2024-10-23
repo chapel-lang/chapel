@@ -226,7 +226,7 @@ class BasicRule(Rule[BasicRuleResult]):
         # addition to the fixits in the result itself)
         # add the fixits from the hooks to the fixits from the rule
         fixits = self.run_fixit_hooks(context, result) + fixits
-        return (node, self.name, fixits)
+        return (result.node, self.name, fixits)
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode

@@ -15,4 +15,4 @@ export CHPL_TARGET_COMPILER=clang
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-clang"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$CWD/nightly -cron -examples -blog ${nightly_args}

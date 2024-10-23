@@ -185,6 +185,9 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
         (startsWithChpl==false && inlined==false))
       return cur;
 
+    // If we're in a module init function, we can't go any further
+    if (curFn->hasFlag(FLAG_MODULE_INIT)) return cur;
+
     // Look for a call to that function
     CallExpr* anyCall = NULL;
     CallExpr* userCall = NULL;

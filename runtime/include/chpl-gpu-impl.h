@@ -100,6 +100,10 @@ GPU_CUB_WRAP(DECL_ONE_SORT_IMPL, keys)
 
 #undef DECL_ONE_SORT_IMPL
 
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize);
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute);
+
 #ifdef __cplusplus
 }
 #endif

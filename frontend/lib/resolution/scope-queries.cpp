@@ -20,6 +20,7 @@
 #include "chpl/resolution/scope-queries.h"
 
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
@@ -188,6 +189,9 @@ struct GatherDecls {
 
       // TODO: can we remove this at some point when TupleType becomes close
       // enough to the _tuple record?
+      skip = true;
+    } else if (d->isClass() && d->name() == "_ddata") {
+      // ditto for _ddata
       skip = true;
     } else if (d->name() == "eltType" &&
                atFieldLevel && tagParent == asttags::Class &&
@@ -524,7 +528,9 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     // TODO: would it be beneficial to use idToTag in most cases here?
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      if (CompositeType::isMissingBundledType(context, id)) {
+      if (CompositeType::isMissingBundledType(context, id) ||
+          (id.isFabricatedId() &&
+          id.fabricatedIdKind() == ID::FabricatedIdKind::Generated)) {
         // if there are no bundled modules selected,
         // to enable testing, just return the top-level scope for these
         // built-in types

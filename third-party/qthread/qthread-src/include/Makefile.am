@@ -10,8 +10,6 @@ noinst_HEADERS = \
 	fastcontext/taskimpl.h \
 	fastcontext/power-ucontext.h \
 	fastcontext/386-ucontext.h \
-	fastcontext/tile-ucontext.h \
-	net/net.h \
 	qthread_innards.h \
 	qloop_innards.h \
 	qt_asserts.h \
@@ -25,7 +23,6 @@ noinst_HEADERS = \
 	qt_barrier.h \
 	qt_blocking_structs.h \
 	qt_context.h \
-	qt_debug.h \
 	qt_envariables.h \
 	qt_filters.h \
 	qt_gcd.h \
@@ -58,10 +55,3 @@ noinst_HEADERS = \
 	qt_visibility.h \
 	spr_innards.h
 
-if COMPILE_EUREKAS
-noinst_HEADERS += qt_eurekas.h
-endif
-
-if COMPILE_MULTINODE
-noinst_HEADERS += qt_multinode_innards.h
-endif

@@ -15,7 +15,7 @@ ax[0].plot(signal)
 ax[0].set_title("ecg signal")
 
 # plot detail layers
-fmin = 0;
+fmin = 0
 fmax = math.floor(len(coeffs) / 2**num_levels)
 for i in range(0, num_levels):
     idx = num_levels - i

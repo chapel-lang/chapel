@@ -16,20 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifeq ($(CHPL_MAKE_GASNET_VERSION),ex)
-  COMM_SUFFIX=-ex
-endif
-
 COMM_LAUNCHER_SRCS = \
         comm-gasnet-launch.c \
         comm-gasnet-locales.c \
 
 COMM_SRCS = \
-	comm-gasnet$(COMM_SUFFIX).c \
+	comm-gasnet-ex.c \
 	comm-gasnet-locales.c \
 
 SRCS = \
-  comm-gasnet$(COMM_SUFFIX).c \
+  comm-gasnet-ex.c \
   comm-gasnet-launch.c \
   comm-gasnet-locales.c \
 
@@ -49,6 +45,6 @@ endif
 endif
 endif
 
-$(RUNTIME_OBJ_DIR)/comm-gasnet$(COMM_SUFFIX).o: comm-gasnet$(COMM_SUFFIX).c $(RUNTIME_OBJ_DIR_STAMP)
+$(RUNTIME_OBJ_DIR)/comm-gasnet-ex.o: comm-gasnet-ex.c $(RUNTIME_OBJ_DIR_STAMP)
 	$(CC) -c $(RUNTIME_CFLAGS) $(CHPL_GASNET_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 

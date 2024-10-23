@@ -8,7 +8,7 @@ import chpl_hwloc
 
 @memoize
 def get():
-    hwloc_val = chpl_hwloc.get();
+    hwloc_val = chpl_hwloc.get()
     debug_val = overrides.get('CHPL_HWLOC_DEBUG')
     if not debug_val or hwloc_val != 'bundled':
         debug_val = 'nodbg'

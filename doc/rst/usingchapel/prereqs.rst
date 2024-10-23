@@ -83,7 +83,7 @@ Installation
 
 We have used the following commands to install the above prerequisites:
 
-  * Alma Linux 8, 9.3::
+  * Alma Linux 8, 9.3, 9.4::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -102,9 +102,15 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
+  * Alpine 3.20::
+
+      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
+      sudo apk add llvm-dev clang-dev clang-static llvm-static
+
+
   * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`_)::
 
-      sudo yum install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
+      sudo yum install git gcc gcc-c++ m4 perl python tcsh bash perl python python-devel python-setuptools bash make gawk python3 which
       sudo yum install wget tar openssl-devel
       wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
       tar xvzf cmake-3.25.1.tar.gz
@@ -131,28 +137,11 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -S llvm14 clang14
 
 
-  * CentOS 7 Devtoolset 11 (but note `CentOS 7 CHPL_LLVM=system incompatibility`_)::
-
-      sudo yum install centos-release-scl
-      sudo yum install devtoolset-11-gcc*
-      sudo yum install epel-release
-      sudo scl enable devtoolset-11 bash
-      sudo echo source scl_source enable devtoolset-11 >> ~/.bashrc
-      sudo yum install git gcc gcc-c++ m4 perl tcsh bash python3 make gawk wget openssl-devel
-      wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
-      tar xvzf cmake-3.25.1.tar.gz
-      cd cmake-3.25.1
-      ./bootstrap
-      make
-      sudo make install
-      sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
-
-
-  * CentOS Stream 8, 9::
+  * CentOS Stream 9::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
-      sudo dnf install llvm-devel-16.0.6 clang-16.0.6 clang-devel-16.0.6
+      sudo dnf install llvm-devel clang clang-devel
 
 
   * Debian 10 "Buster" (but note `Newer CMake required to build LLVM`_)::
@@ -174,14 +163,14 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 37, 38, 39, 40 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
+  * Fedora 39, 40 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.2, 13.3, 14.0::
+  * FreeBSD 13.2, 13.3, 14.0, 14.1::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
@@ -193,7 +182,7 @@ We have used the following commands to install the above prerequisites:
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 9.3::
+  * Rocky Linux 8, 8.10, 9.3, 9.4::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils

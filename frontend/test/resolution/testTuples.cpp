@@ -852,10 +852,11 @@ static const TypedFnSignature* test20Helper(Context* context, std::string progra
   auto x = M->stmt(M->numStmts()-1)->toVarLikeDecl();
   auto call = x->initExpression()->toFnCall();
 
+  ResolutionContext rcval(context);
   auto r = rr.byAstOrNull(call);
   auto candidate = r->mostSpecific().only();
   auto sig = candidate.fn();
-  sig = resolveFunction(context, sig, r->poiScope())->signature();
+  sig = resolveFunction(&rcval, sig, r->poiScope())->signature();
   return sig;
 }
 static void test20() {
@@ -971,6 +972,32 @@ static void test20() {
   }
 }
 
+static void test21() {
+  // Ensure that (type int, type int) tuples in type expression are properly
+  // handled when they are specifying the type of var or const variable.
+
+  Context ctx;
+  Context* context = &ctx;
+  auto program = R"""(
+    var x: 2*int = (7,3);
+    const y: 2*int = (7,3);
+    var x2: 2*int;
+    const y2: 2*int;
+
+    param firstMatch = x.type == x2.type;
+    param secondMatch = y.type == y2.type;
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program,
+                                      {"x", "y", "x2", "y2", "firstMatch", "secondMatch"});
+  assert(vars["x"].type()->isTupleType());
+  assert(vars["y"].type()->isTupleType());
+  assert(vars["x2"].type()->isTupleType());
+  assert(vars["y2"].type()->isTupleType());
+  ensureParamBool(vars["firstMatch"], true);
+  ensureParamBool(vars["secondMatch"], true);
+}
+
 
 int main() {
   test1();
@@ -998,5 +1025,6 @@ int main() {
   testTupleGeneric();
 
   test20();
+  test21();
   return 0;
 }

@@ -4450,7 +4450,7 @@ static void linkGpuDeviceLibraries() {
   } else {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
-    auto libPath = gGpuSdkPath + std::string("/amdgcn/bitcode");
+    auto libPath = CHPL_ROCM_AMDGCN_PATH + std::string("/bitcode");
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());
@@ -4821,11 +4821,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   std::string inputs = "-inputs=/dev/null";
   std::string outputs = "-outputs=" + fatbinFilename;
 #endif
-  auto sdkString = std::string(gGpuSdkPath);
-  // check file exists, maybe use alternate path (say if spack installed)
-  std::string lldBin = pathExists((sdkString + "/llvm/bin/lld").c_str()) ?
-                       sdkString + "/llvm/bin/lld"  :
-                       sdkString + "/bin/lld";
+  std::string lldBin = CHPL_ROCM_LLVM_PATH + std::string("/bin/lld");
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -5051,7 +5047,8 @@ void makeBinaryLLVM(void) {
         gpuArgs += " -Wno-unknown-cuda-version";
       }
       else if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-        curPath = addToPATH(gGpuSdkPath + std::string("/llvm/bin"));
+        // use the AMD LLVM path, use separate var
+        curPath = addToPATH(CHPL_ROCM_LLVM_PATH + std::string("/bin"));
       }
     }
 

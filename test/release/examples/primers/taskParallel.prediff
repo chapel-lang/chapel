@@ -71,7 +71,8 @@ for line in lines:
             continue
         if isSeparator(line):
             continue
-        (left, num, iterstr, iter) = rest.rsplit(' ', 3)
+        (junk, left, num, iter) = rest.split(' ', 3)
+        print(left, num, iter, sep=":::")
         seenIters.append(iter)
         if seenIters.count(iter) != int(num):
             errs += 1

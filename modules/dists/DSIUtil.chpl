@@ -301,7 +301,7 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,bounds=?B), w: range(?IT,?), userErrors=true
+proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
              ) : densiResult(s, w)
 {
   _densiEnsureBounded(s);
@@ -425,7 +425,7 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,bounds=?B), whole: range(?IT,?)
+proc unDensify(dense: range(?dIT,bounds=?), whole: range(?IT,?)
                ) : densiResult(dense, whole)
 {
   _undensEnsureBounded(dense);

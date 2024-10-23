@@ -35,18 +35,49 @@ MAYBE_GPU static inline int chpl_macro_double_signbit(double x) { return signbit
 MAYBE_GPU static inline int chpl_macro_float_signbit(float x) { return signbit(x); }
 
 
+#define chpl_COMPLEX_RETURN_REAL(V) V(creal) V(cimag) V(cabs) V(carg)
+#define chpl_COMPLEX_RETURN_COMPLEX(V)                    \
+  V(conj) V(cproj) V(csqrt) V(cexp) V(clog)               \
+  V(ccos) V(ccosh) V(csin) V(csinh) V(ctan) V(ctanh)      \
+  V(cacos) V(cacosh) V(casin) V(casinh) V(catan) V(catanh)
+
+
 #ifdef __cplusplus
 // workaround for C++ lacking C99 complex support
-MAYBE_GPU static inline double chpl_creal(_complex128 x) { return __builtin_creal(x); }
-MAYBE_GPU static inline float  chpl_crealf(_complex64 x) { return __builtin_crealf(x); }
-MAYBE_GPU static inline _imag64 chpl_cimag(_complex128 x) { return __builtin_cimag(x); }
-MAYBE_GPU static inline _imag32 chpl_cimagf(_complex64 x) { return __builtin_cimagf(x); }
+#define chpl_complex_wrapper(basename)                                     \
+  MAYBE_GPU static ___always_inline double                                           \
+    chpl_##basename(_complex128 x) { return __builtin_##basename(x); }     \
+  MAYBE_GPU static ___always_inline float                                            \
+    chpl_##basename##f(_complex64 x) { return __builtin_##basename##f(x); }
+chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+
+#define chpl_complex_wrapper(basename)                                     \
+  MAYBE_GPU static ___always_inline _complex128                                      \
+    chpl_##basename(_complex128 x) { return __builtin_##basename(x); }     \
+  MAYBE_GPU static ___always_inline _complex64                                       \
+    chpl_##basename##f(_complex64 x) { return __builtin_##basename##f(x); }
+chpl_COMPLEX_RETURN_COMPLEX(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
 #else
-MAYBE_GPU static inline double chpl_creal(_complex128 x) { return creal(x); }
-MAYBE_GPU static inline float  chpl_crealf(_complex64 x) { return crealf(x); }
-MAYBE_GPU static inline _imag64 chpl_cimag(_complex128 x) { return cimag(x); }
-MAYBE_GPU static inline _imag32 chpl_cimagf(_complex64 x) { return cimagf(x); }
+#define chpl_complex_wrapper(basename)                         \
+  MAYBE_GPU static ___always_inline double                               \
+    chpl_##basename(_complex128 x) { return basename(x); }     \
+  MAYBE_GPU static ___always_inline float                                \
+    chpl_##basename##f(_complex64 x) { return basename##f(x); }
+chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+
+#define chpl_complex_wrapper(basename)                         \
+  MAYBE_GPU static ___always_inline _complex128                          \
+    chpl_##basename(_complex128 x) { return basename(x); }     \
+  MAYBE_GPU static ___always_inline _complex64                           \
+    chpl_##basename##f(_complex64 x) { return basename##f(x); }
+chpl_COMPLEX_RETURN_COMPLEX(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
 #endif
+#undef chpl_COMPLEX_RETURN_COMPLEX
+
 
 MAYBE_GPU static inline double chpl_sqrt64(double x) { return sqrt(x);  }
 MAYBE_GPU static inline float  chpl_sqrt32(float x)  { return sqrtf(x); }

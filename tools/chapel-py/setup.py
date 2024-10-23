@@ -69,6 +69,20 @@ LDFLAGS += [
     chpl_lib_path,
 ]
 
+if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
+    if str(chpl_variables.get("CHPL_HOST_PLATFORM")) == "darwin":
+        sys.exit(
+            "Cannot use chapel-py on Mac OS when address sanitization is enabled; "
+            + "please unset 'CHPL_SANITIZE' then rebuild Chapel"
+        )
+
+    CXXFLAGS += ["-fsanitize=address"]
+    LDFLAGS += ["-fsanitize=address"]
+
+    if "clang" in host_cc:
+        CXXFLAGS += ["-shared-libasan"]
+        LDFLAGS += ["-shared-libasan"]
+
 os.environ["CC"] = host_cc
 os.environ["CXX"] = host_cxx
 setup(
