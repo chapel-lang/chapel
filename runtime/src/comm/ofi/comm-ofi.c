@@ -401,12 +401,15 @@ static chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static void tciFree(struct perTxCtxInfo_t*);
 static void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
 static void ofi_put(const void*, c_nodeid_t, void*, size_t);
-static nb_handle_t ofi_put_nb(nb_handle_t, const void*, c_nodeid_t, void*, size_t);
+static nb_handle_t ofi_put_nb(nb_handle_t, const void*, c_nodeid_t, void*,
+                              size_t);
 static void ofi_put_lowLevel(const void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
 static void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
-static chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
+static void ofi_get(void*, c_nodeid_t, void*, size_t);
+static nb_handle_t ofi_get_nb(nb_handle_t, void*, c_nodeid_t, void*,
+                              size_t);
 static void ofi_get_lowLevel(void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
@@ -5314,7 +5317,7 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   size_t payloadSize = comm->argSize
                        - offsetof(chpl_comm_on_bundle_t, payload);
   CHK_TRUE(mrGetKey(NULL, NULL, node, xol->pPayload, payloadSize));
-  (void) ofi_get(&bundle->payload, node, xol->pPayload, payloadSize);
+  ofi_get(&bundle->payload, node, xol->pPayload, payloadSize);
 
   //
   // Iff this is a nonblocking executeOn, now that we have the payload
@@ -5349,7 +5352,7 @@ void amWrapGet(struct taskArg_RMA_t* tsk_rma) {
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) rma));
 
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size));
-  (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
+  ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr((amRequest_t*) rma));
   amPutDone(rma->b.node, rma->b.pAmDone);
@@ -5614,17 +5617,64 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
   return (chpl_comm_nb_handle_t) handle;
 }
 
+/*
+ * get_prologue
+ *
+ * Common prologue operations for chpl_comm_get and chpl_comm_get_nb. Returns
+ * true if the GET should proceed, false if it was handled in this function.
+ */
+static inline
+chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
+                       int32_t commID, int ln, int32_t fn) {
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
+  //
+  // Sanity checks, self-communication.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+
+  if (size == 0) {
+    return false;
+  }
+
+  if (node == chpl_nodeID) {
+    memmove(addr, raddr, size);
+    return false;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
+  chpl_comm_diags_incr(get);
+  return true;
+}
+
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
                                        int32_t commID, int ln, int32_t fn) {
-  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
-  return NULL;
+  nb_handle_t handle = NULL;
+  if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
+    handle = ofi_get_nb(handle, addr, node, raddr, size);
+  }
+  return (chpl_comm_nb_handle_t) handle;
 }
 
 
 static inline
 int test_nb_complete(nb_handle_t handle) {
-  return handle != NULL ? handle->reported : 1;
+  int result = (handle != NULL ? handle->reported : 1);
+  if (result) {
+    DBG_PRINTF(DBG_RMA, "handle %p is complete", handle);
+  }
+  return result;
 }
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h) {
@@ -5791,7 +5841,7 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
   chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
-  (void) ofi_get(addr, node, raddr, size);
+  ofi_get(addr, node, raddr, size);
 }
 
 
@@ -6539,73 +6589,119 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
 /*** END OF BUFFERED PUT OPERATIONS ***/
 
 
-typedef chpl_comm_nb_handle_t (rmaGetFn_t)(void* myAddr, void* mrDesc,
+typedef void (rmaGetFn_t)(nb_handle_t handle, void* myAddr, void* mrDesc,
                                            c_nodeid_t node,
                                            uint64_t mrRaddr, uint64_t mrKey,
-                                           size_t size, void* ctx,
+                                           size_t size,
                                            struct perTxCtxInfo_t* tcip);
 
 static rmaGetFn_t rmaGetFn_selector;
 
+/*
+ * ofi_get
+ *
+ * Blocking GET. Implemented by initiating a non-blocking GET and waiting for
+ * it to complete.
+ */
+
 static inline
-chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
+void ofi_get(void* addr, c_nodeid_t node, void* raddr, size_t size) {
+
+  // Allocate the handle on the stack to avoid malloc overhead
+  nb_handle handle_struct;
+  nb_handle_t handle = &handle_struct;
+  nb_handle_init(handle);
+
+  handle = ofi_get_nb(handle, addr, node, raddr, size);
+  do {
+    wait_nb_some(&handle, 1);
+  } while(!test_nb_complete(handle));
+  if (handle->next != NULL) {
+    // free any handles for sub-operations
+    chpl_comm_free_nb_handle(handle->next);
+  }
+  nb_handle_destroy(handle);
+}
+
+static inline
+nb_handle_t ofi_get_nb(nb_handle_t handle, void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
-  //
-  // Don't ask the provider to transfer more than it wants to.
-  //
+
+  char *dest = (char *) addr;
+  char *src = (char *) raddr;
+  nb_handle_t prev = NULL;
+  nb_handle_t first = NULL;
+
   if (size > ofi_info->ep_attr->max_msg_size) {
     DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-               "splitting large GET %p <= %d:%p, size %zd",
-               addr, (int) node, raddr, size);
+               "splitting large GET %d:%p <= %p, size %zd",
+               (int) node, raddr, addr, size);
+  }
 
-    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
-    for (size_t i = 0; i < size; i += chunkSize) {
-      if (chunkSize > size - i) {
-        chunkSize = size - i;
-      }
-      (void) ofi_get(&((char*) addr)[i], node, &((char*) raddr)[i],
-                     chunkSize);
+  struct perTxCtxInfo_t* tcip = NULL;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+  size_t offset = 0;
+  while (offset < size) {
+    if (chunkSize > size - offset) {
+      chunkSize = size - offset;
+    }
+    DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
+              "GET %p <= %d:%p, size %zd",
+              dest, (int) node, src, size);
+
+    if (handle == NULL) {
+      handle = chpl_mem_alloc(sizeof(*handle),
+                              CHPL_RT_MD_COMM_NB_HANDLE, 0, 0);
+      nb_handle_init(handle);
+    }
+    // Make a linked-list of handles
+    if (prev != NULL) {
+      prev->next = handle;
+    }
+    // Keep track of the first handle so we can return it.
+    if (first == NULL) {
+      first = handle;
     }
 
-    return NULL;
+    //
+    // If the remote address is directly accessible do a GET RMA from this
+    // side; otherwise do a PUT from the other side.
+    //
+    uint64_t mrKey;
+    uint64_t mrRaddr;
+    if (mrGetKey(&mrKey, &mrRaddr, node, (void *) src, chunkSize)) {
+      if (tcip->txCntr == NULL) {
+        // TODO: why is this necessary?
+        waitForCQSpace(tcip, 1);
+      }
+
+      void* mrDesc;
+      void* myAddr = mrLocalizeTarget(&mrDesc, (const void *) dest,
+                                      chunkSize, "GET tgt");
+
+      rmaGetFn_selector(handle, myAddr, mrDesc, node, mrRaddr,
+                        mrKey, chunkSize, tcip);
+
+      handle->mrAddr = myAddr;
+      handle->addr = dest;
+      handle->size = size;
+    } else {
+      amRequestRmaGet(node, (void *) dest, (void *) src, size);
+      atomic_store_bool(&handle->complete, true);
+    }
+    offset += chunkSize;
+    src += chunkSize;
+    dest += chunkSize;
+    prev = handle;
+    handle = NULL;
   }
-
-  DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
-             "GET %p <= %d:%p, size %zd",
-             addr, (int) node, raddr, size);
-
-  //
-  // If the remote address is directly accessible do an RMA from this
-  // side; otherwise do the opposite RMA from the other side.
-  //
-  chpl_comm_nb_handle_t ret;
-  uint64_t mrKey;
-  uint64_t mrRaddr;
-  if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size)) {
-    struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc()) != NULL);
-    // TODO: Why is this necessary?
-    waitForCQSpace(tcip, 1);
-
-    void* mrDesc;
-    void* myAddr = mrLocalizeTarget(&mrDesc, addr, size, "GET tgt");
-
-    chpl_atomic_bool txnDone;
-    void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
-    ret = rmaGetFn_selector(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                            ctx, tcip);
-
-    waitForTxnComplete(tcip, ctx);
-    txCtxCleanup(ctx);
-    mrUnLocalizeTarget(myAddr, addr, size);
-    tciFree(tcip);
-  } else {
-    amRequestRmaGet(node, addr, raddr, size);
-    ret = NULL;
-  }
-
-  return ret;
+  tciFree(tcip);
+  DBG_PRINTF(DBG_RMA | DBG_RMA_READ, "GET handle %p", first);
+  return first;
 }
+
 
 
 static rmaGetFn_t rmaGetFn_msgOrdFence;
@@ -6614,32 +6710,28 @@ static rmaGetFn_t rmaGetFn_dlvrCmplt;
 
 
 static inline
-chpl_comm_nb_handle_t rmaGetFn_selector(void* myAddr, void* mrDesc,
+void rmaGetFn_selector(nb_handle_t handle, void* myAddr, void* mrDesc,
                                         c_nodeid_t node,
                                         uint64_t mrRaddr, uint64_t mrKey,
-                                        size_t size, void* ctx,
+                                        size_t size,
                                         struct perTxCtxInfo_t* tcip) {
-  chpl_comm_nb_handle_t ret = NULL;
-
   switch (mcmMode) {
   case mcmm_msgOrdFence:
-    ret = rmaGetFn_msgOrdFence(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                               ctx, tcip);
+    rmaGetFn_msgOrdFence(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                               tcip);
     break;
   case mcmm_msgOrd:
-    ret = rmaGetFn_msgOrd(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                          ctx, tcip);
+    rmaGetFn_msgOrd(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                          tcip);
     break;
   case mcmm_dlvrCmplt:
-    ret = rmaGetFn_dlvrCmplt(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                             ctx, tcip);
+    rmaGetFn_dlvrCmplt(handle, myAddr, mrDesc, node, mrRaddr, mrKey, size,
+                             tcip);
     break;
   default:
     INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
     break;
   }
-
-  return ret;
 }
 
 
@@ -6659,13 +6751,15 @@ static ssize_t wrap_fi_readmsg(void* addr, void* mrDesc,
 // Implements ofi_get() when MCM mode is message ordering with fences.
 //
 static
-chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
-                                           c_nodeid_t node,
-                                           uint64_t mrRaddr, uint64_t mrKey,
-                                           size_t size, void* ctx,
-                                           struct perTxCtxInfo_t* tcip) {
+void rmaGetFn_msgOrdFence(nb_handle_t handle, void* myAddr, void* mrDesc,
+                          c_nodeid_t node,
+                          uint64_t mrRaddr, uint64_t mrKey,
+                          size_t size,
+                          struct perTxCtxInfo_t* tcip) {
   chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, node);
   chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
+
+  uint64_t flags = 0;
 
   if (havePutsOut || haveAmosOut) {
     //
@@ -6674,22 +6768,16 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
     // a bound tx context) then this GET needs to be fenced to force
     // that visibility.
     //
-    (void) wrap_fi_readmsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
-                           FI_FENCE, tcip);
-    if (havePutsOut) {
-      bitmapClear(tcip->putVisBitmap, node);
-    }
-    if (haveAmosOut) {
-      bitmapClear(tcip->amoVisBitmap, node);
-    }
-  } else {
-    //
-    // General case.
-    //
-    (void) wrap_fi_read(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
+    flags |= FI_FENCE;
   }
-
-  return NULL;
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
+  ofi_get_lowLevel(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, flags, tcip);
+  if (havePutsOut) {
+    bitmapClear(tcip->putVisBitmap, node);
+  }
+  if (haveAmosOut) {
+    bitmapClear(tcip->amoVisBitmap, node);
+  }
 }
 
 
@@ -6697,11 +6785,11 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
 // Implements ofi_get() when MCM mode is message ordering.
 //
 static
-chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
-                                      c_nodeid_t node,
-                                      uint64_t mrRaddr, uint64_t mrKey,
-                                      size_t size, void* ctx,
-                                      struct perTxCtxInfo_t* tcip) {
+void rmaGetFn_msgOrd(nb_handle_t handle, void* myAddr, void* mrDesc,
+                     c_nodeid_t node,
+                     uint64_t mrRaddr, uint64_t mrKey,
+                     size_t size,
+                     struct perTxCtxInfo_t* tcip) {
   //
   // This GET will force any outstanding PUT to the same node to be
   // visible.
@@ -6710,8 +6798,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
     bitmapClear(tcip->putVisBitmap, node);
     bitmapClear(tcip->amoVisBitmap, node);
   }
-  (void) wrap_fi_read(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
-  return NULL;
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
+  ofi_get_lowLevel(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, 0, tcip);
 }
 
 
@@ -6719,13 +6807,13 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
 // Implements ofi_get() when MCM mode is delivery complete.
 //
 static
-chpl_comm_nb_handle_t rmaGetFn_dlvrCmplt(void* myAddr, void* mrDesc,
-                                         c_nodeid_t node,
-                                         uint64_t mrRaddr, uint64_t mrKey,
-                                         size_t size, void* ctx,
-                                         struct perTxCtxInfo_t* tcip) {
-  (void) wrap_fi_read(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
-  return NULL;
+void rmaGetFn_dlvrCmplt(nb_handle_t handle, void* myAddr, void* mrDesc,
+                        c_nodeid_t node,
+                        uint64_t mrRaddr, uint64_t mrKey,
+                        size_t size,
+                        struct perTxCtxInfo_t* tcip) {
+  void *ctx = txCtxInit(tcip, __LINE__, &handle->complete);
+  ofi_get_lowLevel(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, 0, tcip);
 }
 
 
