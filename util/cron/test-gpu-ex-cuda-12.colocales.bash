@@ -8,6 +8,7 @@ source $CWD/common-hpe-cray-ex.bash
 source $CWD/common-ofi.bash
 
 export SLURM_NETWORK=single_node_vni
+export CHPL_RT_LOCALES_PER_NODE=2
 module load cudatoolkit  # default is CUDA 12
 
 export CHPL_LLVM=bundled  # CUDA 12 is only supported with bundled LLVM
