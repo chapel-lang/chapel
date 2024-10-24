@@ -20,12 +20,51 @@
 
 /* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
 
+/*
+  This module supports Compressed Sparse Row/Column (CSR/CSC) memory
+  layouts for sparse domains and the arrays declared over them.  It
+  does this via a pair of records, :record:`csrLayout` and
+  :record:`cscLayout`, which correspond to the CSR and CSC approaches,
+  respectively.  These two records are duals of one another, where the
+  CSR format supports efficient iteration over rows while the CSC
+  format is better for column-wise traversals.
+
+  A sparse domain can be declared using these layouts using syntax
+  like the following:
+
+    .. code-block:: chapel
+
+      use CompressedSparseLayout;
+      
+      const D = {1..m, 1..n},  // a dense domain defining a bounding box
+            CSRDomain: sparse subdomain(D) dmapped new csrLayout() = ...;
+      
+      var CSRArray: [CSRDomain] real;
+
+  
+  In addition to the standard methods and operators defined on sparse
+  domains and arrays in Chapel, these layouts also support the
+  following methods:
+
+  * Domains and arrays support ``.rows()/.cols()`` queries, which
+    return a ``range`` value representing the indices of the rows or
+    columns over which the domain is defined.  Note that some of these
+    rows or columns may be empty in practice.
+
+  * CSR/CSC arrays support ``.colsAndVals(row)``/``.rowsAndVals(col)``
+    iterators, which take a given row/column index as input and yield
+    2-tuples corresponding the column/row index and value at that
+    index, respectively.  Note that CSR only supports
+    ``.colsAndVals()`` and CSC only supports ``.rowsAndVals()``.
+*/
+
 @chplcheck.ignore("IncorrectIndentation")
 @unstable("'CompressedSparseLayout' is unstable and may change in the future")
 module CompressedSparseLayout {
 import Sort.{keyComparator};
 import RangeChunk;
 
+ 
 @chpldoc.nodoc
 /* Debug flag */
 config param debugCS = false;
@@ -33,9 +72,12 @@ config param debugCS = false;
 @chpldoc.nodoc
 config param csLayoutSupportsAutoLocalAccess = true;
 
-/* Default sparse dimension index sorting mode for LayoutCS.
-Sparse dimension indices will default to sorted order if true, inserted order if false */
-config param csLayoutDefaultToSorted = true;
+/* Indicates whether the indices within a row/column of a CSR/CSC
+   layout should be sorted by default or not.  Note that this default
+   can be overridden on a per-instance basis using the
+   ``sortedIndices`` initializer arguments below. */
+ 
+config param csLayoutSortByDefault = true;
 
 @chpldoc.nodoc
 /* Comparator used for sorting by columns */
@@ -96,16 +138,18 @@ This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.  By default, the CS
 layout stores sparse indices in sorted order.  However, this default can
-be changed for a program by compiling with ``-scsLayoutDefaultToSorted=false``,
+be changed for a program by compiling with ``-scsLayoutSortByDefault=false``,
 or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
+
+@chpldoc.nodoc
 class CSImpl: BaseDist {
   param compressRows: bool;
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  param sortedIndices: bool = csLayoutSortByDefault;
 
   proc init(param compressRows: bool,
-            param sortedIndices: bool = csLayoutDefaultToSorted) {
+            param sortedIndices: bool = csLayoutSortByDefault) {
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
   }
@@ -143,50 +187,88 @@ record chpl_layoutHelper {
   }
 }
 
+/*
+
+  This record implements a 2D compressed sparse row layout (CSR, for
+  short).
+
+  Each domain declared over this layout represents its sparse index
+  set using an ``.size``-element vector to store the column indices
+  and a ~#rows-element vector indicating the offset where each row
+  starts.  The ``sortedIndices`` argument in the initializer indicates
+  whether the column indices within each row are stored in sorted
+  order or not.
+  
+  Arrays declared over such domains store their elements corresponding
+  to the domain's indices using a dense ``.size``-element vector.
+
+  As a result of this storage format, CSR domains and arrays support
+  efficient iteration over rows, but not over columns.
+
+*/
+ 
 record csrLayout {
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  @chpldoc.nodoc
+  param sortedIndices: bool = csLayoutSortByDefault;
   forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=true, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=true, sortedIndices));
 
-  proc init(param sortedIndices: bool = csLayoutDefaultToSorted) {
+  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
     const value = new unmanaged CSImpl(compressRows=true, sortedIndices);
     this.sortedIndices = sortedIndices;
     this.chpl_layoutHelp = new chpl_layoutHelper(value);
   }
 
+  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
     this.chpl_layoutHelp = new chpl_layoutHelper(value);
   }
 
+  @chpldoc.nodoc
   operator ==(l: csrLayout(?), r: csrLayout(?)) param {
     return l.type == r.type;
   }
 
+  @chpldoc.nodoc
   operator !=(l: csrLayout(?), r: csrLayout(?)) param {
     return l.type != r.type;
   }
 }
 
-@chpldoc.nodoc
+/*
+
+  This record implements a 2D compressed sparse column layout (CSC,
+  for short).  It is the dual of the :record:`csrLayout` layout above,
+  simply swapping rows and columns in its representation and
+  operators.  As a result, it effectively stores its arrays' values in
+  column-major order, supporting efficient iteration over rows, but
+  not over columns.
+
+*/
+ 
 record cscLayout {
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  @chpldoc.nodoc
+  param sortedIndices: bool = csLayoutSortByDefault;
   forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=false, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=false, sortedIndices));
 
-  proc init(param sortedIndices: bool = csLayoutDefaultToSorted) {
+  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
     const value = new unmanaged CSImpl(compressRows=false, sortedIndices);
     this.sortedIndices = sortedIndices;
     this.chpl_layoutHelp = new chpl_layoutHelper(value);
   }
 
+  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
     this.chpl_layoutHelp = new chpl_layoutHelper(value);
   }
 
+  @chpldoc.nodoc
   operator ==(l: cscLayout(?), r: cscLayout(?)) param {
     return l.type == r.type;
   }
 
+  @chpldoc.nodoc
   operator !=(l: cscLayout(?), r: cscLayout(?)) param {
     return l.type != r.type;
   }
@@ -201,11 +283,11 @@ record cscLayout {
 @chpldoc.nodoc
 record csLayout {
   param compressRows: bool;
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  param sortedIndices: bool = csLayoutSortByDefault;
   forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
 
   proc init(param compressRows: bool,
-            param sortedIndices: bool = csLayoutDefaultToSorted) {
+            param sortedIndices: bool = csLayoutSortByDefault) {
     const value = new unmanaged CSImpl(compressRows, sortedIndices);
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
@@ -250,16 +332,17 @@ record csLayout {
   assertion is removed:
 
   record csrLayout {
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  param sortedIndices: bool = csLayoutSortByDefault;
   forwarding var csl: csLayout(compressRows=true, sortedIndices);
   }
 
   record cscLayout {
-  param sortedIndices: bool = csLayoutDefaultToSorted;
+  param sortedIndices: bool = csLayoutSortByDefault;
   forwarding var csl: csLayout(compressRows=false, sortedIndices);
   }
 */
 
+@chpldoc.nodoc
 class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
   param sortedIndices;
@@ -808,10 +891,12 @@ class CSDom: BaseSparseDomImpl(?) {
 } // CSDom
 
 
+@chpldoc.nodoc
 proc CSDom.rows() {
   return this.rowRange;
 }
 
+@chpldoc.nodoc
 proc CSDom.cols() {
   return this.colRange;
 }
@@ -823,6 +908,7 @@ iter CSDom.uidsInRowCol(rc) {
 }
 
 
+@chpldoc.nodoc
 class CSArr: BaseSparseArrImpl(?) {
 
   proc init(type eltType,
@@ -943,10 +1029,12 @@ class CSArr: BaseSparseArrImpl(?) {
   }
 } // CSArr
 
+@chpldoc.nodoc
 proc CSArr.rows() {
   return this.dom.rows();
 }
 
+@chpldoc.nodoc
 proc CSArr.cols() {
   return this.dom.cols();
 }
@@ -958,6 +1046,7 @@ iter CSArr.indsAndVals(rc) {
     yield (dom.idx[uid], this.data[uid]);
 }
 
+@chpldoc.nodoc
 iter CSArr.colsAndVals(r) {
   if this.dom.compressRows == false then
     compilerError("Can't (efficiently) iterate over rows using a CSC layout");
@@ -965,6 +1054,7 @@ iter CSArr.colsAndVals(r) {
     yield colVal;
 }
 
+@chpldoc.nodoc
 iter CSArr.rowsAndVals(c) {
   if this.dom.compressRows == true then
     compilerError("Can't (efficiently) iterate over columns using a CSR layout");

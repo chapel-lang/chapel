@@ -20,7 +20,7 @@
 
 /* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
 
-@deprecated("'LayoutCS' and the 'CS' layout are deprecated; please use 'CompressedSparseLayout' and 'csrLayout' or 'cscLayout' instead")
+@deprecated("'LayoutCS' and its 'CS' layout are deprecated; please use ':mod:`CompressedSparseLayout`' and its 'csrLayout' or 'cscLayout' layouts instead")
 prototype module LayoutCS {
 import Sort.{keyComparator};
 import RangeChunk;
@@ -67,11 +67,6 @@ defaults to ``true`` if omitted. For example:
     var CSR_Domain: sparse subdomain(D) dmapped new dmap(new CS(compressRows=true)); // Default argument
     var CSC_Domain : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
 
-
-.. note::
-
-    In an upcoming release, it will be possible to declare CS domains without
-    using the unstable ``new dmap`` syntax.
 
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:

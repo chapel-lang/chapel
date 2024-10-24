@@ -1,4 +1,4 @@
-testLayoutCS.chpl:1: warning: 'LayoutCS' and the 'CS' layout are deprecated; please use 'CompressedSparseLayout' and 'csrLayout' or 'cscLayout' instead
+testLayoutCS.chpl:1: warning: 'LayoutCS' and its 'CS' layout are deprecated; please use 'CompressedSparseLayout' and its 'csrLayout' or 'cscLayout' layouts instead
 testLayoutCS.chpl:4: warning: 'CS' is deprecated, please use 'CompressedSparseLayout.[csrLayout|cscLayout]' instead
 {
  (1, 1)
