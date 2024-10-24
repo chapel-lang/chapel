@@ -547,8 +547,9 @@ void chpl_gpu_impl_host_unregister(void* var) {
   ROCM_CALL(hipHostUnregister(var));
 }
 
-void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
-  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, indexToDeviceID[dev]));
+void chpl_gpu_impl_name(int dev_lid, char *resultBuffer, int bufferSize) {
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, dev_pid));
 }
 
 const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = hipDeviceAttributeMaxThreadsPerBlock;
@@ -595,9 +596,10 @@ const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = hipDeviceAttributeConc
 const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = hipDeviceAttributePageableMemoryAccessUsesHostPageTables;
 const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = hipDeviceAttributeDirectManagedMemAccessFromHost;
 
-int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+int chpl_gpu_impl_query_attribute(int dev_lid, int attribute) {
   int res;
-  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, indexToDeviceID[dev]));
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, dev_pid));
   return res;
 }
 
