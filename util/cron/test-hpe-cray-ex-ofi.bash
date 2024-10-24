@@ -11,4 +11,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-cray-ex-ofi"
 export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE=16g
 
-$CWD/nightly -cron -examples ${nightly_args}
+$CWD/nightly -cron -examples -blog ${nightly_args}
