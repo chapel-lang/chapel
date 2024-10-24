@@ -1,4 +1,4 @@
-unstableDists.chpl:1: warning: LayoutCS is unstable and may change in the future
+unstableDists.chpl:1: warning: 'CompressedSparseLayout' is unstable and may change in the future
 unstableDists.chpl:2: warning: BlockCycDist is unstable and may change in the future
 unstableDists.chpl:3: warning: DimensionalDist2D is unstable and may change in the future
 unstableDists.chpl:4: warning: HashedDist is unstable and may change in the future

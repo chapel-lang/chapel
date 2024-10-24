@@ -2696,7 +2696,7 @@ A high-level interface to linear algebra operations and procedures for sparse
 matrices (2D arrays).
 
 Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
-All sparse operations support the CSR layout (``LayoutCS.CS(compressRows=true)``)
+All sparse operations support the CSR layout (``CompressedSparseLayout.csrLayout``)
 and some operations support COO layout (default sparse array layout).
 
 See the :ref:`Sparse Primer <primers-sparse>` for more information about working
@@ -2749,7 +2749,7 @@ A common usage of this interface might look like this:
 */
 module Sparse {
 
-  public use LayoutCS;
+  public use CompressedSparseLayout;
   private use LinearAlgebra;
 
   /* Return an empty CSR domain over parent domain:
@@ -2788,7 +2788,7 @@ module Sparse {
     nonzeros as ``Dom``
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
-    var csrDom: sparse subdomain(Dom.parentDom) dmapped new dmap(new CS(sortedIndices=false));
+    var csrDom: sparse subdomain(Dom.parentDom) dmapped new csrLayout(sortedIndices=false);
     csrDom += Dom;
     return csrDom;
   }
@@ -2796,7 +2796,7 @@ module Sparse {
   @chpldoc.nodoc
   /* Return a CSR domain based on domain: ``Dom`` - Dense case */
   proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
-    var csrDom: sparse subdomain(Dom) dmapped new dmap(new CS(sortedIndices=false));
+    var csrDom: sparse subdomain(Dom) dmapped new csrLayout(sortedIndices=false);
     return csrDom;
   }
 
@@ -2874,7 +2874,7 @@ module Sparse {
   proc CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
     const rowRange = parentDom.dim(0).lowBound..parentDom.dim(0).highBound;
-    var ADom: sparse subdomain(parentDom) dmapped new dmap(new CS(sortedIndices=false));
+    var ADom: sparse subdomain(parentDom) dmapped new csrLayout(sortedIndices=false);
 
     ADom.startIdxDom = {rowRange.lowBound..rowRange.highBound+1};
     ADom.startIdx = indptr;
@@ -3190,6 +3190,8 @@ module Sparse {
     }
   }
 
+  // Note: This routine is probably untested given that 'insertionSort'
+  // is no longer defined directly in 'Sort' (?)
 
   /* Sort CS array indices */
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
@@ -3220,7 +3222,7 @@ module Sparse {
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
     const parentDT = transpose(D.parentDom);
-    var Dom: sparse subdomain(parentDT) dmapped new dmap (new CS(sortedIndices=false));
+    var Dom: sparse subdomain(parentDT) dmapped new csrLayout(sortedIndices=false);
 
     var idxBuffer = Dom.createIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));

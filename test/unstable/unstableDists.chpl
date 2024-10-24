@@ -1,4 +1,4 @@
-import LayoutCS;
+import CompressedSparseLayout;
 import BlockCycDist;
 import DimensionalDist2D;
 import HashedDist;
