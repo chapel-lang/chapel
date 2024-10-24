@@ -87,7 +87,7 @@ proc main() {
   }
 
   // dsiEqualsDmap && default value
-  if csLayoutDefaultToSorted {
+  if csLayoutSortByDefault {
     assert(csDmap == csrsDmap);
   } else {
     assert(csDmap == csruDmap);
