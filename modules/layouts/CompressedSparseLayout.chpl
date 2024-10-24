@@ -220,7 +220,7 @@ module CompressedSparseLayout {
   }
 
   @chpldoc.nodoc
-    record csLayout {
+  record csLayout {
     param compressRows: bool;
     param sortedIndices: bool = csLayoutSortByDefault;
     forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
