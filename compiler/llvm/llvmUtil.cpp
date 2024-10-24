@@ -30,6 +30,7 @@
 #ifdef HAVE_LLVM
 
 #include "llvm/Support/Debug.h"
+#include "llvm/IR/Module.h"
 
 #if TRACK_LLVM_VALUES
 #include "llvm/IR/AssemblyAnnotationWriter.h"

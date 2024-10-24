@@ -1908,8 +1908,13 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.UseInitArray = CodeGenOpts.UseInitArray;
   Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
+#if HAVE_LLVM_VER >= 190
+  Options.MCOptions.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+  Options.MCOptions.X86RelaxRelocations = CodeGenOpts.RelaxELFRelocations;
+#else
   Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
   Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
+#endif
 
   // Set EABI version.
   Options.EABIVersion = TargetOpts.EABIVersion;

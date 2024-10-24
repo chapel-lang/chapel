@@ -1,0 +1,1 @@
+--ccflags -fno-discard-value-names --fast --debug --llvm-print-ir-stage basic --llvm-print-ir dbg_proc

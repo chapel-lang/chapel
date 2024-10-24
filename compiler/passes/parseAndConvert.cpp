@@ -498,7 +498,7 @@ static void gatherStdModuleNamesInDir(std::string dir,
     } else {
       llvm::StringRef fileExt = llvm::sys::path::extension(fileName);
       llvm::StringRef fileStem = llvm::sys::path::stem(fileName);
-      if (fileExt.equals(".chpl")) {
+      if (fileExt == ".chpl") {
         moduleNamesHere.insert(fileStem.str());
       }
     }
