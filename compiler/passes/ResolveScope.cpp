@@ -192,6 +192,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(gNoInit);
   extend(gSplitInit);
+  extend(gCpuVsGpuToken);
 
   extend(dtUnknown->symbol);
   extend(dtAnyRecord->symbol);

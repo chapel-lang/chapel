@@ -1134,13 +1134,11 @@ void initPrimitiveTypes() {
   gFalse                               = createSymbol(dtBool, "false");
   gTrue                                = createSymbol(dtBool, "true");
 
-  gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
   gFalse->immediate->num_index         = BOOL_SIZE_SYS;
 
-  gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
@@ -1149,7 +1147,6 @@ void initPrimitiveTypes() {
   dtBool->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
@@ -1179,6 +1176,9 @@ void initPrimitiveTypes() {
   dtAnyRecord = createInternalType("record", "_anyRecord");
   dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
+  gCpuVsGpuToken = createSymbol(dtBool, "chpl_cpuVsGpuToken");
+  gCpuVsGpuToken->addFlag(FLAG_NO_CODEGEN);
+
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
 
@@ -1201,20 +1201,16 @@ void initPrimitiveTypes() {
 
   // Set up INFINITY and NAN params
   gInfinity = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_INFINITY");
-  gInfinity->addFlag(FLAG_PARAM);
   gInfinity->immediate = new Immediate;
   gInfinity->immediate->v_float64 = INFINITY;
   gInfinity->immediate->const_kind = NUM_KIND_REAL;
   gInfinity->immediate->num_index = FLOAT_SIZE_DEFAULT;
 
   gNan = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_NAN");
-  gNan->addFlag(FLAG_PARAM);
   gNan->immediate = new Immediate;
   gNan->immediate->v_float64 = NAN;
   gNan->immediate->const_kind = NUM_KIND_REAL;
   gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
-
-
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
@@ -1398,19 +1394,9 @@ VarSymbol* createCompilerGlobalParam(const char* name, T value);
 template <>
 VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
   auto globalVar = new VarSymbol(name, dtBool);
-  globalVar->addFlag(FLAG_PARAM);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
-
-  if (value) {
-     globalVar->immediate = new Immediate;
-    *globalVar->immediate = *gTrue->immediate;
-    paramMap.put(globalVar, gTrue);
-
-  } else {
-     globalVar->immediate = new Immediate;
-    *globalVar->immediate = *gFalse->immediate;
-    paramMap.put(globalVar, gFalse);
-  }
+  globalVar->immediate = new Immediate;
+ *globalVar->immediate = *(value ? gTrue : gFalse)->immediate;
 
   return globalVar;
 }
@@ -1426,6 +1412,12 @@ void initCompilerGlobals() {
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
+
+  if (! usingGpuLocaleModel()) {
+    // gCpuVsGpuToken is param true for non-gpu compiles
+    gCpuVsGpuToken->immediate = new Immediate;
+   *gCpuVsGpuToken->immediate = *gTrue->immediate;
+  }
 
   initForTaskIntents();
 }
