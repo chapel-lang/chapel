@@ -93,12 +93,6 @@ module CompressedSparseLayout {
   @chpldoc.nodoc
   proc isCSType(type t:cscLayout(?)) param do return true;
 
-  /* This worked before I had to move away from the csLayout approach
-     TODO: Try this again
-  @chpldoc.nodoc
-  proc isCSType(type t:csLayout(?)) param do return true;
-  */
-
   @chpldoc.nodoc
   proc isCSType(type t) param do return false;
 
@@ -310,7 +304,6 @@ module CompressedSparseLayout {
     proc dsiGetDist() {
       return if compressRows then new csrLayout(dist)
                              else new cscLayout(dist);
-      //    return new csLayout(dist);
     }
 
     proc dsiAssignDomain(rhs: domain(?), lhsPrivate:bool) {
