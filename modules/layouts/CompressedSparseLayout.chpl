@@ -58,7 +58,6 @@
     ``.colsAndVals()`` and CSC only supports ``.rowsAndVals()``.
 */
 
-@chplcheck.ignore("IncorrectIndentation")
 @unstable("'CompressedSparseLayout' is unstable and may change in the future")
 module CompressedSparseLayout {
   import Sort.{keyComparator};
