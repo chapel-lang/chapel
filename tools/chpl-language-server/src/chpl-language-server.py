@@ -394,19 +394,19 @@ class PositionList(Generic[EltT]):
         ongoing: List[Tuple[Position, EltT, int]] = []
 
         # To be able to insert ongoing segments in descending order.
-        def get_negated_pos(pos):
+        def get_negated_pos(pos: Position):
             return (-pos.line, -pos.character)
 
-        def push_segment(pos, elt, idx):
+        def push_segment(pos: Position, elt: Optional[EltT], idx: int):
             # Don't create duplicate segments for the same position.
             while len(into) > 0 and into[-1][0] == pos:
                 into.pop()
             into.append((pos, elt, idx))
 
-        # Close any ongoing segments that we need to clos.
+        # Close any ongoing segments that we need to close.
         #
         # When we close the segment, we switch to the one underneath.
-        def push_segment_from_ongoing(pos):
+        def push_segment_from_ongoing(pos: Position):
             # If there's a segment underneath, restart it.
             if len(ongoing) > 0:
                 push_segment(pos, ongoing[-1][1], ongoing[-1][2])
@@ -1055,7 +1055,7 @@ class FileInfo:
 
             self._search_instantiations(fn, via=sig)
 
-    def find_decl_by_unique_id(self, unique_id) -> Optional[NodeAndRange]:
+    def find_decl_by_unique_id(self, unique_id: str) -> Optional[NodeAndRange]:
         """
         Traverse the (location-key'ed) definition segment table and
         find the definition segment with the given ID, or none.
@@ -1070,7 +1070,7 @@ class FileInfo:
         )
 
     def find_instantiation_by_unique_id(
-        self, unique_id
+        self, unique_id: str
     ) -> Optional[Tuple[NodeAndRange, chapel.TypedSignature]]:
         """
         Traverse the (location-key'ed) definition segment table and
@@ -1091,11 +1091,12 @@ class FileInfo:
 
         segments_for_elt = {}
 
-        def process_instantiation_segment(value_at_segment, elt_idx):
+        def process_instantiation_segment(
+            inst: NodeAndRange, sig: chapel.TypedSignature, elt_idx: int
+        ):
             if elt_idx in segments_for_elt:
                 return segments_for_elt[elt_idx]
 
-            inst, sig = value_at_segment
             calls_in_inst = PositionList[ResolvedPair](lambda x: x.ident.rng)
 
             for node in chapel.preorder(inst.node):
@@ -1133,7 +1134,7 @@ class FileInfo:
             # can appear in multiple segments, since it could be interrupted
             # by a nested instantiation.
             calls_in_inst = process_instantiation_segment(
-                value_at_segment, elt_idx
+                *value_at_segment, elt_idx
             )
             self.call_segments.overwrite_range(
                 Range(begin_pos, end_pos), calls_in_inst
@@ -1161,6 +1162,7 @@ class FileInfo:
         self.use_segments.sort()
         self.def_segments.sort()
         self.scope_segments.sort()
+        # call segments via ._search_instantiations, so sort them there.
 
         self.siblings = chapel.SiblingMap(asts)
 
