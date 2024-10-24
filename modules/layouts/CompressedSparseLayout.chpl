@@ -149,7 +149,6 @@ record chpl_layoutHelper {
 }
 
 /*
-/*
 
   This record implements a 2D compressed sparse row layout (CSR, for
   short).
@@ -168,34 +167,24 @@ record chpl_layoutHelper {
   efficient iteration over rows, but not over columns.
 
 */
- 
+
 record csrLayout {
-  @chpldoc.nodoc
+  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
   param sortedIndices: bool = csLayoutSortByDefault;
-  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=true, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=true, sortedIndices));
+  forwarding var csl: csLayout(compressRows=true, sortedIndices);
 
   proc init(param sortedIndices: bool = csLayoutSortByDefault) {
-    const value = new unmanaged CSImpl(compressRows=true, sortedIndices);
     this.sortedIndices = sortedIndices;
-    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+    this.csl = new csLayout(compressRows=true, sortedIndices);
   }
 
-  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
-    this.chpl_layoutHelp = new chpl_layoutHelper(value);
-  }
-
-  @chpldoc.nodoc
-  operator ==(l: csrLayout(?), r: csrLayout(?)) param {
-    return l.type == r.type;
-  }
-
-  @chpldoc.nodoc
-  operator !=(l: csrLayout(?), r: csrLayout(?)) param {
-    return l.type != r.type;
+    this.csl = new csLayout(value);
   }
 }
+
+
 
 /*
 
@@ -207,35 +196,22 @@ record csrLayout {
   not over columns.
 
 */
- 
+
 record cscLayout {
-  @chpldoc.nodoc
+  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
   param sortedIndices: bool = csLayoutSortByDefault;
-  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows=false, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows=false, sortedIndices));
+  forwarding var csl: csLayout(compressRows=false, sortedIndices);
 
   proc init(param sortedIndices: bool = csLayoutSortByDefault) {
-    const value = new unmanaged CSImpl(compressRows=false, sortedIndices);
     this.sortedIndices = sortedIndices;
-    this.chpl_layoutHelp = new chpl_layoutHelper(value);
+    this.csl = new csLayout(compressRows=false, sortedIndices);
   }
 
-  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
-    this.chpl_layoutHelp = new chpl_layoutHelper(value);
-  }
-
-  @chpldoc.nodoc
-  operator ==(l: cscLayout(?), r: cscLayout(?)) param {
-    return l.type == r.type;
-  }
-
-  @chpldoc.nodoc
-  operator !=(l: cscLayout(?), r: cscLayout(?)) param {
-    return l.type != r.type;
+    this.csl = new csLayout(value);
   }
 }
-*/
 
 @chpldoc.nodoc
 record csLayout {
@@ -266,54 +242,7 @@ record csLayout {
   }
 }
 
-/*
-  At first I considered a type-returning procedure, but that wouldn't
-  support being called with arguments or used as a fully-defaulted type,
-  so I never even sketched it out...
-*/
 
-/*
-  This works in many cases, but doesn't support using 'csrLayout' as a
-  fully-defaulted type / without args...
-
-  type csrLayout;
-  csrLayout = csLayout(compressRows=true, ?);
-
-  type cscLayout;
-  cscLayout = csLayout(compressRows=false, ?);
-*/
-
-record csrLayout {
-  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
-  param sortedIndices: bool = csLayoutSortByDefault;
-  forwarding var csl: csLayout(compressRows=true, sortedIndices);
-
-  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
-    this.sortedIndices = sortedIndices;
-    this.csl = new csLayout(compressRows=true, sortedIndices);
-  }
-
-  proc init(value: CSImpl(?)) {
-    this.sortedIndices = value.sortedIndices;
-    this.csl = new csLayout(value);
-  }
-}
-
-record cscLayout {
-  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
-  param sortedIndices: bool = csLayoutSortByDefault;
-  forwarding var csl: csLayout(compressRows=false, sortedIndices);
-
-  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
-    this.sortedIndices = sortedIndices;
-    this.csl = new csLayout(compressRows=false, sortedIndices);
-  }
-
-  proc init(value: CSImpl(?)) {
-    this.sortedIndices = value.sortedIndices;
-    this.csl = new csLayout(value);
-  }
-}
 
 @chpldoc.nodoc
 class CSDom: BaseSparseDomImpl(?) {
