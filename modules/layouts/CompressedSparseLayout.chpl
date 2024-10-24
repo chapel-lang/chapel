@@ -178,6 +178,7 @@ record csrLayout {
     this.csl = new csLayout(compressRows=true, sortedIndices);
   }
 
+  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
     this.csl = new csLayout(value);
@@ -207,6 +208,7 @@ record cscLayout {
     this.csl = new csLayout(compressRows=false, sortedIndices);
   }
 
+  @chpldoc.nodoc
   proc init(value: CSImpl(?)) {
     this.sortedIndices = value.sortedIndices;
     this.csl = new csLayout(value);
