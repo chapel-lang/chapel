@@ -48,7 +48,7 @@ The Chapel implementation is composed of two categories of code:
      jemalloc         alternative memory allocator                 BSD-like
      libfabric        portable networking library                  BSD
      libunwind        used for runtime stack tracing               MIT
-     llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
+     llvm             CLANG C parsing/optional back-end compiler   Apache 2.0
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT

@@ -203,7 +203,9 @@ compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
 
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id) {
+parseFileContainingIdToBuilderResult(Context* context,
+                                     ID id,
+                                     UniqueString* setParentSymbolPath) {
   if (id.isFabricatedId() &&
       id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     // Find the generated module's symbol path
@@ -212,6 +214,7 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
       symbolPath = id.symbolPath();
     } else {
       symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+      if (symbolPath.isEmpty()) return nullptr;
 
       // Assumption: The generated module goes only one symbol deep.
       CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
@@ -219,6 +222,7 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
 
     const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
     assert(br.numTopLevelExpressions() != 0);
+    if (setParentSymbolPath) *setParentSymbolPath = UniqueString();
     return &br;
   } else  {
     UniqueString path;
@@ -227,6 +231,7 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
     if (found) {
       const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                         parentSymbolPath);
+      if (setParentSymbolPath) *setParentSymbolPath = parentSymbolPath;
       return &p;
     }
 
@@ -1104,9 +1109,9 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName) {
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
@@ -1120,6 +1125,13 @@ ID getSymbolFromTopLevelModule(Context* context,
   fullPath += symName;
 
   return ID(UniqueString::get(context, fullPath));
+}
+
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  return {getSymbolIdFromTopLevelModule(context, modName, symName),
+          UniqueString::get(context, symName)};
 }
 
 static const Module* const&
@@ -1242,7 +1254,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  if (!id.isFabricatedId()) {
+  if (!id.isFabricatedId() ||
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
@@ -1293,8 +1306,9 @@ bool idIsParenlessFunction(Context* context, ID id) {
 
 bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsFunction(context, up)) return true;
   }
   return false;
 }
@@ -1425,14 +1439,38 @@ const ID& idToParentId(Context* context, ID id) {
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
 
+  // Performance: Could this query use id.parentSymbolId in many cases?
+
   ID result;
 
-  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  UniqueString parentSymbolPath;
+  const BuilderResult* r =
+    parseFileContainingIdToBuilderResult(context, id, &parentSymbolPath);
+
   if (r != nullptr) {
     result = r->idToParentId(id);
+    // For a submodule in a separate file, the BuilderResult's idToParentId
+    // will return an empty ID for the submodule.
+    // Detect that and return the parent module in that case.
+    if (result.isEmpty() && !parentSymbolPath.isEmpty()) {
+      ID parentSymbolId = id.parentSymbolId(context);
+      CHPL_ASSERT(!parentSymbolId.isEmpty());
+      CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
+      result = parentSymbolId;
+    }
   }
 
   return QUERY_END(result);
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    // Get the first parent function (a parent could be a record/class/etc).
+    if (parsing::idIsFunction(context, up)) return up;
+  }
+  return {};
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {

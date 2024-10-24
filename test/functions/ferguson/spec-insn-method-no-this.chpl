@@ -12,7 +12,13 @@ proc (R(int)).bar() {
   writeln("in specific R(int).bar, x=", tmp);
 }
 
+proc getR type do return R(int);
+proc getR.baz() {
+  var tmp = x; // as above, x refers to field, `this` is implicit
+  writeln("in specific R(int).baz, x=", tmp);
+}
 
 var x = new R(1);
 x.foo();
 x.bar();
+x.baz();

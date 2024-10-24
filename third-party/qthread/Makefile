@@ -146,9 +146,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
-# spawn-caching has a semantic mismatch with chapel (and leads to deadlock with
-# some applications.) Qthreads team tends to build with spawn cache off too
-CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache
+# only do this on M1+ Macs
+ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
+  CHPL_QTHREAD_CFG_OPTIONS += --with-cacheline-width=128
+endif
+endif
 
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue

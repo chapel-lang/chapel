@@ -29,7 +29,7 @@
 #include "cuda-utils.h"
 
 static inline
-void* chpl_gpu_load_module(const char* fatbin_data) {
+void* chpl_gpu_load_module(const char* fatbin_data, const uint64_t fatbin_size) {
   CUmodule cuda_module;
 
   CUDA_CALL(cuModuleLoadData(&cuda_module, fatbin_data));

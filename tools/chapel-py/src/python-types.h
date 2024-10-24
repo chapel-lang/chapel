@@ -92,7 +92,7 @@ template <typename T>
 std::vector<T> unwrapVector(ContextObject* CONTEXT, PyObject* vec) {
   std::vector<T> toReturn(PyList_Size(vec));
   for (ssize_t i = 0; i < PyList_Size(vec); i++) {
-    toReturn.push_back(PythonReturnTypeInfo<T>::unwrap(CONTEXT, PyList_GetItem(vec, i)));
+    toReturn[i] = PythonReturnTypeInfo<T>::unwrap(CONTEXT, PyList_GetItem(vec, i));
   }
   return toReturn;
 }

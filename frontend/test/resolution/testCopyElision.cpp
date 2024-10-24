@@ -133,10 +133,6 @@ static void test1() {
   testCopyElision("test1",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int = 0;
@@ -150,10 +146,6 @@ static void test2() {
   testCopyElision("test2",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x;
@@ -182,10 +174,6 @@ static void test4() {
   testCopyElision("test4",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -306,10 +294,6 @@ static void test12() {
   testCopyElision("test12",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -326,10 +310,6 @@ static void test13() {
   testCopyElision("test13",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test(cond: bool) {
           var x:int;
@@ -397,10 +377,6 @@ static void test17() {
   testCopyElision("test17",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -419,10 +395,6 @@ static void test18() {
   testCopyElision("test18",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -460,10 +432,6 @@ static void test20() {
   testCopyElision("test20",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -483,10 +451,6 @@ static void test21() {
   testCopyElision("test21",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x:int;
@@ -521,10 +485,6 @@ static void test23() {
   testCopyElision("test23",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         record R {
           var field: int;
         }
@@ -541,10 +501,6 @@ static void test24() {
   testCopyElision("test24",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         var x: int;
         var y = x;
       }
@@ -558,10 +514,6 @@ static void test25() {
   testCopyElision("test25",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         var x: int;
         proc test() {
           var y = x;
@@ -577,10 +529,6 @@ static void test26() {
   testCopyElision("test26",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int;
@@ -598,10 +546,6 @@ static void test27() {
   testCopyElision("test27",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int;
@@ -621,10 +565,6 @@ static void test28() {
   testCopyElision("test28",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         config const cond = true;
 
@@ -648,10 +588,6 @@ static void test29() {
   testCopyElision("test29",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         config const cond = true;
 
@@ -676,10 +612,6 @@ static void test30() {
   testCopyElision("test30",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         proc test(out x: int) {
           var y = x;
           return;
@@ -692,10 +624,6 @@ static void test31() {
   testCopyElision("test31",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         proc test(out x: int) {
           var y = x;
         }
@@ -707,10 +635,6 @@ static void test32() {
   testCopyElision("test32",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         proc test(inout x: int) {
           var y = x;
           return;
@@ -723,10 +647,6 @@ static void test33() {
   testCopyElision("test33",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         proc test(inout x: int) {
           var y = x;
         }
@@ -739,10 +659,6 @@ static void test34() {
   testCopyElision("test34",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         config const cond = true;
 
@@ -766,10 +682,6 @@ static void test35() {
   testCopyElision("test35a1",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -783,10 +695,6 @@ static void test35() {
   testCopyElision("test35a2",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -805,10 +713,6 @@ static void test35() {
   testCopyElision("test35a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -826,10 +730,6 @@ static void test35() {
   testCopyElision("test35b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -850,10 +750,6 @@ static void test36() {
   testCopyElision("test36a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -869,10 +765,6 @@ static void test36() {
   testCopyElision("test36b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -888,10 +780,6 @@ static void test36() {
   testCopyElision("test36c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -907,10 +795,6 @@ static void test36() {
   testCopyElision("test36d",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -929,10 +813,6 @@ static void test37() {
   testCopyElision("test37a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -950,10 +830,6 @@ static void test37() {
   testCopyElision("test37b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -971,10 +847,6 @@ static void test37() {
   testCopyElision("test37c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -995,10 +867,6 @@ static void test38() {
   testCopyElision("test38a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1015,10 +883,6 @@ static void test38() {
   testCopyElision("test38b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1035,10 +899,6 @@ static void test38() {
   testCopyElision("test38c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1058,10 +918,6 @@ static void test39() {
   testCopyElision("test39a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1081,10 +937,6 @@ static void test39() {
   testCopyElision("test39b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1104,10 +956,6 @@ static void test39() {
   testCopyElision("test39c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -1133,10 +981,6 @@ static void test39() {
   testCopyElision("test39d",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -1165,10 +1009,6 @@ static void test40() {
   testCopyElision("test40a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1185,10 +1025,6 @@ static void test40() {
   testCopyElision("test40b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1207,10 +1043,6 @@ static void test40() {
   testCopyElision("test40c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1223,7 +1055,6 @@ static void test40() {
             return;
           }
 
-          
         }
       }
     )"""",
@@ -1231,10 +1062,6 @@ static void test40() {
   testCopyElision("test40d",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1245,8 +1072,6 @@ static void test40() {
             x;
             return;
           }
-
-          
         }
       }
     )"""",
@@ -1254,10 +1079,6 @@ static void test40() {
   testCopyElision("test40e",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1268,7 +1089,6 @@ static void test40() {
             x;
           }
 
-          
         }
       }
     )"""",
@@ -1276,10 +1096,6 @@ static void test40() {
   testCopyElision("test40e",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1290,7 +1106,6 @@ static void test40() {
             return;
           }
 
-          
         }
       }
     )"""",
@@ -1298,10 +1113,6 @@ static void test40() {
   testCopyElision("test40f",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
 
         proc test() {
           var x: int = 0;
@@ -1312,8 +1123,7 @@ static void test40() {
             return;
           }
           x;
-          
-        }
+          }
       }
     )"""",
     {});
@@ -1323,10 +1133,6 @@ static void test41() {
   testCopyElision("test41a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1350,10 +1156,6 @@ static void test41() {
   testCopyElision("test41b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1383,10 +1185,6 @@ static void test42() {
   testCopyElision("test42a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1410,10 +1208,6 @@ static void test42() {
   testCopyElision("test42b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1440,10 +1234,6 @@ static void test43() {
   testCopyElision("test43a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }
@@ -1467,10 +1257,6 @@ static void test43() {
   testCopyElision("test43b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) {
-          __primitive("=", lhs, rhs);
-        }
         operator ==(ref lhs: int, rhs: int) {
           __primitive("==", lhs, rhs);
         }

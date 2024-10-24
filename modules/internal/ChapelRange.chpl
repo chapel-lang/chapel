@@ -3513,8 +3513,7 @@ private proc isBCPindex(type t) param do
   //#
 
   @chpldoc.nodoc
-  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
-    !localeModelPartitionsIterationOnSublocales
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone
   {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) {
       compilerError("parallel iteration is not currently supported over ranges without bounds");
@@ -3569,83 +3568,22 @@ private proc isBCPindex(type t) param do
       chpl_debug_writeln("*** In range leader:"); // ", this);
     const numSublocs = here._getChildCount();
 
-    if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
-      const len = this.sizeAs(chpl_integralIdxType);
-      const tasksPerLocale = dataParTasksPerLocale;
-      const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
-      var dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                  else tasksPerLocale;
-      if !ignoreRunning {
-        const otherTasks = here.runningTasks() - 1; // don't include self
-        dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
-      }
+    var v = this.chpl_sizeAsForIter(chpl_integralIdxType);
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(v);
 
-      // Make sure we don't use more sublocales than the numbers of
-      // tasksPerLocale requested
-      const numSublocTasks = min(numSublocs, dptpl);
-      // For serial tasks, we will only have a single chunk
-      const numChunks =  if __primitive("task_get_serial") then
-                         1 else _computeNumChunks(numSublocTasks,
-                                                  ignoreRunning=true,
-                                                  minIndicesPerTask,
-                                                  len);
-      if debugDataParNuma {
-        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
-                           "### numTasksPerSubloc = ", numSublocTasks, "\n",
-                           "### ignoreRunning = ", ignoreRunning, "\n",
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
-                           "### numChunks = ", numChunks);
-      }
+    if debugChapelRange
+    {
+      chpl_debug_writeln("*** RI: length=", v, " numChunks=", numChunks);
+      chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
+    }
 
-      coforall chunk in 0..#numChunks {
-        local do on here._getChild(chunk) {
-          if debugDataParNuma {
-            if chunk!=chpl_getSubloc() then
-              chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
-                                 chunk, ", on ", chpl_getSubloc(), ") ***");
-          }
-          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
-          const locRange = lo..hi;
-          const locLen = locRange.sizeAs(chpl_integralIdxType);
-          // Divide the locale's tasks approximately evenly
-          // among the sublocales
-          const numSublocTasks = (if chunk < dptpl % numChunks
-                                  then dptpl / numChunks + 1
-                                  else dptpl / numChunks);
-          const numTasks = _computeNumChunks(numSublocTasks,
-                                             ignoreRunning=true,
-                                             minIndicesPerTask,
-                                             locLen);
-          coforall core in 0..#numTasks {
-            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-            if debugDataParNuma {
-              chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
-                                 "locRange = ", locRange, "  coreRange = ", low..high);
-            }
-            yield (low..high,);
-          }
-        }
-      }
-
-    } else {
-      var v = this.chpl_sizeAsForIter(chpl_integralIdxType);
-      const numChunks = if __primitive("task_get_serial") then
-                        1 else _computeNumChunks(v);
-
-      if debugChapelRange
-      {
-        chpl_debug_writeln("*** RI: length=", v, " numChunks=", numChunks);
-        chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
-      }
-
-      coforall chunk in 0..#numChunks
-      {
-        const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-        if debugChapelRange then
-          chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks
+    {
+      const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+      if debugChapelRange then
+        chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
+      yield (lo..hi,);
     }
   }
 

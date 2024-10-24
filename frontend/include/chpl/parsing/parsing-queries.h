@@ -107,9 +107,13 @@ introspectParsedFiles(Context* context);
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
+
+  If setParentSymbolPath is not nullptr, sets it to the parentSymbolPath used
+  when creating the BuilderResult.
  */
 const uast::BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id);
+parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setParentSymbolPath=nullptr);
 
 /**
   Fetch the BuilderResult storing compiler-generated uAST based on the given
@@ -450,15 +454,29 @@ std::string getExistingFileInModuleSearchPath(Context* context,
  */
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
+struct IdAndName {
+  ID id;
+  UniqueString name;
+};
+
+
 /**
- Given a particular (presumably standard) module, return the ID of a symbol
- with the given name in that module. Beyond creating the ID, this also ensures
- that the standard module is parsed, and thus, that 'idToAst' on the returned
- ID will return a non-null value.
+ Given a particular (presumably standard) module, return the ID of a
+ symbol with the given name in that module. Beyond creating the ID, this also
+ ensures that the standard module is parsed, and thus, that 'idToAst' on the
+ returned ID will return a non-null value.
  */
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName);
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName);
+
+/**
+ Like getSymbolId..., but return also contains the name of the given symbol for
+ convenience.
+ */
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                                      const char* modName,
+                                      const char* symName);
 
 /**
  This query parses a submodule for 'include submodule'.
@@ -533,6 +551,11 @@ bool idIsField(Context* context, ID id);
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
+
+/**
+ Returns the parent function ID given an ID.
+ */
+ID idToParentFunctionId(Context* context, ID id);
 
 /**
  Returns the parent AST node given an AST node

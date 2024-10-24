@@ -264,7 +264,7 @@ static void setup_main_thread_private_data(void)
                              .is_executeOn    = false,
                              .lineno          = 0,
                              .filename        = CHPL_FILE_IDX_MAIN_PROGRAM,
-                             .requestedSubloc = c_sublocid_any_val,
+                             .requestedSubloc = c_sublocid_none_val,
                              .requested_fid   = FID_NONE,
                              .requested_fn    = NULL,
                              .id              = get_next_task_id(),
@@ -435,7 +435,7 @@ static void comm_task_wrapper(void* arg) {
                              .is_executeOn    = false,
                              .lineno          = 0,
                              .filename        = CHPL_FILE_IDX_COMM_TASK,
-                             .requestedSubloc = c_sublocid_any_val,
+                             .requestedSubloc = c_sublocid_none_val,
                              .requested_fid   = FID_NONE,
                              .requested_fn    = NULL,
                              .id              = get_next_task_id(),
@@ -493,7 +493,7 @@ void chpl_task_addTask(chpl_fn_int_t fid,
                        chpl_task_bundle_t* arg, size_t arg_size,
                        c_sublocid_t subloc,
                        int lineno, int32_t filename) {
-  assert(subloc == c_sublocid_any);
+  assert(subloc == c_sublocid_none);
 
   arg->kind = CHPL_ARG_BUNDLE_KIND_TASK;
 
@@ -929,7 +929,7 @@ task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
     { .is_executeOn    = is_executeOn,
       .lineno          = lineno,
       .filename        = filename,
-      .requestedSubloc = c_sublocid_any_val,
+      .requestedSubloc = c_sublocid_none_val,
       .requested_fid   = fid,
       .requested_fn    = fp,
       .id              = get_next_task_id(),

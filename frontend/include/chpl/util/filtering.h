@@ -28,7 +28,7 @@ namespace chpl
 
 /*
   Removes the Sphinx inline markup for printing messages to the console.
-  See https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+  See https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
 */
 std::string removeSphinxMarkup(const std::string& msg);
 

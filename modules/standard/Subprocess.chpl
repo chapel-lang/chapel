@@ -199,8 +199,8 @@ module Subprocess {
   /*
      This record represents a subprocess.
 
-     Note that the subprocess will not be waited for if this record
-     goes out of scope. Channels opened to communicate with the subprocess
+     Note that the subprocess will not be waited for if this record goes out of
+     scope. FileReaders/fileWriters opened to communicate with the subprocess
      will be closed if the record goes out of scope, however.
 
      Generally, it is important to call :proc:`subprocess.wait` to wait for the

@@ -260,8 +260,20 @@ class QueryMapResultBase {
   // lastChanged indicates the last revision in which the query result
   // has changed
   mutable RevisionNumber lastChanged = -1;
-
-  mutable QueryDependencyVec dependencies;
+  // This field exists to support isQueryRunning. When traversingg the dependencies
+  // of a query, we may re-run dependency queries to see if their results change.
+  // Sometimes, these queries will check isQueryRunning. At this time, the
+  // actual query (this) is not running, but we want to return 'true' to hide
+  // the details of the query system from the query author. This field is set to
+  // 'true' when the query is being tested for re-computation, so that
+  // we can return 'true' when isQueryRunning is called in that case.
+  //
+  // Note (Daniel 10/08/2024): there may be a way to combine this field with
+  // lastChanged somehow, since that's what we use for isQueryRunning while
+  // the query really is running. However, the semantics of that are nontrivial,
+  // and that field is used for a lot of things, so for the time being, the
+  // extra boolean is fine.
+  mutable bool beingTestedForReuse = false;
 
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
@@ -273,6 +285,8 @@ class QueryMapResultBase {
   // This is not too strongly connected to emittedErrors (which tracks whether
   // errors --- if any --- were shown to the user for this query result only)
   mutable bool errorsPresentInSelfOrDependencies = false;
+
+  mutable QueryDependencyVec dependencies;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
@@ -280,6 +294,7 @@ class QueryMapResultBase {
 
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
+                     bool beingTestedForReuse,
                      bool emittedErrors,
                      bool errorsPresentInSelfOrDependencies,
                      std::set<const QueryMapResultBase*> recursionErrors,
@@ -302,20 +317,21 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, false, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, false, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
+                 bool beingTestedForReuse,
                  bool emittedErrors,
                  bool errorsPresentInSelfOrDependencies,
                  std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
-    : QueryMapResultBase(lastChecked, lastChanged, emittedErrors,
-                         errorsPresentInSelfOrDependencies,
+    : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
+                         emittedErrors, errorsPresentInSelfOrDependencies,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
@@ -444,11 +460,16 @@ struct QueryTimingStopwatch {
   typename Clock::time_point start_;
 
   QueryTimingStopwatch(bool enabled, F onExit)
-      : onExit_(onExit) {
+      : onExit_(std::move(onExit)) {
     if (enabled) {
       start_ = Clock::now();
     }
   }
+
+  QueryTimingStopwatch(QueryTimingStopwatch&& rhs) = default;
+  QueryTimingStopwatch(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(QueryTimingStopwatch&& rhs) = default;
 
   QueryTimingDuration elapsed() {
     auto stop = Clock::now();
@@ -461,7 +482,7 @@ struct QueryTimingStopwatch {
 // Helper function to sort out the templates over lambda's
 template <typename F> QueryTimingStopwatch<F>
 makeQueryTimingStopwatch(bool enabled, F onExit) {
-  return QueryTimingStopwatch<F>(enabled, onExit);
+  return QueryTimingStopwatch<F>(enabled, std::move(onExit));
 }
 
 inline auto

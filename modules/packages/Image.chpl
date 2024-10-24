@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/* Provides a way to write arrays of pixels to an output image format.
+/* Provides a way to read/write arrays of pixels to image formats.
 
 For example, the following code creates a 3x3 array of pixels and writes it to
 a BMP file. The array is then scaled by a factor of 2 (creating a 9x9 image)
@@ -39,6 +39,19 @@ and written to a second BMP file.
    writeImage("pixels.bmp", imageType.bmp, arr);
    writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
 
+In another example, the following code reads a PNG file, removes all green from
+the image, and writes it back out to a new JPG file.
+
+.. code-block:: chapel
+
+   use Image;
+
+   var arr = readImage("input.png", imageType.png);
+   const fmt = (rgbColor.red, rgbColor.green, rgbColor.blue);
+   var colors = pixelToColor(arr, format=fmt);
+   [c in colors] c(1) = 0;
+   arr = colorToPixel(colors, format=fmt);
+   writeImage("output.jpg", imageType.jpg, arr);
 
 */
 @unstable("Image is unstable")
@@ -309,7 +322,7 @@ module Image {
 
   private import Subprocess as sp;
   /*
-  Represents a ffmpeg stream that frame data can be written to to produce a mp4.
+    Represents an ffmpeg stream that frame data can be written to to produce a mp4.
   */
   record mediaPipe {
     @chpldoc.nodoc
@@ -359,12 +372,24 @@ module Image {
     Write a frame into the media pipe.
     */
     proc writeFrame(pixelData: [] pixelType) throws {
-      writeImage(process.stdin, imageType.bmp, pixelData);
+      try {
+        writeImage(process.stdin, imageType.bmp, pixelData);
+      } catch e: FileNotFoundError {
+        halt("ffmpeg not found. Please install ffmpeg to use Image.mediaPipe.");
+      } catch e {
+        throw e;
+      }
     }
     proc ref finish() throws {
       if !finished {
-        process.wait();
-        finished = true;
+        try {
+          defer finished = true;
+          process.wait();
+        } catch e: FileNotFoundError {
+          halt("ffmpeg not found. Please install ffmpeg to use Image.mediaPipe.");
+        } catch e {
+          throw e;
+        }
       }
     }
   }

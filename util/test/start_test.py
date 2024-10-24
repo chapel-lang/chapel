@@ -868,7 +868,7 @@ def set_up_general():
     if args.valgrind or args.valgrind_exe:
         # Stay below valgrind's --max-threads option, which defaults to 500
         if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
-            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450";
+            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450"
         else:
             logger.write("[Warning: Deadlock is possible since you set CHPL_RT_NUM_THREADS_PER_LOCALE]")
 

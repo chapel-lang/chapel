@@ -4248,7 +4248,7 @@ void rf_handler(gni_cq_entry_t* ev)
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
                                &bundle, sizeof(bundle),
-                               c_sublocid_any, chpl_nullTaskID);
+                               c_sublocid_none, chpl_nullTaskID);
     }
     break;
 
@@ -6187,6 +6187,9 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 
   return 0;
 }
+
+
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) { }
 
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)

@@ -3,6 +3,6 @@
 
 #include "qthread/qthread.h"
 
-void qthread_run_needed_task(syncvar_t * value);
+void qthread_run_needed_task(syncvar_t *value);
 
 #endif

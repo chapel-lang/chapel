@@ -146,3 +146,36 @@ async def test_document_symbols_nested(client: LanguageClient):
 
     async with source_file(client, file) as doc:
         await check_symbol_information(client, doc, symbols)
+
+
+@pytest.mark.asyncio
+async def test_document_symbols_exprs(client: LanguageClient):
+    """
+    Test that document symbols for more complex expressions are correct
+
+    This test ensures that we can round-trip well formed expressions through
+    'symbol_signature'. 'symbol_signature' will auto correct spacing and remove
+    inline comments, which is not tested here.
+
+    Note: const is erroneously not included in the location
+    """
+
+    exprs = [
+        "const a = 10 + 10;",
+        "const b: [1..10] int = 2 * ((-3) + 1i);",
+        "const c = [{1..10 by 2}] 1;",
+        "const d = 2..#5;",
+        "const e = for 1..10 do 1;",
+        "const f = {(1 + 2)..<10};",
+        "const g = -f.size;",
+    ]
+    file = "\n".join(exprs)
+
+    symbols = []
+    for i, e in enumerate(exprs):
+        exp_str = e.removesuffix(";")
+        exp_sym = (rng((i, 6), (i, len(exp_str))), exp_str, SymbolKind.Constant)
+        symbols.append(exp_sym)
+
+    async with source_file(client, file) as doc:
+        await check_symbol_information(client, doc, symbols)

@@ -80,7 +80,7 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) { }
 
 
 c_sublocid_t chpl_topo_getThreadLocality(void) {
-  return c_sublocid_any;
+  return c_sublocid_none;
 }
 
 void chpl_topo_interleaveMemLocality(void* p, size_t size) { }
@@ -99,7 +99,7 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
 
 
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
-  return c_sublocid_any;
+  return c_sublocid_none;
 }
 
 chpl_bool chpl_topo_isOversubscribed(void) {

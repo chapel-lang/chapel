@@ -22,9 +22,14 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/BasicClassType.h"
 #include "chpl/types/ClassType.h"
+#include "chpl/types/ClassTypeDecorator.h"
+#include "chpl/types/CPtrType.h"
+#include "chpl/types/DomainType.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/NamedDecl.h"
 
@@ -91,8 +96,17 @@ void CompositeType::stringify(std::ostream& ss,
     superType = bct->parentClassType();
   }
 
-  //std::string ret = typetags::tagToString(tag());
-  name().stringify(ss, stringKind);
+  if (isStringType()) {
+    ss << "string";
+  } else if (isBytesType()) {
+    ss << "bytes";
+  } else if (isLocaleType()) {
+    ss << "locale";
+  } else if (id().symbolPath() == USTR("ChapelRange._range")) {
+    ss << "range";
+  } else {
+    name().stringify(ss, stringKind);
+  }
 
   auto sorted = sortedSubstitutions();
 
@@ -145,43 +159,101 @@ void CompositeType::stringify(std::ostream& ss,
 }
 
 const RecordType* CompositeType::getStringType(Context* context) {
-  auto name = UniqueString::get(context, "string");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "String", "_string");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "String", "_string");
   return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto name = UniqueString::get(context, "_range");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "_range");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "_range");
   return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getBytesType(Context* context) {
-  auto name = UniqueString::get(context, "bytes");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "Bytes", "_bytes");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "Bytes", "_bytes");
   return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleType(Context* context) {
-  auto name = UniqueString::get(context, "locale");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelLocale", "_locale");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelLocale", "_locale");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleIDType(Context* context) {
-  auto name = UniqueString::get(context, "chpl_localeID_t");
   auto id = ID();
+  auto name = UniqueString::get(context, "chpl_localeID_t");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getDistributionType(Context* context) {
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(
+      context, "ChapelDistribution", "_distribution");
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+}
+
+static const ID getOwnedRecordId(Context* context) {
+  return parsing::getSymbolIdFromTopLevelModule(context, "OwnedObject",
+                                                "_owned");
+}
+
+static const ID getSharedRecordId(Context* context) {
+  return parsing::getSymbolIdFromTopLevelModule(context, "SharedObject",
+                                                "_shared");
+}
+
+static const RecordType* tryCreateManagerRecord(Context* context,
+                                                const ID& recordId,
+                                                const BasicClassType* bct) {
+  const RecordType* instantiatedFrom = nullptr;
+  SubstitutionsMap subs;
+  if (bct != nullptr) {
+    instantiatedFrom = tryCreateManagerRecord(context,
+                                              recordId,
+                                              /*bct*/ nullptr);
+
+    auto fields = fieldsForTypeDecl(context,
+                                    instantiatedFrom,
+                                    DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) != "chpl_t") continue;
+      auto ctd = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto ct = ClassType::get(context, bct, /* manager */ nullptr, ctd);
+
+      subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
+      break;
+    }
+    if (fields.numFields() == 0) {
+      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context,
+                                                            instantiatedFrom->id()));
+      return nullptr;
+    }
+  }
+
+  auto name = recordId.symbolName(context);
+  return RecordType::get(context, recordId, name,
+                         instantiatedFrom,
+                         std::move(subs));
+}
+
+const RecordType*
+CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, getOwnedRecordId(context), bct);
+}
+
+const RecordType*
+CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
+  return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
 }
 
 bool CompositeType::isMissingBundledType(Context* context, ID id) {
@@ -192,11 +264,14 @@ bool CompositeType::isMissingBundledType(Context* context, ID id) {
 bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
   bool noLibrary = parsing::bundledModulePath(context).isEmpty();
   if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "String._string" ||
-           path == "ChapelRange._range" ||
-           path == "ChapelTuple._tuple" ||
-           path == "Bytes._bytes";
+    return id == CompositeType::getStringType(context)->id() ||
+           id == CompositeType::getRangeType(context)->id() ||
+           id == TupleType::getGenericTupleType(context)->id() ||
+           id == CompositeType::getBytesType(context)->id() ||
+           id == CompositeType::getDistributionType(context)->id() ||
+           id == DomainType::getGenericDomainType(context)->id() ||
+           id == getOwnedRecordId(context) ||
+           id == getSharedRecordId(context);
   }
 
   return false;
@@ -205,19 +280,18 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
 bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
   bool noLibrary = parsing::bundledModulePath(context).isEmpty();
   if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "ChapelReduce.ReduceScanOp" ||
-           path == "Errors.Error" || 
-           path == "CTypes.c_ptr" ||
-           path == "CTypes.c_ptrConst";
+    return id == BasicClassType::getReduceScanOpType(context)->id() ||
+           id == CompositeType::getErrorType(context)->basicClassType()->id() ||
+           id == CPtrType::getId(context) ||
+           id == CPtrType::getConstId(context);
   }
 
   return false;
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
-  auto name = UniqueString::get(context, "Error");
-  auto id = parsing::getSymbolFromTopLevelModule(context, "Errors", "Error");
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "Errors", "Error");
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
   auto bct = BasicClassType::get(context, id,
                                 name,

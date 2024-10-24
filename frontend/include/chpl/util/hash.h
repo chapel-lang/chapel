@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -109,7 +110,6 @@ static inline size_t hash(const std::tuple<>& tuple) {
   return 0;
 }
 
-// Hash function for vector
 template<typename T>
 inline size_t hashVector(const std::vector<T>& key) {
   size_t ret = 0;
@@ -119,7 +119,6 @@ inline size_t hashVector(const std::vector<T>& key) {
   return ret;
 }
 
-// Hash function for set
 template<typename T>
 inline size_t hashSet(const std::set<T>& key) {
   size_t ret = 0;
@@ -138,7 +137,6 @@ inline size_t hashOwned(const chpl::owned<T>& key) {
   return ret;
 }
 
-// Hash function for pair
 template<typename T, typename U>
 inline size_t hashPair(const std::pair<T, U>& key) {
   size_t ret = 0;
@@ -147,6 +145,18 @@ inline size_t hashPair(const std::pair<T, U>& key) {
   return ret;
 }
 
+template <typename K, typename V>
+inline size_t hashMap(const std::map<K, V>& key) {
+  size_t ret = 0;
+
+  // Just iterate and hash, relying on std::map being a sorted container.
+  for (auto& [k, v] : key) {
+    ret = hash_combine(ret, hash(k));
+    ret = hash_combine(ret, hash(v));
+  }
+
+  return ret;
+}
 
 namespace detail {
 
@@ -160,6 +170,11 @@ template<typename T> struct hasher<std::vector<T>> {
 template<typename T> struct hasher<std::set<T>> {
   size_t operator()(const std::set<T>& key) const {
     return chpl::hashSet(key);
+  }
+};
+template<typename K, typename V> struct hasher<std::map<K, V>> {
+  size_t operator()(const std::map<K, V>& key) const {
+    return chpl::hashMap(key);
   }
 };
 template<typename T> struct hasher<chpl::owned<T>> {
@@ -183,5 +198,19 @@ template <typename ... Ts> struct hasher<std::tuple<Ts...>> {
 
 
 } // end namespace chpl
+
+namespace std {
+  template <typename T, typename U> struct hash<std::pair<T,U>> {
+    size_t operator()(const std::pair<T,U>& key) const {
+      return chpl::hashPair(key);
+    }
+  };
+
+  template <typename... Ts> struct hash<std::tuple<Ts...>> {
+    size_t operator()(const std::tuple<Ts...>& key) const {
+      return chpl::hash(key);
+    }
+  };
+} // end namespace std
 
 #endif

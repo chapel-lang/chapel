@@ -158,6 +158,11 @@ template<typename ... Ts> struct mark<std::tuple<Ts...>> {
     mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
+template<typename ... Ts> struct mark<const std::tuple<Ts...>> {
+  void operator()(Context* context, const std::tuple<Ts...>& keep) const {
+    mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
+  }
+};
 
 /// \endcond
 

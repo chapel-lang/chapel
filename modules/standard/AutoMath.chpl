@@ -175,8 +175,8 @@ module AutoMath {
   inline proc abs(x : complex(128)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cabs(x: complex(128)): real(64);
-    return cabs(x);
+    extern proc chpl_cabs(x: complex(128)): real(64);
+    return chpl_cabs(x);
   }
 
   /* Returns the magnitude of a ``param`` ``complex(128)``.
@@ -193,8 +193,8 @@ module AutoMath {
   inline proc abs(x : complex(64)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cabsf(x: complex(64)): real(32);
-    return cabsf(x);
+    extern proc chpl_cabsf(x: complex(64)): real(32);
+    return chpl_cabsf(x);
   }
 
   /* Returns the magnitude of a ``param`` ``complex(64)``.
@@ -237,14 +237,14 @@ module AutoMath {
   inline proc conj(x: complex(?w)) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc conjf(x: complex(64)): complex(64);
+    extern proc chpl_conjf(x: complex(64)): complex(64);
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc conj(x: complex(128)): complex(128);
+    extern proc chpl_conj(x: complex(128)): complex(128);
     if w == 64 then
-      return conjf(x);
+      return chpl_conjf(x);
     else
-      return conj(x);
+      return chpl_conj(x);
   }
 
   /* Returns the complex conjugate of the imaginary argument `x`.
@@ -538,28 +538,28 @@ module AutoMath {
   inline proc phase(x: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cargf(x: complex(64)): real(32);
+    extern proc chpl_cargf(x: complex(64)): real(32);
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc carg(x: complex(128)): real(64);
+    extern proc chpl_carg(x: complex(128)): real(64);
     if w == 64 then
-      return cargf(x);
+      return chpl_cargf(x);
     else
-      return carg(x);
+      return chpl_carg(x);
   }
 
   /* Returns the projection of `x` on a Riemann sphere. */
   inline proc riemProj(x: complex(?w)): complex(w) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cprojf(x: complex(64)): complex(64);
+    extern proc chpl_cprojf(x: complex(64)): complex(64);
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc cproj(x: complex(128)): complex(128);
+    extern proc chpl_cproj(x: complex(128)): complex(128);
     if w == 64 then
-      return cprojf(x);
+      return chpl_cprojf(x);
     else
-      return cproj(x);
+      return chpl_cproj(x);
   }
 
   /* Returns the nearest integral value of the argument `x`, returning that
@@ -643,8 +643,8 @@ module AutoMath {
   inline proc sqrt(x: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csqrtf(x: complex(64)): complex(64);
-    return csqrtf(x);
+    extern proc chpl_csqrtf(x: complex(64)): complex(64);
+    return chpl_csqrtf(x);
   }
 
   /* Returns the square root of the argument `x`. */
@@ -656,8 +656,8 @@ module AutoMath {
   inline proc sqrt(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
-    extern proc csqrt(x: complex(128)): complex(128);
-    return csqrt(x);
+    extern proc chpl_csqrt(x: complex(128)): complex(128);
+    return chpl_csqrt(x);
   }
 
   /* Returns the square root of the argument `x`. */

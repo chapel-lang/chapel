@@ -104,7 +104,7 @@ def main():
             ok = True
             # Build/rebuild image.sif if needed
             if os.path.exists("image.sif") and args.rebuild:
-                printAndLog(log, "Removing {}/image.sif".format(d));
+                printAndLog(log, "Removing {}/image.sif".format(d))
                 os.remove("image.sif")
             if not os.path.exists("image.sif"):
                 e,r = runAndLog(log, ["apptainer", "build", "--fakeroot",
@@ -136,10 +136,10 @@ def main():
 
             if args.cleanup:
                 if os.path.exists("image.sif"):
-                    printAndLog(log, "Removing {}/image.sif".format(d));
+                    printAndLog(log, "Removing {}/image.sif".format(d))
                     os.remove("image.sif")
                 if os.path.exists("chapel"):
-                    printAndLog(log, "Removing {}/chapel".format(d));
+                    printAndLog(log, "Removing {}/chapel".format(d))
                     shutil.rmtree("chapel")
 
             printAndLog(log, "")

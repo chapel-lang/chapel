@@ -1261,6 +1261,10 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
       offsetCheck->insertAtTail(e->copy());
     }
 
+    CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
+        new SymExpr(staticCheckSymMap[baseSym]));
+    offsetCheck = new CallExpr("||", staticOverride, offsetCheck);
+
     CallExpr* newCheck = new CallExpr("&&", offsetCheck); // we'll add curCheck
     curCheck->replace(newCheck);
     newCheck->insertAtTail(curCheck);

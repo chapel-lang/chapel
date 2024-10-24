@@ -6,6 +6,7 @@ import sys
 import argparse
 import os
 import subprocess as sp
+import re
 from string import Template
 
 
@@ -41,10 +42,7 @@ def determine_arch(package):
 def infer_docker_os(package):
     os_tag_to_docker = {
         "el9": "rockylinux/rockylinux:9",
-        "fc37": "fedora:37",
-        "fc38": "fedora:38",
-        "fc39": "fedora:39",
-        "fc40": "fedora:40",
+        "amzn2023": "amazonlinux:2023",
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
         "debian11": "debian:bullseye",
@@ -53,6 +51,13 @@ def infer_docker_os(package):
     for tag, docker in os_tag_to_docker.items():
         if ".{}.".format(tag) in package:
             return docker
+
+    # do fedora separately, since its easy to predict
+    m = re.search(r".fc(\d+).", package)
+    if m:
+        fc = m.group(1)
+        return f"fedora:{fc}"
+
     return ValueError(f"Could not infer docker image from package {package}")
 
 def infer_env_vars(package):

@@ -21,7 +21,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-llvm.sh"
 
-  config.vm.provision "shell", privileged: false,
+  config.vm.provision "shell", privileged: false, run: "always",
     path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,

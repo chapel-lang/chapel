@@ -21,6 +21,7 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chplsys.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
@@ -30,7 +31,6 @@
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
 #include "gpu/amd/rocm-utils.h"
-#include "gpu/amd/rocm-version.h"
 #include "chpl-topo.h"
 
 #include <assert.h>
@@ -44,11 +44,12 @@
 
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
+extern const uint64_t chpl_gpuBinarySize;
 
 static int numAllDevices = -1;
 static int numDevices = -1;
-static int *deviceIDToIndex = NULL;
-static hipDevice_t *indexToDeviceID = NULL;
+static int *dev_pid_to_lid_table = NULL;
+static hipDevice_t *dev_lid_to_pid_table = NULL;
 
 // array indexed by device ID (we load the same module once for each GPU).
 static hipModule_t *chpl_gpu_rocm_modules;
@@ -56,21 +57,55 @@ static hipModule_t *chpl_gpu_rocm_modules;
 static int *deviceClockRates;
 
 static inline
-void* chpl_gpu_load_module(const char* fatbin_data) {
+void* chpl_gpu_load_module(const char* fatbin_data, const uint64_t fatbin_size) {
   hipModule_t rocm_module;
 
-  ROCM_CALL(hipModuleLoadData(&rocm_module, fatbin_data));
+  const char* buffer = fatbin_data;
+  chpl_bool has_huge_pages = chpl_getHeapPageSize() > chpl_getSysPageSize();
+  if (has_huge_pages) {
+    // ROCm and huge pages don't play well together.
+    // Make a temporary copy of the fatbin
+    buffer = chpl_malloc(fatbin_size);
+    memcpy((void*)buffer, fatbin_data, fatbin_size);
+  }
+
+  ROCM_CALL(hipModuleLoadData(&rocm_module, buffer));
   assert(rocm_module);
+
+  if (has_huge_pages) chpl_free((void*)buffer);
 
   return (void*)rocm_module;
 }
 
-static void switch_context(int dev_id) {
-  ROCM_CALL(hipSetDevice(indexToDeviceID[dev_id]));
+// Maps the "physical" device ID used by the HIP library to the "logical"
+// device ID used by this locale. The two may differ due to co-locales.
+// Logical device IDs start with zero in each co-locale and are equal to the
+// sublocale ID. Physical device IDs are the same for all co-locales on the
+// machine.
+
+static int dev_pid_to_lid(int32_t dev_pid) {
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  int dev_lid = dev_pid_to_lid_table[dev_pid];
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  return dev_lid;
 }
 
-void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
-  switch_context(dev_id);
+// Maps a logical device ID to physical device ID.
+
+static int dev_lid_to_pid(int dev_lid) {
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  int dev_pid = dev_lid_to_pid_table[dev_lid];
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  return dev_pid;
+}
+
+static void switch_context(int dev_lid) {
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipSetDevice(dev_pid));
+}
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_lid) {
+  switch_context(dev_lid);
 }
 
 static hipModule_t get_module(void) {
@@ -78,16 +113,14 @@ static hipModule_t get_module(void) {
   hipModule_t module;
 
   ROCM_CALL(hipGetDevice(&device));
-  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
-  int index = deviceIDToIndex[(int)device];
-  assert((index >= 0) && (index < numDevices));
-  module = chpl_gpu_rocm_modules[index];
+  int dev_lid = dev_pid_to_lid((int32_t) device);
+  module = chpl_gpu_rocm_modules[dev_lid];
   return module;
 }
 
 extern c_nodeid_t chpl_nodeID;
 
-static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_lid, hipModule_t module) {
   hipDeviceptr_t ptr = NULL;;
   size_t glob_size;
 
@@ -194,22 +227,23 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 
   // Allocate the GPU data structures. Note that the HIP API, specifically
-  // hipGetDevice, returns the global device ID so we need deviceIDToIndex
-  // to map from the global device ID to an array index.
+  // hipGetDevice, returns the global device ID so we need
+  // dev_pid_to_lid_table to map from the global device ID to the logical
+  // device ID.
 
   numDevices = numAddrs;
   chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*numDevices);
   deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
-  indexToDeviceID = chpl_malloc(sizeof(int) * numDevices);
-  deviceIDToIndex = chpl_malloc(sizeof(int) * numAllDevices);
+  dev_lid_to_pid_table = chpl_malloc(sizeof(int) * numDevices);
+  dev_pid_to_lid_table = chpl_malloc(sizeof(int) * numAllDevices);
 
   for (int i = 0; i < numDevices; i++) {
     chpl_gpu_rocm_modules[i] = NULL;
-    indexToDeviceID[i] = -1;
+    dev_lid_to_pid_table[i] = -1;
   }
 
   for (int i = 0; i < numAllDevices; i++) {
-    deviceIDToIndex[i] = -1;
+    dev_pid_to_lid_table[i] = -1;
   }
 
   // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
@@ -231,15 +265,15 @@ void chpl_gpu_impl_init(int* num_devices) {
 
         ROCM_CALL(hipSetDevice(device));
 #endif
-        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
+        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
         chpl_gpu_rocm_modules[i] = module;
 
         hipDeviceGetAttribute(&deviceClockRates[i],
                               hipDeviceAttributeClockRate, device);
 
         // map array indices (relative device numbers) to global device IDs
-        indexToDeviceID[i] = device;
-        deviceIDToIndex[device] = i;
+        dev_lid_to_pid_table[i] = device;
+        dev_pid_to_lid_table[device] = i;
         chpl_gpu_impl_set_globals(i, module);
         break;
       }
@@ -394,6 +428,12 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
+    // see note in chpl_gpu_mem_free
+    hipPointerAttribute_t res;
+    ROCM_CALL(hipPointerGetAttributes(&res, memAlloc));
+    int dev_lid = dev_pid_to_lid(res.device);
+    switch_context(dev_lid);
+
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
@@ -432,22 +472,22 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
-bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+bool chpl_gpu_impl_can_access_peer(int dev_lid1, int dev_lid2) {
   int p2p;
-  int id1 = indexToDeviceID[dev1];
-  int id2 = indexToDeviceID[dev2];
-  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, id1, id2));
+  int dev_pid1 = dev_lid_to_pid(dev_lid1);
+  int dev_pid2 = dev_lid_to_pid(dev_lid2);
+  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev_pid1, dev_pid2));
   return p2p != 0;
 }
 
-void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  int id1 = indexToDeviceID[dev1];
-  int id2 = indexToDeviceID[dev2];
-  ROCM_CALL(hipSetDevice(id1));
+void chpl_gpu_impl_set_peer_access(int dev_lid1, int dev_lid2, bool enable) {
+  int dev_pid1 = dev_lid_to_pid(dev_lid1);
+  int dev_pid2 = dev_lid_to_pid(dev_lid2);
+  ROCM_CALL(hipSetDevice(dev_pid1));
   if(enable) {
-    ROCM_CALL(hipDeviceEnablePeerAccess(id2, 0));
+    ROCM_CALL(hipDeviceEnablePeerAccess(dev_pid2, 0));
   } else {
-    ROCM_CALL(hipDeviceDisablePeerAccess(id2));
+    ROCM_CALL(hipDeviceDisablePeerAccess(dev_pid2));
   }
 }
 
@@ -507,5 +547,58 @@ void chpl_gpu_impl_host_unregister(void* var) {
   ROCM_CALL(hipHostUnregister(var));
 }
 
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, indexToDeviceID[dev]));
+}
+
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = hipDeviceAttributeMaxThreadsPerBlock;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X = hipDeviceAttributeMaxBlockDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y = hipDeviceAttributeMaxBlockDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z = hipDeviceAttributeMaxBlockDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X = hipDeviceAttributeMaxGridDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y = hipDeviceAttributeMaxGridDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z = hipDeviceAttributeMaxGridDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK = hipDeviceAttributeMaxSharedMemoryPerBlock;
+const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY = hipDeviceAttributeTotalConstantMemory;
+const int CHPL_GPU_ATTRIBUTE__WARP_SIZE = hipDeviceAttributeWarpSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_PITCH = hipDeviceAttributeMaxPitch;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH = hipDeviceAttributeMaxTexture1DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH = hipDeviceAttributeMaxTexture2DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT = hipDeviceAttributeMaxTexture2DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH = hipDeviceAttributeMaxTexture3DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT = hipDeviceAttributeMaxTexture3DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH = hipDeviceAttributeMaxTexture3DDepth;
+const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK = hipDeviceAttributeMaxRegistersPerBlock;
+const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE = hipDeviceAttributeClockRate;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT = hipDeviceAttributeTextureAlignment;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT = hipDeviceAttributeTexturePitchAlignment;
+const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT = hipDeviceAttributeMultiprocessorCount;
+const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT = hipDeviceAttributeKernelExecTimeout;
+const int CHPL_GPU_ATTRIBUTE__INTEGRATED = hipDeviceAttributeIntegrated;
+const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY = hipDeviceAttributeCanMapHostMemory;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE = hipDeviceAttributeComputeMode;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS = hipDeviceAttributeConcurrentKernels;
+const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED = hipDeviceAttributeEccEnabled;
+const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID = hipDeviceAttributePciBusId;
+const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID = hipDeviceAttributePciDeviceId;
+const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE = hipDeviceAttributeMemoryClockRate;
+const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH = hipDeviceAttributeMemoryBusWidth;
+const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE = hipDeviceAttributeL2CacheSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR = hipDeviceAttributeMaxThreadsPerMultiProcessor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR = hipDeviceAttributeComputeCapabilityMajor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR = hipDeviceAttributeComputeCapabilityMinor;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = hipDeviceAttributeMaxSharedMemoryPerMultiprocessor;
+const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY = hipDeviceAttributeManagedMemory;
+const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD = hipDeviceAttributeIsMultiGpuBoard;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS = hipDeviceAttributePageableMemoryAccess;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = hipDeviceAttributeConcurrentManagedAccess;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = hipDeviceAttributePageableMemoryAccessUsesHostPageTables;
+const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = hipDeviceAttributeDirectManagedMemAccessFromHost;
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+  int res;
+  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, indexToDeviceID[dev]));
+  return res;
+}
 
 #endif // HAS_GPU_LOCALE

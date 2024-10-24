@@ -21,7 +21,7 @@ If you do not, follow the steps `here
 
 .. note::
 
-   This document was last updated for ParallelCluster v3.8.0. Other versions may not have the same features and adjustments may be necessary.
+   This document was last updated for ParallelCluster v3.10.0. Other versions may not have the same features and adjustments may be necessary.
 
 Configuring a ParallelCluster
 -----------------------------
@@ -46,19 +46,12 @@ when configuring a cluster for Chapel.
    The default scheduler is ``slurm``. AWS Batch is also available, but not
    currently supported by Chapel.
 * Operating System
-   The default operating system is ``alinux2``. We recommend using either
-   ``alinux2`` or ``ubuntu2204``.
+   We recommend using either ``alinux2023``, ``ubuntu2204``, or ``rhel9``.
 
    .. note::
 
-      The default AMI for ``alinux2`` does not have the necessary drivers for
+      The default AMI for ``alinux2023`` does not have the necessary drivers for
       GPUs. If you plan to use GPUs, we recommend using ``ubuntu2204``.
-
-   .. note::
-
-      ``Amazon Linux 2023`` is preferred, but is not yet available in
-      ParallelCluster. If a later version of ParallelCluster includes ``Amazon
-      Linux 2023``, we recommend using it.
 
 * Head node instance type
    The default instance type is ``t2.micro``. This is the node that will be
@@ -95,7 +88,7 @@ something like this:
 
    Region: us-west-1
    Image:
-     Os: alinux2
+     Os: alinux2023
    HeadNode:
      InstanceType: t2.medium
      Networking:
@@ -152,7 +145,7 @@ These additional options can be added to the configuration file:
 
    Region: us-west-1
    Image:
-     Os: alinux2
+     Os: alinux2023
    HeadNode:
      InstanceType: t2.medium
      Networking:
@@ -178,9 +171,9 @@ These additional options can be added to the configuration file:
          - SUBNETID
 
 It also possible to use instances with GPUs. We recommend using ``G4dn``,
-``G5``, ``P3``, or ``P4`` instances. We also recommend not using ``alinux2``
-with these instances, as it does not have the necessary drivers for the GPUs.
-Instead, use ``ubuntu2204``.
+``G5``, ``P3``, or ``P4`` instances. For best experience, we recommend using
+``ubuntu2204`` with these instances as it is the easiest path to install the
+proper drivers.
 
 Launching and Connecting
 ------------------------
@@ -217,8 +210,8 @@ using the AWS session manager.
    .. note::
 
       The username may be different depending on the AMI used. The default
-      username for Amazon Linux 2 is ``ec2-user``. The default username for
-      Ubuntu 22.04 is ``ubuntu``.
+      username for Amazon Linux 2023 and Red Hat 9 is ``ec2-user``. The default
+      username for Ubuntu 22.04 is ``ubuntu``.
 
    .. note::
 
@@ -242,10 +235,25 @@ using the AWS session manager.
    user (for Ubuntu, use ``sudo su ubuntu``). Then run ``cd`` to go to the home
    directory.
 
-Building Chapel
----------------
+Getting Chapel
+--------------
 
-Once connected to the instance via ssh, do the following:
+Once connected to the instance via ssh, you need to install Chapel.
+If you are using an OS that has a pre-built libfabric+slurm binary for Chapel,
+you can download and install it using the system package manager.
+For example, to install Chapel 2.2 on Ubuntu 22.04:
+
+.. code-block:: bash
+
+    wget https://github.com/chapel-lang/chapel/releases/download/2.2.0/chapel-ofi-slurm-2.2.0-1.ubuntu22.amd64.deb
+    sudo apt install ./chapel-ofi-slurm-2.2.0-1.ubuntu22.amd64.deb
+
+If there is no pre-built binary for your OS, you can build Chapel from source.
+
+Building Chapel from Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To build Chapel from source for use on the cluster, follow these steps:
 
 * Install the dependencies as shown on the :ref:`readme-prereqs-installation` page.
 
@@ -265,49 +273,12 @@ Once connected to the instance via ssh, do the following:
       export CHPL_COMM=ofi
       export CHPL_LAUNCHER=slurm-srun
       export CHPL_COMM_OFI_OOB=pmi2
-      export SLURM_MPI_TYPE=pmi2
 
-      # if using a cluster without EFA, use FI_PROVIDER=tcp instead
-      export FI_PROVIDER=efa
-
+      # these paths may need to be adjusted, for example on some OSes the
+      # EFA path may be "lib" instead of "lib64"
       export CHPL_LIBFABRIC=system
       export PKG_CONFIG_PATH=/opt/amazon/efa/lib64/pkgconfig/
       export CHPL_LD_FLAGS="-L/opt/slurm/lib/ -Wl,-rpath,/opt/slurm/lib/"
-
-      export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
-      export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
-
-   Due to limitations in the number of pages that can be registered with EFA,
-   by default Chapel will try and use transparent huge pages. Make sure your
-   cluster has transparent huge pages enabled and has enough huge pages.
-
-   .. code-block:: bash
-
-      NUM_NODES=<max number of nodes in your cluster>
-      NUM_PAGES=<number of pages to use>
-      echo always | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
-      echo $NUM_PAGES | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages >/dev/null
-
-   .. note::
-
-       Setting more huge pages than there is memory on the system can cause the
-       system to hang. Make sure to set the number of huge pages to a value
-       that is less than the total memory on the system (you can query this
-       with ``srun lsmem``). If you set it too low, you may get out of memory
-       errors when running Chapel programs. Try increasing the number of huge
-       pages or set a max heap size with ``CHPL_RT_MAX_HEAP_SIZE``.
-
-   If you wish to not use transparent huge pages, set ``export
-   CHPL_RT_COMM_OFI_THP_HINT=0``. Depending on your system, you my also need to
-   set ``CHPL_RT_MAX_HEAP_SIZE`` to a value less than ``96G``.
-
-   For best performance, users should also set ``export
-   FI_EFA_USE_DEVICE_RDMA=1``. This enables higher network performance by using
-   the RDMA capabilities of EFA, but it is only available on newer instances.
-   If you are unsure if your instance supports this, try setting it and running
-   a Chapel program. If the program fails with an error about
-   ``FI_EFA_USE_DEVICE_RDMA``, then your instance does not support this
-   feature.
 
    If using a GPU instance, use the following in addition to the above:
 
@@ -319,6 +290,55 @@ Once connected to the instance via ssh, do the following:
 
 Running Chapel Programs
 -----------------------
+
+A few final steps are left to configure the environment to run Chapel programs.
+These are required regardless of whether Chapel was installed from a package or
+built from source. These environment variables should be set before running any
+Chapel code. Users may wish to add this to their ``.bashrc``:
+
+.. code-block:: bash
+
+   export SLURM_MPI_TYPE=pmi2
+   # if using a cluster without EFA, use FI_PROVIDER=tcp instead
+   export FI_PROVIDER=efa
+
+   # these are not required, but can improve performance
+   export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
+   export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
+
+
+For best performance, users should also set ``export
+FI_EFA_USE_DEVICE_RDMA=1``. This enables higher network performance by using
+the RDMA capabilities of EFA, but it is only available on newer instances.
+If you are unsure if your instance supports this, try setting it and running
+a Chapel program. If the program fails with an error about
+``FI_EFA_USE_DEVICE_RDMA``, then your instance does not support this
+feature.
+
+Lastly, due to limitations in the number of pages that can be registered with EFA,
+by default Chapel will try and use transparent huge pages. Make sure your
+cluster has transparent huge pages enabled and has enough huge pages.
+
+.. code-block:: bash
+
+  NUM_NODES=<max number of nodes in your cluster>
+  NUM_PAGES=<number of pages to use>
+  echo always | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null
+  echo $NUM_PAGES | srun --nodes $NUM_NODES sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages >/dev/null
+
+.. note::
+
+    Setting more huge pages than there is memory on the system can cause the
+    system to hang. Make sure to set the number of huge pages to a value
+    that is less than the total memory on the system (you can query this
+    with ``srun lsmem``). If you set it too low, you may get out of memory
+    errors when running Chapel programs. Try increasing the number of huge
+    pages or set a max heap size with ``CHPL_RT_MAX_HEAP_SIZE``.
+
+If you wish to not use transparent huge pages, set ``export
+CHPL_RT_COMM_OFI_THP_HINT=0``. Depending on your system, you my also need to
+set ``CHPL_RT_MAX_HEAP_SIZE`` to a value less than ``96G``.
+
 
 If all of the above steps have been completed successfully, you should be able
 to use your cluster to run Chapel programs. If you have a cluster with 4 or

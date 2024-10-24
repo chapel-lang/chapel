@@ -13,11 +13,14 @@ Available rules (default rules marked with *):
   * IncorrectIndentation         Warn for inconsistent or missing indentation
   * MethodsAfterFields           Warn for classes or records that mix field and method definitions.
   * MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
+  * MissingInIntent              Warn for formals used to initialize fields that are missing an 'in' intent.
     NestedCoforalls              Warn for nested 'coforall' loops, which could lead to performance hits.
   * PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   * PascalCaseModules            Warn for modules that are not 'PascalCase'.
   * SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
-    UnusedFormal                 Warn for unused formals in functions.
+  * UnusedFormal                 Warn for unused formals in functions.
   * UnusedLoopIndex              Warn for unused index variables in loops.
+  * UnusedTaskIntent             Warn for unused task intents in functions.
   * UnusedTupleUnpack            Warn for unused tuple unpacking, such as '(_, _)'.
+  * UnusedTypeQuery              Warn for unused type queries in functions.
     UseExplicitModules           Warn for code that relies on auto-inserted implicit modules.

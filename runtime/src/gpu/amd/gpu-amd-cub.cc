@@ -21,7 +21,6 @@
 
 
 #include <hip/hip_common.h>
-#include "gpu/amd/rocm-version.h"
 
 #if ROCM_VERSION_MAJOR >= 5
 // if we include this all the time, we get unused function errors

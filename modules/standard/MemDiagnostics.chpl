@@ -252,4 +252,33 @@ proc stopVerboseMemHere() {
   chpl_stopVerboseMemHere();
 }
 
+/*
+  Yield (address, size) pairs for all individual dynamic memory allocations
+  that are still allocated on this locale. ``minSize`` can be passed to limit
+  the size of the yielded elements. Note that some allocations may have larger
+  sizes than expected due to padding.
+*/
+iter allocations(minSize: integral = 0) {
+  use CTypes;
+
+  extern proc chpl_memtable_size(): c_int;
+  extern proc chpl_memtable_entry(idx: c_int): c_ptr(void);
+  extern proc chpl_memtable_next_entry(entry): c_ptr(void);
+  extern proc chpl_memtable_entry_addr(entry): uint;
+  extern proc chpl_memtable_entry_size(entry): uint;
+
+  const hashSize = chpl_memtable_size();
+  for i in 0..<hashSize {
+    var entry = chpl_memtable_entry(i);
+    while entry != nil {
+      var addr = chpl_memtable_entry_addr(entry);
+      var size = chpl_memtable_entry_size(entry);
+
+      if size >= minSize then yield (addr,size);
+
+      entry = chpl_memtable_next_entry(entry);
+    }
+  }
+}
+
 }

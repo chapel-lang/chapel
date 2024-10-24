@@ -133,7 +133,6 @@ static void test4() {
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
@@ -168,7 +167,6 @@ static void test5a() {
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -207,7 +205,6 @@ static void test5b() {
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -256,7 +253,6 @@ static void test6a() {
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -309,7 +305,6 @@ static void test6b() {
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -495,6 +490,44 @@ static void test7() {
   guard.realizeErrors();
 }
 
+// Test that 'except' clause doesn't exclude other symbols.
+// Doesn't test 'except' correct exclusion functionality.
+static void test8() {
+  printf("test8\n");
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      record Foo {
+        var _instance : owned Bar;
+
+        proc init(value) {
+          this._instance = value;
+        }
+
+        proc arbitrarySymbol do return 4;
+        forwarding _instance except arbitrarySymbol;
+      }
+
+      class Bar {
+        var asdf : int;
+      }
+
+      var myFoo = new Foo(new unmanaged Bar());
+      var x = myFoo.asdf;
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  guard.realizeErrors();
+}
+
 
 int main() {
   test1();
@@ -512,6 +545,8 @@ int main() {
   test7();
 
   // TODO: forwarding with only, except
+
+  test8();
 
   return 0;
 }

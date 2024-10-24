@@ -203,10 +203,12 @@ class Context {
 
     RecomputeMarker(Context* context, bool isRecomputing) :
       context_(context), oldValue_(isRecomputing) {
-        std::swap(context_->isRecomputing, oldValue_);
+        if (context) std::swap(context_->isRecomputing, oldValue_);
     }
 
    public:
+    RecomputeMarker() : RecomputeMarker(nullptr, false) {}
+
     RecomputeMarker(RecomputeMarker&& other) {
       *this = std::move(other);
     }
@@ -223,6 +225,10 @@ class Context {
         std::swap(context_->isRecomputing, oldValue_);
       }
       context_ = nullptr;
+    }
+
+    bool isCleared() {
+      return context_ == nullptr;
     }
 
     ~RecomputeMarker() {
@@ -878,6 +884,47 @@ class Context {
   ;
 
   /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void warning(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void warning(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void warning(const uast::AstNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
     Sets the enableDebugTrace flag. This was needed because the context
     in main gets created before the arguments to the compiler are parsed.
   */
@@ -1021,28 +1068,48 @@ class Context {
                             const std::string& args,
                             querydetail::QueryTimingDuration elapsed);
 
+  template<typename... ArgTs>
+  struct ReportOnExit {
+    using Stopwatch = querydetail::QueryTimingStopwatch<ReportOnExit>;
+    Context* context = nullptr;
+    querydetail::QueryMapBase* base = nullptr;
+    const std::tuple<ArgTs...>* tupleOfArgs = nullptr;
+    bool enableQueryTiming = false;
+    size_t depth = 0;
+    bool enableQueryTimingTrace = false;
+
+    ReportOnExit(const ReportOnExit& rhs) = delete;
+    ReportOnExit(ReportOnExit&& rhs) = default;
+    ReportOnExit& operator=(const ReportOnExit& rhs) = delete;
+    ReportOnExit& operator=(ReportOnExit&& rhs) = default;
+
+    bool enabled() { return enableQueryTiming || enableQueryTimingTrace; }
+
+    void operator()(Stopwatch& stopwatch) {
+      // Return if the map is empty (to allow for default-construction).
+      if (base == nullptr) return;
+      bool enabled = enableQueryTiming || enableQueryTimingTrace;
+      if (enabled) {
+        auto elapsed = stopwatch.elapsed();
+        std::ostringstream oss;
+        if (tupleOfArgs) querydetail::queryArgsPrint(oss, *tupleOfArgs);
+        context->finishQueryStopwatch(base, depth, oss.str(), elapsed);
+      }
+    };
+  };
+
   // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
   // timing if we are enabled. And then on scope exit we conditionally stop the
   // timing and add it to the total or log it.
   // Semi-public method because we only expect it to be used in the macro
   template<typename... ArgTs>
   auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base,
-                                const std::tuple<ArgTs...>& tupleOfArgs) {
-    size_t depth = queryStack.size();
-    bool enabled = enableQueryTiming || enableQueryTimingTrace;
-
-    return querydetail::makeQueryTimingStopwatch(
-        enabled,
-        // This lambda gets called when the stopwatch object (which lives on the
-        // stack of the query function) is destructed
-        [this, base, depth, enabled, &tupleOfArgs](auto& stopwatch) {
-          if (enabled) {
-            auto elapsed = stopwatch.elapsed();
-            std::ostringstream oss;
-            querydetail::queryArgsPrint(oss, tupleOfArgs);
-            finishQueryStopwatch(base, depth, oss.str(), elapsed);
-          }
-        });
+                           const std::tuple<ArgTs...>& tupleOfArgs) {
+    ReportOnExit<ArgTs...> s {
+      this, base, &tupleOfArgs, enableQueryTiming, queryStack.size(),
+      enableQueryTimingTrace
+    };
+    return querydetail::makeQueryTimingStopwatch(s.enabled(), std::move(s));
   }
   /// \endcond
 };

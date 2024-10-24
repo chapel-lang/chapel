@@ -167,6 +167,11 @@ void AutoDestroyScope::addEarlyDeinit(VarSymbol* var) {
   INT_FATAL("could not find scope declaring var");
 }
 
+
+size_t AutoDestroyScope::numLocalsAndDefers() const {
+  return mLocalsAndDefers.size();
+}
+
 VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {
 
   if (CallExpr* call = toCallExpr(stmt)) {

@@ -23,22 +23,20 @@
 #include <set>
 #include <queue>
 #include <list>
-#include "stmt.h"
 #include "stlUtil.h"
 #include "passes.h"
 #include "ModuleSymbol.h"
 #include "LoopStmt.h"
 #include "ForLoop.h"
-#include "expr.h"
 #include "driver.h"
 #include "CForLoop.h"
+#include "WhileDoStmt.h"
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
 #include "timer.h"
 #include "misc.h"
 #include "view.h"
-#include "expr.h"
 
 #include "global-ast-vecs.h"
 
@@ -1480,7 +1478,7 @@ Symbol* GpuKernel::addLocalVariable(Symbol* symInLoop) {
  *  t1 = t0 + threadIdxX      // aka `global thread idx`
  *  index = t1 + lowerBound   // aka `calculated thread idx`
  *
- *  If we have gpu.itersPerThread, instead generates:
+ *  If we have @gpu.itersPerThread, instead generates:
  *
  *  index = lowerBound + t1 * itersPerThread
  *
@@ -1581,48 +1579,62 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
  *
  * // recall index[0] = lowerBound + `global thread idx` * itersPerThread
  * def threadBound = min(index[0] + itersPerThread - 1, upperBound)
- *
- * CForLoop(; index[0] <= threadBound; for all i: index[i] += 1) {
+ * for(; index[0] <= threadBound; for all i: index[i] += 1) {
  *   // empty block stored in this->userBody_
  * }
+ *
+ * If we turn the for-loop into CForLoop, it will be treated as a CPU-only
+ * loop in cleanupForeachLoopsGuaranteedToRunOnCpu() that will come later
+ * and replace ex. GPU primitives like "gpu threadIdx x" with chpl_error.
+ * Not to mention that the latter will break codegen.
+ * So use WhileDoStmt instead as follows:
+ *
+ * def whileVar = index[0] <= threadBound
+ * WhileDoStmt(whileVar, {
+ *   {  // empty block stored in this->userBody_
+ *   }
+ *   for all i: index[i] += 1;
+ *   whileVar = index[0] <= threadBound
+ * })
  */
 void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
-  // initBlock is empty, inits are added in generateIndexComputation()
-  BlockStmt* initBlock = new BlockStmt();
-
-  // testBlock tests only for index[0], like in generateOobCondNoIPT()
+  // calculate 'threadBound'
   Symbol* index0 = kernelIndices_[0];
 
   VarSymbol* iptMinus1 = insertNewVarAndDef(fn_->body, "iptMinus1",
                                             localItersPerThread_->type);
-  fn_->insertAtTail("'='(%S,'-'(%S,%S))", iptMinus1,
+  fn_->insertAtTail("'move'(%S,'-'(%S,%S))", iptMinus1,
                     localItersPerThread_, new_IntSymbol(1));
 
   VarSymbol* threadBound = insertNewVarAndDef(fn_->body, "threadBound",
                                               index0->type);
-  fn_->insertAtTail("'='(%S,'+'(%S,%S))", threadBound, index0, iptMinus1);
+  fn_->insertAtTail("'move'(%S,'+'(%S,%S))", threadBound, index0, iptMinus1);
 
   VarSymbol* switchToLB = insertNewVarAndDef(fn_->body, "switchToLB", dtBool);
-  fn_->insertAtTail("'='(%S,'<'(%S,%S))", switchToLB, upperBound, threadBound);
-
+  fn_->insertAtTail("'move'(%S,'<'(%S,%S))", switchToLB,
+                                             upperBound, threadBound);
   BlockStmt* switchBlock = new BlockStmt();
-  switchBlock->insertAtTail("'='(%S,%S)", threadBound, upperBound);
+  switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
   fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
 
-  BlockStmt* testBlock = new BlockStmt();
-  testBlock->insertAtTail("'<='(%S,%S)", index0, threadBound);
+  // while loop condition variable
+  VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
+  Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
+                             whileVar, index0, threadBound);
+  fn_->insertAtTail(whileExpr);
 
-  // incrBlock increments all indices
-  BlockStmt* incrBlock = new BlockStmt();
+  // while loop execute userBody_ then increment all indices
+  BlockStmt* whileBody = new BlockStmt();
+  whileBody->insertAtTail(this->userBody_);
+
   for_vector(Symbol, index, kernelIndices_) {
-    incrBlock->insertAtTail("'+='(%S,%S)", index, new_IntSymbol(1));
+    whileBody->insertAtTail("'+='(%S,%S)", index, new_IntSymbol(1));
   }
 
-  CForLoop* iptLoop = toCForLoop(
-    CForLoop::buildCForLoop(nullptr, this->userBody_) // returns a BlockStmt
-      ->body.head->remove());
-  iptLoop->loopHeaderSet(initBlock, testBlock, incrBlock);
-  fn_->insertAtTail(iptLoop);
+  whileBody->insertAtTail(whileExpr->copy());
+
+  // create AST for the loop
+  fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
 }
 
 void GpuKernel::generatePostBody() {
@@ -2035,8 +2047,17 @@ const std::unordered_set<PrimitiveTag>
  *
  *   chpl_block_delta = ub - lb
  *   chpl_gpu_num_threads = chpl_block_delta + 1
+ *
+ *  If we have @gpu.itersPerThread, chpl_gpu_num_threads should be
+ *      ceil( (ub-lb) / itersPerThread )
+ *  so generate the following instead:
+ *
+ *   chpl_block_delta = ub - lb
+ *   chpl_block_delta_plus = chpl_block_delta + ipt
+ *   chpl_gpu_num_threads = chpl_block_delta_plus / itersPerThread
  */
 static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     GpuKernel* kernel,
                                      const GpuizableLoop& gpuLoop) {
 
   VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
@@ -2046,16 +2067,31 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
                                              "chpl_num_gpu_threads",
                                              dtInt[INT_SIZE_64]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
+  CallExpr *c1 = new CallExpr(PRIM_MOVE, varBoundDelta,
                               new CallExpr(PRIM_SUBTRACT,
                                            gpuLoop.upperBound(),
                                            gpuLoop.lowerBounds()[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, numThreads,
-                              new CallExpr(PRIM_ADD, varBoundDelta,
-                                           new_IntSymbol(1)));
-  gpuLaunchBlock->insertAtTail(c2);
+  if (kernel->itersPerThread() == nullptr) {
+
+    CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
+                                new CallExpr(PRIM_ADD, varBoundDelta,
+                                             new_IntSymbol(1)));
+      gpuLaunchBlock->insertAtTail(c2);
+
+  } else {
+
+    VarSymbol* varBoundDeltaPlus = insertNewVarAndDef(gpuLaunchBlock,
+                          "chpl_block_delta_plus", dtInt[INT_SIZE_64]);
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, varBoundDeltaPlus,
+      new CallExpr(PRIM_ADD, varBoundDelta, kernel->itersPerThread())));
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, numThreads,
+      new CallExpr(PRIM_DIV, varBoundDeltaPlus, kernel->itersPerThread())));
+
+  }
 
   return numThreads;
 }
@@ -2063,7 +2099,7 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
 void GpuKernel::generateKernelLaunch() {
   VarSymbol* cfg = insertNewVarAndDef(launchBlock_, "kernel_cfg", dtCVoidPtr);
 
-  VarSymbol* numThreads = generateNumThreads(launchBlock_, gpuLoop);
+  VarSymbol* numThreads = generateNumThreads(launchBlock_, this, gpuLoop);
 
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
@@ -2169,7 +2205,7 @@ static void doGpuTransforms() {
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
-  forv_Vec(FnSymbol*, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol*, fn, gFnSymbols) {
     bool canAssumeFnWillRunOnCpu = fGpuSpecialization &&
                                    !isFnGpuSpecialized(fn) &&
                                    assumeNonGpuSpecFnsAreOnCpu;

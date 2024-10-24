@@ -4,7 +4,7 @@ FROM @@{OS_BASE_IMAGE}
 
 @@{TEST_ENV}
 
-RUN dnf upgrade -y && dnf install -y --allowerasing sudo vim which
+RUN dnf upgrade -y && dnf install -y --allowerasing sudo vim which shadow-utils
 
 @@{USER_CREATION}
 

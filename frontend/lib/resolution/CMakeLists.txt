@@ -21,6 +21,7 @@ target_sources(ChplFrontend-obj
                InitResolver.cpp
                Resolver.cpp
                VarScopeVisitor.cpp
+               call-graph.cpp
                call-init-deinit.cpp
                can-pass.cpp
                copy-elision.cpp
@@ -30,6 +31,7 @@ target_sources(ChplFrontend-obj
                intents.cpp
                maybe-const.cpp
                prims.cpp
+               ResolutionContext.cpp
                resolution-error-classes-list.cpp
                resolution-queries.cpp
                resolution-types.cpp

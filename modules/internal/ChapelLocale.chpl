@@ -33,11 +33,6 @@ module ChapelLocale {
   use ChapelBase;
   use ChapelNumLocales;
 
-  compilerAssert(!(!localeModelHasSublocales &&
-   localeModelPartitionsIterationOnSublocales),
-   "Locale model without sublocales can not have " +
-   "localeModelPartitionsIterationOnSublocales set to true.");
-
   //
   // Node and sublocale types and special sublocale values.
   //
@@ -46,15 +41,9 @@ module ChapelLocale {
 
   @chpldoc.nodoc
   extern const c_sublocid_none: chpl_sublocID_t;
-  @chpldoc.nodoc
-  extern const c_sublocid_any: chpl_sublocID_t;
-  @chpldoc.nodoc
-  extern const c_sublocid_all: chpl_sublocID_t;
 
   inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t) do
-    return (subloc != c_sublocid_none
-            && subloc != c_sublocid_any
-            && subloc != c_sublocid_all);
+    return (subloc != c_sublocid_none);
 
   /*
     regular: Has a concrete BaseLocale instance
@@ -443,6 +432,16 @@ module ChapelLocale {
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
 
+    // if using a gpu locale return its position in the parent locale's
+    // `here.gpus` array
+    proc gpuId : int do return gpuIdImpl();
+
+    @chpldoc.nodoc
+    proc gpuIdImpl() : int {
+      halt("Can not use 'gpuId' field on a non gpu locale");
+      return -1;
+    }
+
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {
@@ -597,7 +596,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
         }
@@ -605,7 +604,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales  {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
           chpl_singletonCurrentLocaleInitPrivate(locIdx);
@@ -730,7 +729,7 @@ module ChapelLocale {
     if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
-      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_none);
   }
 
   // Returns a wide pointer to the locale with the given id.

@@ -49,6 +49,8 @@
 #include "view.h"
 #endif
 
+#include "convert-help.h"
+
 #include <cstdlib>
 #include <fstream>
 
@@ -136,8 +138,10 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 static bool dynoRealizeErrors(void);
 static bool dynoRealizeDeferredErrors(void);
 
-static void dynoConvertInternalModule(const char* moduleName);
-static ModuleSymbol* dynoConvertFile(const char* fileName,
+static void dynoConvertInternalModule(UastConverter& c,
+                                      const char* moduleName);
+static ModuleSymbol* dynoConvertFile(UastConverter& c,
+                                     const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine);
 
@@ -221,7 +225,7 @@ static void checkCanLoadCommandLineFile(const char* path) {
   }
 }
 
-static void loadAndConvertModules() {
+static void loadAndConvertModules(UastConverter& c) {
 
   // check that some key internal modules are available
   checkCanLoadBundledModules();
@@ -273,11 +277,33 @@ static void loadAndConvertModules() {
                                                 commandLineModules);
 
 
-  // construct a set of modules to convert
-  gConvertFilterModuleIds.clear();
-  for (const auto& id : modulesToConvert) {
-    gConvertFilterModuleIds.insert(id);
+  // Compute the set of functions to fully resolve when using --dyno.
+  // This allows us to avoid resolving functions that aren't called.
+  if (fDynoCompilerLibrary) {
+    chpl::resolution::CalledFnsSet calledFns;
+
+    for (const auto& id : modulesToConvert) {
+      // Workaround: only use the dyno type resolver for user modules
+      // (and code called from them)
+      bool convertModInitCallsWithTypes = false;
+
+      UniqueString path;
+      bool found = gContext->filePathForId(id, path);
+      INT_ASSERT(found);
+      if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+        convertModInitCallsWithTypes = true;
+      }
+
+      if (convertModInitCallsWithTypes) {
+        gatherTransitiveFnsCalledByModInit(gContext, id, calledFns);
+      }
+    }
+
+    c.setFunctionsToConvertWithTypes(std::move(calledFns));
   }
+
+  // construct a set of modules to convert
+  c.setModulesToConvert(modulesToConvert);
 
   // construct a set of top-level command-line modules
   std::set<ID> commandLineModulesSet;
@@ -296,21 +322,11 @@ static void loadAndConvertModules() {
       checkFilenameNotTooLong(path);
 
       // compute the modTag
-      ModTag modTag = MOD_USER;
-      if (chpl::parsing::filePathIsInInternalModule(gContext, path)) {
-        modTag = MOD_INTERNAL;
-      } else if (chpl::parsing::filePathIsInStandardModule(gContext, path)) {
-        modTag = MOD_STANDARD;
-      } else if (chpl::parsing::filePathIsInBundledModule(gContext, path)) {
-        // TODO: this considers code in modules/packages as MOD_STANDARD but
-        // we would like this to be MOD_USER.
-        // See also issue #24998.
-        modTag = MOD_STANDARD;
-      }
+      ModTag modTag = getModuleTag(gContext, path);
 
       // convert it from uAST to AST
       bool namedOnCommandLine = commandLineModulesSet.count(id) > 0;
-      dynoConvertFile(path.c_str(), modTag, namedOnCommandLine);
+      dynoConvertFile(c, path.c_str(), modTag, namedOnCommandLine);
     } else {
       // ignore a submodule
     }
@@ -318,9 +334,9 @@ static void loadAndConvertModules() {
 
 
   // also handle some modules that get magically included
-  dynoConvertInternalModule("PrintModuleInitOrder");
+  dynoConvertInternalModule(c, "PrintModuleInitOrder");
   if (fLibraryFortran) {
-    dynoConvertInternalModule("ISO_Fortran_binding");
+    dynoConvertInternalModule(c, "ISO_Fortran_binding");
   }
 }
 
@@ -546,8 +562,6 @@ static std::set<UniqueString> gatherStdModuleNames() {
     modNames.erase(UniqueString::get(gContext, "LocaleModelHelpGPU"));
     modNames.erase(UniqueString::get(gContext, "GpuDiagnostics"));
   }
-  // Workaround: don't try to compile LocaleModelHelpAPU
-  modNames.erase(UniqueString::get(gContext, "LocaleModelHelpAPU"));
   // Workaround: don't try to compile PrivateDist to avoid a compilation error
   modNames.erase(UniqueString::get(gContext, "PrivateDist"));
   // Workaround: don't try to compile GMP or BigInteger if CHPL_GMP is none
@@ -675,6 +689,10 @@ static ID findIdForContainingDecl(ID id) {
 
   auto ret = ID();
   auto up = id;
+
+  // TODO: if ID refers to a Function, perhaps this
+  // function should return the ID unchanged,
+  // instead of causing 'In module ...' to be printed.
 
   while (1) {
     up = chpl::parsing::idToParentId(gContext, up);
@@ -932,7 +950,8 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
 }
 
 
-static void dynoConvertInternalModule(const char* moduleName) {
+static void dynoConvertInternalModule(UastConverter& c,
+                                      const char* moduleName) {
   UniqueString uname = UniqueString::get(gContext, moduleName);
   auto mod = chpl::parsing::getToplevelModule(gContext, uname);
   if (mod == nullptr) {
@@ -943,11 +962,12 @@ static void dynoConvertInternalModule(const char* moduleName) {
   bool found = gContext->filePathForId(mod->id(), path);
   INT_ASSERT(found);
 
-  dynoConvertFile(path.c_str(), MOD_INTERNAL, false);
+  dynoConvertFile(c, path.c_str(), MOD_INTERNAL, false);
 }
 
 
-static ModuleSymbol* dynoConvertFile(const char* fileName,
+static ModuleSymbol* dynoConvertFile(UastConverter& c,
+                                     const char* fileName,
                                      ModTag      modTag,
                                      bool        namedOnCommandLine) {
   ModuleSymbol* ret = nullptr;
@@ -1009,7 +1029,7 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
     yyfilename = nullptr;
 
     // Only converts the module, does not add to done list.
-    ModuleSymbol* got = convertToplevelModule(gContext, mod, modTag);
+    ModuleSymbol* got = c.convertToplevelModule(mod, modTag);
     INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
@@ -1096,6 +1116,13 @@ void parseAndConvertUast() {
 
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
+  chpl::owned<UastConverter> converter;
+  if (fDynoCompilerLibrary) {
+    converter = createTypedConverter(gContext);
+  } else {
+    converter = createUntypedConverter(gContext);
+  }
+
   if (countTokens || printTokens) countTokensInCmdLineFiles();
 
   if (printSearchDirs) {
@@ -1104,7 +1131,7 @@ void parseAndConvertUast() {
 
   addDynoLibFiles();
 
-  loadAndConvertModules();
+  loadAndConvertModules(*converter.get());
 
   setupDynoLibFileGeneration();
 
@@ -1121,7 +1148,7 @@ void parseAndConvertUast() {
 
   checkConfigs();
 
-  postConvertApplyFixups(gContext);
+  converter->postConvertApplyFixups();
 
   // One last catchall for errors.
   if (dynoRealizeErrors()) USR_STOP();

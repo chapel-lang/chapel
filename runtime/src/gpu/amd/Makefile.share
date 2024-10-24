@@ -28,4 +28,4 @@ RUNTIME_CFLAGS += -Wno-strict-prototypes
 
 $(RUNTIME_OBJ_DIR)/gpu-amd-cub.o: gpu-amd-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	PATH=$(PATH):$(CHPL_MAKE_ROCM_LLVM_PATH)/bin $(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

@@ -5,7 +5,7 @@ From: debian:buster
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apt-get-deps.sh
+    /provision-scripts/apt-get-deps-and-cmake.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

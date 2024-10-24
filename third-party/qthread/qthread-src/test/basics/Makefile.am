@@ -43,17 +43,9 @@ TESTS = \
                 qthread_fp \
                 qthread_fp_double
 
-if QTHREAD_PERFORMANCE
-TESTS += performance
-endif
-
 check_PROGRAMS = $(TESTS)
 
 TESTS_ENVIRONMENT =
-
-if HAVE_PROG_TIMELIMIT
-TESTS_ENVIRONMENT += @timelimit_path@ -T 1
-endif
 
 if WANT_SINGLE_WORKER_SCHEDULER
 TESTS_ENVIRONMENT += env QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1
@@ -145,6 +137,3 @@ test_teams_SOURCES = test_teams.c
 
 test_subteams_SOURCES = test_subteams.c
 
-if QTHREAD_PERFORMANCE
-performance_SOURCES = performance.c
-endif

@@ -101,18 +101,17 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
+    ChapelEnv('  CHPL_GPU_SDK_VERSION', RUNTIME, 'gpu_vers'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
-    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
+    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem'),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
-    ChapelEnv('  CHPL_ROCM_BITCODE_PATH', INTERNAL),
-    ChapelEnv('  CHPL_ROCM_INCLUDE_PATH', INTERNAL),
-    ChapelEnv('  CHPL_ROCM_RUNTIME_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_LLVM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_AMDGCN_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
-    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('  CHPL_COMM_OFI_OOB', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
@@ -205,12 +204,14 @@ def compute_all_values():
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
+    ENV_VALS['  CHPL_GPU_SDK_VERSION'] = chpl_gpu.get_sdk_version()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
+    ENV_VALS['  CHPL_ROCM_LLVM_PATH'] = chpl_gpu.get_rocm_llvm_path()
+    ENV_VALS['  CHPL_ROCM_AMDGCN_PATH'] = chpl_gpu.get_rocm_amdgcn_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
-    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['  CHPL_COMM_OFI_OOB'] = chpl_comm_ofi_oob.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
@@ -317,9 +318,6 @@ def compute_internal_values():
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
-    ENV_VALS['  CHPL_ROCM_BITCODE_PATH'] = chpl_gpu.get_sdk_path("amd", sdk_type="bitcode")
-    ENV_VALS['  CHPL_ROCM_INCLUDE_PATH'] = chpl_gpu.get_sdk_path("amd", sdk_type="include")
-    ENV_VALS['  CHPL_ROCM_RUNTIME_PATH'] = chpl_gpu.get_sdk_path("amd", sdk_type="runtime")
 
 
 
@@ -357,8 +355,6 @@ def filter_tidy(chpl_env):
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
-    elif chpl_env.name == '  CHPL_GASNET_VERSION':
-        return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_COMM_OFI_OOB':
@@ -373,12 +369,16 @@ def filter_tidy(chpl_env):
         return gpu == 'nvidia'
     elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
         return gpu == 'nvidia'
-    elif chpl_env.name == '  CHPL_ROCM_PATH':
+    elif chpl_env.name == '  CHPL_ROCM_LLVM_PATH':
         return gpu == 'amd'
-    elif chpl_env.name in ('  CHPL_ROCM_BITCODE_PATH', '  CHPL_ROCM_INCLUDE_PATH', '  CHPL_ROCM_RUNTIME_PATH'):
+    elif chpl_env.name == '  CHPL_ROCM_AMDGCN_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_ROCM_PATH':
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
+    elif chpl_env.name == '  CHPL_GPU_SDK_VERSION':
+        return gpu != 'none'
     elif chpl_env.name == '  CHPL_HOST_JEMALLOC':
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':

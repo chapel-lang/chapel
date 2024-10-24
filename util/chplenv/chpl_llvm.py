@@ -182,7 +182,7 @@ def check_llvm_packages(llvm_config):
                     contents = f.read()
                     if llvm_version in contents:
                         usr_include_clang_ok = True
-                        clang_include_ok = True;
+                        clang_include_ok = True
 
     llvm_lib_dir = run_command([llvm_config, '--libdir']).strip()
 
@@ -195,16 +195,16 @@ def check_llvm_packages(llvm_config):
         clang_lib_name = 'libclang-cpp.so'
 
     if os.path.isdir(llvm_lib_dir):
-        clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name);
+        clang_cpp_lib = os.path.join(llvm_lib_dir, clang_lib_name)
         clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
         if usr_include_clang_ok and not clang_cpp_lib_ok:
             # use e.g. /usr/lib/libclang-cpp.so
-            clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name);
+            clang_cpp_lib = os.path.join("/usr/lib", clang_lib_name)
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
         if usr_include_clang_ok and not clang_cpp_lib_ok:
             # use e.g. /usr/lib64/libclang-cpp.so
-            clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name);
+            clang_cpp_lib = os.path.join("/usr/lib64", clang_lib_name)
             clang_cpp_lib_ok = os.path.exists(clang_cpp_lib)
 
     s = ''
@@ -649,7 +649,7 @@ def llvm_enabled():
     return False
 
 @memoize
-def get_gcc_prefix():
+def get_gcc_prefix_dir():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
     # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
@@ -709,6 +709,20 @@ def get_gcc_prefix():
             gcc_prefix = ''
 
     return gcc_prefix
+
+@memoize
+def get_gcc_install_dir():
+    gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
+
+    if gcc_dir:
+        llvm_version = get_llvm_version()
+        if llvm_version in ('11', '12', '13', '14', '15'):
+            warning("This LLVM / clang version {0} is too old to use "
+                    "CHPL_LLVM_GCC_INSTALL_DIR -- "
+                    "it will be ignored".format(llvm_version))
+            return ''
+
+    return gcc_dir
 
 
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
@@ -808,9 +822,13 @@ def get_system_llvm_built_sdkroot():
 def get_clang_basic_args():
     clang_args = [ ]
 
-    gcc_prefix = get_gcc_prefix()
-    if gcc_prefix:
-        clang_args.append('--gcc-toolchain=' + gcc_prefix)
+    gcc_install_dir = get_gcc_install_dir()
+    if gcc_install_dir:
+        clang_args.append('--gcc-install-dir=' + gcc_install_dir)
+    else:
+        gcc_prefix = get_gcc_prefix_dir()
+        if gcc_prefix:
+            clang_args.append('--gcc-toolchain=' + gcc_prefix)
 
     sysroot_args = get_sysroot_resource_dir_args()
     if sysroot_args:

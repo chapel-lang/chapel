@@ -7,7 +7,7 @@
 generateGood() {
     # Generate Good file from printchplenv variables
 
-    printchplenv=$(../../../../util/printchplenv --all --simple --no-tidy --anonymize | grep -v CHPL_TARGET_HAS_PRGENV | grep -v CHPL_HOST_CC | grep -v CHPL_TARGET_CC | grep -v CHPL_HOST_CXX | grep -v CHPL_TARGET_CXX | grep -v CHPL_TARGET_LD | grep -v CHPL_AUX_FILESYS | grep -v CHPL_GASNET_VERSION | grep -v CHPL_HOST_MEM | grep -v CHPL_HOST_JEMALLOC | grep -v CHPL_TARGET_JEMALLOC | grep -v CHPL_LLVM_SUPPORT | grep -v CHPL_LLVM_CONFIG | grep -v CHPL_LLVM_VERSION | grep -v CHPL_SANITIZE | grep -v SUBDIR)
+    printchplenv=$(../../../../util/printchplenv --all --simple --no-tidy --anonymize | grep -v CHPL_TARGET_HAS_PRGENV | grep -v CHPL_HOST_CC | grep -v CHPL_TARGET_CC | grep -v CHPL_HOST_CXX | grep -v CHPL_TARGET_CXX | grep -v CHPL_TARGET_LD | grep -v CHPL_AUX_FILESYS | grep -v CHPL_HOST_MEM | grep -v CHPL_HOST_JEMALLOC | grep -v CHPL_TARGET_JEMALLOC | grep -v CHPL_LLVM_SUPPORT | grep -v CHPL_LLVM_CONFIG | grep -v CHPL_LLVM_VERSION | grep -v CHPL_SANITIZE | grep -v SUBDIR)
 
     good=""
     for var in ${printchplenv}; do

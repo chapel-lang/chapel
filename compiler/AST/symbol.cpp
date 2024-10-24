@@ -461,7 +461,7 @@ const char* Symbol::getUnstableMsg() const {
 // When printing the deprecation message to the console we typically
 // want to filter out inline markup used for Sphinx (which is useful
 // for when generating the docs). See:
-// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
@@ -1450,15 +1450,15 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(symId), sig(nullptr)
+    symId(symId), rfn(nullptr)
 {
   gTemporaryConversionSymbols.add(this);
 }
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(
-    const chpl::resolution::TypedFnSignature* sig)
+    const chpl::resolution::ResolvedFunction* rfn)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(), sig(sig)
+    symId(), rfn(rfn)
 {
   gTemporaryConversionSymbols.add(this);
 }
@@ -1469,8 +1469,8 @@ void TemporaryConversionSymbol::verify() {
 TemporaryConversionSymbol*
 TemporaryConversionSymbol::copyInner(SymbolMap* map) {
   TemporaryConversionSymbol* copy = nullptr;
-  if (sig) {
-    copy = new TemporaryConversionSymbol(sig);
+  if (rfn) {
+    copy = new TemporaryConversionSymbol(rfn);
   } else {
     copy = new TemporaryConversionSymbol(symId);
   }

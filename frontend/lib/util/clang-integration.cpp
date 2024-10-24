@@ -19,6 +19,7 @@
 
 #include "chpl/util/clang-integration.h"
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"

@@ -70,6 +70,8 @@ static void test4() {
   printf("test4\n");
   Context ctx;
   Context* context = &ctx;
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
   std::string program = R""""(
     enum myEnum {
       blue,
@@ -123,7 +125,7 @@ static void test4() {
   assert(bestFn->formalType(0).param()->isEnumParam());
   assert(bestFn->formalType(0).param()->toEnumParam()->value().id == greenEnum->id());
   const ResolvedFunction* rfn = scopeResolveFunction(context, isBlueFn->id());
-  const auto tsi = typedSignatureInitial(context, rfn->signature()->untyped());
+  const auto tsi = typedSignatureInitial(rc, rfn->signature()->untyped());
   assert(tsi->formalType(0).isParam());
 }
 

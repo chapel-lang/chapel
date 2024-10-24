@@ -97,29 +97,13 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(c_sublocid_none);
       const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
 
     root_accum.setRootLocaleValues(dst);
-  }
-
-  proc helpSetupRootLocaleAPU(dst:borrowed RootLocale) {
-    extern proc chpl_task_setSubloc(subloc: int(32));
-
-    var root_accum:chpl_root_locale_accum;
-
-    forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
-      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
-      dst.myLocales[locIdx] = node;
-      root_accum.accum(node);
-    }
-
-    root_accum.setRootLocaleValues(dst);
-    here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
   proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
@@ -214,34 +198,6 @@ module LocaleModelHelpSetup {
       }
       chpl_task_setSubloc(origSubloc);
     }
-  }
-
-  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out
-      numSublocales, type CPULocale, type GPULocale) {
-    helpSetupLocaleFlat(dst, local_name);
-
-    extern proc chpl_task_getMaxPar(): uint(32);
-
-    // Comment out HSA initialization until runtime HSA support is checked in
-
-    //    extern proc chpl_hsa_initialize(): c_int;
-    //    var initHsa =  chpl_hsa_initialize();
-    //    if (initHsa == 1) {
-    //      halt("Could not initialize HSA");
-    //    }
-
-    // Hardcode two sublocales, 1 CPU and 1 GPU
-    numSublocales = 2;
-
-    const origSubloc = chpl_task_getRequestedSubloc();
-
-    chpl_task_setSubloc(0:chpl_sublocID_t);
-    dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
-
-    chpl_task_setSubloc(1:chpl_sublocID_t);
-
-    dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
-    chpl_task_setSubloc(origSubloc);
   }
 
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
