@@ -243,9 +243,9 @@ void chpl_gpu_impl_setup_device(int my_index, int global_index) {
   ROCM_CALL(hipSetDevice(device));
 #endif
   hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
-  chpl_gpu_rocm_modules[i] = module;
+  chpl_gpu_rocm_modules[my_index] = module;
 
-  hipDeviceGetAttribute(&deviceClockRates[i],
+  hipDeviceGetAttribute(&deviceClockRates[my_index],
                         hipDeviceAttributeClockRate, device);
 
   // map array indices (relative device numbers) to global device IDs
