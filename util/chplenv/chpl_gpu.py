@@ -454,7 +454,7 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
     major_version = get_sdk_version().split('.')[0]
 
-    if major_version in ('4', '5') and chpl_llvm.get() == 'bundled':
+    if major_version in ('5',) and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
     elif major_version == '6' and chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
         # once https://github.com/llvm/llvm-project/issues/65188 is resolved,
@@ -522,7 +522,7 @@ def get_sdk_version():
 def _validate_rocm_version_impl():
     """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
-    MIN_REQ_VERSION = "4"
+    MIN_REQ_VERSION = "5.0"
     MAX_REQ_VERSION = "5.5"
     MIN_ROCM6_REQ_VERSION = "6"
     MAX_ROCM6_REQ_VERSION = "6.3"

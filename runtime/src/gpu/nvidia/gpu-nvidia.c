@@ -461,14 +461,6 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return true;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return true;
-}
-
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
   CUDA_CALL(cuMemHostRegister(var, size, CU_MEMHOSTREGISTER_PORTABLE));
   return var;

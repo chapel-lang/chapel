@@ -149,22 +149,10 @@ bool chpl_gpu_impl_stream_ready(void* stream) {
 void chpl_gpu_impl_stream_synchronize(void* stream) {
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return false;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return false;
-}
-
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle reductions in "\
-                      "the module code\n");\
-}
+                                                    void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
@@ -175,11 +163,7 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle reductions in "\
-                      "the module code\n");\
-}
+                                                    void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
@@ -189,11 +173,7 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 #define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                                   data_type* data_out, \
-                                                  int n, void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle sorting in "\
-                      "the module code\n");\
-}
+                                                  int n, void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
 

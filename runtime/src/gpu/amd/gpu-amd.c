@@ -186,8 +186,8 @@ void chpl_gpu_impl_init(int* num_devices) {
 #else
     ROCM_CALL(hipDeviceGet(&allDevices[i], i));
 #endif
+
     int domain, bus, device;
-#if ROCM_VERSION_MAJOR >= 5
     int rc = hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
                                     allDevices[i]);
     if (rc == hipErrorInvalidValue) {
@@ -197,10 +197,7 @@ void chpl_gpu_impl_init(int* num_devices) {
     } else {
       ROCM_CALL(rc);
     }
-#else
-    // Earlier versions of ROCm don't support this attribute.
-    domain = 0;
-#endif
+
     ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
                                     allDevices[i]));
     ROCM_CALL(hipDeviceGetAttribute(&device, hipDeviceAttributePciDeviceId,
@@ -526,14 +523,6 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   if (stream) {
     ROCM_CALL(hipStreamSynchronize(stream));
   }
-}
-
-bool chpl_gpu_impl_can_reduce(void) {
-  return ROCM_VERSION_MAJOR>=5;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return chpl_gpu_impl_can_reduce();
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
