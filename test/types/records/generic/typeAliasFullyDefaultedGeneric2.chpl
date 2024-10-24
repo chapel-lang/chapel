@@ -23,3 +23,4 @@ type t6 = if coinflip then R(?) else R(?);
 
 writeln(t5:string);
 writeln(t6:string);
+writeln(R(?):string);

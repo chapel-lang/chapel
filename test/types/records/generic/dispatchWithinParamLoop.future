@@ -6,3 +6,5 @@ the loop form.
 
 Interestingly, if rewriting the param bool loop as an int bool loop,
 things work (see dispatchWithinIntParamLoop.chpl)
+
+#26142
