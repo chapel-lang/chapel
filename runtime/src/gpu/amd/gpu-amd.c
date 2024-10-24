@@ -249,8 +249,8 @@ void chpl_gpu_impl_setup_device(int my_index, int global_index) {
                         hipDeviceAttributeClockRate, device);
 
   // map array indices (relative device numbers) to global device IDs
-  indexToDeviceID[my_index] = device;
-  deviceIDToIndex[device] = my_index;
+  dev_lid_to_pid_table[my_index] = device;
+  dev_pid_to_lid_table[device] = my_index;
   chpl_gpu_impl_set_globals(my_index, module);
 }
 
