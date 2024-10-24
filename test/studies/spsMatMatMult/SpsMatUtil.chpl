@@ -67,7 +67,9 @@ module SpsMatUtil {
 
     // writeln(grid);
 
-    type layoutType = if layout==CSR then csrLayout else cscLayout;
+    // Note: Parens below are a workaround for the issue captured in
+    //   test/type/records/generic/typeAliasFullyDefaultedGeneric.chpl
+    type layoutType = if layout==CSR then csrLayout() else cscLayout();
     const DenseBlkDom = parentDom dmapped new blockDist(boundingBox=parentDom,
                                                   targetLocales=localeGrid,
                                                   sparseLayoutType=layoutType);
