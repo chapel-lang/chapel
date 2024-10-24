@@ -57,7 +57,7 @@ async def test_go_to_record_def(client: LanguageClient):
 @pytest.mark.asyncio
 async def test_go_to_call_basic(client: LanguageClient):
     """
-    Ensure that 'go to definition' on a type actually works.
+    Ensure that 'go to definition' works for concrete called functions.
     """
 
     file = """
@@ -75,7 +75,8 @@ async def test_go_to_call_basic(client: LanguageClient):
 @pytest.mark.asyncio
 async def test_go_to_call_generic(client: LanguageClient):
     """
-    Ensure that 'go to definition' on a type actually works.
+    Ensure that 'go to definition' works for generic functions and calls
+    made from within them.
     """
 
     file = """
