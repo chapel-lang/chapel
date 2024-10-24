@@ -86,6 +86,14 @@ module MemConsistency {
     }
   }
 
+  // Given an input memory order, returns 'true' if that
+  // order has a release component
+  proc orderIncludesRelease(param order: memoryOrder) param : bool {
+    return order == memoryOrder.seqCst ||
+           order == memoryOrder.acqRel ||
+           order == memoryOrder.release;
+  }
+
   inline proc c_memory_order(param order: memoryOrder) {
     import HaltWrappers;
     select order {
