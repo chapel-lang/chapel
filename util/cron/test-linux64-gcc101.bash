@@ -27,4 +27,4 @@ fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc101"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$CWD/nightly -cron -examples -blog ${nightly_args}

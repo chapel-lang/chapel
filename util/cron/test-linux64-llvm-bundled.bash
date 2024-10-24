@@ -11,4 +11,4 @@ unset CHPL_LLVM_CONFIG
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm-bundled"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$CWD/nightly -cron -examples -blog ${nightly_args}
