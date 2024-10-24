@@ -115,7 +115,7 @@ class CSImpl: BaseDist {
     this.sortedIndices = sortedIndices;
   }
 
-  override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain(?)) {
     return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.strides, _to_unmanaged(this), dom);
   }
 
@@ -134,12 +134,12 @@ class CSImpl: BaseDist {
   override proc dsiIsLayout() param {
     return true;
   }
-} // CS
+} // CSImpl
 
 record chpl_layoutHelper {
   forwarding var _value;
 
-  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+  proc newSparseDom(param rank: int, type idxType, dom: domain(?)) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {
       _value.add_dom(x);
@@ -326,7 +326,7 @@ class CSDom: BaseSparseDomImpl(?) {
   var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CSImpl(compressRows,sortedIndices), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CSImpl(compressRows,sortedIndices), parentDom: domain(?)) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -363,7 +363,7 @@ class CSDom: BaseSparseDomImpl(?) {
     //    return new csLayout(dist);
   }
 
-  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  proc dsiAssignDomain(rhs: domain(?), lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type &&
        canDoDirectAssignment(rhs) {
       // Optimized CSC->CSC / CSR->CSR
