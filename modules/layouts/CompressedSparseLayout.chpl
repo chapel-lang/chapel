@@ -149,6 +149,7 @@ record chpl_layoutHelper {
 }
 
 /*
+/*
 
   This record implements a 2D compressed sparse row layout (CSR, for
   short).
@@ -234,12 +235,7 @@ record cscLayout {
     return l.type != r.type;
   }
 }
-/*
 */
-
-/* This was a record that was designed to be re-usable for both csr and
-   csc, but I wasn't able to get it to work (in time for 2.2) due to the
-   challenges mentioned in the comment blocks that follow this one.
 
 @chpldoc.nodoc
 record csLayout {
@@ -269,7 +265,6 @@ record csLayout {
     return l.type != r.type;
   }
 }
-*/
 
 /*
   At first I considered a type-returning procedure, but that wouldn't
@@ -288,20 +283,37 @@ record csLayout {
   cscLayout = csLayout(compressRows=false, ?);
 */
 
-/*
-  These lead to an assertion error in the compiler or segfault if the
-  assertion is removed:
-
-  record csrLayout {
+record csrLayout {
+  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
   param sortedIndices: bool = csLayoutSortByDefault;
   forwarding var csl: csLayout(compressRows=true, sortedIndices);
+
+  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
+    this.sortedIndices = sortedIndices;
+    this.csl = new csLayout(compressRows=true, sortedIndices);
   }
 
-  record cscLayout {
+  proc init(value: CSImpl(?)) {
+    this.sortedIndices = value.sortedIndices;
+    this.csl = new csLayout(value);
+  }
+}
+
+record cscLayout {
+  // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
   param sortedIndices: bool = csLayoutSortByDefault;
   forwarding var csl: csLayout(compressRows=false, sortedIndices);
+
+  proc init(param sortedIndices: bool = csLayoutSortByDefault) {
+    this.sortedIndices = sortedIndices;
+    this.csl = new csLayout(compressRows=false, sortedIndices);
   }
-*/
+
+  proc init(value: CSImpl(?)) {
+    this.sortedIndices = value.sortedIndices;
+    this.csl = new csLayout(value);
+  }
+}
 
 @chpldoc.nodoc
 class CSDom: BaseSparseDomImpl(?) {
