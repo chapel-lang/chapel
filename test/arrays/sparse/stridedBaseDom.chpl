@@ -1,11 +1,11 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const useCS = false;
 
 const D = {1..10, 1..10};
 const D2 = D by 2;
 var SDdefault: sparse subdomain(D2);
-var SDCS: sparse subdomain(D2) dmapped new dmap (new CS());
+var SDCS: sparse subdomain(D2) dmapped new csrLayout();
 
 if useCS then
   foo(SDCS);

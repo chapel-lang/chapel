@@ -177,6 +177,7 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
+	layouts/CompressedSparseLayout.chpl \
 
 
 #

@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 use Random;
 
 config const N = 8;
@@ -8,8 +8,8 @@ const ParentDom = {dimRange, dimRange};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=true));
-var cscDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=false));
+var csrDom: sparse subdomain(ParentDom) dmapped new csrLayout();
+var cscDom: sparse subdomain(ParentDom) dmapped new cscLayout();
 var cooDom: sparse subdomain(ParentDom);
 
 var SparseDom = if layoutType == layoutTypes.csr then
