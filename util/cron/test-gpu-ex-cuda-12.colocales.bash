@@ -9,9 +9,8 @@ source $CWD/common-ofi.bash
 
 export SLURM_NETWORK=single_node_vni
 export CHPL_RT_LOCALES_PER_NODE=2
-module load cudatoolkit  # default is CUDA 12
+module load cuda/12.4
 
-export CHPL_LLVM=bundled  # CUDA 12 is only supported with bundled LLVM
 export CHPL_LAUNCHER_PARTITION=allgriz
 export CHPL_GPU=nvidia
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native/multiLocale"
