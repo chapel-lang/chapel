@@ -1019,13 +1019,12 @@ class FileInfo:
 
     def _search_instantiations(
         self,
-        root: Union[chapel.AstNode, List[chapel.AstNode]],
+        root: chapel.AstNode,
         via: Optional[chapel.TypedSignature] = None,
     ):
-        for node in chapel.preorder(root):
-            if not isinstance(node, chapel.FnCall):
-                continue
-
+        for node, _ in chapel.each_matching(
+            root, chapel.FnCall, iterator=chapel.preorder
+        ):
             resolved = self._resolve_call(node, via)
             if not resolved:
                 continue
@@ -1099,10 +1098,9 @@ class FileInfo:
 
             calls_in_inst = PositionList[ResolvedPair](lambda x: x.ident.rng)
 
-            for node in chapel.preorder(inst.node):
-                if not isinstance(node, chapel.FnCall):
-                    continue
-
+            for node, _ in chapel.each_matching(
+                inst.node, chapel.FnCall, iterator=chapel.preorder
+            ):
                 resolved = self._resolve_call(node, via=sig)
                 if not resolved:
                     continue
@@ -1170,7 +1168,8 @@ class FileInfo:
             # TODO: suppress resolution errors due to false-positives
             # this should be removed once the resolver is finished
             with self.context.context.track_errors() as _:
-                self._search_instantiations(asts)
+                for ast in asts:
+                    self._search_instantiations(ast)
                 self.call_segments.sort()
 
     def called_function_at_position(
