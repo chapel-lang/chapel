@@ -142,7 +142,8 @@ ID ID::parentSymbolId(Context* context) const {
   }
 
   if (this->isFabricatedId() &&
-      this->fabricatedIdKind() == FabricatedIdKind::Generated) {
+      this->fabricatedIdKind() == FabricatedIdKind::Generated &&
+      !isSymbolDefiningScope()) {
     return ID(parentSymPath, ID_GEN_START, 0);
   } else {
     // Otherwise, construct an ID for the parent symbol
