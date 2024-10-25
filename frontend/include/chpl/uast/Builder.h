@@ -127,7 +127,6 @@ class Builder final {
                                                 UniqueString parentSymbolPath);
 
   static owned<Builder> createForGeneratedCode(Context* context,
-                                               const char* filepath,
                                                ID generatedFrom);
 
   /** Construct a Builder for use when reading uAST from a library file. */

@@ -1513,11 +1513,7 @@ static const BuilderResult&
 buildTypeConstructor(Context* context, ID typeID) {
   QUERY_BEGIN(buildTypeConstructor, context, typeID);
 
-  auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
-
-  auto parentMod = parsing::idToParentModule(context, typeID);
-  auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + typeDecl->name().str();
-  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), typeID);
+  auto bld = Builder::createForGeneratedCode(context, typeID);
   auto builder = bld.get();
   auto dummyLoc = parsing::locateId(context, typeID);
 

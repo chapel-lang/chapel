@@ -120,9 +120,11 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
 }
 
 owned<Builder> Builder::createForGeneratedCode(Context* context,
-                                               const char* filepath,
                                                ID generatedFrom) {
-  auto uniqueFilename = UniqueString::get(context, filepath);
+  // Note: currently filePath only appears to be used when modules are
+  // involved, and generated uAST is currently expected to be a single
+  // top-level function. Locations will be set manually by caller.
+  auto uniqueFilename = UniqueString::get(context, "<dummy>");
   auto b = new Builder(context, uniqueFilename, generatedFrom.symbolPath(),
                        /* LibraryFile */ nullptr,
                        /* isGenerated=*/true);
