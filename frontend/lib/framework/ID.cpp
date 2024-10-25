@@ -129,6 +129,20 @@ ID ID::fabricateId(Context* context,
   return newId;
 }
 
+ID ID::generatedId(UniqueString symbolPath,
+                 int postOrderId,
+                 int numChildIds) {
+  int pid;
+  if (postOrderId == -1) {
+    pid = ID_GEN_START;
+  } else {
+    pid = ID_GEN_START - 1 - postOrderId;
+  }
+
+  return ID(symbolPath, pid, numChildIds);
+}
+
+
 ID ID::parentSymbolId(Context* context) const {
   if (postOrderId_ >= 0) {
     // Create an ID with postorder id -1 instead

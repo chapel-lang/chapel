@@ -159,6 +159,13 @@ class ID final {
                         FabricatedIdKind kind);
 
   /**
+    Create an ID that represents a uAST node created during compilation.
+   */
+  static ID generatedId(UniqueString symbolPath,
+                       int postOrderId,
+                       int numChildIds);
+
+  /**
     Return the number of ids contained in this node, not including itself. In
     the postorder traversal numbering, the ids contained appear before the node.
 
