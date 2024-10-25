@@ -294,6 +294,15 @@ const char* toString(Type* type, bool decorateAllClasses) {
     if (retval == NULL)
       retval = vt->symbol->name;
 
+    // If the type is generic with defaults, insert a question mark to
+    // differentiate it from the concrete instance.
+    if (auto at = toAggregateType(vt)) {
+      if (at == at->getRootInstantiation() &&
+          at->isGenericWithDefaults()) {
+        retval = astr(retval, "(?)");
+      }
+    }
+
   }
 
   return astr(retval);
