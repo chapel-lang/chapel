@@ -5896,6 +5896,21 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
   return resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
 }
 
+const BuilderResult*
+buildDefaultFunction(Context* context,
+                     UniqueString typePath,
+                     UniqueString name) {
+  auto typeID = ID(typePath);
+
+  if (name == USTR("init")) {
+    return &buildInitializer(context, typeID);
+  } else if (typeID.symbolName(context) == name) {
+    return &buildTypeConstructor(context, typeID);
+  }
+
+  return nullptr;
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

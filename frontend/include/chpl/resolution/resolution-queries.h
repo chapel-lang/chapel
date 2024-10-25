@@ -558,6 +558,15 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                                       const types::QualifiedType& followThis,
                                       const CallScopeInfo& inScopes);
 
+/**
+  Given a type's symbol path and the name of a default function, return a
+  BuilderResult storing the generated default function uAST.
+*/
+const uast::BuilderResult*
+buildDefaultFunction(Context* context,
+                     UniqueString typePath,
+                     UniqueString name);
+
 
 } // end namespace resolution
 } // end namespace chpl

@@ -219,7 +219,9 @@ void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
 }
 
 BuilderResult Builder::result() {
-  this->createImplicitModuleIfNeeded();
+  if (isGenerated() == false) {
+    this->createImplicitModuleIfNeeded();
+  }
   this->assignIDs();
 
   // if we have a symbolTableVec, use it to compute
@@ -333,14 +335,17 @@ void Builder::assignIDs() {
   int i = 0;
   int commentIndex = 0;
 
-  if (!startingSymbolPath_.isEmpty()) {
+  if (!generatedFrom_.isEmpty()) {
+    pathVec = ID::expandSymbolPath(context_, generatedFrom_.symbolPath());
+  } else if (!startingSymbolPath_.isEmpty()) {
     // start from the starting symbol path if it exists
     pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
   }
 
   for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
-    if (ast->isModule() || ast->isComment()) {
+    bool isModuleOrComment = ast->isModule() || ast->isComment();
+    if (isGenerated() || isModuleOrComment) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {

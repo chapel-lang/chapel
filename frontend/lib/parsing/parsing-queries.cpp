@@ -26,6 +26,7 @@
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/resolution/scope-queries.h" // for moduleInitializationOrder
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
@@ -192,15 +193,6 @@ introspectParsedFiles(Context* context) {
   return toReturn;
 }
 
-static const BuilderResult&
-compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
-  QUERY_BEGIN(compilerGeneratedBuilderQuery, context, symbolPath);
-
-  BuilderResult ret;
-
-  return QUERY_END(ret);
-}
-
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context,
@@ -208,22 +200,16 @@ parseFileContainingIdToBuilderResult(Context* context,
                                      UniqueString* setParentSymbolPath) {
   if (id.isFabricatedId() &&
       id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
-    // Find the generated module's symbol path
-    UniqueString symbolPath;
-    if (id.symbolName(context).startsWith("chpl__generated")) {
-      symbolPath = id.symbolPath();
-    } else {
-      symbolPath = ID::parentSymbolPath(context, id.symbolPath());
-      if (symbolPath.isEmpty()) return nullptr;
+    // Symbol path for the type from which this ID was generated
+    auto symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+    auto symbolName = id.symbolName(context);
 
-      // Assumption: The generated module goes only one symbol deep.
-      CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
+    const BuilderResult* br = resolution::buildDefaultFunction(context, symbolPath, symbolName);
+    if (br != nullptr) {
+      if (setParentSymbolPath) *setParentSymbolPath = symbolPath;
     }
 
-    const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
-    assert(br.numTopLevelExpressions() != 0);
-    if (setParentSymbolPath) *setParentSymbolPath = UniqueString();
-    return &br;
+    return br;
   } else  {
     UniqueString path;
     UniqueString parentSymbolPath;
@@ -237,16 +223,6 @@ parseFileContainingIdToBuilderResult(Context* context,
 
     return nullptr;
   }
-}
-
-const BuilderResult&
-getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath) {
-  return compilerGeneratedBuilderQuery(context, symbolPath);
-}
-
-void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
-                                 BuilderResult result) {
-  QUERY_STORE_RESULT(compilerGeneratedBuilderQuery, context, result, symbolPath);
 }
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
