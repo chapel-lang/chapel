@@ -299,8 +299,6 @@ static void collectFields(const AstNode* ast,
   }
 }
 
-static const BuilderResult& buildInitializer(Context* context, ID typeID);
-
 static bool initHelper(Context* context,
                        Builder* builder,
                        const AggregateDecl* typeDecl,
@@ -332,8 +330,7 @@ static bool initHelper(Context* context,
 
       if (!userDefinedExists) {
         auto& br = buildInitializer(context, pct->id());
-        auto mod = br.topLevelExpression(0)->toModule();
-        auto fn = mod->child(0)->toFunction();
+        auto fn = br.topLevelExpression(0)->toFunction();
 
         // Add formals and super.init() arguments
         for (auto formal : fn->formals()) {
@@ -389,10 +386,12 @@ static bool initHelper(Context* context,
 }
 
 const BuilderResult& buildInitializer(Context* context, ID typeID) {
+  QUERY_BEGIN(buildInitializer, context, typeID);
+
   auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
   auto parentMod = parsing::idToParentModule(context, typeID);
   auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + typeDecl->name().str() + "_init";
-  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), parentMod, parentMod.symbolPath());
+  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), typeID, parentMod.symbolPath());
   auto builder = bld.get();
   auto dummyLoc = parsing::locateId(context, typeID);
 
@@ -439,13 +438,7 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
   builder->addToplevelExpression(std::move(genFn));
 
   auto result = builder->result();
-
-  auto modPath = result.topLevelExpression(0)->id().symbolPath();
-  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(result));
-
-  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
-
-  return br;
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
@@ -505,8 +498,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   } else {
     auto& br = buildInitializer(context, inCompType->id());
 
-    const Module* genMod = br.topLevelExpression(0)->toModule();
-    auto initFn = genMod->child(genMod->numChildren()-1)->toFunction();
+    auto initFn = br.topLevelExpression(0)->toFunction();
 
     // compute the FormalDetails manually so that we can set the default-kind
     // appropriately.
