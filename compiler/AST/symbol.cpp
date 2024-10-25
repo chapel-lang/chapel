@@ -1788,14 +1788,7 @@ VarSymbol *new_CStringSymbol(const char *str) {
 
 VarSymbol* new_BoolSymbol(bool b) {
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  // Why not just return these? test: studies/bale/indexgather/ig-variants
-  VarSymbol* proto = b ? gTrue : gFalse;
-  VarSymbol* s = new VarSymbol(
-    astr("_", proto->name, "_", istr(literal_id++)), dtBool);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
-  *s->immediate = *proto->immediate;
-  return s;
+  return b ? gTrue : gFalse;
 }
 
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
