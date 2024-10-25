@@ -121,12 +121,11 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
 
 owned<Builder> Builder::createForGeneratedCode(Context* context,
                                                const char* filepath,
-                                               ID generatedFrom,
-                                               UniqueString parentSymbolPath) {
+                                               ID generatedFrom) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+  auto b = new Builder(context, uniqueFilename, generatedFrom.symbolPath(),
                        /* LibraryFile */ nullptr,
-                       generatedFrom);
+                       /* isGenerated=*/true);
   return toOwned(b);
 }
 
@@ -335,9 +334,7 @@ void Builder::assignIDs() {
   int i = 0;
   int commentIndex = 0;
 
-  if (!generatedFrom_.isEmpty()) {
-    pathVec = ID::expandSymbolPath(context_, generatedFrom_.symbolPath());
-  } else if (!startingSymbolPath_.isEmpty()) {
+  if (!startingSymbolPath_.isEmpty()) {
     // start from the starting symbol path if it exists
     pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
   }
