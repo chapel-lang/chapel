@@ -71,8 +71,8 @@ proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
       if elm != gridDim[1] then
         { show("gridDim", gridDim); break; }
 
-    writef("numIndices %i  itersPerThread %i  blockSize %i/%i  gridSize %i\n",
-           numIndices, itersPerThread, blockSize, blockDim[1], gridDim[1]);
+    writef("numIndices %i  itersPerThread %i  blockSize %i/%i  gridSize %i  cyclic %?\n",
+           numIndices, itersPerThread, blockSize, blockDim[1], gridDim[1], cyclic);
     show("threadIdx", threadIdx);
     show("blockId",   blockId);
     writeln();
