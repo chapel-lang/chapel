@@ -1091,7 +1091,7 @@ class GpuKernel {
   int nReductionBufs_ = 0;
   int nHostRegisteredVars_ = 0;
   bool lateGpuizationFailure_ = false;
-  bool cyclicIPT_ = false; //wass
+  bool cyclicIPT_ = true; //wass
 
   public:
   GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1125,8 +1125,7 @@ class GpuKernel {
 
   void generateIndexComputation();
   void generateOobCond();
-  void generateIptLoopHelp(Symbol* index0, Symbol* upperBound0,
-                           Symbol* increment);
+  void generateIptLoopHelp(Symbol* upperBound0, Symbol* increment);
   void generateBlockedLoopOverIPT(Symbol* upperBound);
   void generateCyclicLoopOverIPT(Symbol* upperBound);
   void generateOobCondNoIPT(Symbol* upperBound);
@@ -1648,15 +1647,14 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
   fn_->insertAtTail(new CondStmt(new SymExpr(isInBounds), this->userBody_));
 }
 
-void GpuKernel::generateIptLoopHelp(Symbol* index0, Symbol* upperBound0,
-                                    Symbol* increment) {
+void GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
   // while loop condition variable
   VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
   Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
-                             whileVar, index0, upperBound0);
+                             whileVar, kernelIndices_[0], upperBound0);
   fn_->insertAtTail(whileExpr);
 
-  // while loop execute userBody_ then increment all indices
+  // while loop to execute userBody_ then increment all indices
   BlockStmt* whileBody = new BlockStmt();
   whileBody->insertAtTail(this->userBody_);
 
@@ -1666,7 +1664,6 @@ void GpuKernel::generateIptLoopHelp(Symbol* index0, Symbol* upperBound0,
 
   whileBody->insertAtTail(whileExpr->copy());
 
-  // create AST for the loop
   fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
 }
 
@@ -1714,15 +1711,20 @@ void GpuKernel::generateBlockedLoopOverIPT(Symbol* upperBound) {
   switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
   fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
 
-  generateIptLoopHelp(index0, threadBound, new_IntSymbol(1));
+  generateIptLoopHelp(threadBound, new_IntSymbol(1));
 }
 
-/* Adds the following AST to a GPU kernel
- * to implement *cyclic* IPT partitioning,
- * analogously to generateBlockedLoopOverIPT().
+/* Adds the AST for *cyclic* IPT partitioning,
+ * analogously to generateBlockedLoopOverIPT():
  *
+ *   for(; index[0] <= upperBound; for all i: index[i] += numThreads) {
+ *     // empty block stored in this->userBody_
+ *   }
+ *
+ * Currently implemented as a while loop.
  */
 void GpuKernel::generateCyclicLoopOverIPT(Symbol* upperBound) {
+  generateIptLoopHelp(upperBound, localNumThreads_);
 }
 
 void GpuKernel::generatePostBody() {
