@@ -205,7 +205,7 @@ inline bool CallExpr::isIndirectCall() const {
   if (!baseExpr) return false;
   if (resolvedFunction()) return false;
   if (isPrimitive()) return false;
-  if (isFunctionType(baseExpr->qualType().type())) return true;
+  if (isFunctionType(baseExpr->qualType().type()->getValType())) return true;
   return false;
 }
 

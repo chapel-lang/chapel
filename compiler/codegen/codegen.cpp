@@ -336,6 +336,26 @@ genGlobalInt(const char* cname, int value, bool isHeader,
   }
 }
 
+void codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                        bool isConstant) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    if(isHeader)
+      fprintf(info->cfile, "extern const int64_t %s;\n", cname);
+    else
+    fprintf(info->cfile, "const int64_t %s = %" PRId64 ";\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(
+          cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->irBuilder->getInt64(value));
+    globalInt->setConstant(isConstant);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+#endif
+  }
+}
+
 static void genGlobalInt32(const char *cname, int value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
@@ -657,12 +677,13 @@ static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
-  const char* eltType = "chpl_fn_p";
-  const char* name = "chpl_ftable";
+  const char* eltType = dtCVoidPtr->symbol->cname;
+  const char* name = ftableName;
 
   if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalInt64(ftableSizeName, 0, true);
     return;
   }
 
@@ -692,14 +713,15 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     ftable.push_back(gen);
   }
 
-  // make sure ftable always contains at least 1 element
-  if (ftable.empty()) {
-    GenRet nullFn = codegenTypedNull(funcPtrType);
-    ftable.push_back(nullFn);
-  }
+  // Make sure there is a NULL sentinel at the end.
+  GenRet nullFn = codegenTypedNull(funcPtrType);
+  ftable.push_back(nullFn);
 
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &ftable, false);
+
+  // Now emit the size
+  codegenGlobalInt64(ftableSizeName, ftable.size(), false);
 }
 
 static void
@@ -1938,6 +1960,7 @@ static void codegen_header(std::set<const char*> & cnames,
     // Start with primitive types in case they are referenced by
     // records or classes.
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
+      if (isFunctionType(typeSymbol->type)) typeSymbol->codegenMetadata();
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
           typeSymbol->hasLLVMType()) {
@@ -1966,6 +1989,7 @@ static void codegen_header(std::set<const char*> & cnames,
   for_vector(FnSymbol, fn2, functions) {
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
       ftableVec.push_back(fn2);
       ftableMap[fn2] = ftableVec.size()-1;

@@ -1035,7 +1035,20 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
-    llvm::Type *varType = type->getLLVMType();
+    llvm::Type *varType = nullptr;
+    if (auto ft = toFunctionType(type)) {
+
+      // If it's a function type, then it's an int index and not a pointer.
+      // Don't call the FunctionType::Type() builder because that would
+      // just create a LLVM function type.
+      // TODO: Depends on whether the variable is marked local or wide.
+      // We could make some function pointers local pointers instead of
+      // global indices as an optimization.
+      varType = dtUInt[INT_SIZE_64]->getLLVMType();
+    } else {
+      varType = type->getLLVMType();
+    }
+
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
@@ -1187,6 +1200,9 @@ GenRet ArgSymbol::codegen() {
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
+    // Set the type again since it will be overwritten by the LVT entry,
+    // which for some reason does not have a type.
+    ret.chplType = this->type;
 #endif
   }
 
@@ -1647,7 +1663,8 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
              isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
-             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
+             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ||
+             isFunctionType(type)) {
     if (is_imag_type(type)) {
       // At present, imaginary often aliases with real,
       // so make real the parent of imaginary.
@@ -1930,10 +1947,11 @@ int TypeSymbol::getLLVMStructureAlignment() {
 // for a class type, get its pointer alignment; otherwise:
 // must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
 int TypeSymbol::getLLVMAlignment() {
-  if (isClass(this->type))
+  if (isFunctionType(this->type) || isClass(this->type)) {
     return ALIGNMENT_DEFER; // pointer alignment from LLVM
-  else
+  } else {
     return getLLVMStructureAlignment();
+  }
 }
 
 // return the alignment stored in 'this' or,
@@ -3144,8 +3162,36 @@ void FnSymbol::codegenDef() {
 GenRet FnSymbol::codegen() {
   GenInfo *info = gGenInfo;
   GenRet ret;
-  if( info->cfile ) ret.c = cname;
-  else {
+
+  // If the value is being used as a first class function, then get its
+  // index from the dynamic function table and use that as the value.
+  if (this->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) {
+    std::vector<GenRet> args(1);
+    int64_t index = 0;
+
+    auto it = ftableMap.find(this);
+    if (it != ftableMap.end()) {
+      index = it->second;
+    } else {
+      INT_FATAL(this, "Failed to look up 'ftable' index!");
+    }
+
+    args[0] = new_IntSymbol(index, INT_SIZE_64);
+
+    auto fname = "chpl_staticToDynamicProcIdx";
+    ret = codegenCallExprWithArgs(fname, args);
+
+    INT_ASSERT(ret.isLVPtr == GEN_VAL);
+
+    // But make sure that the type is still the function pointer type.
+    ret.chplType = this->computeAndSetType();
+
+    return ret;
+  }
+
+  if (info->cfile) {
+      ret.c = cname;
+  } else {
 #ifdef HAVE_LLVM
     if (cname[0] == 'l' &&
         cname[1] == 'l' &&

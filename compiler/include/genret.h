@@ -54,7 +54,7 @@ extern GenRet baseASTCodegenString(const char* str);
    about
      - if it is GEN_VAL it can only be read (e.g. an integer constant);
      - if it is GEN_PTR it is a local pointer (e.g. to stack variable or array
-       member);i
+       member);
      - if it is GEN_WIDE, it is a wide pointer.
    For example, if we have
      var x:int;

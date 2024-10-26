@@ -42,6 +42,8 @@ FnSymbol*                 gAddModuleFn          = NULL;
 FnSymbol*                 gGenericTupleTypeCtor = NULL;
 FnSymbol*                 gGenericTupleDestroy  = NULL;
 
+const char*               ftableName = "chpl_ftable";
+const char*               ftableSizeName = "chpl_ftableSize";
 std::map<FnSymbol*, int>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 

@@ -213,6 +213,16 @@ void initializeGenInfo(void);
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
+// These typedefs exist just to avoid needing ifdefs in fn prototypes
+#ifdef HAVE_LLVM
+#include "clang/CodeGen/CGFunctionInfo.h"
+typedef clang::FunctionDecl* ClangFunctionDeclPtr;
+typedef llvm::FunctionType* LlvmFunctionTypePtr;
+#else
+typedef void* ClangFunctionDeclPtr;
+typedef void* LlvmFunctionTypePtr;
+#endif
+
 bool isBuiltinExternCFunction(const char* cname);
 bool needsCodegenWrtGPU(FnSymbol* fn);
 
@@ -231,6 +241,18 @@ void flushStatements(void);
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+GenRet codegenCallExprWithArgs(const char* fnName,
+                               std::vector<GenRet> & args,
+                               FnSymbol* fnSym = nullptr,
+                               ClangFunctionDeclPtr FD = nullptr,
+                               bool defaultToValues = true);
+GenRet codegenGetLocaleID(void);
+GenRet codegenUseGlobal(const char* global);
+GenRet codegenProcedurePointerFetch(Expr* baseExpr);
+GenRet codegenValueMaybeDeref(Expr* baseExpr);
+void   codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                          bool isConstant=true);
+
 Type* getNamedTypeDuringCodegen(const char* name);
 void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);

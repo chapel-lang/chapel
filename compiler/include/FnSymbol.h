@@ -310,6 +310,8 @@ extern FnSymbol*                gAddModuleFn;
 extern FnSymbol*                gGenericTupleTypeCtor;
 extern FnSymbol*                gGenericTupleDestroy;
 
+extern const char*              ftableName;
+extern const char*              ftableSizeName;
 extern std::map<FnSymbol*, int> ftableMap;
 extern std::vector<FnSymbol*>   ftableVec;
 

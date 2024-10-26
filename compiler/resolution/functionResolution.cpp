@@ -10656,6 +10656,8 @@ static Expr* swapInErrorSinkForCapture(FunctionType::Kind kind, Expr* use) {
 }
 
 static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
+  // Mark the function as a root to be added to the function table later.
+  fn->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   auto ret = new SymExpr(fn);
   use->replace(ret);
   return ret;
@@ -10718,7 +10720,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
-    for(auto i = 0; i < ft->numFormals(); i++) {
+    for (auto i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
       if (formal->isGeneric()) {
         std::string reason;
@@ -10727,7 +10729,9 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
           USR_PRINT(use, "the formal '%s' is generic", formal->name);
         } else {
           for (auto& r : reasons) {
-            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+            USR_PRINT(use, "the formal '%s' is generic because %s",
+                      formal->name,
+                      r.c_str());
           }
         }
       }

@@ -87,15 +87,6 @@ static GenRet codegenRnode(GenRet wide);
 
 static GenRet codegenAddrOf(GenRet r);
 
-// These typedefs exist just to avoid needing ifdefs in fn prototypes
-#ifdef HAVE_LLVM
-typedef clang::FunctionDecl* ClangFunctionDeclPtr;
-typedef llvm::FunctionType* LlvmFunctionTypePtr;
-#else
-typedef void* ClangFunctionDeclPtr;
-typedef void* LlvmFunctionTypePtr;
-#endif
-
 /* Note well the difference between codegenCall and codegenCallExpr.
  * codegenCallExpr always returns the call as an expression in the
  * returned GenRet. But codegenCall instead adds the call to the
@@ -116,11 +107,6 @@ static GenRet codegenCallExprWithArgs(GenRet function,
                                       FnSymbol* fnSym,
                                       ClangFunctionDeclPtr FD,
                                       bool defaultToValues);
-static GenRet codegenCallExprWithArgs(const char* fnName,
-                                      std::vector<GenRet> & args,
-                                      FnSymbol* fnSym = nullptr,
-                                      ClangFunctionDeclPtr FD = nullptr,
-                                      bool defaultToValues = true);
 static void codegenCallWithArgs(const char* fnName,
                                 std::vector<GenRet> & args,
                                 FnSymbol* fnSym = nullptr,
@@ -187,7 +173,7 @@ GenRet SymExpr::codegen() {
       if (var->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
         ret.mustPointOutsideOrderIndependentLoop = true;
     } else if(isArgSymbol(var)) {
-      ret = info->lvt->getValue(var->cname);
+      ret = toArgSymbol(var)->codegen();
       addNoAliasMetadata(ret, var);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
@@ -767,7 +753,6 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
 
 #endif
 
-static
 GenRet codegenUseGlobal(const char* global)
 {
   GenInfo* info = gGenInfo;
@@ -831,7 +816,6 @@ GenRet codegenGetNodeID(void)
 }
 
 // A construct which gives the current locale ID.
-static
 GenRet codegenGetLocaleID(void)
 {
   GenRet ret =  codegenCallExpr("chpl_gen_getLocaleID");
@@ -1684,7 +1668,7 @@ GenRet codegenValue(GenRet r)
 }
 
 // codegenValue r, but deref it first if necessary
-static GenRet codegenValueMaybeDeref(Expr* r) {
+GenRet codegenValueMaybeDeref(Expr* r) {
   GenRet ret;
   if (r->isRefOrWideRef()) {
     ret = codegenValue(codegenDeref(r));
@@ -3300,7 +3284,6 @@ static GenRet codegenCallExprWithArgs(GenRet function,
                               defaultToValues);
 }
 
-static
 GenRet codegenCallExprWithArgs(const char* fnName,
                                std::vector<GenRet> & args,
                                FnSymbol* fnSym,
@@ -4258,15 +4241,29 @@ static void codegenEmbedChapelAstMetadata(GenRet& gr, BaseAST* ast) {
   #endif
 }
 
+GenRet codegenProcedurePointerFetch(Expr* baseExpr) {
+  std::vector<GenRet> args(1);
+  args[0] = codegenValueMaybeDeref(baseExpr);
+
+  // Make sure the converted value is a Chapel function type.
+  auto t = baseExpr->typeInfo();
+  INT_ASSERT(t && isFunctionType(t->getValType()));
+  INT_ASSERT(isFunctionType(args[0].chplType));
+
+  auto fname = "chpl_dynamicProcIdxToLocalPtr";
+  GenRet ret = codegenCallExprWithArgs(fname, args);
+
+  return ret;
+}
+
 static GenRet codegenCallIndirect(CallExpr* call) {
   std::vector<GenRet> args(call->numActuals());
-  GenRet base = call->baseExpr->codegen();
+  GenRet base = codegenProcedurePointerFetch(call->baseExpr);
   GenRet ret;
 
-  auto chplFnType = toFunctionType(call->baseExpr->qualType().type());
+  auto baseExprT = call->baseExpr->typeInfo()->getValType();
+  auto chplFnType = toFunctionType(baseExprT);
   INT_ASSERT(chplFnType);
-
-  // TODO: Relax this when we are able.
   INT_ASSERT(call->numActuals() == chplFnType->numFormals());
 
   int idx = 0;

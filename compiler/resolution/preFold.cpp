@@ -120,7 +120,7 @@ Expr* preFold(CallExpr* call) {
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
 
       } else if (isLcnSymbol(symExpr->symbol())) {
-        if (!isFunctionType(symExpr->symbol()->type)) {
+        if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
           call->insertAtHead(gMethodToken);
