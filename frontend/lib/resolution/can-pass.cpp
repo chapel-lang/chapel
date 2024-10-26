@@ -1018,10 +1018,13 @@ CanPassResult CanPassResult::canPass(Context* context,
   const Param* actualParam = actualQT.param();
   const Param* formalParam = formalQT.param();
   if (actualParam && formalParam) {
-    if (actualParam != formalParam) {
-      // passing different param values won't do
-      return fail(FAIL_MISMATCHED_PARAM);
-    } // otherwise continue with type information
+    // Note: Comparing 'actualParam' and 'formalParam' here isn't quite enough.
+    // We could have squeezed an int(64) '0' into a uint(64) formal, which
+    // would then be instantiated as a uint(64) '0'.
+    //
+    // Passing a param with a value to another such param isn't valid in Chapel,
+    // so the caller should be responsible for catching that case and dealing
+    // with it based on the context of the two arguments.
   } else if (formalParam && !actualParam) {
     // this case doesn't make sense
     CHPL_ASSERT(false && "case not expected");
@@ -1357,6 +1360,29 @@ commonType(Context* context,
   if (!properties.valid()) return chpl::empty;
   auto bestKind = properties.toKind();
 
+  // Check param values of each type. If a param is required and the values
+  // do not match then there is no common type.
+  //
+  // If a param is not required and there is a mismatch continue on without
+  // param-ness.
+  bool paramRequired = requiredKind &&
+                       *requiredKind == QualifiedType::PARAM;
+  if (bestKind == QualifiedType::PARAM || paramRequired) {
+    auto firstParam = types.front().param();
+    bool mismatch = false;
+    for (auto& type : types) {
+      mismatch = mismatch || type.param() != firstParam;
+    }
+    if (mismatch) {
+      if (paramRequired) {
+        return chpl::empty;
+      } else {
+        properties.setParam(false);
+        bestKind = properties.toKind();
+      }
+    }
+  }
+
   // Create a new list of types with their kinds adjusted.
   std::vector<QualifiedType> adjustedTypes;
   for (const auto& type : types) {
@@ -1379,22 +1405,6 @@ commonType(Context* context,
   if (auto commonType = findByAncestor(context, adjustedTypes, requiredKind))
     return commonType;
 
-  bool paramRequired = requiredKind &&
-                       *requiredKind == QualifiedType::PARAM;
-
-  if (bestKind == QualifiedType::PARAM && !paramRequired) {
-    // We couldn't unify the types as params, but maybe if we downgrade
-    // them to values, it'll work.
-    properties.setParam(false);
-    bestKind = properties.toKind();
-    for (auto& adjustedType : adjustedTypes) {
-      // adjust kind and strip param
-      adjustedType = QualifiedType(bestKind, adjustedType.type());
-    }
-
-    if (auto commonType = findByPassing(context, adjustedTypes))
-      return commonType;
-  }
   return chpl::empty;
 }
 
