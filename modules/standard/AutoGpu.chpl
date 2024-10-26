@@ -107,20 +107,15 @@ module AutoGpu {
   */
   pragma "docs only"
   @chpldoc.attributeSignature("gpu.blockSize")
-  inline proc chpl__gpuBlockSizeAttr(arg: integral) {}
+  inline proc chpl__gpuBlockSizeAttr(blockSize: integral) {}
 
   inline proc chpl__gpuBlockSizeAttr(param counter: int, arg: integral) {
     if CHPL_LOCALE_MODEL == "gpu" then
-      __primitive("gpu set blockSize", arg, counter);
+      __primitive("gpu set blockSize", counter, arg);
   }
 
   pragma "last resort"
-  inline proc chpl__gpuBlockSizeAttr(param counter: int, rest ...) {
-    compilerError("'@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size");
-  }
-
-  pragma "last resort"
-  inline proc chpl__gpuBlockSizeAttr(param counter: int) {
+  inline proc chpl__gpuBlockSizeAttr(args ...) {
     compilerError("'@gpu.blockSize' attribute must have exactly one argument: an integral value for the block size");
   }
 
@@ -139,23 +134,24 @@ module AutoGpu {
      // variable version (applies to loop expressions and promoted expressions)
      @gpu.itersPerThread(4)
      var A = (foreach i in 1..128 do i*i) + 1;
+
+   Specifying the `cyclic` argument to be `true` distributes the iterations
+   across GPU threads in cyclic fashion instead of the default block
+   discipline.
   */
   pragma "docs only"
   @chpldoc.attributeSignature("gpu.itersPerThread")
-  inline proc chpl__gpuItersPerThreadAttr(arg: integral) {}
+  inline proc chpl__gpuItersPerThreadAttr(itersPerThread: integral,
+                                          param cyclic: bool = false) {}
 
-  inline proc chpl__gpuItersPerThreadAttr(param counter: int, arg: integral) {
+  inline proc chpl__gpuItersPerThreadAttr(param counter: int, ipt: integral,
+                                          param cyclic: bool = false) {
     if CHPL_LOCALE_MODEL == "gpu" then
-      __primitive("gpu set itersPerThread", arg, counter);
+      __primitive("gpu set itersPerThread", counter, ipt, cyclic);
   }
 
   pragma "last resort"
-  inline proc chpl__gpuItersPerThreadAttr(param counter: int, rest ...) {
-    compilerError("'@gpu.itersPerThread' attribute must have exactly one argument: an integral value for the number of iterations per GPU thread");
-  }
-
-  pragma "last resort"
-  inline proc chpl__gpuItersPerThreadAttr(param counter: int) {
-    compilerError("'@gpu.itersPerThread' attribute must have exactly one argument: an integral value for the number of iterations per GPU thread");
+  inline proc chpl__gpuItersPerThreadAttr(args ...) {
+    compilerError("'@gpu.itersPerThread' attribute must have one or two arguments: an integral value for the number of iterations per GPU thread and optionally a param boolean value indicating whether the iterations should be distributed across GPU threads in a cyclic fashion, with block-distributed by default");
   }
 }

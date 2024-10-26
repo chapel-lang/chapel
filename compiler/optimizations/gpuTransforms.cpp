@@ -1091,7 +1091,7 @@ class GpuKernel {
   int nReductionBufs_ = 0;
   int nHostRegisteredVars_ = 0;
   bool lateGpuizationFailure_ = false;
-  bool cyclicIPT_ = true; //wass
+  bool cyclicIPT_ = false;
 
   public:
   GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1756,11 +1756,10 @@ static bool isAttrCloneOrError(CallExpr* recordedAttr, CallExpr* call) {
   // attributes get unique number as a second actual, and for clones,
   // that number should match.
   // See convert-uast.cpp / convertAttributeCall().
-  if (recordedAttr->numActuals() == 2 && call->numActuals() == 2) {
-    auto sym1 = toSymExpr(recordedAttr->get(2))->symbol();
-    auto sym2 = toSymExpr(call->get(2))->symbol();
-    if (sym1 == sym2) return true;
-  }
+  auto sym1 = toSymExpr(recordedAttr->get(1))->symbol();
+  auto sym2 = toSymExpr(call->get(1))->symbol();
+  if (sym1 == sym2) return true;
+
   USR_FATAL_CONT(call, "can apply this attribute only once per loop");
   USR_PRINT(recordedAttr, "the attribute is previously applied here");
   return true;
@@ -1781,13 +1780,16 @@ void GpuKernel::processGpuPrimitivesBlock() {
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
         if (isAttrCloneOrError(blockSizeCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 2); // see chpl__gpuBlockSizeAttr()
         blockSizeCall_ = call;
-        blockSize_ = toSymExpr(call->get(1))->symbol();
+        blockSize_ = toSymExpr(call->get(2))->symbol();
       }
       else if (call->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD)) {
         if (isAttrCloneOrError(itersPerThreadCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 3); // see chpl__gpuItersPerThreadAttr
         itersPerThreadCall_ = call;
-        itersPerThread_ = toSymExpr(call->get(1))->symbol();
+        itersPerThread_ = toSymExpr(call->get(2))->symbol();
+        cyclicIPT_ = toSymExpr(call->get(3))->symbol() == gTrue;
       }
 
       if (isCallToPrimitiveWeShouldNotCopyIntoKernel(call))
