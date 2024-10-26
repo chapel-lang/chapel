@@ -46,3 +46,43 @@ numIndices 32  itersPerThread 8  blockSize 5/5  gridSize 1
   threadIdx:  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  3  3  3  3  3  3  3  3
     blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 
+numIndices 32  itersPerThread 1  blockSize 3/3  gridSize 11
+  threadIdx:  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  1
+    blockId:  0  0  0  1  1  1  2  2  2  3  3  3  4  4  4  5  5  5  6  6  6  7  7  7  8  8  8  9  9  9 10 10
+
+numIndices 32  itersPerThread 2  blockSize 3/3  gridSize 6
+  threadIdx:  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0  0  1  2  0  1  2  0  1  2  0  1  2  0  1  2  0
+    blockId:  0  0  0  1  1  1  2  2  2  3  3  3  4  4  4  5  0  0  0  1  1  1  2  2  2  3  3  3  4  4  4  5
+
+numIndices 32  itersPerThread 3  blockSize 3/3  gridSize 4
+  threadIdx:  0  1  2  0  1  2  0  1  2  0  1  0  1  2  0  1  2  0  1  2  0  1  0  1  2  0  1  2  0  1  2  0
+    blockId:  0  0  0  1  1  1  2  2  2  3  3  0  0  0  1  1  1  2  2  2  3  3  0  0  0  1  1  1  2  2  2  3
+
+numIndices 32  itersPerThread 4  blockSize 3/3  gridSize 3
+  threadIdx:  0  1  2  0  1  2  0  1  0  1  2  0  1  2  0  1  0  1  2  0  1  2  0  1  0  1  2  0  1  2  0  1
+    blockId:  0  0  0  1  1  1  2  2  0  0  0  1  1  1  2  2  0  0  0  1  1  1  2  2  0  0  0  1  1  1  2  2
+
+numIndices 32  itersPerThread 5  blockSize 3/3  gridSize 3
+  threadIdx:  0  1  2  0  1  2  0  0  1  2  0  1  2  0  0  1  2  0  1  2  0  0  1  2  0  1  2  0  0  1  2  0
+    blockId:  0  0  0  1  1  1  2  0  0  0  1  1  1  2  0  0  0  1  1  1  2  0  0  0  1  1  1  2  0  0  0  1
+
+numIndices 32  itersPerThread 8  blockSize 1/1  gridSize 4
+  threadIdx:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+    blockId:  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3
+
+numIndices 32  itersPerThread 8  blockSize 2/2  gridSize 2
+  threadIdx:  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1
+    blockId:  0  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1
+
+numIndices 32  itersPerThread 8  blockSize 3/3  gridSize 2
+  threadIdx:  0  1  2  0  0  1  2  0  0  1  2  0  0  1  2  0  0  1  2  0  0  1  2  0  0  1  2  0  0  1  2  0
+    blockId:  0  0  0  1  0  0  0  1  0  0  0  1  0  0  0  1  0  0  0  1  0  0  0  1  0  0  0  1  0  0  0  1
+
+numIndices 32  itersPerThread 8  blockSize 4/4  gridSize 1
+  threadIdx:  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+
+numIndices 32  itersPerThread 8  blockSize 5/5  gridSize 1
+  threadIdx:  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3  0  1  2  3
+    blockId:  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+

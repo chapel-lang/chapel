@@ -50,12 +50,12 @@ proc show(name: string, arr) {
   writef("\n");
 }
 
-proc test(numIndices: int, itersPerThread: int, blockSize: int) {
+proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
   on here.gpus(0) {
     var threadIdx, blockDim, blockId, gridDim: [1..numIndices] int;
 
     @gpu.blockSize(blockSize)
-    @gpu.itersPerThread(itersPerThread)
+    @gpu.itersPerThread(itersPerThread, cyclic)
     foreach i in 1..numIndices {
       threadIdx[i] = __primitive("gpu threadIdx x");
       blockDim[i] = __primitive("gpu blockDim x");
@@ -82,14 +82,16 @@ proc test(numIndices: int, itersPerThread: int, blockSize: int) {
 
 writeln();
 
-test(32, 1, 3);
-test(32, 2, 3);
-test(32, 3, 3);
-test(32, 4, 3);
-test(32, 5, 3);
+for param cyclic in false..true {
+  test(32, 1, 3, cyclic);
+  test(32, 2, 3, cyclic);
+  test(32, 3, 3, cyclic);
+  test(32, 4, 3, cyclic);
+  test(32, 5, 3, cyclic);
 
-test(32, 8, 1);
-test(32, 8, 2);
-test(32, 8, 3);
-test(32, 8, 4);
-test(32, 8, 5);
+  test(32, 8, 1, cyclic);
+  test(32, 8, 2, cyclic);
+  test(32, 8, 3, cyclic);
+  test(32, 8, 4, cyclic);
+  test(32, 8, 5, cyclic);
+}
