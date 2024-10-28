@@ -2972,6 +2972,10 @@ FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
   return resolveNormalCall(call, checkState);
 }
 
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, Type* type);
+
 static bool resolveTypeComparisonCall(CallExpr* call) {
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
@@ -2989,8 +2993,12 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
             rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
         {
+            // Instantiate generic-with-default types if needed.
+            Type* lhsType = resolveGenericActual(lhs, call);
+            Type* rhsType = resolveGenericActual(rhs, call);
+
             Symbol* value = gFalse;
-            bool sameType = lhs->symbol()->type == rhs->symbol()->type;
+            bool sameType = lhsType == rhsType;
             if (eq && sameType)
               value = gTrue;
             if (ne && !sameType)
@@ -3158,10 +3166,6 @@ static bool isGenericSubclass(Type* targetType, Type* valueType) {
 
   return ret;
 }
-
-static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
-                                  bool resolvePartials = false);
-static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
