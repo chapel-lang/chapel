@@ -1281,6 +1281,33 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
   return props.toKind();
 }
 
+// Try finding a common ancestor type between class types
+static optional<QualifiedType> findByAncestor(
+    Context* context, const std::vector<QualifiedType>& types,
+    const KindRequirement& requiredKind) {
+  // disallow subtype conversions for ref intents
+  if (requiredKind && isRefQualifier(*requiredKind)) return chpl::empty;
+
+  std::vector<QualifiedType> parentTypes;
+  for (const auto& type : types) {
+    auto ct = type.type()->toClassType();
+    if (!ct) return chpl::empty;
+    auto bct = ct->basicClassType();
+    if (!bct) return chpl::empty;
+    auto pct = bct->parentClassType();
+    // don't consider the root of the class hierarchy for a common type
+    if (!pct || pct->isObjectType()) return chpl::empty;
+
+    parentTypes.emplace_back(QualifiedType(
+        type.kind(),
+        ClassType::get(context, pct, ct->manager(), ct->decorator())));
+  }
+
+  if (parentTypes.empty()) return chpl::empty;
+
+  return commonType(context, parentTypes, requiredKind);
+}
+
 static optional<QualifiedType>
 findByPassing(Context* context,
               const std::vector<QualifiedType>& types) {
@@ -1346,10 +1373,11 @@ commonType(Context* context,
   // Try apply usual coercion rules to find common type
   // Performance: if the types vector ever becomes very long,
   // it might be worth using a unique'd vector here.
-  auto commonType = findByPassing(context, adjustedTypes);
-  if (commonType) {
+  if (auto commonType = findByPassing(context, adjustedTypes))
     return commonType;
-  }
+
+  if (auto commonType = findByAncestor(context, adjustedTypes, requiredKind))
+    return commonType;
 
   bool paramRequired = requiredKind &&
                        *requiredKind == QualifiedType::PARAM;
@@ -1364,10 +1392,8 @@ commonType(Context* context,
       adjustedType = QualifiedType(bestKind, adjustedType.type());
     }
 
-    commonType = findByPassing(context, adjustedTypes);
-    if (commonType) {
+    if (auto commonType = findByPassing(context, adjustedTypes))
       return commonType;
-    }
   }
   return chpl::empty;
 }
