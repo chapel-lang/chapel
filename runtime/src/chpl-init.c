@@ -404,6 +404,7 @@ void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
 void chpl_libraryModuleLevelSetup(void);
 void chpl_libraryModuleLevelCleanup(void);
 
+bool lib_inited = false;
 //
 // A program using Chapel as a library might look like:
 //
@@ -423,12 +424,10 @@ void chpl_libraryModuleLevelCleanup(void);
 // }
 //
 void chpl_library_init(int argc, char* argv[]) {
-  static bool inited = false;
-
-  if (inited) {
+  if (lib_inited) {
     chpl_error("Can't call chpl_library_init() twice", 0, 0);
   } else {
-    inited = true;
+    lib_inited = true;
   }
   chpl_rt_init(argc, argv);                     // Initialize the runtime
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
@@ -446,6 +445,9 @@ extern void chpl_deinitModules(void);
 // A wrapper around chplexit.c:chpl_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
+  if (!lib_inited) {
+    return;
+  }
   chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
   chpl_finalize(0, 1);
