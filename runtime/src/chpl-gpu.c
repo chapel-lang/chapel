@@ -635,6 +635,15 @@ void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
                                int n_reduce_vars, int n_host_registered_vars,
                                int ln, int32_t fn) {
+
+  if (blk_dim <= 0) {
+    char msg[200];
+    snprintf(msg, sizeof(msg),
+             "Illegal block size was specified for the GPU kernel: %d\n",
+             blk_dim);
+    chpl_error(msg, ln, fn);
+  }
+
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
