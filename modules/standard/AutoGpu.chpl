@@ -152,6 +152,6 @@ module AutoGpu {
 
   pragma "last resort"
   inline proc chpl__gpuItersPerThreadAttr(args ...) {
-    compilerError("'@gpu.itersPerThread' attribute must have one or two arguments: an integral value for the number of iterations per GPU thread and optionally a param boolean value indicating whether the iterations should be distributed across GPU threads in a cyclic fashion, with block-distributed by default");
+    compilerError("'@gpu.itersPerThread' attribute must have one or two arguments: an integral value for the number of iterations per GPU thread and optionally a 'param' boolean value indicating whether the iterations should be distributed across GPU threads in a cyclic or block (default) fashion");
   }
 }
