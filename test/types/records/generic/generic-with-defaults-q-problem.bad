@@ -1,4 +1,4 @@
 generic-with-defaults-q-problem.chpl:11: error: unresolved call 'K.init(GRD(int(64)))'
-generic-with-defaults-q-problem.chpl:5: note: this candidate did not match: K.init(myfield: GRD)
+generic-with-defaults-q-problem.chpl:5: note: this candidate did not match: K.init(myfield: GRD(?))
 generic-with-defaults-q-problem.chpl:11: note: because actual argument #1 with type 'GRD(int(64))'
-generic-with-defaults-q-problem.chpl:6: note: is passed to formal 'in myfield: GRD'
+generic-with-defaults-q-problem.chpl:6: note: is passed to formal 'in myfield: GRD(?)'
