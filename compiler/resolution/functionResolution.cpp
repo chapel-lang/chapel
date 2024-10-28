@@ -3159,6 +3159,10 @@ static bool isGenericSubclass(Type* targetType, Type* valueType) {
   return ret;
 }
 
+static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
+                                  bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, Type* type);
+
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
@@ -3184,6 +3188,9 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     // handle casts from types
     if (isTypeExpr(valueSe)) {
       if (targetType == dtString) {
+        // Instantiate generic-with-default types if needed.
+        valueType = resolveGenericActual(valueSe, call);
+
         // Handle cast of type to string
         call->primitive = primitives[PRIM_NOOP];
         call->baseExpr->remove();
@@ -10074,10 +10081,6 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static Type* resolveGenericActual(SymExpr* se, CallExpr* inCall,
-                                  bool resolvePartials = false);
-static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
   CallExpr* inCall = nullptr;

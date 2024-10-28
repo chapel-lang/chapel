@@ -1,0 +1,17 @@
+R1(?)
+R1(true)
+R1(true)
+R1(false)
+R2
+R2
+R2(true)
+R2(false)
+----
+R1(?)
+R1(true)
+R1(true)
+R1(false)
+R2
+R2
+R2(true)
+R2(false)
