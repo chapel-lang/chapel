@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-
 # Ensure mason in PATH
 print('PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH')
 
@@ -13,7 +11,3 @@ print('MASON_HOME=$PWD/mason_home')
 print('MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry')
 print('MASON_OFFLINE=false')
 print('SPACK_ROOT=$PWD/mason_home/spack')
-
-cachePath = os.getenv('REPO_CACHE_PATH', default='')
-if cachePath != '':
-   print('MASON_LICENSE_CACHE_PATH=' + cachePath)

@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+import os
+
+cachePath = os.getenv('REPO_CACHE_PATH')
+print('MASON_LICENSE_CACHE_PATH=' + cachePath)
