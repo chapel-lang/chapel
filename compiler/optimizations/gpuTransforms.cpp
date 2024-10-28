@@ -1055,6 +1055,9 @@ class KernelArg {
 
 static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
 static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
+static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     GpuKernel* kernel,
+                                     const GpuizableLoop& gpuLoop);
 
 // Given a GpuizableLoop that was determined to be "eligible" we generate an
 // outlined function
@@ -1079,6 +1082,8 @@ class GpuKernel {
   std::vector<Symbol*> kernelIndices_;
   std::vector<KernelArg> kernelActuals_;
   SymbolMap  copyMap_;
+  VarSymbol* numThreads_;
+  Symbol*    localNumThreads_;
   Symbol*    localItersPerThread_;
   BlockStmt* userBody_; // where the loop's body goes
   BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
@@ -1086,6 +1091,7 @@ class GpuKernel {
   int nReductionBufs_ = 0;
   int nHostRegisteredVars_ = 0;
   bool lateGpuizationFailure_ = false;
+  bool cyclicIPT_ = false;
 
   public:
   GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1100,6 +1106,8 @@ class GpuKernel {
   CallExpr* itersPerThreadCall() const {return itersPerThreadCall_; }
   Symbol* itersPerThread() const {return itersPerThread_; }
   bool hasItersPerThread() const { return itersPerThread_ != nullptr; }
+  bool blockIPT() const { return !cyclicIPT_; }
+  bool cyclicIPT() const { return cyclicIPT_; }
   int nReductionBufs() const {return nReductionBufs_; }
   int nHostRegisteredVars() const {return nHostRegisteredVars_; }
   void incNumHostRegisteredVars() { nHostRegisteredVars_ += 1; }
@@ -1117,7 +1125,9 @@ class GpuKernel {
 
   void generateIndexComputation();
   void generateOobCond();
-  void generateLoopOverIPT(Symbol* upperBound);
+  void generateIptLoopHelp(Symbol* upperBound0, Symbol* increment);
+  void generateBlockedLoopOverIPT(Symbol* upperBound);
+  void generateCyclicLoopOverIPT(Symbol* upperBound);
   void generateOobCondNoIPT(Symbol* upperBound);
   void generatePostBody();
   void markGPUSubCalls(FnSymbol* fn);
@@ -1139,6 +1149,8 @@ GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , itersPerThread_(nullptr)
   , name_("")
   , launchBlock_(new BlockStmt())
+  , numThreads_(nullptr)
+  , localNumThreads_(nullptr)
   , localItersPerThread_(nullptr)
   , userBody_(nullptr)
   , postBody_(nullptr)
@@ -1176,6 +1188,7 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   fn_->addFlag(FLAG_ALWAYS_RESOLVE);
   fn_->addFlag(FLAG_GPU_CODEGEN);
 
+  numThreads_ = generateNumThreads(launchBlock_, this, gpuLoop);
   generateIndexComputation();
   generateOobCond();
   generatePostBody();
@@ -1528,7 +1541,7 @@ Symbol* GpuKernel::addLocalVariable(Symbol* symInLoop) {
  *  t1 = t0 + threadIdxX      // aka `global thread idx`
  *  index = t1 + lowerBound   // aka `calculated thread idx`
  *
- *  If we have @gpu.itersPerThread, instead generates:
+ *  If we have @gpu.itersPerThread with block policy, instead generates:
  *
  *  index = lowerBound + t1 * itersPerThread
  *
@@ -1559,9 +1572,14 @@ void GpuKernel::generateIndexComputation() {
     PRIM_ADD, tempVar, varThreadIdxX));
   fn_->insertAtTail(c2);
 
-  if (hasItersPerThread()) {
+  if (hasItersPerThread() && blockIPT()) {
     localItersPerThread_ = maybeAddCompilerGeneratedKernelArgument(
                                itersPerThread_, "chpl_itersPerThread");
+  }
+
+  if (hasItersPerThread() && cyclicIPT()) {
+    localNumThreads_ = maybeAddCompilerGeneratedKernelArgument(
+                               numThreads_, "chpl_numThreads");
   }
 
   for (std::vector<Symbol*>::size_type i=0 ; i<numIndices ; i++) {
@@ -1571,7 +1589,7 @@ void GpuKernel::generateIndexComputation() {
                                                            "chpl_lowerBound");
     VarSymbol* addend = tempVar1;
 
-    if (hasItersPerThread()) {
+    if (hasItersPerThread() && blockIPT()) {
       VarSymbol* tempVar2 = insertNewVarAndDef(fn_->body, "t2",
                                                tempVar1->type);
       fn_->insertAtTail(new CallExpr(PRIM_MOVE, tempVar2, new CallExpr(
@@ -1597,8 +1615,12 @@ void GpuKernel::generateOobCond() {
                               gpuLoop.upperBound(), "chpl_upperBound");
   this->userBody_ = new BlockStmt();
 
-  if (hasItersPerThread())
-    generateLoopOverIPT(localUpperBound);
+  if (hasItersPerThread()) {
+    if (blockIPT())
+      generateBlockedLoopOverIPT(localUpperBound);
+    if (cyclicIPT())
+      generateCyclicLoopOverIPT(localUpperBound);
+  }
   else
     generateOobCondNoIPT(localUpperBound);
 }
@@ -1625,7 +1647,28 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
   fn_->insertAtTail(new CondStmt(new SymExpr(isInBounds), this->userBody_));
 }
 
+void GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
+  // while loop condition variable
+  VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
+  Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
+                             whileVar, kernelIndices_[0], upperBound0);
+  fn_->insertAtTail(whileExpr);
+
+  // while loop to execute userBody_ then increment all indices
+  BlockStmt* whileBody = new BlockStmt();
+  whileBody->insertAtTail(this->userBody_);
+
+  for_vector(Symbol, index, kernelIndices_) {
+    whileBody->insertAtTail("'+='(%S,%S)", index, increment);
+  }
+
+  whileBody->insertAtTail(whileExpr->copy());
+
+  fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
+}
+
 /* Adds the following AST to a GPU kernel
+ * to implement *block* IPT partitioning.
  *
  * // recall index[0] = lowerBound + `global thread idx` * itersPerThread
  * def threadBound = min(index[0] + itersPerThread - 1, upperBound)
@@ -1637,6 +1680,7 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
  * loop in cleanupForeachLoopsGuaranteedToRunOnCpu() that will come later
  * and replace ex. GPU primitives like "gpu threadIdx x" with chpl_error.
  * Not to mention that the latter will break codegen.
+ * TODO: fix that, so we can generate CForLoop instead of WhileDoStmt:
  * So use WhileDoStmt instead as follows:
  *
  * def whileVar = index[0] <= threadBound
@@ -1647,7 +1691,7 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
  *   whileVar = index[0] <= threadBound
  * })
  */
-void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
+void GpuKernel::generateBlockedLoopOverIPT(Symbol* upperBound) {
   // calculate 'threadBound'
   Symbol* index0 = kernelIndices_[0];
 
@@ -1667,24 +1711,20 @@ void GpuKernel::generateLoopOverIPT(Symbol* upperBound) {
   switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
   fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
 
-  // while loop condition variable
-  VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
-  Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
-                             whileVar, index0, threadBound);
-  fn_->insertAtTail(whileExpr);
+  generateIptLoopHelp(threadBound, new_IntSymbol(1));
+}
 
-  // while loop execute userBody_ then increment all indices
-  BlockStmt* whileBody = new BlockStmt();
-  whileBody->insertAtTail(this->userBody_);
-
-  for_vector(Symbol, index, kernelIndices_) {
-    whileBody->insertAtTail("'+='(%S,%S)", index, new_IntSymbol(1));
-  }
-
-  whileBody->insertAtTail(whileExpr->copy());
-
-  // create AST for the loop
-  fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
+/* Adds the AST for *cyclic* IPT partitioning,
+ * analogously to generateBlockedLoopOverIPT():
+ *
+ *   for(; index[0] <= upperBound; for all i: index[i] += numThreads) {
+ *     // empty block stored in this->userBody_
+ *   }
+ *
+ * Currently implemented as a while loop.
+ */
+void GpuKernel::generateCyclicLoopOverIPT(Symbol* upperBound) {
+  generateIptLoopHelp(upperBound, localNumThreads_);
 }
 
 void GpuKernel::generatePostBody() {
@@ -1716,11 +1756,10 @@ static bool isAttrCloneOrError(CallExpr* recordedAttr, CallExpr* call) {
   // attributes get unique number as a second actual, and for clones,
   // that number should match.
   // See convert-uast.cpp / convertAttributeCall().
-  if (recordedAttr->numActuals() == 2 && call->numActuals() == 2) {
-    auto sym1 = toSymExpr(recordedAttr->get(2))->symbol();
-    auto sym2 = toSymExpr(call->get(2))->symbol();
-    if (sym1 == sym2) return true;
-  }
+  auto sym1 = toSymExpr(recordedAttr->get(1))->symbol();
+  auto sym2 = toSymExpr(call->get(1))->symbol();
+  if (sym1 == sym2) return true;
+
   USR_FATAL_CONT(call, "can apply this attribute only once per loop");
   USR_PRINT(recordedAttr, "the attribute is previously applied here");
   return true;
@@ -1741,13 +1780,16 @@ void GpuKernel::processGpuPrimitivesBlock() {
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
         if (isAttrCloneOrError(blockSizeCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 2); // see chpl__gpuBlockSizeAttr()
         blockSizeCall_ = call;
-        blockSize_ = toSymExpr(call->get(1))->symbol();
+        blockSize_ = toSymExpr(call->get(2))->symbol();
       }
       else if (call->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD)) {
         if (isAttrCloneOrError(itersPerThreadCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 3); // see chpl__gpuItersPerThreadAttr
         itersPerThreadCall_ = call;
-        itersPerThread_ = toSymExpr(call->get(1))->symbol();
+        itersPerThread_ = toSymExpr(call->get(2))->symbol();
+        cyclicIPT_ = toSymExpr(call->get(3))->symbol() == gTrue;
       }
 
       if (isCallToPrimitiveWeShouldNotCopyIntoKernel(call))
@@ -2105,7 +2147,7 @@ const std::unordered_set<PrimitiveTag>
  *  so generate the following instead:
  *
  *   chpl_block_delta = ub - lb
- *   chpl_block_delta_plus = chpl_block_delta + ipt
+ *   chpl_block_delta_plus = chpl_block_delta + itersPerThread
  *   chpl_gpu_num_threads = chpl_block_delta_plus / itersPerThread
  */
 static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
@@ -2151,12 +2193,9 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
 void GpuKernel::generateKernelLaunch() {
   VarSymbol* cfg = insertNewVarAndDef(launchBlock_, "kernel_cfg", dtCVoidPtr);
 
-  VarSymbol* numThreads = generateNumThreads(launchBlock_, this, gpuLoop);
-
-
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
   initCfgCall->insertAtTail(fn());
-  initCfgCall->insertAtTail(numThreads);
+  initCfgCall->insertAtTail(numThreads_);
   initCfgCall->insertAtTail(blockSize());
   initCfgCall->insertAtTail(new_IntSymbol(kernelActuals().size()));
   initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
