@@ -808,6 +808,7 @@ static void launch_kernel(const char* name,
   chpl_gpu_impl_use_device(cfg->dev);
 
   chpl_gpu_diags_verbose_launch(cfg->ln, cfg->fn, cfg->dev,
+                                grd_dim_x, grd_dim_y, grd_dim_z,
                                 blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
