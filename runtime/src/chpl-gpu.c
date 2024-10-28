@@ -52,12 +52,7 @@ bool chpl_gpu_use_stream_per_task = true;
 
 static chpl_atomic_spinlock_t* priv_table_lock = NULL;
 
-void chpl_gpu_init(void) {
-  chpl_gpu_impl_init(&chpl_gpu_num_devices);
-
-  assert(chpl_gpu_num_devices >= 0);
-
-  // override number of devices if applicable
+static void override_number_of_devices(void) {
   const char* env;
   int32_t num = -1;
   if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
@@ -89,6 +84,68 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+}
+
+static void find_and_setup_devices(int numAllDevices) {
+  // Collect PCI information about each available device.
+  chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
+  for (int i=0 ; i < numAllDevices; i++) {
+    chpl_gpu_impl_collect_topo_addr_info(&allAddrs[i], i);
+  }
+
+  // Call the topo module to determine which GPUs we should use.
+  int numAddrs = numAllDevices;
+  chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
+
+  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
+  if (rc) {
+    chpl_warning("unable to select GPUs for this locale, using them all",
+                 0, 0);
+    for (int i = 0; i < numAllDevices; i++) {
+        addrs[i] = allAddrs[i];
+    }
+    numAddrs = numAllDevices;
+  }
+
+
+  // Now that we've figured out the devices assigned to us, set up the
+  // implementation to use them. This allocates various per-device state.
+  int numDevices = numAddrs;
+  chpl_gpu_impl_setup_with_device_count(numDevices);
+
+  // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
+  // and find the corresponding GPUs. Initialize each GPU and its array
+  // entries.
+
+  int j = 0;
+  for (int i = 0; i < numDevices; i++ ) {
+    for (; j < numAllDevices; j++) {
+      if (CHPL_TOPO_PCI_ADDR_EQUAL(&addrs[i], &allAddrs[j])) {
+        chpl_gpu_impl_setup_device(/* my_index */ i, /* global_index */ j);
+        break;
+      }
+    }
+  }
+
+  chpl_free(allAddrs);
+  chpl_free(addrs);
+
+  chpl_gpu_num_devices = numDevices;
+  assert(chpl_gpu_num_devices >= 0);
+}
+
+void chpl_gpu_init(void) {
+  // Initialize the underlying runtime library and count how many devices are
+  // available.
+  int numAllDevices;
+  chpl_gpu_impl_begin_init(&numAllDevices);
+
+#ifndef GPU_RUNTIME_CPU
+  find_and_setup_devices(numAllDevices);
+#endif
+
+  // override number of devices if applicable
+  override_number_of_devices();
 
   // TODO these should be freed
   priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
