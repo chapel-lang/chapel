@@ -11,7 +11,7 @@ export SLURM_NETWORK=single_node_vni
 export CHPL_RT_LOCALES_PER_NODE=2
 module load cuda/12.4
 
-export CHPL_LAUNCHER_PARTITION=allgriz
+export CHPL_LAUNCHER_PARTITION=griz256
 export CHPL_GPU=nvidia
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native/multiLocale"
 
