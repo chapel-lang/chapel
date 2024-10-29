@@ -726,7 +726,8 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
 
 const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
   auto fn = symbol->toFunction();
-  if (!fn && parentResolver)
+  auto ad = symbol->toAggregateDecl();
+  if (!fn && !ad && parentResolver)
     return parentResolver->getMethodReceiverScopeHelper();
 
   if (!allowReceiverScopes) {
@@ -735,36 +736,43 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     return nullptr;
   }
 
-  if (!receiverScopesComputed) {
-    receiverScopeHelper = nullptr;
-
-    if (fn && fn->isMethod()) {
-      if (!scopeResolveOnly) {
-        if (typedSignature != nullptr) {
-          if (typedSignature->isMethod()) {
-            // if we have a method typedFnSignature, use that
-            receiverScopeTypedHelper =
-              ReceiverScopeTypedHelper(typedSignature->id(),
-                                       typedSignature->formalType(0));
-            receiverScopeHelper = &receiverScopeTypedHelper;
-          }
-        } else {
-          // use the result from byPostorder
-          auto receiverType = byPostorder.byAst(fn->thisFormal()).type();
-          receiverScopeTypedHelper =
-            ReceiverScopeTypedHelper(fn->id(), std::move(receiverType));
-          receiverScopeHelper = &receiverScopeTypedHelper;
-        }
-
-      } else {
-        // scope resolve only
-        receiverScopeHelper = &receiverScopeSimpleHelper;
-      }
-    }
-
-    receiverScopesComputed = true;
+  if (receiverScopesComputed) {
+    return receiverScopeHelper;
   }
 
+  receiverScopeHelper = nullptr;
+
+  if (fn && fn->isMethod()) {
+    if (!scopeResolveOnly) {
+      if (typedSignature != nullptr) {
+        if (typedSignature->isMethod()) {
+          // if we have a method typedFnSignature, use that
+          receiverScopeTypedHelper =
+            ReceiverScopeTypedHelper(typedSignature->id(),
+                                     typedSignature->formalType(0));
+          receiverScopeHelper = &receiverScopeTypedHelper;
+        }
+      } else {
+        // use the result from byPostorder
+        auto receiverType = byPostorder.byAst(fn->thisFormal()).type();
+        receiverScopeTypedHelper =
+          ReceiverScopeTypedHelper(fn->id(), std::move(receiverType));
+        receiverScopeHelper = &receiverScopeTypedHelper;
+      }
+
+    } else {
+      // scope resolve only
+      receiverScopeHelper = &receiverScopeSimpleHelper;
+    }
+  } else if (ad) {
+    // If we're in an aggregate decl, set up to resolve implicit 'this' in,
+    // e.g., forwarding declarations.
+    //
+    // TODO: do something smarter when not scopeResolveOnly.
+    receiverScopeHelper = &receiverScopeSimpleHelper;
+  }
+
+  receiverScopesComputed = true;
   return receiverScopeHelper;
 }
 

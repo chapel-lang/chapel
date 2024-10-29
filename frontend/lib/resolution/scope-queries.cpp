@@ -338,6 +338,7 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isLoop(tag)
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
+         || asttags::isForwardingDecl(tag)
          || asttags::isSelect(tag)
          || asttags::isWhen(tag)
          || asttags::isTry(tag)
@@ -574,6 +575,12 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
 
       // Always generate a scope for do-while loops, to simplify the below
       if (ast->isDoWhile()) {
+        newScope = true;
+      }
+
+      // Always generate a scope for forwarding statements, to ensure they
+      // are in a 'method scope' when searching for receivers.
+      if (ast->isForwardingDecl()) {
         newScope = true;
       }
 

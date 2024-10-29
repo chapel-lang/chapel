@@ -164,6 +164,7 @@ struct Visitor {
   void checkInheritExprValid(const AstNode* node);
   void checkIterNames(const Function* node);
   void checkFunctionReturnsYields(const Function* node);
+  void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
 
   /*
   TODO
@@ -200,6 +201,7 @@ struct Visitor {
   void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const Foreach* node);
+  void visit(const ForwardingDecl* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
@@ -1766,6 +1768,10 @@ void Visitor::visit(const Foreach* node) {
   warnUnstableForeachLoops(node);
 }
 
+void Visitor::visit(const ForwardingDecl* node) {
+  checkForwardingInNonRecordOrClass(node);
+}
+
 void Visitor::visit(const Use* node) {
   for (auto clause : node->visibilityClauses()) {
     checkVisibilityClauseValid(node, clause);
@@ -2017,6 +2023,20 @@ void Visitor::checkFunctionReturnsYields(const Function* node) {
   if (counter.nReturnSomething > 0 && counter.nReturnEmpty > 0) {
     CHPL_REPORT(context_, InvalidReturns,
                 counter.firstReturnSomething, counter.firstReturnEmpty);
+  }
+}
+
+void Visitor::checkForwardingInNonRecordOrClass(const ForwardingDecl* node) {
+  auto parent = parents_.back();
+  bool validParent = false;
+  if (parent) {
+    if (auto ad = parent->toAggregateDecl()) {
+      validParent = !ad->isUnion();
+    }
+  }
+
+  if (!validParent) {
+    context_->error(node, "forwarding declarations are only allowed in records and classes");
   }
 }
 

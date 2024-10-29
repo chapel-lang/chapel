@@ -2976,6 +2976,11 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
           child->isTupleDecl() ||
           child->isForwardingDecl()) {
         auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
+
+        if (child->isForwardingDecl()) {
+          res.allowReceiverScopes = true;
+        }
+
         child->traverse(res);
       }
     }

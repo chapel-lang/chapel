@@ -1292,6 +1292,9 @@ static const ID& methodReceiverTypeIdForMethodId(Context* context,
           // we want to ignore errors here while just scope resolving.
         }
       }
+    } else if (ast->isForwardingDecl()) {
+      // Find the containing aggregate ID
+      result = parsing::idToParentId(context, methodId);
     }
   }
 
