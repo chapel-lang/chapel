@@ -460,18 +460,16 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
     bool allContinue = true;
     bool allSkip = true;
     for (auto& subFrame : poppingFrame->subFrames) {
-      if (subFrame.skip) continue;
-      allSkip = false;
+      if (subFrame.skip)
+        continue;
+      else
+        allSkip = false;
 
-      if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
-        allReturnOrThrow = false;
-      }
-      if (subFrame.frame == nullptr || !subFrame.frame->breaks) {
-        allBreak = false;
-      }
-      if (subFrame.frame == nullptr || !subFrame.frame->continues) {
-        allContinue = false;
-      }
+      bool frameNonEmpty = subFrame.frame != nullptr;
+
+      allReturnOrThrow &= frameNonEmpty && subFrame.frame->returnsOrThrows;
+      allBreak &= frameNonEmpty && subFrame.frame->breaks;
+      allContinue &= frameNonEmpty && subFrame.frame->continues;
     }
 
     // If all subframes skipped, then there were no returns.
