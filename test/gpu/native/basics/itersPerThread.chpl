@@ -50,6 +50,43 @@ proc show(name: string, arr) {
   writef("\n");
 }
 
+proc byThread(numIndices, threadIdx, blockSize, blockId, gridSize) {
+  var iters: [0..#gridSize, 0..#blockSize, 1..numIndices] bool;
+  for i in 1..numIndices do
+    iters[blockId[i], threadIdx[i], i] = true;
+  writef("%2s %2s | iters\n", "bl", "th");
+  for bid in 0..#gridSize {
+    for tid in 0..#blockSize {
+      writef("%2i %2i |", bid, tid);
+      for i in 1..numIndices do if iters[bid, tid, i] then writef(" %2i", i);
+      writef(" .\n");
+    }
+  }
+}
+
+proc check(blockSize, gridSize, threadIdx, blockDim, blockId, gridDim) {
+    // blockDim entries should equal the requested size
+    if blockSize != blockDim[1] then
+      writeln("blockSize attribute ", blockSize,
+              " != blockDim primitive ", blockDim[1]);
+
+    // all entries in 'blockDim' and 'gridDim' should be the same
+    for elm in blockDim do
+      if elm != blockSize then
+        { show("blockDim", blockDim); break; }
+    for elm in gridDim do
+      if elm != gridSize then
+        { show("gridDim", gridDim); break; }
+
+    // all entries in 'threadIdx' and 'blockId' should be within ranges
+    for elm in threadIdx do
+      if elm < 0 || elm >= blockSize then
+        writeln("invalid threadIdx ", elm);
+    for elm in blockId do
+      if elm < 0 || elm >= gridSize then
+        writeln("invalid blockId ", elm);
+}
+
 proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
   on here.gpus(0) {
     var threadIdx, blockDim, blockId, gridDim: [1..numIndices] int;
@@ -63,18 +100,16 @@ proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
       gridDim[i] = __primitive("gpu gridDim x");
     }
 
-    // all entries in 'blockDim' and 'gridDim' should be the same
-    for elm in blockDim do
-      if elm != blockDim[1] then
-        { show("blockDim", blockDim); break; }
-    for elm in gridDim do
-      if elm != gridDim[1] then
-        { show("gridDim", gridDim); break; }
+    const gridSize = gridDim[1];
 
-    writef("numIndices %i  itersPerThread %i  blockSize %i/%i  gridSize %i  cyclic %?\n",
-           numIndices, itersPerThread, blockSize, blockDim[1], gridDim[1], cyclic);
+    writef("numIndices %i  itersPerThread %i  blockSize %i  gridSize %i  %s\n",
+           numIndices, itersPerThread, blockSize, gridSize,
+           if cyclic then "cyclic" else "block");
+
+    check(blockSize, gridSize, threadIdx, blockDim, blockId, gridDim);
     show("threadIdx", threadIdx);
     show("blockId",   blockId);
+    byThread(numIndices, threadIdx, blockSize, blockId, gridSize);
     writeln();
   }
 }
@@ -95,3 +130,8 @@ for param cyclic in false..true {
   test(32, 8, 4, cyclic);
   test(32, 8, 5, cyclic);
 }
+
+// interesting cases to puzzle over
+test(18, 2, 2, true);
+test(18, 2, 3, true);
+test(18, 2, 6, true);
