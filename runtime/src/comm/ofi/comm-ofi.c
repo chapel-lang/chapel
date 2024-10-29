@@ -5587,7 +5587,6 @@ chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
   }
 
   chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
-  chpl_comm_diags_incr(put);
   return true;
 }
 
@@ -5614,6 +5613,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
   if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_put_nb(handle, addr, node, raddr, size);
   }
+  chpl_comm_diags_incr(put_nb);
   return (chpl_comm_nb_handle_t) handle;
 }
 
@@ -5653,7 +5653,6 @@ chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
   }
 
   chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
-  chpl_comm_diags_incr(get);
   return true;
 }
 
@@ -5664,6 +5663,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
   if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_get_nb(handle, addr, node, raddr, size);
   }
+  chpl_comm_diags_incr(get_nb);
   return (chpl_comm_nb_handle_t) handle;
 }
 
@@ -5805,6 +5805,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
     ofi_put(addr, node, raddr, size);
   }
+  chpl_comm_diags_incr(put);
 }
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
@@ -5813,35 +5814,10 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
 
-  retireDelayedAmDone(false /*taskIsEnding*/);
-
-  //
-  // Sanity checks, self-communication.
-  //
-  CHK_TRUE(addr != NULL);
-  CHK_TRUE(raddr != NULL);
-
-  if (size == 0) {
-    return;
+  if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
+    ofi_get(addr, node, raddr, size);
   }
-
-  if (node == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return;
-  }
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
-      chpl_comm_cb_info_t cb_data =
-        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
-         .iu.comm={addr, raddr, size, commID, ln, fn}};
-      chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
-
-  ofi_get(addr, node, raddr, size);
 }
 
 
