@@ -284,8 +284,8 @@ struct ReturnTypeInferrer {
   bool enter(const Select* sel, RV& rv);
   void exit(const Select* sel, RV& rv);
 
-  bool enter(const For* sel, RV& rv);
-  void exit(const For* sel, RV& rv);
+  bool enter(const For* forLoop, RV& rv);
+  void exit(const For* forLoop, RV& rv);
 
   bool enter(const Break* brk, RV& rv);
   void exit(const Break* brk, RV& rv);
