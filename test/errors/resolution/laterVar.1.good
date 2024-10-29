@@ -1,1 +1,5 @@
-error in laterVar.chpl:1: statement references a variable before it is defined
+laterVar.chpl:1: In function 'helper':
+laterVar.chpl:2: error: statement references a variable before it is defined
+laterVar.chpl:7: In function 'other':
+laterVar.chpl:8: error: statement references a variable before it is defined
+laterVar.chpl:16: error: statement references a variable before it is defined
