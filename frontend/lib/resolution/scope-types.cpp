@@ -339,8 +339,7 @@ Scope::Scope(Context* context,
   }
   if (auto fn = ast->toFunction()) {
     isMethodScope = fn->isMethod();
-  }
-  if (auto fd = ast->toForwardingDecl()) {
+  } else if (ast->isForwardingDecl()) {
     // Forwarding statements in aggregate types should be treated as if there's
     // an implicit 'this' receiver, so create a method scope.
     isMethodScope = true;
