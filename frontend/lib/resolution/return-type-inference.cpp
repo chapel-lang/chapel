@@ -374,6 +374,8 @@ QualifiedType ReturnTypeInferrer::returnedType() {
                               (QualifiedType::Kind) returnIntent);
     if (!retType) {
       // Couldn't find common type, so return type is incorrect.
+      // TODO: replace with custom error class, and give more information about
+      // why we couldn't determine a return type
       context->error(fnAstForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
