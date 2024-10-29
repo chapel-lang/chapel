@@ -33,11 +33,13 @@
      PYTHON_LIB_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
      PYTHON_LDVERSION=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LDVERSION'))")
 
-     chpl --ccflags "-isystem$PYTHON_INCLUDE_DIR" --ldflags "-L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION" ...Chapel source files...
+     chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
+          -L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION ...Chapel source files...
 
 
   TODO: example codes
 */
+@unstable("Python is unstable")
 module Python {
   private use CTypes;
   private import List;
@@ -90,7 +92,7 @@ module Python {
     /*
       Query to see if an exception has occurred, it will print the exception and halt
     */
-    proc checkException() throws {
+    inline proc checkException() throws {
       var ptype, pvalue, ptraceback: c_ptr(void);
       PyErr_Fetch(c_ptrTo(ptype), c_ptrTo(pvalue), c_ptrTo(ptraceback));
 
@@ -171,8 +173,8 @@ module Python {
         return new Function("<unknown>", new PyObject(this, obj));
       } else if isSubtype(t, PyObject) || isSubtype(t, PyObject?) {
         return new PyObject(this, obj);
-      } else if isSubtype(t, ClassInstance) || isSubtype(t, ClassInstance?) {
-        return new ClassInstance(new PyObject(this, obj));
+      } else if isSubtype(t, ClassObject) || isSubtype(t, ClassObject?) {
+        return new ClassObject(new PyObject(this, obj));
       } else if t == None {
         return new None();
       } else {
@@ -219,6 +221,9 @@ module Python {
       this.mod.check();
     }
     proc interpreter do return this.mod.interpreter;
+    proc str(): string throws {
+      return this.mod!.str();
+    }
   }
 
   /*
@@ -246,6 +251,10 @@ module Python {
       this.fn!.check();
     }
     proc interpreter do return this.fn!.interpreter;
+    proc str(): string throws {
+      return this.fn!.str();
+    }
+
     /*
       Call a python function with Chapel arguments and get a Chapel return value
     */
@@ -267,6 +276,13 @@ module Python {
 
       return res;
     }
+    proc this(type retType): retType throws {
+      var pyRes = PyObject_CallObject(this.fn!.get(), nil);
+      interpreter.checkException();
+      var res = interpreter.pyCPtrToChapel(retType, pyRes);
+      Py_DECREF(pyRes);
+      return res;
+    }
   }
 
 
@@ -283,6 +299,9 @@ module Python {
       this.cls.check();
     }
     proc interpreter do return this.cls.interpreter;
+    proc str(): string throws {
+      return this.cls!.str();
+    }
 
 
     @chpldoc.nodoc
@@ -311,11 +330,11 @@ module Python {
     /*
       Create a new instance of a python class
     */
-    proc this(args...): owned ClassInstance throws {
-      return new ClassInstance(this, (...args));
+    proc this(args...): owned ClassObject throws {
+      return new ClassObject(this, (...args));
     }
-    proc this(): owned ClassInstance throws {
-      return new ClassInstance(this);
+    proc this(): owned ClassObject throws {
+      return new ClassObject(this);
     }
 
 
@@ -323,9 +342,9 @@ module Python {
 
 
   /*
-    Represents a python class value
+    Represents a python value
   */
-  class ClassInstance {
+  class ClassObject {
     var cls: borrowed Class?;
     var obj: owned PyObject?;
     proc init(cls: borrowed Class, args...) throws {
@@ -346,6 +365,9 @@ module Python {
       this.obj!.check();
     }
     proc interpreter do return this.obj!.interpreter;
+    proc str(): string throws {
+      return this.obj!.str();
+    }
 
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.obj!.get(), attr.c_str());
@@ -423,14 +445,45 @@ module Python {
     proc value(type value) {
       return interpreter.pyCPtrToChapel(value, this.obj);
     }
+    proc str(): string throws {
+      var pyStr = PyObject_Str(this.obj);
+      interpreter.checkException();
+      var res = interpreter.pyCPtrToChapel(string, pyStr);
+      Py_DECREF(pyStr);
+      return res;
+    }
   }
 
   /* Represents the python value 'None' */
-  record None: writeSerializable {
-    proc serialize(writer, ref serializer) throws {
-      writer.write("None");
+  record None {
+    proc str(): string {
+      return "None";
     }
   }
+
+  operator:(v, type t: string): string throws
+    where isSubtype(v.type, PyObject) || isSubtype(v.type, Module) ||
+          isSubtype(v.type, Class) || isSubtype(v.type, Function) ||
+          isSubtype(v.type, ClassObject) || isSubtype(v.type, None) {
+    return v.str();
+  }
+  // PyObject intentionally does not have a serialize method
+  // its meant to be an implementation detail and not used directly
+  Module implements writeSerializable;
+  override proc Module.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+  Function implements writeSerializable;
+  override proc Function.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+  Class implements writeSerializable;
+  override proc Class.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+  ClassObject implements writeSerializable;
+  override proc ClassObject.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+  None implements writeSerializable;
+  proc None.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
 
   @chpldoc.nodoc
   module CPythonInterface {
