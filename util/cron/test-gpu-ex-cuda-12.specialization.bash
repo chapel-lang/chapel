@@ -11,7 +11,7 @@ module load cudatoolkit  # default is CUDA 12
 export CHPL_LLVM=bundled  # Using bundled LLVM since that's safer
 export CHPL_COMM=none
 export CHPL_LOCALE_MODEL=gpu
-export CHPL_LAUNCHER_PARTITION=allgriz
+export CHPL_LAUNCHER_PARTITION=griz256
 export CHPL_TEST_GPU=true
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
