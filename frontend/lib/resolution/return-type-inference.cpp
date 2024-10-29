@@ -627,6 +627,7 @@ bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
   enterScope(forLoop);
 
   if (forLoop->isParam()) {
+    // For param loops, "unroll" by manually traversing each iteration.
     const ResolvedExpression& rr = rv.byAst(forLoop);
     const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
     CHPL_ASSERT(resolvedLoop);
@@ -642,9 +643,11 @@ bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
         break;
       }
     }
-  }
 
-  return false;
+    return false;
+  } else {
+    return true;
+  }
 }
 void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
   exitScope(forLoop);
