@@ -1,4 +1,4 @@
-use MemDiagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes, CommDiagnostics;
 
 type elemType = int;
 
@@ -38,8 +38,30 @@ config const doGET = true;
 // in <10secs.
 config const verify = true;
 config const verifyStride = (2**12) / numBytes(elemType);
-
+config const printDiags = false;
 config const showPerf = false;
+
+
+var t: stopwatch;
+proc startDiags() {
+  t.start();
+  if printDiags { startCommDiagnostics(); }
+}
+proc stopDiags(op: OP, iters) {
+  t.stop();
+  if showPerf {
+    var xferGB = xferMem / (2^^30);
+    writef("GB: %.2dr\n", xferGB);
+    writeln("Time: ", t.elapsed());
+    writef("GB/s: %.2dr\n", xferGB / t.elapsed());
+  }
+  t.clear();
+  if printDiags {
+    stopCommDiagnostics();
+    printCommDiagnosticsTable();
+    resetCommDiagnostics();
+  }
+}
 
 var A: [1..n] elemType;
 [i in A.domain with (ref A)] A(i) = i:A.eltType;
@@ -48,18 +70,15 @@ on Locales[numLocales - 1] {
   var B: [1..n] elemType;
   [i in B.domain with (ref B)] B(i) = (n + 1 - i):B.eltType;
 
-  const startTime = timeSinceEpoch().totalSeconds();
+  startDiags();
   if doGET then
     B = A;
   else
     A = B;
-  const elapsedTime = timeSinceEpoch().totalSeconds() - startTime;
+  stopDiags();
 
   if verify {
     const arraysMatch = && reduce [i in 1..n by verifyStride] B(i) == A(i);
     writeln(if arraysMatch then 'PASS' else 'FAIL');
   }
-
-  if showPerf then
-    writeln("Time: ", elapsedTime);
 }
