@@ -44,13 +44,14 @@ config const showPerf = false;
 
 var t: stopwatch;
 proc startDiags() {
-  t.start();
   if printDiags { startCommDiagnostics(); }
+  t.start();
 }
-proc stopDiags(op: OP, iters) {
+proc stopDiags(size) {
   t.stop();
   if showPerf {
-    var xferGB = xferMem / (2^^30);
+    writeln("Size: ", size);
+    var xferGB = size / (2**30);
     writef("GB: %.2dr\n", xferGB);
     writeln("Time: ", t.elapsed());
     writef("GB/s: %.2dr\n", xferGB / t.elapsed());
@@ -66,6 +67,7 @@ proc stopDiags(op: OP, iters) {
 var A: [1..n] elemType;
 [i in A.domain with (ref A)] A(i) = i:A.eltType;
 
+
 on Locales[numLocales - 1] {
   var B: [1..n] elemType;
   [i in B.domain with (ref B)] B(i) = (n + 1 - i):B.eltType;
@@ -75,7 +77,7 @@ on Locales[numLocales - 1] {
     B = A;
   else
     A = B;
-  stopDiags();
+  stopDiags(xferMem);
 
   if verify {
     const arraysMatch = && reduce [i in 1..n by verifyStride] B(i) == A(i);
