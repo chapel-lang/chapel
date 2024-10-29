@@ -47,10 +47,20 @@ module Python {
   require "Python.h";
   private use CPythonInterface;
 
+  // interface typeConverter {
+  //   proc Self.type_(type t) type { return nothing; }
+  //   proc Self.handlesType(type t)param : bool { return Self.type_(t) != nothing; }
+  //   proc Self.toPython(value: T): c_ptr(void) throws;
+  //   proc Self.fromPython(obj: c_ptr(void)): T throws;
+  // }
+
+
   /*
     There should only be one interpreter per program, it should be owned
   */
   class Interpreter {
+    @chpldoc.nodoc
+    var converters: List.list(owned TypeConverter);
 
     @chpldoc.nodoc
     proc init() {
@@ -67,6 +77,13 @@ module Python {
     proc run(code: string) throws {
       PyRun_SimpleString(code.c_str());
       this.checkException();
+    }
+
+    /*
+      Register a custom type converter
+    */
+    proc registerConverter(in cvt: owned TypeConverter) {
+      converters.pushBack(cvt);
     }
 
     /*
@@ -98,14 +115,24 @@ module Python {
 
       if pvalue {
         var pvalue_str = PyObject_Str(pvalue);
-        var value_str = this.pyCPtrToChapel(string, pvalue_str);
+        var value_str = this.fromPython(string, pvalue_str);
         Py_DECREF(pvalue_str);
         throw new Exception(value_str);
       }
     }
 
-    @chpldoc.nodoc
-    proc chapelToPyCPtr(val: ?t): c_ptr(void) throws {
+    /*
+      Convert a Chapel value to a python object
+
+      Note: unless you are writing a custom type converter, you probably don't need to use this
+    */
+    proc toPython(val: ?t): c_ptr(void) throws {
+      for converter in this.converters {
+        if converter.handlesType(t) {
+          return converter.toPython(this, t, val);
+        }
+      }
+      // if no converter is found, use the defaults
       if t == int {
         var v = Py_BuildValue("i", val);
         this.checkException();
@@ -123,7 +150,7 @@ module Python {
         this.checkException();
         for i in 0..<val.size {
           const idx = val.domain.orderToIndex(i);
-          PyList_SetItem(pyList, i, chapelToPyCPtr(val[idx]));
+          PyList_SetItem(pyList, i, toPython(val[idx]));
           this.checkException();
         }
         return pyList;
@@ -137,8 +164,19 @@ module Python {
         halt("Unsupported type");
       }
     }
-    @chpldoc.nodoc
-    proc pyCPtrToChapel(type t, obj: c_ptr(void)): t throws {
+
+    /*
+      Convert a python object to a Chapel value
+
+      Note: unless you are writing a custom type converter, you probably don't need to use this
+    */
+    proc fromPython(type t, obj: c_ptr(void)): t throws {
+      for converter in this.converters {
+        if converter.handlesType(t) {
+          return converter.fromPython(this, t, obj);
+        }
+      }
+      // if no converter is found, use the defaults
       if t == int {
         var v = PyLong_AsLong(obj);
         this.checkException();
@@ -158,14 +196,14 @@ module Python {
         }
         for i in 0..<res.size {
           const idx = res.domain.orderToIndex(i);
-          res[idx] = pyCPtrToChapel(res.eltType, PyList_GetItem(obj, i));
+          res[idx] = fromPython(res.eltType, PyList_GetItem(obj, i));
           this.checkException();
         }
         return res;
       } else if isSubtype(t, List.list) {
         var res = new t();
         for i in 0..<PyList_Size(obj) {
-          res.pushBack(pyCPtrToChapel(t.eltType, PyList_GetItem(obj, i)));
+          res.pushBack(fromPython(t.eltType, PyList_GetItem(obj, i)));
           this.checkException();
         }
         return res;
@@ -192,6 +230,35 @@ module Python {
       super.init(message);
     }
   }
+
+
+  //
+  // TODO: using an interface is the ideal here, but there are too many limitations
+  //
+  // interface typeConverter {
+  //   proc Self.handlesType(type T): bool;
+  //   proc Self.toPython(interpreter: borrowed Interpreter,
+  //                      type T,
+  //                      ref value: T): c_ptr(void) throws;
+  //   proc Self.fromPython(interpreter: borrowed Interpreter,
+  //                        type T,
+  //                        obj: c_ptr(void)): T throws;
+  // }
+
+  class TypeConverter {
+    proc handlesType(type T): bool {
+      return false;
+    }
+    proc toPython(interpreter: borrowed Interpreter, type T, value: T): c_ptr(void) throws {
+      import HaltWrappers;
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+    proc fromPython(interpreter: borrowed Interpreter, type T, obj: c_ptr(void)): T throws {
+      import HaltWrappers;
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+  }
+
 
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one thread is executing python code at a time
@@ -261,7 +328,7 @@ module Python {
     proc this(type retType, args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
-        pyArgs(i) = interpreter.chapelToPyCPtr(args(i));
+        pyArgs(i) = interpreter.toPython(args(i));
       }
       var pyArg = PyTuple_Pack(args.size, (...pyArgs));
       interpreter.checkException();
@@ -271,7 +338,7 @@ module Python {
 
       Py_DECREF(pyArg);
 
-      var res = interpreter.pyCPtrToChapel(retType, pyRes);
+      var res = interpreter.fromPython(retType, pyRes);
       Py_DECREF(pyRes);
 
       return res;
@@ -279,7 +346,7 @@ module Python {
     proc this(type retType): retType throws {
       var pyRes = PyObject_CallObject(this.fn!.get(), nil);
       interpreter.checkException();
-      var res = interpreter.pyCPtrToChapel(retType, pyRes);
+      var res = interpreter.fromPython(retType, pyRes);
       Py_DECREF(pyRes);
       return res;
     }
@@ -303,12 +370,13 @@ module Python {
       return this.cls!.str();
     }
 
-
-    @chpldoc.nodoc
+    /*
+      Create a new instance of a python class
+    */
     proc newInstance(args...): owned PyObject throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
-        pyArgs(i) = interpreter.chapelToPyCPtr(args(i));
+        pyArgs(i) = interpreter.toPython(args(i));
       }
       var pyArg = PyTuple_Pack(args.size, (...pyArgs));
       interpreter.checkException();
@@ -372,19 +440,19 @@ module Python {
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.obj!.get(), attr.c_str());
       interpreter.checkException();
-      var res = interpreter.pyCPtrToChapel(t, pyAttr);
+      var res = interpreter.fromPython(t, pyAttr);
       Py_DECREF(pyAttr);
       return res;
     }
     proc setAttr(attr: string, value) throws {
-      var pyValue = interpreter.chapelToPyCPtr(value);
+      var pyValue = interpreter.toPython(value);
       PyObject_SetAttrString(this.obj!.get(), attr.c_str(), pyValue);
       interpreter.checkException();
     }
     proc callMethod(type retType, method: string, args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
-        pyArgs(i) = interpreter.chapelToPyCPtr(args(i));
+        pyArgs(i) = interpreter.toPython(args(i));
       }
       var pyArg = PyTuple_Pack(args.size, (...pyArgs));
       interpreter.checkException();
@@ -394,7 +462,7 @@ module Python {
 
       Py_DECREF(pyArg);
 
-      var res = interpreter.pyCPtrToChapel(retType, pyRes);
+      var res = interpreter.fromPython(retType, pyRes);
       Py_DECREF(pyRes);
 
       return res;
@@ -402,7 +470,7 @@ module Python {
     proc callMethod(type retType, method: string): retType throws {
       var pyRes = PyObject_CallObject(PyObject_GetAttrString(this.obj!.get(), method.c_str()), nil);
       interpreter.checkException();
-      var res = interpreter.pyCPtrToChapel(retType, pyRes);
+      var res = interpreter.fromPython(retType, pyRes);
       Py_DECREF(pyRes);
       return res;
     }
@@ -426,7 +494,7 @@ module Python {
     }
     proc init(in interpreter: borrowed Interpreter, value: ?) {
       this.interpreter = interpreter;
-      this.obj = chapelToPyCPtr(interpreter, value);
+      this.obj = toPython(interpreter, value);
       this.isOwned = true;
     }
     proc deinit() {
@@ -443,12 +511,12 @@ module Python {
       return this.obj;
     }
     proc value(type value) {
-      return interpreter.pyCPtrToChapel(value, this.obj);
+      return interpreter.fromPython(value, this.obj);
     }
     proc str(): string throws {
       var pyStr = PyObject_Str(this.obj);
       interpreter.checkException();
-      var res = interpreter.pyCPtrToChapel(string, pyStr);
+      var res = interpreter.fromPython(string, pyStr);
       Py_DECREF(pyStr);
       return res;
     }
