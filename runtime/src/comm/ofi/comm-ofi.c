@@ -378,7 +378,7 @@ static bool cxiHybridMRMode = false;
 // a linked-list of handles.
 
 typedef struct nb_handle {
-  chpl_taskID_t id;          // task that created the handle
+  pthread_t id;              // thread that created the handle
   chpl_bool reported;        // operation has been reported as complete
   chpl_atomic_bool complete; // operation has completed
   void *mrAddr;              // memory region address for unlocalizing
@@ -5534,7 +5534,7 @@ void amCheckLiveness(void) {
 
 static inline
 void nb_handle_init(nb_handle_t h) {
-  h->id = chpl_task_getId();
+  h->id = pthread_self();
   h->reported = false;
   atomic_init_bool(&h->complete, false);
   h->mrAddr = NULL;
@@ -5659,14 +5659,10 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
       if ((handle == NULL) || handle->reported) {
         continue;
       }
-      if (handle->id != chpl_task_getId()) {
+      if (!pthread_equal(handle->id, pthread_self())) {
         char msg[128];
-        char task1[32];
-        char task2[32];
         snprintf(msg, sizeof(msg),
-             "Task %s did not create non-blocking handle (created by %s)",
-            chpl_task_idToString(task1, sizeof(task1), chpl_task_getId()),
-            chpl_task_idToString(task2, sizeof(task2), handle->id));
+                 "Thread did not create non-blocking handle %p", handle);
         chpl_error(msg, 0, 0);
       }
       pending = true;
