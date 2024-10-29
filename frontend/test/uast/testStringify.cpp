@@ -312,7 +312,6 @@ static void test1(Parser* parser) {
    }
    type t;
    var Array:[1..1] t;
-   forwarding Array[1]!;
    const A: [1..10] int = [i in 1..10] if (i < 3) then 100 else i;
    writeln(A);
    var Cs = [i in nums] if i then new C[i] else nil: owned C?;
