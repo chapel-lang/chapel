@@ -483,7 +483,9 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
     for (auto& subFrame : parentFrame->subFrames) {
       if (subFrame.astNode == node) {
-        CHPL_ASSERT(!storedAsSubFrame && "should not be possible");
+        CHPL_ASSERT(
+            !storedAsSubFrame &&
+            "should not be possible to store a frame as multiple sub-frames");
         subFrame.frame = std::move(poppingFrame);
         storedAsSubFrame = true;
       }
