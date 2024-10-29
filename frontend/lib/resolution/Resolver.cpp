@@ -1782,11 +1782,14 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // compute the type based upon the init expression
       ResolvedExpression& r = byPostorder.byAst(initExpr);
       // Check that the init expression isn't something defined later in the program.
-      bool isLocalIdent = var->id().symbolPath() == r.toId().symbolPath();
-      if (isLocalIdent && r.toId().postOrderId() > var->id().postOrderId()) {
-        CHPL_REPORT(context, UseOfLaterVariable, var, r.toId());
-        auto unknownType = UnknownType::get(context);
-        typeExprT = QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      // don't check for this if we are in a statement as that is caught later in typeForId
+      if (!this->curStmt) {
+        bool isLocalIdent = var->id().symbolPath() == r.toId().symbolPath();
+        if (isLocalIdent && r.toId().postOrderId() > var->id().postOrderId()) {
+          CHPL_REPORT(context, UseOfLaterVariable, var, r.toId());
+          auto unknownType = UnknownType::get(context);
+          typeExprT = QualifiedType(QualifiedType::UNKNOWN, unknownType);
+        }
       }
       initExprT = r.type();
     }
