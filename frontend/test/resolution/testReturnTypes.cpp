@@ -1221,6 +1221,98 @@ static void testParamLoop() {
                                          program);
     ensureParamBool(qt, true);
   }
+
+  // Return in iteration after a conditional break, hit only after return
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        if i == 1 {
+          break;
+        }
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamString(qt, "asdf");
+  }
+
+  // Return in iteration after a conditional break, hit before any return
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        if i == 0 {
+          break;
+        }
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamBool(qt, true);
+  }
+
+  // Return in iteration after a conditional continue, hit in only some iterations
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        if i == 0 {
+          continue;
+        }
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamString(qt, "asdf");
+  }
+
+  // Return in iteration after a conditional continue, hit in all iterations
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        if i != 3 {
+          continue;
+        }
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamBool(qt, true);
+  }
 }
 
 static void testCPtrEltType() {
