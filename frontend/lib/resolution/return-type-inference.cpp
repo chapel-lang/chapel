@@ -624,8 +624,9 @@ bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
         child->traverse(loopVis);
       }
 
-      // stop processing subsequent bodies after a return or break statement
       if (hasHitBreak() || hasReturnedOrThrown()) {
+        // Stop processing subsequent loop bodies after a return or break
+        // statement; they're never reached.
         break;
       }
     }
