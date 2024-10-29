@@ -1315,6 +1315,30 @@ static void testParamLoop() {
   }
 }
 
+// Test return from within non-param loop (shouldn't work)
+static void testNonParamLoop() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = ops + R"""(
+  proc foo() {
+    for i in 0..2 {
+      return "asdf";
+    }
+    return true;
+  }
+  var x = foo();
+  )""";
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                       program);
+
+  assert(qt.isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "could not determine return type for function");
+  guard.realizeErrors();
+}
+
 static void testCPtrEltType() {
   std::string chpl_home;
   if (const char* chpl_home_env = getenv("CHPL_HOME")) {
@@ -1565,6 +1589,7 @@ int main() {
   testSelectParams();
 
   testParamLoop();
+  testNonParamLoop();
 
   testCPtrEltType();
 
