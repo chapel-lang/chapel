@@ -1116,6 +1116,29 @@ static void testParamLoop() {
     ensureParamString(qt, "asdf");
   }
 
+  // Different returns in subsequent iterations
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        if i == 1 {
+          return "asdf";
+        } else {
+          return true;
+        }
+      }
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamBool(qt, true);
+  }
+
   // Return in param TRUE conditional inside param loop iteration
   {
     Context ctx;
