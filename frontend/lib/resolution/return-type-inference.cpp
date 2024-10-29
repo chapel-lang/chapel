@@ -437,10 +437,13 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
   bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
 
-  if (poppingFrame->scopeAst->isLoop() && !(poppingFrame->scopeAst->isFor() && poppingFrame->scopeAst->toFor()->isParam())) {
-    // Could have while true { break; return; }, so do not propagate
-    // returns.
-    parentReturnsOrThrows = false;
+  if (poppingFrame->scopeAst->isLoop()) {
+    if (!(poppingFrame->scopeAst->isFor() &&
+          poppingFrame->scopeAst->toFor()->isParam())) {
+      // Do not propagate returns from non-param loops, as we can't statically
+      // know what they'll do at runtime.
+      parentReturnsOrThrows = false;
+    }
   }
 
   // Integrate sub-frame information.
