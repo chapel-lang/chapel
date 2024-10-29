@@ -7,20 +7,27 @@
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
 
+#define ROCM_CALL(call) do {\
+  if(call) { \
+    printf("!!! error encountered on ROCM call\n"); \
+  } \
+} while(0);
+
 hipDevice_t device;
 
 static void reportAttribute(const char *name, hipDeviceAttribute_t attr) {
   int val;
-  hipDeviceGetAttribute(&val, attr, device);
+  hipError_t err;
+  ROCM_CALL(hipDeviceGetAttribute(&val, attr, device));
   printf("%s: %d\n", name, val);
 }
 
 void runBaselineVersion(void) {
-  hipInit(0);
-  hipDeviceGet(&device, 0);
+  ROCM_CALL(hipInit(0));
+  ROCM_CALL(hipDeviceGet(&device, 0));
 
   char name[0xFF];
-  hipDeviceGetName(name, 0xFF, device);
+  ROCM_CALL(hipDeviceGetName(name, 0xFF, device));
   printf("name: %s\n", name);
 
   reportAttribute("maxThreadsPerBlock", hipDeviceAttributeMaxThreadsPerBlock);
