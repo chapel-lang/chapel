@@ -1179,6 +1179,48 @@ static void testParamLoop() {
                                          program);
     ensureParamBool(qt, true);
   }
+
+  // Return in iteration after break
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        break;
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamBool(qt, true);
+  }
+
+  // Return in iteration after continue
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo() param {
+      for param i in 0..2 {
+        break;
+        return "asdf";
+      }
+      return true;
+    }
+    param x = foo();
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    ensureParamBool(qt, true);
+  }
 }
 
 static void testCPtrEltType() {
