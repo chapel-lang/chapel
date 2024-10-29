@@ -639,15 +639,6 @@ void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
   exitScope(forLoop);
 }
 
-// int ReturnTypeInferrer::findEnclosingLoopFrame() {
-//   for (int i = returnFrames.size() - 1; i >= 0; i--) {
-//     if (returnFrames[i]->scopeAst->isLoop()) {
-//       return i;
-//     }
-//   }
-//   CHPL_ASSERT(false && "should not be possible");
-// }
-
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
   CHPL_ASSERT(!returnFrames.empty());
   returnFrames.back()->breaks = true;
