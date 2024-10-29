@@ -272,8 +272,6 @@ struct ReturnTypeInferrer {
   bool markReturnOrThrow();
   bool hasReturnedOrThrown();
 
-  void markBreak();
-  void markContinue();
   bool hasHitBreak();
   bool hasHitBreakOrContinue();
 
@@ -515,16 +513,6 @@ bool ReturnTypeInferrer::hasReturnedOrThrown() {
   return returnFrames.back()->returnsOrThrows;
 }
 
-void ReturnTypeInferrer::markBreak() {
-  CHPL_ASSERT(!returnFrames.empty());
-  returnFrames.back()->breaks = true;
-}
-
-void ReturnTypeInferrer::markContinue() {
-  CHPL_ASSERT(!returnFrames.empty());
-  returnFrames.back()->continues = true;
-}
-
 bool ReturnTypeInferrer::hasHitBreak() {
   if (returnFrames.empty()) return false;
   auto& topFrame = returnFrames.back();
@@ -661,12 +649,14 @@ void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
 // }
 
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  markBreak();
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->breaks = true;
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  markContinue();
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->continues = true;
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
