@@ -1094,248 +1094,146 @@ static void testSelectParams() {
   }
 }
 
+// Assumes loop body will return param string "asdf"
+static void paramLoopTestHelper(Context* context, const char* loopBody,
+                                bool returnFromLoop, bool useEmptyLoop = false) {
+  context->advanceToNextRevision(false);
+  ErrorGuard guard(context);
+
+  // Construct test program
+  std::ostringstream oss;
+  oss << ops;
+  oss << "proc foo() param {\n";
+  oss << "  for param i in " << (useEmptyLoop ? "1..0" : "0..2") << " {\n";
+  oss << loopBody;
+  oss << "  }\n";
+  oss << "  return true;\n";
+  oss << "}\n";
+  oss << "param x = foo();\n";
+  std::string program = oss.str();
+
+  std::cout << "Param loop test program:\n";
+  std::cout << program.c_str() << "\n";
+
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                       program);
+  assert(!qt.isUnknownOrErroneous());
+  if (returnFromLoop) {
+    ensureParamString(qt, "asdf");
+  } else {
+    ensureParamBool(qt, true);
+  }
+
+  assert(guard.realizeErrors() == 0);
+
+  std::cout << "success\n";
+}
+
 // Test returns from within param for loops
 static void testParamLoop() {
-  // Basic case
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
+  Context ctx;
+  Context* context = &ctx;
 
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamString(qt, "asdf");
-  }
+  // Basic case
+  paramLoopTestHelper(context,
+                      R"""(
+                      return "asdf";
+                      )""",
+                      true);
 
   // Different returns in subsequent iterations
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 1 {
-          return "asdf";
-        } else {
-          return true;
-        }
-      }
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 1 {
+                        return true;
+                      } else {
+                        return "asdf";
+                      }
+                      )""",
+                      true);
 
   // Return in param TRUE conditional inside param loop iteration
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 1 {
-          return "asdf";
-        }
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamString(qt, "asdf");
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 1 {
+                        return "asdf";
+                      }
+                      )""",
+                      true);
 
   // Return in param FALSE conditional inside param loop iteration
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 3 {
-          return "asdf";
-        }
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 3 {
+                        return "asdf";
+                      }
+                      )""",
+                      false);
 
   // Return in a param loop with no iterations
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 1..0 {
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      return "asdf";
+                      )""",
+                      false,
+                      /* useEmptyLoop */ true);
 
   // Return in iteration after break
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        break;
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      break;
+                      return "asdf";
+                      )""",
+                      false);
 
   // Return in iteration after continue
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        break;
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      continue;
+                      return "asdf";
+                      )""",
+                      false);
 
   // Return in iteration after a conditional break, hit only after return
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 1 {
-          break;
-        }
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamString(qt, "asdf");
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 1 {
+                        break;
+                      }
+                      return "asdf";
+                      )""",
+                      true);
 
   // Return in iteration after a conditional break, hit before any return
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 0 {
+                        break;
+                      }
+                      return "asdf";
+                      )""",
+                      false);
 
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 0 {
-          break;
-        }
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
-
-  // Return in iteration after a conditional continue, hit in only some iterations
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i == 0 {
-          continue;
-        }
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamString(qt, "asdf");
-  }
+  // Return in iteration after a conditional continue, hit in only some
+  // iterations
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i == 0 {
+                        continue;
+                      }
+                      return "asdf";
+                      )""",
+                      true);
 
   // Return in iteration after a conditional continue, hit in all iterations
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    std::string program = ops + R"""(
-    proc foo() param {
-      for param i in 0..2 {
-        if i != 3 {
-          continue;
-        }
-        return "asdf";
-      }
-      return true;
-    }
-    param x = foo();
-    )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
-    ensureParamBool(qt, true);
-  }
+  paramLoopTestHelper(context,
+                      R"""(
+                      if i != 3 {
+                        continue;
+                      }
+                      return "asdf";
+                      )""",
+                      false);
 }
 
 // Test return from within non-param loop (shouldn't work)
