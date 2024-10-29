@@ -4,7 +4,7 @@
 
 #define CUDA_CALL(call) do {\
   if(call) { \
-    printf("!!! error encountered on ROCM call\n"); \
+    printf("!!! error encountered on CUDA call\n"); \
   } \
 } while(0);
 
