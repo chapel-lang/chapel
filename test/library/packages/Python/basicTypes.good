@@ -1,0 +1,17 @@
+module: <module 'basicTypes' from '$CHPL_HOME/test/library/packages/Python/basicTypes.py'>
+func: <function round_trip at 0xXXXXXXXX>
+  type: int(64) value: 42
+    res: 42
+  type: string value: hello
+    res: hello
+class: <class 'basicTypes.RoundTrip'>
+  type: int(64) value: 42
+    obj: <basicTypes.RoundTrip object at 0xXXXXXXXX>
+    obj.value: 42
+    obj.getter(): 43
+    obj.value: 42
+  type: string value: hello
+    obj: <basicTypes.RoundTrip object at 0xXXXXXXXX>
+    obj.value: hello
+    obj.getter(): world
+    obj.value: hello
