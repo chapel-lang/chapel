@@ -87,6 +87,7 @@ static void override_number_of_devices(void) {
 }
 
 static void find_and_setup_devices(int numAllDevices) {
+#ifndef GPU_RUNTIME_CPU
   // Collect PCI information about each available device.
   chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
   for (int i=0 ; i < numAllDevices; i++) {
@@ -129,6 +130,9 @@ static void find_and_setup_devices(int numAllDevices) {
 
   chpl_free(allAddrs);
   chpl_free(addrs);
+#else
+  int numDevices = numAllDevices;
+#endif
 
   chpl_gpu_num_devices = numDevices;
   assert(chpl_gpu_num_devices >= 0);
@@ -140,9 +144,7 @@ void chpl_gpu_init(void) {
   int numAllDevices;
   chpl_gpu_impl_begin_init(&numAllDevices);
 
-#ifndef GPU_RUNTIME_CPU
   find_and_setup_devices(numAllDevices);
-#endif
 
   // override number of devices if applicable
   override_number_of_devices();
