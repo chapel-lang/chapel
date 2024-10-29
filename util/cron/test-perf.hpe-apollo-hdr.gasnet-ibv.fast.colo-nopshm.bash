@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Run co-locale performance tests on an HPE Apollo over GASNet with PSHM
-# enabled.
+# disabled.
 
 CWD=$(cd $(dirname $0) ; pwd)
 
