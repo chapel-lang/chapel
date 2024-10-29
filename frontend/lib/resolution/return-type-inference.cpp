@@ -220,7 +220,8 @@ struct ReturnInferenceSubFrame {
 struct ReturnInferenceFrame {
   const AstNode* scopeAst = nullptr;
   bool returnsOrThrows = false;
-  bool hitBreakOrContinue = false;
+  bool breaks = false;
+  bool continues = false;
   std::vector<ReturnInferenceSubFrame> subFrames;
 
   ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
@@ -271,7 +272,9 @@ struct ReturnTypeInferrer {
   bool markReturnOrThrow();
   bool hasReturnedOrThrown();
 
-  bool markBreakOrContinue();
+  void markBreak();
+  void markContinue();
+  bool hasHitBreak();
   bool hasHitBreakOrContinue();
 
   bool enter(const Function* fn, RV& rv);
@@ -436,19 +439,25 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
   returnFrames.pop_back();
 
   bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
+  bool parentBreaks = poppingFrame->breaks;
+  bool parentContinues = poppingFrame->continues;
 
   if (poppingFrame->scopeAst->isLoop()) {
     if (!(poppingFrame->scopeAst->isFor() &&
           poppingFrame->scopeAst->toFor()->isParam())) {
-      // Do not propagate returns from non-param loops, as we can't statically
+      // Do not propagate info from non-param loops, as we can't statically
       // know what they'll do at runtime.
       parentReturnsOrThrows = false;
+      parentBreaks = false;
+      parentContinues = false;
     }
   }
 
   // Integrate sub-frame information.
   if (poppingFrame->subFrames.size() > 0) {
     bool allReturnOrThrow = true;
+    bool allBreak = true;
+    bool allContinue = true;
     bool allSkip = true;
     for (auto& subFrame : poppingFrame->subFrames) {
       if (subFrame.skip) continue;
@@ -456,12 +465,19 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
       if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
         allReturnOrThrow = false;
-        break;
+      }
+      if (subFrame.frame == nullptr || !subFrame.frame->breaks) {
+        allBreak = false;
+      }
+      if (subFrame.frame == nullptr || !subFrame.frame->continues) {
+        allContinue = false;
       }
     }
 
     // If all subframes skipped, then there were no returns.
     parentReturnsOrThrows = !allSkip && allReturnOrThrow;
+    parentBreaks = !allSkip && allBreak;
+    parentContinues = !allSkip && allContinue;
   }
 
   if (returnFrames.size() > 0) {
@@ -471,6 +487,7 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
     for (auto& subFrame : parentFrame->subFrames) {
       if (subFrame.astNode == node) {
+        CHPL_ASSERT(!storedAsSubFrame && "should not be possible");
         subFrame.frame = std::move(poppingFrame);
         storedAsSubFrame = true;
       }
@@ -478,6 +495,11 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
     if (!storedAsSubFrame) {
       parentFrame->returnsOrThrows |= parentReturnsOrThrows;
+      if (!poppingFrame->scopeAst->isLoop()) {
+        // propagate break/continue only up to the enclosing loop
+        parentFrame->breaks |= parentBreaks;
+        parentFrame->continues |= parentContinues;
+      }
     }
   }
 }
@@ -495,17 +517,26 @@ bool ReturnTypeInferrer::hasReturnedOrThrown() {
   return returnFrames.back()->returnsOrThrows;
 }
 
-bool ReturnTypeInferrer::markBreakOrContinue() {
+void ReturnTypeInferrer::markBreak() {
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->breaks = true;
+}
+
+void ReturnTypeInferrer::markContinue() {
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->continues = true;
+}
+
+bool ReturnTypeInferrer::hasHitBreak() {
   if (returnFrames.empty()) return false;
   auto& topFrame = returnFrames.back();
-  bool oldValue = topFrame->hitBreakOrContinue;
-  topFrame->hitBreakOrContinue = true;
-  return oldValue;
+  return topFrame->breaks;
 }
 
 bool ReturnTypeInferrer::hasHitBreakOrContinue() {
   if (returnFrames.empty()) return false;
-  return returnFrames.back()->hitBreakOrContinue;
+  auto& topFrame = returnFrames.back();
+  return topFrame->breaks || topFrame->continues;
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
@@ -595,19 +626,46 @@ void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
 bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
   enterScope(forLoop);
 
-  return forLoop->isParam();
+  if (forLoop->isParam()) {
+    const ResolvedExpression& rr = rv.byAst(forLoop);
+    const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+    CHPL_ASSERT(resolvedLoop);
+
+    for (auto loopBody : resolvedLoop->loopBodies()) {
+      RV loopVis(rv.rc(), forLoop, rv.userVisitor(), loopBody);
+      for (const AstNode* child : forLoop->children()) {
+        child->traverse(loopVis);
+      }
+
+      // stop processing subsequent bodies after a return or break statement
+      if (hasHitBreak() || hasReturnedOrThrown()) {
+        break;
+      }
+    }
+  }
+
+  return false;
 }
 void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
   exitScope(forLoop);
 }
 
+// int ReturnTypeInferrer::findEnclosingLoopFrame() {
+//   for (int i = returnFrames.size() - 1; i >= 0; i--) {
+//     if (returnFrames[i]->scopeAst->isLoop()) {
+//       return i;
+//     }
+//   }
+//   CHPL_ASSERT(false && "should not be possible");
+// }
+
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  markBreakOrContinue();
+  markBreak();
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  markBreakOrContinue();
+  markContinue();
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
