@@ -36,7 +36,7 @@
 
 void chpl_gpu_impl_begin_init(int* num_all_devices) {
   CHPL_GPU_DEBUG("Initializing none GPU layer.\n");
-  *num_devices = 1;
+  *num_all_devices = 1;
 }
 
 void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
