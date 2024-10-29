@@ -1,2 +1,0 @@
-bug: forwarding to non-method causes --verify failure or segfault
-#25692
