@@ -38,6 +38,8 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+#define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
+
 
 static char* debug = NULL;
 static char* walltime = NULL;
@@ -46,6 +48,7 @@ static char* nodelist = NULL;
 static char* partition = NULL;
 static char* reservation = NULL;
 static char* exclude = NULL;
+static char* gpusPerNode = NULL;
 
 char slurmFilename[FILENAME_MAX];
 
@@ -234,7 +237,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
-  char* gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
@@ -302,6 +304,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line exclude takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   }
 
   reservation = getenv("SLURM_RESERVATION");
@@ -407,6 +414,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
     }
 
+    // Set the gpus per node if it was specified
+    if (gpusPerNode) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
@@ -415,11 +427,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
-    }
-
-    // set gpus-per-node if one was provided
-    if (gpusPerNode && strlen(gpusPerNode) > 0) {
-      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
     }
 
     // set the output file name to either the user specified
@@ -556,6 +563,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
     }
 
+    // Set the gpus per node if it was specified
+    if (gpusPerNode) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ",
+                      gpusPerNode);
+    }
+
     // set any constraints
     if (constraint) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--constraint=%s ", constraint);
@@ -564,11 +577,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
-    }
-
-    // set gpus-per-node if one was provided
-    if (gpusPerNode && strlen(gpusPerNode) > 0) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
     }
 
     // add the (possibly wrapped) binary name
@@ -685,6 +693,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --gpus-per-node <gpus> or --gpus-per-node=<gpus>
+  if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
+    gpusPerNode = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+    return 1;
+  }
+
   // handle --generate-sbatch-script
   if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
     generate_sbatch_script = 1;
@@ -728,6 +745,12 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_EXCLUDE)"
+      },
+      { CHPL_GPUS_PER_NODE_FLAG " <gpus>",
+        "specify number of gpus per node"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
       },
       { NULL, NULL },
     };
