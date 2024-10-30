@@ -558,6 +558,7 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                                       const types::QualifiedType& followThis,
                                       const CallScopeInfo& inScopes);
 
+// Note: Defined in default-functions.cpp
 /**
   Given a type's symbol path and the name of a default function, return a
   BuilderResult storing the generated default function uAST.

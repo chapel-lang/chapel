@@ -1370,6 +1370,99 @@ getCompilerGeneratedBinaryOp(Context* context,
   return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
 }
 
+const BuilderResult&
+buildTypeConstructor(Context* context, ID typeID) {
+  QUERY_BEGIN(buildTypeConstructor, context, typeID);
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  AstList formals;
+  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+
+  if (auto bct = ct->toBasicClassType()) {
+    auto parent = bct->parentClassType();
+    if (parent && !parent->isObjectType()) {
+      auto& br = buildTypeConstructor(context, parent->id());
+      auto fn = br.topLevelExpression(0)->toFunction();
+
+      for (auto formal : fn->formals()) {
+        formals.push_back(formal->copy());
+      }
+    }
+  }
+
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              defaultsPolicy,
+                                              /* syntaxOnly */ true);
+
+  // find the generic fields from the type and add
+  // these as type constructor arguments.
+  int nFields = f.numFields();
+  for (int i = 0; i < nFields; i++) {
+    auto declId = f.fieldDeclId(i);
+    auto declAst = parsing::idToAst(context, declId);
+    CHPL_ASSERT(declAst);
+    auto fieldDecl = declAst->toVariable();
+    CHPL_ASSERT(fieldDecl);
+    QualifiedType formalType;
+    if (isFieldSyntacticallyGeneric(context, declId, nullptr)) {
+
+      auto typeExpr = fieldDecl->typeExpression();
+      auto initExpr = fieldDecl->initExpression();
+      auto kind = fieldDecl->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
+      owned<AstNode> formal = Formal::build(builder, dummyLoc,
+                                            /*attributeGroup=*/nullptr,
+                                            fieldDecl->name(),
+                                            (Formal::Intent)kind,
+                                            typeExpr ? typeExpr->copy() : nullptr,
+                                            initExpr ? initExpr->copy() : nullptr);
+      formals.push_back(std::move(formal));
+    }
+  }
+
+  auto genFn = Function::build(builder, dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               ct->name(),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  // Finalize the uAST and obtain the BuilderResult
+  auto res = builder->result();
+
+  return QUERY_END(res);
+}
+
+const BuilderResult*
+builderResultForDefaultFunction(Context* context,
+                                UniqueString typePath,
+                                UniqueString name) {
+  auto typeID = ID(typePath);
+
+  if (name == USTR("init")) {
+    return &buildInitializer(context, typeID);
+  } else if (typeID.symbolName(context) == name) {
+    return &buildTypeConstructor(context, typeID);
+  }
+
+  return nullptr;
+}
+
 
 } // end namespace resolution
 } // end namespace chpl
