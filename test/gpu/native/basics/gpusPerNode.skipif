@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# skip if slurm not in CHPL_LAUNCHER
+if [[ $CHPL_LAUNCHER != *"slurm"* ]]; then
+  echo 1
+else
+  echo 0
+fi
