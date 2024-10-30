@@ -2362,6 +2362,14 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         r.byAst(entry.formal()).setType(formalType);
       }
 
+      // We've set up the type queries and re-traversed the formal AST to
+      // compute the type using these queries. If the formal type is still
+      // unknown at this point, we couldn't extract the type queries, which
+      // means the call is ill-formed.
+      if (qFormalType.isUnknownKindOrType()) {
+        return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+      }
+
       auto checkType = !useType.isUnknown() ? useType : formalType;
       // With the type and query-aware type known, make sure that they're compatible
       auto passResult = canPass(context, checkType, qFormalType);
