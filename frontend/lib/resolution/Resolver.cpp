@@ -685,7 +685,7 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     return nullptr;
   }
 
-  // barrier to only compute the receiver scopes once
+  // check to make sure the receiver scope helper is only computed once
   if (receiverScopesComputed) return receiverScopeHelper;
   receiverScopesComputed = true;
   receiverScopeHelper = nullptr;
@@ -719,7 +719,7 @@ const MethodLookupHelper* Resolver::getFieldDeclarationLookupHelper() {
     return nullptr;
   }
 
-  // barrier to only compute the lookup helper once
+  // check to make sure the method lookup helper is only computed once
   if (methodHelperComputed) return methodLookupHelper;
   methodHelperComputed = true;
   methodLookupHelper = nullptr;
