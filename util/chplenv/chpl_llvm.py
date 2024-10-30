@@ -770,7 +770,7 @@ def get_sysroot_resource_dir_args():
 @memoize
 def get_sysroot_linux_args():
     args = [ ]
-    # try invoking the system gcc to see if it needs it various extra flags
+    # try invoking the system gcc to see if it needs various extra flags
     dummy_main = '#include <stdio.h>\nint main() { return 0; }\n'
     _, _, stdout, _ = try_run_command(
         ["gcc", "-v", "-x", "c", "-", "-o", "/dev/null"],
