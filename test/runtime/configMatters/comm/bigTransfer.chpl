@@ -50,7 +50,6 @@ proc startDiags() {
 proc stopDiags(size) {
   t.stop();
   if showPerf {
-    writeln("Size: ", size);
     var xferGB = size / (2**30);
     writef("GB: %.2dr\n", xferGB);
     writeln("Time: ", t.elapsed());
