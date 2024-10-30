@@ -204,7 +204,7 @@ parseFileContainingIdToBuilderResult(Context* context,
     auto symbolPath = ID::parentSymbolPath(context, id.symbolPath());
     auto symbolName = id.symbolName(context);
 
-    const BuilderResult* br = resolution::buildDefaultFunction(context, symbolPath, symbolName);
+    const BuilderResult* br = resolution::builderResultForDefaultFunction(context, symbolPath, symbolName);
     if (br != nullptr) {
       if (setParentSymbolPath) *setParentSymbolPath = symbolPath;
     }

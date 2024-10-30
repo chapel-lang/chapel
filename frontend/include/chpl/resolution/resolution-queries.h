@@ -563,9 +563,9 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
   BuilderResult storing the generated default function uAST.
 */
 const uast::BuilderResult*
-buildDefaultFunction(Context* context,
-                     UniqueString typePath,
-                     UniqueString name);
+builderResultForDefaultFunction(Context* context,
+                                UniqueString typePath,
+                                UniqueString name);
 
 
 } // end namespace resolution

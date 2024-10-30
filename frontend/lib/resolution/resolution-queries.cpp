@@ -5838,9 +5838,9 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
 }
 
 const BuilderResult*
-buildDefaultFunction(Context* context,
-                     UniqueString typePath,
-                     UniqueString name) {
+builderResultForDefaultFunction(Context* context,
+                                UniqueString typePath,
+                                UniqueString name) {
   auto typeID = ID(typePath);
 
   if (name == USTR("init")) {
