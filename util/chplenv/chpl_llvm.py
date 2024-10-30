@@ -767,6 +767,45 @@ def get_sysroot_resource_dir_args():
 
     return args
 
+# On some systems, it may be necessary to provide a --sysroot and/or a explicit dynamic linker
+@memoize
+def get_sysroot_linux_args():
+    args = [ ]
+    target_platform = chpl_platform.get('target')
+    # darwin is handled separately
+    if target_platform != "darwin":
+        # try invoking the system gcc to see if it needs it various extra flags
+        dummy_main = '#include <stdio.h>\nint main() { return 0; }\n'
+        _, _, stdout, _ = try_run_command(
+            ["gcc", "-v", "-x", "c", "-", "-o", "/dev/null"],
+            combine_output=True, cmd_input=dummy_main
+        )
+        if stdout:
+            # on some platforms, it may be necessary to provide a --sysroot.
+            # note: this regex does not handle paths with spaces
+            found = re.search(r'--(?:with-)sysroot(?:=|\s+)([^ ]+)', stdout)
+            if found:
+                args.append('--sysroot')
+                args.append(found.group(1).strip())
+
+            # on some platforms, it may be necessary to provide -dynamic-linker explicitly
+            # note: this regex does not handle paths with spaces
+            found = re.search(r'-dynamic-linker(?:=|\s+)([^ ]+)', stdout)
+            if found:
+                dyn_linker = found.group(1).strip()
+                # if this is path starts with 'lib/' or '/lib64/' then its the
+                # default and we don't need to override it
+                if not (
+                    dyn_linker.startswith('lib/') or dyn_linker.startswith('/lib64/')
+                ):
+                    # this linker flags needs some tricks to be passed to the compiler
+                    # wrap in '--[start|end]-no-unused-arguments' to prevent compiler warnings
+                    # pass as '-Wl,-dynamic-linker,<path>'
+                    args.append('--start-no-unused-arguments')
+                    args.append('-Wl,-dynamic-linker,' + dyn_linker)
+                    args.append('--end-no-unused-arguments')
+    return args
+
 # When a system LLVM is installed with Homebrew, it's very important
 # to use the same Mac OS X libraries as what the Homebrew LLVM used.
 # This function helps us to do that.
@@ -833,6 +872,10 @@ def get_clang_basic_args():
     sysroot_args = get_sysroot_resource_dir_args()
     if sysroot_args:
         clang_args.extend(sysroot_args)
+
+    linux_args = get_sysroot_linux_args()
+    if linux_args:
+        clang_args.extend(linux_args)
 
     # This is a workaround for problems with Homebrew llvm@11 on 10.14
     # which avoids errors like
