@@ -184,7 +184,7 @@ class ChapelConfig(object):
                 if self.skip_line(line, linenum):
                     continue
 
-                var, val = [f.strip() for f in line.split('=')]
+                var, val = [f.strip() for f in line.split('=', maxsplit=1)]
                 self.chplconfig[var] = val
 
     def skip_line(self, line, linenum):
@@ -198,7 +198,7 @@ class ChapelConfig(object):
 
         # Check for syntax errors
         try:
-            var, val = [f.strip() for f in line.split('=')]
+            var, val = [f.strip() for f in line.split('=', maxsplit=1)]
         except ValueError:
             self.warnings.append(
             (
