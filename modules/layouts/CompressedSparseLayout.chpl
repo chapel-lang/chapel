@@ -168,7 +168,10 @@ module CompressedSparseLayout {
 */
 
   record csrLayout {
-    // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
+    // This 'param' may feel redundant with the one in 'csLayout', but
+    // it's required to make this a fully-defaulted type; otherwise it
+    // would be generic due to the 'csl' field not being able to
+    // specify its 'sortedIndices' param value.
     param sortedIndices: bool = csLayoutSortByDefault;
     forwarding var csl: csLayout(compressRows=true, sortedIndices);
 
@@ -197,7 +200,10 @@ module CompressedSparseLayout {
   */
 
   record cscLayout {
-    // TODO: Doesn't this duplicate what we have in csLayout unnecessarily?
+    // This 'param' may feel redundant with the one in 'csLayout', but
+    // it's required to make this a fully-defaulted type; otherwise it
+    // would be generic due to the 'csl' field not being able to
+    // specify its 'sortedIndices' param value.
     param sortedIndices: bool = csLayoutSortByDefault;
     forwarding var csl: csLayout(compressRows=false, sortedIndices);
 
@@ -272,7 +278,7 @@ module CompressedSparseLayout {
               dist: unmanaged CSImpl(compressRows,sortedIndices),
               parentDom: domain(?)) {
       if (rank != 2 || parentDom.rank != 2) then
-        compilerError("Only 2D sparse domains are supported by the CS distribution");
+        compilerError("Only 2D sparse domains are supported by the CSR/CSC layouts");
       if parentDom.idxType != idxType then
         compilerError("idxType mismatch in CSDom.init(): " + idxType:string + " != " + parentDom.idxType:string);
 
@@ -397,7 +403,7 @@ module CompressedSparseLayout {
 
       // TODO: Allow zippering sparse domains of equal length some day...
       if (followThisDom != this) then
-        halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CS layout)");
+        halt("Sparse domains can't currently be zippered with anything other than themselves and their arrays");
 
       // This loop is identical to the serial iterator, except for the
       // iteration space and finding the initial 'cursorRow'.
@@ -416,7 +422,7 @@ module CompressedSparseLayout {
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-      compilerError("Sparse iterators can't yet be zippered with others (CS layout)");
+      compilerError("Sparse iterators can't currently be zippered with others");
       yield 0;    // Dummy.
     }
 
@@ -885,7 +891,7 @@ module CompressedSparseLayout {
       var (followThisDom, startIx, endIx) = followThis;
 
       if (followThisDom != this.dom) then
-        halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays (CS layout)");
+        halt("Sparse arrays can't currently be zippered with anything other than their domains and sibling arrays");
       if debugCS then
         writeln("CSArr follower: ", startIx, "..", endIx);
 
@@ -893,7 +899,7 @@ module CompressedSparseLayout {
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-      compilerError("Sparse iterators can't yet be zippered with others (CS layout)");
+      compilerError("Sparse iterators can't currently be zippered with others");
       yield 0;    // Dummy.
     }
 
