@@ -1,0 +1,2 @@
+                        # qualified-inherit.dyno.good
+--no-dyno-scope-resolve # qualified-inherit.nodyno.good
