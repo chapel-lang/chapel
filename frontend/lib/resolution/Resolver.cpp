@@ -3847,8 +3847,34 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add key or range actuals
     std::vector<CallInfoActual> actuals;
+    bool freshDomainQuery = false;
     for (auto expr : decl->exprs()) {
-      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+      auto exprType = byPostorder.byAst(expr).type();
+
+      // If it's a type query, we may be looking at [?D] (where a Domain node
+      // is implicitly created in the array expression AST). In that case,
+      // we want the fully generic domain type.
+      if (expr->isTypeQuery() && exprType.type() && exprType.type()->isAnyType()) {
+        freshDomainQuery = true;
+        break;
+      }
+
+      actuals.emplace_back(exprType, UniqueString());
+    }
+
+    if (freshDomainQuery) {
+      if (decl->numExprs() > 1 || decl->usedCurlyBraces()) {
+        // We can only query the whole domain using a type query, so reject
+        // the domain expression.
+        context->error(decl, "cannot query part of a domain");
+      }
+
+      auto& re = byPostorder.byAst(decl);
+      auto dt = QualifiedType(QualifiedType::CONST_VAR, genericDomainType);
+      re.setType(dt);
+
+      // No need to perform the call to chpl__buildDomainExpr etc.
+      return;
     }
 
     // Add definedConst actual if appropriate
