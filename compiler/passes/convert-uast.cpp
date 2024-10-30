@@ -3680,23 +3680,36 @@ struct Converter final : UastConverter {
       auto converted = convertExprOrNull(ident);
       inheritMarkedGeneric |= thisInheritMarkedGeneric;
 
-      // Don't convert the expression literally if we have a `toId`.
-      // The production scope resolver doesnt't support M.C as a class
-      // inheritance expression, but we already know what it refers to.
-      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
-      if (auto results = currentResolutionResult()) {
+      auto results = currentResolutionResult();
+      if (!(results != nullptr || ident->isIdentifier())) {
+        USR_FATAL_CONT(inheritExpr->id(),
+                       "only simple inheritance expressions are supported "
+                       "without Dyno scope resolution");
+      }
+
+      // If scope resolution is enabled, then we should already know what
+      // the inherit expression is referring to. Use that information,
+      // and error if it's not there, since the Dyno scope resolver should
+      // be fully online.
+      if (results) {
         if (auto result = results->byAstOrNull(ident)) {
           auto toId = result->toId();
           if (!toId.isEmpty()) {
-            if (auto converted = findConvertedSym(toId)) {
-              inherits.push_back(new SymExpr(converted));
-              continue;
-            }
+            auto converted = findConvertedSym(toId);
+            CHPL_ASSERT(converted &&
+                        "non-null 'results' implies scope resolution is enabled");
+            inherits.push_back(new SymExpr(converted));
+            continue;
           }
         }
+
+        // Coudln't find the target, emit an error message
+        USR_FATAL_CONT(inheritExpr->id(),
+                       "could not find parent class or target interface for inheritance expression");
       }
 
-      // Couldn't find the target, so translate it literally.
+      // Couldn't find the target, so translate it literally and hand it off
+      // to the production scope resolver.
       if (converted) {
         inherits.push_back(converted);
       }
