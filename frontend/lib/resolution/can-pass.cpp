@@ -993,7 +993,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   // when computing an initial candidate, 'b' is unknown
   // but we should allow passing an argument to it.
   if (formalT->isUnknownType() && !actualQT.isType()) {
-    return passAsIs();
+    return instantiate();
   }
 
   // allow unknown qualifier for any type actuals

@@ -3768,6 +3768,89 @@ void Resolver::exit(const TupleDecl* decl) {
   exitScope(decl);
 }
 
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci) {
+  Context* context = rv->context;
+  SkipCallResolutionReason skip = NONE;
+  auto& byPostorder = rv->byPostorder;
+
+  if (callLike->isTuple()) return skip;
+
+  int actualIdx = 0;
+  for (const auto& actual : ci.actuals()) {
+    ID toId; // does the actual refer directly to a particular variable?
+    const AstNode* actualAst = actualAsts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      toId = byPostorder.byAst(actualAst).toId();
+    }
+    QualifiedType qt = actual.type();
+    const Type* t = qt.type();
+
+    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+    bool isNonOutFormal = formalAst != nullptr &&
+                          formalAst->isFormal() &&
+                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
+    if (t != nullptr && t->isErroneousType()) {
+      // always skip if there is an ErroneousType
+      skip = ERRONEOUS_ACT;
+    } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.kind() != QualifiedType::PARAM &&
+               qt.kind() != QualifiedType::TYPE &&
+               qt.isRef() == false) {
+      // don't skip because it could be initialized with 'out' intent,
+      // but not for non-out formals because they can't be split-initialized.
+    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+      // don't skip for type queries in type constructors
+    } else {
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = UNKNOWN_PARAM;
+      } else if (qt.isUnknown()) {
+        skip = UNKNOWN_ACT;
+      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
+        // For initializer calls, allow generic formals using the above
+        // condition; this way, 'this.init(..)' while 'this' is generic
+        // should be fine.
+
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
+          skip = GENERIC_TYPE;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = GENERIC_VALUE;
+        }
+      }
+    }
+
+    // Don't skip for type constructors, except due to unknown params.
+    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+      skip = NONE;
+    }
+
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
+      skip = NONE;
+    }
+
+    if (skip) {
+      break;
+    }
+    actualIdx++;
+  }
+
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = OTHER_REASON;
+  }
+
+  return skip;
+}
+
+
 bool Resolver::enter(const Range* range) {
   return true;
 }
@@ -3798,23 +3881,37 @@ void Resolver::exit(const Range* range) {
   const char* function = functions[boundType];
 
   std::vector<CallInfoActual> actuals;
+  std::vector<const AstNode*> actualAsts;
   if (range->lowerBound()) {
     actuals.emplace_back(/* type */ byPostorder.byAst(range->lowerBound()).type(),
                          /* byName */ UniqueString());
+    actualAsts.push_back(range->lowerBound());
   }
   if (range->upperBound()) {
     actuals.emplace_back(/* type */ byPostorder.byAst(range->upperBound()).type(),
                          /* byName */ UniqueString());
+    actualAsts.push_back(range->upperBound());
   }
+
+
   auto ci = CallInfo(/* name */ UniqueString::get(context, function),
                      /* calledType */ QualifiedType(),
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
-  auto scope = scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  auto c = resolveGeneratedCall(context, range, ci, inScopes);
-  handleResolvedCall(byPostorder.byAst(range), range, ci, c);
+
+  // Skip calls when the bounds are unknown to avoid putting function resolution
+  // into an awkward position.
+  auto skip = shouldSkipCallResolution(this, range, actualAsts, ci);
+  if (!skip) {
+    auto scope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+    auto c = resolveGeneratedCall(context, range, ci, inScopes);
+    handleResolvedCall(byPostorder.byAst(range), range, ci, c);
+  } else {
+    auto& r = byPostorder.byAst(range);
+    r.setType(QualifiedType());
+  }
 }
 
 bool Resolver::enter(const uast::Domain* decl) {
@@ -3847,8 +3944,34 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add key or range actuals
     std::vector<CallInfoActual> actuals;
+    bool freshDomainQuery = false;
     for (auto expr : decl->exprs()) {
-      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+      auto exprType = byPostorder.byAst(expr).type();
+
+      // If it's a type query, we may be looking at [?D] (where a Domain node
+      // is implicitly created in the array expression AST). In that case,
+      // we want the fully generic domain type.
+      if (expr->isTypeQuery() && exprType.type() && exprType.type()->isAnyType()) {
+        freshDomainQuery = true;
+        break;
+      }
+
+      actuals.emplace_back(exprType, UniqueString());
+    }
+
+    if (freshDomainQuery) {
+      if (decl->numExprs() > 1 || decl->usedCurlyBraces()) {
+        // We can only query the whole domain using a type query, so reject
+        // the domain expression.
+        context->error(decl, "cannot query part of a domain");
+      }
+
+      auto& re = byPostorder.byAst(decl);
+      auto dt = QualifiedType(QualifiedType::CONST_VAR, genericDomainType);
+      re.setType(dt);
+
+      // No need to perform the call to chpl__buildDomainExpr etc.
+      return;
     }
 
     // Add definedConst actual if appropriate
@@ -3991,89 +4114,6 @@ static const Type* getGenericType(Context* context, const Type* recv) {
     gen = DomainType::getGenericDomainType(context);
   }
   return gen;
-}
-
-static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::Call* call,
-                         std::vector<const uast::AstNode*> actualAsts,
-                         ID moduleScopeId,
-                         const CallInfo& ci) {
-  Context* context = rv->context;
-  SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
-
-  if (call->isTuple()) return skip;
-
-  int actualIdx = 0;
-  for (const auto& actual : ci.actuals()) {
-    ID toId; // does the actual refer directly to a particular variable?
-    const AstNode* actualAst = actualAsts[actualIdx];
-    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-      toId = byPostorder.byAst(actualAst).toId();
-    }
-    QualifiedType qt = actual.type();
-    const Type* t = qt.type();
-
-    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
-    bool isNonOutFormal = formalAst != nullptr &&
-                          formalAst->isFormal() &&
-                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
-
-    if (t != nullptr && t->isErroneousType()) {
-      // always skip if there is an ErroneousType
-      skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
-      // don't skip for type queries in type constructors
-    } else {
-      if (qt.isParam() && qt.param() == nullptr) {
-        skip = UNKNOWN_PARAM;
-      } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
-      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
-        // For initializer calls, allow generic formals using the above
-        // condition; this way, 'this.init(..)' while 'this' is generic
-        // should be fine.
-
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
-          skip = GENERIC_TYPE;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
-        }
-      }
-    }
-
-    // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
-      skip = NONE;
-    }
-
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    if (skip == GENERIC_TYPE && call->toPrimCall()) {
-      skip = NONE;
-    }
-
-    if (skip) {
-      break;
-    }
-    actualIdx++;
-  }
-
-  // Don't try to resolve calls to '=' until later
-  if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = OTHER_REASON;
-  }
-
-  return skip;
 }
 
 static const bool& warnForMissingIterKindEnum(Context* context,
@@ -4282,10 +4322,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
-  auto skip = shouldSkipCallResolution(this, call, actualAsts,
-                                       moduleScopeId,
-                                       ci);
-
+  auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
   if (!skip) {
     ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();
