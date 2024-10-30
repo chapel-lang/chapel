@@ -588,6 +588,12 @@ all:
   08/28/24:
     - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
       config: chapcs
+  10/15/24:
+    - text: Update bundled qthreads to 1.21 (#26086)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  10/24/24:
+    - text: Backport Fix For Performance Regression in Qthreads 1.21 (#26138)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
 
 # End all
 
