@@ -110,7 +110,7 @@ class ID final {
         return -1;
       } else {
         // generated uAST nodes
-        return (postOrderId_ * -1) - ID_GEN_START - 1;
+        return (postOrderId_ * -1) + ID_GEN_START - 1;
       }
     } else {
       return postOrderId_;

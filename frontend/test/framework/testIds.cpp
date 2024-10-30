@@ -231,12 +231,35 @@ static void test4() {
   checkFromString(context, id3a);
 }
 
+static void testGenerated() {
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "MyMod.MyType.foo");
+  ID root = ID::generatedId(path, -1, 0);
+  assert(root.postOrderId() == -1);
+  assert(root.isFabricatedId());
+  assert(root.fabricatedIdKind() == ID::FabricatedIdKind::Generated);
+
+  ID child = ID::generatedId(path, 5, 0);
+  assert(child.postOrderId() == 5);
+  assert(child.isFabricatedId());
+  assert(child.fabricatedIdKind() == ID::FabricatedIdKind::Generated);
+  assert(child.parentSymbolId(context) == root);
+
+  ID type = ID(UniqueString::get(context, "MyMod.MyType"), -1, 0);
+  ID parent = root.parentSymbolId(context);
+  assert(type == parent);
+  assert(parent.isFabricatedId() == false);
+}
+
 
 int main() {
   test1();
   test2();
   test3();
   test4();
+  testGenerated();
 
   return 0;
 }
