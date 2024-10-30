@@ -75,7 +75,7 @@ hwloc-config: FORCE
 	mkdir -p $(HWLOC_BUILD_DIR)
 	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' \
 		CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' \
-		LDFLAGS='$(RUNTIME_LFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) \
+		LDFLAGS='$(RUNTIME_LFLAGS) $(LDFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) \
 		$(CHPL_HWLOC_CFG_OPTIONS)
 
 hwloc-build: FORCE
