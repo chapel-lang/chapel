@@ -3754,6 +3754,15 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
+  // Sometimes, actual types can be unknown since we are checking for 'out'
+  // intent. No special functions here use the 'out' intent, so in this case,
+  // return false.
+  for (auto& actual : ci.actuals()) {
+    if (actual.type().isUnknown()) {
+      return false;
+    }
+  }
+
   // special casts including explicit param casts are resolved here
   if (ci.isOpCall() && ci.name() == USTR(":")) {
     auto srcQt = ci.actual(0).type();
