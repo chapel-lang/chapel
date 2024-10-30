@@ -129,24 +129,42 @@ ID ID::fabricateId(Context* context,
   return newId;
 }
 
+ID ID::generatedId(UniqueString symbolPath,
+                 int postOrderId,
+                 int numChildIds) {
+  int pid;
+  if (postOrderId == -1) {
+    pid = ID_GEN_START;
+  } else {
+    pid = ID_GEN_START - 1 - postOrderId;
+  }
+
+  return ID(symbolPath, pid, numChildIds);
+}
+
+
 ID ID::parentSymbolId(Context* context) const {
-  if (postOrderId_ >= 0) {
-    // Create an ID with postorder id -1 instead
-    return ID(symbolPath_, -1, 0);
+  UniqueString pathToUse;
+  if (postOrderId() >= 0) {
+    pathToUse = symbolPath_;
+  } else {
+    pathToUse = ID::parentSymbolPath(context, symbolPath_);
+    if (pathToUse.isEmpty()) {
+      // no parent symbol path so return an empty ID
+      return ID();
+    }
   }
 
-  UniqueString parentSymPath = ID::parentSymbolPath(context, symbolPath_);
-  if (parentSymPath.isEmpty()) {
-    // no parent symbol path so return an empty ID
-    return ID();
-  }
-
+  // Assumption: Generated uAST symbols that define a scope do not themselves
+  // contain symbols that define a scope. This means that if we see a generated
+  // scope-defining symbol, its parent must not be generated uAST.
   if (this->isFabricatedId() &&
-      this->fabricatedIdKind() == FabricatedIdKind::Generated) {
-    return ID(parentSymPath, ID_GEN_START, 0);
+      this->fabricatedIdKind() == FabricatedIdKind::Generated &&
+      !isSymbolDefiningScope()) {
+    return ID(pathToUse, ID_GEN_START, 0);
   } else {
     // Otherwise, construct an ID for the parent symbol
-    return ID(parentSymPath, -1, 0);
+    return ID(pathToUse, -1, 0);
   }
 }
 

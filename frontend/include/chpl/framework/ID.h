@@ -110,7 +110,7 @@ class ID final {
         return -1;
       } else {
         // generated uAST nodes
-        return (postOrderId_ * -1) - ID_GEN_START - 1;
+        return (postOrderId_ * -1) + ID_GEN_START - 1;
       }
     } else {
       return postOrderId_;
@@ -157,6 +157,13 @@ class ID final {
                         ID parentSymbolId,
                         UniqueString name,
                         FabricatedIdKind kind);
+
+  /**
+    Create an ID that represents a uAST node created during compilation.
+   */
+  static ID generatedId(UniqueString symbolPath,
+                       int postOrderId,
+                       int numChildIds);
 
   /**
     Return the number of ids contained in this node, not including itself. In
