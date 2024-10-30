@@ -447,6 +447,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
 
+    // Assumption: doAssignIDs is invoked on top-level uAST with an empty
+    // string for the symbolPath. If the symbolPath is not empty, and this
+    // builder is for generated uAST, then we have violated the assumption that
+    // there is only one scope-defining symbol.
+    if (isGenerated() && !symbolPath.isEmpty()) {
+      CHPL_ASSERT(false && "generated uAST may not contain scope-defining "
+                           "symbols other than the top-level symbol");
+    }
+
     int repeat = 0;
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
