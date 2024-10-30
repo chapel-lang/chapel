@@ -2512,6 +2512,10 @@ arkouda: &arkouda-base
     - Use Chapel 2.2 for Arkouda "release" nightly testing (#26014)
   10/09/24:
     - Fix array transfer performance regression (Bears-R-Us/arkouda#3826)
+  10/16/24:
+    - Part of argTypeReductionMessage refactor (Bears-R-Us/arkouda#3845)
+  10/29/24:
+    - Fix performance regression in reductions benchmark (Bears-R-Us/arkouda#3874)
 
 arkouda-string:
   <<: *arkouda-base
