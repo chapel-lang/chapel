@@ -3849,8 +3849,6 @@ resolveFnCallForTypeCtor(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedMethods(Context* context,
                                  const CallInfo& ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope,
                                  CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
   if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
@@ -3875,8 +3873,6 @@ considerCompilerGeneratedMethods(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedFunctions(Context* context,
                                    const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
   // methods and op calls considered elsewhere
   if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
@@ -3893,8 +3889,6 @@ considerCompilerGeneratedFunctions(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedOperators(Context* context,
                                    const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
   if (!ci.isOpCall()) return nullptr;
 
@@ -3937,20 +3931,18 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
 
 static void
 considerCompilerGeneratedCandidates(Context* context,
-                                   const AstNode* astForErr,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates,
-                                   std::vector<ApplicabilityResult>* rejected) {
+                                    const AstNode* astForErr,
+                                    const CallInfo& ci,
+                                    CandidatesAndForwardingInfo& candidates,
+                                    std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
+  tfs = considerCompilerGeneratedMethods(context, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(context, ci, inScope, inPoiScope, candidates);
+    tfs = considerCompilerGeneratedFunctions(context, ci, candidates);
   }
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedOperators(context, ci, inScope, inPoiScope, candidates);
+    tfs = considerCompilerGeneratedOperators(context, ci, candidates);
   }
 
   if (!tfs) return;
@@ -3969,11 +3961,10 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // need to instantiate before storing
   ResolutionContext rcval(context);
-  auto poi = pointOfInstantiationScope(context, inScope, inPoiScope);
   auto instantiated = doIsCandidateApplicableInstantiating(&rcval,
                                                            tfs,
                                                            ci,
-                                                           poi);
+                                                           /* POI */ nullptr);
   if (!instantiated.success()) {
     // failed when instantiating, likely due to dependent types.
     if (rejected) rejected->push_back(instantiated);
@@ -4253,7 +4244,6 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, astContext, fci,
-                                          inScopes.callScope(), inScopes.poiScope(),
                                           nonPoiCandidates,
                                           rejected);
       // update forwardingTo
@@ -4477,8 +4467,6 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, astContext, ci,
-                                      inScopes.callScope(),
-                                      inScopes.poiScope(),
                                       candidates,
                                       rejected);
 
