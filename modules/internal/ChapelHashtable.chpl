@@ -211,7 +211,7 @@ module ChapelHashtable {
   private iter _allSlots(size: int, followThis, param tag: iterKind)
     where tag == iterKind.follower {
 
-    var (chunk, followThisDom) = followThis;
+    var chunk = followThis;
 
     if debugDefaultAssoc then
       writeln("In associative domain _allSlots follower iterator: ",
