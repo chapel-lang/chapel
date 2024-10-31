@@ -568,6 +568,8 @@ builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
                                 UniqueString name);
 
+const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
+
 
 } // end namespace resolution
 } // end namespace chpl
