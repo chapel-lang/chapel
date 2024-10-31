@@ -137,12 +137,26 @@ module CompressedSparseLayout {
   record chpl_layoutHelper {
     forwarding var _value;
 
+    proc init=(other: chpl_layoutHelper) {
+      this._value = other._value.dsiClone();
+    }
+
+      operator =(lhs: chpl_layoutHelper, rhs: chpl_layoutHelper) {
+        if lhs._value != nil then
+          delete lhs._value;
+        lhs._value = rhs._value.dsiClone();
+      }
+    
     proc newSparseDom(param rank: int, type idxType, dom: domain(?)) {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
         _value.add_dom(x);
       }
       return x;
+    }
+
+    proc deinit() {
+      delete _value;
     }
   }
 
@@ -236,7 +250,7 @@ module CompressedSparseLayout {
     proc init(value: CSImpl(?)) {
       this.compressRows = value.compressRows;
       this.sortedIndices = value.sortedIndices;
-      this.chpl_layoutHelp = new chpl_layoutHelper(value);
+      this.chpl_layoutHelp = new chpl_layoutHelper(value.dsiClone());
     }
 
     operator ==(l: csLayout(?), r: csLayout(?)) param {
