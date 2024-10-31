@@ -3796,22 +3796,20 @@ bool Resolver::enter(const MultiDecl* decl) {
     const AstNode* initExpr = nullptr;
     getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
 
-    if (typeExpr != nullptr) {
-      typeExpr->traverse(*this);
-    }
-    if (initExpr != nullptr) {
-      initExpr->traverse(*this);
-    }
+    // if (typeExpr != nullptr) {
+    //   typeExpr->traverse(*this);
+    // }
+    // if (initExpr != nullptr) {
+    //   initExpr->traverse(*this);
+    // }
 
     exitScope(d);
   }
 
   return false;
 }
-void Resolver::exit(const MultiDecl* decl) {
-  if (scopeResolveOnly)
-    return;
 
+void Resolver::exit(const MultiDecl* decl) {
   // Separate decls into groups of decls sharing a type/init.
   std::vector<std::vector<const Decl*>> declGroups;
   std::vector<const Decl*> currentGroup;
@@ -3840,6 +3838,15 @@ void Resolver::exit(const MultiDecl* decl) {
       const AstNode* typeExpr = nullptr;
       const AstNode* initExpr = nullptr;
       getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+
+      // Resolve type and init expressions if present.
+      if (typeExpr != nullptr) {
+        typeExpr->traverse(*this);
+      }
+      if (initExpr != nullptr) {
+        initExpr->traverse(*this);
+      }
+      if (scopeResolveOnly) continue;
 
       // if it has neither init nor type, use the type from the
       // variable to the right.
