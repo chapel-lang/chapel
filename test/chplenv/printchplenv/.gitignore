@@ -2,3 +2,6 @@ printchplenv.good
 printchplenvAll.good
 printchplenv-only.good
 printchplenv-only-value.good
+print-chpl-settings.1.good
+print-chpl-settings.2.good
+print-chpl-settings.3.good

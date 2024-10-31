@@ -5,7 +5,7 @@ CHPL_HOST_ARCH=x86_64
 CHPL_HOST_COMPILER=clang
 CHPL_TARGET_PLATFORM=darwin
 CHPL_TARGET_ARCH=x86_64
-CHPL_TARGET_COMPILER=clang
+CHPL_TARGET_COMPILER=clang --gcc-toolchain=/usr # nonsenseical value, but tests that it is accepted
 CHPL_TARGET_CPU=native
 CHPL_LOCALE_MODEL=flat
 CHPL_COMM=none
