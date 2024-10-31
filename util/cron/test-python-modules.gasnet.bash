@@ -16,7 +16,7 @@ export CHPL_LLVM=none
 
 # ensure we fail early if ZMQ is not present
 echo "Ensure ZMQ is installed"
-cCompiler=`PYTHONPATH=$CHPL_HOME/util/chplenv python3 getCompiler.py`
+cCompiler=`PYTHONPATH=$CHPL_HOME/util/chplenv python3 $CWD/getCompiler.py`
 echo "cCompiler is $cCompiler"
 
 zmqDirname="zmqDir-XXXXXX"
