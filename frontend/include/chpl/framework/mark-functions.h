@@ -120,7 +120,7 @@ template<typename T> struct mark<std::set<T>> {
 };
 
 template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
-  void operator()(Context* context, std::unordered_map<K,V>& keep) const {
+  void operator()(Context* context, const std::unordered_map<K,V>& keep) const {
     for (auto const &pair : keep) {
       chpl::mark<K> keyMarker;
       chpl::mark<V> valMarker;
