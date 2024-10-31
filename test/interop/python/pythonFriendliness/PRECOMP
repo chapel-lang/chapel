@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Remove the __init__.py file to prevent a warning.  We always generate this
+# file, so if it is present from a previous test's run we will encounter a
+# warning about not being able to overwrite it.  Remove any previous version
+# before compiling so that we do not encounter this error
+if [ -f bufferDir/lib/__init__.py ]; then
+    rm bufferDir/lib/__init__.py
+fi
+
+if [ -f lib/__init__.py ]; then
+    rm lib/__init__.py
+fi
