@@ -26,4 +26,4 @@ fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm15"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$CWD/nightly -cron -examples -blog ${nightly_args}
