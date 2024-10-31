@@ -1,0 +1,2 @@
+In One: Local='y', Global='default'
+In Two: Local=None, Global='different default'

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+base=$1
+good=$2
+function testcase() {
+  local testnum=$1
+  shift
+  local args=$@
+  $CHPL_HOME/tools/chplcheck/chplcheck --add-rules rules.py $args $base.chpl > $base.$testnum.out
+  if diff -q $base.$testnum.out $base.$testnum.good; then
+    echo "testcase $testnum passed" >> $good
+    rm $base.$testnum.out
+  else
+    echo "testcase $testnum failed" >> $good
+  fi
+}
+
+testcase 1
+testcase 2 --setting One.Local=x
+testcase 3 --setting Two.Local=y
+testcase 4 --setting Global=bar
+testcase 5 --setting One.Local=x --setting Two.Local=y --setting Global=bar
+testcase 6 --setting Local=foo # error
+testcase 7 --setting Two.Global=bar # error
+testcase 8 --setting One.Local=x --setting One.Local=y
