@@ -39,7 +39,7 @@ struct DisambiguationCandidate {
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
-  bool anyPromotes = false;
+  SubstitutionsMap promotedFormals;
   bool nImplicitConversionsComputed = false;
   bool anyNegParamToUnsigned = false;
   int nImplicitConversions = 0;
@@ -52,7 +52,7 @@ struct DisambiguationCandidate {
                           const CallInfo& call,
                           int idx)
     : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx),
-      anyPromotes(false), nImplicitConversionsComputed(false),
+      promotedFormals(), nImplicitConversionsComputed(false),
       anyNegParamToUnsigned(false), nImplicitConversions(0),
       nParamNarrowingImplicitConversions(0), visibilityDistance(-1)
   {
@@ -1134,7 +1134,7 @@ static bool isNegativeParamToUnsigned(const Param* actualSym,
   return false;
 }
 
-static bool isMatchingImagComplex(Type* actualType, Type* formalType) {
+static bool isMatchingImagComplex(const Type* actualType, const Type* formalType) {
   if (auto fct = formalType->toComplexType()) {
     if (auto ait = actualType->toImagType()) {
       return ait->bitwidth()*2 == fct->bitwidth();
@@ -1189,12 +1189,12 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       // think this is embedded in query
     // }
 
-    Type* actualType = (Type*)fa1->actualType().type();
-    Type* formalType = (Type*)fa1->formalType().type();
+    const Type* actualType = fa1->actualType().type();
+    const Type* formalType = fa1->formalType().type();
 
-    auto canPass = CanPassResult::canPassScalar(dctx.context,
-                                                fa1->actualType(),
-                                                fa1->formalType());
+    auto canPass = CanPassResult::canPass(dctx.context,
+                                          fa1->actualType(),
+                                          fa1->formalType());
 
     if (canPass.passes() &&
         canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {
@@ -1202,9 +1202,8 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     }
 
     if (canPass.passes() && canPass.promotes()) {
-      // TODO: what is equivalent in Dyno?
-      // actualType = actualType->scalarPromotionType->getValType();
-      continue;
+      actualType = getPromotionType(dctx.context, fa1->actualType()).type();
+      candidate->promotedFormals[fa1->formal()->id()] = fa1->actualType();
     }
 
     if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
@@ -1371,7 +1370,7 @@ static void discardWorsePromoting(const DisambiguationContext& dctx,
     }
 
     const DisambiguationCandidate* candidate = candidates[i];
-    if (candidate->anyPromotes) {
+    if (!candidate->promotedFormals.empty()) {
       nPromoting++;
     } else {
       nNotPromoting++;
@@ -1385,7 +1384,7 @@ static void discardWorsePromoting(const DisambiguationContext& dctx,
       }
 
       const DisambiguationCandidate* candidate = candidates[i];
-      if (candidate->anyPromotes) {
+      if (!candidate->promotedFormals.empty()) {
         EXPLAIN_DUMP(candidate->fn);
         EXPLAIN("\n\n");
         EXPLAIN("X: Fn %lu promotes but others do not\n", i);
@@ -1918,9 +1917,7 @@ static int prefersNumericCoercion(const DisambiguationContext& dctx,
 
 static QualifiedType computeActualScalarType(Context* context,
                                              QualifiedType actualType) {
-  // TODO: fill this in
-  CHPL_UNIMPL("scalar type matching");
-  return actualType;
+  return getPromotionType(context, actualType);
 }
 
 
