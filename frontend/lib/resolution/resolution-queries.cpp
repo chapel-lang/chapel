@@ -5706,6 +5706,64 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
   return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 }
 
+// Helper with shared logic between loop expression iterators and promotion,
+// in which several iterables (zippered args to loop, multiple promoted args),
+// are all part of the 'these' call.
+static CallResolutionResult
+resolveTheseCallForZipperedArguments(ResolutionContext* rc,
+                                     const AstNode* astContext,
+                                     const IteratorType* iterType,
+                                     std::vector<QualifiedType> zippered,
+                                     uast::Function::IteratorKind iterKind,
+                                     const types::QualifiedType& followThis) {
+  bool leaderOnly = iterKind == Function::LEADER;
+  bool standalone = iterKind == Function::STANDALONE;
+  bool serial = iterKind == Function::SERIAL;
+
+  // Loop expressions don't have standalone iterators.
+  if (standalone)
+    return CallResolutionResult::getEmpty();
+
+  bool supportsParallel = !iterType->isLoopExprIteratorType() ||
+                          iterType->toLoopExprIteratorType()->supportsParallel();
+
+  // the loop was written as a serial loop expression, so no parallel
+  // 'these' calls are allowed.
+  if (!serial && !supportsParallel)
+    return CallResolutionResult::getEmpty();
+
+  bool succeeded = true;
+  auto inScopes = callScopeInfoForIterator(rc->context(), iterType, nullptr);
+  for (auto receiverType : zippered) {
+    auto c = resolveTheseCall(rc, astContext, receiverType,
+                              iterKind, followThis, inScopes);
+
+    if (c.exprType().isUnknownOrErroneous() ||
+        !c.exprType().type()->isIteratorType()) {
+      succeeded = false;
+      break;
+    }
+
+    if (leaderOnly) return c;
+  }
+
+  if (!succeeded) {
+    return CallResolutionResult::getEmpty();
+  }
+
+  if (auto loopIt = iterType->toLoopExprIteratorType()) {
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
+                                loopIt->yieldType());
+  } else {
+    CHPL_ASSERT(iterType->isPromotionIteratorType());
+    auto promoIt = iterType->toPromotionIteratorType();
+
+    auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
+                                scalarReturn);
+  }
+}
+
 static CallResolutionResult
 resolveTheseCallForLoopIterator(ResolutionContext* rc,
                                 const AstNode* astContext,
@@ -5729,40 +5787,31 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
     receiverTypes.push_back(loopIt->iterand());
   }
 
-  bool leaderOnly = iterKind == Function::LEADER;
-  bool standalone = iterKind == Function::STANDALONE;
-  bool serial = iterKind == Function::SERIAL;
+  return resolveTheseCallForZipperedArguments(rc, astContext, loopIt,
+                                              receiverTypes, iterKind, followThis);
+}
 
-  // Loop expressions don't have standalone iterators.
-  if (standalone)
-    return CallResolutionResult::getEmpty();
+static CallResolutionResult
+resolveTheseCallForPromotionIterator(ResolutionContext* rc,
+                                     const AstNode* astContext,
+                                     const PromotionIteratorType* promoIt,
+                                     uast::Function::IteratorKind iterKind,
+                                     const types::QualifiedType& followThis) {
+  std::vector<QualifiedType> receiverTypes;
 
-  // the loop was written as a serial loop expression, so no parallel
-  // 'these' calls are allowed.
-  if (!serial && !loopIt->supportsParallel())
-    return CallResolutionResult::getEmpty();
-
-  auto inScopes = callScopeInfoForIterator(rc->context(), loopIt, nullptr);
-  bool succeeded = true;
-  for (auto receiverType : receiverTypes) {
-    auto c = resolveTheseCall(rc, astContext, receiverType,
-                              iterKind, followThis, inScopes);
-
-    if (c.exprType().isUnknownOrErroneous() ||
-        !c.exprType().type()->isIteratorType()) {
-      succeeded = false;
-      break;
+  auto typedScalarFn = promoIt->scalarFn();
+  auto untypedScalarFn = typedScalarFn->untyped();
+  int numFormals = untypedScalarFn->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    auto id = untypedScalarFn->formalDecl(i)->id();
+    auto promotionType = promoIt->promotedFormals().find(id);
+    if (promotionType != promoIt->promotedFormals().end()) {
+      receiverTypes.push_back(promotionType->second);
     }
-
-    if (leaderOnly) return c;
   }
 
-  if (!succeeded) {
-    return CallResolutionResult::getEmpty();
-  }
-
-  return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
-                              loopIt->yieldType());
+  return resolveTheseCallForZipperedArguments(rc, astContext, promoIt,
+                                              receiverTypes, iterKind, followThis);
 }
 
 CallResolutionResult resolveTheseCall(ResolutionContext* rc,
@@ -5778,6 +5827,9 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
       return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
       return resolveTheseCallForLoopIterator(rc, astContext, loopIt, iterKind, followThis);
+    } else if (auto promoIt = receiverType.type()->toPromotionIteratorType()) {
+      debuggerBreakHere();
+      return resolveTheseCallForPromotionIterator(rc, astContext, promoIt, iterKind, followThis);
     }
   }
 
