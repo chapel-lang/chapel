@@ -4665,7 +4665,18 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   QualifiedType yieldedType;
   if (msc.fn()) {
     exprType = returnType(rc, msc.fn(), instantiationPoiScope);
-    if (msc.fn()->isIterator()) {
+
+    if (!msc.promotedFormals().empty()) {
+      yieldedType = exprType;
+      exprType = QualifiedType(
+          exprType.kind(),
+          PromotionIteratorType::get(rc->context(),
+                                     instantiationPoiScope,
+                                     msc.fn(),
+                                     msc.promotedFormals()));
+    }
+
+    if (msc.fn()->isIterator() && yieldedType.isUnknown()) {
       yieldedType = yieldType(rc, msc.fn(), instantiationPoiScope);
     }
   }
@@ -4751,6 +4762,13 @@ resolveFnCall(ResolutionContext* rc,
       bool isIterator = candidate.fn()->isIterator();
       QualifiedType rt = returnType(rc, candidate.fn(),
                                     instantiationPoiScope);
+      QualifiedType yt;
+
+      if (!candidate.promotedFormals().empty()) {
+        // this is actually a promotion; construct a promotion type instead.
+        yt = rt;
+        rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+      }
 
       if (retType && retType->type() != rt.type()) {
         // The actual iterator type for each overload will be different
@@ -4768,9 +4786,11 @@ resolveFnCall(ResolutionContext* rc,
         retType = rt;
       }
 
-      if (isIterator) {
-        QualifiedType yt = yieldType(rc, candidate.fn(),
-                                     instantiationPoiScope);
+      if (isIterator || !yt.isUnknown()) {
+        if (yt.isUnknown()) {
+          yt = yieldType(rc, candidate.fn(), instantiationPoiScope);
+        }
+
         if (yieldedType && yieldedType->type() != yt.type()) {
           context->error(candidate.fn(),
                          nullptr,
