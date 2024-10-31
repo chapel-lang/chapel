@@ -715,19 +715,13 @@ static void testControlFlowYield4() {
   guard.realizeErrors();
 }
 
-std::string ops = R"""(
-  operator ==(x:int, y:int) { return __primitive("==", x, y); }
-  operator ==(param x:int, param y:int) param { return __primitive("==", x, y); }
-)""";
-
 static void testSelectVals() {
   {
     // Basic test case
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -745,11 +739,10 @@ static void testSelectVals() {
   }
   {
     // Recognize that cases do not all return the same type
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -770,11 +763,10 @@ static void testSelectVals() {
   }
   {
     // Recognize that all cases return, so the final 'return' isn't considered.
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -794,11 +786,10 @@ static void testSelectVals() {
   }
   {
     // Without an 'otherwise', we should consider the final 'return'.
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -829,8 +820,7 @@ static void testSelectCases(std::string base,
     std::string kind = isType ? "type" : "var";
     std::string program = base + kind + " x = foo(" + pair.first + ");";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     QualifiedType qt = resolveTypeOfXInit(context, program);
     std::stringstream ss;
@@ -845,7 +835,7 @@ static void testSelectCases(std::string base,
 static void testSelectTypes() {
   {
     // basic type usage
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -865,7 +855,7 @@ static void testSelectTypes() {
   }
   {
     // multiple cases in a single 'when'
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) type {
       select T {
         when int, uint, real do return int;
@@ -886,7 +876,7 @@ static void testSelectTypes() {
   }
   {
     // demonstrate that cases are ignored after first param-true
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -903,15 +893,14 @@ static void testSelectTypes() {
     type x = foo(int);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
   {
     // demonstrate that in the case of duplicates, the first is always chosen.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -930,7 +919,7 @@ static void testSelectTypes() {
     assert(qt.type()->isIntType());
   }
   {
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       select T {
         when int do return 5;
@@ -953,7 +942,7 @@ static void testSelectTypes() {
   {
     // demonstrate that when blocks can have multiple 
     // statements without otherwise
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       var x : int;
       select T {
@@ -976,7 +965,7 @@ static void testSelectTypes() {
   {
     // demonstrate that when blocks can have multiple 
     // statements with otherwise
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       var x : int;
       select T {
@@ -1001,7 +990,7 @@ static void testSelectTypes() {
 static void testSelectParams() {
   {
     // basic param usage
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(param p) type {
       select p {
         when 1 do return int;
@@ -1022,7 +1011,7 @@ static void testSelectParams() {
   }
   {
     // multiple cases in a single 'when'
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(param p) type {
       select p {
         when 1, 2, 3 do return int;
@@ -1045,7 +1034,7 @@ static void testSelectParams() {
   {
     // Show that 'otherwise' should still resolve when a param-true case is
     // not present.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     var myGlobal = 100;
     proc foo(param p) type {
       select p {
@@ -1057,8 +1046,7 @@ static void testSelectParams() {
     type x = foo(5);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
 
@@ -1070,7 +1058,7 @@ static void testSelectParams() {
   {
     // Show that non-param cases *preceding* param-true cases should still
     // resolve, in case their value matches at execution time.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     var myGlobal = 100;
     proc foo(param p) type {
       select p {
@@ -1082,8 +1070,7 @@ static void testSelectParams() {
     type x = foo(1);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
 
@@ -1273,26 +1260,15 @@ static void testNonParamLoop() {
 }
 
 static void testCPtrEltType() {
-  std::string chpl_home;
-  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
-    chpl_home = chpl_home_env;
-  } else {
-    printf("CHPL_HOME must be set");
-    exit(1);
-  }
-  Context::Configuration config;
-  config.chplHome = chpl_home;
   { 
     //works for c_ptr
-    std::string program = ops + R"""(
+    std::string program = R"""(
     use CTypes;
     var y: c_ptr(uint(8));
     type x = y.eltType;
     )""";
 
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isUintType());
@@ -1301,7 +1277,7 @@ static void testCPtrEltType() {
   return;
   { 
     //works for user-defined class 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     use CTypes;
     class c_ptr2 {
       type eltType;
@@ -1310,9 +1286,7 @@ static void testCPtrEltType() {
     type x = y.eltType;
     )""";
 
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isUintType());
@@ -1328,7 +1302,6 @@ static void testChildClassesHelper(const char* decls,
                                    int checkParam = -1) {
   // Construct test program
   std::ostringstream oss;
-  oss << ops;
   oss << decls << "\n";
   oss << "proc test(x : int = 0) " << intent << " {\n";
   oss << "select x {\n";
@@ -1360,8 +1333,7 @@ var x = test();
     std::cout << "Expecting no common parent (error)\n";
 
   // Setup to test
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   // Resolve program and test expected results

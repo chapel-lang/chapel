@@ -134,7 +134,6 @@ static void test3() {
   printf("test3\n");
 
   std::string program = R"""(
-    operator =(ref lhs: int, const rhs: int) {}
     class C {
       var a, b : int;
     }
@@ -146,8 +145,7 @@ static void test3() {
     var foo = new C(40, 2);
     var x = foo.getA();
     )""";
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto m = parseModule(context, program);
   auto results = resolveModule(context, m->id());
@@ -161,12 +159,10 @@ static void test3() {
 static void test4() {
   printf("test4\n");
 
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
-    operator =(ref lhs: 2*int, const rhs : 2*int) {}
     class Bar {
       param rank : int;
       var myTup : rank*int;

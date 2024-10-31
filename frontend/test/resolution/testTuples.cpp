@@ -398,8 +398,7 @@ static void test11() {
 
 static void test11b() {
   printf("test11b\n");
-  auto uctx = buildStdContext();
-  auto context = uctx.get();
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Exercises a case where the frontend was attempting to resolve an '='
@@ -700,13 +699,10 @@ static void test17() {
 
 static void argHelper(std::string formal, std::string actual,
                            bool shouldResolve) {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
-    operator =(ref lhs: _tuple, const ref rhs: _tuple) {}
-
     proc foo(arg: )""" + formal + R"""() {
       return arg;
     }

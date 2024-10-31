@@ -36,8 +36,7 @@ testConstChecking(const char* test,
                   std::vector<int> expectedErrorLines) {
   printf("\n### %s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
@@ -294,20 +293,18 @@ static void test6a() {
   testConstChecking("test6a",
     R""""(
       module M {
-        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           x = 34;
         }
       }
     )"""",
-    {6});
+    {5});
 }
 static void test6b() {
   testConstChecking("test6b",
     R""""(
       module M {
-        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           const ref y = x;
@@ -315,13 +312,12 @@ static void test6b() {
         }
       }
     )"""",
-    {7});
+    {6});
 }
 static void test6c() {
   testConstChecking("test6c",
     R""""(
       module M {
-        operator =(ref lhs: int, const rhs: int) {}
         proc test() {
           const x: int = 0;
           ref y = x;
@@ -329,7 +325,7 @@ static void test6c() {
         }
       }
     )"""",
-    {6});
+    {5});
 }
 
 static void test7a() {

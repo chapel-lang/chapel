@@ -1712,14 +1712,13 @@ static void test27() {
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
   auto context = buildStdContext();
-  auto ctx = context.get();
 
-  ctx->advanceToNextRevision(false);
-  setupModuleSearchPaths(ctx, false, false, {}, {});
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
 
   CompilerFlags flags;
   flags.set(CompilerFlags::WARN_UNSTABLE, true);
-  setCompilerFlags(ctx, std::move(flags));
+  setCompilerFlags(context, std::move(flags));
 
   std::string program0 =
     R""""(
@@ -1731,10 +1730,10 @@ static void testInfiniteCycleBug() {
     var x = foo();
     )"""";
 
-  std::ignore = resolveQualifiedTypeOfX(ctx, program0);
+  std::ignore = resolveQualifiedTypeOfX(context, program0);
 
-  ctx->advanceToNextRevision(false);
-  setupModuleSearchPaths(ctx, false, false, {}, {});
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
 
   std::string program1 =
     R""""(
@@ -1746,7 +1745,7 @@ static void testInfiniteCycleBug() {
     var x = baz();
     )"""";
 
-  std::ignore = resolveQualifiedTypeOfX(ctx, program1);
+  std::ignore = resolveQualifiedTypeOfX(context, program1);
 }
 
 int main() {

@@ -39,8 +39,7 @@ testMaybeRef(const char* test,
              bool expectErrors=false) {
   printf("\n### %s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   ResolutionContext rcval(context);
@@ -278,7 +277,6 @@ static void test3h() {
   testMaybeRef("test3h",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() const ref { return global; }   // M.foo#1
@@ -296,7 +294,6 @@ static void test3i() {
   testMaybeRef("test3i",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() const ref { return global; }   // M.foo#1
@@ -430,7 +427,6 @@ static void test4h() {
   testMaybeRef("test4h",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() { return global; }             // M.foo#1
@@ -448,7 +444,6 @@ static void test4i() {
   testMaybeRef("test4i",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() { return global; }             // M.foo#1
@@ -743,7 +738,6 @@ static void test6h() {
   testMaybeRef("test6h",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() const ref { return global; }     // M.foo
         proc foo() { return global; }               // M.foo#1
@@ -762,7 +756,6 @@ static void test6i() {
   testMaybeRef("test6i",
     R""""(
       module M {
-        operator =(ref lhs: int, rhs: int) {}
         var global: int;
         proc foo() ref { return global; }        // M.foo
         proc foo() const ref { return global; }  // M.foo#1

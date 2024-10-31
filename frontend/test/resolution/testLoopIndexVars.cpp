@@ -1079,8 +1079,7 @@ int main() {
   testIndexScope1();
 
   // Use a single context instance to avoid re-resolving internal modules.
-  auto ctx = buildStdContext();
-  Context* context = ctx.get();
+  auto context = buildStdContext();
   testIterSigDetection(context);
   testExplicitTaggedIter(context);
   testSerialZip(context);
