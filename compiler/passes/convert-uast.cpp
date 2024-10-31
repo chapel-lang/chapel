@@ -2525,6 +2525,11 @@ struct Converter final : UastConverter {
     }
     ret->insertAtTail(forwardingStmt);
 
+    // We never pushed the forwarding function onto the symbol stack, so
+    // we don't need to exit. Exiting normally notes fixups, though, so
+    // do that now.
+    noteAllContainedFixups(fn, 0);
+
     return ret;
   }
 

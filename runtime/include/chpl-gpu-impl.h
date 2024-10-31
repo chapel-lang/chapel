@@ -20,12 +20,20 @@
 #ifndef chpl_gpu_impl_h
 #define chpl_gpu_impl_h
 
+#include "chpl-topo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void chpl_gpu_impl_init(int* num_devices);
+void chpl_gpu_impl_begin_init(int* num_all_devices);
+
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num);
+
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices);
+
+void chpl_gpu_impl_setup_device(int my_index, int global_index);
 
 void* chpl_gpu_impl_load_function(const char* kernel_name);
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
@@ -72,9 +80,6 @@ void* chpl_gpu_impl_stream_create(void);
 void chpl_gpu_impl_stream_destroy(void* stream);
 bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
-
-bool chpl_gpu_impl_can_reduce(void);
-bool chpl_gpu_impl_can_sort(void);
 
 void* chpl_gpu_impl_host_register(void* var, size_t size);
 void chpl_gpu_impl_host_unregister(void* var);

@@ -2,20 +2,26 @@
 #include <cuda.h>
 #include <stdio.h>
 
+#define CUDA_CALL(call) do {\
+  if(call) { \
+    printf("!!! error encountered on CUDA call\n"); \
+  } \
+} while(0);
+
 CUdevice device;
 
 static void reportAttribute(const char *name, CUdevice_attribute attr) {
   int val;
-  cuDeviceGetAttribute(&val, attr, device);
+  CUDA_CALL(cuDeviceGetAttribute(&val, attr, device));
   printf("%s: %d\n", name, val);
 }
 
 void runBaselineVersion(void) {
-  cuInit(0);
-  cuDeviceGet(&device, 0);
+  CUDA_CALL(cuInit(0));
+  CUDA_CALL(cuDeviceGet(&device, 0));
 
   char name[0xFF];
-  cuDeviceGetName(name, 0xFF, device);
+  CUDA_CALL(cuDeviceGetName(name, 0xFF, device));
   printf("name: %s\n", name);
 
   reportAttribute("maxThreadsPerBlock", CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK);

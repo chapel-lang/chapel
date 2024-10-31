@@ -2506,6 +2506,8 @@ void FnSymbol::codegenPrototype() {
     if (hasFlag(FLAG_GPU_AND_CPU_CODEGEN) == false &&
        hasFlag(FLAG_GPU_CODEGEN) == false)
       return;
+    if (hasFlag(FLAG_NOT_CALLED_FROM_GPU))
+      return;
   }
 
   if( info->cfile ) {
@@ -2760,6 +2762,8 @@ void FnSymbol::codegenDef() {
 
   if( (hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU) &&
       !hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) return;
+
+  if (gCodegenGPU && hasFlag(FLAG_NOT_CALLED_FROM_GPU)) return;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();

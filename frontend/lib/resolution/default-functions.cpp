@@ -299,8 +299,6 @@ static void collectFields(const AstNode* ast,
   }
 }
 
-static const BuilderResult& buildInitializer(Context* context, ID typeID);
-
 static bool initHelper(Context* context,
                        Builder* builder,
                        const AggregateDecl* typeDecl,
@@ -332,8 +330,7 @@ static bool initHelper(Context* context,
 
       if (!userDefinedExists) {
         auto& br = buildInitializer(context, pct->id());
-        auto mod = br.topLevelExpression(0)->toModule();
-        auto fn = mod->child(0)->toFunction();
+        auto fn = br.topLevelExpression(0)->toFunction();
 
         // Add formals and super.init() arguments
         for (auto formal : fn->formals()) {
@@ -389,10 +386,10 @@ static bool initHelper(Context* context,
 }
 
 const BuilderResult& buildInitializer(Context* context, ID typeID) {
+  QUERY_BEGIN(buildInitializer, context, typeID);
+
   auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
-  auto parentMod = parsing::idToParentModule(context, typeID);
-  auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + typeDecl->name().str() + "_init";
-  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), parentMod, parentMod.symbolPath());
+  auto bld = Builder::createForGeneratedCode(context, typeID);
   auto builder = bld.get();
   auto dummyLoc = parsing::locateId(context, typeID);
 
@@ -439,13 +436,7 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
   builder->addToplevelExpression(std::move(genFn));
 
   auto result = builder->result();
-
-  auto modPath = result.topLevelExpression(0)->id().symbolPath();
-  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(result));
-
-  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
-
-  return br;
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
@@ -505,8 +496,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   } else {
     auto& br = buildInitializer(context, inCompType->id());
 
-    const Module* genMod = br.topLevelExpression(0)->toModule();
-    auto initFn = genMod->child(genMod->numChildren()-1)->toFunction();
+    auto initFn = br.topLevelExpression(0)->toFunction();
 
     // compute the FormalDetails manually so that we can set the default-kind
     // appropriately.
@@ -1353,60 +1343,6 @@ getCompilerGeneratedFunction(Context* context,
   return nullptr;
 }
 
-static const BuilderResult&
-buildAssignmentOperators(Context* context,
-                         QualifiedType lhs, QualifiedType rhs) {
-  std::stringstream ss;
-  lhs.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-  auto typeName = ss.str();
-
-  auto modName = "chpl__generated_" + typeName + "_=";
-  auto baseName = UniqueString::get(context, "ChapelBase");
-  auto bld = Builder::createForGeneratedCode(context, modName.c_str(), ID(baseName, ID_GEN_START, 0), UniqueString::get(context, "ChapelBase"));
-  auto builder = bld.get();
-  auto dummyLoc = Location(UniqueString::get(context, "ChapelBase.="));
-
-  auto lhsFormal = Formal::build(builder, dummyLoc, nullptr,
-                                 UniqueString::get(context, "lhs"),
-                                 Formal::REF, nullptr, nullptr);
-  auto rhsFormal = Formal::build(builder, dummyLoc, nullptr,
-                                 UniqueString::get(context, "rhs"),
-                                 Formal::CONST, nullptr, nullptr);
-  AstList formals;
-  formals.push_back(std::move(lhsFormal));
-  formals.push_back(std::move(rhsFormal));
-
-  AstList stmts;
-  auto body = Block::build(builder, dummyLoc, std::move(stmts));
-  auto genFn = Function::build(builder,
-                               dummyLoc, {},
-                               Decl::Visibility::PUBLIC,
-                               Decl::Linkage::DEFAULT_LINKAGE,
-                               /*linkageName=*/{},
-                               USTR("="),
-                               /*inline=*/false, /*override=*/false,
-                               Function::Kind::OPERATOR,
-                               /*receiver=*/nullptr,
-                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
-                               // throws, primaryMethod, parenless
-                               false, false, false,
-                               std::move(formals),
-                               // returnType, where, lifetime, body
-                               {}, {}, {}, std::move(body));
-
-  builder->noteChildrenLocations(genFn.get(), dummyLoc);
-  builder->addToplevelExpression(std::move(genFn));
-
-  auto result = builder->result();
-
-  auto modPath = result.topLevelExpression(0)->id().symbolPath();
-  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(result));
-
-  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
-
-  return br;
-}
-
 static const TypedFnSignature* const&
 getCompilerGeneratedBinaryOpQuery(Context* context,
                                   types::QualifiedType lhs,
@@ -1421,48 +1357,6 @@ getCompilerGeneratedBinaryOpQuery(Context* context,
     } else if (rhs.type() && rhs.type()->isEnumType()) {
       result = generateCastToEnum(context, lhs, rhs);
     }
-  } else if (name == USTR("=") &&
-             lhs.type() == rhs.type() &&
-             (lhs.type()->isPrimitiveType() ||
-              lhs.type()->isTupleType() ||
-              lhs.type()->isClassType())) {
-
-    auto& br = buildAssignmentOperators(context, lhs, rhs);
-    auto assignFn = br.topLevelExpression(0)->child(0)->toFunction();
-
-    auto lhsType = QualifiedType(QualifiedType::REF, lhs.type());
-    auto rhsType = QualifiedType(QualifiedType::CONST_IN, rhs.type());
-    std::vector<QualifiedType> formalTypes = {lhsType, rhsType};
-
-    auto lhsDet =
-        UntypedFnSignature::FormalDetail(UniqueString::get(context, "lhs"),
-                                         UntypedFnSignature::DK_NO_DEFAULT, assignFn->formal(0));
-    auto rhsDet =
-        UntypedFnSignature::FormalDetail(UniqueString::get(context, "rhs"),
-                                       UntypedFnSignature::DK_NO_DEFAULT, assignFn->formal(1));
-    std::vector<UntypedFnSignature::FormalDetail> ufsFormals = {lhsDet, rhsDet};
-
-    auto ufs = UntypedFnSignature::get(context,
-                          /*id*/ assignFn->id(),
-                          /*name*/ USTR("="),
-                          /*isMethod*/ false,
-                          /*isTypeConstructor*/ false,
-                          /*isCompilerGenerated*/ true,
-                          /*throws*/ false,
-                          /*idTag*/ asttags::Function,
-                          /*kind*/ uast::Function::Kind::OPERATOR,
-                          /*formals*/ std::move(ufsFormals),
-                          /*whereClause*/ nullptr);
-
-    result = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /* needsInstantiation */ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
   }
 
   return QUERY_END(result);
@@ -1474,6 +1368,99 @@ getCompilerGeneratedBinaryOp(Context* context,
                              const types::QualifiedType rhs,
                              UniqueString name) {
   return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
+}
+
+const BuilderResult&
+buildTypeConstructor(Context* context, ID typeID) {
+  QUERY_BEGIN(buildTypeConstructor, context, typeID);
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  AstList formals;
+  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+
+  if (auto bct = ct->toBasicClassType()) {
+    auto parent = bct->parentClassType();
+    if (parent && !parent->isObjectType()) {
+      auto& br = buildTypeConstructor(context, parent->id());
+      auto fn = br.topLevelExpression(0)->toFunction();
+
+      for (auto formal : fn->formals()) {
+        formals.push_back(formal->copy());
+      }
+    }
+  }
+
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              defaultsPolicy,
+                                              /* syntaxOnly */ true);
+
+  // find the generic fields from the type and add
+  // these as type constructor arguments.
+  int nFields = f.numFields();
+  for (int i = 0; i < nFields; i++) {
+    auto declId = f.fieldDeclId(i);
+    auto declAst = parsing::idToAst(context, declId);
+    CHPL_ASSERT(declAst);
+    auto fieldDecl = declAst->toVariable();
+    CHPL_ASSERT(fieldDecl);
+    QualifiedType formalType;
+    if (isFieldSyntacticallyGeneric(context, declId, nullptr)) {
+
+      auto typeExpr = fieldDecl->typeExpression();
+      auto initExpr = fieldDecl->initExpression();
+      auto kind = fieldDecl->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
+      owned<AstNode> formal = Formal::build(builder, dummyLoc,
+                                            /*attributeGroup=*/nullptr,
+                                            fieldDecl->name(),
+                                            (Formal::Intent)kind,
+                                            typeExpr ? typeExpr->copy() : nullptr,
+                                            initExpr ? initExpr->copy() : nullptr);
+      formals.push_back(std::move(formal));
+    }
+  }
+
+  auto genFn = Function::build(builder, dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               ct->name(),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  // Finalize the uAST and obtain the BuilderResult
+  auto res = builder->result();
+
+  return QUERY_END(res);
+}
+
+const BuilderResult*
+builderResultForDefaultFunction(Context* context,
+                                UniqueString typePath,
+                                UniqueString name) {
+  auto typeID = ID(typePath);
+
+  if (name == USTR("init")) {
+    return &buildInitializer(context, typeID);
+  } else if (typeID.symbolName(context) == name) {
+    return &buildTypeConstructor(context, typeID);
+  }
+
+  return nullptr;
 }
 
 

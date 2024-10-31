@@ -563,9 +563,7 @@ module GPU
       }
     }
 
-    use CTypes;
-    extern proc chpl_gpu_can_reduce(): bool;
-    if gpuAlwaysFallBackToCpuReduce || !chpl_gpu_can_reduce() {
+    if CHPL_GPU=="cpu" || gpuAlwaysFallBackToCpuReduce {
       return doCpuReduce(op, A);
     }
 
@@ -928,8 +926,7 @@ module GPU
     }
 
     // Only useful when calling gpuExternSort directly
-    extern proc chpl_gpu_can_sort(): bool;
-    if !chpl_gpu_can_sort() {
+    if CHPL_GPU=="cpu" {
       gpuSort(gpuInputArr);
       return;
     }
@@ -985,28 +982,11 @@ module GPU
     if CHPL_GPU=="cpu" {
       use Sort only sort;
       sort(gpuInputArr);
-      return;
-    }
-
-    extern proc chpl_gpu_can_sort(): bool;
-    if chpl_gpu_can_sort() {
+    } else {
       gpuExternSort(gpuInputArr);
-      return;
     }
-
-    fallBackRadixSort(gpuInputArr);
   }
 
-  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where isCoercible(t, uint){
-    // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
-    // TODO better heuristic here?
-    var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
-  }
-
-  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where !isCoercible(t, uint){
-    compilerError("GPU Based sorting is only supported for arrays of type uint for ROCm version <5.0.0. Upgrade your ROCm install to sort all primitive numeric types");
-  }
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
   proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8,

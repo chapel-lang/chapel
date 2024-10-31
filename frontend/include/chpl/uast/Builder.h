@@ -77,7 +77,7 @@ class Builder final {
   // These are removed in the astToLocation_ map.
   AstLocMap notedLocations_;
 
-  ID generatedFrom_;
+  bool isGenerated_;
 
   // These map AST to additional locations while the builder is building.
   // This is an equivalent to notedLocations for the additional locations.
@@ -92,11 +92,11 @@ class Builder final {
   Builder(Context* context, UniqueString filePath,
           UniqueString startingSymbolPath,
           const libraries::LibraryFile* lib,
-          ID generatedFrom = ID())
+          bool isGenerated = false)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib, generatedFrom),
-      generatedFrom_(generatedFrom)
+      br(filePath, lib),
+      isGenerated_(isGenerated)
   {
   }
 
@@ -111,7 +111,7 @@ class Builder final {
   void copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
   void deleteAdditionalLocation(AstLocMap& m, const AstNode* ast);
 
-  bool isGenerated() { return !generatedFrom_.isEmpty(); }
+  bool isGenerated() { return isGenerated_; }
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -127,9 +127,7 @@ class Builder final {
                                                 UniqueString parentSymbolPath);
 
   static owned<Builder> createForGeneratedCode(Context* context,
-                                               const char* filepath,
-                                               ID generatedFrom,
-                                               UniqueString parentSymbolPath);
+                                               ID generatedFrom);
 
   /** Construct a Builder for use when reading uAST from a library file. */
   static owned<Builder> createForLibraryFileModule(

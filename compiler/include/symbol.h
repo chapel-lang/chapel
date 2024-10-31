@@ -926,16 +926,18 @@ extern Symbol *gDummyWitness;
 extern Symbol *gDummyRef;
 // used in convert-uast to mark a SymExpr needing future adjustment
 extern Symbol *gFixupRequiredToken;
+// used to disambiguate promotion cache entries
 extern Symbol *gIgnoredPromotionToken;
 
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+extern VarSymbol *gCpuVsGpuToken;  // true branch runs on CPU
+extern VarSymbol *gIteratorBreakToken;
 
 extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 

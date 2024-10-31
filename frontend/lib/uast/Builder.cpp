@@ -120,13 +120,14 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
 }
 
 owned<Builder> Builder::createForGeneratedCode(Context* context,
-                                               const char* filepath,
-                                               ID generatedFrom,
-                                               UniqueString parentSymbolPath) {
-  auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                                               ID generatedFrom) {
+  // Note: currently filePath only appears to be used when modules are
+  // involved, and generated uAST is currently expected to be a single
+  // top-level function. Locations will be set manually by caller.
+  auto uniqueFilename = UniqueString::get(context, "<dummy>");
+  auto b = new Builder(context, uniqueFilename, generatedFrom.symbolPath(),
                        /* LibraryFile */ nullptr,
-                       generatedFrom);
+                       /* isGenerated=*/true);
   return toOwned(b);
 }
 
@@ -219,7 +220,9 @@ void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
 }
 
 BuilderResult Builder::result() {
-  this->createImplicitModuleIfNeeded();
+  if (isGenerated() == false) {
+    this->createImplicitModuleIfNeeded();
+  }
   this->assignIDs();
 
   // if we have a symbolTableVec, use it to compute
@@ -340,7 +343,8 @@ void Builder::assignIDs() {
 
   for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
-    if (ast->isModule() || ast->isComment()) {
+    bool isModuleOrComment = ast->isModule() || ast->isComment();
+    if (isGenerated() || isModuleOrComment) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {
@@ -443,6 +447,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
 
+    // Assumption: doAssignIDs is invoked on top-level uAST with an empty
+    // string for the symbolPath. If the symbolPath is not empty, and this
+    // builder is for generated uAST, then we have violated the assumption that
+    // there is only one scope-defining symbol.
+    if (isGenerated() && !symbolPath.isEmpty()) {
+      CHPL_ASSERT(false && "generated uAST may not contain scope-defining "
+                           "symbols other than the top-level symbol");
+    }
+
     int repeat = 0;
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
@@ -489,8 +502,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    int postOrderId = this->isGenerated() ? -3 : -1;
-    ast->setID(ID(newSymbolPath, postOrderId, numContainedIds));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(newSymbolPath, -1, numContainedIds);
+    } else {
+      id = ID(newSymbolPath, -1, numContainedIds);
+    }
+    ast->setID(id);
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -511,10 +529,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = this->isGenerated() ? -4 - afterChildID : afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
-    ast->setID(ID(symbolPath, myID, numContainedIDs));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(symbolPath, afterChildID, numContainedIDs);
+    } else {
+      id = ID(symbolPath, afterChildID, numContainedIDs);
+    }
+    ast->setID(id);
   }
 
   // update idToAst_ for the visited AST node

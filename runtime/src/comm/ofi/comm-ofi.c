@@ -378,9 +378,12 @@ static bool cxiHybridMRMode = false;
 // a linked-list of handles.
 
 typedef struct nb_handle {
-  chpl_taskID_t id;          // task that created the handle
+  pthread_t id;              // thread that created the handle
   chpl_bool reported;        // operation has been reported as complete
   chpl_atomic_bool complete; // operation has completed
+  void *mrAddr;              // memory region address for unlocalizing
+  void *addr;                // address corresponding to memory region
+  size_t size;               // if > 0 then address is a target
   struct nb_handle *next;
 } nb_handle;
 
@@ -5531,9 +5534,12 @@ void amCheckLiveness(void) {
 
 static inline
 void nb_handle_init(nb_handle_t h) {
-  h->id = chpl_task_getId();
+  h->id = pthread_self();
   h->reported = false;
   atomic_init_bool(&h->complete, false);
+  h->mrAddr = NULL;
+  h->addr = NULL;
+  h->size = 0;
   h->next = NULL;
 }
 
@@ -5653,28 +5659,44 @@ chpl_bool check_complete(nb_handle_t *handles, size_t nhandles,
       if ((handle == NULL) || handle->reported) {
         continue;
       }
-      if (handle->id != chpl_task_getId()) {
+      if (!pthread_equal(handle->id, pthread_self())) {
         char msg[128];
-        char task1[32];
-        char task2[32];
         snprintf(msg, sizeof(msg),
-             "Task %s did not create non-blocking handle (created by %s)",
-            chpl_task_idToString(task1, sizeof(task1), chpl_task_getId()),
-            chpl_task_idToString(task2, sizeof(task2), handle->id));
+                 "Thread did not create non-blocking handle %p", handle);
+        chpl_error(msg, 0, 0);
       }
       pending = true;
       // determine if this handle is now complete by checking the completion
       // status of its operations
       chpl_bool allComplete = true;
       for (nb_handle_t p = handle; p != NULL; p = p->next) {
-        if(!atomic_load_explicit_bool(&p->complete,
-                                      chpl_memory_order_acquire)) {
-          allComplete = false;
-          break;
+        if (!p->reported) {
+          if (!atomic_load_explicit_bool(&p->complete,
+                                        chpl_memory_order_acquire)) {
+            allComplete = false;
+          } else {
+            // if a suboperation just completed then unlocalize mr
+            if ((p != handle) && (!p->reported) && (p->mrAddr != NULL)) {
+              if (p->size) {
+                mrUnLocalizeTarget(p->mrAddr, p->addr, p->size);
+              } else {
+                mrUnLocalizeSource(p->mrAddr, p->addr);
+              }
+              p->mrAddr = NULL;
+            }
+            p->reported = true;
+           }
         }
       }
       if (allComplete) {
+        // mark top handle as complete and unlocalize its mr
         completed = true;
+        if (handle->size) {
+          mrUnLocalizeTarget(handle->mrAddr, handle->addr, handle->size);
+        } else {
+          mrUnLocalizeSource(handle->mrAddr, handle->addr);
+        }
+        handle->mrAddr = NULL;
         handle->reported = true;
       }
     }
@@ -6212,7 +6234,8 @@ nb_handle_t ofi_put_nb(nb_handle_t handle, const void* addr, c_nodeid_t node,
       rmaPutFn_selector(handle, myAddr, mrDesc, node, mrRaddr,
                         mrKey, chunkSize, tcip);
 
-      mrUnLocalizeSource(myAddr, src);
+      handle->mrAddr = myAddr;
+      handle->addr = src;
     } else {
       amRequestRmaPut(node, (void *) src, (void *) dest, size);
       atomic_store_bool(&handle->complete, true);
@@ -6224,8 +6247,7 @@ nb_handle_t ofi_put_nb(nb_handle_t handle, const void* addr, c_nodeid_t node,
     handle = NULL;
   }
   tciFree(tcip);
-  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
-               "PUT %d:%p <= %p, handle %p", first);
+  DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE, "PUT handle %p", first);
   return first;
 }
 

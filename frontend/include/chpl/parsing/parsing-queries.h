@@ -116,20 +116,6 @@ parseFileContainingIdToBuilderResult(Context* context, ID id,
                                      UniqueString* setParentSymbolPath=nullptr);
 
 /**
-  Fetch the BuilderResult storing compiler-generated uAST based on the given
-  symbolPath.
- */
-const uast::BuilderResult&
-getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath);
-
-/**
-  Set the BuilderResult storing compiler-generated uAST based on the given
-  symbolPath.
- */
-void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
-                                 uast::BuilderResult result);
-
-/**
   A function for counting the tokens when parsing
 */
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats);

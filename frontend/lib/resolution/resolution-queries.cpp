@@ -520,22 +520,31 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
   return whereClauseResult;
 }
 
-static void checkForParenlessMethodFieldRedefinition(Context* context,
-                                                     const Function* fn,
-                                                     Resolver& visitor) {
+static void
+checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
+  Context* context = rv.context;
 
   if (fn->isMethod() && fn->isParenless()) {
-    QualifiedType receiverType;
-    ID receiverId;
-    if (visitor.getMethodReceiver(&receiverType, &receiverId)) {
+    bool allowNonLocal = false;
+    if (auto receiverInfo = rv.closestMethodReceiverInfo(allowNonLocal)) {
+      auto compositeId = std::get<0>(*receiverInfo);
+      auto receiverType = std::get<1>(*receiverInfo);
+
       if (receiverType.type()) {
         // use the type information, if it is present
         if (auto ct = receiverType.type()->getCompositeType()) {
-          receiverId = ct->id();
+          compositeId = ct->id();
         }
       }
-      if (!receiverId.isEmpty()) {
-        if (parsing::idContainsFieldWithName(context, receiverId, fn->name())) {
+
+      // Forcibly use scope-resolution to look up the composite if needed.
+      if (parsing::idIsFunction(context, compositeId)) {
+        compositeId = rv.scopeResolveCompositeIdFromMethodReceiver();
+      }
+
+      if (compositeId) {
+        if (parsing::idContainsFieldWithName(context, compositeId,
+                                             fn->name())) {
           context->error(fn, "parenless proc redeclares the field '%s'",
                          fn->name().c_str());
         }
@@ -651,7 +660,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
   }
 
-  checkForParenlessMethodFieldRedefinition(context, fn, visitor);
+  checkForParenlessMethodFieldRedefinition(visitor, fn);
 
   result = TypedFnSignature::get(context,
                                  untypedSig,
@@ -1509,112 +1518,6 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   return false;
 }
 
-static void buildTypeCtorArgs(Context* context, const CompositeType* ct,
-                              std::vector<QualifiedType>& formalTypes,
-                              std::vector<const Variable*>& args) {
-
-  // Build up parent class args first
-  if (auto bct = ct->toBasicClassType()) {
-    if (auto parent = bct->parentClassType()) {
-      buildTypeCtorArgs(context, parent->getCompositeType(),
-                        formalTypes, args);
-    }
-  }
-
-  // attempt to resolve the fields
-  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                              defaultsPolicy,
-                                              /* syntaxOnly */ true);
-
-  // find the generic fields from the type and add
-  // these as type constructor arguments.
-  int nFields = f.numFields();
-  for (int i = 0; i < nFields; i++) {
-    auto declId = f.fieldDeclId(i);
-    auto declAst = parsing::idToAst(context, declId);
-    CHPL_ASSERT(declAst);
-    const Decl* fieldDecl = declAst->toDecl();
-    CHPL_ASSERT(fieldDecl);
-    QualifiedType formalType;
-    if (isFieldSyntacticallyGeneric(context, declId, &formalType)) {
-
-      CHPL_ASSERT(formalType.kind() != QualifiedType::UNKNOWN);
-      formalTypes.push_back(formalType);
-
-      auto var = declAst->toVariable();
-      CHPL_ASSERT(var);
-      args.push_back(var);
-    }
-  }
-}
-
-static const BuilderResult&
-buildTypeConstructor(Context* context, const CompositeType* t,
-                     ID id, UniqueString name,
-                     std::vector<const Variable*>& fieldAsts) {
-  auto parentMod = parsing::idToParentModule(context, id);
-  auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + name.str();
-  auto builder = Builder::createForGeneratedCode(context, modName.c_str(), parentMod, parentMod.symbolPath());
-  auto dummyLoc = parsing::locateId(context, id);
-
-  // Build formals of type constructor
-  AstList formalAst;
-  for(auto& var : fieldAsts) {
-    auto typeExpr = var->typeExpression();
-    auto initExpr = var->initExpression();
-    auto kind = var->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
-    owned<AstNode> formal = Formal::build(builder.get(), dummyLoc,
-                                /*attributeGroup=*/nullptr,
-                                var->name(),
-                                (Formal::Intent)kind,
-                                typeExpr ? typeExpr->copy() : nullptr,
-                                initExpr ? initExpr->copy() : nullptr);
-    formalAst.push_back(std::move(formal));
-  }
-
-  auto genFn = Function::build(builder.get(), dummyLoc, {},
-                               Decl::Visibility::PUBLIC,
-                               Decl::Linkage::DEFAULT_LINKAGE,
-                               /*linkageName=*/{},
-                               name,
-                               /*inline=*/false, /*override=*/false,
-                               Function::Kind::PROC,
-                               /*receiver=*/{},
-                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
-                               // throws, primaryMethod, parenless
-                               false, false, false,
-                               std::move(formalAst),
-                               // returnType, where, lifetime, body
-                               {}, {}, {}, {});
-
-  builder->noteChildrenLocations(genFn.get(), dummyLoc);
-  builder->addToplevelExpression(std::move(genFn));
-
-  // Finalize the uAST and obtain the BuilderResult
-  auto res = builder->result();
-
-  // Store the BuilderResult for later, using the module's path as the
-  // query key.
-  auto modPath = res.topLevelExpression(0)->id().symbolPath();
-  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(res));
-
-  //
-  // Re-acquire the BuilderResult
-  //
-  // We need this because in the case of multiple revisions, we might encounter
-  // a situation where we have a BuilderResult from a previous iteration that
-  // is equivalent to the BuilderResult we just made. In this situation the old
-  // BuilderResult will not be changed from the query system's point of view.
-  // This means that the BuilderResult we just created will be destroyed,
-  // along with all its uAST. To work around this (for now), we simply run the
-  // corresponding 'getter' query and use that BuilderResult.
-  //
-  // TODO: Find a way to integrate all this into the query system more cleanly.
-  //
-  return parsing::getCompilerGeneratedBuilder(context, modPath);
-}
-
 static const TypedFnSignature* const&
 typeConstructorInitialQuery(Context* context, const Type* t)
 {
@@ -1622,38 +1525,14 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
   const TypedFnSignature* result = nullptr;
 
-  ID id;
+  ID id = t->getCompositeType()->id();
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
-  std::vector<types::QualifiedType> formalTypes;
-  auto idTag = uast::asttags::AST_TAG_UNKNOWN;
-  std::vector<const Variable*> fieldAsts;
 
-  auto ct = t->getCompositeType();
-  if (ct != nullptr) {
-    id = ct->id();
-    name = ct->name();
-
-    buildTypeCtorArgs(context, ct, formalTypes, fieldAsts);
-
-    if (t->isBasicClassType() || t->isClassType()) {
-      idTag = uast::asttags::Class;
-    } else if (t->isRecordType()) {
-      idTag = uast::asttags::Record;
-    } else if (t->isDomainType()) {
-      idTag = uast::asttags::Record;
-    } else if (t->isUnionType()) {
-      idTag = uast::asttags::Union;
-    }
-  } else {
-    CHPL_ASSERT(false && "case not handled");
-  }
-
-  auto& br = buildTypeConstructor(context, ct, id, name, fieldAsts);
+  auto& br = buildTypeConstructor(context, id);
 
   if (br.numTopLevelExpressions() != 0) {
-    const Module* genMod = br.topLevelExpression(0)->toModule();
-    auto typeCtor = genMod->child(genMod->numChildren()-1)->toFunction();
+    auto typeCtor = br.topLevelExpression(0)->toFunction();
 
     // Build the UntypedFnSignature formals
     for (auto decl : typeCtor->formals()) {
@@ -1672,21 +1551,14 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                            /* isTypeConstructor */ true,
                                            /* isCompilerGenerated */ true,
                                            /* throws */ false,
-                                           idTag,
+                                           asttags::Function,
                                            Function::PROC,
                                            std::move(formals),
                                            /* whereClause */ nullptr,
                                            id);
 
-    result = TypedFnSignature::get(context,
-                                   untyped,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /* needsInstantiation */ true,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
+    ResolutionContext rcval(context);
+    result = typedSignatureInitial(&rcval, untyped);
   }
 
   return QUERY_END(result);
@@ -2362,6 +2234,14 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         r.byAst(entry.formal()).setType(formalType);
       }
 
+      // We've set up the type queries and re-traversed the formal AST to
+      // compute the type using these queries. If the formal type is still
+      // unknown at this point, we couldn't extract the type queries, which
+      // means the call is ill-formed.
+      if (qFormalType.isUnknownKindOrType()) {
+        return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+      }
+
       auto checkType = !useType.isUnknown() ? useType : formalType;
       // With the type and query-aware type known, make sure that they're compatible
       auto passResult = canPass(context, checkType, qFormalType);
@@ -2925,7 +2805,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
       child->traverse(visitor);
     }
 
-    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
+    checkForParenlessMethodFieldRedefinition(visitor, fn);
 
     sig = visitor.typedSignature;
   }
@@ -2976,6 +2856,11 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
           child->isTupleDecl() ||
           child->isForwardingDecl()) {
         auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
+
+        if (child->isForwardingDecl()) {
+          res.allowReceiverScopes = true;
+        }
+
         child->traverse(res);
       }
     }
@@ -3741,28 +3626,39 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  // explicit param casts are resolved here
-  if (ci.isOpCall() && ci.name() == USTR(":")) {
-    auto src = ci.actual(0).type();
-    auto dst = ci.actual(1).type();
+  // Sometimes, actual types can be unknown since we are checking for 'out'
+  // intent. No special functions here use the 'out' intent, so in this case,
+  // return false.
+  for (auto& actual : ci.actuals()) {
+    if (actual.type().isUnknown()) {
+      return false;
+    }
+  }
 
-    auto targetParamGuess = Param::tryGuessParamTagFromType(dst.type());
-    if (!targetParamGuess) {
+  // special casts including explicit param casts are resolved here
+  if (ci.isOpCall() && ci.name() == USTR(":")) {
+    auto srcQt = ci.actual(0).type();
+    auto dstQt = ci.actual(1).type();
+    auto srcTy = srcQt.type();
+    auto dstTy = dstQt.type();
+
+    auto targetParamGuess = Param::tryGuessParamTagFromType(dstQt.type());
+    if (srcQt.isParam() && !targetParamGuess) {
       // We're casting a param value, but the destination type can't be
       // a param. This should be treated as a non-special cast.
       return false;
     }
 
-    bool isDstType = dst.kind() == QualifiedType::TYPE;
-    bool isParamTypeCast = src.kind() == QualifiedType::PARAM && isDstType;
+    bool isDstType = dstQt.kind() == QualifiedType::TYPE;
+    bool isParamTypeCast = srcQt.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
-        auto srcEnumType = src.type()->toEnumType();
-        auto dstEnumType = dst.type()->toEnumType();
+        auto srcQtEnumType = srcTy->toEnumType();
+        auto dstQtEnumType = dstTy->toEnumType();
 
-        if (srcEnumType && dst.type()->isStringType()) {
+        if (srcQtEnumType && dstTy->isStringType()) {
           std::ostringstream oss;
-          src.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+          srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
           auto ustr = UniqueString::get(context, oss.str());
           exprTypeOut = QualifiedType(QualifiedType::PARAM,
                                       RecordType::getStringType(context),
@@ -3770,14 +3666,14 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         }
 
-        if (srcEnumType && srcEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcEnumType, dst.type());
+        if (srcQtEnumType && srcQtEnumType->isAbstract()) {
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
           return true;
-        } else if (dstEnumType && dstEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstEnumType, src.type());
+        } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
+          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
           return true;
-        } else if (srcEnumType && dst.type()->toNothingType()) {
-          auto fromName = tagToString(src.type()->tag());
+        } else if (srcQtEnumType && dstTy->toNothingType()) {
+          auto fromName = tagToString(srcTy->tag());
           context->error(astForErr, "illegal cast from %s to nothing", fromName);
           exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                       ErroneousType::get(context));
@@ -3785,21 +3681,35 @@ static bool resolveFnCallSpecial(Context* context,
         }
 
         exprTypeOut = Param::fold(context, astForErr,
-                                  uast::PrimitiveTag::PRIM_CAST, src, dst);
+                                  uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
         return true;
-    } else if (src.isType() && dst.hasTypePtr() && dst.type()->isStringType()) {
+    } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
       // handle casting a type name to a string
       std::ostringstream oss;
-      src.type()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+      srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       auto ustr = UniqueString::get(context, oss.str());
       exprTypeOut = QualifiedType(QualifiedType::PARAM,
                                   RecordType::getStringType(context),
                                   StringParam::get(context, ustr));
       return true;
+    } else if (srcTy->isClassType() && dstTy->isClassType()) {
+      // cast (borrowed class) : unmanaged
+      auto srcClass = srcTy->toClassType();
+      auto dstClass = dstTy->toClassType();
+      if (srcClass->decorator().isBorrowed() &&
+          dstClass->manageableType()->isAnyClassType() &&
+          dstClass->decorator().isUnmanaged()) {
+        auto decorator = ClassTypeDecorator(ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED);
+        decorator = decorator.copyNilabilityFrom(srcClass->decorator());
+        auto outTy = ClassType::get(context, srcClass->manageableType(),
+                                    nullptr, decorator);
+        exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+        return true;
+      }
     } else if (!isDstType) {
       // trying to cast to something that's not a type
-      auto toName = tagToString(dst.type()->tag());
-      auto fromName = tagToString(src.type()->tag());
+      auto toName = tagToString(dstTy->tag());
+      auto fromName = tagToString(srcTy->tag());
       context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
       exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
@@ -3995,26 +3905,17 @@ considerCompilerGeneratedOperators(Context* context,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
-
-  // Generate assignment operators if the standard library isn't available.
-  bool generateAssign = parsing::bundledModulePath(context).isEmpty() &&
-                        ci.name() == USTR("=");
+  if (!ci.isOpCall()) return nullptr;
 
   // Avoid invoking the query if we don't need a binary operation here.
-  if (!(ci.numActuals() == 2 &&
-        (ci.name() == USTR(":") || generateAssign))) {
+  if (ci.name() != USTR(":") || ci.numActuals() != 2) {
     return nullptr;
   }
 
   auto lhsType = ci.actual(0).type();
   auto rhsType = ci.actual(1).type();
-
-  if (lhsType.type() == nullptr || rhsType.type() == nullptr) return nullptr;
-
-  if (ci.name() == USTR(":") &&
-      !lhsType.type()->isEnumType() &&
-      !rhsType.type()->isEnumType()) {
+  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
+      !(rhsType.type() && rhsType.type()->isEnumType())) {
     return nullptr;
   }
 

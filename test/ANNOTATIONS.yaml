@@ -588,6 +588,12 @@ all:
   08/28/24:
     - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
       config: chapcs
+  10/15/24:
+    - text: Update bundled qthreads to 1.21 (#26086)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  10/24/24:
+    - text: Backport Fix For Performance Regression in Qthreads 1.21 (#26138)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
 
 # End all
 
@@ -2506,6 +2512,10 @@ arkouda: &arkouda-base
     - Use Chapel 2.2 for Arkouda "release" nightly testing (#26014)
   10/09/24:
     - Fix array transfer performance regression (Bears-R-Us/arkouda#3826)
+  10/16/24:
+    - Part of argTypeReductionMessage refactor (Bears-R-Us/arkouda#3845)
+  10/29/24:
+    - Fix performance regression in reductions benchmark (Bears-R-Us/arkouda#3874)
 
 arkouda-string:
   <<: *arkouda-base

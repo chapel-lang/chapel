@@ -1489,8 +1489,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   bool primaryMethod = false;
   if (currentScopeIsAggregate()) {
     if (fp.receiver == nullptr) {
-      fp.receiver = buildThisFormal(location, fp.thisIntentLoc, fp.thisIntent,
-                                    nullptr, nullptr);
+      fp.receiver = buildThisFormal(fp.thisIntentLoc, fp.thisIntentLoc,
+                                    fp.thisIntent, nullptr, nullptr);
       primaryMethod = true;
     }
   }

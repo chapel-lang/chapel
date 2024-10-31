@@ -169,69 +169,52 @@ void* chpl_gpu_impl_load_function(const char* kernel_name) {
   return (void*)function;
 }
 
-void chpl_gpu_impl_init(int* num_devices) {
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   ROCM_CALL(hipInit(0));
-
-  // Find all the GPUs (devices) on the machine then decide which we will
-  // use. If there are co-locales then the GPUs are evenly divided among
-  // them, otherwise we use them all.
-
   ROCM_CALL(hipGetDeviceCount(&numAllDevices));
-  hipDevice_t *allDevices = chpl_malloc(sizeof(*allDevices) * numAllDevices);
-  chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
-  // Find all the GPUs and get their PCI bus addresses.
-  for (int i=0 ; i < numAllDevices; i++) {
+  *num_all_devices = numAllDevices;
+}
+
+static hipDevice_t ith_device(int i) {
 #if ROCM_VERSION_MAJOR >= 6
-    allDevices[i] = i;
+  return i;
 #else
-    ROCM_CALL(hipDeviceGet(&allDevices[i], i));
+  hipDevice_t device;
+  ROCM_CALL(hipDeviceGet(&device, i));
+  return device;
 #endif
-    int domain, bus, device;
-#if ROCM_VERSION_MAJOR >= 5
-    int rc = hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
-                                    allDevices[i]);
-    if (rc == hipErrorInvalidValue) {
-      // hipDeviceGetAttribute for hipDeviceAttributePciDomainID fails
-      // on some (all?) platforms. Assume the domain is 0 and carry on.
-      domain = 0;
-    } else {
-      ROCM_CALL(rc);
-    }
-#else
-    // Earlier versions of ROCm don't support this attribute.
+}
+
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {
+  hipDevice_t hipDevice = ith_device(device_num);
+  int domain, bus, device;
+  int rc = hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
+                                 hipDevice);
+  if (rc == hipErrorInvalidValue) {
+    // hipDeviceGetAttribute for hipDeviceAttributePciDomainID fails
+    // on some (all?) platforms. Assume the domain is 0 and carry on.
     domain = 0;
-#endif
-    ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
-                                    allDevices[i]));
-    ROCM_CALL(hipDeviceGetAttribute(&device, hipDeviceAttributePciDeviceId,
-                                    allDevices[i]));
-    allAddrs[i].domain = (uint8_t) domain;
-    allAddrs[i].bus = (uint8_t) bus;
-    allAddrs[i].device = (uint8_t) device;
-    allAddrs[i].function = 0;
+  } else {
+    ROCM_CALL(rc);
   }
+  ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
+                                  hipDevice));
+  ROCM_CALL(hipDeviceGetAttribute(&device, hipDeviceAttributePciDeviceId,
+                                  hipDevice));
+  into->domain = (uint8_t) domain;
+  into->bus = (uint8_t) bus;
+  into->device = (uint8_t) device;
+  into->function = 0;
+}
 
-  // Call the topo module to determine which GPUs we should use.
-
-  int numAddrs = numAllDevices;
-  chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
-
-  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
-  if (rc) {
-    chpl_warning("unable to select GPUs for this locale, using them all",
-                 0, 0);
-    for (int i = 0; i < numAllDevices; i++) {
-        addrs[i] = allAddrs[i];
-    }
-    numAddrs = numAllDevices;
-  }
-
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {
   // Allocate the GPU data structures. Note that the HIP API, specifically
   // hipGetDevice, returns the global device ID so we need
   // dev_pid_to_lid_table to map from the global device ID to the logical
   // device ID.
 
-  numDevices = numAddrs;
+  numDevices = num_my_devices;
   chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*numDevices);
   deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
   dev_lid_to_pid_table = chpl_malloc(sizeof(int) * numDevices);
@@ -245,44 +228,30 @@ void chpl_gpu_impl_init(int* num_devices) {
   for (int i = 0; i < numAllDevices; i++) {
     dev_pid_to_lid_table[i] = -1;
   }
+}
 
-  // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
-  // and find the corresponding GPUs. Initialize each GPU and its array
-  // entries.
-
-  int j = 0;
-  for (int i = 0; i < numDevices; i++ ) {
-    for (; j < numAllDevices; j++) {
-      if (CHPL_TOPO_PCI_ADDR_EQUAL(&addrs[i], &allAddrs[j])) {
-        hipDevice_t device = allDevices[j];
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {
+  hipDevice_t device = ith_device(global_index);
 #if ROCM_VERSION_MAJOR >= 6
-        ROCM_CALL(hipSetDevice(device));
-        ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
+  ROCM_CALL(hipSetDevice(device));
+  ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
 #else
-        hipCtx_t context;
-        ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
-        ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
+  hipCtx_t context;
+  ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
+  ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
-        ROCM_CALL(hipSetDevice(device));
+  ROCM_CALL(hipSetDevice(device));
 #endif
-        hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
-        chpl_gpu_rocm_modules[i] = module;
+  hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
+  chpl_gpu_rocm_modules[my_index] = module;
 
-        hipDeviceGetAttribute(&deviceClockRates[i],
-                              hipDeviceAttributeClockRate, device);
+  hipDeviceGetAttribute(&deviceClockRates[my_index],
+                        hipDeviceAttributeClockRate, device);
 
-        // map array indices (relative device numbers) to global device IDs
-        dev_lid_to_pid_table[i] = device;
-        dev_pid_to_lid_table[device] = i;
-        chpl_gpu_impl_set_globals(i, module);
-        break;
-      }
-    }
-  }
-  chpl_free(allDevices);
-  chpl_free(allAddrs);
-  chpl_free(addrs);
-  *num_devices = numDevices;
+  // map array indices (relative device numbers) to global device IDs
+  dev_lid_to_pid_table[my_index] = device;
+  dev_pid_to_lid_table[device] = my_index;
+  chpl_gpu_impl_set_globals(my_index, module);
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
@@ -528,14 +497,6 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return ROCM_VERSION_MAJOR>=5;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return chpl_gpu_impl_can_reduce();
-}
-
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
   ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
   void *dev_var;
@@ -547,8 +508,9 @@ void chpl_gpu_impl_host_unregister(void* var) {
   ROCM_CALL(hipHostUnregister(var));
 }
 
-void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
-  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, indexToDeviceID[dev]));
+void chpl_gpu_impl_name(int dev_lid, char *resultBuffer, int bufferSize) {
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, dev_pid));
 }
 
 const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = hipDeviceAttributeMaxThreadsPerBlock;
@@ -595,9 +557,10 @@ const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = hipDeviceAttributeConc
 const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = hipDeviceAttributePageableMemoryAccessUsesHostPageTables;
 const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = hipDeviceAttributeDirectManagedMemAccessFromHost;
 
-int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+int chpl_gpu_impl_query_attribute(int dev_lid, int attribute) {
   int res;
-  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, indexToDeviceID[dev]));
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, dev_pid));
   return res;
 }
 

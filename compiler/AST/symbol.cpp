@@ -74,12 +74,13 @@ Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gCpuVsGpuToken = NULL;
+VarSymbol *gIteratorBreakToken = NULL;
 
 llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
@@ -1786,20 +1787,8 @@ VarSymbol *new_CStringSymbol(const char *str) {
 
 
 VarSymbol* new_BoolSymbol(bool b) {
-  Immediate imm;
-  imm.v_bool = b;
-  imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = BOOL_SIZE_SYS;
-  VarSymbol *s;
-  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
-  // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBool;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  return s;
+  return b ? gTrue : gFalse;
 }
 
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {

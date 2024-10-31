@@ -356,6 +356,28 @@ static void test5() {
   assert(qt.type()->isIntType());
 }
 
+static void test6() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    proc helper(param a : int(64), param b : int(64)) param {
+      return true;
+    }
+
+    proc helper(param a : uint(64), param b : uint(64)) param {
+      return false;
+    }
+
+    param val : uint = 1;
+    var x = if helper(val, 0) then 5 else "42";
+  )""";
+
+  auto qt = resolveQualifiedTypeOfX(context, program);
+  assert(qt.type()->isStringType());
+}
+
 int main() {
 
   test1();
@@ -363,6 +385,7 @@ int main() {
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }

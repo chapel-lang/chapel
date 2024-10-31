@@ -46,6 +46,7 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+#define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
 
 #define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
@@ -54,6 +55,7 @@ static char* walltime = NULL;
 static char* nodelist = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
+static char* gpusPerNode = NULL;
 char slurmFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
@@ -137,6 +139,12 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
+  }
+
+
   if (walltime)
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   if (nodelist)
@@ -145,6 +153,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
   if (exclude)
     fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
+  if (gpusPerNode)
+    fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
   switch (sbatch) {
   case slurm: {
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
@@ -237,6 +247,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
+  }
+
   // request exclusive node access by default, but allow user to override
   nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
@@ -316,6 +331,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ", partition);
     if(exclude)
       len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
+    if(gpusPerNode)
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
     if(projectString && strlen(projectString) > 0)
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ",
                      projectString);
@@ -410,6 +427,16 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
     return 1;
   }
+
+  // handle --gpus-per-node <gpus> or --gpus-per-node=<gpus>
+  if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
+    gpusPerNode = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+    return 1;
+  }
+
   return 0;
 }
 
@@ -440,6 +467,13 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_EXCLUDE)"
+      },
+      {
+        CHPL_GPUS_PER_NODE_FLAG " <gpus>",
+        "specify the number of GPUs per node"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
       },
       { NULL, NULL },
     };

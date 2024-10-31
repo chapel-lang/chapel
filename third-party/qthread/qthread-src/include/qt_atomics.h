@@ -21,8 +21,24 @@
 #define THREAD_FENCE_MEM_RELEASE THREAD_FENCE_MEM_RELEASE_IMPL
 #endif
 
+#if QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32 ||                                   \
+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
 #define SPINLOCK_BODY()                                                        \
-  do { MACHINE_FENCE; } while (0)
+  do { __asm__ __volatile__("pause" ::: "memory"); } while (0)
+#elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM ||                                  \
+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64
+#define SPINLOCK_BODY()                                                        \
+  do { __asm__ __volatile__("yield" ::: "memory"); } while (0)
+#elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64 ||                            \
+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32
+// For whatever reason the 29 (mdoio) version of this instruction performed
+// better in some back-of-the-envelope benchmarking so we're using that.
+#define SPINLOCK_BODY()                                                        \
+  do { __asm__ __volatile__("or 29,29,29" ::: "memory"); } while (0)
+#else
+#define SPINLOCK_BODY()                                                        \
+  do { atomic_thread_fence(memory_order_acq_rel); } while (0)
+#endif
 
 #define QTHREAD_FASTLOCK_SETUP()                                               \
   do {                                                                         \

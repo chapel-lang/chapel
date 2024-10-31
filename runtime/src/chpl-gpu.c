@@ -52,12 +52,7 @@ bool chpl_gpu_use_stream_per_task = true;
 
 static chpl_atomic_spinlock_t* priv_table_lock = NULL;
 
-void chpl_gpu_init(void) {
-  chpl_gpu_impl_init(&chpl_gpu_num_devices);
-
-  assert(chpl_gpu_num_devices >= 0);
-
-  // override number of devices if applicable
+static void override_number_of_devices(void) {
   const char* env;
   int32_t num = -1;
   if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
@@ -89,6 +84,70 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+}
+
+static void find_and_setup_devices(int numAllDevices) {
+#ifndef GPU_RUNTIME_CPU
+  // Collect PCI information about each available device.
+  chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
+  for (int i=0 ; i < numAllDevices; i++) {
+    chpl_gpu_impl_collect_topo_addr_info(&allAddrs[i], i);
+  }
+
+  // Call the topo module to determine which GPUs we should use.
+  int numAddrs = numAllDevices;
+  chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
+
+  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
+  if (rc) {
+    chpl_warning("unable to select GPUs for this locale, using them all",
+                 0, 0);
+    for (int i = 0; i < numAllDevices; i++) {
+        addrs[i] = allAddrs[i];
+    }
+    numAddrs = numAllDevices;
+  }
+
+
+  // Now that we've figured out the devices assigned to us, set up the
+  // implementation to use them. This allocates various per-device state.
+  int numDevices = numAddrs;
+  chpl_gpu_impl_setup_with_device_count(numDevices);
+
+  // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
+  // and find the corresponding GPUs. Initialize each GPU and its array
+  // entries.
+
+  int j = 0;
+  for (int i = 0; i < numDevices; i++ ) {
+    for (; j < numAllDevices; j++) {
+      if (CHPL_TOPO_PCI_ADDR_EQUAL(&addrs[i], &allAddrs[j])) {
+        chpl_gpu_impl_setup_device(/* my_index */ i, /* global_index */ j);
+        break;
+      }
+    }
+  }
+
+  chpl_free(allAddrs);
+  chpl_free(addrs);
+#else
+  int numDevices = numAllDevices;
+#endif
+
+  chpl_gpu_num_devices = numDevices;
+  assert(chpl_gpu_num_devices >= 0);
+}
+
+void chpl_gpu_init(void) {
+  // Initialize the underlying runtime library and count how many devices are
+  // available.
+  int numAllDevices;
+  chpl_gpu_impl_begin_init(&numAllDevices);
+
+  find_and_setup_devices(numAllDevices);
+
+  // override number of devices if applicable
+  override_number_of_devices();
 
   // TODO these should be freed
   priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
@@ -677,13 +736,6 @@ void chpl_gpu_arg_pass(void* _cfg, void* arg) {
 
 void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
                          reduce_wrapper_fn_t wrapper) {
-#ifndef GPU_RUNTIME_CPU
-  if (!chpl_gpu_can_reduce()) {
-    chpl_internal_error("The runtime is built with a software stack that does "
-                        "not support reductions (e.g. ROCm 4.x). `reduce` "
-                        "expressions and intents are not supported");
-  }
-#endif
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
   if (cfg_can_reduce(cfg)) {
     // pass the argument normally
@@ -729,23 +781,16 @@ void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
 }
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
-  if (chpl_gpu_can_reduce()) {
-    for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
-      CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
-                     cfg->reduce_vars[i].buffer,
-                     cfg->reduce_vars[i].outer_var,
-                     cfg->reduce_vars[i].wrapper);
+  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+    CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
+                    cfg->reduce_vars[i].buffer,
+                    cfg->reduce_vars[i].outer_var,
+                    cfg->reduce_vars[i].wrapper);
 
-      cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
-                                  cfg->grd_dim_x,
-                                  cfg->reduce_vars[i].outer_var,
-                                  NULL); // no minloc/maxloc, yet
-    }
-  }
-  else {
-    // we can hit this only with cpu-as-device today, where this function will
-    // be called, but the reduction is actually handled by the loop as normal
-    // so, we don't do anything
+    cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
+                                cfg->grd_dim_x,
+                                cfg->reduce_vars[i].outer_var,
+                                NULL); // no minloc/maxloc, yet
   }
 }
 
@@ -1520,14 +1565,6 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2) {
 
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
-}
-
-bool chpl_gpu_can_reduce(void) {
-  return chpl_gpu_impl_can_reduce();
-}
-
-bool chpl_gpu_can_sort(void) {
-  return chpl_gpu_impl_can_sort();
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\

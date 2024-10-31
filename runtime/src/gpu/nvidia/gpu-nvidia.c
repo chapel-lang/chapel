@@ -148,100 +148,64 @@ void chpl_gpu_impl_use_device(c_sublocid_t dev_lid) {
   switch_context(dev_lid);
 }
 
-void chpl_gpu_impl_init(int* num_devices) {
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   CUDA_CALL(cuInit(0));
-
-  // Find all the GPUs (devices) on the machine then decide which we will
-  // use. If there are co-locales then the GPUs are evenly divided among
-  // them, otherwise we use them all.
-
   CUDA_CALL(cuDeviceGetCount(&numAllDevices));
-  CUdevice *allDevices = chpl_malloc(sizeof(*allDevices) * numAllDevices);
-  chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
+  *num_all_devices = numAllDevices;
+}
 
-  // Find all the GPUs and get their PCI bus addresses.
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {
+  CUdevice cuDevice;
+  CUDA_CALL(cuDeviceGet(&cuDevice, device_num));
+  int domain, bus, device;
+  CUDA_CALL(cuDeviceGetAttribute(&domain, CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
+                                 cuDevice));
+  CUDA_CALL(cuDeviceGetAttribute(&bus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
+                                 cuDevice));
+  CUDA_CALL(cuDeviceGetAttribute(&device, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
+                                 cuDevice));
+  into->domain = (uint8_t) domain;
+  into->bus = (uint8_t) bus;
+  into->device = (uint8_t) device;
+  into->function = 0;
+}
 
-  for (int i=0 ; i < numAllDevices; i++) {
-    CUDA_CALL(cuDeviceGet(&allDevices[i], i));
-    int domain, bus, device;
-    CUDA_CALL(cuDeviceGetAttribute(&domain, CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
-                                   allDevices[i]));
-    CUDA_CALL(cuDeviceGetAttribute(&bus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
-                                   allDevices[i]));
-    CUDA_CALL(cuDeviceGetAttribute(&device, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
-                                   allDevices[i]));
-    allAddrs[i].domain = (uint8_t) domain;
-    allAddrs[i].bus = (uint8_t) bus;
-    allAddrs[i].device = (uint8_t) device;
-    allAddrs[i].function = 0;
-  }
-
-  // Call the topo module to determine which GPUs we should use.
-
-  int numAddrs = numAllDevices;
-  chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
-
-  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
-  if (rc) {
-    chpl_warning("unable to select GPUs for this locale, using them all",
-                 0, 0);
-    for (int i = 0; i < numAllDevices; i++) {
-        addrs[i] = allAddrs[i];
-    }
-    numAddrs = numAllDevices;
-  }
-
-  // Allocate the GPU data structures. Note that the CUDA API, specifically
-  // cuCtxGetDevice, returns the global device ID so we need
-  // dev_pid_to_lid_table to map from the global device ID to the logical
-  // device ID.
-
-  numDevices = numAddrs;
+// Allocate the GPU data structures. Note that the CUDA API, specifically
+// cuCtxGetDevice, returns the global device ID so we need deviceIDToIndex
+// to map from the global device ID to an array index.
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {
+  numDevices = num_my_devices;
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*numDevices);
   chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*numDevices);
   chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*numDevices);
   deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
   dev_pid_to_lid_table = chpl_malloc(sizeof(int) * numAllDevices);
+}
 
-  // Go through the PCI bus addresses returned by chpl_topo_selectMyDevices
-  // and find the corresponding GPUs. Initialize each GPU and its array
-  // entries.
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {
+  CUdevice device;
+  CUDA_CALL(cuDeviceGet(&device, global_index));
 
-  int j = 0;
-  for (int i = 0; i < numDevices; i++ ) {
-    for (; j < numAllDevices; j++) {
-      if (CHPL_TOPO_PCI_ADDR_EQUAL(&addrs[i], &allAddrs[j])) {
-        CUdevice device = allDevices[j];
+  CUcontext context;
 
-        CUcontext context;
+  CUDA_CALL(cuDevicePrimaryCtxSetFlags(device,
+                                       CU_CTX_SCHED_BLOCKING_SYNC));
+  CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
-        CUDA_CALL(cuDevicePrimaryCtxSetFlags(device,
-                                             CU_CTX_SCHED_BLOCKING_SYNC));
-        CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+  CUDA_CALL(cuCtxSetCurrent(context));
+  // load the module and setup globals within
+  CUmodule module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
+  chpl_gpu_cuda_modules[my_index] = module;
 
-        CUDA_CALL(cuCtxSetCurrent(context));
-        // load the module and setup globals within
-        CUmodule module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
-        chpl_gpu_cuda_modules[i] = module;
+  cuDeviceGetAttribute(&deviceClockRates[my_index],
+                       CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
-        cuDeviceGetAttribute(&deviceClockRates[i],
-                             CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
+  chpl_gpu_devices[my_index] = device;
+  chpl_gpu_primary_ctx[my_index] = context;
+  dev_pid_to_lid_table[global_index] = my_index; // map device ID to array index
 
-        chpl_gpu_devices[i] = device;
-        chpl_gpu_primary_ctx[i] = context;
-        dev_pid_to_lid_table[j] = i; // map device ID to array index
-
-        // TODO can we refactor some of this to chpl-gpu to avoid duplication
-        // between runtime layers?
-        chpl_gpu_impl_set_globals(i, module);
-        break;
-      }
-    }
-  }
-  chpl_free(allDevices);
-  chpl_free(allAddrs);
-  chpl_free(addrs);
-  *num_devices = numDevices;
+  chpl_gpu_impl_set_globals(my_index, module);
 }
 
 bool chpl_gpu_impl_stream_supported(void) {
@@ -459,14 +423,6 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   if (stream) {
     CUDA_CALL(cuStreamSynchronize(stream));
   }
-}
-
-bool chpl_gpu_impl_can_reduce(void) {
-  return true;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return true;
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {

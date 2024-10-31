@@ -453,6 +453,59 @@ static void test44() {
                       ErroneousType::get(context), nullptr);
 }
 
+static void test45() {
+  printf("test45\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+
+  // Non-nilable
+  {
+    context->advanceToNextRevision(false);
+    setupModuleSearchPaths(context, false, false, {}, {});
+
+    std::string program =
+      R"""(
+      class Foo { }
+
+      var f = new owned Foo();
+      var b : borrowed Foo = f.borrow();
+      var x = b:unmanaged;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    auto ct = xInit.type()->toClassType();
+    assert(ct);
+    assert(ct->decorator().isUnmanaged());
+    assert(!ct->decorator().isUnknownNilability());
+    assert(ct->decorator().isNonNilable());
+  }
+
+  // Nilable
+  {
+    context->advanceToNextRevision(false);
+    setupModuleSearchPaths(context, false, false, {}, {});
+
+    std::string program =
+      R"""(
+      class Foo { }
+
+      var f = new owned Foo();
+      var b : borrowed Foo? = f.borrow();
+      var x = b:unmanaged;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    auto ct = xInit.type()->toClassType();
+    assert(ct);
+    assert(ct->decorator().isUnmanaged());
+    assert(!ct->decorator().isUnknownNilability());
+    assert(ct->decorator().isNilable());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -498,6 +551,7 @@ int main() {
   test42();
   test43();
   test44();
+  test45();
 
   return 0;
 }

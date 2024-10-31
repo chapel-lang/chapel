@@ -20,7 +20,7 @@ export CHPL_LIB_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64:$CHP
 
 export CHPL_LLVM=bundled  # Using bundled LLVM since that's safer
 export CHPL_TEST_GPU=true
-export CHPL_LAUNCHER_PARTITION=allgriz
+export CHPL_LAUNCHER_PARTITION=griz256
 export CHPL_NIGHTLY_TEST_DIRS="gpu/interop/"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.interop"

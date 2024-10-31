@@ -1035,7 +1035,23 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   // such that we don't worry about instantiating the signature if we it's
   // compiler generated and one of the ops we know the return type for, e.g.
   // `==`, `init`, `init=`, `deinit`, and `=`.
-  if (untyped->idIsFunction() && sig->needsInstantiation()) {
+  if (untyped->isTypeConstructor()) {
+    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
+
+    // for a 'class C' declaration, the above query returns a BasicClassType,
+    // but 'C' normally means a generic-management non-nil C
+    // so adjust the result.
+    if (auto bct = t->toBasicClassType()) {
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
+    }
+
+    result = QualifiedType(QualifiedType::TYPE, t);
+    return true;
+
+    // special case to set param value of tuple size, which is set late by
+    // production compiler
+  } else if (untyped->idIsFunction() && sig->needsInstantiation()) {
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
     return true;
@@ -1077,24 +1093,6 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // otherwise, need to use visitor to get the return type
     return false;
 
-  } else if (untyped->isTypeConstructor()) {
-    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
-
-    // for a 'class C' declaration, the above query returns a BasicClassType,
-    // but 'C' normally means a generic-management non-nil C
-    // so adjust the result.
-    if (untyped->idIsClass()) {
-      auto bct = t->toBasicClassType();
-      CHPL_ASSERT(bct);
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
-    }
-
-    result = QualifiedType(QualifiedType::TYPE, t);
-    return true;
-
-    // special case to set param value of tuple size, which is set late by
-    // production compiler
   } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
              untyped->name() == "size") {
     auto tup = sig->formalType(0).type()->toTupleType();

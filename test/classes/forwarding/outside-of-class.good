@@ -1,0 +1,2 @@
+outside-of-class.chpl:1: In module 'M':
+outside-of-class.chpl:3: error: forwarding declarations are only allowed in records and classes
