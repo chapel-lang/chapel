@@ -49,7 +49,7 @@ private use ChapelUtil;
 private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
-private use LayoutCS;
+private use CompressedSparseLayout;
 
 public use SparseBlockDist;
 //

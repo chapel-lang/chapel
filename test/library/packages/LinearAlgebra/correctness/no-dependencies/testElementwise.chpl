@@ -1,7 +1,7 @@
 use LinearAlgebra;
 use LinearAlgebra.Sparse;
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 use List;
 
 config const n = 20;

@@ -1,6 +1,6 @@
 
 use utilities;
-use LayoutCS;
+use CompressedSparseLayout;
 
 // RES = + reduce (shape=RES.domain) [idx in DOM] FEXPR(idx)
 
@@ -17,8 +17,8 @@ proc plusPRinto(ref RES,DOM,FEXPR) throws {
 
 // At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()
 // except for the receiver class.
-proc CS.dsiPartialReduceInto(ref resArr, const perElemOp,
-                             const srcDom, const fExpr)
+proc CSImpl.dsiPartialReduceInto(ref resArr, const perElemOp,
+                                 const srcDom, const fExpr)
   throws
 {
 //  const ref srcDom  = srcArr.domain;

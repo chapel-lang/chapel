@@ -26,7 +26,7 @@ proc ones(Dom: domain(2), type eltType=real) {
   const BparentDom = {0..2,0..2};
   var D34 = {0..2,0..3};
 
-  var BDom: sparse subdomain(BparentDom) dmapped new dmap(new CS(compressRows=true,sortedIndices=true));
+  var BDom: sparse subdomain(BparentDom) dmapped new csrLayout(sortedIndices=true);
   var B: [BDom] real;
   BDom += [(0,0),(0,1),(1,1),(2,2)];
 

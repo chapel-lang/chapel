@@ -1,0 +1,5 @@
+In bar: cscLayout(false)
+In baz: cscLayout(false)
+In foo: cscLayout(true)
+In bar: cscLayout(true)
+In baz: cscLayout(true)

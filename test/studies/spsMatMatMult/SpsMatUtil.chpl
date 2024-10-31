@@ -1,10 +1,10 @@
 module SpsMatUtil {
   // The following are routines that should arguably be supported directly
-  // by the LayoutCS and SparseBlockDist modules themselves
+  // by the CompressedSparseLayout and SparseBlockDist modules themselves
   //
-  //  public use LayoutCSUtil, SparseBlockDistUtil;
+  //  public use CompressedSparseLayoutUtil, SparseBlockDistUtil;
 
-  use BlockDist, LayoutCS, Map, Random;
+  use BlockDist, CompressedSparseLayout, Map, Random;
 
   enum layout { CSR, CSC };
   public use layout;
@@ -43,7 +43,9 @@ module SpsMatUtil {
   proc randSparseDomain(parentDom, density, param layout, param distributed)
    where distributed == false {
 
-    var SD: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=(layout==CSR)));
+    var SD: sparse subdomain(parentDom) dmapped if layout == CSR
+                                                  then new csrLayout()
+                                                  else new cscLayout();
 
     for (i,j) in parentDom do
       if rands.next() <= density then
@@ -65,7 +67,9 @@ module SpsMatUtil {
 
     // writeln(grid);
 
-    type layoutType = CS(compressRows=(layout==CSR));
+    // Note: Parens below are a workaround for the issue captured in
+    //   test/type/records/generic/typeAliasFullyDefaultedGeneric.chpl
+    type layoutType = if layout==CSR then csrLayout() else cscLayout();
     const DenseBlkDom = parentDom dmapped new blockDist(boundingBox=parentDom,
                                                   targetLocales=localeGrid,
                                                   sparseLayoutType=layoutType);
@@ -109,7 +113,7 @@ module SpsMatUtil {
   proc makeSparseMat(parentDom, spsData) {
     use Sort;
 
-    var CDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
+    var CDom: sparse subdomain(parentDom) dmapped new csrLayout();
     var inds: [0..<spsData.size] 2*int;
     for (idx, i) in zip(spsData.keys(), 0..) do
       inds[i] = idx;

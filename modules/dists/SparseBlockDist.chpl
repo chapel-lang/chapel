@@ -37,7 +37,7 @@ private use ChapelUtil;
 private use BlockDist;
 private use RangeChunk;
 private use HaltWrappers;
-private use LayoutCS;
+private use CompressedSparseLayout;
 import Sort.{keyComparator};
 
 //
@@ -60,7 +60,8 @@ record targetLocaleComparator: keyComparator {
   var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
-      if sparseLayoutType == unmanaged CS(compressRows=false) then
+      if sparseLayoutType == cscLayout(true) ||
+         sparseLayoutType == cscLayout(false) then
         return (dist.targetLocsIdx(a), a[1], a[0]);
       else
         return (dist.targetLocsIdx(a), a[0], a[1]);
@@ -343,6 +344,8 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
     return defaultDist;
+  } else if isRecord(sparseLayoutType) {
+    return new sparseLayoutType();
   } else {
     return new dmap(new sparseLayoutType());
   }

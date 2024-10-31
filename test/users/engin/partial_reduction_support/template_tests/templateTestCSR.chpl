@@ -2,12 +2,12 @@ use templates;
 use utilities;
 use dsiMethods;
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 4;
 
 const ParentDom = {0..#N, 0..#N};
-var SparseDom: sparse subdomain(ParentDom) dmapped new CS();
+var SparseDom: sparse subdomain(ParentDom) dmapped new csrLayout();
 var arr: [SparseDom] int;
 
 for (i,j) in ParentDom {

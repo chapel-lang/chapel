@@ -1,7 +1,7 @@
 use LinearAlgebra;
 
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 
 
 var distArr = blockDist.createArray({1..10}, int);
@@ -12,13 +12,13 @@ var locSparseDom: sparse subdomain(locArr.domain);
 var locSparseArr: [locSparseDom] int;
 
 var space2D = {1..10, 1..10};
-var locSparseDomCSR: sparse subdomain(space2D) dmapped new dmap(new CS());
+var locSparseDomCSR: sparse subdomain(space2D) dmapped new csrLayout();
 var locSparseArrCSR: [locSparseDomCSR] int;
 
 var distSparseDom: sparse subdomain(distArr.domain);
 var distSparseArr: [distSparseDom] int;
 
-var distCSRBlock = {1..10, 1..10} dmapped new blockDist({1..10, 1..10}, sparseLayoutType=CS);
+var distCSRBlock = {1..10, 1..10} dmapped new blockDist({1..10, 1..10}, sparseLayoutType=csrLayout);
 var distSparseArrCSR: [distCSRBlock] int;
 
 assert(isDistributed(distArr) == true);

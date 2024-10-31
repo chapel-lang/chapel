@@ -2,7 +2,7 @@ use utilities;
 use dsiMethods;
 use templates;
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 config const N = 10;
 
@@ -11,7 +11,7 @@ const ParentDom = {0..#N, 0..#2*N};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=true));
+var csrDom: sparse subdomain(ParentDom) dmapped new csrLayout();
 var cooDom: sparse subdomain(ParentDom);
 
 var SparseDom = if layoutType == layoutTypes.csr then 
