@@ -3791,10 +3791,14 @@ bool Resolver::enter(const MultiDecl* decl) {
 }
 
 void Resolver::exit(const MultiDecl* decl) {
-  // Separate decls into groups of decls sharing a type/init.
-  std::vector<std::vector<const Decl*>> declGroups;
-  std::vector<const Decl*> currentGroup;
-  for (const auto individualDecl : decl->decls()) {
+  // Move through decls in order, propagating type backwards each time one with
+  // a type or init is encountered.
+  // This effectively splits the decls into groups that share a type/init.
+  auto it = decl->decls().begin();
+  auto groupBegin = it;
+  while (it != decl->decls().end()) {
+    const Decl* individualDecl = *it;
+
     // Resolve type and init expressions if present.
     const AstNode* typeExpr = nullptr;
     const AstNode* initExpr = nullptr;
@@ -3806,57 +3810,53 @@ void Resolver::exit(const MultiDecl* decl) {
       initExpr->traverse(*this);
     }
 
-    // Accumulate decls into a running group until hitting one with a type/init.
-    currentGroup.push_back(individualDecl);
-    if (typeExpr || initExpr) {
-      declGroups.emplace_back(currentGroup);
-      currentGroup.clear();
-    }
-  }
+    if (!scopeResolveOnly && (typeExpr || initExpr)) {
+      // Decl with type/init encountered, resolve and propagate the type info
+      // backwards through its group.
+      auto groupIt = it;
+      const Type* lastType = nullptr;
+      while (groupIt != groupBegin) {
+        --groupIt;
 
-  if (scopeResolveOnly) return;
+        const Decl* d = *groupIt;
+        const AstNode* typeExpr = nullptr;
+        const AstNode* initExpr = nullptr;
+        getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
 
-  // Visit each group, working in reverse order within groups to propagate type.
-  for (const auto& declGroup : declGroups) {
-    auto begin = declGroup.begin();
-    auto it = declGroup.end();
-    const Type* lastType = nullptr;
-    while (it != begin) {
-      --it;
-
-      const Decl* d = *it;
-      const AstNode* typeExpr = nullptr;
-      const AstNode* initExpr = nullptr;
-      getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
-
-      // if it has neither init nor type, use the type from the
-      // variable to the right.
-      // e.g., in
-      //    var a, b: int
-      // a is of type int
-      const Type* t = nullptr;
-      if (typeExpr == nullptr && initExpr == nullptr) {
-        if (lastType == nullptr) {
-          // this could be split init
-          t = UnknownType::get(context);
-        } else {
-          t = lastType;
+        // if it has neither init nor type, use the type from the
+        // variable to the right.
+        // e.g., in
+        //    var a, b: int
+        // a is of type int
+        const Type* t = nullptr;
+        if (typeExpr == nullptr && initExpr == nullptr) {
+          if (lastType == nullptr) {
+            // this could be split init
+            t = UnknownType::get(context);
+          } else {
+            t = lastType;
+          }
         }
+
+        // for the functions called in these conditionals:
+        //  * if t is nullptr, just resolve it like usual
+        //  * update the type of d in byPostorder
+        if (auto v = d->toVarLikeDecl()) {
+          resolveNamedDecl(v, t);
+        } else if (auto td = d->toTupleDecl()) {
+          resolveTupleDecl(td, t);
+        }
+
+        // update lastType
+        ResolvedExpression& result = byPostorder.byAst(d);
+        lastType = result.type().type();
       }
 
-      // for the functions called in these conditionals:
-      //  * if t is nullptr, just resolve it like usual
-      //  * update the type of d in byPostorder
-      if (auto v = d->toVarLikeDecl()) {
-        resolveNamedDecl(v, t);
-      } else if (auto td = d->toTupleDecl()) {
-        resolveTupleDecl(td, t);
-      }
-
-      // update lastType
-      ResolvedExpression& result = byPostorder.byAst(d);
-      lastType = result.type().type();
+      // Advance group beginning pointer to past the end of this group
+      groupBegin = std::next(it);
     }
+
+    ++it;
   }
 
   exitScope(decl);
