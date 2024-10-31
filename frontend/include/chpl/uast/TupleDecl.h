@@ -44,7 +44,7 @@ namespace uast {
   \endrst
 
   Each of the lines above is represented by a TupleDecl containing a
-  list of VariableDecls.  Note that the initial value and/or type is inferred
+  list of Variables.  Note that the initial value and/or type is inferred
   from later declarations.
 
   Since the Tuple does not itself have a name, it is not
