@@ -21,6 +21,7 @@ import typing
 
 import chapel
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from fixits import Fixit, Edit
 from config import RuleSetting
 
@@ -37,6 +38,23 @@ def _build_ignore_fixit(
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
     return ignore
+
+@dataclass
+class RuleLocation:
+    path_: str
+    start_: typing.Tuple[int, int]
+    end_: typing.Tuple[int, int]
+
+    def path(self) -> str:
+        return self.path_
+    def start(self) -> typing.Tuple[int, int]:
+        return self.start_
+    def end(self) -> typing.Tuple[int, int]:
+        return self.end_
+
+    @classmethod
+    def from_chapel(cls, location: chapel.Location) -> "RuleLocation":
+        return RuleLocation(location.path(), location.start(), location.end())
 
 
 class BasicRuleResult:
@@ -137,10 +155,54 @@ AdvancedRuleCheck = typing.Callable[
 """Function type for advanced rules"""
 
 
-RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
+class LocationRuleResult:
+    """
+    Result type for location based rules. Rules can also return a plain RuleLocation
+    """
+
+    def __init__(
+        self,
+        location: RuleLocation,
+        fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+        data: typing.Optional[typing.Any] = None,
+    ):
+        self.location = location
+        if fixits is None:
+            self._fixits = []
+        elif isinstance(fixits, Fixit):
+            self._fixits = [fixits]
+        else:
+            self._fixits = fixits
+        self.data = data
+
+    def add_fixits(self, *fixits: Fixit):
+        """
+        Add fixits to the result.
+        """
+        self._fixits.extend(fixits)
+
+    def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
+        """
+        Get the fixits associated with this result.
+        """
+        to_return = self._fixits
+        return to_return
+
+_LocationRuleResult = typing.Iterator[typing.Union[RuleLocation, LocationRuleResult]]
+"""Internal type for location rule results"""
+
+
+LocationRuleCheck = typing.Callable[
+    [chapel.Context, str, typing.List[str]], _LocationRuleResult
+]
+"""Function type for location rules"""
+
+
+
+RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult, _LocationRuleResult]
 """Union type for all rule results"""
 
-CheckResult = typing.Tuple[chapel.AstNode, str, typing.List[Fixit]]
+CheckResult = typing.Tuple[RuleLocation, typing.Optional[chapel.AstNode], str, typing.List[Fixit]]
 
 
 VarResultType = typing.TypeVar("VarResultType")
@@ -261,7 +323,8 @@ class BasicRule(Rule[BasicRuleResult]):
         # addition to the fixits in the result itself)
         # add the fixits from the hooks to the fixits from the rule
         fixits = self.run_fixit_hooks(context, result) + fixits
-        return (result.node, self.name, fixits)
+        loc = RuleLocation.from_chapel(result.node.location())
+        return (loc, result.node, self.name, fixits)
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode
@@ -320,4 +383,42 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
             # addition to the fixits in the result itself)
             # add the fixits from the hooks to the fixits from the rule
             fixits = self.run_fixit_hooks(context, result) + fixits
-            yield (node, self.name, fixits)
+            loc = RuleLocation.from_chapel(node.location())
+            yield (loc, node, self.name, fixits)
+
+class LocationRule(Rule[LocationRuleResult]):
+    """
+    Class containing all information for the driver about advanced
+    """
+
+    def __init__(
+        self, driver, name: str, check_func: LocationRuleCheck, settings: typing.List[str]
+    ) -> None:
+        super().__init__(driver, name, settings)
+        self.check_func = check_func
+
+    def check(
+        self, context: chapel.Context, root: chapel.AstNode
+    ) -> typing.Iterable[CheckResult]:
+        if isinstance(root, chapel.Comment):
+            # TODO: we have no way to get the location of a comment to
+            # determine path/lines
+            yield from []
+            return
+        path = root.location().path()
+        lines = chapel.get_file_lines(context, root)
+
+        setting_kwargs = self.get_settings_kwargs()
+        for result in self.check_func(context, path, lines, **setting_kwargs):
+            if isinstance(result, LocationRuleResult):
+                fixits = result.fixits(context, self.name)
+            else:
+                fixits = []
+                result = LocationRuleResult(result)
+
+            # if we are going to warn, check for fixits from fixit hooks (in
+            # addition to the fixits in the result itself)
+            # add the fixits from the hooks to the fixits from the rule
+            fixits = self.run_fixit_hooks(context, result) + fixits
+            loc = result.location
+            yield (loc, None, self.name, fixits)

@@ -54,9 +54,9 @@ def get_lint_diagnostics(
     # Silence errors from scope resolution etc., especially since they
     # may be emitted from other files (dependencies).
     with context.track_errors() as _:
-        for node, rule, fixits in driver.run_checks(context, asts):
+        for loc, node, rule, fixits in driver.run_checks(context, asts):
             diagnostic = Diagnostic(
-                range=_get_location(node),
+                range=chapel.lsp.location_to_range(loc),
                 message="Lint: rule [{}] violated".format(rule),
                 severity=DiagnosticSeverity.Warning,
             )
