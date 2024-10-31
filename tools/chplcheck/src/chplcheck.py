@@ -247,7 +247,7 @@ def main():
     if args.list_rules:
         print("Available rules (default rules marked with *):")
         print_rules(driver)
-        return
+        return 0
 
     driver.disable_rules(*config.disabled_rules)
     driver.enable_rules(*config.enabled_rules)
@@ -255,11 +255,19 @@ def main():
     if args.list_active_rules:
         print("Active rules:")
         print_rules(driver, show_all=False)
-        return
+        return 0
+
+    invalid_settings = driver.validate_rule_settings()
+    if invalid_settings:
+        print("Invalid rule settings:")
+        for r in invalid_settings:
+            print(f"  {r}")
+        return 2
+
 
     if args.lsp:
         run_lsp(driver)
-        return
+        return 0
 
     printed_warning = False
 
@@ -282,8 +290,9 @@ def main():
                 printed_warning = True
 
     if printed_warning:
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    ret = main()
+    sys.exit(ret if ret is not None else 0)

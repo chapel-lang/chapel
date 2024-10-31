@@ -22,6 +22,7 @@ import typing
 import chapel
 from abc import ABCMeta, abstractmethod
 from fixits import Fixit, Edit
+from config import RuleSetting
 
 
 def _build_ignore_fixit(
@@ -155,10 +156,20 @@ Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 
 class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
     # can't specify type of driver due to circular import
-    def __init__(self, driver, name: str) -> None:
+    def __init__(self, driver, name: str, settings: typing.List[str]) -> None:
         self.driver = driver
         self.name = name
+        self.settings = self._parse_settings(settings)
         self.fixit_funcs: typing.List[FixitHook[VarResultType]] = []
+
+    def _parse_settings(self, settings_from_user: typing.List[str]) -> typing.List[RuleSetting]:
+        settings: typing.List[RuleSetting] = []
+        for s in settings_from_user:
+            if s.startswith("."):
+                settings.append(RuleSetting(s[1:], self.name))
+            else:
+                settings.append(RuleSetting(s))
+        return settings
 
     def _fixup_description_for_fixit(
         self, fixit: Fixit, fixit_func: FixitHook
@@ -185,6 +196,23 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
                 fixits_from_hooks.append(f)
         return fixits_from_hooks
 
+    def get_settings_kwargs(self):
+        """
+        Returns a Dict of SettingName -> SettingValue for this rule
+        """
+
+        # find all relevant settings for this rule
+        # either they have no specific rule name, or they match this rule
+        setting_kwargs = {}
+        for setting in self.settings:
+            # if setting is in the driver's settings, use that value
+            # otherwise, use the default value (ie pass nothing in the kwargs)
+            driver_setting = self.driver.config.rule_settings.get(setting)
+            if driver_setting is not None:
+                setting_kwargs[setting.setting_name] = driver_setting
+
+        return setting_kwargs
+
     @abstractmethod
     def check(
         self, context: chapel.Context, root: chapel.AstNode
@@ -198,16 +226,17 @@ class BasicRule(Rule[BasicRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck
+        self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck, settings: typing.List[str]
     ) -> None:
-        super().__init__(driver, name)
+        super().__init__(driver, name, settings)
         self.pattern = pattern
         self.check_func = check_func
 
     def _check_single(
         self, context: chapel.Context, node: chapel.AstNode
     ) -> typing.Optional[CheckResult]:
-        result = self.check_func(context, node)
+        setting_kwargs = self.get_settings_kwargs()
+        result = self.check_func(context, node, **setting_kwargs)
         check, fixits = None, []
 
         # unwrap the result from the check function, and wrap it back
@@ -246,15 +275,16 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, check_func: AdvancedRuleCheck
+        self, driver, name: str, check_func: AdvancedRuleCheck, settings: typing.List[str]
     ) -> None:
-        super().__init__(driver, name)
+        super().__init__(driver, name, settings)
         self.check_func = check_func
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode
     ) -> typing.Iterable[CheckResult]:
-        for result in self.check_func(context, root):
+        setting_kwargs = self.get_settings_kwargs()
+        for result in self.check_func(context, root, **setting_kwargs):
             if isinstance(result, AdvancedRuleResult):
                 node, anchor = result.node, result.anchor
                 fixits = result.fixits(context, self.name)

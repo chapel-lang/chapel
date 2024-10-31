@@ -148,7 +148,7 @@ class LintDriver:
 
         yield from rule.check(context, root)
 
-    def basic_rule(self, pat, default=True):
+    def basic_rule(self, pat, default:bool=True, settings: List[str]=[]):
         """
         This method is a decorator factory for adding 'basic' rules to the
         driver. A basic rule is a function returning a boolean that gets called
@@ -166,6 +166,7 @@ class LintDriver:
                     name=func.__name__,
                     pattern=pat,
                     check_func=func,
+                    settings=settings,
                 )
             )
             if not default:
@@ -211,7 +212,7 @@ class LintDriver:
 
         return decorator_fixit
 
-    def advanced_rule(self, _func=None, *, default=True):
+    def advanced_rule(self, _func=None, *, default=True, settings: List[str]=[]):
         """
         This method is a decorator for adding 'advanced' rules to the driver.
         An advanced rule is a function that gets called on a root AST node,
@@ -231,6 +232,7 @@ class LintDriver:
                     driver=self,
                     name=func.__name__,
                     check_func=func,
+                    settings=settings,
                 )
             )
             if not default:
@@ -247,6 +249,25 @@ class LintDriver:
             return decorator_advanced_rule
         else:
             return decorator_advanced_rule(_func)
+
+    def validate_rule_settings(self) -> List[str]:
+        """
+        Validate that all rule settings are valid. Checks if user has specified a
+        setting that is not recognized by any rule.
+
+        Returns a list of unrecognized settings.
+        """
+
+        all_rule_settings = set()
+        for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
+            all_rule_settings.update(rule.settings)
+
+        unrecognized_settings = []
+        for setting in self.config.rule_settings:
+            if setting not in all_rule_settings:
+                unrecognized_settings.append(setting)
+
+        return unrecognized_settings
 
     def run_checks(
         self, context: chapel.Context, asts: List[chapel.AstNode]
