@@ -137,16 +137,6 @@ module CompressedSparseLayout {
   record chpl_layoutHelper {
     forwarding var _value;
 
-    proc init=(other: chpl_layoutHelper) {
-      this._value = other._value.dsiClone();
-    }
-
-      operator =(lhs: chpl_layoutHelper, rhs: chpl_layoutHelper) {
-        if lhs._value != nil then
-          delete lhs._value;
-        lhs._value = rhs._value.dsiClone();
-      }
-    
     proc newSparseDom(param rank: int, type idxType, dom: domain(?)) {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
@@ -156,7 +146,16 @@ module CompressedSparseLayout {
     }
 
     proc deinit() {
-      delete _value;
+      on _value {
+        // Count the number of domains that refer to this distribution.
+        // and mark the distribution to be freed when that number reaches 0.
+        // If the number is 0, .remove() returns the distribution
+        // that should be freed.
+        var distToFree = _value.remove();
+        if distToFree != nil {
+          _delete_dist(distToFree!, false);
+        }
+      }
     }
   }
 
