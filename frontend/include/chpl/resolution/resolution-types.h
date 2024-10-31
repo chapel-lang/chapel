@@ -1564,20 +1564,23 @@ class MostSpecificCandidate {
 
   const TypedFnSignature* fn_;
   owned<FormalActualMap> faMap_;
+  owned<SubstitutionsMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
+                        SubstitutionsMap promotedFormals,
                         int constRefCoercionFormal,
                         int constRefCoercionActual)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
+      promotedFormals_(new SubstitutionsMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual) {}
 
  public:
   MostSpecificCandidate()
-    : fn_(nullptr), faMap_(),
+    : fn_(nullptr), faMap_(), promotedFormals_(),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1) {}
 
@@ -1586,6 +1589,9 @@ class MostSpecificCandidate {
     fn_ = other.fn_;
     if (other.faMap_) {
       faMap_ = toOwned(new FormalActualMap(*other.faMap_));
+    }
+    if (other.promotedFormals_) {
+      promotedFormals_ = toOwned(new SubstitutionsMap(*other.promotedFormals_));
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
@@ -1597,15 +1603,19 @@ class MostSpecificCandidate {
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
-                                        const FormalActualMap& faMap);
+                                        const FormalActualMap& faMap,
+                                        const SubstitutionsMap& promotedFormals);
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
-                                        const CallInfo& info);
+                                        const CallInfo& info,
+                                        const SubstitutionsMap& promotedFormals);
 
   const TypedFnSignature* fn() const { return fn_; }
 
   const FormalActualMap& formalActualMap() const { return *faMap_; }
+
+  const SubstitutionsMap& promotedFormals() const { return *promotedFormals_; }
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
@@ -1627,6 +1637,12 @@ class MostSpecificCandidate {
       faMapsEqual = *faMap_ == *other.faMap_;
     }
 
+    bool promotedFormalsEqual = promotedFormals_ == other.promotedFormals_;
+    if (!promotedFormalsEqual && promotedFormals_ && other.promotedFormals_) {
+      // See above comment.
+      promotedFormalsEqual = *promotedFormals_ == *other.promotedFormals_;
+    }
+
     return fn_ == other.fn_ &&
            faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
@@ -1640,12 +1656,15 @@ class MostSpecificCandidate {
   void mark(Context* context) const {
     context->markPointer(fn_);
     if (faMap_) faMap_->mark(context);
+    if (promotedFormals_) {
+      chpl::mark<SubstitutionsMap>{}(context, *promotedFormals_);
+    }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, constRefCoercionFormal_, constRefCoercionActual_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -1656,6 +1675,7 @@ class MostSpecificCandidate {
   void swap(MostSpecificCandidate& other) {
     std::swap(fn_, other.fn_);
     std::swap(faMap_, other.faMap_);
+    std::swap(promotedFormals_, other.promotedFormals_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
   }

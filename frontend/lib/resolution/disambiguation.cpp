@@ -34,6 +34,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+struct DisambiguationContext;
+
 struct DisambiguationCandidate {
   const TypedFnSignature* fn = nullptr;
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
@@ -58,8 +60,11 @@ struct DisambiguationCandidate {
   {
   }
 
+  void computeConversionInfo(Context* context, int numActuals);
+  void computeConversionInfo(const DisambiguationContext& dctx);
+
   MostSpecificCandidate toMostSpecificCandidate(Context* context) const {
-    return MostSpecificCandidate::fromTypedFnSignature(context, fn, formalActualMap);
+    return MostSpecificCandidate::fromTypedFnSignature(context, fn, formalActualMap, promotedFormals);
   }
 };
 
@@ -378,9 +383,13 @@ findMostSpecificCandidates(Context* context,
   }
 
   if (lst.size() == 1) {
-    // If there is just one candidate, return it
-    auto msc =
-        MostSpecificCandidate::fromTypedFnSignature(context, lst.get(0), call);
+    // If there is just one candidate, return it.
+    //
+    // Create a DisambiguationCandidate anyway, to re-use the promotion
+    // counting logic.
+    DisambiguationCandidate candidate(lst.get(0), QualifiedType(), call, 0);
+    candidate.computeConversionInfo(context, call.numActuals());
+    auto msc = candidate.toMostSpecificCandidate(context);
     return MostSpecificCandidates::getOnly(msc);
   }
 
@@ -1153,10 +1162,9 @@ normalizeTupleTypeToValueTuple(Context* context, const Type* t) {
   return t;
 }
 
-static void computeConversionInfo(const DisambiguationContext& dctx,
-                                  DisambiguationCandidate* candidate) {
+void DisambiguationCandidate::computeConversionInfo(Context* context, int numActuals) {
   // no need to recompute it if it is already computed
-  if (candidate->nImplicitConversionsComputed) {
+  if (this->nImplicitConversionsComputed) {
     return;
   }
 
@@ -1164,12 +1172,12 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
   int numParamNarrowing = 0;
   int nImplicitConversions = 0;
 
-  bool forGenericInit = candidate->fn->untyped()->name()==USTR("init") ||
-                        candidate->fn->untyped()->name()==USTR("init=");
-  size_t n = (size_t)dctx.call->numActuals();
+  bool forGenericInit = this->fn->untyped()->name()==USTR("init") ||
+                        this->fn->untyped()->name()==USTR("init=");
+  size_t n = (size_t) numActuals;
   for (size_t k = 0; k < n; k++) {
 
-    const FormalActual* fa1 = candidate->formalActualMap.byActualIdx(k);
+    const FormalActual* fa1 = this->formalActualMap.byActualIdx(k);
 
     if (fa1 == nullptr) {
       // TODO: is this possible with dyno?
@@ -1192,7 +1200,7 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     const Type* actualType = fa1->actualType().type();
     const Type* formalType = fa1->formalType().type();
 
-    auto canPass = CanPassResult::canPass(dctx.context,
+    auto canPass = CanPassResult::canPass(context,
                                           fa1->actualType(),
                                           fa1->formalType());
 
@@ -1202,8 +1210,8 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     }
 
     if (canPass.passes() && canPass.promotes()) {
-      actualType = getPromotionType(dctx.context, fa1->actualType()).type();
-      candidate->promotedFormals[fa1->formal()->id()] = fa1->actualType();
+      actualType = getPromotionType(context, fa1->actualType()).type();
+      this->promotedFormals[fa1->formal()->id()] = fa1->actualType();
     }
 
     if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
@@ -1236,9 +1244,9 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
 
     // Not counting tuple value vs referential tuple changes
     if (actualType->isTupleType() && formalType->isTupleType()) {
-      auto actualNormTup = normalizeTupleTypeToValueTuple(dctx.context,
+      auto actualNormTup = normalizeTupleTypeToValueTuple(context,
                                                           fa1->actualType().type());
-      auto formalNormTup = normalizeTupleTypeToValueTuple(dctx.context,
+      auto formalNormTup = normalizeTupleTypeToValueTuple(context,
                                                           fa1->formalType().type());
       if (actualNormTup == formalNormTup) {
         // it is only a change in the tuple ref-ness
@@ -1250,10 +1258,14 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
   }
 
   // save the computed details in the ResolutionCandidate
-  candidate->nImplicitConversionsComputed = true;
-  candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
-  candidate->nImplicitConversions = nImplicitConversions;
-  candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
+  this->nImplicitConversionsComputed = true;
+  this->anyNegParamToUnsigned = anyNegParamToUnsigned;
+  this->nImplicitConversions = nImplicitConversions;
+  this->nParamNarrowingImplicitConversions = numParamNarrowing;
+}
+
+void DisambiguationCandidate::computeConversionInfo(const DisambiguationContext& dctx) {
+  computeConversionInfo(dctx.context, dctx.call->numActuals());
 }
 
 static void discardWorseConversions(const DisambiguationContext& dctx,
@@ -1268,7 +1280,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
     }
 
     DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
-    computeConversionInfo(dctx, candidate);
+    candidate->computeConversionInfo(dctx);
     int impConv = candidate->nImplicitConversions;
     if (impConv < minImpConv) {
       minImpConv = impConv;
@@ -1301,7 +1313,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
     }
 
     DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
-    computeConversionInfo(dctx, candidate);
+    candidate->computeConversionInfo(dctx);
     if (candidate->anyNegParamToUnsigned) {
       numWithNegParamToSigned++;
     } else {
@@ -1331,7 +1343,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
     }
 
     DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
-    computeConversionInfo(dctx, candidate);
+    candidate->computeConversionInfo(dctx);
     int narrowing = candidate->nParamNarrowingImplicitConversions;
     if (narrowing < minNarrowing) {
       minNarrowing = narrowing;
