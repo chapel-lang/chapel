@@ -770,7 +770,7 @@ void setupModuleSearchPaths(Context* context,
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(context,
                          chplHomeStr,
-                         false,
+                         minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
                          chplEnv->at("CHPL_TASKS"),
