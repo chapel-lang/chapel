@@ -3795,18 +3795,28 @@ void Resolver::exit(const MultiDecl* decl) {
   std::vector<std::vector<const Decl*>> declGroups;
   std::vector<const Decl*> currentGroup;
   for (const auto individualDecl : decl->decls()) {
-    // Accumulate decls into a running group until hitting one with a type/init.
-    currentGroup.push_back(individualDecl);
+    // Resolve type and init expressions if present.
     const AstNode* typeExpr = nullptr;
     const AstNode* initExpr = nullptr;
     getVarLikeOrTupleTypeInit(individualDecl, typeExpr, initExpr);
+    if (typeExpr != nullptr) {
+      typeExpr->traverse(*this);
+    }
+    if (initExpr != nullptr) {
+      initExpr->traverse(*this);
+    }
+
+    // Accumulate decls into a running group until hitting one with a type/init.
+    currentGroup.push_back(individualDecl);
     if (typeExpr || initExpr) {
       declGroups.emplace_back(currentGroup);
       currentGroup.clear();
     }
   }
 
-  // Visit each group, working in reverse order within groups to set type/init.
+  if (scopeResolveOnly) return;
+
+  // Visit each group, working in reverse order within groups to propagate type.
   for (const auto& declGroup : declGroups) {
     auto begin = declGroup.begin();
     auto it = declGroup.end();
@@ -3818,15 +3828,6 @@ void Resolver::exit(const MultiDecl* decl) {
       const AstNode* typeExpr = nullptr;
       const AstNode* initExpr = nullptr;
       getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
-
-      // Resolve type and init expressions if present.
-      if (typeExpr != nullptr) {
-        typeExpr->traverse(*this);
-      }
-      if (initExpr != nullptr) {
-        initExpr->traverse(*this);
-      }
-      if (scopeResolveOnly) continue;
 
       // if it has neither init nor type, use the type from the
       // variable to the right.
