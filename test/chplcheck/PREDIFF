@@ -8,6 +8,13 @@ FLAGS="--enable-rule ConsecutiveDecls"\
 " --internal-prefix myprefix_ --internal-prefix _"\
 " --skip-unstable"
 
+# read extra arguments from a $1.chplcheckopts file
+# currently only supports 1 line with nothing but flags
+if [ -e $1.chplcheckopts ]; then
+  FLAGS="$FLAGS $(cat $1.chplcheckopts)"
+fi
+
+
 $CHPL_HOME/tools/chplcheck/chplcheck \
   $FLAGS $1.chpl >> $2
 
