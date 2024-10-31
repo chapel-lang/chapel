@@ -7,6 +7,10 @@
 
 # Incorrect format:
 CHPL_TASKS == fifo
+CHPL_TASKS = = fifo
+# entry with '=' still works`
+CHPL_TARGET_CC = clang --gcc-toolchain=/usr
+
 
 # Unacceptable variable:
 CHPL_COMMS = none
