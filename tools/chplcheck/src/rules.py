@@ -1046,13 +1046,14 @@ def register_rules(driver: LintDriver):
         return [fixit]
 
     @driver.location_rule(settings=[".Max"])
-    def LineLength(_: chapel.Context, path: str, lines: List[str], Max = "80"):
+    def LineLength(_: chapel.Context, path: str, lines: List[str], Max = None):
         """
         Warn for lines that exceed a maximum length.
 
         By default, the maximum line length is 80 characters.
         """
 
+        Max = Max or "80" # default to 80 characters
         try:
             max_line_length = int(Max)
         except ValueError:
