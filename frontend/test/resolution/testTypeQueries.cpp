@@ -586,6 +586,30 @@ static void test18() {
   assert(qt.type()->isStringType());
 }
 
+static void test19() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveQualifiedTypeOfX(context,
+                R""""(
+                proc helper(param cond : bool) type {
+                  if cond then return int;
+                  else return string;
+                }
+
+                proc func(arg: helper(true)) {
+                  return arg;
+                }
+
+                var x = func(2);
+                )"""");
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isIntType());
+  assert(!guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -607,6 +631,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   return 0;
 }

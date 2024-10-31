@@ -591,7 +591,7 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
   // No match if the target's parent symbol is what we're resolving.
   if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
 
-  // Ditto for the mention.
+  // The mention and the target should not live in the same symbol.
   if (mentionParentSymbolId == targetParentSymbolId) return false;
 
   auto tag = parsing::idToTag(context, targetParentSymbolId);
@@ -611,7 +611,7 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
         }
       }
     */
-    // Check to see if the module is not the most immediate parent AST.
+    // Return 'false' if the module is not the most immediate parent AST.
     auto targetParentAstId = parsing::idToParentId(context, target);
     return targetParentSymbolId != targetParentAstId;
   }
@@ -625,98 +625,46 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
       record r {
         type T;
         proc foo() {
-          // Here 'T' is read from the implicit receiver of 'foo'.
+          // Here, 'bar' is not a method and 'T' is read from the
+          // implicit receiver of 'foo' (which can also be used as
+          // a 'this' as well).
           proc bar(f: T) {}
           var x: T;
           bar(x);
         }
       }
     */
-    ID& sym = mentionParentSymbolId;
-    bool isMentionInNested = parsing::idIsNestedFunction(context, sym);
-    bool isMentionInMethod = parsing::idIsMethod(context, sym);
+    ID& m = mentionParentSymbolId;
+    bool isMentionInNested = parsing::idIsNestedFunction(context, m);
+    bool isMentionInMethod = parsing::idIsMethod(context, m);
     bool isTargetField = parsing::idIsField(context, target);
 
     // Not sure what else it could be in this case...
     CHPL_ASSERT(isTargetField);
 
-    if (isTargetField) {
+    if (isTargetField && isMentionInNested) {
 
-      // The obvious case: we are a nested non-method function.
-      if (isMentionInNested && !isMentionInMethod) {
-        return true;
+      // If we aren't in a method, then the receiver has to be non-local.
+      if (!isMentionInMethod) return true;
 
-      } else if (isMentionInNested) {
-        // TODO: Is an ID check alone sufficient? Do we need to do a
-        // more sophisticated check in the case of e.g., recursion or
-        // overlapping instantiations?
-        if (auto t = rv.methodReceiverType().type()) {
+      // In a method, check if the type ID of the closest receiver matches
+      // the parent of the target.
+      //
+      // TODO: Is it even legal to reference fields from two different
+      // receivers? Shouldn't we run into a 'NestedClassFieldRef' error?
+      // Also, if they were two different instantiations of the same
+      // composite then this check would be insufficient.
+      const bool allowNonLocal = false;
+      if (auto receiverInfo = rv.closestMethodReceiverInfo(allowNonLocal)) {
+        if (auto t = std::get<1>(*receiverInfo).type()) {
           if (auto ct = t->toCompositeType()) {
             return ct->id() != targetParentSymbolId;
           }
-        } else if (!rv.scopeResolveOnly) {
-          CHPL_UNIMPL("detecting if field use in nested method is outer "
-                      "variable without 'methodReceiverType()'");
-          return false;
         }
-      }
-    }
-  }
-
-  return false;
-}
-
-bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
-  if (!scopeResolveOnly &&
-      typedSignature &&
-      typedSignature->untyped()->isMethod()) {
-    // use type information to compute the receiver type
-    if (outType) *outType = typedSignature->formalType(0);
-    return true;
-  } else {
-    // Use scope-resolver logic to compute the receiver scopes.
-
-    // If receiver type is specified by a simple identifier, determine it.
-    // For more complicated receiver types we cannot yet gather any information.
-
-    ID methodId;
-    const Formal* thisFormal = nullptr;
-    if (typedSignature && typedSignature->untyped()->isMethod()) {
-      thisFormal = typedSignature->untyped()->formalDecl(0)->toFormal();
-      methodId = typedSignature->id();
-    }
-
-    if (thisFormal == nullptr) {
-      // if there is no typed signature, fall back to computing receiver type
-      // from an identifier
-      if (auto func = this->symbol->toFunction()) {
-        thisFormal = func->thisFormal();
-        methodId = this->symbol->id();
-      }
-    }
-
-    if (thisFormal) {
-      auto type = thisFormal->typeExpression();
-      if (type == nullptr) {
-        // `this` formals of primary methods have no type expression. They
-        // are, however, in primary methods, so the method's parent is the
-        // aggregate type whose scope should be used.
-
-        if (outId) *outId = parsing::idToParentId(context, methodId);
-      } else if (auto ident = type->toIdentifier()) {
-        if (outId) *outId = byPostorder.byAst(ident).toId();
-      }
-      return true;
-    } else if (auto agg = symbol->toAggregateDecl()) {
-      // Lacking any more specific information, use the containing aggregate ID
-      // if available.
-      //
-      // TODO: when enabled for 'scopeResolveOnly' we must start issuing
-      // errors for cyclic class hierarchies and an inability to find
-      // parent class expressions.
-      if (!scopeResolveOnly) {
-        if (outId) *outId = agg->id();
-        return true;
+      } else if (!rv.scopeResolveOnly) {
+        CHPL_UNIMPL("detecting if field use in nested method is outer "
+                    "variable without 'methodReceiverType()'");
+        return false;
       }
     }
   }
@@ -727,8 +675,9 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
 const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
   auto fn = symbol->toFunction();
   auto ad = symbol->toAggregateDecl();
-  if (!fn && !ad && parentResolver)
+  if (!fn && !ad && parentResolver) {
     return parentResolver->getMethodReceiverScopeHelper();
+  }
 
   if (!allowReceiverScopes) {
     // can't use receiver scopes yet
@@ -736,34 +685,22 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     return nullptr;
   }
 
-  if (receiverScopesComputed) {
+  // check to make sure the receiver scope helper is only computed once
+  if (receiverScopesComputed) return receiverScopeHelper;
+  receiverScopesComputed = true;
+  receiverScopeHelper = nullptr;
+
+  if (scopeResolveOnly) {
+    receiverScopeHelper = &receiverScopeSimpleHelper;
     return receiverScopeHelper;
   }
 
-  receiverScopeHelper = nullptr;
-
-  if (fn && fn->isMethod()) {
-    if (!scopeResolveOnly) {
-      if (typedSignature != nullptr) {
-        if (typedSignature->isMethod()) {
-          // if we have a method typedFnSignature, use that
-          receiverScopeTypedHelper =
-            ReceiverScopeTypedHelper(typedSignature->id(),
-                                     typedSignature->formalType(0));
-          receiverScopeHelper = &receiverScopeTypedHelper;
-        }
-      } else {
-        // use the result from byPostorder
-        auto receiverType = byPostorder.byAst(fn->thisFormal()).type();
-        receiverScopeTypedHelper =
-          ReceiverScopeTypedHelper(fn->id(), std::move(receiverType));
-        receiverScopeHelper = &receiverScopeTypedHelper;
-      }
-
-    } else {
-      // scope resolve only
-      receiverScopeHelper = &receiverScopeSimpleHelper;
-    }
+  const bool allowNonLocal = true;
+  if (auto idAndTypePtr = closestMethodReceiverInfo(allowNonLocal)) {
+    auto helper = ReceiverScopeTypedHelper(std::get<0>(*idAndTypePtr),
+                                           std::get<1>(*idAndTypePtr));
+    receiverScopeTypedHelper = std::move(helper);
+    receiverScopeHelper = &receiverScopeTypedHelper;
   } else if (ad) {
     // If we're in an aggregate decl, set up to resolve implicit 'this' in,
     // e.g., forwarding declarations.
@@ -772,7 +709,6 @@ const ReceiverScopeHelper* Resolver::getMethodReceiverScopeHelper() {
     receiverScopeHelper = &receiverScopeSimpleHelper;
   }
 
-  receiverScopesComputed = true;
   return receiverScopeHelper;
 }
 
@@ -783,39 +719,100 @@ const MethodLookupHelper* Resolver::getFieldDeclarationLookupHelper() {
     return nullptr;
   }
 
-  if (!methodHelperComputed) {
-    methodLookupHelper = nullptr;
+  // check to make sure the method lookup helper is only computed once
+  if (methodHelperComputed) return methodLookupHelper;
+  methodHelperComputed = true;
+  methodLookupHelper = nullptr;
 
-    if (symbol->isTypeDecl()) {
-      // the case of being in a method will be handled
-      // by getMethodReceiverScopeHelper.
+  if (symbol->isTypeDecl()) {
+    // the case of being in a method will be handled
+    // by getMethodReceiverScopeHelper. So this path
+    // only handles when we are resolving a composite.
 
-      if (!scopeResolveOnly) {
-        if (inCompositeType) {
-          // create a helper for the containing class/record type
-          // to help with field/method access in field & forwarding declarations
-          auto qt = methodReceiverType();
-          auto helper = ReceiverScopeTypedHelper();
-          methodLookupHelper = helper.methodLookupForType(context, qt);
-        }
-      } else {
-        auto helper = ReceiverScopeSimpleHelper();
-        ID typeId = symbol->id();
-        methodLookupHelper = helper.methodLookupForTypeId(context, typeId);
-      }
-      methodHelperComputed = true;
+    if (scopeResolveOnly) {
+      auto helper = ReceiverScopeSimpleHelper();
+      ID typeId = symbol->id();
+      methodLookupHelper = helper.methodLookupForTypeId(context, typeId);
+      return methodLookupHelper;
+    }
+
+    if (inCompositeType) {
+      // create a helper for the containing class/record type
+      // to help with field/method access in field & forwarding declarations
+      auto qt = methodReceiverType();
+      auto helper = ReceiverScopeTypedHelper();
+      methodLookupHelper = helper.methodLookupForType(context, qt);
     }
   }
 
   return methodLookupHelper;
 }
 
-QualifiedType Resolver::methodReceiverType() {
+ID Resolver::scopeResolveCompositeIdFromMethodReceiver() {
+  // Use scope-resolver logic to compute the receiver scopes.
+  // If receiver type is specified by a simple identifier, determine it.
+  // For more complicated receiver types we cannot yet gather any information.
+
+  ID methodId;
+  const Formal* thisFormal = nullptr;
   if (typedSignature && typedSignature->untyped()->isMethod()) {
-    return typedSignature->formalType(0);
+    thisFormal = typedSignature->untyped()->formalDecl(0)->toFormal();
+    methodId = typedSignature->id();
+  }
+
+  if (thisFormal == nullptr) {
+    // if there is no typed signature, fall back to computing receiver type
+    // from an identifier
+    if (auto func = this->symbol->toFunction()) {
+      thisFormal = func->thisFormal();
+      methodId = this->symbol->id();
+    }
+  }
+
+  if (thisFormal) {
+    auto type = thisFormal->typeExpression();
+    if (type == nullptr) {
+      // `this` formals of primary methods have no type expression. They
+      // are, however, in primary methods, so the method's parent is the
+      // aggregate type whose scope should be used.
+      return parsing::idToParentId(context, methodId);
+    } else if (auto ident = type->toIdentifier()) {
+
+      // Otherwise, the type expr is scope resolved to the aggregate type.
+      return byPostorder.byAst(ident).toId();
+    }
+  } else if (auto agg = symbol->toAggregateDecl()) {
+    // Lacking any more specific information, use the containing aggregate ID
+    // if available.
+    //
+    // TODO: when enabled for 'scopeResolveOnly' we must start issuing
+    // errors for cyclic class hierarchies and an inability to find
+    // parent class expressions.
+    if (!scopeResolveOnly) {
+      return agg->id();
+    }
+  }
+
+  return {};
+}
+
+std::optional<std::tuple<ID, QualifiedType>>
+Resolver::closestMethodReceiverInfo(bool allowNonLocal) {
+  auto fn = symbol ? symbol->toFunction() : nullptr;
+  auto sig = typedSignature;
+
+  // If there is a signature, always prefer using it first.
+  if (sig && sig->isMethod()) {
+    return {{ sig->id(), sig->formalType(0) }};
+
+  // Else, try to use the result from 'byPostorder'.
+  } else if (fn && fn->isMethod()) {
+    auto& qt = byPostorder.byAst(fn->thisFormal()).type();
+    return {{ fn->id(), qt }};
+
+  // Else, compute something from the 'inCompositeType'.
   } else if (inCompositeType != nullptr) {
-    // compute the method receiver type in case it is needed
-    // to find fields or methods
+
     // TODO: do we want this to be more focused? It might compute
     // the receiver type in too many cases.
     const Type* t = inCompositeType;
@@ -824,15 +821,49 @@ QualifiedType Resolver::methodReceiverType() {
       t = ClassType::get(context, bct, /* manager */ nullptr,
                          ClassTypeDecorator(b));
     }
-    return QualifiedType(QualifiedType::VAR, t);
+    QualifiedType qt(QualifiedType::VAR, t);
+    return {{ inCompositeType->id(), std::move(qt) }};
+
+  // Finally, try to scope-resolve a containing aggregate.
+  } else if (ID id = scopeResolveCompositeIdFromMethodReceiver()) {
+    return {{ std::move(id), QualifiedType() }};
   }
 
-  return QualifiedType();
+  // If all the above failed, look for a non-local receiver if able.
+  if (symbol && allowNonLocal) {
+
+    // This predicate returns the first method stack frame that lexically
+    // contains 'symbol'. Stack frames are not always lexically enclosing.
+    auto pred = [&](const ResolutionContext::Frame& f) {
+      auto sig = f.signature();
+      return (sig && sig->isMethod() && sig->id().contains(symbol->id()));
+    };
+
+    // Look for a non-local method receiver we can use.
+    if (auto f = rc->findFrameMatching(pred)) {
+      return {{ f->signature()->id(), f->signature()->formalType(0) }};
+    }
+  }
+
+  return {};
+}
+
+QualifiedType Resolver::methodReceiverType() {
+  const bool allowNonLocal = true;
+  if (auto parentIdAndType = closestMethodReceiverInfo(allowNonLocal)) {
+    return std::get<1>(*parentIdAndType);
+  }
+  return {};
 }
 
 bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType) {
   if (ident->name() == USTR("super")) {
-    return getMethodReceiver(outType);
+    // TODO: Consider non-local receivers here?
+    const bool allowNonLocal = false;
+    if (auto tup = closestMethodReceiverInfo(allowNonLocal)) {
+      *outType = std::get<1>(*tup);
+      return true;
+    }
   }
   return false;
 }
@@ -929,6 +960,22 @@ static bool isCallToClassManager(const FnCall* call) {
          name == USTR("unmanaged") || name == USTR("borrowed");
 }
 
+static std::vector<const TypeQuery*>
+collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
+  std::vector<const TypeQuery*> ret;
+
+  auto func = [&](const AstNode* ast, auto& self) -> void {
+    for (auto child : ast->children()) {
+      if (auto tq = child->toTypeQuery()) ret.push_back(tq);
+      if (recurse) self(child, self);
+    }
+  };
+
+  func(ast, func);
+
+  return ret;
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const QualifiedType& actualType,
@@ -1014,15 +1061,80 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                          isNonStarVarArg,
                          /* isTopLevel */ false);
     } else {
-      // Error if it is not calling a type constructor
-      auto actualCt = actualTypePtr->toCompositeType();
+      auto typeQueries = collectTypeQueriesIn(call);
 
+      // There are no type queries in the call, so there is nothing to do.
+      if (typeQueries.empty()) return;
+
+      // If we are a resolving a signature, then we have resolved the types
+      // of the call's sub-expressions, so we can accurately judge whether
+      // or not the call is to a type constructor.
+      QualifiedType baseExprType;
+      bool isCertainlyCallToTypeConstructor = false;
+      if (this->signatureOnly) {
+        if (auto expr = call->calledExpression()) {
+          CHPL_ASSERT(byPostorder.hasId(expr->id()));
+
+          baseExprType = byPostorder.byAst(expr).type();
+
+          if (baseExprType.kind() == QualifiedType::TYPE &&
+              (baseExprType.type() &&
+               baseExprType.type()->getCompositeType())) {
+            isCertainlyCallToTypeConstructor = true;
+          }
+        }
+      }
+
+      // If we know that the call is not a type constructor, then emit an
+      // error about illegal type queries, and then give up. We know from
+      // above that there's at least one '?w' type query in the call.
+      //
+      // TODO: Can emit more elaborate errors here.
+      if (this->signatureOnly && !isCertainlyCallToTypeConstructor) {
+        CHPL_ASSERT(!typeQueries.empty());
+        context->error(typeQueries[0], "One or more type queries appeared "
+                                       "outside of a type constructor call - "
+                                       "here is the first one");
+        return;
+      }
+
+      // From this point on, we are only working with the type of the entire
+      // call. To explain why, consider the following code:
+      //
+      //          proc foo(x: helper(bool)) {}
+      //
+      // If 'signatureOnly == true', then we already would have returned if
+      // 'helper' is not a type constructor. However, if '!signatureOnly',
+      // then we are preparing to resolve a function's body and only have
+      // access to the entire type of 'x'. So the only thing we can use to
+      // judge if 'helper(bool)' is a type constructor is whether or not
+      // 'helper(bool)' returns a 'CompositeType'.
+      //
+      // We already know from above that the call has to contain type queries,
+      // and we can rely on previous resolution when 'signatureOnly == true'
+      // to prevent bogus type queries like 'helper(?w)'.
+      //
+      // So just assume that 'helper(bool)' is a type constructor and fail
+      // if 'typeConstructorInitial' returns 'nullptr'.
+
+      // Try to convert the type of the call to a composite type.
+      auto actualCt = actualTypePtr->getCompositeType();
+
+      // If we're not working with a composite type, give up. There's some
+      // sort of structural issue that we should have detected earlier.
       if (actualCt == nullptr) {
-        context->error(formalTypeExpr, "Type construction call expected");
+        CHPL_ASSERT(!this->signatureOnly);
         return;
-      } else if (!actualCt->instantiatedFromCompositeType()) {
-        context->error(formalTypeExpr, "Instantiated type expected");
-        return;
+      }
+
+      // Make sure that 'actualCt' is instantiated. Only do this when we're
+      // first evaluating the signature and not when we're "reloading" the
+      // types of type queries.
+      if (this->signatureOnly) {
+        if (!actualCt->instantiatedFromCompositeType()) {
+          context->error(formalTypeExpr, "Instantiated type expected");
+          return;
+        }
       }
 
       // TODO: need to implement type queries for domain type expressions
@@ -1030,6 +1142,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
       auto baseCt = actualCt->instantiatedFromCompositeType();
       auto sig = typeConstructorInitial(context, baseCt);
+      CHPL_ASSERT(sig);
 
       // Generate a simple CallInfo for the call
       auto callInfo = CallInfo::createSimple(call);
@@ -3233,7 +3346,7 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
       if (!sig || !sig->isMethod()) continue;
 
       auto t = sig->formalType(0).type();
-      auto ct = t ? t->toCompositeType() : nullptr;
+      auto ct = t ? t->getCompositeType() : nullptr;
 
       // TODO: What if an ID check alone is not sufficient? If I cannot
       // lookup using field ID alone, then I cannot cache with field ID.
@@ -3325,9 +3438,14 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   } else if (ids.numIds() > 1) {
     // Ambiguous. Check if we can break ambiguity by performing function resolution with
     // an implicit 'this' receiver, to filter based on receiver type.
-    QualifiedType receiverType;
     ID receiverId;
-    if (getMethodReceiver(&receiverType, &receiverId) && receiverType.type()) {
+    QualifiedType receiverType;
+
+    bool allowNonLocal = true;
+    auto receiverInfo = closestMethodReceiverInfo(allowNonLocal);
+    if (receiverInfo) receiverType = std::get<1>(*receiverInfo);
+
+    if (receiverInfo && receiverType.type()) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiverType, USTR("this")));
       auto ci = CallInfo(/* name */ ident->name(),
