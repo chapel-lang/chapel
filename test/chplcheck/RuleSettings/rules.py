@@ -1,6 +1,6 @@
-
 from chapel import AstNode
 from typing import Optional
+
 
 def var_string(**kwargs):
     s = []
@@ -9,17 +9,15 @@ def var_string(**kwargs):
         s.append(f"{k}={val}")
     return ", ".join(s)
 
+
 def rules(driver):
 
     @driver.basic_rule(AstNode, settings=[".Local", "Global"])
-    def One(context, node, Local: Optional[str]=None, Global: str="default"):
-
+    def One(c, n, Local: Optional[str] = None, Global: Optional[str] = None):
         print(f"In One:", var_string(Local=Local, Global=Global))
         return True
 
     @driver.advanced_rule(settings=[".Local", "Global"])
-    def Two(context, node, Local: Optional[str]=None, Global: str="different default"):
-
+    def Two(c, n, Local: Optional[str] = None, Global: Optional[str] = None):
         print(f"In Two:", var_string(Local=Local, Global=Global))
         yield from []
-

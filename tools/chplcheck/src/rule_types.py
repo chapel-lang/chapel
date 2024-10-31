@@ -207,6 +207,8 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
         # either they have no specific rule name, or they match this rule
         setting_kwargs = {}
         for setting in self.settings:
+            # default to None if the setting is not in the driver's settings
+            setting_kwargs[setting.setting_name] = None
             # if setting is in the driver's settings, use that value
             # otherwise, use the default value (ie pass nothing in the kwargs)
             driver_setting = self.driver.config.rule_settings.get(setting)

@@ -1,2 +1,2 @@
-In One: Local='x', Global='default'
-In Two: Local=None, Global='different default'
+In One: Local='x', Global=None
+In Two: Local=None, Global=None
