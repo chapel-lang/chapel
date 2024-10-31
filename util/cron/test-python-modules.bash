@@ -4,6 +4,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
+source $CWD/common-python-interop.bash
 
 export CHPL_LIB_PIC=pic
 
