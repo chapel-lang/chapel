@@ -53,6 +53,6 @@ parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
 
 const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod, std::string name);
 
-std::unique_ptr<chpl::Context> buildStdContext();
+chpl::Context* buildStdContext();
 
 #endif
