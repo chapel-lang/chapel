@@ -656,7 +656,7 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
     QualifiedType fElt = fT->elementType(i);
 
     if (aElt != fElt) {
-      auto got = canPass(context, aElt, fElt);
+      auto got = canPassScalar(context, aElt, fElt);
       if (!got.passes()){
         // TODO: figure out how to propagate this information.
         return fail(FAIL_FORMAL_OTHER);
@@ -970,9 +970,9 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   return fail(FAIL_CANNOT_INSTANTIATE);
 }
 
-CanPassResult CanPassResult::canPass(Context* context,
-                                     const QualifiedType& actualQtIn,
-                                     const QualifiedType& formalQtIn) {
+CanPassResult CanPassResult::canPassScalar(Context* context,
+                                           const QualifiedType& actualQtIn,
+                                           const QualifiedType& formalQtIn) {
   auto actualQT = actualQtIn;
   auto formalQT = formalQtIn;
 
@@ -1146,8 +1146,6 @@ CanPassResult CanPassResult::canPass(Context* context,
             }
           }
         }
-        // TODO: promotion
-
         return canPassSubtypeNonBorrowing(context, actualT, formalT);
       }
 
@@ -1161,7 +1159,6 @@ CanPassResult CanPassResult::canPass(Context* context,
             got.instantiates_ = true;
           }
         }
-        // TODO: promotion
         return got;
       }
 
@@ -1172,17 +1169,43 @@ CanPassResult CanPassResult::canPass(Context* context,
     case QualifiedType::CONST_VAR: // as formals but we allow it for testing
     case QualifiedType::INIT_RECEIVER:
       {
-        // TODO: promotion
         return canConvert(context, actualQT, formalQT);
       }
   }
 
-  // can we promote?
-  // TODO: implement promotion check
-  // When promotion is implemented, the failing cases marked "TODO: promotion"
-  // above will need to fall through to here.
-
   return fail(FAIL_FORMAL_OTHER);
+}
+
+CanPassResult CanPassResult::canPass(Context* context,
+                                     const QualifiedType& actualQtIn,
+                                     const QualifiedType& formalQtIn) {
+  auto got = canPassScalar(context, actualQtIn, formalQtIn);
+  if (got.passes()) {
+    return got;
+  }
+
+  // Scalar passing failing, but promotion may be possible.
+  if (formalQtIn.kind() != QualifiedType::TYPE &&
+      formalQtIn.kind() != QualifiedType::PARAM) {
+    debuggerBreakHere();
+    auto promotionType = getPromotionType(context, actualQtIn);
+
+    // Fix the intent to match original actual
+    promotionType = QualifiedType(actualQtIn.kind(), promotionType.type());
+
+    if (!promotionType.isUnknownOrErroneous()) {
+      auto got = canPassScalar(context, promotionType, formalQtIn);
+
+      if (got.passes()) {
+        return CanPassResult(/* no fail reason */ {},
+                             /* instantiates */ got.instantiates(),
+                             /* promotes */ true,
+                             /* converts */ got.conversionKind());
+      }
+    }
+  }
+
+  return got;
 }
 
 void KindProperties::invalidate() {

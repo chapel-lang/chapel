@@ -1192,9 +1192,9 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     Type* actualType = (Type*)fa1->actualType().type();
     Type* formalType = (Type*)fa1->formalType().type();
 
-    auto canPass = CanPassResult::canPass(dctx.context,
-                           fa1->actualType(),
-                           fa1->formalType());
+    auto canPass = CanPassResult::canPassScalar(dctx.context,
+                                                fa1->actualType(),
+                                                fa1->formalType());
 
     if (canPass.passes() &&
         canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {

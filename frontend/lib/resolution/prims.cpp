@@ -990,7 +990,7 @@ primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
   auto qtFrom = ci.actual(0).type();
   auto qtTo = ci.actual(1).type();
-  auto canPass = CanPassResult::canPass(context, qtFrom, qtTo);
+  auto canPass = CanPassResult::canPassScalar(context, qtFrom, qtTo);
   bool eval = canPass.passes() &&
               (canPass.instantiates() || canPass.converts()) &&
               !canPass.promotes();

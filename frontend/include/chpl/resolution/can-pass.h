@@ -171,6 +171,10 @@ class CanPassResult {
       Does not include borrowing with implicit subtyping. */
   bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
 
+  static CanPassResult canPassScalar(Context* context,
+                                     const types::QualifiedType& actualType,
+                                     const types::QualifiedType& formalType);
+
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
                                const types::QualifiedType& actualType,

@@ -5801,7 +5801,9 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   const AstNode* astContext = nullptr;
   if (t) {
     if (auto ct = t->getCompositeType()) {
-      astContext = parsing::idToAst(context, ct->id());
+      if (!ct->id().isEmpty()) {
+        astContext = parsing::idToAst(context, ct->id());
+      }
     }
   }
 
