@@ -728,19 +728,17 @@ public:
 static LLVMValueTracker llvmValueTracker;
 
 void nprint_view(const llvm::Value* arg) {
-  printfLLVMHelper("<NULL>");
+  auto fd = getLlvmPrintIrFile();
+  if (arg == NULL) printfLLVMHelper("<NULL>");
   else if (const llvm::Function* f = llvm::dyn_cast<llvm::Function>(arg)) {
-    auto fd = getLlvmPrintIrFile();
     f->print(*fd, &llvmValueTracker, true, true);
   }
   else if (const llvm::BasicBlock* bb = llvm::dyn_cast<llvm::BasicBlock>(arg)) {
-    auto fd = getLlvmPrintIrFile();
     bb->print(*fd, &llvmValueTracker, true, true);
   }
   else {
     printLlvmId(arg);
     // LLVM currently does not print Value* w/ AssemblyAnnotationWriter
-    auto fd = getLlvmPrintIrFile();
     arg->print(*fd, true);
   }
   printfLLVMHelper("\n");

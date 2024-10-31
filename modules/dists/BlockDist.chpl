@@ -1531,6 +1531,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
+pragma "not called from gpu"
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {

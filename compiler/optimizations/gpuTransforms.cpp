@@ -105,14 +105,17 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
           // we're covering this elsewhere
           continue;
         }
-        if (!var->isParameter() && var != gVoid && var != gNil) {
-          if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-            if (isFieldAccessPrimitive(parent)) {
-              continue;
-            }
-          }
-          return se;
+        if (var == gVoid || var == gNil || var == gCpuVsGpuToken
+            || var->isParameter()) {
+          continue;
         }
+        if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+          if (isFieldAccessPrimitive(parent)) {
+            continue;
+          }
+        }
+        // found an undesirable outer var
+        return se;
       }
     }
   }
@@ -814,15 +817,21 @@ static void setupCpuVsGpuCalls(CallExpr* cpuCall, FnSymbol* gpuFn) {
   elseBlock->insertAtTail(gpuStmt);
 }
 
+static SymbolMap erroringStubCache;
+
 FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
+  FnSymbol* cached = toFnSymbol(erroringStubCache.get(fn));
+  if (cached != nullptr) return cached;
+
   SET_LINENO(fn);
 
   // set up the new function
   FnSymbol* gpuCopy = fn->copy();
   gpuCopy->name = astr(gpuCopy->name, "_gpuError");
+  gpuCopy->cname = astr(gpuCopy->cname, "_gpuError");
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
   gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
-  fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+  fn->defPoint->insertAfter(new DefExpr(gpuCopy));
 
   // modify its body
   BlockStmt* gpuCopyBody = new BlockStmt();
@@ -834,6 +843,7 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
 
   gpuCopy->body->replace(gpuCopyBody);
 
+  erroringStubCache.put(fn, gpuCopy);
   return gpuCopy;
 }
 
@@ -1863,7 +1873,7 @@ void GpuKernel::populateBody() {
         Symbol* sym = symExpr->symbol();
 
         if (!  handledSymbols.insert(sym).second)
-          continue; // sym was already in the set
+          continue; // 'sym' was already in 'handleSymbols'
 
         if (isDefinedInTheLoop(sym, loopForBody)) {
           // looks like this symbol was declared within the loop body,
@@ -1914,9 +1924,7 @@ void GpuKernel::populateBody() {
                 addUserVarKernelArgument(sym);
               }
 
-              if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-                 markGPUSubCalls(calledFn);
-              }
+              markGPUSubCalls(calledFn);
             }
             else {
               this->setLateGpuizationFailure(true);
@@ -2003,6 +2011,9 @@ void GpuKernel::finalize() {
 
 void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU))
+      // fn will not to be codegen-ed, ignore it
+      return;
     fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
     fn->addFlag(FLAG_GPU_CODEGEN);
   } else {
