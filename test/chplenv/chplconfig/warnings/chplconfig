@@ -10,7 +10,8 @@ CHPL_TASKS == fifo
 CHPL_TASKS = = fifo
 # entry with '=' still works`
 CHPL_TARGET_CC = clang --gcc-toolchain=/usr
-
+# entry can start with ''
+CHPL_TARGET_CXX = '=/usr' # this is garbage for the purposes of testing
 
 # Unacceptable variable:
 CHPL_COMMS = none

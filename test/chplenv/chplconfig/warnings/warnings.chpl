@@ -17,5 +17,5 @@ Warning: Syntax Error: $CHPL_CONFIG/chplconfig:line 9\
               > CHPL_TASKS = = fifo\
               Expected format is:\
               > CHPL_VAR = VALUE\
-Warning: $CHPL_CONFIG/chplconfig:line 15: \"CHPL_COMMS\" is not an acceptable variable\
-Warning: $CHPL_CONFIG/chplconfig:line 19: Duplicate entry of \"CHPL_COMM\"\n");
+Warning: $CHPL_CONFIG/chplconfig:line 16: \"CHPL_COMMS\" is not an acceptable variable\
+Warning: $CHPL_CONFIG/chplconfig:line 20: Duplicate entry of \"CHPL_COMM\"\n");
