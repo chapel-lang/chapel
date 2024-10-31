@@ -749,6 +749,7 @@ isDefinedInUseImport(Context* context, const Scope* scope,
 static int
 computeVisibilityDistanceInternal(Context* context, const Scope* scope,
                                   const TypedFnSignature* fn, int distance) {
+  if (!scope) return -1;
 
   // first, check things in the current block or
   // from use/import that don't use a shadow scope

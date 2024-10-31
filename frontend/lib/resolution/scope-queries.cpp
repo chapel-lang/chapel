@@ -1069,7 +1069,7 @@ bool LookupHelper::doLookupInReceiverScopes(
           break;
 
         LookupConfig useConfig = newConfig;
-        if (cur->id().contains(scope->id())) {
+        if (scope && cur->id().contains(scope->id())) {
           // if the parent scope also contains the original scope,
           // private methods can be accessed.
         } else {
@@ -1685,7 +1685,9 @@ helpLookupInScope(Context* context,
 
   bool got = false;
 
-  got |= helper.doLookupInScope(scope, name, config);
+  if (scope) {
+    got |= helper.doLookupInScope(scope, name, config);
+  }
 
   // When resolving a Dot expression like myRecord.foo, we might not be inside
   // of a method at all, but we should still search the definition point
@@ -1700,7 +1702,10 @@ helpLookupInScope(Context* context,
   if (checkExternBlocks && !got && foundExternBlock) {
     config |= LOOKUP_EXTERN_BLOCKS;
     checkedScopes = savedCheckedScopes;
-    got = helper.doLookupInScope(scope, name, config);
+
+    if (scope) {
+      got = helper.doLookupInScope(scope, name, config);
+    }
   }
 
   // TODO: check for "last resort" symbols here, as well
@@ -1867,13 +1872,11 @@ lookupNameInScope(Context* context,
   CheckedScopes visited;
   MatchingIdsWithName vec;
 
-  if (scope) {
-    helpLookupInScope(context, scope,
-                      /* resolving scope */ nullptr,
-                      methodLookupHelper, receiverScopeHelper,
-                      name, config, visited, vec,
-                      /* allowCached */ true);
-  }
+  helpLookupInScope(context, scope,
+                    /* resolving scope */ nullptr,
+                    methodLookupHelper, receiverScopeHelper,
+                    name, config, visited, vec,
+                    /* allowCached */ true);
 
   return vec;
 }
@@ -1889,15 +1892,13 @@ lookupNameInScopeWithWarnings(Context* context,
   CheckedScopes visited;
   MatchingIdsWithName vec;
 
-  if (scope) {
-    helpLookupInScopeWithShadowingWarning(context, scope,
-                                          /* resolving scope */ nullptr,
-                                          methodLookupHelper,
-                                          receiverScopeHelper,
-                                          name, config, visited, vec,
-                                          idForWarnings,
-                                          /* allowCached */ true);
-  }
+  helpLookupInScopeWithShadowingWarning(context, scope,
+                                        /* resolving scope */ nullptr,
+                                        methodLookupHelper,
+                                        receiverScopeHelper,
+                                        name, config, visited, vec,
+                                        idForWarnings,
+                                        /* allowCached */ true);
 
   return vec;
 }
@@ -1913,17 +1914,16 @@ lookupNameInScopeTracing(Context* context,
   CheckedScopes visited;
   std::vector<VisibilityTraceElt> traceCurPath;
   MatchingIdsWithName vec;
-  if (scope) {
-    helpLookupInScope(context, scope,
-                      /* resolving scope */ nullptr,
-                      methodLookupHelper, receiverScopeHelper,
-                      name, config, visited, vec,
-                      /* allowCached */ true,
-                      &traceCurPath,
-                      &traceResult,
-                      /* shadowed */ nullptr,
-                      /* traceShadowed */ nullptr);
-  }
+
+  helpLookupInScope(context, scope,
+                    /* resolving scope */ nullptr,
+                    methodLookupHelper, receiverScopeHelper,
+                    name, config, visited, vec,
+                    /* allowCached */ true,
+                    &traceCurPath,
+                    &traceResult,
+                    /* shadowed */ nullptr,
+                    /* traceShadowed */ nullptr);
 
   return vec;
 }
@@ -1939,13 +1939,11 @@ lookupNameInScopeWithSet(Context* context,
                          CheckedScopes& visited) {
   MatchingIdsWithName vec;
 
-  if (scope) {
-    helpLookupInScope(context, scope,
-                      /* resolving scope */ nullptr,
-                      methodLookupHelper, receiverScopeHelper,
-                      name, config, visited, vec,
-                      /* allowCached */ true);
-  }
+  helpLookupInScope(context, scope,
+                    /* resolving scope */ nullptr,
+                    methodLookupHelper, receiverScopeHelper,
+                    name, config, visited, vec,
+                    /* allowCached */ true);
 
   return vec;
 }
@@ -3017,6 +3015,12 @@ pointOfInstantiationScopeQuery(Context* context,
                                const Scope* scope,
                                const PoiScope* parentPoiScope) {
   QUERY_BEGIN(pointOfInstantiationScopeQuery, context, scope, parentPoiScope);
+
+  // If there was no call scope, no need to create PoI scope.
+  if (scope == nullptr) {
+    const PoiScope* result = nullptr;
+    return QUERY_END(result);
+  }
 
   // figure out which POI scope to create.
   const Scope* useScope = nullptr;
