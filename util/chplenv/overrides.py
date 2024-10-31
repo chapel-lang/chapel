@@ -198,7 +198,7 @@ class ChapelConfig(object):
 
         # Check for syntax errors
         try:
-            var, val = [f.strip() for f in line.split('=', maxsplit=1)]
+            var, val = [f.strip() for f in line.split('=')]
         except ValueError:
             self.warnings.append(
             (
