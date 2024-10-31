@@ -3784,6 +3784,7 @@ static void getVarLikeOrTupleTypeInit(const AstNode* ast,
 }
 
 bool Resolver::enter(const MultiDecl* decl) {
+  gdbShouldBreakHere();
   enterScope(decl);
 
   // Establish the type or init expressions within
@@ -3811,46 +3812,63 @@ void Resolver::exit(const MultiDecl* decl) {
   if (scopeResolveOnly)
     return;
 
-  // Visit the named decls in reverse order
-  // setting the type/init.
-  auto begin = decl->declOrComments().begin();
-  auto it = decl->declOrComments().end();
-  const Type* lastType = nullptr;
-  while (it != begin) {
-    --it;
-
-    auto d = it->toDecl();
+  // Separate decls into groups of decls sharing a type/init.
+  std::vector<std::vector<const Decl*>> declGroups;
+  std::vector<const Decl*> currentGroup;
+  for (const auto individualDecl : decl->decls()) {
+    // Accumulate decls into a running group until hitting one with a type/init.
+    currentGroup.push_back(individualDecl);
     const AstNode* typeExpr = nullptr;
     const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+    getVarLikeOrTupleTypeInit(individualDecl, typeExpr, initExpr);
+    if (typeExpr || initExpr) {
+      declGroups.emplace_back(currentGroup);
+      currentGroup.clear();
+    }
+  }
+  gdbShouldBreakHere();
 
-    // if it has neither init nor type, use the type from the
-    // variable to the right.
-    // e.g., in
-    //    var a, b: int
-    // a is of type int
-    const Type* t = nullptr;
-    if (typeExpr == nullptr && initExpr == nullptr) {
-      if (lastType == nullptr) {
-        // this could be split init
-        t = UnknownType::get(context);
-      } else {
-        t = lastType;
+  // Visit each group, working in reverse order within groups to set type/init.
+  for (const auto& declGroup : declGroups) {
+    auto begin = declGroup.begin();
+    auto it = declGroup.end();
+    const Type* lastType = nullptr;
+    while (it != begin) {
+      --it;
+
+      const Decl* d = *it;
+      const AstNode* typeExpr = nullptr;
+      const AstNode* initExpr = nullptr;
+      getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+
+      // if it has neither init nor type, use the type from the
+      // variable to the right.
+      // e.g., in
+      //    var a, b: int
+      // a is of type int
+      const Type* t = nullptr;
+      if (typeExpr == nullptr && initExpr == nullptr) {
+        if (lastType == nullptr) {
+          // this could be split init
+          t = UnknownType::get(context);
+        } else {
+          t = lastType;
+        }
       }
-    }
 
-    // for the functions called in these conditionals:
-    //  * if t is nullptr, just resolve it like usual
-    //  * update the type of d in byPostorder
-    if (auto v = d->toVarLikeDecl()) {
-      resolveNamedDecl(v, t);
-    } else if (auto td = d->toTupleDecl()) {
-      resolveTupleDecl(td, t);
-    }
+      // for the functions called in these conditionals:
+      //  * if t is nullptr, just resolve it like usual
+      //  * update the type of d in byPostorder
+      if (auto v = d->toVarLikeDecl()) {
+        resolveNamedDecl(v, t);
+      } else if (auto td = d->toTupleDecl()) {
+        resolveTupleDecl(td, t);
+      }
 
-    // update lastType
-    ResolvedExpression& result = byPostorder.byAst(d);
-    lastType = result.type().type();
+      // update lastType
+      ResolvedExpression& result = byPostorder.byAst(d);
+      lastType = result.type().type();
+    }
   }
 
   exitScope(decl);
