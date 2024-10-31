@@ -16,10 +16,7 @@ proc baz(x: cscLayout(?)) {
   writeln("In baz: ", x.type:string);
 }
 
-for param i in 0..1 {
-  // workaround for bug captured in
-  // test/types/records/generic/dispatchWithinParamLoop.chpl
-  param flag = i: bool;
+for param flag in false..true {
   var csr = new cscLayout(flag);
   if flag == true then foo(csr);
   bar(csr);

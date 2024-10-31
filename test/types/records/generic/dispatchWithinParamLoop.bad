@@ -1,6 +1,0 @@
-dispatchWithinParamLoop.chpl:41: error: unresolved call 'bar(R(false))'
-dispatchWithinParamLoop.chpl:9: note: this candidate did not match: bar(x: R(true))
-dispatchWithinParamLoop.chpl:41: note: because actual argument #1 with type 'R(false)'
-dispatchWithinParamLoop.chpl:9: note: is passed to formal 'x: R(true)'
-dispatchWithinParamLoop.chpl:41: note: other candidates are:
-dispatchWithinParamLoop.chpl:13: note:   bar(x: R(false))
