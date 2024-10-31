@@ -257,11 +257,12 @@ static void test7() {
 
   auto M = parseModule(context,
                 R""""(
+                  operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
                   var a = 1, b = (1 + a);
                 )"""");
 
-  assert(M->numStmts() == 1);
-  const MultiDecl* md = M->stmt(0)->toMultiDecl();
+  assert(M->numStmts() == 2);
+  const MultiDecl* md = M->stmt(1)->toMultiDecl();
   assert(md);
   auto a = md->declOrComment(0)->toVariable();
   assert(a);
