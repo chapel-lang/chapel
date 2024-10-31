@@ -3784,28 +3784,9 @@ static void getVarLikeOrTupleTypeInit(const AstNode* ast,
 }
 
 bool Resolver::enter(const MultiDecl* decl) {
-  gdbShouldBreakHere();
   enterScope(decl);
 
-  // Establish the type or init expressions within
-  // by visiting those nodes
-  for (auto d : decl->decls()) {
-    enterScope(d);
-
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
-
-    // if (typeExpr != nullptr) {
-    //   typeExpr->traverse(*this);
-    // }
-    // if (initExpr != nullptr) {
-    //   initExpr->traverse(*this);
-    // }
-
-    exitScope(d);
-  }
-
+  // Traversal is done in exit
   return false;
 }
 
@@ -3824,7 +3805,6 @@ void Resolver::exit(const MultiDecl* decl) {
       currentGroup.clear();
     }
   }
-  gdbShouldBreakHere();
 
   // Visit each group, working in reverse order within groups to set type/init.
   for (const auto& declGroup : declGroups) {
