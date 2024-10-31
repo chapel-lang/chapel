@@ -162,7 +162,9 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
         self.settings = self._parse_settings(settings)
         self.fixit_funcs: typing.List[FixitHook[VarResultType]] = []
 
-    def _parse_settings(self, settings_from_user: typing.List[str]) -> typing.List[RuleSetting]:
+    def _parse_settings(
+        self, settings_from_user: typing.List[str]
+    ) -> typing.List[RuleSetting]:
         settings: typing.List[RuleSetting] = []
         for s in settings_from_user:
             if s.startswith("."):
@@ -226,7 +228,12 @@ class BasicRule(Rule[BasicRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck, settings: typing.List[str]
+        self,
+        driver,
+        name: str,
+        pattern: typing.Any,
+        check_func: BasicRuleCheck,
+        settings: typing.List[str],
     ) -> None:
         super().__init__(driver, name, settings)
         self.pattern = pattern
@@ -275,7 +282,11 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, check_func: AdvancedRuleCheck, settings: typing.List[str]
+        self,
+        driver,
+        name: str,
+        check_func: AdvancedRuleCheck,
+        settings: typing.List[str],
     ) -> None:
         super().__init__(driver, name, settings)
         self.check_func = check_func

@@ -264,7 +264,6 @@ def main():
             print(f"  {r}")
         return 2
 
-
     if args.lsp:
         run_lsp(driver)
         return 0

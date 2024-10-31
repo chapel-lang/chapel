@@ -22,16 +22,22 @@ from typing import List, Union, Dict, Any, Optional
 import argparse
 import re
 
+
 @dataclass(frozen=True)
 class RuleSetting:
     """
     Settings for an rules, these can optionally be namespaced to a specific rule
     """
+
     setting_name: str
     rule_name: Optional[str] = None
 
     def __str__(self):
-        return f"{self.rule_name}.{self.setting_name}" if self.rule_name else self.setting_name
+        return (
+            f"{self.rule_name}.{self.setting_name}"
+            if self.rule_name
+            else self.setting_name
+        )
 
 
 class RuleSettingAction(argparse.Action):
@@ -61,6 +67,7 @@ class RuleSettingAction(argparse.Action):
         setting_dict[setting] = setting_value
         setattr(namespace, self.dest, setting_dict)
 
+
 @dataclass
 class Config:
     """
@@ -74,7 +81,6 @@ class Config:
     check_internal_prefixes: bool
     add_rules: List[str]
     rule_settings: Dict[RuleSetting, str]
-
 
     @classmethod
     def add_arguments(cls, parser: argparse.ArgumentParser, prefix: str = ""):

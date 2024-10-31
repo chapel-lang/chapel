@@ -148,7 +148,7 @@ class LintDriver:
 
         yield from rule.check(context, root)
 
-    def basic_rule(self, pat, default:bool=True, settings: List[str]=[]):
+    def basic_rule(self, pat, default: bool = True, settings: List[str] = []):
         """
         This method is a decorator factory for adding 'basic' rules to the
         driver. A basic rule is a function returning a boolean that gets called
@@ -212,7 +212,9 @@ class LintDriver:
 
         return decorator_fixit
 
-    def advanced_rule(self, _func=None, *, default=True, settings: List[str]=[]):
+    def advanced_rule(
+        self, _func=None, *, default=True, settings: List[str] = []
+    ):
         """
         This method is a decorator for adding 'advanced' rules to the driver.
         An advanced rule is a function that gets called on a root AST node,
