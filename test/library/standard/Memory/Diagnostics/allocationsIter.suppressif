@@ -1,1 +1,3 @@
+# baseline exhibits different number of allocations, which this test should be
+# sensitive to
 COMPOPTS <= baseline
