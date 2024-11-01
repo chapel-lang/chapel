@@ -325,6 +325,22 @@ module NetworkAtomics {
       atomic_xor(v, _localeid(), _addr(), c_memory_order(order));
     }
 
+    inline proc fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("fetchMin is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      compilerError("min is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("fetchMax is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc max(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("max is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
     inline proc const waitFor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {

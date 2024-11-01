@@ -4,6 +4,8 @@
 // - fences
 // - non seqCst memory_orders passed to atomic methods
 
+use ChplConfig;
+
 proc writea  (op: string, a)       { writeln("  ",op,"    a=",a); }
 proc writeai (op: string, a, i)    { writeln("  ",op,"    a=",a,", i=",i); }
 proc writeab (op: string, a, b)    { writeln("  ",op,"    a=",a,", b=",b); }
@@ -114,6 +116,12 @@ proc testAtomicT(ref a, ref i, ref b) {
   if isInt {    i = a.fetchXor(5);                              writeai ("fetchXor", a, i);   }
   if isInt {        a.xor(5);                                   writea  ("xor     ", a);      }
   asyncAdd(a);      a.waitFor(6);                               writea  ("waitFor ", a);
+                if CHPL_COMM == "ofi" || CHPL_COMM == "none" {
+                    i = a.fetchMin(2);                          writeai ("fetchMin", a, i);
+                        a.min(1);                               writea  ("min",      a);
+                    i = a.fetchMax(17);                         writeai ("fetchMax", a, i);
+                        a.max(42);                              writea  ("max",      a);
+                }
   writeln();
 }
 
@@ -159,6 +167,12 @@ proc testOrderAtomicT(ref a, ref i, ref b, param o: memoryOrder) {
   if isInt {    i = a.fetchXor(5, o);                                writeai ("fetchXor", a, i);   }
   if isInt {        a.xor(5, o);                                     writea  ("xor     ", a);      }
   asyncAdd(a);      a.waitFor(6, o);                                 writea  ("waitFor ", a);
+                if CHPL_COMM == "ofi" || CHPL_COMM == "none" {
+                    i = a.fetchMin(2);                               writeai ("fetchMin", a, i);
+                        a.min(1);                                    writea  ("min",      a);
+                    i = a.fetchMax(17);                              writeai ("fetchMax", a, i);
+                        a.max(42);                                   writea  ("max",      a);
+                }
   writeln();
 }
 

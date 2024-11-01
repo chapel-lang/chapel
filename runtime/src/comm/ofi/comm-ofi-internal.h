@@ -47,6 +47,7 @@ extern "C" {
 #define OFI_ALL_DEBUGS(m)                                               \
   m(CFG,                    "config: fabric resources used")            \
   m(CFG_AV,                 "config: address vectors")                  \
+  m(CFG_AMO,                "config: AMOs")                             \
   m(PROV,                   "provider: selection")                      \
   m(PROV_HINTS,             "provider: hints")                          \
   m(PROV_ALL,               "provider: all matching")                   \
