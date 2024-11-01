@@ -2108,17 +2108,26 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         // Including past type information made this instantiation fail.
         return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
       }
+
+      // If promotion was involved, figure out the scalar type. We want to
+      // work with the scalar function, so we need the scalar type.
+      auto scalarType = actualType;
+      if (got.promotes()) {
+        scalarType = getPromotionType(context, actualType);
+      }
+
       if (got.instantiates()) {
         // add a substitution for a valid value
-        if (!got.converts() && !got.promotes()) {
+        if (!got.converts()) {
           // use the actual type since no conversion/promotion was needed
           addSub = true;
-          useType = actualType;
+          useType = scalarType;
         } else {
           // get instantiation type
           addSub = true;
+
           useType = getInstantiationType(context,
-                                         actualType,
+                                         scalarType,
                                          formalType);
 
           // Verify that the 'instantiation type' still accepts the actual.
@@ -2133,7 +2142,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
-          auto got = canPassFn(context, actualType, useTypeConcrete);
+          auto got = canPassFn(context, scalarType, useTypeConcrete);
           if (!got.passes()) {
             return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
           }
