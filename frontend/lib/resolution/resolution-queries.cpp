@@ -1976,6 +1976,13 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
+static bool allowPromotionForSig(const TypedFnSignature* sig) {
+  const UntypedFnSignature* untypedSignature = sig->untyped();
+  return
+    untypedSignature->name() != USTR("these") &&
+    untypedSignature->name() != USTR("=");
+}
+
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
 ApplicabilityResult instantiateSignature(ResolutionContext* rc,
@@ -1998,6 +2005,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   const Function* fn = nullptr;
   const AggregateDecl* ad = nullptr;
   const Enum* ed = nullptr;
+
+  auto canPassFn = allowPromotionForSig(sig) ? canPass : canPassScalar;
 
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
@@ -2094,7 +2103,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         useType = actualType;
       }
     } else {
-      auto got = canPass(context, actualType, formalType);
+      auto got = canPassFn(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
         return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
@@ -2124,7 +2133,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
-          auto got = canPass(context, actualType, useTypeConcrete);
+          auto got = canPassFn(context, actualType, useTypeConcrete);
           if (!got.passes()) {
             return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
           }
@@ -2235,7 +2244,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
       auto checkType = !useType.isUnknown() ? useType : formalType;
       // With the type and query-aware type known, make sure that they're compatible
-      auto passResult = canPass(context, checkType, qFormalType);
+      auto passResult = canPassFn(context, checkType, qFormalType);
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
         return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
@@ -2911,6 +2920,8 @@ isInitialTypedSignatureApplicable(Context* context,
     return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
   }
 
+  auto canPassFn = allowPromotionForSig(tfs) ? canPass : canPassScalar;
+
   // Next, check that the types are compatible
   int numVarArgActuals = 0;
   QualifiedType varArgType;
@@ -2936,9 +2947,9 @@ isInitialTypedSignatureApplicable(Context* context,
         }
         numVarArgActuals += 1;
 
-        got = canPass(context, actualType, getVarArgTupleElemType(formalType));
+        got = canPassFn(context, actualType, getVarArgTupleElemType(formalType));
       } else {
-        got = canPass(context, actualType, formalType);
+        got = canPassFn(context, actualType, formalType);
       }
       if (!got.passes()) {
         return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
@@ -3744,7 +3755,7 @@ static bool resolveFnCallSpecial(Context* context,
                                   ErroneousType::get(context));
       return true;
     }
-    auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
+    auto got = canPassScalar(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
     exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                 BoolParam::get(context, result));
@@ -5693,7 +5704,7 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
     for (int i = 0; i < msc.fn()->numFormals(); i++){
       if (msc.fn()->formalName(i) == USTR("followThis")) {
         auto formalType = msc.fn()->formalType(i);
-        auto got = canPass(rc->context(), followThis, formalType);
+        auto got = canPassScalar(rc->context(), followThis, formalType);
         if (!got.passes()) {
           return CallResolutionResult::getEmpty();
         }
