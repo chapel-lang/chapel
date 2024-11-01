@@ -5860,30 +5860,45 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt) {
   QUERY_BEGIN(getPromotionType, context, qt);
 
-  std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(qt, USTR("this")));
-  auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
-                     qt,
-                     /* isMethodCall */ true,
-                     /* hasQuestionArg */ false,
-                     /* isParenless */ false,
-                     /* actuals */ std::move(actuals));
 
-  auto t = qt.type();
-  const AstNode* astContext = nullptr;
-  if (t) {
-    if (auto ct = t->getCompositeType()) {
-      if (!ct->id().isEmpty()) {
-        astContext = parsing::idToAst(context, ct->id());
+  auto ret = QualifiedType();
+  if (qt.isUnknownOrErroneous()) {
+    /* do nothing */
+  } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
+    ret = loopIt->yieldType();
+  } else if (auto fnIt = qt.type()->toFnIteratorType()) {
+    ResolutionContext rc(context); // TODO
+    ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
+  } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
+    ResolutionContext rc(context); // TODO
+    ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
+  } else {
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(qt, USTR("this")));
+    auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
+        qt,
+        /* isMethodCall */ true,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false,
+        /* actuals */ std::move(actuals));
+
+    auto t = qt.type();
+    const AstNode* astContext = nullptr;
+    if (t) {
+      if (auto ct = t->getCompositeType()) {
+        if (!ct->id().isEmpty()) {
+          astContext = parsing::idToAst(context, ct->id());
+        }
       }
     }
+
+    // only the receiver type in the call info should be used for search
+    auto scopes = CallScopeInfo::forNormalCall(nullptr, nullptr);
+    auto c = resolveGeneratedCall(context, astContext, ci, scopes);
+
+    ret = c.exprType();
   }
 
-  // only the receiver type in the call info should be used for search
-  auto scopes = CallScopeInfo::forNormalCall(nullptr, nullptr);
-  auto c = resolveGeneratedCall(context, astContext, ci, scopes);
-
-  auto ret = c.exprType();
   return QUERY_END(ret);
 }
 
