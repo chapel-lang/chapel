@@ -3796,6 +3796,7 @@ void Resolver::exit(const MultiDecl* decl) {
   // This effectively splits the decls into groups that share a type/init.
   auto it = decl->decls().begin();
   auto groupBegin = it;
+  gdbShouldBreakHere();
   while (it != decl->decls().end()) {
     const Decl* individualDecl = *it;
 
@@ -3813,7 +3814,8 @@ void Resolver::exit(const MultiDecl* decl) {
     if (!scopeResolveOnly && (typeExpr || initExpr)) {
       // Decl with type/init encountered, resolve and propagate the type info
       // backwards through its group.
-      auto groupIt = it;
+      auto groupEnd = std::next(it);
+      auto groupIt = groupEnd;
       const Type* lastType = nullptr;
       while (groupIt != groupBegin) {
         --groupIt;
@@ -3852,8 +3854,8 @@ void Resolver::exit(const MultiDecl* decl) {
         lastType = result.type().type();
       }
 
-      // Advance group beginning pointer to past the end of this group
-      groupBegin = std::next(it);
+      // Advance to beginning of next group
+      groupBegin = groupEnd;
     }
 
     ++it;
