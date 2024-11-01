@@ -12,7 +12,7 @@ else {
     writeln("maxBlockDimX: ", deviceAttributes(here).maxBlockDimX);
     writeln("maxBlockDimY: ", deviceAttributes(here).maxBlockDimY);
     writeln("maxBlockDimZ: ", deviceAttributes(here).maxBlockDimZ);
-    writeln("MaxGridDimX: ", deviceAttributes(here).MaxGridDimX);
+    writeln("maxGridDimX: ", deviceAttributes(here).maxGridDimX);
     writeln("maxGridDimY: ", deviceAttributes(here).maxGridDimY);
     writeln("maxGridDimZ: ", deviceAttributes(here).maxGridDimZ);
     writeln("maxSharedMemoryPerBlock: ", deviceAttributes(here).maxSharedMemoryPerBlock);

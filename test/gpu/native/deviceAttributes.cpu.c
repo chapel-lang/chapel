@@ -7,7 +7,7 @@ void runBaselineVersion(void) {
   printf("maxBlockDimX: -1\n");
   printf("maxBlockDimY: -1\n");
   printf("maxBlockDimZ: -1\n");
-  printf("MaxGridDimX: -1\n");
+  printf("maxGridDimX: -1\n");
   printf("maxGridDimY: -1\n");
   printf("maxGridDimZ: -1\n");
   printf("maxSharedMemoryPerBlock: -1\n");

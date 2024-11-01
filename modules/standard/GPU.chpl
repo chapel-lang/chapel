@@ -1273,7 +1273,7 @@ module GPU
     proc maxBlockDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X);
     proc maxBlockDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y);
     proc maxBlockDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z);
-    proc MaxGridDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X);
+    proc maxGridDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X);
     proc maxGridDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y);
     proc maxGridDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z);
     proc maxSharedMemoryPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK);
