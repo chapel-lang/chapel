@@ -87,7 +87,7 @@ not the type face."
   chpl '("as"
          "const" "config"
          "except" "export" "extern"
-         "import" "inline" "iter"
+         "implements" "import" "include" "inline" "iter"
          "lambda"
          "module"
          "only" "operator" "override"
@@ -110,11 +110,11 @@ will be handled.
 Note that presence on this list does not automatically treat the
 following identifier as a type; the keyword must also be present on
 `c-type-prefix-kwds' or `c-type-list-kwds' to accomplish that."
-  chpl '("class" "record" "union"))
+  chpl '("class" "record" "union" "interface"))
 
 (c-lang-defconst c-type-start-kwds
   "Keywords that can start a type."
-  chpl '("class" "enum" "record" "type" "union"))
+  chpl '("class" "enum" "record" "type" "union" "interface"))
 
 ;; Type aliases
 (c-lang-defconst c-typedef-decl-kwds
