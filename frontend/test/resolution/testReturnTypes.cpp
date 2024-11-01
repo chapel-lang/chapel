@@ -1096,7 +1096,8 @@ static void testSelectParams() {
 
 // Assumes loop body will return param string "asdf"
 static void paramLoopTestHelper(Context* context, const char* loopBody,
-                                bool returnFromLoop, bool useEmptyLoop = false) {
+                                const char* loopRange, bool returnedFromLoop,
+                                bool useEmptyLoop = false) {
   context->advanceToNextRevision(false);
   ErrorGuard guard(context);
 
@@ -1104,7 +1105,7 @@ static void paramLoopTestHelper(Context* context, const char* loopBody,
   std::ostringstream oss;
   oss << ops;
   oss << "proc foo() param {\n";
-  oss << "  for param i in " << (useEmptyLoop ? "1..0" : "0..2") << " {\n";
+  oss << "  for param i in " << loopRange << " {\n";
   oss << loopBody;
   oss << "  }\n";
   oss << "  return true;\n";
@@ -1118,7 +1119,7 @@ static void paramLoopTestHelper(Context* context, const char* loopBody,
   QualifiedType qt = resolveTypeOfXInit(context,
                                        program);
   assert(!qt.isUnknownOrErroneous());
-  if (returnFromLoop) {
+  if (returnedFromLoop) {
     ensureParamString(qt, "asdf");
   } else {
     ensureParamBool(qt, true);
@@ -1139,9 +1140,10 @@ static void testParamLoop() {
                       R"""(
                       return "asdf";
                       )""",
+                      "0..2",
                       true);
 
-  // Different returns in subsequent iterations
+  // Return statement in else branch taken
   paramLoopTestHelper(context,
                       R"""(
                       if i == 1 {
@@ -1150,51 +1152,57 @@ static void testParamLoop() {
                         return "asdf";
                       }
                       )""",
+                      "0..2",
                       true);
 
-  // Return in param TRUE conditional inside param loop iteration
+  // Return statement in param TRUE if
   paramLoopTestHelper(context,
                       R"""(
                       if i == 1 {
                         return "asdf";
                       }
                       )""",
+                      "0..2",
                       true);
 
-  // Return in param FALSE conditional inside param loop iteration
+  // Return statement in param FALSE if
   paramLoopTestHelper(context,
                       R"""(
                       if i == 3 {
                         return "asdf";
                       }
                       )""",
+                      "0..2",
                       false);
 
-  // Return in a param loop with no iterations
+  // Return statement in a param loop with no iterations
   paramLoopTestHelper(context,
                       R"""(
                       return "asdf";
                       )""",
+                      "1..0",
                       false,
                       /* useEmptyLoop */ true);
 
-  // Return in iteration after break
+  // Return statement in iteration after break
   paramLoopTestHelper(context,
                       R"""(
                       break;
                       return "asdf";
                       )""",
+                      "0..2",
                       false);
 
-  // Return in iteration after continue
+  // Return statement in iteration after continue
   paramLoopTestHelper(context,
                       R"""(
                       continue;
                       return "asdf";
                       )""",
+                      "0..2",
                       false);
 
-  // Return in iteration after a conditional break, hit only after return
+  // Return statement in iteration after a conditional break, only after return
   paramLoopTestHelper(context,
                       R"""(
                       if i == 1 {
@@ -1202,9 +1210,10 @@ static void testParamLoop() {
                       }
                       return "asdf";
                       )""",
+                      "0..2",
                       true);
 
-  // Return in iteration after a conditional break, hit before any return
+  // Return statement in iteration after a conditional break, before any return
   paramLoopTestHelper(context,
                       R"""(
                       if i == 0 {
@@ -1212,9 +1221,10 @@ static void testParamLoop() {
                       }
                       return "asdf";
                       )""",
+                      "0..2",
                       false);
 
-  // Return in iteration after a conditional continue, hit in only some
+  // Return statement in iteration after a conditional continue, in only some
   // iterations
   paramLoopTestHelper(context,
                       R"""(
@@ -1223,9 +1233,10 @@ static void testParamLoop() {
                       }
                       return "asdf";
                       )""",
+                      "0..2",
                       true);
 
-  // Return in iteration after a conditional continue, hit in all iterations
+  // Return statement in iteration after a conditional continue, in all iterations
   paramLoopTestHelper(context,
                       R"""(
                       if i != 3 {
@@ -1233,6 +1244,7 @@ static void testParamLoop() {
                       }
                       return "asdf";
                       )""",
+                      "0..2",
                       false);
 }
 
