@@ -1137,7 +1137,7 @@ static bool isNegative(const Param* p) {
 static bool isNegativeParamToUnsigned(const Param* actualSym,
                                       const Type* actualScalarType,
                                       const Type* formalType) {
-  if (actualScalarType->isIntType() && formalType->isUintType()) {
+  if (actualSym && actualScalarType->isIntType() && formalType->isUintType()) {
    return isNegative(actualSym);
   }
   return false;
