@@ -3797,33 +3797,34 @@ void Resolver::exit(const MultiDecl* decl) {
   auto it = decl->decls().begin();
   auto groupBegin = it;
   gdbShouldBreakHere();
+  const AstNode* curTypeExpr = nullptr;
+  const AstNode* curInitExpr = nullptr;
   while (it != decl->decls().end()) {
     const Decl* individualDecl = *it;
 
     // Resolve type and init expressions if present.
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(individualDecl, typeExpr, initExpr);
-    if (typeExpr != nullptr) {
-      typeExpr->traverse(*this);
+    getVarLikeOrTupleTypeInit(individualDecl, curTypeExpr, curInitExpr);
+    if (curTypeExpr != nullptr) {
+      curTypeExpr->traverse(*this);
     }
-    if (initExpr != nullptr) {
-      initExpr->traverse(*this);
+    if (curInitExpr != nullptr) {
+      curInitExpr->traverse(*this);
     }
 
-    if (!scopeResolveOnly && (typeExpr || initExpr)) {
+    if (!scopeResolveOnly && (curTypeExpr || curInitExpr)) {
       // Decl with type/init encountered, resolve and propagate the type info
       // backwards through its group.
       auto groupEnd = std::next(it);
       auto groupIt = groupEnd;
       const Type* lastType = nullptr;
       while (groupIt != groupBegin) {
-        --groupIt;
+        const Decl* d = *(--groupIt);
 
-        const Decl* d = *groupIt;
-        const AstNode* typeExpr = nullptr;
-        const AstNode* initExpr = nullptr;
-        getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+        // Skip extracting type/init if we're on the last decl in the group
+        // (first inner loop iteration), as we've already just done so in the
+        // current iteration of the outer loop.
+        // Take null lastType to mean we're on the first inner iteration.
+        if (lastType) getVarLikeOrTupleTypeInit(d, curTypeExpr, curInitExpr);
 
         // if it has neither init nor type, use the type from the
         // variable to the right.
@@ -3831,7 +3832,7 @@ void Resolver::exit(const MultiDecl* decl) {
         //    var a, b: int
         // a is of type int
         const Type* t = nullptr;
-        if (typeExpr == nullptr && initExpr == nullptr) {
+        if (curTypeExpr == nullptr && curInitExpr == nullptr) {
           if (lastType == nullptr) {
             // this could be split init
             t = UnknownType::get(context);
