@@ -135,7 +135,7 @@ def check_camel_case(
 ):
     return re.fullmatch(
         r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?",
-        name_for_linting(context, node, internal_prefixes=internal_prefixes),
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
@@ -144,7 +144,7 @@ def check_pascal_case(
 ):
     return re.fullmatch(
         r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?",
-        name_for_linting(context, node, internal_prefixes=internal_prefixes),
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
@@ -161,10 +161,8 @@ def register_rules(driver: LintDriver):
             return True
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(
-            context, node, internal_prefixes=internal_prefixes
-        ) or check_pascal_case(
-            context, node, internal_prefixes=internal_prefixes
-        )
+            context, node, internal_prefixes
+        ) or check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context: Context, node: Record):
@@ -173,9 +171,7 @@ def register_rules(driver: LintDriver):
         """
 
         internal_prefixes = driver.config.internal_prefixes
-        return check_camel_case(
-            context, node, internal_prefixes=internal_prefixes
-        )
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context: Context, node: Function):
@@ -196,9 +192,7 @@ def register_rules(driver: LintDriver):
             return True
 
         internal_prefixes = driver.config.internal_prefixes
-        return check_camel_case(
-            context, node, internal_prefixes=internal_prefixes
-        )
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Class)
     def PascalCaseClasses(context: Context, node: Class):
@@ -207,9 +201,7 @@ def register_rules(driver: LintDriver):
         """
 
         internal_prefixes = driver.config.internal_prefixes
-        return check_pascal_case(
-            context, node, internal_prefixes=internal_prefixes
-        )
+        return check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context: Context, node: Module):
@@ -219,7 +211,7 @@ def register_rules(driver: LintDriver):
 
         internal_prefixes = driver.config.internal_prefixes
         return node.kind() == "implicit" or check_pascal_case(
-            context, node, internal_prefixes=internal_prefixes
+            context, node, internal_prefixes
         )
 
     @driver.basic_rule(Module, default=False)
