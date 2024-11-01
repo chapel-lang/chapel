@@ -5907,6 +5907,10 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
     auto c = resolveGeneratedCall(context, astContext, ci, scopes);
 
     ret = c.exprType();
+
+    // Fix the intent to match original actual
+    ret = QualifiedType(qt.kind(), ret.type());
+
   }
 
   return QUERY_END(ret);

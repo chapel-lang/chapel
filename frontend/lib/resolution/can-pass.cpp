@@ -1189,9 +1189,6 @@ CanPassResult CanPassResult::canPass(Context* context,
       formalQtIn.kind() != QualifiedType::PARAM) {
     auto promotionType = getPromotionType(context, actualQtIn);
 
-    // Fix the intent to match original actual
-    promotionType = QualifiedType(actualQtIn.kind(), promotionType.type());
-
     if (!promotionType.isUnknownOrErroneous()) {
       auto got = canPassScalar(context, promotionType, formalQtIn);
 
