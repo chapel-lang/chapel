@@ -197,6 +197,13 @@ CanPassResult canPass(Context* context,
   return CanPassResult::canPass(context, actualType, formalType);
 }
 
+static inline
+CanPassResult canPassScalar(Context* context,
+                            const types::QualifiedType& actualType,
+                            const types::QualifiedType& formalType) {
+  return CanPassResult::canPassScalar(context, actualType, formalType);
+}
+
 /* When trying to combine two kinds, you can't just pick one.
    For instance, if any type in the list is a value, the result
    should be a value, and if any type in the list is const, the

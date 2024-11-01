@@ -1521,8 +1521,8 @@ bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
 
   if (tfs && tfs->isMethod()) {
     QualifiedType methodRcvType = tfs->formalType(0);
-    auto p = canPass(context,
-                     /* actual */ receiverType_, /* formal */ methodRcvType);
+    auto p = canPassScalar(context,
+                           /* actual */ receiverType_, /* formal */ methodRcvType);
     return p.passes();
   }
 
