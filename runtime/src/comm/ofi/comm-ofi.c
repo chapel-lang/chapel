@@ -5612,8 +5612,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
   nb_handle_t handle = NULL;
   if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_put_nb(handle, addr, node, raddr, size);
+    chpl_comm_diags_incr(put_nb);
   }
-  chpl_comm_diags_incr(put_nb);
   return (chpl_comm_nb_handle_t) handle;
 }
 
@@ -5662,8 +5662,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
   nb_handle_t handle = NULL;
   if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_get_nb(handle, addr, node, raddr, size);
+    chpl_comm_diags_incr(get_nb);
   }
-  chpl_comm_diags_incr(get_nb);
   return (chpl_comm_nb_handle_t) handle;
 }
 
@@ -5804,8 +5804,8 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
   if (put_prologue(addr, node, raddr, size, commID, ln, fn)) {
     ofi_put(addr, node, raddr, size);
+    chpl_comm_diags_incr(put);
   }
-  chpl_comm_diags_incr(put);
 }
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
@@ -5816,8 +5816,8 @@ void chpl_comm_get(void* addr, int32_t node, void* raddr,
 
   if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
     ofi_get(addr, node, raddr, size);
+    chpl_comm_diags_incr(get);
   }
-  chpl_comm_diags_incr(get);
 }
 
 
