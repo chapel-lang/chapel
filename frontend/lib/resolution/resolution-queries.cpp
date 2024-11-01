@@ -5828,7 +5828,6 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
       return resolveTheseCallForLoopIterator(rc, astContext, loopIt, iterKind, followThis);
     } else if (auto promoIt = receiverType.type()->toPromotionIteratorType()) {
-      debuggerBreakHere();
       return resolveTheseCallForPromotionIterator(rc, astContext, promoIt, iterKind, followThis);
     }
   }

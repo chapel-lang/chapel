@@ -1187,7 +1187,6 @@ CanPassResult CanPassResult::canPass(Context* context,
   // Scalar passing failing, but promotion may be possible.
   if (formalQtIn.kind() != QualifiedType::TYPE &&
       formalQtIn.kind() != QualifiedType::PARAM) {
-    debuggerBreakHere();
     auto promotionType = getPromotionType(context, actualQtIn);
 
     // Fix the intent to match original actual
