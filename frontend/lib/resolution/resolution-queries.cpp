@@ -2141,13 +2141,13 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
       }
     }
 
+    // If the formal wasn't instantiated then use whatever type was computed.
+    if (!addSub) useType = formalType;
+
     if (entry.isVarArgEntry()) {
       // If any formal needs instantiating then we need to instantiate all
       // the VarArgs
       instantiateVarArgs = instantiateVarArgs || addSub;
-
-      // If the formal wasn't instantiated then use whatever type was computed.
-      if (!addSub) useType = formalType;
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
