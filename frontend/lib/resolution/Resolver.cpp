@@ -3796,7 +3796,6 @@ void Resolver::exit(const MultiDecl* decl) {
   // This effectively splits the decls into groups that share a type/init.
   auto it = decl->decls().begin();
   auto groupBegin = it;
-  gdbShouldBreakHere();
   const AstNode* curTypeExpr = nullptr;
   const AstNode* curInitExpr = nullptr;
   while (it != decl->decls().end()) {
