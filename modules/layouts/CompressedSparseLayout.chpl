@@ -144,6 +144,19 @@ module CompressedSparseLayout {
       }
       return x;
     }
+
+    proc deinit() {
+      on _value {
+        // Count the number of domains that refer to this distribution.
+        // and mark the distribution to be freed when that number reaches 0.
+        // If the number is 0, .remove() returns the distribution
+        // that should be freed.
+        var distToFree = _value.remove();
+        if distToFree != nil {
+          _delete_dist(distToFree!, false);
+        }
+      }
+    }
   }
 
   /*
@@ -236,7 +249,7 @@ module CompressedSparseLayout {
     proc init(value: CSImpl(?)) {
       this.compressRows = value.compressRows;
       this.sortedIndices = value.sortedIndices;
-      this.chpl_layoutHelp = new chpl_layoutHelper(value);
+      this.chpl_layoutHelp = new chpl_layoutHelper(value.dsiClone());
     }
 
     operator ==(l: csLayout(?), r: csLayout(?)) param {
