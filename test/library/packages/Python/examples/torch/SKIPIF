@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+# skip test if torch is not installed
+try:
+  import torch
+  print(False)
+except ImportError:
+  print(True)
+

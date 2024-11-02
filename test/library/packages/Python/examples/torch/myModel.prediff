@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# run the python mymodel to generate the .good file
+python3 mymodel.py > $1.good
