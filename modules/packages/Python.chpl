@@ -43,9 +43,12 @@
 module Python {
   private use CTypes;
   private import List;
+  private import Map;
 
   require "Python.h";
   private use CPythonInterface;
+  private use CWChar;
+  private use OS.POSIX only getenv;
 
   // interface typeConverter {
   //   proc Self.type_(type t) type { return nothing; }
@@ -54,6 +57,12 @@ module Python {
   //   proc Self.fromPython(obj: c_ptr(void)): T throws;
   // }
 
+  private inline proc checkPyStatus(in status: PyStatus) throws {
+    if PyStatus_Exception(status) {
+      var str = string.createCopyingBuffer(status.err_msg);
+      throw new Exception(str);
+    }
+  }
 
   /*
     There should only be one interpreter per program, it should be owned
@@ -63,9 +72,50 @@ module Python {
     var converters: List.list(owned TypeConverter);
 
     @chpldoc.nodoc
-    proc init() {
+    proc init() throws {
       init this;
-      Py_Initialize();
+
+      // preinit
+      var preconfig: PyPreConfig;
+      PyPreConfig_InitPythonConfig(c_ptrTo(preconfig));
+      preconfig.utf8_mode = 1;
+      checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
+
+      // init
+      var config_: PyConfig;
+      var cfgPtr = c_ptrTo(config_);
+      PyConfig_InitPythonConfig(cfgPtr);
+      defer PyConfig_Clear(cfgPtr);
+
+      // set program name
+      checkPyStatus(
+        PyConfig_SetString(
+          cfgPtr, c_ptrTo(config_.program_name), "chapel".c_wstr()));
+
+      // check VIRTUAL_ENV, if its set, make it the executable
+      var venv = getenv("VIRTUAL_ENV".c_str());
+      if venv != nil {
+        // ideally this just sets config_.home
+        // but by setting executable we can reuse the python logic to determine
+        // the locale (in the string sense, not the chapel sense)
+        const executable = string.createBorrowingBuffer(venv) + "/bin/python";
+        checkPyStatus(
+          PyConfig_SetString(
+            cfgPtr, c_ptrTo(config_.executable), executable.c_wstr()));
+      }
+
+      // initialize
+      checkPyStatus(Py_InitializeFromConfig(cfgPtr));
+
+      // add the current directory to the python path
+      var sys = PyImport_ImportModule("sys");
+      this.checkException();
+      var path = PyObject_GetAttrString(sys, "path");
+      this.checkException();
+      PyList_Insert(path, 0, Py_BuildValue("s", "."));
+      this.checkException();
+      Py_DECREF(path);
+      Py_DECREF(sys);
     }
     @chpldoc.nodoc
     proc deinit() {
@@ -133,8 +183,16 @@ module Python {
         }
       }
       // if no converter is found, use the defaults
-      if t == int {
+      if isIntType(t) {
         var v = Py_BuildValue("i", val);
+        this.checkException();
+        return v;
+      } else if isRealType(t) {
+        var v = Py_BuildValue("d", val);
+        this.checkException();
+        return v;
+      } else if isBoolType(t) {
+        var v = PyBool_FromLong(val:int);
         this.checkException();
         return v;
       } else if t == c_ptrConst(c_char) {
@@ -145,23 +203,22 @@ module Python {
         var v = Py_BuildValue("s", val.c_str());
         this.checkException();
         return v;
-      } else if isArrayType(t) && val.rank == 1{
-        var pyList = PyList_New(val.size);
-        this.checkException();
-        for i in 0..<val.size {
-          const idx = val.domain.orderToIndex(i);
-          PyList_SetItem(pyList, i, toPython(val[idx]));
-          this.checkException();
-        }
-        return pyList;
+      } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
+        return toList(val);
+      } else if isArrayType(t) && val.isAssociative() {
+        return toDict(val);
+      } else if isSubtype(t, List.list) {
+        return toList(val);
       } else if isSubtype(t, Function) {
         return val.fn!.get();
-      } else if t == PyObject {
+      } else if isSubtype(t, PyObject) {
         return val.get();
+      } else if isSubtype(t, ClassObject) {
+        return val.obj!.get();
       } else if t == None {
         return nil;
       } else {
-        halt("Unsupported type");
+        halt("Unsupported toPython type: '" + t:string + "'");
       }
     }
 
@@ -177,10 +234,16 @@ module Python {
         }
       }
       // if no converter is found, use the defaults
-      if t == int {
+      if isIntType(t) {
         var v = PyLong_AsLong(obj);
         this.checkException();
-        return v;
+        return v: t; // cast to the real type
+      } else if isRealType(t) {
+        var v = PyFloat_AsDouble(obj);
+        this.checkException();
+        return v: t; // cast to the real type
+      } else if isBoolType(t) {
+        return if obj == Py_True then true else false;
       } else if t == c_ptrConst(c_char) {
         var v = PyUnicode_AsUTF8(obj);
         this.checkException();
@@ -190,23 +253,9 @@ module Python {
         this.checkException();
         return v;
       } else if isArrayType(t) {
-        var res: t;
-        if PyList_Size(obj) != res.size {
-          throw new Exception("Size mismatch");
-        }
-        for i in 0..<res.size {
-          const idx = res.domain.orderToIndex(i);
-          res[idx] = fromPython(res.eltType, PyList_GetItem(obj, i));
-          this.checkException();
-        }
-        return res;
+        return fromList(t, obj);
       } else if isSubtype(t, List.list) {
-        var res = new t();
-        for i in 0..<PyList_Size(obj) {
-          res.pushBack(fromPython(t.eltType, PyList_GetItem(obj, i)));
-          this.checkException();
-        }
-        return res;
+        return fromList(t, obj);
       } else if isSubtype(t, Function) {
         return new Function("<unknown>", new PyObject(this, obj));
       } else if isSubtype(t, PyObject) || isSubtype(t, PyObject?) {
@@ -216,9 +265,121 @@ module Python {
       } else if t == None {
         return new None();
       } else {
-        halt("Unsupported type " + t:string);
+        halt("Unsupported fromPython type: '" + t:string + "'");
       }
     }
+
+    /*
+      Converts an array to a python list
+    */
+    @chpldoc.nodoc
+    proc toList(arr): c_ptr(void) throws
+      where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
+      var pyList = PyList_New(arr.size);
+      this.checkException();
+      for i in 0..<arr.size {
+        const idx = arr.domain.orderToIndex(i);
+        PyList_SetItem(pyList, i, toPython(arr[idx]));
+        this.checkException();
+      }
+      return pyList;
+    }
+
+    /*
+      Convert a chapel list to a python list
+    */
+    @chpldoc.nodoc
+    proc toList(l: List.list(?)): c_ptr(void) throws {
+      var pyList = PyList_New(l.size);
+      this.checkException();
+      for i in 0..<l.size {
+        PyList_SetItem(pyList, i, toPython(l(i)));
+        this.checkException();
+      }
+      return pyList;
+    }
+
+    /*
+      Converts a python list to an array
+    */
+    @chpldoc.nodoc
+    proc fromList(type T, obj: c_ptr(void)): T throws
+      where isArrayType(T) {
+      var res: T;
+      if PySequence_Size(obj) != res.size {
+        throw new Exception("Size mismatch");
+      }
+      for i in 0..<res.size {
+        const idx = res.domain.orderToIndex(i);
+        res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
+        this.checkException();
+      }
+      return res;
+    }
+
+    /*
+      Convert a python list to a Chapel list
+    */
+    @chpldoc.nodoc
+    proc fromList(type T, obj: c_ptr(void)): T throws where isSubtype(T, List.list) {
+      var res = new T();
+      while true {
+        var item = PyIter_Next(obj);
+        if item == nil {
+          break;
+        }
+        res.pushBack(fromPython(T.eltType, item));
+        this.checkException();
+      }
+      return res;
+    }
+
+    /*
+      Converts an array to a python set
+    */
+    // proc toSet(arr): c_ptr(void) throws {
+    // TODO
+    // }
+
+    // TODO: convert chapel set to python set
+
+    /*
+      Converts a python set to an array
+    */
+    // proc fromSet(type T, obj: c_ptr(void)): T throws {
+    // TODO
+    // }
+
+    // TODO: convert python set to chapel set
+
+
+    /*
+      Converts an associative array to a python dictionary
+    */
+    @chpldoc.nodoc
+    proc toDict(arr): c_ptr(void) throws
+      where isArrayType(arr.type) && arr.isAssociative() {
+      var pyDict = PyDict_New();
+      this.checkException();
+      for key in arr.domain {
+        var pyKey = toPython(key);
+        var pyValue = toPython(arr[key]);
+        PyDict_SetItem(pyDict, pyKey, pyValue);
+        this.checkException();
+      }
+      return pyDict;
+    }
+
+    // TODO: convert chapel map to python dict
+
+    /*
+      Converts a python dictionary to an associative array
+    */
+    // proc fromDict(type T, obj: c_ptr(void)): T throws {
+      // TODO
+    // }
+
+    // TODO: convert python dict to chapel map
 
   }
 
@@ -274,6 +435,26 @@ module Python {
   }
 
 
+  // TODO: make a base Value class that can be used for all values
+  //  the base class is essentially what PyObject is now
+
+  // TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
+  //  this can be done in a few ways.
+  //   1. create a class that wraps the array and implements the python list interface
+  //   2. create a class that wraps the array and implements the numpy array interface
+
+  //  TODO: represent python context managers as Chapel context managers
+
+  // TODO: create adapters for common Python types that are subclasses of a Value class
+  // this will prevent needing to round trip through python for some operations
+  // for example, a List, Set, Dict, Tuple, etc.
+  // these should provide native like operation, so `for i in pyList` should work
+
+  // TODO: there are decrefs missing all over the place
+
+  // TODO: using the Py*_Check, we may be able to avoid needing to specify the type of the return value
+
+  // TODO: implement operators as dunder methods
 
   /*
     Represents a python module
@@ -330,26 +511,54 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
-      var pyArg = PyTuple_Pack(args.size, (...pyArgs));
-      interpreter.checkException();
 
-      var pyRes = PyObject_CallObject(this.fn!.get(), pyArg);
+      var pyRes;
+      if pyArgs.size == 1 then
+        pyRes = PyObject_CallOneArg(this.fn!.get(), pyArgs(0));
+      else
+        pyRes = PyObject_CallFunctionObjArgs(this.fn!.get(), (...pyArgs), nil);
       interpreter.checkException();
-
-      Py_DECREF(pyArg);
 
       var res = interpreter.fromPython(retType, pyRes);
-      Py_DECREF(pyRes);
 
       return res;
     }
     proc this(type retType): retType throws {
-      var pyRes = PyObject_CallObject(this.fn!.get(), nil);
+      var pyRes = PyObject_CallNoArgs(this.fn!.get());
       interpreter.checkException();
       var res = interpreter.fromPython(retType, pyRes);
-      Py_DECREF(pyRes);
       return res;
     }
+    proc this(type retType, args..., kwargs:?t=none): retType throws
+      where kwargs.domain.isAssociative() {
+      var pyArgs: args.size * c_ptr(void);
+      for param i in 0..#args.size {
+        pyArgs(i) = interpreter.toPython(args(i));
+      }
+      var pyArg = PyTuple_Pack(args.size, (...pyArgs));
+
+      var pyKwargs;
+      if t != nothing {
+        pyKwargs = interpreter.toPython(kwargs);
+      } else {
+        pyKwargs = nil;
+      }
+
+      var pyRes = PyObject_Call(this.fn!.get(), pyArg, pyKwargs);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+
+      return res;
+    }
+
+    proc getAttr(type t, attr: string): t throws {
+      var pyAttr = PyObject_GetAttrString(this.fn!.get(), attr.c_str());
+      interpreter.checkException();
+      var res = interpreter.fromPython(t, pyAttr);
+      return res;
+    }
+
   }
 
 
@@ -378,19 +587,15 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
-      var pyArg = PyTuple_Pack(args.size, (...pyArgs));
-      interpreter.checkException();
 
-      var pyRes = PyObject_CallObject(this.cls.get(), pyArg);
+      var pyRes = PyObject_CallFunctionObjArgs(this.cls.get(), (...pyArgs), nil);
       interpreter.checkException();
-
-      Py_DECREF(pyArg);
 
       return new PyObject(interpreter, pyRes);
     }
     @chpldoc.nodoc
     proc newInstance(): owned PyObject throws {
-      var pyRes = PyObject_CallObject(this.cls.get(), nil);
+      var pyRes = PyObject_CallNoArgs(this.cls.get());
       interpreter.checkException();
       return new PyObject(interpreter, pyRes);
     }
@@ -441,7 +646,6 @@ module Python {
       var pyAttr = PyObject_GetAttrString(this.obj!.get(), attr.c_str());
       interpreter.checkException();
       var res = interpreter.fromPython(t, pyAttr);
-      Py_DECREF(pyAttr);
       return res;
     }
     proc setAttr(attr: string, value) throws {
@@ -449,29 +653,44 @@ module Python {
       PyObject_SetAttrString(this.obj!.get(), attr.c_str(), pyValue);
       interpreter.checkException();
     }
-    proc callMethod(type retType, method: string, args...): retType throws {
+
+    proc this(type retType, args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
-      var pyArg = PyTuple_Pack(args.size, (...pyArgs));
+      var pyRes;
+      if pyArgs.size == 1 then
+        pyRes = PyObject_CallOneArg(this.obj!.get(), pyArgs(0));
+      else
+        pyRes = PyObject_CallFunctionObjArgs(this.obj!.get(), (...pyArgs), nil);
       interpreter.checkException();
-
-      var pyRes = PyObject_CallObject(PyObject_GetAttrString(this.obj!.get(), method.c_str()), pyArg);
-      interpreter.checkException();
-
-      Py_DECREF(pyArg);
 
       var res = interpreter.fromPython(retType, pyRes);
-      Py_DECREF(pyRes);
 
       return res;
     }
-    proc callMethod(type retType, method: string): retType throws {
-      var pyRes = PyObject_CallObject(PyObject_GetAttrString(this.obj!.get(), method.c_str()), nil);
+
+    proc call(type retType, method: string, args...): retType throws {
+      var pyArgs: args.size * c_ptr(void);
+      for param i in 0..#args.size {
+        pyArgs(i) = interpreter.toPython(args(i));
+      }
+
+      var methodName = interpreter.toPython(method);
+      var pyRes = PyObject_CallMethodObjArgs(
+        this.obj!.get(), methodName, (...pyArgs), nil);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+
+      return res;
+    }
+    proc call(type retType, method: string): retType throws {
+      var methodName = interpreter.toPython(method);
+      var pyRes = PyObject_CallMethodNoArgs(this.obj!.get(), methodName);
       interpreter.checkException();
       var res = interpreter.fromPython(retType, pyRes);
-      Py_DECREF(pyRes);
       return res;
     }
   }
@@ -501,6 +720,10 @@ module Python {
       if this.isOwned then
         Py_DECREF(this.obj);
     }
+    @chpldoc.nodoc
+    proc incrementRC() {
+      Py_INCREF(this.obj);
+    }
     proc check() throws {
       // if obj == nil {
       //   throw new Exception("Failed to get object");
@@ -517,7 +740,6 @@ module Python {
       var pyStr = PyObject_Str(this.obj);
       interpreter.checkException();
       var res = interpreter.fromPython(string, pyStr);
-      Py_DECREF(pyStr);
       return res;
     }
   }
@@ -554,24 +776,91 @@ module Python {
     writer.write(this:string);
 
   @chpldoc.nodoc
+  module CWChar {
+    require "wchar.h";
+    private use CTypes;
+
+    extern "wchar_t" type c_wchar;
+    extern proc mbstowcs(dest: c_ptr(c_wchar), src: c_ptrConst(c_char), n: c_size_t): c_size_t;
+
+    proc string.c_wstr(): c_ptr(c_wchar) {
+      var len = this.size;
+      var buf = allocate(c_wchar, len + 1, clear=true);
+      mbstowcs(buf, this.c_str(), len);
+      return buf;
+    }
+  }
+
+  @chpldoc.nodoc
   module CPythonInterface {
     private use CTypes;
+    private use super.CWChar;
+
+    /*
+      PyConfig
+    */
+    extern record PyConfig {
+      // TODO: this fails LLVM ir verification, because the fields are out of order
+      // but the chapel spec says the order doesn't matter?
+      var isolated: c_int;
+      var user_site_directory: c_int;
+      var site_import: c_int;
+      var module_search_paths: PyWideStringList;
+      var module_search_paths_set: c_int;
+      var home: c_ptr(c_wchar);
+      var use_environment: c_int;
+      var filesystem_encoding: c_ptr(c_wchar);
+      var program_name: c_ptr(c_wchar);
+      var executable: c_ptr(c_wchar);
+    }
+    extern proc PyConfig_Clear(config_: c_ptr(PyConfig));
+    extern proc PyConfig_Read(config_: c_ptr(PyConfig)): PyStatus;
+    extern proc PyConfig_InitIsolatedConfig(config_: c_ptr(PyConfig));
+    extern proc PyConfig_InitPythonConfig(config_: c_ptr(PyConfig));
+
+    extern proc PyConfig_SetString(config_: c_ptr(PyConfig), config_str: c_ptr(c_ptr(c_wchar)), str: c_ptr(c_wchar)): PyStatus;
+    extern proc PyConfig_SetBytesString(config_: c_ptr(PyConfig), config_str: c_ptr(c_ptr(c_wchar)), str: c_ptrConst(c_char)): PyStatus;
+
+    extern type PyWideStringList;
+    extern proc PyWideStringList_Append(list: c_ptr(PyWideStringList), str: c_ptr(c_wchar)): PyStatus;
+    extern proc PyWideStringList_Insert(list: c_ptr(PyWideStringList), idx: c_int, str: c_ptr(c_wchar)): PyStatus;
+
+    /*
+      PyPreConfig
+    */
+    extern record PyPreConfig {
+      var isolated: c_int;
+      var utf8_mode: c_int;
+    }
+    extern proc PyPreConfig_InitPythonConfig(config_: c_ptr(PyPreConfig));
+    extern proc Py_PreInitialize(config_: c_ptr(PyPreConfig)): PyStatus;
 
     /*
       Global functions for the interpreter
     */
+    extern record PyStatus {
+      var err_msg: c_ptrConst(c_char);
+    }
     extern proc Py_Initialize();
+    extern proc Py_InitializeFromConfig(config_: c_ptr(PyConfig)): PyStatus;
+    extern proc PyStatus_Exception(in status: PyStatus): bool;
     extern proc Py_Finalize();
     extern proc Py_INCREF(obj: c_ptr(void));
     extern proc Py_DECREF(obj: c_ptr(void));
     extern proc PyObject_Str(obj: c_ptr(void)): c_ptr(void); // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): c_ptr(void);
 
+
     /*
       Global exec functions
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
-    extern proc PyEval_GetFrameGlobals(): c_ptr(void);
+
+    //python 3.13 only
+    // extern proc PyEval_GetFrameGlobals(): c_ptr(void);
+    extern "PyEval_GetGlobals" proc PyEval_GetFrameGlobals(): c_ptr(void);
+
+
     extern var Py_eval_input: c_int;
     extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int, globals: c_ptr(void), locals: c_ptr(void)): c_ptr(void);
 
@@ -598,9 +887,33 @@ module Python {
     */
     extern proc Py_BuildValue(format: c_ptrConst(c_char), vals...): c_ptr(void);
     extern proc Py_BuildValue(format: c_ptrConst(c_char)): c_ptr(void);
+    extern proc PyLong_FromLong(v: c_long): c_ptr(void);
     extern proc PyLong_AsLong(obj: c_ptr(void)): c_long;
+    extern proc PyLong_AsInt(obj: c_ptr(void)): c_int;
+    extern proc PyLong_FromUnsignedLong(v: c_ulong): c_ptr(void);
+    extern proc PyLong_AsUnsignedLong(obj: c_ptr(void)): c_ulong;
+    extern proc PyFloat_FromDouble(r: real(64)): c_ptr(void);
+    extern proc PyFloat_AsDouble(obj: c_ptr(void)): real(64);
+    extern proc PyBool_FromLong(v: c_long): c_ptr(void);
     extern proc PyString_FromString(s: c_ptrConst(c_char)): c_ptr(void);
     extern proc PyUnicode_AsUTF8(obj: c_ptr(void)): c_ptr(c_char);
+
+    extern var Py_False: c_ptr(void);
+    extern var Py_True: c_ptr(void);
+
+    /*
+      Sequences
+    */
+    extern proc PySequence_Size(obj: c_ptr(void)): c_long;
+    extern proc PySequence_GetItem(obj: c_ptr(void), idx: c_long): c_ptr(void);
+    extern proc PySequence_SetItem(obj: c_ptr(void), idx: c_long, value: c_ptr(void));
+
+
+    /*
+      Iterators
+    */
+    extern proc PyIter_Next(obj: c_ptr(void)): c_ptr(void);
+    extern proc PyIter_Check(obj: c_ptr(void)): c_int;
 
     /*
       Lists
@@ -609,10 +922,26 @@ module Python {
     extern proc PyList_SetItem(list: c_ptr(void), idx: c_long, item: c_ptr(void));
     extern proc PyList_GetItem(list: c_ptr(void), idx: c_long): c_ptr(void);
     extern proc PyList_Size(list: c_ptr(void)): c_long;
+    extern proc PyList_Insert(list: c_ptr(void), idx: c_long, item: c_ptr(void));
+
+    /*
+      Sets
+    */
+    extern proc PySet_New(): c_ptr(void);
+    extern proc PySet_Add(set: c_ptr(void), item: c_ptr(void));
+    extern proc PySet_Size(set: c_ptr(void)): c_long;
+
 
     /*
       Dictionaries
     */
+    extern proc PyDict_New(): c_ptr(void);
+    extern proc PyDict_SetItem(dict: c_ptr(void), key: c_ptr(void), value: c_ptr(void));
+    extern proc PyDict_SetItemString(dict: c_ptr(void), key: c_ptrConst(c_char), value: c_ptr(void));
+    extern proc PyDict_GetItem(dict: c_ptr(void), key: c_ptr(void)): c_ptr(void);
+    extern proc PyDict_GetItemString(dict: c_ptr(void), key: c_ptrConst(c_char)): c_ptr(void);
+    extern proc PyDict_Size(dict: c_ptr(void)): c_long;
+
     extern proc PyObject_GetAttrString(obj: c_ptr(void), name: c_ptrConst(c_char)): c_ptr(void);
     extern proc PyObject_SetAttrString(obj: c_ptr(void), name: c_ptrConst(c_char), value: c_ptr(void));
 
@@ -624,7 +953,14 @@ module Python {
     /*
       Functions
     */
+    extern proc PyObject_Call(obj: c_ptr(void), args: c_ptr(void), kwargs: c_ptr(void)): c_ptr(void);
     extern proc PyObject_CallObject(obj: c_ptr(void), args: c_ptr(void)): c_ptr(void);
+    extern proc PyObject_CallNoArgs(obj: c_ptr(void)): c_ptr(void);
+    extern proc PyObject_CallOneArg(obj: c_ptr(void), arg: c_ptr(void)): c_ptr(void);
+    extern proc PyObject_CallFunctionObjArgs(obj: c_ptr(void), args...): c_ptr(void);
+
+    extern proc PyObject_CallMethodNoArgs(obj: c_ptr(void), method: c_ptr(void)): c_ptr(void);
+    extern proc PyObject_CallMethodObjArgs(obj: c_ptr(void), method: c_ptr(void), args...): c_ptr(void);
 
 
 
