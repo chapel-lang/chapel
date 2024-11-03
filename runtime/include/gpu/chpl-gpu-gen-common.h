@@ -92,6 +92,16 @@ __device__ static inline void chpl_gen_comm_put_unordered(void *addr,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_getput_unordered(
+                                            c_nodeid_t dstnode, void* dstaddr,
+                                            c_nodeid_t srcnode, void* srcaddr,
+                                            size_t size, int32_t commID,
+                                            int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_getput_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 MAYBE_GPU static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 MAYBE_GPU static inline void chpl_gpu_printf0(const char *fmt) {
