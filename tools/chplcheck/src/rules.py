@@ -554,8 +554,8 @@ def register_rules(driver: LintDriver):
         """
         if isinstance(root, Comment):
             return
-
-        prev, prevloop = None, None
+        prev = []
+        fix = None
         for child in root:
             if isinstance(child, Comment):
                 continue
@@ -563,24 +563,35 @@ def register_rules(driver: LintDriver):
                 continue
             yield from MisleadingIndentation(context, child)
 
-            if prev is not None:
-                loc = child.location()
-                prev_loc = prev.location()
-                if loc.start()[1] == prev_loc.start()[1]:
-                    yield AdvancedRuleResult(child, prevloop)
+            if prev and any(
+                p.location().start()[1] == child.location().start()[1]
+                for p in prev
+            ):
+                yield AdvancedRuleResult(child, fix)
 
-            prev, prevloop = None, None
-            if isinstance(child, Loop) and child.block_style() == "implicit":
-                grandchildren = list(child)
-                # safe to access [-1], loops must have at least 1 child
-                for blockchild in reversed(list(grandchildren[-1])):
-                    if isinstance(blockchild, Comment):
-                        continue
-                    if might_incorrectly_report_location(blockchild):
-                        continue
-                    prev = blockchild
-                    prevloop = child
-                    break
+            prev = []
+            fix = append_nested_single_stmt(child, prev)
+
+    def append_nested_single_stmt(node, prev: List[AstNode]):
+        if isinstance(node, Loop) and node.block_style() == "implicit":
+            children = list(node)
+            # safe to access [-1], loops must have at least 1 child
+            inblock = reversed(list(children[-1]))
+        elif isinstance(node, On) and node.block_style() == "implicit":
+            inblock = node.stmts()
+        else:
+            # Should we also check for Conditionals here?
+            return None
+        for stmt in inblock:
+            if isinstance(stmt, Comment):
+                continue
+            if might_incorrectly_report_location(stmt):
+                continue
+            prev.append(stmt)
+            append_nested_single_stmt(stmt, prev)
+            return node  # Return the outermost on to use an anchor
+
+        return None
 
     @driver.fixit(MisleadingIndentation)
     def FixMisleadingIndentation(context: Context, result: AdvancedRuleResult):
@@ -728,7 +739,6 @@ def register_rules(driver: LintDriver):
         uses = set()
 
         for tq, _ in chapel.each_matching(root, TypeQuery):
-
             typequeries[tq.unique_id()] = tq
 
         for use, _ in chapel.each_matching(root, Identifier):
@@ -931,7 +941,7 @@ def register_rules(driver: LintDriver):
                 # MisleadingIndentation
                 if not (
                     prev
-                    and isinstance(prev, Loop)
+                    and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
                     yield child
