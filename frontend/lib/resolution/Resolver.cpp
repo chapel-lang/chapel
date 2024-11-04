@@ -71,6 +71,7 @@ namespace {
     // When an iter is resolved these pieces of the process will be stored.
     struct Pieces {
       const IteratorType* iterType = nullptr;
+      TheseResolutionResult resolutionResult;
     };
     Pieces standalone;
     Pieces leader;
@@ -4852,28 +4853,40 @@ static IterDetails resolveIterDetails(Resolver& rv,
   if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
+      std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
+      auto tryAdd = [&](Function::IteratorKind kind, TheseResolutionResult& tr) {
+        if (tr.reason() != TheseResolutionResult::THESE_SUCCESS) {
+          failures.push_back({ kind, std::move(tr) });
+        }
+      };
+
+      tryAdd(Function::STANDALONE, ret.standalone.resolutionResult);
+      tryAdd(Function::LEADER, ret.leader.resolutionResult);
+      tryAdd(Function::FOLLOWER, ret.follower.resolutionResult);
+      tryAdd(Function::SERIAL, ret.serial.resolutionResult);
+
       ret.idxType = CHPL_TYPE_ERROR(rv.context, NonIterable, astForErr, iterand,
-                                    iterandRE.type());
+                                    iterandRE.type(), std::move(failures));
     }
   }
 
   return ret;
 }
 
-static CallResolutionResult resolveTheseMethod(Resolver& rv,
-                                               const AstNode* iterand,
-                                               const QualifiedType& iterandType,
-                                               Function::IteratorKind iterKind,
-                                               const QualifiedType& followThisType) {
+static TheseResolutionResult resolveTheseMethod(Resolver& rv,
+                                                const AstNode* iterand,
+                                                const QualifiedType& iterandType,
+                                                Function::IteratorKind iterKind,
+                                                const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterand);
   auto inScope = rv.scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
-  auto c = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
-  rv.handleResolvedCallWithoutError(iterandRe, iterand, c,
+  auto tr = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
+  rv.handleResolvedCallWithoutError(iterandRe, iterand, tr.callResult(),
       { { AssociatedAction::ITERATE, iterand->id() } });
 
-  return c;
+  return tr;
 }
 
 static bool isExplicitlyTaggedIteratorCall(Context* context,
@@ -4942,7 +4955,7 @@ resolveIterTypeWithTag(Resolver& rv,
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
-    outIterPieces = { iteratingOver };
+    outIterPieces = { iteratingOver, TheseResolutionResult::success(CallResolutionResult(), iterandType)};
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
 
   // There's nothing to do in this case, so error out.
@@ -4954,16 +4967,16 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto c = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
-  auto qt = c.exprType();
+  auto tr = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
+  auto qt = tr.callResult().exprType();
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
 
     iteratingOver = qt.type()->toIteratorType();
-    outIterPieces = { iteratingOver };
   }
-  return c.yieldedType();
+  outIterPieces = { iteratingOver, std::move(tr) };
+  return tr.callResult().yieldedType();
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {

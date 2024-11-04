@@ -5700,12 +5700,24 @@ yieldTypeForIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-static CallResolutionResult
+static TheseResolutionResult
+callResolutionResultToTheseResolutionResult(CallResolutionResult cr, QualifiedType iterandType) {
+  if (cr.exprType().isUnknownOrErroneous() ||
+      !cr.exprType().type()->isIteratorType()) {
+    auto reason = TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG;
+    return TheseResolutionResult::failure(reason, std::move(iterandType), std::move(cr));
+  }
+
+  return TheseResolutionResult::success(cr, iterandType);
+}
+
+static TheseResolutionResult
 resolveTheseCallForFnIterator(ResolutionContext* rc,
                               const FnIteratorType* fnIt,
                               uast::Function::IteratorKind iterKind,
                               const types::QualifiedType& followThis) {
   auto& msc = findTaggedIteratorForType(rc, fnIt, iterKind);
+  auto iterandType = QualifiedType(QualifiedType::CONST_VAR, fnIt);
 
   if (msc && iterKind == Function::FOLLOWER) {
     // Additionally check that the follower type matches the expected
@@ -5715,7 +5727,8 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
         auto formalType = msc.fn()->formalType(i);
         auto got = canPassScalar(rc->context(), followThis, formalType);
         if (!got.passes()) {
-          return CallResolutionResult::getEmpty();
+          auto reason = TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH;
+          return TheseResolutionResult::failure(reason, std::move(iterandType));
         }
         break;
       }
@@ -5723,13 +5736,15 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
   }
 
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIt, nullptr);
-  return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+  auto cr = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+
+  return callResolutionResultToTheseResolutionResult(cr, std::move(iterandType));
 }
 
 // Helper with shared logic between loop expression iterators and promotion,
 // in which several iterables (zippered args to loop, multiple promoted args),
 // are all part of the 'these' call.
-static CallResolutionResult
+static TheseResolutionResult
 resolveTheseCallForZipperedArguments(ResolutionContext* rc,
                                      const AstNode* astContext,
                                      const IteratorType* iterType,
@@ -5739,52 +5754,64 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
   bool leaderOnly = iterKind == Function::LEADER;
   bool standalone = iterKind == Function::STANDALONE;
   bool serial = iterKind == Function::SERIAL;
+  auto iterandType = QualifiedType(QualifiedType::CONST_VAR, iterType);
 
   // Loop expressions don't have standalone iterators.
-  if (standalone)
-    return CallResolutionResult::getEmpty();
+  if (standalone) {
+    auto reason = iterType->isLoopExprIteratorType() ?
+      TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE :
+      TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE;
+    return TheseResolutionResult::failure(reason, std::move(iterandType));
+  }
 
   bool supportsParallel = !iterType->isLoopExprIteratorType() ||
                           iterType->toLoopExprIteratorType()->supportsParallel();
 
   // the loop was written as a serial loop expression, so no parallel
   // 'these' calls are allowed.
-  if (!serial && !supportsParallel)
-    return CallResolutionResult::getEmpty();
+  if (!serial && !supportsParallel) {
+    auto reason = TheseResolutionResult::THESE_FAIL_SERIAL_LOOP_EXPR;
+    return TheseResolutionResult::failure(reason, std::move(iterandType));
+  }
 
-  bool succeeded = true;
   auto inScopes = callScopeInfoForIterator(rc->context(), iterType, nullptr);
+  std::unique_ptr<TheseResolutionResult> failedZipResult = nullptr;
+  int index = -1;
   for (auto receiverType : zippered) {
-    auto c = resolveTheseCall(rc, astContext, receiverType,
-                              iterKind, followThis, inScopes);
+    index++;
 
-    if (c.exprType().isUnknownOrErroneous() ||
-        !c.exprType().type()->isIteratorType()) {
-      succeeded = false;
+    auto tr = resolveTheseCall(rc, astContext, receiverType,
+                               iterKind, followThis, inScopes);
+
+    if (!tr) {
+      failedZipResult = std::make_unique<TheseResolutionResult>(std::move(tr));
       break;
     }
 
-    if (leaderOnly) return c;
+    if (leaderOnly) return tr;
   }
+  CHPL_ASSERT(index != -1);
 
-  if (!succeeded) {
-    return CallResolutionResult::getEmpty();
+  if (failedZipResult) {
+    return TheseResolutionResult::failure(std::move(failedZipResult), index, std::move(iterandType));
   }
 
   if (auto loopIt = iterType->toLoopExprIteratorType()) {
-    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
-                                loopIt->yieldType());
+    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
+                                   loopIt->yieldType());
+    return TheseResolutionResult::success(cr, std::move(iterandType));
   } else {
     CHPL_ASSERT(iterType->isPromotionIteratorType());
     auto promoIt = iterType->toPromotionIteratorType();
 
     auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
-    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
-                                scalarReturn);
+    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
+                                   scalarReturn);
+    return TheseResolutionResult::success(cr, std::move(iterandType));
   }
 }
 
-static CallResolutionResult
+static TheseResolutionResult
 resolveTheseCallForLoopIterator(ResolutionContext* rc,
                                 const AstNode* astContext,
                                 const LoopExprIteratorType* loopIt,
@@ -5811,7 +5838,7 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
                                               receiverTypes, iterKind, followThis);
 }
 
-static CallResolutionResult
+static TheseResolutionResult
 resolveTheseCallForPromotionIterator(ResolutionContext* rc,
                                      const AstNode* astContext,
                                      const PromotionIteratorType* promoIt,
@@ -5834,12 +5861,12 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
                                               receiverTypes, iterKind, followThis);
 }
 
-CallResolutionResult resolveTheseCall(ResolutionContext* rc,
-                                      const uast::AstNode* astContext,
-                                      const types::QualifiedType& receiverType,
-                                      uast::Function::IteratorKind iterKind,
-                                      const types::QualifiedType& followThis,
-                                      const CallScopeInfo& inScopes) {
+TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                       const uast::AstNode* astContext,
+                                       const types::QualifiedType& receiverType,
+                                       uast::Function::IteratorKind iterKind,
+                                       const types::QualifiedType& followThis,
+                                       const CallScopeInfo& inScopes) {
   // Handle 'these' on various iterator types, circumventing the normal
   // process (since we do not generate 'these' methods).
   if (receiverType.type()) {
@@ -5873,7 +5900,8 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      /* actuals */ std::move(actuals));
-  return resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
+  auto cr = resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
+  return callResolutionResultToTheseResolutionResult(cr, receiverType);
 }
 
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt) {

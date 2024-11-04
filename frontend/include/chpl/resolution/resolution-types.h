@@ -1976,6 +1976,95 @@ class CallResolutionResult {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+// The result of resolving a 'these' call. This contains more information
+// than a general call resolution result, because we can encode what threw off
+// the iteration (e.g., lack of a follower iterator)
+struct TheseResolutionResult {
+ public:
+  enum FailureReason {
+    THESE_SUCCESS = 0,
+    THESE_NOT_ATTEMPTED,
+    THESE_FAIL_NO_LOOP_EXPR_STANDALONE,
+    THESE_FAIL_NO_PROMO_STANDALONE,
+    THESE_FAIL_SERIAL_LOOP_EXPR,
+    THESE_FAIL_NO_ITERATOR_WITH_TAG,
+    THESE_FAIL_LEADER_FOLLOWER_MISMATCH,
+    THESE_FAIL_ZIPPERED_ARG_FAILED,
+  };
+
+ private:
+  FailureReason reason_;
+  CallResolutionResult callResult_;
+  std::unique_ptr<TheseResolutionResult> zipperedFailure_ = nullptr;
+  int zipperedFailureIndex_ = -1;
+  types::QualifiedType iterandType_;
+
+  TheseResolutionResult(FailureReason reason,
+                        CallResolutionResult callResult,
+                        std::unique_ptr<TheseResolutionResult> zipperedResult,
+                        int zipperedResultIndex,
+                        types::QualifiedType iterandType)
+    : reason_(reason),
+      callResult_(std::move(callResult)),
+      zipperedFailure_(std::move(zipperedResult)),
+      zipperedFailureIndex_(zipperedResultIndex),
+      iterandType_(std::move(iterandType)) {}
+
+ public:
+  TheseResolutionResult() : reason_(THESE_NOT_ATTEMPTED) {}
+  TheseResolutionResult(TheseResolutionResult&& other) = default;
+  TheseResolutionResult& operator=(TheseResolutionResult&& other) = default;
+
+  // Needed because we copy error messages, which can contain 'TheseResolutionResults'.
+  TheseResolutionResult(const TheseResolutionResult& other)
+    : reason_(other.reason_),
+      callResult_(other.callResult_),
+      iterandType_(other.iterandType_) {
+    if (other.zipperedFailure_) {
+      zipperedFailure_ = toOwned(new TheseResolutionResult(*other.zipperedFailure_));
+    }
+  }
+
+  static TheseResolutionResult success(CallResolutionResult callResult, types::QualifiedType iterandType) {
+    return TheseResolutionResult(THESE_SUCCESS, std::move(callResult), nullptr, -1, std::move(iterandType));
+  }
+  static TheseResolutionResult failure(FailureReason reason, types::QualifiedType iterandType, CallResolutionResult result = CallResolutionResult()) {
+    return TheseResolutionResult(reason, std::move(result), nullptr, -1, std::move(iterandType));
+  }
+  static TheseResolutionResult failure(std::unique_ptr<TheseResolutionResult> zipperedFailure, int zipperedResultIndex, types::QualifiedType iterandType) {
+    return TheseResolutionResult(THESE_FAIL_ZIPPERED_ARG_FAILED, CallResolutionResult(), std::move(zipperedFailure), zipperedResultIndex, std::move(iterandType));
+  }
+
+  operator bool() const { return reason_ == THESE_SUCCESS; }
+
+  bool operator==(const TheseResolutionResult& other) const {
+    return reason_ == other.reason_ &&
+           callResult_ == other.callResult_ &&
+           zipperedFailure_ == other.zipperedFailure_ &&
+           zipperedFailureIndex_ == other.zipperedFailureIndex_;
+  }
+
+  bool operator!=(const TheseResolutionResult& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    (void) reason_; // nothing to mark
+    /* chpl::mark<decltype(callResult_)>{}(context, callResult_); */
+    if (zipperedFailure_) zipperedFailure_->mark(context);
+  }
+
+  size_t hash() const {
+    return chpl::hash(reason_, /* TODO callResult_ */ 0, zipperedFailure_, zipperedFailureIndex_);
+  }
+
+  FailureReason reason() const { return reason_; }
+  const CallResolutionResult& callResult() const { return callResult_; }
+  const TheseResolutionResult* zipperedFailure() const { return zipperedFailure_.get(); }
+  int zipperedFailureIndex() const { return zipperedFailureIndex_; }
+  const types::QualifiedType& iterandType() const { return iterandType_; }
+};
+
 /**
 
   When resolving calls like f(), we need three scopes to search.
@@ -2949,6 +3038,7 @@ CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
+CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std
