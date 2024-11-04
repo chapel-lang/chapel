@@ -220,6 +220,8 @@ struct ReturnInferenceSubFrame {
 struct ReturnInferenceFrame {
   const AstNode* scopeAst = nullptr;
   bool returnsOrThrows = false;
+  bool breaks = false;
+  bool continues = false;
   std::vector<ReturnInferenceSubFrame> subFrames;
 
   ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
@@ -270,6 +272,9 @@ struct ReturnTypeInferrer {
   bool markReturnOrThrow();
   bool hasReturnedOrThrown();
 
+  bool hasHitBreak();
+  bool hasHitBreakOrContinue();
+
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
 
@@ -278,6 +283,15 @@ struct ReturnTypeInferrer {
 
   bool enter(const Select* sel, RV& rv);
   void exit(const Select* sel, RV& rv);
+
+  bool enter(const For* forLoop, RV& rv);
+  void exit(const For* forLoop, RV& rv);
+
+  bool enter(const Break* brk, RV& rv);
+  void exit(const Break* brk, RV& rv);
+
+  bool enter(const Continue* cont, RV& rv);
+  void exit(const Continue* cont, RV& rv);
 
   bool enter(const Return* ret, RV& rv);
   void exit(const Return* ret, RV& rv);
@@ -360,6 +374,8 @@ QualifiedType ReturnTypeInferrer::returnedType() {
                               (QualifiedType::Kind) returnIntent);
     if (!retType) {
       // Couldn't find common type, so return type is incorrect.
+      // TODO: replace with custom error class, and give more information about
+      // why we couldn't determine a return type
       context->error(fnAstForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
@@ -423,29 +439,44 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
   returnFrames.pop_back();
 
   bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
+  bool parentBreaks = poppingFrame->breaks;
+  bool parentContinues = poppingFrame->continues;
 
   if (poppingFrame->scopeAst->isLoop()) {
-    // Could have while true { break; return; }, so do not propagate
-    // returns.
-    parentReturnsOrThrows = false;
+    if (!(poppingFrame->scopeAst->isFor() &&
+          poppingFrame->scopeAst->toFor()->isParam())) {
+      // Do not propagate info from non-param loops, as we can't statically
+      // know what they'll do at runtime.
+      parentReturnsOrThrows = false;
+      parentBreaks = false;
+      parentContinues = false;
+    }
   }
 
   // Integrate sub-frame information.
   if (poppingFrame->subFrames.size() > 0) {
     bool allReturnOrThrow = true;
+    bool allBreak = true;
+    bool allContinue = true;
     bool allSkip = true;
     for (auto& subFrame : poppingFrame->subFrames) {
-      if (subFrame.skip) continue;
-      allSkip = false;
-
-      if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
-        allReturnOrThrow = false;
-        break;
+      if (subFrame.skip) {
+        continue;
+      } else {
+        allSkip = false;
       }
+
+      bool frameNonEmpty = subFrame.frame != nullptr;
+
+      allReturnOrThrow &= frameNonEmpty && subFrame.frame->returnsOrThrows;
+      allBreak &= frameNonEmpty && subFrame.frame->breaks;
+      allContinue &= frameNonEmpty && subFrame.frame->continues;
     }
 
     // If all subframes skipped, then there were no returns.
     parentReturnsOrThrows = !allSkip && allReturnOrThrow;
+    parentBreaks = !allSkip && allBreak;
+    parentContinues = !allSkip && allContinue;
   }
 
   if (returnFrames.size() > 0) {
@@ -455,6 +486,9 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
     for (auto& subFrame : parentFrame->subFrames) {
       if (subFrame.astNode == node) {
+        CHPL_ASSERT(
+            !storedAsSubFrame &&
+            "should not be possible to store a frame as multiple sub-frames");
         subFrame.frame = std::move(poppingFrame);
         storedAsSubFrame = true;
       }
@@ -462,6 +496,11 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
 
     if (!storedAsSubFrame) {
       parentFrame->returnsOrThrows |= parentReturnsOrThrows;
+      if (!poppingFrame->scopeAst->isLoop()) {
+        // propagate break/continue only up to the enclosing loop
+        parentFrame->breaks |= parentBreaks;
+        parentFrame->continues |= parentContinues;
+      }
     }
   }
 }
@@ -477,6 +516,18 @@ bool ReturnTypeInferrer::markReturnOrThrow() {
 bool ReturnTypeInferrer::hasReturnedOrThrown() {
   if (returnFrames.empty()) return false;
   return returnFrames.back()->returnsOrThrows;
+}
+
+bool ReturnTypeInferrer::hasHitBreak() {
+  if (returnFrames.empty()) return false;
+  auto& topFrame = returnFrames.back();
+  return topFrame->breaks;
+}
+
+bool ReturnTypeInferrer::hasHitBreakOrContinue() {
+  if (returnFrames.empty()) return false;
+  auto& topFrame = returnFrames.back();
+  return topFrame->breaks || topFrame->continues;
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
@@ -563,7 +614,54 @@ void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
   exitScope(sel);
 }
 
+bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
+  enterScope(forLoop);
+
+  if (forLoop->isParam()) {
+    // For param loops, "unroll" by manually traversing each iteration.
+    const ResolvedExpression& rr = rv.byAst(forLoop);
+    const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+    CHPL_ASSERT(resolvedLoop);
+
+    for (auto loopBody : resolvedLoop->loopBodies()) {
+      RV loopVis(rv.rc(), forLoop, rv.userVisitor(), loopBody);
+      for (const AstNode* child : forLoop->children()) {
+        child->traverse(loopVis);
+      }
+
+      if (hasHitBreak() || hasReturnedOrThrown()) {
+        // Stop processing subsequent loop bodies after a return or break
+        // statement; they're never reached.
+        break;
+      }
+    }
+
+    return false;
+  } else {
+    return true;
+  }
+}
+void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
+  exitScope(forLoop);
+}
+
+bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->breaks = true;
+  return false;
+}
+void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
+bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
+  CHPL_ASSERT(!returnFrames.empty());
+  returnFrames.back()->continues = true;
+  return false;
+}
+void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
+
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
+  // Ignore subsequent returns after a break or continue statement.
+  if (hasHitBreakOrContinue()) return false;
+
   if (markReturnOrThrow()) {
     // If it's statically known that we've already encountered a return
     // we can safely ignore subsequent returns.
