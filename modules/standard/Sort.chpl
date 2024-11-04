@@ -329,27 +329,6 @@ module Sort {
   private use Reflection;
   private use CTypes;
 
-/* Module-defined comparators */
-
-/*
-  Instance of :record:`DefaultComparator` used as default ``comparator=``
-  argument when no comparator is passed to a sort function
-*/
-@deprecated("The variable 'defaultComparator' is now deprecated, please create a new instance of the :record:`DefaultComparator` type instead.")
-const defaultComparator: DefaultComparator = new DefaultComparator();
-
-
-/*
-   Instance of :record:`ReverseComparator` that reverses the default comparator.
-
-   Pass this as the ``comparator=`` argument of a sort function to reverse the
-   default sort order.
-
- */
-@deprecated("The variable 'reverseComparator' is now deprecated, please create a new instance of the :type:`ReverseComparator` type reversing the :type:`DefaultComparator` instead.")
-const reverseComparator: ReverseComparator(DefaultComparator) =
-  new ReverseComparator();
-
 /* Private methods */
 
 private inline
