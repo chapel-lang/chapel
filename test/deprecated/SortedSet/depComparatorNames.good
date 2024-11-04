@@ -1,0 +1,1 @@
+depComparatorNames.chpl:2: warning: The 'DefaultComparator' record has been renamed to defaultComparator, please use that name instead

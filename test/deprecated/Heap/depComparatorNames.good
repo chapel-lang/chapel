@@ -1,0 +1,2 @@
+depComparatorNames.chpl:2: warning: The 'DefaultComparator' record has been renamed to defaultComparator, please use that name instead
+depComparatorNames.chpl:3: warning: The 'ReverseComparator' record has been renamed to reverseComparator, please use that name instead
