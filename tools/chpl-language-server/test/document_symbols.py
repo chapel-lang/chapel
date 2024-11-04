@@ -168,6 +168,8 @@ async def test_document_symbols_exprs(client: LanguageClient):
         "const e = for 1..10 do 1;",
         "const f = {(1 + 2)..<10};",
         "const g = -f.size;",
+        "const h = new R();",
+        "const i = new owned C();",
     ]
     file = "\n".join(exprs)
 

@@ -190,6 +190,8 @@ def _node_to_string(node: chapel.AstNode, sep="") -> List[Component]:
         return _range_to_string(node)
     elif isinstance(node, chapel.Block):
         return _list_to_string(node.stmts(), sep)
+    elif isinstance(node, chapel.New):
+        return _new_to_string(node)
 
     return [Component(ComponentTag.PLACEHOLDER, None)]
 
@@ -460,3 +462,14 @@ def _indexable_loop_to_string(loop: chapel.IndexableLoop) -> List[Component]:
     comps.extend(_node_to_string(loop.body()))
 
     return comps
+
+
+def _new_to_string(new: chapel.New) -> List[Component]:
+    """
+    Convert a new expression to a string
+    """
+    mng = new.management()
+    if mng != "" and mng != "default":
+        mng = mng + " "
+    type_ = _node_to_string(new.type_expression())
+    return [_wrap_str("new "), _wrap_str(mng)] + type_
