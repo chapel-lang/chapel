@@ -535,8 +535,8 @@ def register_rules(driver: LintDriver):
         """
         if isinstance(root, Comment):
             return
-
-        prev, prevloop = None, None
+        prev = []
+        fix = None
         for child in root:
             if isinstance(child, Comment):
                 continue
@@ -544,24 +544,25 @@ def register_rules(driver: LintDriver):
                 continue
             yield from MisleadingIndentation(context, child)
 
-            if prev is not None:
-                loc = child.location()
-                prev_loc = prev.location()
-                if loc.start()[1] == prev_loc.start()[1]:
-                    yield AdvancedRuleResult(child, prevloop)
+            if prev and any(p.location().start()[1] == child.location().start()[1] for p in prev):
+                yield AdvancedRuleResult(child, fix)
 
-            prev, prevloop = None, None
-            if isinstance(child, Loop) and child.block_style() == "implicit":
-                grandchildren = list(child)
-                # safe to access [-1], loops must have at least 1 child
-                for blockchild in reversed(list(grandchildren[-1])):
-                    if isinstance(blockchild, Comment):
-                        continue
-                    if might_incorrectly_report_location(blockchild):
-                        continue
-                    prev = blockchild
-                    prevloop = child
-                    break
+            prev = []
+            fix = append_nested_single_stmt(child, prev)
+
+    def append_nested_single_stmt(node, prev: List[AstNode]):
+        if (isinstance(node, Loop)) and node.block_style() == "implicit":
+            children = list(node)
+            # safe to access [-1], loops or on stmt must have at least 1 child
+            for blockchild in reversed(list(children[-1])):
+                if isinstance(blockchild, Comment):
+                    continue
+                if might_incorrectly_report_location(blockchild):
+                    continue
+                prev.append(blockchild)
+                append_nested_single_stmt(blockchild, prev)
+                return node # Return the outermost loop to use an anchor
+        return None
 
     @driver.fixit(MisleadingIndentation)
     def FixMisleadingIndentation(context: Context, result: AdvancedRuleResult):
@@ -912,7 +913,7 @@ def register_rules(driver: LintDriver):
                 # MisleadingIndentation
                 if not (
                     prev
-                    and isinstance(prev, Loop)
+                    and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
                     yield child
