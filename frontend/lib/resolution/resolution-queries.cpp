@@ -3761,9 +3761,10 @@ static bool resolveFnCallSpecial(Context* context,
         exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
         return true;
       }
-    } else if (!srcQt.isParam() && srcTy->isEnumType() && isDstType &&
+    } else if (!srcQt.isParam() &&
+               (srcTy->isEnumType() || srcTy->isStringType()) && isDstType &&
                dstTy->isStringType()) {
-      // non-param enum to string cast
+      // supported non-param casts to string
       exprTypeOut =
           QualifiedType(QualifiedType::VAR, RecordType::getStringType(context));
       return true;
