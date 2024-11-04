@@ -544,7 +544,10 @@ def register_rules(driver: LintDriver):
                 continue
             yield from MisleadingIndentation(context, child)
 
-            if prev and any(p.location().start()[1] == child.location().start()[1] for p in prev):
+            if prev and any(
+                p.location().start()[1] == child.location().start()[1]
+                for p in prev
+            ):
                 yield AdvancedRuleResult(child, fix)
 
             prev = []
@@ -561,7 +564,7 @@ def register_rules(driver: LintDriver):
                     continue
                 prev.append(blockchild)
                 append_nested_single_stmt(blockchild, prev)
-                return node # Return the outermost loop to use an anchor
+                return node  # Return the outermost loop to use an anchor
         elif isinstance(node, On) and node.block_style() == "implicit":
             for stmt in node.stmts():
                 if isinstance(stmt, Comment):
@@ -570,7 +573,7 @@ def register_rules(driver: LintDriver):
                     continue
                 prev.append(stmt)
                 append_nested_single_stmt(stmt, prev)
-                return node # Return the outermost on to use an anchor
+                return node  # Return the outermost on to use an anchor
         # Should we also check for Conditionals here?
         return None
 
@@ -720,7 +723,6 @@ def register_rules(driver: LintDriver):
         uses = set()
 
         for tq, _ in chapel.each_matching(root, TypeQuery):
-
             typequeries[tq.unique_id()] = tq
 
         for use, _ in chapel.each_matching(root, Identifier):
