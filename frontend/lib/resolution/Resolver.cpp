@@ -5088,8 +5088,6 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
 
   std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
 
-  debuggerBreakHere();
-
   // Get the leader actual.
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
     auto iterandQt = rv.byPostorder.byAst(leader).type();
@@ -5185,7 +5183,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     }
   }
 
-  if (ret.isErroneousType() || failedOthers) {
+  if (!rv.scopeResolveOnly && (ret.isErroneousType() || failedOthers)) {
     // Emit a NonIterable error.
     ret = CHPL_TYPE_ERROR(context, NonIterable, loop, zip,
                           QualifiedType(), std::move(failures));
