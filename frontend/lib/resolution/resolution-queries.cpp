@@ -3681,6 +3681,7 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
+  gdbShouldBreakHere();
   // Sometimes, actual types can be unknown since we are checking for 'out'
   // intent. No special functions here use the 'out' intent, so in this case,
   // return false.
@@ -3761,6 +3762,12 @@ static bool resolveFnCallSpecial(Context* context,
         exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
         return true;
       }
+    } else if (!srcQt.isParam() && srcTy->isEnumType() && isDstType &&
+               dstTy->isStringType()) {
+      // non-param enum to string cast
+      exprTypeOut =
+          QualifiedType(QualifiedType::VAR, RecordType::getStringType(context));
+      return true;
     } else if (!isDstType) {
       // trying to cast to something that's not a type
       auto toName = tagToString(dstTy->tag());
