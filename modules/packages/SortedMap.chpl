@@ -33,13 +33,13 @@ module SortedMap {
   private use SortedSet;
   private use IO;
   import Sort.{relativeComparator};
-  public use Sort only DefaultComparator;
+  public use Sort only defaultComparator;
 
   // TODO: remove this module and its public use when the deprecations have been
   // removed
   pragma "ignore deprecated use"
   private module HideDeprecatedReexport {
-    public use Sort only defaultComparator;
+    public use Sort only DefaultComparator;
   }
 
   public use HideDeprecatedReexport;
@@ -106,7 +106,7 @@ module SortedMap {
     param parSafe = false;
 
     /* The comparator used to compare keys */
-    var comparator: record = new DefaultComparator();
+    var comparator: record = new defaultComparator();
 
     // TODO: Maybe we want something like record optional for this?
     @chpldoc.nodoc
@@ -151,7 +151,7 @@ module SortedMap {
       :arg comparator: The comparator used to compare keys.
     */
     proc init(type keyType, type valType, param parSafe = false,
-              comparator: record = new DefaultComparator()) {
+              comparator: record = new defaultComparator()) {
       _checkKeyType(keyType);
       _checkValType(valType);
 

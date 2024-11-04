@@ -194,7 +194,7 @@ module Treap {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, param parSafe = false,
-              comparator: record = new DefaultComparator()) {
+              comparator: record = new defaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -212,7 +212,7 @@ module Treap {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe = false,
-              comparator: record = new DefaultComparator())
+              comparator: record = new defaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkType(eltType);
 
