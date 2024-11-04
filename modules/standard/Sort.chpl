@@ -77,7 +77,7 @@ The :proc:`sort` function can accept a comparator argument, which defines how
 the data is sorted. If no comparator is passed, the default comparator is
 used.
 
-Reverse sorting is handled by the :record:`ReverseComparator`.
+Reverse sorting is handled by the :record:`reverseComparator`.
 See :ref:`Reverse Comparator<reverse-comparator>` for details.
 
 
@@ -280,15 +280,15 @@ Reverse Comparator
 Sort functions in Chapel do not have a ``reverse`` argument. Instead, reverse
 sorting is handled through the comparator interface.
 
-An instance of the type :record:`ReverseComparator` can be passed to a sort
+An instance of the type :record:`reverseComparator` can be passed to a sort
 function to reverse the default sorting order.
 
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
-  // Using module-defined 'ReverseComparator'
-  sort(Array, comparator = new ReverseComparator())
+  // Using module-defined 'reverseComparator'
+  sort(Array, comparator = new reverseComparator())
 
   // This will output: 3, 2, -1, -4
   writeln(Array);
@@ -296,7 +296,7 @@ function to reverse the default sorting order.
 
 To reverse the sort order of a user-defined comparator, pass the user-defined
 comparator to the initializer of the module-defined
-:record:`ReverseComparator` record, which can be passed to the sort function.
+:record:`reverseComparator` record, which can be passed to the sort function.
 
 For this example, we will reverse the absolute value comparison from above
 using the ``relativeComparator`` interface, although the same can be done with
@@ -314,7 +314,7 @@ the ``keyComparator`` interface.
     return abs(x) - abs(y); // ascending order
   }
 
-  var absReverseComparator: ReverseComparator(absComparator); // reverse order
+  var absReverseComparator: reverseComparator(absComparator); // reverse order
 
   sort(Array, comparator=absReverseComparator);
 
@@ -498,7 +498,7 @@ private proc chpl_check_comparator_helper(comparator,
   }
 
   if comparator.type == defaultComparator {}
-  else if isSubtype(comparator.type, ReverseComparator) {
+  else if isSubtype(comparator.type, reverseComparator) {
     return chpl_check_comparator_helper(comparator.comparator, data, eltType, errorDepth+1);
   }
   // Check for valid comparator methods
@@ -3995,8 +3995,11 @@ record defaultComparator: keyPartComparator {
 }
 
 /* Reverse comparator built from another comparator.*/
-@unstable("'ReverseComparator' is unstable and will have its name changed in the future")
-record ReverseComparator: keyPartComparator {
+@deprecated("The 'ReverseComparator' record has been renamed to :record:`reverseComparator`, please use that name instead")
+type ReverseComparator = reverseComparator;
+
+/* Reverse comparator built from another comparator.*/
+record reverseComparator: keyPartComparator {
 
   /* Generic comparator defined in initializer.*/
   var comparator;
@@ -4025,10 +4028,10 @@ record ReverseComparator: keyPartComparator {
    Copy Initializer - builds a comparator that's a copy of
    its argument.
 
-   :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
+   :arg revcomp: :ref:`reverseComparator <reverse-comparator>` to copy.
    */
   @chpldoc.nodoc
-  proc init=(revcomp: ReverseComparator(?)) {
+  proc init=(revcomp: reverseComparator(?)) {
     this.comparator = revcomp.comparator;
   }
 
