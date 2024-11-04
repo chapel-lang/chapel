@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
-/* A library for interfacing with Python from Chapel code.
+/* Library for interfacing with Python from Chapel code.
 
-  TODO: docs about this library
+
 
   To build Chapel code that uses this module, you will need to include the Python
   header files and link against the Python library. This can be done by setting
@@ -39,7 +39,7 @@
 
   TODO: example codes
 */
-@unstable("Python is unstable")
+@unstable("The Python module's interface is under active development and may change")
 module Python {
   private use CTypes;
   private import List;
@@ -49,22 +49,14 @@ module Python {
   private use CWChar;
   private use OS.POSIX only getenv;
 
-  // interface typeConverter {
-  //   proc Self.type_(type t) type { return nothing; }
-  //   proc Self.handlesType(type t)param : bool { return Self.type_(t) != nothing; }
-  //   proc Self.toPython(value: T): c_ptr(void) throws;
-  //   proc Self.fromPython(obj: c_ptr(void)): T throws;
-  // }
-
-  private inline proc checkPyStatus(in status: PyStatus) throws {
-    if PyStatus_Exception(status) {
-      var str = string.createCopyingBuffer(status.err_msg);
-      throw new Exception(str);
-    }
-  }
-
   /*
-    There should only be one interpreter per program, it should be owned
+    Represents the python interpreter. All code using the Python module should
+    create and maintain a single instance of this class.
+
+    .. warning::
+
+       Multiple/sub interpreters are not yet supported.
+       Do not create more than one instance of this class.
   */
   class Interpreter {
     @chpldoc.nodoc
@@ -121,7 +113,10 @@ module Python {
       Py_Finalize();
     }
     /*
-      Run a string of python code
+      Run a string of python code.
+
+      This function will just run the code, it cannot be passed arguments or
+      return values.
     */
     proc run(code: string) throws {
       PyRun_SimpleString(code.c_str());
@@ -129,7 +124,12 @@ module Python {
     }
 
     /*
-      Register a custom type converter
+      Register a custom :type:`TypeConverter` with the interpreter. This allows
+      arbitrary Chapel types to be serialized/deserialized to and from Python
+      objects.
+
+      The registered converter will take precedence over the default converters,
+      allowing users to override the default behavior.
     */
     proc registerConverter(in cvt: owned TypeConverter) {
       converters.pushBack(cvt);
@@ -145,7 +145,7 @@ module Python {
       var globals = chpl_PyEval_GetFrameGlobals();
       // create a globals if it doesn't exist
       if !globals {
-        globals = Py_BuildValue("{}"); // TODO: I need to decrement this?
+        globals = Py_BuildValue("{}"); // TODO: need to decrement this?
       }
       // this is the equivalent of `eval(compile(l, '<string>', 'eval'))`
       // we can also do `Py_CompileString` -> `PyFunction_New`?
@@ -156,7 +156,12 @@ module Python {
     }
 
     /*
-      Query to see if an exception has occurred, it will print the exception and halt
+      Query to see if an Python exception has occurred. If there is an
+      exception, the Python exception will be thrown as a :type:`Exception`.
+
+      This method should be called after any Python API call that may fail.
+      The wrapping types in this module will call this method automatically,
+      most users should not need to call this method directly.
     */
     inline proc checkException() throws {
       var ptype, pvalue, ptraceback: c_ptr(void);
@@ -171,9 +176,12 @@ module Python {
     }
 
     /*
-      Convert a Chapel value to a python object
+      Convert a Chapel value to a python object. This clones the Chapel value.
 
-      Note: unless you are writing a custom type converter, you probably don't need to use this
+      .. note::
+
+         Most users should not need to call this directly, except when writing
+         a :type:`TypeConverter`.
     */
     proc toPython(val: ?t): c_ptr(void) throws {
       for converter in this.converters {
@@ -184,6 +192,10 @@ module Python {
       // if no converter is found, use the defaults
       if isIntType(t) {
         var v = Py_BuildValue("i", val);
+        this.checkException();
+        return v;
+      } else if isUintType(t) {
+        var v = Py_BuildValue("I", val);
         this.checkException();
         return v;
       } else if isRealType(t) {
@@ -222,9 +234,12 @@ module Python {
     }
 
     /*
-      Convert a python object to a Chapel value
+      Convert a Python object to a Chapel value. This clones the Python value.
 
-      Note: unless you are writing a custom type converter, you probably don't need to use this
+      .. note::
+
+         Most users should not need to call this directly, except when writing
+         a :type:`TypeConverter`.
     */
     proc fromPython(type t, obj: c_ptr(void)): t throws {
       for converter in this.converters {
@@ -235,6 +250,10 @@ module Python {
       // if no converter is found, use the defaults
       if isIntType(t) {
         var v = PyLong_AsLong(obj);
+        this.checkException();
+        return v: t; // cast to the real type
+      } if isUintType(t) {
+        var v = PyLong_AsUnsignedLong(obj);
         this.checkException();
         return v: t; // cast to the real type
       } else if isRealType(t) {
@@ -383,11 +402,24 @@ module Python {
   }
 
   /*
-    Represents a python error
+    Represents a Python exception.
   */
   class Exception: Error {
+    /*
+      Creates a new exception with the given message.
+    */
     proc init(in message: string) {
       super.init(message);
+    }
+  }
+
+  /*
+    Helper error checking function for python initialization functions
+  */
+  private inline proc checkPyStatus(in status: PyStatus) throws {
+    if PyStatus_Exception(status) {
+      var str = string.createCopyingBuffer(status.err_msg);
+      throw new Exception(str);
     }
   }
 
@@ -405,31 +437,47 @@ module Python {
   //                        obj: c_ptr(void)): T throws;
   // }
 
+  /*
+    Base class for Chapel/Python type converters.
+
+    To create a custom type converter, subclass this class and implement the
+    :proc:`handlesType`, :proc:`toPython`, and :proc:`fromPython` methods.
+    Then register an instance of this class with the interpreter by calling
+    :proc:`Interpreter.registerConverter`.
+  */
   class TypeConverter {
+    /*
+      Check if the converter can handle the given Chapel type.
+
+      This method should return true if the converter can handle the given type,
+      and false otherwise.
+    */
     proc handlesType(type T): bool {
       return false;
     }
+    /*
+      Convert a Chapel value to a Python object.
+
+      This method should convert the Chapel value to a Python object and return
+      the :type:`~CTypes.c_ptr` to the underlying Python object.
+
+      The :proc:`Interpreter.toPython` method will call this method.
+    */
     proc toPython(interpreter: borrowed Interpreter, type T, value: T): c_ptr(void) throws {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
+    /*
+      Convert a Python object to a Chapel value.
+
+      This method should convert the Python object to a Chapel value and return
+      the Chapel value.
+
+      The :proc:`Interpreter.fromPython` method will call this method.
+    */
     proc fromPython(interpreter: borrowed Interpreter, type T, obj: c_ptr(void)): T throws {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
-    }
-  }
-
-
-  /*
-    Represents the Global Interpreter Lock, this is used to ensure that only one thread is executing python code at a time
-  */
-  record GIL {
-    var state: PyGILState_STATE;
-    proc init() {
-      state = PyGILState_Ensure();
-    }
-    proc deinit() {
-      PyGILState_Release(state);
     }
   }
 
@@ -456,28 +504,45 @@ module Python {
   // TODO: implement operators as dunder methods
 
   /*
-    Represents a python module
+    Represents a Python module.
   */
   class Module {
+    @chpldoc.nodoc
     var modName: string;
+    @chpldoc.nodoc
     var mod: owned PyObject;
+
+    /*
+      Import a Python module by name.
+    */
     proc init(interpreter: borrowed Interpreter, in modName: string) throws {
       this.modName = modName;
       this.mod = new PyObject(interpreter, PyImport_ImportModule(modName.c_str()));
       init this;
       this.mod.check();
     }
+    /*
+      Get the interpreter associated with this module.
+    */
     proc interpreter do return this.mod.interpreter;
-    proc str(): string throws {
-      return this.mod!.str();
-    }
+
+    /*
+      Returns the string representation of the object.
+      This is the same as casting to a string.
+
+      Equivalent to calling ``str(obj)`` in Python.
+    */
+    proc str(): string throws do return this.mod!.str();
+
   }
 
   /*
-    Represents a python function
+    Represents a Python function.
   */
   class Function {
+    @chpldoc.nodoc
     var fnName: string;
+    @chpldoc.nodoc
     var fn: owned PyObject?;
     proc init(mod: borrowed Module, in fnName: string) throws {
       this.fnName = fnName;
@@ -497,10 +562,18 @@ module Python {
       this.fn = interpreter.compileLambda(lambdaFn);
       this.fn!.check();
     }
+    /*
+      Get the interpreter associated with this function.
+    */
     proc interpreter do return this.fn!.interpreter;
-    proc str(): string throws {
-      return this.fn!.str();
-    }
+
+    /*
+      Returns the string representation of the object.
+      This is the same as casting to a string.
+
+      Equivalent to calling ``str(obj)`` in Python.
+    */
+    proc str(): string throws do return this.fn!.str();
 
     /*
       Call a python function with Chapel arguments and get a Chapel return value
@@ -519,12 +592,12 @@ module Python {
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
-
       return res;
     }
     proc this(type retType): retType throws {
       var pyRes = PyObject_CallNoArgs(this.fn!.get());
       interpreter.checkException();
+
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
@@ -547,13 +620,13 @@ module Python {
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
-
       return res;
     }
 
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.fn!.get(), attr.c_str());
       interpreter.checkException();
+
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
@@ -562,7 +635,7 @@ module Python {
 
 
   /*
-    Represents a python class type
+    Represents a Python class.
   */
   class Class {
     var className: string;
@@ -573,10 +646,18 @@ module Python {
       init this;
       this.cls.check();
     }
+    /*
+      Get the interpreter associated with this class.
+    */
     proc interpreter do return this.cls.interpreter;
-    proc str(): string throws {
-      return this.cls!.str();
-    }
+
+    /*
+      Returns the string representation of the object.
+      This is the same as casting to a string.
+
+      Equivalent to calling ``str(obj)`` in Python.
+    */
+    proc str(): string throws do return this.cls!.str();
 
     /*
       Create a new instance of a python class
@@ -596,25 +677,21 @@ module Python {
     proc newInstance(): owned PyObject throws {
       var pyRes = PyObject_CallNoArgs(this.cls.get());
       interpreter.checkException();
+
       return new PyObject(interpreter, pyRes);
     }
 
     /*
       Create a new instance of a python class
     */
-    proc this(args...): owned ClassObject throws {
-      return new ClassObject(this, (...args));
-    }
-    proc this(): owned ClassObject throws {
-      return new ClassObject(this);
-    }
-
+    proc this(args...): owned ClassObject throws do return new ClassObject(this, (...args));
+    proc this(): owned ClassObject throws do return new ClassObject(this);
 
   }
 
 
   /*
-    Represents a python value
+    Represents a Python class object.
   */
   class ClassObject {
     var cls: borrowed Class?;
@@ -636,10 +713,19 @@ module Python {
       init this;
       this.obj!.check();
     }
+    /*
+      Get the interpreter associated with this object.
+    */
     proc interpreter do return this.obj!.interpreter;
-    proc str(): string throws {
-      return this.obj!.str();
-    }
+
+    /*
+      Returns the string representation of the object.
+      This is the same as casting to a string.
+
+      Equivalent to calling ``str(obj)`` in Python.
+    */
+    proc str(): string throws do return this.obj!.str();
+
 
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.obj!.get(), attr.c_str());
@@ -666,7 +752,6 @@ module Python {
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
-
       return res;
     }
 
@@ -682,59 +767,196 @@ module Python {
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
-
       return res;
     }
     proc call(type retType, method: string): retType throws {
       var methodName = interpreter.toPython(method);
       var pyRes = PyObject_CallMethodNoArgs(this.obj!.get(), methodName);
       interpreter.checkException();
+
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
   }
 
+  /* Represents the python value 'None' */
+  record None {
+    /*
+      Returns the string representation of None.
+
+      Equivalent to calling ``str(None)`` in Python.
+    */
+    proc str(): string do return "None";
+  }
 
   /*
-    Represents a python object, it handles reference counting and is owned by default.
+    Represents the Global Interpreter Lock, this is used to ensure that only one
+    thread is executing python code at a time. Each thread should have its own
+    :type:`GIL` instance.
+
+    .. warning::
+
+       This is not thread safe, do not attempt to use the same instance from
+       multiple threads. This may cause a segfault or deadlock.
+  */
+  record GIL {
+    @chpldoc.nodoc
+    var state: PyGILState_STATE;
+    @chpldoc.nodoc
+    var acquired: bool;
+    /*
+      Acquires the GIL on record creation by default.
+      Set ``acquire`` to false to delay acquisition.
+    */
+    proc init(param acquire: bool = true) {
+      if acquire {
+        state = PyGILState_Ensure();
+        acquired = true;
+      } else {
+        acquired = false;
+      }
+    }
+    @chpldoc.nodoc
+    proc deinit() do release();
+
+    /*
+      Acquire the GIL. If the GIL is already acquired, this is a no-op.
+    */
+    proc acquire() {
+      if !acquired {
+        state = PyGILState_Ensure();
+        acquired = true;
+      }
+    }
+    /*
+      Release the GIL. If the GIL is not acquired, this is a no-op.
+
+      This method is called automatically when the record is destroyed.
+    */
+    proc release() {
+      if acquired {
+        PyGILState_Release(state);
+        acquired = false;
+      }
+    }
+  }
+
+  /*
+    Represents the current thread state. This saves and restores the current thread
+    state.
+
+    .. warning::
+
+       This is not thread safe, do not attempt to use the same instance from
+       multiple threads. This may cause a segfault or deadlock.
+  */
+  record threadState {
+    @chpldoc.nodoc
+    var state: c_ptr(void);
+    @chpldoc.nodoc
+    var saved: bool;
+    /*
+      Saves the current thread state on record creation by default.
+      Set ``save`` to true to save the thread state on object creation.
+    */
+    proc init(param save: bool = false) {
+      if save {
+        state = PyEval_SaveThread();
+        saved = true;
+      } else {
+        saved = false;
+      }
+    }
+    @chpldoc.nodoc
+    proc deinit() do release();
+
+    /*
+      Saves the current thread state. If the state is already saved, this is a no-op.
+    */
+    proc save() {
+      if !saved {
+        state = PyEval_SaveThread();
+        saved = true;
+      }
+    }
+    /*
+      Restores the thread state. If the state is not saved, this is a no-op.
+
+      This method is called automatically when the record is destroyed.
+    */
+    proc restore() {
+      if saved {
+        PyEval_RestoreThread(state);
+        saved = false;
+      }
+    }
+  }
+
+
+  /*
+    Represents a Python value, it handles reference counting and is owned by default.
 
     Most users should not need to use this directly.
   */
   class PyObject {
+    /*
+      The interpreter that this object is associated with.
+    */
     var interpreter: borrowed Interpreter;
+    @chpldoc.nodoc
     var obj: c_ptr(void);
+    @chpldoc.nodoc
     var isOwned: bool;
 
+    /*
+      Takes ownership of an existing Python object, pointed to by ``obj``
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
+      :arg isOwned: Whether this object owns the Python object. This is true by default.
+    */
     proc init(in interpreter: borrowed Interpreter, obj: c_ptr(void), isOwned: bool = true) {
       this.interpreter = interpreter;
       this.obj = obj;
       this.isOwned = isOwned;
     }
+    /*
+      Creates a new Python object from a Chapel value.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg value: The Chapel value to convert to a Python object.
+    */
     proc init(in interpreter: borrowed Interpreter, value: ?) {
       this.interpreter = interpreter;
       this.obj = toPython(interpreter, value);
       this.isOwned = true;
     }
+    @chpldoc.nodoc
     proc deinit() {
       if this.isOwned then
         Py_DECREF(this.obj);
     }
-    @chpldoc.nodoc
-    proc incrementRC() {
-      Py_INCREF(this.obj);
-    }
-    proc check() throws {
-      // if obj == nil {
-      //   throw new Exception("Failed to get object");
-      // }
-      this.interpreter.checkException();
-    }
-    proc get() {
-      return this.obj;
-    }
+    proc check() throws do this.interpreter.checkException();
+    /*
+      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
+    */
+    proc get() do return this.obj;
+
+    /*
+      Returns the Chapel value of the object.
+
+      This is a shortcut for calling :proc:`Interpreter.fromPython` on this object.
+    */
     proc value(type value) {
       return interpreter.fromPython(value, this.obj);
     }
+
+    /*
+      Returns the string representation of the object.
+      This is the same as casting to a string.
+
+      Equivalent to calling ``str(obj)`` in Python.
+    */
     proc str(): string throws {
       var pyStr = PyObject_Str(this.obj);
       interpreter.checkException();
@@ -743,46 +965,53 @@ module Python {
     }
   }
 
-  /* Represents the python value 'None' */
-  record None {
-    proc str(): string {
-      return "None";
-    }
-  }
-
+  /*
+    Casts a Chapel value to a Python object.
+    This is the equivalent of calling ``obj.str()`` in Chapel code.
+  */
+  @chpldoc.nodoc
   operator:(v, type t: string): string throws
     where isSubtype(v.type, PyObject) || isSubtype(v.type, Module) ||
           isSubtype(v.type, Class) || isSubtype(v.type, Function) ||
           isSubtype(v.type, ClassObject) || isSubtype(v.type, None) {
     return v.str();
   }
+
   // PyObject intentionally does not have a serialize method
   // its meant to be an implementation detail and not used directly
   Module implements writeSerializable;
+  Function implements writeSerializable;
+  Class implements writeSerializable;
+  ClassObject implements writeSerializable;
+  None implements writeSerializable;
+
+  @chpldoc.nodoc
   override proc Module.serialize(writer, ref serializer) throws do
     writer.write(this:string);
-  Function implements writeSerializable;
+  @chpldoc.nodoc
   override proc Function.serialize(writer, ref serializer) throws do
     writer.write(this:string);
-  Class implements writeSerializable;
+  @chpldoc.nodoc
   override proc Class.serialize(writer, ref serializer) throws do
     writer.write(this:string);
-  ClassObject implements writeSerializable;
+  @chpldoc.nodoc
   override proc ClassObject.serialize(writer, ref serializer) throws do
     writer.write(this:string);
-  None implements writeSerializable;
+  @chpldoc.nodoc
   proc None.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
   module CWChar {
     require "wchar.h";
+    extern "wchar_t" type c_wchar;
     private use CTypes;
 
-    extern "wchar_t" type c_wchar;
-    extern proc mbstowcs(dest: c_ptr(c_wchar), src: c_ptrConst(c_char), n: c_size_t): c_size_t;
-
+    /*
+      Convert a Chapel string to a `wchar_t*`, this is the same as `.c_str()`
+    */
     proc string.c_wstr(): c_ptr(c_wchar) {
+      extern proc mbstowcs(dest: c_ptr(c_wchar), src: c_ptrConst(c_char), n: c_size_t): c_size_t;
       var len = this.size;
       var buf = allocate(c_wchar, len + 1, clear=true);
       mbstowcs(buf, this.c_str(), len);
