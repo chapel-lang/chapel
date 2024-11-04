@@ -463,6 +463,7 @@ def _indexable_loop_to_string(loop: chapel.IndexableLoop) -> List[Component]:
 
     return comps
 
+
 def _new_to_string(new: chapel.New) -> List[Component]:
     """
     Convert a new expression to a string
