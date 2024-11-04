@@ -571,8 +571,7 @@ def register_rules(driver: LintDriver):
             prev.append(stmt)
             append_nested_single_stmt(stmt, prev)
             return node  # Return the outermost on to use an anchor
-        
-        # Should we also check for Conditionals here?
+
         return None
 
     @driver.fixit(MisleadingIndentation)
