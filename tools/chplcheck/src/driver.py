@@ -104,7 +104,10 @@ class LintDriver:
 
         return True
 
-    def _has_internal_name(self, node: chapel.AstNode):
+    def has_internal_prefix(self, node: chapel.AstNode) -> bool:
+        """
+        Check if a node has a name that starts with one of the internal prefixes.
+        """
         if not hasattr(node, "name"):
             return False
         return any(
@@ -256,7 +259,10 @@ class LintDriver:
         for ast in asts:
             for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
                 for toreport in self._check_rule(context, ast, rule):
-                    if self._has_internal_name(toreport[0]):
+                    if (
+                        not self.config.check_internal_prefixes
+                        and self.has_internal_prefix(toreport[0])
+                    ):
                         continue
 
                     yield toreport

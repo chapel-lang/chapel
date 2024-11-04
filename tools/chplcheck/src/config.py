@@ -32,6 +32,7 @@ class Config:
     enabled_rules: List[str]
     skip_unstable: bool
     internal_prefixes: List[str]
+    check_internal_prefixes: bool
     add_rules: List[str]
 
     @classmethod
@@ -65,6 +66,13 @@ class Config:
             help="Add a prefix to the list of internal prefixes used when linting",
         )
         parser.add_argument(
+            f"--{prefix}check-internal-prefix",
+            action="append",
+            dest="chplcheck_check_internal_prefixes",
+            default=False,
+            help="Check symbols with internal prefixes when linting",
+        )
+        parser.add_argument(
             f"--{prefix}add-rules",
             action="append",
             dest="chplcheck_add_rules",
@@ -80,5 +88,6 @@ class Config:
             enabled_rules=args["chplcheck_enabled_rules"],
             skip_unstable=args["chplcheck_skip_unstable"],
             internal_prefixes=args["chplcheck_internal_prefixes"],
+            check_internal_prefixes=args["chplcheck_check_internal_prefixes"],
             add_rules=args["chplcheck_add_rules"],
         )

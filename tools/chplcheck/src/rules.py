@@ -113,26 +113,38 @@ def fixit_remove_unused_node(
     return None
 
 
-def name_for_linting(context: Context, node: NamedDecl) -> str:
+def name_for_linting(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+) -> str:
     name = node.name()
 
     # Strip dollar signs.
     name = name.replace("$", "")
 
-    # TODO: thread `internal_prefixes` through to this and strip them for linting
+    # Strip internal prefixes.
+    for p in internal_prefixes:
+        if name.startswith(p):
+            name = name[len(p) :]
+            break
 
     return name
 
 
-def check_camel_case(context: Context, node: NamedDecl):
+def check_camel_case(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+):
     return re.fullmatch(
-        r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?", name_for_linting(context, node)
+        r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?",
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
-def check_pascal_case(context: Context, node: NamedDecl):
+def check_pascal_case(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+):
     return re.fullmatch(
-        r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
+        r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?",
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
@@ -147,9 +159,10 @@ def register_rules(driver: LintDriver):
             return True
         if node.linkage() == "extern":
             return True
-        return check_camel_case(context, node) or check_pascal_case(
-            context, node
-        )
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(
+            context, node, internal_prefixes
+        ) or check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context: Context, node: Record):
@@ -157,7 +170,8 @@ def register_rules(driver: LintDriver):
         Warn for records that are not 'camelCase'.
         """
 
-        return check_camel_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context: Context, node: Function):
@@ -177,7 +191,8 @@ def register_rules(driver: LintDriver):
         if node.name() == "init=":
             return True
 
-        return check_camel_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Class)
     def PascalCaseClasses(context: Context, node: Class):
@@ -185,7 +200,8 @@ def register_rules(driver: LintDriver):
         Warn for classes that are not 'PascalCase'.
         """
 
-        return check_pascal_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context: Context, node: Module):
@@ -193,7 +209,10 @@ def register_rules(driver: LintDriver):
         Warn for modules that are not 'PascalCase'.
         """
 
-        return node.kind() == "implicit" or check_pascal_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return node.kind() == "implicit" or check_pascal_case(
+            context, node, internal_prefixes
+        )
 
     @driver.basic_rule(Module, default=False)
     def UseExplicitModules(_, node: Module):
