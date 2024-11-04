@@ -551,9 +551,9 @@ def register_rules(driver: LintDriver):
             fix = append_nested_single_stmt(child, prev)
 
     def append_nested_single_stmt(node, prev: List[AstNode]):
-        if (isinstance(node, Loop)) and node.block_style() == "implicit":
+        if isinstance(node, Loop) and node.block_style() == "implicit":
             children = list(node)
-            # safe to access [-1], loops or on stmt must have at least 1 child
+            # safe to access [-1], loops must have at least 1 child
             for blockchild in reversed(list(children[-1])):
                 if isinstance(blockchild, Comment):
                     continue
@@ -562,6 +562,16 @@ def register_rules(driver: LintDriver):
                 prev.append(blockchild)
                 append_nested_single_stmt(blockchild, prev)
                 return node # Return the outermost loop to use an anchor
+        elif isinstance(node, On) and node.block_style() == "implicit":
+            for stmt in node.stmts():
+                if isinstance(stmt, Comment):
+                    continue
+                if might_incorrectly_report_location(stmt):
+                    continue
+                prev.append(stmt)
+                append_nested_single_stmt(stmt, prev)
+                return node # Return the outermost on to use an anchor
+        # Should we also check for Conditionals here?
         return None
 
     @driver.fixit(MisleadingIndentation)

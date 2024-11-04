@@ -30,4 +30,55 @@ writeln(i);
           writeln("Hello, world!");
       var unrelated = "hi";
   }
+
+  on Locale[0] do
+    writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    on Locale[0] do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    for 1..10 do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        for 1..10 do
+          writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      on Locale[0] do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      on Locale[0] do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
 }

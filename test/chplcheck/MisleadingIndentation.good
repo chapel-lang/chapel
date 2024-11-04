@@ -3,4 +3,13 @@ MisleadingIndentation.chpl:13: node violates rule MisleadingIndentation
 MisleadingIndentation.chpl:18: node violates rule MisleadingIndentation
 MisleadingIndentation.chpl:23: node violates rule IncorrectIndentation
 MisleadingIndentation.chpl:24: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:34: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:39: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:44: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:49: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:54: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:61: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:68: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:74: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:80: node violates rule MisleadingIndentation
 [Success matching fixit for MisleadingIndentation]
