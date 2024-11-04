@@ -274,7 +274,7 @@ module DefaultSparse {
       }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique,
-                          new Sort.DefaultComparator());
+                          new Sort.defaultComparator());
 
       if _nnz == 0 {
 
