@@ -45,7 +45,6 @@ module Python {
   private import List;
   private import Map;
 
-  require "Python.h";
   private use CPythonInterface;
   private use CWChar;
   private use OS.POSIX only getenv;
@@ -143,7 +142,7 @@ module Python {
     */
     @chpldoc.nodoc
     proc compileLambda(l: string): owned PyObject throws {
-      var globals = PyEval_GetFrameGlobals();
+      var globals = chpl_PyEval_GetFrameGlobals();
       // create a globals if it doesn't exist
       if !globals {
         globals = Py_BuildValue("{}"); // TODO: I need to decrement this?
@@ -793,6 +792,8 @@ module Python {
 
   @chpldoc.nodoc
   module CPythonInterface {
+    require "Python.h";
+    require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
 
@@ -855,10 +856,7 @@ module Python {
       Global exec functions
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
-
-    //python 3.13 only
-    // extern proc PyEval_GetFrameGlobals(): c_ptr(void);
-    extern "PyEval_GetGlobals" proc PyEval_GetFrameGlobals(): c_ptr(void);
+    extern proc chpl_PyEval_GetFrameGlobals(): c_ptr(void);
 
 
     extern var Py_eval_input: c_int;
