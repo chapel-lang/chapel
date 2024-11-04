@@ -7,7 +7,7 @@ writeln(arr);
 
 var arr2: [0..15] int =
   [3, 2, 15, 2, 23, 5, 8, -2, 9, 3, 34, 100000, 26, 61, -1, 0];
-sort(arr2, new DefaultComparator(), false, true);
+sort(arr2, new defaultComparator(), false, true);
 writeln(arr2);
 
 var arr3: [0..15] int =

@@ -35,7 +35,7 @@ operator FacInt.>(a: FacInt, b: FacInt) {
   return a.n > b.n;
 }
 
-var fac = new sortedMap(int, FacInt, false, new DefaultComparator());
+var fac = new sortedMap(int, FacInt, false, new defaultComparator());
 
 for i in 1..15 {
   fac[i] = new FacInt(i: uint);

@@ -84,7 +84,7 @@ proc write_frequencies(data : string, size : int) {
     s = (f, e);
 
   // sort will sort starting at the tuple's first element.
-  sort(sorted, comparator=new ReverseComparator());
+  sort(sorted, comparator=new reverseComparator());
 
   const sum = data.size - size;
   for (f, e) in sorted do

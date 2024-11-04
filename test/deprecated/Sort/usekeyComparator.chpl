@@ -44,9 +44,9 @@ sort(arr, comparator=new (getComparator(2))());
 writeln("isSorted after ", isSorted(arr, comparator=new (getComparator(3))()));
 
 fillRandom(arr);
-writeln("isSorted before ", isSorted(arr, comparator=new ReverseComparator(new (getComparator(4))())));
-sort(arr, comparator=new ReverseComparator(new (getComparator(5))()));
-writeln("isSorted after ", isSorted(arr, comparator=new ReverseComparator(new (getComparator(6))())));
+writeln("isSorted before ", isSorted(arr, comparator=new reverseComparator(new (getComparator(4))())));
+sort(arr, comparator=new reverseComparator(new (getComparator(5))()));
+writeln("isSorted after ", isSorted(arr, comparator=new reverseComparator(new (getComparator(6))())));
 
 fillRandom(arr);
 writeln("isSorted before ", isSorted(arr, comparator=new (getComparator(7))()));

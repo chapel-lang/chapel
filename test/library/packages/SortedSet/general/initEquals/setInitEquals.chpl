@@ -5,7 +5,7 @@ use OsetTest;
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new sortedSet(eltType, false, new DefaultComparator());
+  var s1 = new sortedSet(eltType, false, new defaultComparator());
 
   for i in 1..testIters {
     var x = i:eltType;

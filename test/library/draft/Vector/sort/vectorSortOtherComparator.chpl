@@ -13,7 +13,7 @@ vec1.clear();
 
 // Try sorting the vector in reverse.
 var vec2: vector(int) = [8, 7, 6, 5, 1, 2, 3, 4];
-vec2.sort(new Sort.ReverseComparator());
+vec2.sort(new Sort.reverseComparator());
 writeln(vec2);
 vec2.clear();
 

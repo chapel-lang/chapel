@@ -15,7 +15,7 @@ const hi = 128;
 
 proc test() {
   var arr: [0..#hi] shared C?;
-  var s = new sortedSet(shared C?, false, new DefaultComparator());
+  var s = new sortedSet(shared C?, false, new defaultComparator());
 
   for i in 0..#hi do arr[i] = new shared C(i);
   for x in arr do s.add(x);

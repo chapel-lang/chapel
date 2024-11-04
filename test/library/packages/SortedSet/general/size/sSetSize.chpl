@@ -1,6 +1,6 @@
 use SortedSet;
 
-var oset = new sortedSet(int, false, new DefaultComparator());
+var oset = new sortedSet(int, false, new defaultComparator());
 for i in 1..10 {
   oset.add(i);
   writeln(oset.size);

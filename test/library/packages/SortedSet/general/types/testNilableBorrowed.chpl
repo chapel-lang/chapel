@@ -12,7 +12,7 @@ operator T.<(lhs: borrowed T?, rhs: borrowed T?) {
   return lhs!.dummy < rhs!.dummy;
 }
 
-var s = new sortedSet(borrowed T?, false, new DefaultComparator());
+var s = new sortedSet(borrowed T?, false, new defaultComparator());
 
 var a = new T();
 var b: borrowed T? = a.borrow();

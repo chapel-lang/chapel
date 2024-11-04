@@ -21,7 +21,7 @@ proc checkComparisonSort(n: int) {
   assert(isSorted(A[2..n/2]));
   assert(A[1] == n);
   assert(A[n] == 1);
-  assert(isSorted(A[n/2+1..n], new ReverseComparator()));
+  assert(isSorted(A[n/2+1..n], new reverseComparator()));
 }
 
 proc checkKeySort(n: int) {
@@ -32,7 +32,7 @@ proc checkKeySort(n: int) {
   assert(isSorted(A[2..n/2]));
   assert(A[1] == n);
   assert(A[n] == 1);
-  assert(isSorted(A[n/2+1..n], new ReverseComparator()));
+  assert(isSorted(A[n/2+1..n], new reverseComparator()));
 }
 
 checkComparisonSort(smallN);

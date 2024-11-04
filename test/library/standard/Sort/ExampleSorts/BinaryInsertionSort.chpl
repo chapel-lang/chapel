@@ -13,7 +13,7 @@ module BinaryInsertionSort {
        data is sorted.
    */
   proc binaryInsertionSort(ref Data: [?Dom] ?eltType,
-                           comparator:?rec = new DefaultComparator()) {
+                           comparator:?rec = new defaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -48,7 +48,7 @@ module BinaryInsertionSort {
   */
   private
   proc _binarySearchForLastOccurrence(Data: [?Dom], val,
-                                      comparator:?rec = new DefaultComparator(),
+                                      comparator:?rec = new defaultComparator(),
                                       in lo=Dom.low, in hi=Dom.high) {
     const stride = abs(Dom.stride): Dom.idxType;
 

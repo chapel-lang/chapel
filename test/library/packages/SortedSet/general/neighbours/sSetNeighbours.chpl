@@ -6,7 +6,7 @@ use Sort;
 config const testIters = 128;
 
 proc doTest(ref arr: [?d] int) {
-  var s1 = new sortedSet(int, false, new DefaultComparator());
+  var s1 = new sortedSet(int, false, new defaultComparator());
 
   for x in arr {
     s1.add(x);

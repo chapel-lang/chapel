@@ -6,8 +6,8 @@ use OsetTest;
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new sortedSet(eltType, false, new DefaultComparator());
-  var s2 = new sortedSet(eltType, false, new DefaultComparator());
+  var s1 = new sortedSet(eltType, false, new defaultComparator());
+  var s2 = new sortedSet(eltType, false, new defaultComparator());
 
   assert(s1.size == s2.size && s1.size == 0);
 
