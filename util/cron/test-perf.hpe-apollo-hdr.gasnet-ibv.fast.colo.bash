@@ -14,7 +14,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-ibv.fast.colo"
 
 source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
-perf_hpe_apollo_args="-performance-configs gn-ibv-fast:v,gn-ibv-fast-colo:v,gasnet-ibv.fast.colo-nopshm:v -perflabel ml- -startdate 09/04/24"
+perf_hpe_apollo_args="-performance-configs gn-ibv-fast:v,gn-ibv-fast-colo:v,gn-ibv.fast.colo-nopshm:v -perflabel ml- -startdate 09/04/24"
 
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX="0.90"
