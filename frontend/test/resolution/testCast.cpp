@@ -506,6 +506,41 @@ static void test45() {
   }
 }
 
+static void test46() {
+  printf("test46\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  // Param
+  {
+    context->advanceToNextRevision(false);
+    std::string program =
+      R"""(
+      param a = "asdf";
+      param x = a:string;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    ensureParamString(xInit, "asdf");
+  }
+
+  // Non-param
+  {
+    context->advanceToNextRevision(false);
+    std::string program =
+      R"""(
+      var a = "asdf";
+      var x = a:string;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    assert(!xInit.isParam());
+    assert(xInit.type()->isStringType());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -552,6 +587,7 @@ int main() {
   test43();
   test44();
   test45();
+  test46();
 
   return 0;
 }
