@@ -781,12 +781,17 @@ computeVisibilityDistanceInternal(Context* context, const Scope* scope,
 // of two functions.
 //
 // Returns -1 if the function is a method or if the function is not found
-static int computeVisibilityDistance(Context* context, const Scope* scope,
+int computeVisibilityDistance(Context* context, const Scope* scope,
                                      const TypedFnSignature* fn) {
   // is this a method?
   if (fn->untyped()->isMethod()) {
     return -1;
   }
+  return computeVisibilityDistanceInternal(context, scope, fn, 0);
+}
+
+int computeVisibilityDistanceMethod(Context* context, const Scope* scope,
+                                     const TypedFnSignature* fn) {
   return computeVisibilityDistanceInternal(context, scope, fn, 0);
 }
 

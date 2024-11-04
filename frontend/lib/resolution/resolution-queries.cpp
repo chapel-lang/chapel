@@ -4941,19 +4941,31 @@ resolveCallInMethod(ResolutionContext* rc,
                     const CallScopeInfo& inScopes,
                     QualifiedType implicitReceiver,
                     std::vector<ApplicabilityResult>* rejected) {
-  // If there is an implicit receiver and ci isn't written as a method,
-  // construct a method call and use that instead. If that resolves,
-  // it takes precedence over functions.
+
+  CallResolutionResult asFunction = resolveCall(rc,call,ci,inScopes,rejected);
+  
+  CallResolutionResult asMethod;
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    auto ret = resolveCall(rc, call, methodCi, inScopes, rejected);
-    if (ret.mostSpecific().foundCandidates()) {
-      return ret;
-    }
+    asMethod = resolveCall(rc, call, methodCi, inScopes, rejected);
   }
 
-  // otherwise, use normal resolution
-  return resolveCall(rc, call, ci, inScopes, rejected);
+  if (!asMethod.mostSpecific().foundCandidates()) {
+    return asFunction;
+  }
+  if (!asFunction.mostSpecific().foundCandidates()) {
+    return asMethod;
+  }
+
+  auto method = asMethod.mostSpecific().only().fn();
+  auto function = asFunction.mostSpecific().only().fn();
+  auto methodDistance = computeVisibilityDistanceMethod(rc->context(), inScopes.callScope(), method);
+  auto functionDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), function);
+  if (methodDistance <= functionDistance) {
+    return asMethod;
+  } else {
+    return asFunction;
+  }
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
