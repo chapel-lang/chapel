@@ -3681,7 +3681,6 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  gdbShouldBreakHere();
   // Sometimes, actual types can be unknown since we are checking for 'out'
   // intent. No special functions here use the 'out' intent, so in this case,
   // return false.
