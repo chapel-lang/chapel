@@ -110,7 +110,8 @@ static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask);
+                                      int mask,
+                                      bool emitError);
 
 Resolver::~Resolver() {
   if (didPushFrame) {
@@ -4821,11 +4822,34 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   return ret;
 }
 
+static QualifiedType
+issueErrorForFailedIterDetails(Context* context,
+                               IterDetails& details,
+                               const uast::AstNode* astForErr,
+                               const uast::AstNode* iterand,
+                               QualifiedType iterandType) {
+  std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
+  auto tryAdd = [&](Function::IteratorKind kind, TheseResolutionResult& tr) {
+    if (tr.reason() != TheseResolutionResult::THESE_SUCCESS) {
+      failures.push_back({ kind, std::move(tr) });
+    }
+  };
+
+  tryAdd(Function::STANDALONE, details.standalone.resolutionResult);
+  tryAdd(Function::LEADER, details.leader.resolutionResult);
+  tryAdd(Function::FOLLOWER, details.follower.resolutionResult);
+  tryAdd(Function::SERIAL, details.serial.resolutionResult);
+
+  return CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
+                         iterandType, std::move(failures));
+}
+
 static IterDetails resolveIterDetails(Resolver& rv,
                                       const AstNode* astForErr,
                                       const AstNode* iterand,
                                       const QualifiedType& leaderYieldType,
-                                      int mask) {
+                                      int mask,
+                                      bool emitError) {
   if (rv.scopeResolveOnly) {
     return {};
   }
@@ -4853,20 +4877,11 @@ static IterDetails resolveIterDetails(Resolver& rv,
   if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
-      std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
-      auto tryAdd = [&](Function::IteratorKind kind, TheseResolutionResult& tr) {
-        if (tr.reason() != TheseResolutionResult::THESE_SUCCESS) {
-          failures.push_back({ kind, std::move(tr) });
-        }
-      };
-
-      tryAdd(Function::STANDALONE, ret.standalone.resolutionResult);
-      tryAdd(Function::LEADER, ret.leader.resolutionResult);
-      tryAdd(Function::FOLLOWER, ret.follower.resolutionResult);
-      tryAdd(Function::SERIAL, ret.serial.resolutionResult);
-
-      ret.idxType = CHPL_TYPE_ERROR(rv.context, NonIterable, astForErr, iterand,
-                                    iterandRE.type(), std::move(failures));
+      if (emitError) {
+        ret.idxType = issueErrorForFailedIterDetails(rv.context, ret, astForErr, iterand, iterandRE.type());
+      } else {
+        ret.idxType = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(rv.context));
+      }
     }
   }
 
@@ -5041,6 +5056,22 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return false;
 }
 
+static void noteZipperedTheseResolutionFailure(
+    std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>>& failures,
+    Function::IteratorKind kind,
+    int index,
+    const QualifiedType& receiver,
+    TheseResolutionResult&& result) {
+  if (index != -1) {
+    auto ownedResult = std::make_unique<TheseResolutionResult>(std::move(result));
+    auto zipperedTheseResult =
+      TheseResolutionResult::failure(std::move(ownedResult), index, receiver);
+    failures.push_back({ kind, std::move(zipperedTheseResult) });
+  } else {
+    failures.push_back({ kind, std::move(result) });
+  }
+}
+
 static QualifiedType
 resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
@@ -5055,17 +5086,38 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   auto followerPolicy = IterDetails::NONE;
   QualifiedType leaderYieldType;
 
+  std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
+
+  debuggerBreakHere();
+
   // Get the leader actual.
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
+    auto iterandQt = rv.byPostorder.byAst(leader).type();
 
     // Set the policy mask for the leader based on the loop properties.
     int m = IterDetails::NONE;
-    if (loopPrefersParallel) m |= IterDetails::LEADER_FOLLOWER;
-    if (!loopRequiresParallel) m |= IterDetails::SERIAL;
+    if (loopPrefersParallel) {
+      m |= IterDetails::LEADER_FOLLOWER;
+    } else {
+      // Note that we will not attempt a leader iterator.
+      noteZipperedTheseResolutionFailure(
+          failures, Function::LEADER, -1,
+          rv.byPostorder.byAst(leader).type(),
+          TheseResolutionResult());
+    }
+
+    if (!loopRequiresParallel) {
+      m |= IterDetails::SERIAL;
+    } else {
+      // Note that we will not attempt a serial iterator.
+      noteZipperedTheseResolutionFailure(
+          failures, Function::SERIAL, -1, iterandQt, TheseResolutionResult());
+    }
+
     CHPL_ASSERT(m != IterDetails::NONE);
 
     // Resolve the leader iterator.
-    auto dt = resolveIterDetails(rv, leader, leader, {}, m);
+    auto dt = resolveIterDetails(rv, leader, leader, {}, m, /* emitError */ false);
 
     eltTypes.push_back(dt.idxType);
 
@@ -5075,10 +5127,25 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
       leaderYieldType = dt.leaderYieldType;
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
+
+      // We didn't find a leader iterator, so note that as a failure in case
+      // we fail to find a serial iterator for other elements in the zip.
+      noteZipperedTheseResolutionFailure(
+          failures, Function::LEADER, 0, iterandQt, std::move(dt.leader.resolutionResult));
     } else {
-      // TODO: Emit an error here informing the user that a usable leader
-      // iterator wasn't found. Might be some test failure(s) to fix.
       ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
+
+      // If we tried to resolve the parallel iterator, note that we failed.
+      if (loopPrefersParallel) {
+        noteZipperedTheseResolutionFailure(
+            failures, Function::LEADER, 0, iterandQt, std::move(dt.leader.resolutionResult));
+      }
+
+      // If we tried to resolve the serial iterator, note that we failed.
+      if (!loopRequiresParallel) {
+        noteZipperedTheseResolutionFailure(
+            failures, Function::SERIAL, 0, iterandQt, std::move(dt.serial.resolutionResult));
+      }
     }
   }
 
@@ -5086,11 +5153,25 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   // It is possible for the follower policy to be 'NONE', in which case
   // no iterators will be resolved, but the follower iterands will be
   // resolved.
+  bool failedOthers = false;
   for (int i = 1; i < zip->numActuals(); i++) {
     auto actual = zip->actual(i);
     auto dt = resolveIterDetails(rv, actual, actual, leaderYieldType,
-                                 followerPolicy);
+                                 followerPolicy, /* emitError */ false);
     auto& qt = dt.idxType;
+    if (qt.isUnknownOrErroneous() && followerPolicy != IterDetails::NONE) {
+      bool isSerial = followerPolicy == IterDetails::SERIAL;
+
+      if (!failedOthers) {
+        noteZipperedTheseResolutionFailure(
+            failures, isSerial ? Function::SERIAL : Function::FOLLOWER, i,
+            rv.byPostorder.byAst(actual).type(),
+            std::move(isSerial ? dt.serial.resolutionResult : dt.follower.resolutionResult));
+      }
+
+      failedOthers = true;
+    }
+
     eltTypes.push_back(qt);
   }
 
@@ -5102,6 +5183,12 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
       kind = QualifiedType::VAR;
       break;
     }
+  }
+
+  if (ret.isErroneousType() || failedOthers) {
+    // Emit a NonIterable error.
+    ret = CHPL_TYPE_ERROR(context, NonIterable, loop, zip,
+                          QualifiedType(), std::move(failures));
   }
 
   if (!ret.isErroneousType()) {
@@ -5282,7 +5369,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!loopRequiresParallel) m |= IterDetails::SERIAL;
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
+    auto dt = resolveIterDetails(*this, loop, iterand, {}, m, /* emitError */ true);
     idxType = dt.idxType;
   }
 
@@ -5522,7 +5609,7 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* iterand) {
   iterand->traverse(resolver);
   auto dt = resolveIterDetails(resolver, reduceOrScan, iterand, {},
-                               IterDetails::SERIAL);
+                               IterDetails::SERIAL, /* emitError */ true);
   auto idxType = dt.idxType;
   if (idxType.isUnknown()) return QualifiedType();
   auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, idxType);

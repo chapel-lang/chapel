@@ -1151,7 +1151,12 @@ static void printTheseResults(
     } else if (reason == TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH) {
       wr.message(start, "the yield type of the leader iterator doesn't match the type of the 'followeThis' argument", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_ZIPPERED_ARG_FAILED) {
-      wr.message(start, "one of the zippered arguments (number ",
+      auto iterandType = currentTr->iterandType().type();
+      const char* combinedKind =
+        iterandType && iterandType->isPromotionIteratorType() ?
+        "promoted argument" :
+        "zippered argument";
+      wr.message(start, "one of the ", combinedKind, "s (", combinedKind ," number ",
                         currentTr->zipperedFailureIndex() + 1,
                         ", ", currentTr->zipperedFailure()->iterandType(),
                         ") does not support a ", iterKindStr, " iterator", end);
@@ -1168,8 +1173,12 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto iterand = std::get<1>(info_);
   auto& iterandType = std::get<types::QualifiedType>(info_);
   auto& resolutionResults = std::get<3>(info_);
-  wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
-  wr.message("Used as an iterand in a loop here:");
+  if (iterandType.isUnknown()) {
+    wr.heading(kind_, type_, loop, "cannot iterate over this loop's iterand.");
+  } else {
+    wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
+    wr.message("Used as an iterand in a loop here:");
+  }
   wr.code(iterand, { iterand });
 
   bool failedLeader = false;
