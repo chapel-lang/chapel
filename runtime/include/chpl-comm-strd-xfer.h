@@ -84,19 +84,26 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
 
   if (currHandles >= maxOutstandingXfers) {
     // reached max in flight -- retire some to make room
-    while (!chpl_comm_try_nb_some(handles, currHandles)) {
-      (yieldFn)();
+    if (yieldFn) {
+      while (!chpl_comm_try_nb_some(handles, currHandles)) {
+        (yieldFn)();
+      }
+    } else {
+      chpl_comm_wait_nb_some(handles, currHandles);
     }
 
-    // compress retired transactions out of the list
+    // remove completed handles from the list and free them
     {
-      size_t iOut, iIn;
+      size_t iOut = 0;
+      size_t iIn = 0;
 
-      for (iOut = iIn = 0; iIn < currHandles; ) {
-        if (handles[iIn] == NULL)
+      while (iIn < currHandles) {
+        if (chpl_comm_test_nb_complete(handles[iIn])) {
+          chpl_comm_free_nb_handle(handles[iIn]);
           iIn++;
-        else
+        } else {
           handles[iOut++] = handles[iIn++];
+        }
       }
 
       currHandles = iOut;
@@ -109,6 +116,22 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
     currHandles++;
 
   *pCurrHandles = currHandles;
+}
+
+// Wait for all handles to complete and free them
+static inline
+void wait_for_all_handles(chpl_comm_nb_handle_t* handles, size_t numHandles) {
+  size_t completed = 0;
+  while (completed < numHandles) {
+    chpl_comm_wait_nb_some(handles, numHandles);
+    for (size_t i = 0; i < numHandles; i++) {
+      if ((handles[i] != NULL) && (chpl_comm_test_nb_complete(handles[i]))) {
+        chpl_comm_free_nb_handle(handles[i]);
+        handles[i] = NULL;
+        completed++;
+      }
+    }
+  }
 }
 
 
@@ -253,7 +276,7 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
   }
 
   if (currHandles > 0) {
-    (void) chpl_comm_wait_nb_some(handles, currHandles);
+    wait_for_all_handles(handles, currHandles);
   }
 }
 
@@ -402,7 +425,7 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
   }
 
   if (currHandles > 0) {
-    (void) chpl_comm_wait_nb_some(handles, currHandles);
+    wait_for_all_handles(handles, currHandles);
   }
 }
 
