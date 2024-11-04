@@ -120,7 +120,7 @@ The default key method would look like this:
 
 .. code-block:: chapel
 
-  proc DefaultComparator.key(elt) {
+  proc defaultComparator.key(elt) {
     return elt;
   }
 
@@ -184,7 +184,7 @@ The default compare method for a signed integral type can look like this:
 
 .. code-block:: chapel
 
-    proc DefaultComparator.compare(x, y) {
+    proc defaultComparator.compare(x, y) {
       return x - y;
     }
 
@@ -246,7 +246,7 @@ A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
 Let's consider several example ``keyPart`` methods. All of these are
 simplifications of ``keyPart`` methods already available in the
-:type:`DefaultComparator`.
+:type:`defaultComparator`.
 
 This ``keyPart`` method supports sorting tuples of 2 integers:
 
@@ -375,10 +375,10 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 /*
    Base compare method of all sort functions.
 
-   By default, it returns the value of DefaultComparator.compare(a, b).
+   By default, it returns the value of defaultComparator.compare(a, b).
 
    If a comparator with a key method is passed, it will return the value of
-   DefaultComparator(comparator.key(a), comparator.key(b)).
+   defaultComparator(comparator.key(a), comparator.key(b)).
 
    If a comparator with a compare method is passed, it will return the value of
    comparator.compare(a, b).
@@ -404,7 +404,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
     // Use the default comparator to compare the integer keys
-    return (new DefaultComparator()).compare(comparator.key(a),
+    return (new defaultComparator()).compare(comparator.key(a),
                                              comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
@@ -497,7 +497,7 @@ private proc chpl_check_comparator_helper(comparator,
     compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " should only implement one sort comparator interface.");
   }
 
-  if comparator.type == DefaultComparator {}
+  if comparator.type == defaultComparator {}
   else if isSubtype(comparator.type, ReverseComparator) {
     return chpl_check_comparator_helper(comparator.comparator, data, eltType, errorDepth+1);
   }
@@ -640,8 +640,8 @@ proc radixSortOkAndStrideOne(Data: [] ?eltType,
     } else if canResolveMethod(comparator, "key", tmp) {
       var key:comparator.key(tmp).type;
       // Does the defaultComparator have a keyPart for this?
-      if canResolveMethod(new DefaultComparator(), "chpl_keyPartInternal", key, 0) ||
-         canResolveMethod(new DefaultComparator(), "keyPart", key, 0) then
+      if canResolveMethod(new defaultComparator(), "chpl_keyPartInternal", key, 0) ||
+         canResolveMethod(new defaultComparator(), "keyPart", key, 0) then
         return true;
     }
   }
@@ -730,7 +730,7 @@ The choice of sorting algorithm used is made by the implementation.
   can sort in a way that reorders equal keys. If it is ``true``, it will use a
   stable algorithm in order to preserve the order of equal keys.
  */
-proc sort(ref x: [], comparator:? = new DefaultComparator(),
+proc sort(ref x: [], comparator:? = new defaultComparator(),
           param stable:bool = false) {
   chpl_check_comparator(comparator, x.eltType);
 
@@ -761,7 +761,7 @@ See :proc:`sort` declared above for details.
   can sort in a way that reorders equal keys. If it is ``true``, it will use a
   stable algorithm in order to preserve the order of equal keys.
  */
-proc sort(ref x: list(?), comparator:? = new DefaultComparator(),
+proc sort(ref x: list(?), comparator:? = new defaultComparator(),
           param stable:bool = false) {
   chpl_check_comparator(comparator, x.eltType);
   // NOTE: this uses very low-level and non-public list methods to avoid overheads
@@ -865,7 +865,7 @@ The choice of sorting algorithm used is made by the implementation.
  */
 pragma "last resort"
 @deprecated("The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead")
-proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec= new defaultComparator(),
           param stable:bool = false, param inPlaceAlgorithm:bool = false) {
   chpl_check_comparator(comparator, eltType);
 
@@ -884,13 +884,13 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc sort(ref x: [?Dom] , comparator:? = new DefaultComparator(), param stable:bool = false)
+proc sort(ref x: [?Dom] , comparator:? = new defaultComparator(), param stable:bool = false)
   where Dom.rank != 1 || !x.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
 @chpldoc.nodoc
 proc sort(ref x: domain,
-          comparator:? = new DefaultComparator(),
+          comparator:? = new defaultComparator(),
           param stable:bool = false) do
   compilerError("sort() is not supported on domains");
 
@@ -904,7 +904,7 @@ proc sort(ref x: domain,
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
-proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
+proc isSorted(x: [], comparator:? = new defaultComparator()): bool {
   chpl_check_comparator(comparator, x.eltType);
 
   const D = x.domain;
@@ -929,7 +929,7 @@ proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
    :returns: ``true`` if list is sorted
    :rtype: `bool`
  */
-proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
+proc isSorted(x: list(?), comparator:? = new defaultComparator()): bool {
   chpl_check_comparator(comparator, x.eltType);
 
   // NOTE: this uses very low-level and non-public list methods to avoid overheads
@@ -949,12 +949,12 @@ proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc isSorted(x: [], comparator:? = new DefaultComparator())
+proc isSorted(x: [], comparator:? = new defaultComparator())
   where x.rank != 1 || !x.isRectangular() {
     compilerError("isSorted() is currently only supported for 1D rectangular arrays");
 }
 @chpldoc.nodoc
-proc isSorted(x: domain, comparator:? = new DefaultComparator()) do
+proc isSorted(x: domain, comparator:? = new defaultComparator()) do
   compilerError("isSorted() is not supported on domains");
 
 /*
@@ -969,12 +969,12 @@ proc isSorted(x: domain, comparator:? = new DefaultComparator()) do
  */
 pragma "last resort"
 @deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec= new defaultComparator()): bool {
   return isSorted(x=Data, comparator);
 }
 
 @chpldoc.nodoc
-iter sorted(x : domain, comparator:? = new DefaultComparator()) {
+iter sorted(x : domain, comparator:? = new defaultComparator()) {
   if !x.isAssociative() then
     compilerError("sorted() is currently only supported on associative domains");
   for i in x._value.dsiSorted(comparator) {
@@ -1013,7 +1013,7 @@ iter sorted(x : domain, comparator:? = new DefaultComparator()) {
    :ytype: x's element type
 
  */
-iter sorted(x, comparator:? = new DefaultComparator()) {
+iter sorted(x, comparator:? = new defaultComparator()) {
   if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted", comparator)
   {
     // As far as I know this branch is only encountered for associative arrays
@@ -1054,7 +1054,7 @@ module InsertionSort {
 
    */
   proc insertionSort(ref Data: [?Dom] ?eltType,
-                     comparator:?rec = new DefaultComparator(), lo:int=Dom.low,
+                     comparator:?rec = new defaultComparator(), lo:int=Dom.low,
                      hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
@@ -1085,7 +1085,7 @@ module InsertionSort {
   }
 
   proc insertionSortMoveElts(ref Data: [?Dom] ?eltType,
-                             comparator:?rec = new DefaultComparator(),
+                             comparator:?rec = new defaultComparator(),
                              lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
@@ -1140,7 +1140,7 @@ module TimSort {
 
   proc timSort(ref x: [],
                blockSize = 16,
-               comparator: ? = new DefaultComparator(),
+               comparator: ? = new defaultComparator(),
                region: range(?) = x.dim(0))
   {
     chpl_check_comparator(comparator, x.eltType);
@@ -1153,7 +1153,7 @@ module TimSort {
   }
 
   private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16,
-                        comparator:?rec = new DefaultComparator()) {
+                        comparator:?rec = new defaultComparator()) {
     import Sort.InsertionSort;
 
     /*Parallelly apply insertionSort on each block of size `blockSize`
@@ -1195,7 +1195,7 @@ module TimSort {
    stores the results back into the original memory.
   */
   private proc _Merge(ref Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int,
-                      comparator:?rec = new DefaultComparator()) {
+                      comparator:?rec = new defaultComparator()) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     if mid >= hi {
@@ -1404,7 +1404,7 @@ module QuickSort {
  /* Use quickSort to sort Data */
  proc quickSort(ref Data: [?Dom] ?eltType,
                 minlen = 16,
-                comparator:?rec = new DefaultComparator(),
+                comparator:?rec = new defaultComparator(),
                 region:range(?) = Data.domain.dim(0)) {
 
     chpl_check_comparator(comparator, eltType);
@@ -1429,7 +1429,7 @@ module QuickSort {
   /* Non-stridable quickSort to sort Data[start..end] */
   proc quickSortImpl(ref Data: [?Dom] ?eltType,
                      minlen=16,
-                     comparator:?rec = new DefaultComparator(),
+                     comparator:?rec = new defaultComparator(),
                      start:int = Dom.low, end:int = Dom.high) {
     import Sort.InsertionSort;
 
@@ -1500,7 +1500,7 @@ module QuickSort {
 module ShellSort {
   private use Sort;
   proc shellSort(ref Data: [?Dom] ?eltType,
-                 comparator:?rec = new DefaultComparator(), start = Dom.low,
+                 comparator:?rec = new defaultComparator(), start = Dom.low,
                  end = Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
@@ -1543,7 +1543,7 @@ module ShellSort {
   // Like the shell sort above, but this version uses
   // ShallowCopy to move elements instead of assigning them.
   proc shellSortMoveElts(ref Data: [?Dom] ?eltType,
-                         comparator:?rec = new DefaultComparator(),
+                         comparator:?rec = new defaultComparator(),
                          start: Data.idxType = Dom.low,
                          end: Data.idxType = Dom.high)
   {
@@ -1591,7 +1591,7 @@ module ShellSort {
   // this version takes int start and end and casts to Data.idxType
   // to make it more convenient to call from the radix sorting code
   proc shellSortMoveEltsIntIdx(ref Data: [?Dom] ?eltType,
-                               comparator:?rec = new DefaultComparator(),
+                               comparator:?rec = new defaultComparator(),
                                start:int = Dom.low,
                                end:int = Dom.high)
   {
@@ -1713,7 +1713,7 @@ module RadixSortHelp {
     } else if canResolveMethod(criterion, "key", a) {
       // Try to use the default comparator to get a keyPart.
       return binForRecordKeyPart(criterion.key(a),
-                                 new DefaultComparator(),
+                                 new defaultComparator(),
                                  startbit);
     } else {
       compilerError("Bad comparator for radix sort ", criterion.type:string,
@@ -1745,7 +1745,7 @@ module RadixSortHelp {
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
     const ref element = Data[Data.domain.low];
-    if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
+    if comparator.type == defaultComparator && fixedWidth(element.type) > 0 {
       return fixedWidth(element.type) - RADIX_BITS;
     } else if canResolveMethod(comparator, "key", element) {
       type keyType = comparator.key(element).type;
@@ -3171,12 +3171,12 @@ module TwoArrayDistributedPartitioning {
 
 @chpldoc.nodoc
 module TwoArrayRadixSort {
-  import Sort.DefaultComparator;
+  import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
 
   proc twoArrayRadixSort(ref Data:[],
-                         comparator:?rec = new DefaultComparator(),
+                         comparator:?rec = new defaultComparator(),
                          region:range(?) = Data.domain.dim(0)) {
 
     if !chpl_domainDistIsLayout(Data.domain) {
@@ -3218,13 +3218,13 @@ module TwoArrayRadixSort {
 
 @chpldoc.nodoc
 module TwoArrayDistributedRadixSort {
-  import Sort.DefaultComparator;
+  import Sort.defaultComparator;
   private use super.TwoArrayDistributedPartitioning;
   private use super.RadixSortHelp;
   private use super.TwoArrayRadixSort;
 
   proc twoArrayDistributedRadixSort(ref Data:[],
-                                    comparator:?rec = new DefaultComparator()) {
+                                    comparator:?rec = new defaultComparator()) {
 
     // just run the local version if Data isn't distributed
     if Data._instance.isDefaultRectangular() {
@@ -3284,7 +3284,7 @@ module InPlacePartitioning {
 // it is not stable and not fully parallel
 @chpldoc.nodoc
 module MSBRadixSort {
-  import Sort.{DefaultComparator, ShellSort};
+  import Sort.{defaultComparator, ShellSort};
   private use super.RadixSortHelp;
   private use OS.POSIX;
 
@@ -3299,7 +3299,7 @@ module MSBRadixSort {
     const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
-  proc msbRadixSort(ref Data:[], comparator:?rec = new DefaultComparator(),
+  proc msbRadixSort(ref Data:[], comparator:?rec = new defaultComparator(),
                     region:range(?)=Data.domain.dim(0)) {
 
     var endbit:int;
@@ -3677,8 +3677,11 @@ private proc comparatorImplementsRelative(cmp) param do
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/
-@unstable("'DefaultComparator' is unstable and will have its name changed in the future")
-record DefaultComparator: keyPartComparator {
+@deprecated("The 'DefaultComparator' record has been renamed to :record:`defaultComparator`, please use that name instead")
+type DefaultComparator = defaultComparator;
+
+/* Default comparator used in sort functions.*/
+record defaultComparator: keyPartComparator {
 
   /*
    Default compare method used in sort functions.
@@ -4003,7 +4006,7 @@ record ReverseComparator: keyPartComparator {
    reverses the sort order of the default comparator.
    */
   proc init() {
-    this.comparator = new DefaultComparator();
+    this.comparator = new defaultComparator();
   }
 
   /*
@@ -4069,8 +4072,8 @@ record ReverseComparator: keyPartComparator {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
-      return canResolveMethod(new DefaultComparator(), "chpl_keyPartInternal", key, 0) ||
-             canResolveMethod(new DefaultComparator(), "keyPart", key, 0);
+      return canResolveMethod(new defaultComparator(), "chpl_keyPartInternal", key, 0) ||
+             canResolveMethod(new defaultComparator(), "keyPart", key, 0);
     }
     return false;
   }
@@ -4084,7 +4087,7 @@ record ReverseComparator: keyPartComparator {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a compare for this?
-      return canResolveMethod(new DefaultComparator(), "compare", key, key);
+      return canResolveMethod(new defaultComparator(), "compare", key, key);
     }
     return false;
   }
@@ -4118,7 +4121,7 @@ record ReverseComparator: keyPartComparator {
     where (hasKeyPart(elt) || hasKeyPartFromKey(elt)) {
     chpl_check_comparator(this.comparator, elt.type, doDeprecationCheck=false);
     if hasKeyPartFromKey(elt) {
-      return getKeyPart(new DefaultComparator(), this.comparator.key(elt), i);
+      return getKeyPart(new defaultComparator(), this.comparator.key(elt), i);
     } else {
       return getKeyPart(this.comparator, elt, i);
     }
@@ -4168,7 +4171,7 @@ record ReverseComparator: keyPartComparator {
     chpl_check_comparator(this.comparator, x.type, doDeprecationCheck=false);
 
     if hasCompareFromKey(x) {
-      return doCompare(new DefaultComparator(),
+      return doCompare(new defaultComparator(),
                        this.comparator.key(x),
                        this.comparator.key(y));
     } else {
