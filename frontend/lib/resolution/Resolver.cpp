@@ -5123,6 +5123,16 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     if (dt.succeededAt == IterDetails::LEADER_FOLLOWER) {
       followerPolicy = IterDetails::FOLLOWER;
       leaderYieldType = dt.leaderYieldType;
+
+      // Note that we won't be attempting a serial iterator, even thought
+      // it was supported.
+      if (!loopRequiresParallel) {
+        noteZipperedTheseResolutionFailure(
+            failures, Function::SERIAL, -1, iterandQt,
+            TheseResolutionResult::failure(
+              TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
+              iterandQt));
+      }
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
 

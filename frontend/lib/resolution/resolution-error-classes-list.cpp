@@ -1160,6 +1160,9 @@ static void printTheseResults(
                         currentTr->zipperedFailureIndex() + 1,
                         ", ", currentTr->zipperedFailure()->iterandType(),
                         ") does not support a ", iterKindStr, " iterator", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR) {
+      wr.message(start, "the first zippered iterand had a parallel follower, "
+                        "which is prioritized over serial iteration", end);
     }
 
     depth--;

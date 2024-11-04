@@ -1982,14 +1982,33 @@ class CallResolutionResult {
 struct TheseResolutionResult {
  public:
   enum FailureReason {
+    /* We didn't fail, finding an iterator. */
     THESE_SUCCESS = 0,
+    /* We didn't attempt to resolve this iterator, possibly because it's
+       not supported in this context. */
     THESE_NOT_ATTEMPTED,
+    /* We tried to resolve a standalone iterator on a loop expression, but
+       loop expressions don't have standalone iterators. */
     THESE_FAIL_NO_LOOP_EXPR_STANDALONE,
+    /* We tried to resolve a standalone iterator on a promoted expression, but
+       promoted expressions don't have standalone iterators. */
     THESE_FAIL_NO_PROMO_STANDALONE,
+    /* We tried to resolve a parallel iterator by we're iterating over a serial
+       loop expression. */
     THESE_FAIL_SERIAL_LOOP_EXPR,
+    /* We couldn't find the given iterator's definition. */
     THESE_FAIL_NO_ITERATOR_WITH_TAG,
+    /* We found a leader and a follower, but the leader's yield type doesn't match
+       the follower's 'followThis'. */
     THESE_FAIL_LEADER_FOLLOWER_MISMATCH,
+    /* We tried to resolve a zippered-like iterator (zippered loop expression,
+       promoted expressions) and one of the iterables that makes it up failed
+       to resolve. In this case, the zipperedFailure_ and zipperedFailureIndex_
+       fields are set. */
     THESE_FAIL_ZIPPERED_ARG_FAILED,
+    /* We started resolving a zippered-like iterator using (e.g.), a leader
+       iterator, so we didn't attempt to use a follower iterator. */
+    THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
   };
 
  private:
