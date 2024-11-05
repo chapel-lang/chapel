@@ -2092,6 +2092,12 @@ struct TheseResolutionResult {
                                  nullptr, -1, std::move(iterandType));
   }
 
+  /** Construct a successful TheseResolutionResult without any underlying call. */
+  static TheseResolutionResult success(types::QualifiedType iterandType) {
+    return TheseResolutionResult(THESE_SUCCESS, nullptr,
+                                 nullptr, -1, std::move(iterandType));
+  }
+
   /** Construct a TheseResolutionResult failed call to 'these' on a given
       iterand type, with 'reason' as the reason for failure. */
   static TheseResolutionResult failure(FailureReason reason,

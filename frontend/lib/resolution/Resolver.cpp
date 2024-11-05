@@ -4880,7 +4880,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
       if (emitError) {
         ret.idxType = issueErrorForFailedIterDetails(rv.context, ret, astForErr, iterand, iterandRE.type());
       } else {
-        ret.idxType = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(rv.context));
+        ret.idxType = QualifiedType();
       }
     }
   }
@@ -4972,7 +4972,9 @@ resolveIterTypeWithTag(Resolver& rv,
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
-    outIterPieces = { iteratingOver, TheseResolutionResult::success(CallResolutionResult(), iterandType)};
+    // We no longer have a call resolution result that produced the MSC,
+    // so just create a mock one here.
+    outIterPieces = { iteratingOver, TheseResolutionResult::success(iterandType) };
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
 
   // There's nothing to do in this case, so error out.
@@ -5059,12 +5061,19 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return false;
 }
 
-static void noteZipperedTheseResolutionFailure(
+// If index is nonzero, notes the given failure are a cause for a zippered
+// failure. Otherwise, notes it as a top-level failure.
+static void noteTheseResolutionFailure(
+    Resolver& rv,
     std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>>& failures,
     Function::IteratorKind kind,
     int index,
     const QualifiedType& receiver,
     TheseResolutionResult&& result) {
+  if (rv.scopeResolveOnly) {
+    return;
+  }
+
   if (index != -1) {
     auto ownedResult = std::make_unique<TheseResolutionResult>(std::move(result));
     auto zipperedTheseResult =
@@ -5101,18 +5110,17 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
       // Note that we will not attempt a leader iterator.
-      noteZipperedTheseResolutionFailure(
-          failures, Function::LEADER, -1,
-          rv.byPostorder.byAst(leader).type(),
-          TheseResolutionResult());
+      noteTheseResolutionFailure(rv, failures, Function::LEADER, -1,
+                                 rv.byPostorder.byAst(leader).type(),
+                                 TheseResolutionResult());
     }
 
     if (!loopRequiresParallel) {
       m |= IterDetails::SERIAL;
     } else {
       // Note that we will not attempt a serial iterator.
-      noteZipperedTheseResolutionFailure(
-          failures, Function::SERIAL, -1, iterandQt, TheseResolutionResult());
+      noteTheseResolutionFailure(rv, failures, Function::SERIAL, -1, iterandQt,
+                                 TheseResolutionResult());
     }
 
     CHPL_ASSERT(m != IterDetails::NONE);
@@ -5130,32 +5138,32 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
       // Note that we won't be attempting a serial iterator, even thought
       // it was supported.
       if (!loopRequiresParallel) {
-        noteZipperedTheseResolutionFailure(
-            failures, Function::SERIAL, -1, iterandQt,
-            TheseResolutionResult::failure(
-              TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
-              iterandQt));
+        auto result =TheseResolutionResult::failure(
+            TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
+            iterandQt);
+        noteTheseResolutionFailure(rv, failures, Function::SERIAL, -1, iterandQt,
+                                   std::move(result));
       }
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
 
       // We didn't find a leader iterator, so note that as a failure in case
       // we fail to find a serial iterator for other elements in the zip.
-      noteZipperedTheseResolutionFailure(
-          failures, Function::LEADER, 0, iterandQt, std::move(dt.leader.resolutionResult));
+      noteTheseResolutionFailure(rv, failures, Function::LEADER, 0, iterandQt,
+                                 std::move(dt.leader.resolutionResult));
     } else {
       ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
 
       // If we tried to resolve the parallel iterator, note that we failed.
       if (loopPrefersParallel) {
-        noteZipperedTheseResolutionFailure(
-            failures, Function::LEADER, 0, iterandQt, std::move(dt.leader.resolutionResult));
+        noteTheseResolutionFailure(rv, failures, Function::LEADER, 0, iterandQt,
+                                   std::move(dt.leader.resolutionResult));
       }
 
       // If we tried to resolve the serial iterator, note that we failed.
       if (!loopRequiresParallel) {
-        noteZipperedTheseResolutionFailure(
-            failures, Function::SERIAL, 0, iterandQt, std::move(dt.serial.resolutionResult));
+        noteTheseResolutionFailure(rv, failures, Function::SERIAL, 0, iterandQt,
+                                   std::move(dt.serial.resolutionResult));
       }
     }
   }
@@ -5174,10 +5182,12 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
       bool isSerial = followerPolicy == IterDetails::SERIAL;
 
       if (!failedOthers) {
-        noteZipperedTheseResolutionFailure(
-            failures, isSerial ? Function::SERIAL : Function::FOLLOWER, i,
-            rv.byPostorder.byAst(actual).type(),
-            std::move(isSerial ? dt.serial.resolutionResult : dt.follower.resolutionResult));
+        noteTheseResolutionFailure(rv, failures,
+                                   isSerial ? Function::SERIAL : Function::FOLLOWER,
+                                   i, rv.byPostorder.byAst(actual).type(),
+                                   std::move(isSerial ?
+                                             dt.serial.resolutionResult :
+                                             dt.follower.resolutionResult));
       }
 
       failedOthers = true;
