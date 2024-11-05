@@ -75,9 +75,7 @@ class LintDriver:
         for rule in itertools.chain(
             self.BasicRules, self.AdvancedRules, self.LocationRules
         ):
-            doc = rule.check_func.__doc__
-            if doc is None:
-                doc = ""
+            doc = rule.check_func.__doc__ or ""
 
             # if there is an escaped underscore, remove the escape
             doc = doc.replace("\\_", "_")
