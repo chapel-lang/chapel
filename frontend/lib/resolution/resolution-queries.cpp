@@ -4959,13 +4959,13 @@ resolveCallInMethod(ResolutionContext* rc,
 
   auto method = asMethod.mostSpecific().only().fn();
   auto function = asFunction.mostSpecific().only().fn();
-  auto methodDistance = computeVisibilityDistanceMethod(rc->context(), inScopes.callScope(), method);
-  auto functionDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), function);
-  if (methodDistance <= functionDistance) {
-    return asMethod;
-  } else {
+  auto methodDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), method, /* allowMethods */ true);
+  auto functionDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), function, /* allowMethods */ true);
+  if (functionDistance < methodDistance) {
     return asFunction;
-  }
+  } else {
+    return asMethod;
+  } 
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
