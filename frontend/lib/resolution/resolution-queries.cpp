@@ -3225,20 +3225,26 @@ static const Type* getManagedClassType(Context* context,
   UniqueString name = ci.name();
 
   if (ci.hasQuestionArg()) {
-    if (ci.numActuals() != 0) {
-      context->error(astForErr, "invalid class type construction");
-      return ErroneousType::get(context);
-    } else if (name == USTR("owned")) {
-      return AnyOwnedType::get(context);
+
+    const Type* ret = nullptr;
+    if (name == USTR("owned")) {
+      ret = AnyOwnedType::get(context);
     } else if (name == USTR("shared")) {
-      return AnySharedType::get(context);
+      ret = AnySharedType::get(context);
     } else if (name == USTR("unmanaged")) {
-      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
     } else if (name == USTR("borrowed")) {
-      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
     } else {
       // case not handled in here
       return nullptr;
+    }
+
+    if (ret != nullptr && ci.numActuals() != 0) {
+      context->error(astForErr, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else {
+      return ret;
     }
   }
 
