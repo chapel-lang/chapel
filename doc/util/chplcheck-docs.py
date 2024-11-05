@@ -46,7 +46,6 @@ class Rule:
         with open(example_file) as handle:
             pieces = chpl2rst.to_pieces(handle, False)
             rstoutput = chpl2rst.gen_rst(pieces, example_file)
-            print(rstoutput)
 
         self.example_text = rstoutput
 
