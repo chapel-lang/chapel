@@ -221,6 +221,8 @@ static void test7() {
         "for i in foo(new R()) {}" },
       [](ErrorGuard& guard, const QualifiedType& t) {
         assert(t.isUnknownOrErroneous());
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::NonIterable);
         guard.realizeErrors();
       },
       IterableType("R").definePromotionType("int").defineSerialIterator("1.0"));
@@ -233,6 +235,8 @@ static void test8() {
         "for i in foo(new R()) {}" },
       [](ErrorGuard& guard, const QualifiedType& t) {
         assert(t.isUnknownOrErroneous());
+        assert(guard.numErrors() == 1);
+        assert(guard.error(0)->type() == ErrorType::NonIterable);
         guard.realizeErrors();
       },
       IterableType("R").definePromotionType("int")
