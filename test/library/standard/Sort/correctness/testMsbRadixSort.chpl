@@ -81,8 +81,8 @@ use BitOps;
    assert(isSorted(A));
  }
  proc testReverseSorted(A, comparator) {
-   assert(isSorted(A, new ReverseComparator(comparator)));
-   assert(isSorted(A, new ReverseComparator()));
+   assert(isSorted(A, new reverseComparator(comparator)));
+   assert(isSorted(A, new reverseComparator()));
  }
 
 
@@ -112,7 +112,7 @@ use BitOps;
    testSorted(A, comparator);
 
    var Ar = input;
-   ShellSort.shellSort(Ar, new ReverseComparator(comparator));
+   ShellSort.shellSort(Ar, new reverseComparator(comparator));
    chplout.writef("shellSort- %?\n", Ar);
    testReverseSorted(Ar, comparator);
 
@@ -127,7 +127,7 @@ use BitOps;
 
      var Br = input;
      MSBRadixSort.msbRadixSort(Br, start, end,
-                               new ReverseComparator(comparator),
+                               new reverseComparator(comparator),
                                0, max(int), s);
      if i == 1 then
       chplout.writef("radixSort- %?\n", Br);
@@ -169,9 +169,9 @@ proc testSortsUnsigned(input) {
    assert(chpl_compare(9,3, new uintCriterion8()) > 0);
    assert(chpl_compare(2,3, new uintCriterion8()) < 0);
    assert(chpl_compare(0,0, new uintCriterion8()) == 0);
-   assert(chpl_compare(9,3, new ReverseComparator(new uintCriterion8())) < 0);
-   assert(chpl_compare(2,3, new ReverseComparator(new uintCriterion8())) > 0);
-   assert(chpl_compare(0,0, new ReverseComparator(new uintCriterion8())) == 0);
+   assert(chpl_compare(9,3, new reverseComparator(new uintCriterion8())) < 0);
+   assert(chpl_compare(2,3, new reverseComparator(new uintCriterion8())) > 0);
+   assert(chpl_compare(0,0, new reverseComparator(new uintCriterion8())) == 0);
 
    testSortsPositive([2,1]);
 

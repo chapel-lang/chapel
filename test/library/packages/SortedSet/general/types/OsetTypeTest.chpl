@@ -3,7 +3,7 @@ use SortedSet;
 
 
 proc testSet(type t) where isTuple(t) {
-  var s = new sortedSet(t, false, new DefaultComparator());
+  var s = new sortedSet(t, false, new defaultComparator());
 
   var x = (new t[0](1), new t[1](2));
 
@@ -19,7 +19,7 @@ proc testSet(type t) where isTuple(t) {
 }
 
 proc testSet(type t) where isBorrowedClass(t) {
-  var s = new sortedSet(t, false, new DefaultComparator());
+  var s = new sortedSet(t, false, new defaultComparator());
 
   // create values with 'owned' if t is a borrowed class type
   // (the set will still store borrowed)
@@ -35,7 +35,7 @@ proc testSet(type t) where isBorrowedClass(t) {
 }
 
 proc testSet(type t) {
-  var s = new sortedSet(t, false, new DefaultComparator());
+  var s = new sortedSet(t, false, new defaultComparator());
 
   var x = new t(1);
 

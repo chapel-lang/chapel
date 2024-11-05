@@ -2,13 +2,13 @@ use Sort;
 
 import Reflection.canResolveMethod;
 record ContrivedComparator {
-  const dc = new DefaultComparator();
+  const dc = new defaultComparator();
   proc keyPart(a, i: int) {
-    // Fall back to DefaultComparator implementation where possible
+    // Fall back to defaultComparator implementation where possible
     if canResolveMethod(dc, "keyPart", a, 0) {
       return dc.keyPart(a, i);
     } else if isTuple(a) {
-      // DefaultComparator does not handle non-homogeneous tuples
+      // defaultComparator does not handle non-homogeneous tuples
       return tupleKeyPart(a, i);
     } else {
       compilerError("No keyPart method for eltType ", a.type:string);
@@ -16,7 +16,7 @@ record ContrivedComparator {
   }
 
   proc tupleKeyPart(x, i:int) {
-    // This is the same as DefaultComparator.keyPart() for homogeneous tuple
+    // This is the same as defaultComparator.keyPart() for homogeneous tuple
     const tup = dc.keyPart(x(i), 1);
     const part = tup(1);
 //    const (_, part) = dc.keyPart(x(i), 1);

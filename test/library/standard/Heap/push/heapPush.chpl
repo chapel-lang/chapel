@@ -17,5 +17,5 @@ proc rangeTest(comparator) {
   }
 }
 
-rangeTest(new DefaultComparator());
-rangeTest(new ReverseComparator());
+rangeTest(new defaultComparator());
+rangeTest(new reverseComparator());

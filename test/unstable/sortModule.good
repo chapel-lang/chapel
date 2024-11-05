@@ -1,2 +1,0 @@
-sortModule.chpl:2: warning: 'DefaultComparator' is unstable and will have its name changed in the future
-sortModule.chpl:3: warning: 'ReverseComparator' is unstable and will have its name changed in the future

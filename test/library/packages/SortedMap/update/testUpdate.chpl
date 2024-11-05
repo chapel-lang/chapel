@@ -2,8 +2,8 @@ use Sort;
 use SortedMap;
 use utilFunctions;
 
-var m1 = new sortedMap(string, int, true, new DefaultComparator());
-var m2 = new sortedMap(string, int, true, new DefaultComparator());
+var m1 = new sortedMap(string, int, true, new defaultComparator());
+var m2 = new sortedMap(string, int, true, new defaultComparator());
 
 forall i in 1..20 with (ref m1) do
   m1[intToEnglish(i)] = i;

@@ -63,9 +63,9 @@ proc testSort(arr) {
 
   // Then, sort the array as reverse strings
   var b = arr;
-  sort(a, new ReverseComparator(new DefaultComparator()));
+  sort(a, new reverseComparator(new defaultComparator()));
   writeln(b);
-  assert(isSorted(a, new ReverseComparator(new DefaultComparator())));
+  assert(isSorted(a, new reverseComparator(new defaultComparator())));
 
   // Then, sort the array as records
   var c = for s in arr do stringToTwoRepeated(s);
@@ -77,9 +77,9 @@ proc testSort(arr) {
 
   // And reverse
   var d = forall s in arr do stringToTwoRepeated(s);
-  sort(d, new ReverseComparator(new MyComparator()));
+  sort(d, new reverseComparator(new MyComparator()));
   writeln(d);
-  assert(isSorted(d, new ReverseComparator(new MyComparator())));
+  assert(isSorted(d, new reverseComparator(new MyComparator())));
 }
 
 var t = stringToTwoRepeated("00011111");

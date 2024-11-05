@@ -1,7 +1,7 @@
 // bubble sort is generally too slow to be useful in practice
 // but, it is stable and in-place
 module BubbleSort {
-  import Sort.{DefaultComparator, chpl_check_comparator, chpl_compare};
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -13,7 +13,7 @@ module BubbleSort {
 
    */
   proc bubbleSort(ref Data: [?Dom] ?eltType,
-                  comparator:?rec = new DefaultComparator()) {
+                  comparator:?rec = new defaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {

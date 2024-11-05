@@ -19,7 +19,7 @@ record UselessKeyPartComparator: keyPartComparator {
         return (keyPartStatus.pre, 0:tt);
 
     } else if x.type == string {
-      return (new DefaultComparator()).keyPart(x, i);
+      return (new defaultComparator()).keyPart(x, i);
     } else if isNumericType(x.type) {
       if i == 0 then
         return (keyPartStatus.returned, x);
@@ -79,13 +79,13 @@ proc checkSorts(arr, comparator) {
 }
 
 proc checkSorts(arr) {
-  checkSorts(arr, new DefaultComparator());
-  checkSorts(arr, new ReverseComparator());
+  checkSorts(arr, new defaultComparator());
+  checkSorts(arr, new reverseComparator());
   checkSorts(arr, new UselessKeyComparator());
-  checkSorts(arr, new ReverseComparator(new UselessKeyComparator()));
+  checkSorts(arr, new reverseComparator(new UselessKeyComparator()));
   if !isRealOrTupleOfReal(arr[1].type) && !isTupleOfString(arr[1].type) {
     checkSorts(arr, new UselessKeyPartComparator());
-    checkSorts(arr, new ReverseComparator(new UselessKeyPartComparator()));
+    checkSorts(arr, new reverseComparator(new UselessKeyPartComparator()));
   }
 }
 

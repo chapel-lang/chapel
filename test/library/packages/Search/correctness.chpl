@@ -56,7 +56,7 @@ proc main() {
 
   /* Comparators */
 
-  result = search(revA, 2, comparator=new ReverseComparator(), sorted=true);
+  result = search(revA, 2, comparator=new reverseComparator(), sorted=true);
   checkSearch(result, (true, 1), revA, 'search');
 
   result = search(absA, 2, comparator=absKey, sorted=true);
@@ -93,7 +93,7 @@ proc main() {
 
 /* Checks array and resets values -- any output results in failure */
 proc checkSearch(result, expected, arr, searchProc:string,
-                 cmp = new DefaultComparator()) {
+                 cmp = new defaultComparator()) {
   if result != expected {
     writeln(searchProc, '() function failed');
     writeln('eltType:    ', arr.eltType:string);
@@ -112,8 +112,8 @@ proc checkSearch(result, expected, arr, searchProc:string,
 
 
 /* Enables more useful error messages */
-proc DefaultComparator.name() { return 'DefaultComparator';}
-proc ReverseComparator.name() { return 'ReverseComparator';}
+proc defaultComparator.name() { return 'defaultComparator';}
+proc reverseComparator.name() { return 'reverseComparator';}
 
 
 /* Key Sort by absolute value */

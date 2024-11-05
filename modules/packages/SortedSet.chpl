@@ -40,13 +40,13 @@ module SortedSet {
   private use Treap;
   private use Reflection;
   private use IO;
-  public use Sort only DefaultComparator;
+  public use Sort only defaultComparator;
 
   // TODO: remove this module and its public use when the deprecations have been
   // removed
   pragma "ignore deprecated use"
   private module HideDeprecatedReexport {
-    public use Sort only defaultComparator;
+    public use Sort only DefaultComparator;
   }
 
   public use HideDeprecatedReexport;
@@ -58,7 +58,7 @@ module SortedSet {
     /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
-    type comparatorType = DefaultComparator;
+    type comparatorType = defaultComparator;
 
     /* The underlying implementation */
     @chpldoc.nodoc
@@ -72,7 +72,7 @@ module SortedSet {
       :arg comparatorType: The comparator type
     */
     proc init(type eltType, param parSafe = false,
-              type comparatorType = DefaultComparator) {
+              type comparatorType = defaultComparator) {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparatorType = comparatorType;
@@ -108,7 +108,7 @@ module SortedSet {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              comparator: record = new DefaultComparator())
+              comparator: record = new defaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;

@@ -1,11 +1,11 @@
 use Sort, CTypes;
 
 //
-// Static usage, a user tries to call `keyPart` from DefaultComparator or
-// ReverseComparator without `-suseKeyPartStatus`
+// Static usage, a user tries to call `keyPart` from defaultComparator or
+// reverseComparator without `-suseKeyPartStatus`
 //
 
-var comparators = (new DefaultComparator(), new ReverseComparator());
+var comparators = (new defaultComparator(), new reverseComparator());
 var titles = ("Default", "Reverse");
 
 for param i in 0..#comparators.size {
@@ -77,9 +77,9 @@ sort(arr, comparator=new (getComparator(2))());
 writeln("isSorted after ", isSorted(arr, comparator=new (getComparator(3))()));
 
 fillRandom(arr);
-writeln("isSorted before ", isSorted(arr, comparator=new ReverseComparator(new (getComparator(4))())));
-sort(arr, comparator=new ReverseComparator(new (getComparator(5))()));
-writeln("isSorted after ", isSorted(arr, comparator=new ReverseComparator(new (getComparator(6))())));
+writeln("isSorted before ", isSorted(arr, comparator=new reverseComparator(new (getComparator(4))())));
+sort(arr, comparator=new reverseComparator(new (getComparator(5))()));
+writeln("isSorted after ", isSorted(arr, comparator=new reverseComparator(new (getComparator(6))())));
 
 fillRandom(arr);
 writeln("isSorted before ", isSorted(arr, comparator=new (getComparator(7))()));
