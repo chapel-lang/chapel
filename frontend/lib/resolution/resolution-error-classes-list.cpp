@@ -1163,6 +1163,8 @@ static void printTheseResults(
     } else if (reason == TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR) {
       wr.message(start, "the first zippered iterand had a parallel follower, "
                         "which is prioritized over serial iteration", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH) {
+      wr.message(start, "the claimed scalar type for promotion does not match the type yielded from the iterator", end);
     }
 
     depth--;

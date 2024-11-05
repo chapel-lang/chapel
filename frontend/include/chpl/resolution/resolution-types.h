@@ -2036,6 +2036,9 @@ struct TheseResolutionResult {
     /* We started resolving a zippered-like iterator using (e.g.), a leader
        iterator, so we didn't attempt to use a follower iterator. */
     THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
+    /* Mismatch between the claimed promotion type and the type yielded by the
+       iterator. */
+    THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH,
   };
 
  private:

@@ -5750,7 +5750,8 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
                                      const IteratorType* iterType,
                                      std::vector<QualifiedType> zippered,
                                      uast::Function::IteratorKind iterKind,
-                                     const types::QualifiedType& followThis) {
+                                     const types::QualifiedType& followThis,
+                                     std::vector<QualifiedType>* outYieldTypes = nullptr) {
   bool leaderOnly = iterKind == Function::LEADER;
   bool standalone = iterKind == Function::STANDALONE;
   bool serial = iterKind == Function::SERIAL;
@@ -5786,6 +5787,10 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
     if (!tr) {
       failedZipResult = std::make_unique<TheseResolutionResult>(std::move(tr));
       break;
+    }
+
+    if (outYieldTypes) {
+      outYieldTypes->push_back(tr.yieldedType());
     }
 
     if (leaderOnly) return tr;
@@ -5845,6 +5850,8 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
                                      uast::Function::IteratorKind iterKind,
                                      const types::QualifiedType& followThis) {
   std::vector<QualifiedType> receiverTypes;
+  std::vector<QualifiedType> scalarFormalTypes;
+  std::vector<QualifiedType> yieldTypes;
 
   auto typedScalarFn = promoIt->scalarFn();
   auto untypedScalarFn = typedScalarFn->untyped();
@@ -5857,8 +5864,34 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
     }
   }
 
-  return resolveTheseCallForZipperedArguments(rc, astContext, promoIt,
-                                              receiverTypes, iterKind, followThis);
+  auto tr = resolveTheseCallForZipperedArguments(rc, astContext, promoIt,
+                                                 receiverTypes, iterKind, followThis, &yieldTypes);
+
+  if (!tr) return tr;
+
+  // Skip validating yield types for leader iterators.
+  if (iterKind == Function::LEADER) return tr;
+
+  // Validate that yield types match the promotion types.
+  int index = 0;
+  for (auto ri = receiverTypes.begin(), yi = yieldTypes.begin();
+       ri != receiverTypes.end() && yi != yieldTypes.end(); ++ri, ++yi, ++index) {
+    auto promotionType = getPromotionType(rc->context(), *ri);
+    if (promotionType.type() != yi->type()) {
+      auto reason = TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH;
+      auto failureForIndex = TheseResolutionResult::failure(reason, *ri);
+      auto failureForIndexPtr =
+        std::make_unique<TheseResolutionResult>(std::move(failureForIndex));
+
+      auto zipperedFailure =
+        TheseResolutionResult::failure(std::move(failureForIndexPtr), index,
+                                       QualifiedType(QualifiedType::CONST_VAR,
+                                         promoIt));
+      return zipperedFailure;
+    }
+  }
+
+  return tr;
 }
 
 TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
