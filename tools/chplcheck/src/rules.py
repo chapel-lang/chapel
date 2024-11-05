@@ -391,7 +391,7 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
         """
-        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
 
         if node.name().startswith("chpl_"):
