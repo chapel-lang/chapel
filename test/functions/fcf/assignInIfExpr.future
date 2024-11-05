@@ -1,0 +1,5 @@
+bug: syntax error when assigning fcf via an if expression
+#26213
+
+Note that this syntax did not work with the lambda keyword before, so will take
+more effort to fix than assignLater.chpl

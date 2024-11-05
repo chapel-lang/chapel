@@ -1,0 +1,2 @@
+bug: syntax error when assigning fcf instead of relying on initialization
+#26213
