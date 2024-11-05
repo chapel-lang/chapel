@@ -172,7 +172,7 @@ namespace {
 #else
     auto& ctx = V->getContext();
     for (auto attr: AttributeSet::get(ctx, mask)) {
-      V->removeAttribute(AttributeList::ReturnIndex, attr);
+      V->removeAttribute(AttributeList::ReturnIndex, attr.getKindAsEnum());
     }
 #endif
 #endif
@@ -189,7 +189,7 @@ namespace {
 #else
     auto& ctx = V->getContext();
     for (auto attr: AttributeSet::get(ctx, mask)) {
-      V->removeAttribute(idx+1, attr);
+      V->removeAttribute(idx+1, attr.getKindAsEnum());
     }
 #endif
 #endif
