@@ -3,5 +3,5 @@ import os
 # LLVM 19 changed how debug information is printed
 print(
     os.getenv('CHPL_LLVM_VERSION') == 'none' or
-    int(os.getenv('CHPL_LLVM_VERSION')) >= 19
+    int(os.getenv('CHPL_LLVM_VERSION')) < 19
 )
