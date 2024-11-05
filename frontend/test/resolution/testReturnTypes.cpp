@@ -142,8 +142,7 @@ enum class ControlFlowResult {
 };
 
 static void testControlFlow(std::string controlFlow, ControlFlowResult expectedResult) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto program = buildControlFlowProgram(controlFlow);
   std::cout << "--- test program ---" << std::endl;

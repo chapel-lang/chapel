@@ -106,8 +106,7 @@ static void test6() {
 }
 
 static void testIfVarErrorUseInElseBranch1() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -153,8 +152,7 @@ static void testIfVarErrorUseInElseBranch1() {
 
 // In this variation the use is in a 'else-if'.
 static void testIfVarErrorUseInElseBranch2() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -205,8 +203,7 @@ static void testIfVarErrorUseInElseBranch2() {
 
 // In this variation the use is in a deeply nested block.
 static void testIfVarErrorUseInElseBranch3() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -250,8 +247,7 @@ static void testIfVarErrorUseInElseBranch3() {
 
 // Uses of two if-vars with the same name across multiple branches.
 static void testIfVarErrorUseInElseBranch4() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -321,8 +317,7 @@ static void testIfVarErrorUseInElseBranch4() {
 }
 
 static void testIfVarErrorNonClassType() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -354,8 +349,7 @@ static void testIfVarErrorNonClassType() {
 }
 
 static void testIfVarNonNilInThen() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);

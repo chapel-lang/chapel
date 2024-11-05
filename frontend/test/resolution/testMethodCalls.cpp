@@ -29,8 +29,7 @@
 
 // Test resolving a simple primary and secondary method in defining scope.
 static void test1() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test1.chpl");
@@ -106,8 +105,7 @@ static void test1() {
 
 // Similar test but for parenless methods.
 static void test2() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test2.chpl");
@@ -183,8 +181,7 @@ static void test2() {
 // test case to lock in correct behavior w.r.t. T being both a
 // field and a formal.
 static void test3() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents = R""""(
@@ -206,8 +203,7 @@ static void test3() {
 }
 
 static void test4() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test4.chpl");
@@ -267,8 +263,7 @@ static void test4() {
 
 // Test a field being named the same as the record.
 static void test5() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "test5.chpl");
@@ -322,8 +317,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -350,8 +344,7 @@ static void test6() {
 
 static void test7() {
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program =
@@ -369,8 +362,7 @@ static void test7() {
     assert(initType.type()->isIntType());
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program =
@@ -392,8 +384,7 @@ static void test7() {
 
 static void runAndAssert(std::string program,
                          std::function<bool(QualifiedType)> fn) {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   QualifiedType initType = resolveTypeOfXInit(context, program);
   //assert(initType.type()->isStringType());
@@ -483,8 +474,7 @@ static void test8() {
   // Ensure that methods whose where-clause always results in 'false' cannot
   // be called.
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = base + R""""(
@@ -501,8 +491,7 @@ static void test8() {
 }
 
 static void test9() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -539,8 +528,7 @@ static void test9() {
 static void test10() {
   // Ensure that secondary methods like 'proc x.myMethod()' are generic
   // even if 'x' is generic-with-defaults.
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -573,8 +561,7 @@ static void test10() {
 static void test11() {
   // Type method calls are allowed on nilable classes; their receiver should
   // be generic over nilability and management.
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -599,8 +586,7 @@ static void test11() {
 }
 
 static void test12() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -633,8 +619,7 @@ static void test12() {
 static void test13() {
   // Test fields that are deemed concrete by the initial type constructor
   // logic but are then discovered to be generic (this should produce errors).
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -671,8 +656,7 @@ static void test14() {
   // fields of parent class Bar aren't instantiated yet. A robust check
   // (locked down by this issue) must ensure that all parent classes are
   // fully instantiated before issuing the error.
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -705,8 +689,7 @@ static void test14() {
 static void test14b() {
   // Test that the error from test13 is correctly emitted when inheritance
   // is in play.
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -744,8 +727,7 @@ static void test16() {
 
   {
     // For automatic variable
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -770,8 +752,7 @@ static void test16() {
 
   {
     // For formal
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -800,8 +781,7 @@ static void test17() {
 
   // Parenful
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -827,8 +807,7 @@ static void test17() {
 
   // Parenless
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(

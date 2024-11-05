@@ -229,8 +229,7 @@ static void test3() {
 // case for instantiation, conversions, and type construction
 static void test4() {
   printf("test4\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
@@ -1178,7 +1177,7 @@ static void test22() {
   // Resolve unambiguous call to 'this'.
   {
     printf("part 1\n");
-    context->advanceToNextRevision(true);
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string contents =
@@ -1561,11 +1560,9 @@ static void test25() {
 static void test26() {
   // Test resolving a generic type field usage in a method signature.
 
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // 'this' qualified, type field
     std::string prog =
       R"""(
@@ -1581,11 +1578,11 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // unqualified, type field
     std::string prog =
       R"""(
@@ -1601,11 +1598,11 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // 'this' qualified, type parenless proc, concrete receiver
     std::string prog =
       R"""(
@@ -1621,11 +1618,11 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // unqualified, type parenless proc, concrete receiver
     std::string prog =
       R"""(
@@ -1641,11 +1638,11 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // 'this' qualified, type parenless proc, generic receiver
     std::string prog =
       R"""(
@@ -1662,11 +1659,11 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
     // unqualified, type parenless proc, generic receiver
     std::string prog =
       R"""(
@@ -1683,8 +1680,6 @@ static void test26() {
     auto t = resolveTypeOfXInit(context, prog);
     ensureParamInt(t, 1);
     assert(guard.realizeErrors() == 0);
-
-    context->advanceToNextRevision(false);
   }
 }
 
@@ -1713,9 +1708,6 @@ static void test27() {
 static void testInfiniteCycleBug() {
   auto context = buildStdContext();
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
-
   CompilerFlags flags;
   flags.set(CompilerFlags::WARN_UNSTABLE, true);
   setCompilerFlags(context, std::move(flags));
@@ -1732,8 +1724,7 @@ static void testInfiniteCycleBug() {
 
   std::ignore = resolveQualifiedTypeOfX(context, program0);
 
-  context->advanceToNextRevision(false);
-  setupModuleSearchPaths(context, false, false, {}, {});
+  context = buildStdContext();
 
   std::string program1 =
     R""""(

@@ -158,8 +158,7 @@ static void testEmptyRecordCompilerGenInit() {
 }
 
 static void testTertMethodCallCrossModule() {
-  Context context;
-  Context* ctx = &context;
+  Context* ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);

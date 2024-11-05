@@ -365,15 +365,6 @@ module M {
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
 static void testBadDomain(Context* contextWithStd, std::string domainType) {
-  // Without standard modules
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    testBadDomainHelper(domainType, context, guard);
-  }
-
   // With standard modules
   {
     contextWithStd->advanceToNextRevision(false);

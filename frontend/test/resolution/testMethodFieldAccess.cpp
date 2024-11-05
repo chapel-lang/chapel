@@ -40,8 +40,7 @@ static void testIt(const char* testName,
                    const char* fieldIdStr,
                    bool scopeResolveOnly=false) {
   printf("test %s\n", testName);
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
 
   auto path = UniqueString::get(context, testName);
   std::string contents = program;

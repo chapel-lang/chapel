@@ -43,8 +43,7 @@ static void testIt(const char* testName,
                    int expectedErrorCount=0,
                    bool validateClassType=true) {
   printf("test %s\n", testName);
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
   auto path = UniqueString::get(context, testName);
   std::string contents = program;
@@ -327,7 +326,7 @@ static void test9() {
 // "try without a catchall in a non-throwing function"
 static void test10(Parser* parser) {
   // test for a try without a catchall in a non-throwing function
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test10.chpl");
 
   ErrorGuard guard(ctx);
@@ -359,7 +358,7 @@ static void test10(Parser* parser) {
 
 // catchall placed before the end of a catch list in non-throwing function
 static void test11(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test11.chpl");
 
   ErrorGuard guard(ctx);
@@ -376,7 +375,6 @@ static void test11(Parser* parser) {
                           }
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -395,7 +393,7 @@ static void test11(Parser* parser) {
 
 // cannot throw in a non-throwing function
 static void test12(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test12.chpl");
 
   ErrorGuard guard(ctx);
@@ -406,7 +404,6 @@ static void test12(Parser* parser) {
                           }
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -425,7 +422,7 @@ static void test12(Parser* parser) {
 
 // "is in a try but not handled"
 static void test13(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test13.chpl");
 
   ErrorGuard guard(ctx);
@@ -442,7 +439,6 @@ static void test13(Parser* parser) {
                           }
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -470,7 +466,7 @@ static void test13(Parser* parser) {
 
 // "deinit is not permitted to throw"
 static void test14(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test14.chpl");
 
   ErrorGuard guard(ctx);
@@ -481,7 +477,6 @@ static void test14(Parser* parser) {
                           }
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -500,7 +495,7 @@ static void test14(Parser* parser) {
 // test for a try wit a catch but not a catchall in a non-throwing function
 static void test15(Parser* parser) {
 
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test15.chpl");
 
   ErrorGuard guard(ctx);
@@ -517,7 +512,6 @@ static void test15(Parser* parser) {
                           }
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -540,7 +534,7 @@ static void test15(Parser* parser) {
 
 // check fatal error handling mode
 static void test16(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test16.chpl");
 
   ErrorGuard guard(ctx);
@@ -553,7 +547,6 @@ static void test16(Parser* parser) {
                         }
                         canThrow(true);
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -569,7 +562,7 @@ static void test16(Parser* parser) {
 // check relaxed error handling mode
 static void test17(Parser* parser) {
 
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test17.chpl");
 
   ErrorGuard guard(ctx);
@@ -584,7 +577,6 @@ static void test17(Parser* parser) {
                           canThrow(true);
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -603,7 +595,7 @@ static void test17(Parser* parser) {
 // check fatal error handling mode prototype module
 static void test18(Parser* parser) {
 
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test18.chpl");
 
   ErrorGuard guard(ctx);
@@ -618,7 +610,6 @@ static void test18(Parser* parser) {
                           canThrow(true);
                         }
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -636,7 +627,7 @@ static void test18(Parser* parser) {
 // check fatal error handling mode - implicit module
 static void test19(Parser* parser) {
 
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test19.chpl");
 
   ErrorGuard guard(ctx);
@@ -649,7 +640,6 @@ static void test19(Parser* parser) {
                         }
                         canThrow(true);
               )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -665,7 +655,7 @@ static void test19(Parser* parser) {
 
 
 static void test20(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test20.chpl");
 
   ErrorGuard guard(ctx);
@@ -687,7 +677,6 @@ static void test20(Parser* parser) {
                           }
                         }
                        )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -711,7 +700,7 @@ static void test20(Parser* parser) {
 
 
 static void test21(Parser* parser) {
- auto ctx = parser->context();
+ auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test21.chpl");
 
   ErrorGuard guard(ctx);
@@ -730,7 +719,6 @@ static void test21(Parser* parser) {
                           }
                         }
                        )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -745,7 +733,7 @@ static void test21(Parser* parser) {
 }
 
 static void test22(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test22.chpl");
 
   ErrorGuard guard(ctx);
@@ -762,7 +750,6 @@ static void test22(Parser* parser) {
                           }
                         }
                        )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -782,7 +769,7 @@ static void test22(Parser* parser) {
 
 // nested try where catchall is only in outermost try
 static void test23(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test23.chpl");
 
   ErrorGuard guard(ctx);
@@ -799,7 +786,6 @@ static void test23(Parser* parser) {
                           }
                         }
                        )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -810,7 +796,7 @@ static void test23(Parser* parser) {
 
 // nested try without a catchall
 static void test24(Parser* parser) {
-  auto ctx = parser->context();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test24.chpl");
 
   ErrorGuard guard(ctx);
@@ -827,7 +813,6 @@ static void test24(Parser* parser) {
                           }
                         }
                        )"""";
-  ctx->advanceToNextRevision(false);
   setFileText(ctx, path, program);
   const ModuleVec& vec = parseToplevel(ctx, path);
   auto mod = vec[0]->toModule();
@@ -862,8 +847,7 @@ static void test25() {
 
 
 int main() {
-  Context context;
-  Context* ctx = &context;
+  Context* ctx = buildStdContext();
   auto parser = Parser::createForTopLevelModule(ctx);
 
   Parser* p = &parser;

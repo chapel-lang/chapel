@@ -430,8 +430,7 @@ static void test1(void) {
 
 // Warnings should not be emitted for method receivers.
 static void test2(void) {
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+  Context* ctx = turnOnWarnUnstable(buildStdContext());
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
@@ -577,8 +576,7 @@ static void test4(ErrorType expectedError) {
         ? "@unstable"
         : "@deprecated";
 
-  Context context;
-  Context* ctx = turnOnWarnUnstable(&context);
+  Context* ctx = turnOnWarnUnstable(buildStdContext());
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);

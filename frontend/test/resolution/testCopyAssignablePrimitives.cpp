@@ -38,8 +38,7 @@ static constexpr bool testExact = !testType;
 static void testPrimitive(
     std::string preamble,
     std::vector<std::tuple<const char*, const char*, bool, bool>> args) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   /* ErrorGuard guard(context); */
 
   std::stringstream ps;

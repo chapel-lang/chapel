@@ -40,13 +40,6 @@
 static bool debug = true;
 static bool verbose = true;
 
-static std::vector<Context*> globalContexts;
-static Context* getNewContext() {
-  Context* ret = new Context();
-  globalContexts.push_back(ret);
-  return ret;
-}
-
 std::vector<const ErrorBase*> errors;
 
 static const Module* parseModule(Context* context, const char* src) {
@@ -505,8 +498,7 @@ static void testMatcher(Qualifier formalIntent,
   std::string program = buildProgram(formalIntent, formalType, count,
                                      info, fail);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -536,7 +528,7 @@ static void testMatcher(Qualifier formalIntent,
 static Collector
 customHelper(std::string program, bool fail = false,
              std::vector<owned<ErrorBase>>* errorsOut=nullptr) {
-  Context* context = getNewContext();
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -874,11 +866,6 @@ int main(int argc, char** argv) {
   testAlignment();
 
   printf("\nAll tests passed successfully.\n");
-
-  // Cleanup
-  for (auto* con : globalContexts) {
-    delete con;
-  }
 
   return 0;
 }
