@@ -391,6 +391,23 @@ static void test18() {
 
 }
 
+static void testTertiaryMethod() {
+  // tertiary method definitions of chpl__promotionType
+  // (defined in the scope of iteration) are not allowed.
+  runProgram(
+      { "{",
+        "  proc R.chpl__promotionType() type do return int;",
+        "  proc foo(x: int) do return x;",
+        "  for i in foo(new R()) {}",
+        "}"},
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(t.isUnknownOrErroneous());
+        assert(guard.realizeErrors());
+      },
+      IterableType("R").defineSerialIterator("1"));
+
+}
+
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
@@ -417,6 +434,8 @@ int main() {
     test17();
     test18();
   }
+
+  testTertiaryMethod();
 
   return 0;
 }
