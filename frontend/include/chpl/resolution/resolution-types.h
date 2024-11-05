@@ -2126,19 +2126,19 @@ struct TheseResolutionResult {
   operator bool() const { return reason_ == THESE_SUCCESS; }
 
   bool operator==(const TheseResolutionResult& other) const {
-    if (this->callResult_ && other.callResult_) {
-      if (*this->callResult_ != *other.callResult_) return false;
-    } else if (this->callResult_ || other.callResult_) {
-      return false;
+    bool callResultEqual = this->callResult_ == other.callResult_;
+    if (!callResultEqual && this->callResult_ && other.callResult_) {
+      callResultEqual = *this->callResult_ == *other.callResult_;
     }
 
-    if (this->zipperedFailure_ && other.zipperedFailure_) {
-      if (*this->zipperedFailure_ != *other.zipperedFailure_) return false;
-    } else if (this->zipperedFailure_ || other.zipperedFailure_) {
-      return false;
+    bool zipperedFailureEqual = this->zipperedFailure_ == other.zipperedFailure_;
+    if (!zipperedFailureEqual && this->zipperedFailure_ && other.zipperedFailure_) {
+      zipperedFailureEqual = *this->zipperedFailure_ == *other.zipperedFailure_;
     }
 
     return reason_ == other.reason_ &&
+           callResultEqual &&
+           zipperedFailureEqual &&
            zipperedFailureIndex_ == other.zipperedFailureIndex_ &&
            iterandType_ == other.iterandType_;
   }
