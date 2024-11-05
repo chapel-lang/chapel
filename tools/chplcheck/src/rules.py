@@ -153,7 +153,7 @@ def check_pascal_case(
     )
 
 
-def register_rules(driver: LintDriver):
+def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
         """
