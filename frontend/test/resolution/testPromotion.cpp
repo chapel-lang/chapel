@@ -31,6 +31,8 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/util/version-info.h"
 
+static bool primary = true;
+
 struct IterableType {
   std::string typeName;
   std::vector<std::string> body;
@@ -38,35 +40,35 @@ struct IterableType {
 
   IterableType(std::string typeName) : typeName(std::move(typeName)) {}
 
-  void pushSignature(const char* fnType, std::string signature, bool primary) {
+  void pushSignature(const char* fnType, std::string signature) {
     if (primary) {
       body.push_back(std::string(fnType) + " " + signature);
     } else {
-      nearby.push_back(std::string(fnType) + " " + typeName + signature);
+      nearby.push_back(std::string(fnType) + " " + typeName + "." + signature);
     }
   }
 
-  IterableType& definePromotionType(const char* type, bool primary = true) {
+  IterableType& definePromotionType(const char* type) {
     auto sig = std::string("chpl__promotionType() type do return ") + type + ";";
-    pushSignature("proc", std::move(sig), primary);
+    pushSignature("proc", std::move(sig));
     return *this;
   }
 
   IterableType& defineSerialIterator(const char* yieldValue) {
     auto sig = std::string("these() do yield ") + yieldValue + ";";
-    pushSignature("iter", std::move(sig), true);
+    pushSignature("iter", std::move(sig));
     return *this;
   }
 
   IterableType& defineStandaloneIterator(const char* yieldValue) {
     auto sig = std::string("these(param tag) where tag == iterKind.standalone do yield ") + yieldValue + ";";
-    pushSignature("iter", std::move(sig), true);
+    pushSignature("iter", std::move(sig));
     return *this;
   }
 
   IterableType& defineLeaderIterator(const char* yieldValue) {
     auto sig = std::string("these(param tag) where tag == iterKind.leader do yield ") + yieldValue + ";";
-    pushSignature("iter", std::move(sig), true);
+    pushSignature("iter", std::move(sig));
     return *this;
   }
 
@@ -74,7 +76,7 @@ struct IterableType {
     auto sig =
       std::string("these(param tag, followThis: ") + followThisType +
       ") where tag == iterKind.follower do yield " + yieldValue + ";";
-    pushSignature("iter", std::move(sig), true);
+    pushSignature("iter", std::move(sig));
     return *this;
   }
 
@@ -390,24 +392,31 @@ static void test18() {
 }
 
 int main() {
-  test0();
-  test1();
-  test2();
-  test3();
-  test4();
-  test5();
-  test6();
-  test7();
-  test8();
-  test9();
-  test10();
-  test11();
-  test12();
-  test13();
-  test14();
-  test15();
-  test16();
-  test17();
-  test18();
+  // Run tests with primary and secondary method definitions (expecting
+  // the same results).
+  for (auto primarySetting : { true, false }) {
+    primary = primarySetting;
+
+    test0();
+    test1();
+    test2();
+    test3();
+    test4();
+    test5();
+    test6();
+    test7();
+    test8();
+    test9();
+    test10();
+    test11();
+    test12();
+    test13();
+    test14();
+    test15();
+    test16();
+    test17();
+    test18();
+  }
+
   return 0;
 }
