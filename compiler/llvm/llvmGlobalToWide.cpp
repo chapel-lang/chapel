@@ -170,9 +170,10 @@ namespace {
 #if HAVE_LLVM_VER > 110
     V->removeAttributes(AttributeList::ReturnIndex, mask);
 #else
-  for (auto attr : mask) {
-    V->removeAttribute(AttributeList::ReturnIndex, attr);
-  }
+    auto& ctx = V->getContext();
+    for (auto attr: AttributeSet::get(ctx, mask)) {
+      V->removeAttribute(AttributeList::ReturnIndex, attr);
+    }
 #endif
 #endif
   }
@@ -186,9 +187,10 @@ namespace {
 #if HAVE_LLVM_VER > 110
     V->removeAttributes(idx+1, mask);
 #else
-  for (auto attr : mask) {
-    V->removeAttribute(idx+1, attr);
-  }
+    auto& ctx = V->getContext();
+    for (auto attr: AttributeSet::get(ctx, mask)) {
+      V->removeAttribute(idx+1, attr);
+    }
 #endif
 #endif
   }
