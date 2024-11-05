@@ -1737,6 +1737,38 @@ static void testInitGenericAfterConcrete() {
   }
 }
 
+static void testNilFieldInit() {
+  std::string program = R"""(
+    class C { var x: int; }
+    record R {
+      var x: unmanaged C?;
+      proc init() {
+        x = nil;
+      }
+    }
+
+    var x: R;
+  )""";
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+  auto m = parseModule(context, std::move(program));
+  auto recordDecl = m->stmt(1)->toAggregateDecl();
+  auto initFunc = recordDecl->declOrComment(1)->toFunction();
+  assert(initFunc);
+
+  auto untyped = UntypedFnSignature::get(context, initFunc);
+  auto typed = typedSignatureInitial(rc, untyped);
+  auto inFn = resolveFunction(rc, typed, nullptr);
+  assert(inFn);
+
+  assert(guard.errors().size() == 0);
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1782,6 +1814,8 @@ int main() {
   testImplicitSuperInit();
 
   testInitGenericAfterConcrete();
+
+  testNilFieldInit();
 
   return 0;
 }
