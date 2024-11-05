@@ -167,7 +167,14 @@ namespace {
 #if HAVE_LLVM_VER >= 140
     V->removeRetAttrs(mask);
 #else
+#if HAVE_LLVM_VER > 110
     V->removeAttributes(AttributeList::ReturnIndex, mask);
+#else
+    auto& ctx = V->getContext();
+    for (auto attr: AttributeSet::get(ctx, mask)) {
+      V->removeAttribute(AttributeList::ReturnIndex, attr.getKindAsEnum());
+    }
+#endif
 #endif
   }
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
@@ -177,7 +184,14 @@ namespace {
 #if HAVE_LLVM_VER >= 140
     V->removeParamAttrs(idx, mask);
 #else
+#if HAVE_LLVM_VER > 110
     V->removeAttributes(idx+1, mask);
+#else
+    auto& ctx = V->getContext();
+    for (auto attr: AttributeSet::get(ctx, mask)) {
+      V->removeAttribute(idx+1, attr.getKindAsEnum());
+    }
+#endif
 #endif
   }
 
