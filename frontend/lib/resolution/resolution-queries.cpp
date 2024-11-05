@@ -3764,10 +3764,14 @@ static bool resolveFnCallSpecial(Context* context,
 
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
-      context->error(astForErr, "bad call to %s", ci.name().c_str());
-      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                  ErroneousType::get(context));
-      return true;
+      if (!ci.isMethodCall()) {
+        context->error(astForErr, "bad call to %s", ci.name().c_str());
+        exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                    ErroneousType::get(context));
+        return true;
+      } else {
+        return false;
+      }
     }
     auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
