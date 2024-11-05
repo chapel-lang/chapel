@@ -486,3 +486,10 @@ The linter is run as follows:
    path/to/myfile/myfile.chpl:1: node violates rule NoFunctionFoo
    path/to/myfile/myfile.chpl:2: node violates rule NoVariableBar
 
+
+Current Rules
+-------------
+
+The following is a list of all the rules currently implemented in ``chplcheck``:
+
+.. include:: generated/rules.rst

@@ -37,6 +37,17 @@ chplcheck-venv:
 
 chplcheck: chplcheck-venv
 
+chplcheck-docs: chplcheck
+	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
+		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+		python3 $(CHPL_MAKE_HOME)/doc/util/chplcheck-docs.py \
+		-r $(CHPL_MAKE_HOME)/tools/chplcheck/src/rules.py \
+		-o $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated \
+		--examples-directory $(CHPL_MAKE_HOME)/tools/chplcheck/examples
+
+clean-chplcheck-docs:
+	rm -rf $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated
+
 clean: clean-pycache
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
@@ -46,7 +57,7 @@ endif
 
 cleanall: clean
 
-clobber: clean
+clobber: clean clean-chplcheck-docs
 
 clean-pycache:
 	find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +
