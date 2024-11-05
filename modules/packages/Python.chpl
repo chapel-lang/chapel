@@ -21,9 +21,13 @@
 /* Library for interfacing with Python from Chapel code.
 
 
+  Caveats
 
-  To build Chapel code that uses this module, you will need to include the Python
-  header files and link against the Python library. This can be done by setting
+
+  Compiling Chapel code
+  ---------------------
+
+  Building Chapel code that uses this module, . This can be done by setting
   the ``--ccflags`` and ``--ldflags`` options when compiling Chapel code.
   The following example shows how to build Chapel code that uses this module:
 
@@ -37,7 +41,22 @@
           -L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION ...Chapel source files...
 
 
-  TODO: example codes
+  Parallel execution
+  ------------------
+
+
+  Defining Custom Types
+  ---------------------
+
+  Example Codes
+  -------------
+
+  // TODO: example for bs4
+
+  // TODO: example for apply
+
+  // TODO: example for pytorch
+
 */
 @unstable("The Python module's interface is under active development and may change")
 module Python {
@@ -159,9 +178,11 @@ module Python {
       Query to see if an Python exception has occurred. If there is an
       exception, the Python exception will be thrown as a :type:`Exception`.
 
-      This method should be called after any Python API call that may fail.
-      The wrapping types in this module will call this method automatically,
-      most users should not need to call this method directly.
+      .. note::
+
+         This method should be called after any Python API call that may fail.
+         The wrapping types in this module will call this method automatically,
+         most users should not need to call this method directly.
     */
     inline proc checkException() throws {
       var ptype, pvalue, ptraceback: c_ptr(void);
@@ -441,9 +462,9 @@ module Python {
     Base class for Chapel/Python type converters.
 
     To create a custom type converter, subclass this class and implement the
-    :proc:`handlesType`, :proc:`toPython`, and :proc:`fromPython` methods.
-    Then register an instance of this class with the interpreter by calling
-    :proc:`Interpreter.registerConverter`.
+    :proc:`~TypeConverter.handlesType`, :proc:`~TypeConverter.toPython`, and
+    :proc:`~TypeConverter.fromPython` methods. Then register an instance of this
+    class with the interpreter by calling :proc:`~Interpreter.registerConverter`.
   */
   class TypeConverter {
     /*
@@ -461,7 +482,7 @@ module Python {
       This method should convert the Chapel value to a Python object and return
       the :type:`~CTypes.c_ptr` to the underlying Python object.
 
-      The :proc:`Interpreter.toPython` method will call this method.
+      The :proc:`~Interpreter.toPython` method will call this method.
     */
     proc toPython(interpreter: borrowed Interpreter, type T, value: T): c_ptr(void) throws {
       import HaltWrappers;
@@ -473,7 +494,7 @@ module Python {
       This method should convert the Python object to a Chapel value and return
       the Chapel value.
 
-      The :proc:`Interpreter.fromPython` method will call this method.
+      The :proc:`~Interpreter.fromPython` method will call this method.
     */
     proc fromPython(interpreter: borrowed Interpreter, type T, obj: c_ptr(void)): T throws {
       import HaltWrappers;
@@ -945,7 +966,7 @@ module Python {
     /*
       Returns the Chapel value of the object.
 
-      This is a shortcut for calling :proc:`Interpreter.fromPython` on this object.
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
     */
     proc value(type value) {
       return interpreter.fromPython(value, this.obj);
@@ -1189,9 +1210,5 @@ module Python {
     extern proc PyObject_CallMethodNoArgs(obj: c_ptr(void), method: c_ptr(void)): c_ptr(void);
     extern proc PyObject_CallMethodObjArgs(obj: c_ptr(void), method: c_ptr(void), args...): c_ptr(void);
 
-
-
   }
-
-
 }
