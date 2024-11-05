@@ -983,11 +983,11 @@ def filter_llvm_config_flags(flags):
             flag == '-std=c++14'):
             continue # filter out these flags
 
-        # change -I flags to -isystem flags
-        # this avoids warnings inside of LLVM headers
+        # change -I flags to -idirafter flags
+        # this avoids warnings inside of LLVM headers by treating LLVM headers
+        # as system headers without perturbing the include search path
         if flag.startswith('-I'):
-            ret.append('-isystem')
-            ret.append(flag[2:])
+            ret.append('-idirafter' + flag[2:])
             continue
 
         if flag.startswith('-W'):
