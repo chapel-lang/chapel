@@ -568,6 +568,8 @@ builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
                                 UniqueString name);
 
+/** Get the 'promotion type' for the given type. E.g., the promotion type
+    for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
 
 
