@@ -4898,8 +4898,10 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
   auto tr = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
-  rv.handleResolvedCallWithoutError(iterandRe, iterand, tr.callResult(),
-      { { AssociatedAction::ITERATE, iterand->id() } });
+  if (auto cr = tr.callResult()) {
+    rv.handleResolvedCallWithoutError(iterandRe, iterand, *cr,
+        { { AssociatedAction::ITERATE, iterand->id() } });
+  }
 
   return tr;
 }
@@ -4983,15 +4985,16 @@ resolveIterTypeWithTag(Resolver& rv,
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
   auto tr = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
-  auto qt = tr.callResult().exprType();
+  auto qt = tr.exprType();
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
     // with the desired tag, so that's sufficient.
 
     iteratingOver = qt.type()->toIteratorType();
   }
+  auto yieldType = tr.yieldedType();
   outIterPieces = { iteratingOver, std::move(tr) };
-  return tr.callResult().yieldedType();
+  return yieldType;
 }
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
