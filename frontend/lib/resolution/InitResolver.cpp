@@ -821,14 +821,30 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
     // TODO: Anything to do if the opposite is true?
     if (!isAlreadyInitialized) {
-      auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
+      // Recompute field type in case it depends on a recently-instantiated
+      // field. For example, ``var curField : typeField;``.
+      auto rf = resolveFieldDecl(ctx_, currentRecvType_->getCompositeType(), fieldId, DefaultsPolicy::IGNORE_DEFAULTS);
+      QualifiedType initialFieldType;
+      for (int i = 0; i < rf.numFields(); i++) {
+        auto id = rf.fieldDeclId(i);
+        if (id == fieldId) {
+          initialFieldType = rf.fieldType(i);
+        }
+      }
 
-      auto param = state->qt.kind() == QualifiedType::PARAM ? rhsType.param() : nullptr;
-      auto qt = QualifiedType(state->qt.kind(), rhsType.type(), param);
-      state->qt = qt;
+      auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
+      auto adjusted = QualifiedType(QualifiedType::TYPE, initialFieldType.type());
+      // TODO: prevent 'getTypeForDecl' from issuing the error message, and
+      // instead do something field-specific.
+      auto computed = initResolver_.getTypeForDecl(node,
+                                                   lhs, rhs, state->qt.kind(),
+                                                   adjusted, rhsType);
+
+      state->qt = computed;
 
       state->initPointId = node->id();
       state->isInitialized = true;
+      initPoints.insert(node);
 
       // We could probably get away with running this less, but it's easier
       // to just attempt updating the receiver type for each field even if the
@@ -838,9 +854,9 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       auto lhsKind = state->qt.kind();
       if (lhsKind != QualifiedType::TYPE && lhsKind != QualifiedType::PARAM) {
         // Regardless of the field's intent, it is mutable in this expression.
-        lhsKind = QualifiedType::REF;
+        lhsKind = QualifiedType::VAR;
       }
-      auto lhsType = QualifiedType(lhsKind, state->qt.type(), state->qt.param());
+      auto lhsType = QualifiedType(lhsKind, computed.type(), computed.param());
       initResolver_.byPostorder.byAst(lhs).setType(lhsType);
 
     } else {
@@ -954,6 +970,10 @@ void InitResolver::checkEarlyReturn(const Return* ret) {
       (size_t)currentFieldIndex_ < fieldIdsByOrdinal_.size()) {
     ctx_->error(ret, "cannot return from initializer before initialization is complete");
   }
+}
+
+bool InitResolver::isInitPoint(const uast::AstNode* node) {
+  return initPoints.find(node) != initPoints.end();
 }
 
 } // end namespace resolution

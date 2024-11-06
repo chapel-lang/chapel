@@ -1737,6 +1737,201 @@ static void testInitGenericAfterConcrete() {
   }
 }
 
+static std::string toString(QualifiedType type) {
+  std::stringstream ss;
+  type.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  return ss.str();
+}
+
+static void testNilFieldInit() {
+  std::string program = R"""(
+    class C { var x: int; }
+    record R {
+      var x: unmanaged C?;
+      proc init() {
+        x = nil;
+      }
+    }
+
+    // exists to work around current lack of default-init at module scope
+    proc test() {
+      var x: R;
+      return x;
+    }
+    var a = test();
+    var b = new R();
+  )""";
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
+
+  assert(toString(vars["a"]) == "R");
+  assert(toString(vars["b"]) == "R");
+}
+
+static void testGenericFieldInit() {
+  {
+    std::string program = R"""(
+      record R {
+        var x : integral;
+
+        proc init(arg) {
+          this.x = arg;
+        }
+      }
+
+      var a = new R(5);
+      var b = new R(10:uint);
+      var c = new R("test");
+      )""";
+
+    auto config = getConfigWithHome();
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
+
+    assert(guard.numErrors() == 1);
+    auto& err = guard.error(0);
+    assert(err->type() == ErrorType::IncompatibleTypeAndInit);
+    assert(err->location(context).firstLine() == 6);
+
+    // Note: These type strings are not stabilized
+    assert(toString(vars["a"]) == "R(var int(64))");
+    assert(toString(vars["b"]) == "R(var uint(64))");
+    assert(toString(vars["c"]) == "R(var ErroneousType)");
+
+    guard.realizeErrors();
+  }
+  {
+    std::string program = R"""(
+      class C {
+        type typeField;
+      }
+
+      record R {
+        var myC: owned C(?)?;
+
+        proc init() {
+          this.myC = nil;
+        }
+      }
+
+      var r  = new R();
+      )""";
+    auto config = getConfigWithHome();
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"r"});
+    assert(toString(vars["r"]) == "R(var ErroneousType)");
+
+    // TODO: error message here says 'owned C?' and 'nil' are incompatible,
+    // but should be more specific about the genericity being the problem.
+    assert(guard.numErrors() == 1);
+    auto& err = guard.error(0);
+    assert(err->type() == ErrorType::IncompatibleTypeAndInit);
+    assert(err->location(context).firstLine() == 10);
+
+    guard.realizeErrors();
+  }
+  {
+    std::string program = R"""(
+      record G { type T; var x : T; }
+
+      proc G.init=(other: this.type) {
+        this.T = other.T;
+        this.x = other.x;
+      }
+
+      proc G.init=(other: ?t) where t != int {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      // just to demonstrate we can specify a concrete formal
+      proc G.init=(other: int) {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      record R {
+        var x : G(?);
+
+        proc init(arg) {
+          this.x = arg;
+        }
+      }
+
+      proc test(arg) {
+        var x = new R(arg);
+        return x;
+      }
+
+      var a = test(5);
+      var b = test(10:uint);
+      var c = test("test");
+      )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
+
+    // Note: These type strings are not stabilized
+    assert(toString(vars["a"]) == "R(var G(int(64)))");
+    assert(toString(vars["b"]) == "R(var G(uint(64)))");
+    assert(toString(vars["c"]) == "R(var G(string))");
+  }
+  {
+    std::string program = R"""(
+      record G { type T; var x : T; }
+
+      proc G.init=(other: this.type) {
+        this.T = other.T;
+        this.x = other.x;
+      }
+
+      proc G.init=(other: ?t) {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      class C { var x : int; }
+
+      record R {
+        var x: G(?),
+            y: unmanaged C?,
+            z: G(?);
+
+        proc init(arg) {
+          this.x = arg;
+          this.y = nil;
+          this.z = 42.0;
+        }
+      }
+
+      var x = new R(5);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto x = resolveQualifiedTypeOfX(context, program);
+    assert(toString(x) == "R(var G(int(64)), var G(real(64)))");
+  }
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1782,6 +1977,10 @@ int main() {
   testImplicitSuperInit();
 
   testInitGenericAfterConcrete();
+
+  testNilFieldInit();
+
+  testGenericFieldInit();
 
   return 0;
 }

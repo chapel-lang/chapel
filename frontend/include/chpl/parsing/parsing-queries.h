@@ -686,6 +686,11 @@ uast::Module::Kind idToModuleKind(Context* context, ID id);
 */
 bool isSpecialMethodName(UniqueString name);
 
+/*
+  Given a function call, determine if it is a call to a class manager.
+*/
+bool isCallToClassManager(const uast::FnCall* call);
+
 } // end namespace parsing
 } // end namespace chpl
 #endif

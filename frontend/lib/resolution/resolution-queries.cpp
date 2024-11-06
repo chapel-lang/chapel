@@ -1349,6 +1349,38 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityViaQualifiedTypeQuery(context, qt);
 }
 
+static bool callHasQuestionMark(const FnCall* call) {
+  for (auto actual : call->actuals()) {
+    if (auto ident = actual->toIdentifier()) {
+      if (ident->name() == "?") {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static const FnCall* unwrapClassCall(const FnCall* call) {
+  const Call* unwrapped = call;
+
+  if (parsing::isCallToClassManager(call)) {
+    if (call->numActuals() == 1) {
+      unwrapped = call->actual(0)->toCall();
+    }
+  }
+
+  if (unwrapped) {
+    if (auto opCall = unwrapped->toOpCall()) {
+      if (opCall->numActuals() == 1 && opCall->op() == "?") {
+        unwrapped = opCall->actual(0)->toFnCall();
+      }
+    }
+  }
+
+  return unwrapped ? unwrapped->toFnCall() : nullptr;
+}
+
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1396,13 +1428,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
     outIsGeneric = isNameBuiltinGenericType(context, ident->name());
     return true;
   } else if (auto call = var->typeExpression()->toFnCall()) {
-    for (auto actual : call->actuals()) {
-      if (auto ident = actual->toIdentifier()) {
-        if (ident->name() == "?") {
-          outIsGeneric = true;
-          return true;
-        }
-      }
+    auto unwrapped = unwrapClassCall(call);
+    if (unwrapped && callHasQuestionMark(unwrapped)) {
+      outIsGeneric = true;
+      return true;
     }
   }
 
@@ -3225,20 +3254,26 @@ static const Type* getManagedClassType(Context* context,
   UniqueString name = ci.name();
 
   if (ci.hasQuestionArg()) {
-    if (ci.numActuals() != 0) {
-      context->error(astForErr, "invalid class type construction");
-      return ErroneousType::get(context);
-    } else if (name == USTR("owned")) {
-      return AnyOwnedType::get(context);
+
+    const Type* ret = nullptr;
+    if (name == USTR("owned")) {
+      ret = AnyOwnedType::get(context);
     } else if (name == USTR("shared")) {
-      return AnySharedType::get(context);
+      ret = AnySharedType::get(context);
     } else if (name == USTR("unmanaged")) {
-      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
     } else if (name == USTR("borrowed")) {
-      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
     } else {
       // case not handled in here
       return nullptr;
+    }
+
+    if (ret != nullptr && ci.numActuals() != 0) {
+      context->error(astForErr, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else {
+      return ret;
     }
   }
 
@@ -3717,21 +3752,26 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
-  if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
-      ci.numActuals() == 2) {
-    auto lhs = ci.actual(0).type();
-    auto rhs = ci.actual(1).type();
+  if ((ci.name() == USTR("==") || ci.name() == USTR("!="))) {
+    if (ci.numActuals() == 2 || ci.hasQuestionArg()) {
+      auto lhs = ci.actual(0).type();
 
-    bool bothType = lhs.kind() == QualifiedType::TYPE &&
-                    rhs.kind() == QualifiedType::TYPE;
-    bool bothParam = lhs.kind() == QualifiedType::PARAM &&
-                     rhs.kind() == QualifiedType::PARAM;
-    if (bothType || bothParam) {
-      bool result = lhs == rhs;
-      result = ci.name() == USTR("==") ? result : !result;
-      exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                  BoolParam::get(context, result));
-      return true;
+      // support comparisions with '?'
+      auto rhs = ci.hasQuestionArg() ?
+                   QualifiedType(QualifiedType::TYPE, AnyType::get(context)) :
+                   ci.actual(1).type();
+
+      bool bothType = lhs.kind() == QualifiedType::TYPE &&
+                      rhs.kind() == QualifiedType::TYPE;
+      bool bothParam = lhs.kind() == QualifiedType::PARAM &&
+                       rhs.kind() == QualifiedType::PARAM;
+      if (bothType || bothParam) {
+        bool result = lhs == rhs;
+        result = ci.name() == USTR("==") ? result : !result;
+        exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                                    BoolParam::get(context, result));
+        return true;
+      }
     }
   }
 
@@ -3748,10 +3788,14 @@ static bool resolveFnCallSpecial(Context* context,
 
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
-      context->error(astForErr, "bad call to %s", ci.name().c_str());
-      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                  ErroneousType::get(context));
-      return true;
+      if (!ci.isMethodCall()) {
+        context->error(astForErr, "bad call to %s", ci.name().c_str());
+        exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                    ErroneousType::get(context));
+        return true;
+      } else {
+        return false;
+      }
     }
     auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();

@@ -73,6 +73,9 @@ class InitResolver {
   // Stores field ID and ID of the uAST referencing the field.
   std::vector<std::pair<ID, ID>> useOfSuperFields_;
 
+  //initialization points to guide handling `=` operators
+  std::set<const uast::AstNode*> initPoints;
+
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
                const types::Type* recvType)
@@ -155,6 +158,9 @@ public:
   const TypedFnSignature* finalize(void);
 
   void checkEarlyReturn(const uast::Return* ret);
+
+  // Returns true if the AST node is an initialization point
+  bool isInitPoint(const uast::AstNode* node);
 };
 
 } // end namespace resolution
