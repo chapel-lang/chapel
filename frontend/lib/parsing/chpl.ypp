@@ -1590,7 +1590,7 @@ extern_export_decl_stmt:
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $5);
     context->resetDeclState();
   }
 | extern_export_decl_stmt_start opt_expr TTYPE
@@ -1600,7 +1600,7 @@ extern_export_decl_stmt:
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(@1, $5);
     context->resetDeclState();
   }
 ;
@@ -2545,7 +2545,11 @@ fn_decl_stmt_start:
 
 fn_decl_receiver_expr:
   ident_expr
-| TLP expr TRP        { $$ = $2; }
+| TLP expr TRP
+  {
+    BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
+    $$ = $2;
+  }
 ;
 
 fn_ident:
@@ -2792,7 +2796,7 @@ lifetime_ident:
 type_alias_decl_stmt:
   type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $2);
     context->resetDeclState();
   }
 ;
@@ -2864,7 +2868,7 @@ var_decl_stmt:
     context->noteIsVarDeclConfig(true);
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $4);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2874,12 +2878,12 @@ var_decl_stmt:
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $5);
     context->resetDeclState();
   }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $2);
     context->resetDeclState();
   }
 | var_decl_type error TSEMI
@@ -2961,7 +2965,7 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 opt_init_expr:
-                        { $$ = nullptr; }
+                        { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | TASSIGN TNOINIT       { $$ = context->buildIdent(@2, $2); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
@@ -2987,7 +2991,7 @@ opt_ret_type:
 ;
 
 opt_type:
-                                 { $$ = nullptr; }
+                                 { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | TCOLON expr                    { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
@@ -3317,6 +3321,7 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
+    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3329,6 +3334,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
+    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3341,6 +3347,7 @@ new_expr:
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
+    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3354,6 +3361,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
+    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);

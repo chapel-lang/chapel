@@ -1976,6 +1976,8 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
     auto newExpr = New::build(builder, convertLocation(location),
                               toOwned(calledExpr),
                               management);
+    builder->copyExprParenthLocation(fnCall, newExpr.get());
+    builder->deleteExprParenthLocation(fnCall);
     child = std::move(newExpr);
 
     // Extend the location of the call to the left and patch the location.
