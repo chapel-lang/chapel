@@ -3753,9 +3753,13 @@ static bool resolveFnCallSpecial(Context* context,
   }
 
   if ((ci.name() == USTR("==") || ci.name() == USTR("!="))) {
-    if (ci.numActuals() == 2) {
+    if (ci.numActuals() == 2 || ci.hasQuestionArg()) {
       auto lhs = ci.actual(0).type();
-      auto rhs = ci.actual(1).type();
+
+      // support comparisions with '?'
+      auto rhs = ci.hasQuestionArg() ?
+                   QualifiedType(QualifiedType::TYPE, AnyType::get(context)) :
+                   ci.actual(1).type();
 
       bool bothType = lhs.kind() == QualifiedType::TYPE &&
                       rhs.kind() == QualifiedType::TYPE;
@@ -3764,15 +3768,6 @@ static bool resolveFnCallSpecial(Context* context,
       if (bothType || bothParam) {
         bool result = lhs == rhs;
         result = ci.name() == USTR("==") ? result : !result;
-        exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                    BoolParam::get(context, result));
-        return true;
-      }
-    } else if (ci.numActuals() == 1 && ci.hasQuestionArg()) {
-      // foo.type == ?
-      auto arg = ci.actual(0).type();
-      if (arg.isType()) {
-        bool result = arg.type() == AnyType::get(context);
         exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                     BoolParam::get(context, result));
         return true;
