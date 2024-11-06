@@ -50,7 +50,7 @@ proc roundTripClass(clsType: borrowed) {
     if print then writeln("    obj.getter(): ", res);
     assert(res == other);
 
-    obj.call(None, "setter", value);
+    obj.call(NoneType, "setter", value);
     res = obj.getAttr(t, "value");
     if print then writeln("    obj.value: ", res);
     assert(res == value);

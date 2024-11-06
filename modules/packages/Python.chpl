@@ -404,7 +404,7 @@ module Python {
         return val.get();
       } else if isSubtype(t, ClassObject) {
         return val.obj!.get();
-      } else if t == None {
+      } else if t == NoneType {
         return nil;
       } else {
         halt("Unsupported toPython type: '" + t:string + "'");
@@ -458,8 +458,8 @@ module Python {
         return new PyObject(this, obj);
       } else if isSubtype(t, ClassObject) || isSubtype(t, ClassObject?) {
         return new ClassObject(new PyObject(this, obj));
-      } else if t == None {
-        return new None();
+      } else if t == NoneType {
+        return new NoneType();
       } else {
         halt("Unsupported fromPython type: '" + t:string + "'");
       }
@@ -973,8 +973,8 @@ module Python {
     }
   }
 
-  /* Represents the python value 'None' */
-  record None {
+  /* Represents the python NoneType */
+  record NoneType {
     /*
       Returns the string representation of None.
 
@@ -982,6 +982,8 @@ module Python {
     */
     proc str(): string do return "None";
   }
+  /* Represents the python value 'None' */
+  const None = new NoneType();
 
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one
@@ -1167,7 +1169,7 @@ module Python {
   operator:(v, type t: string): string throws
     where isSubtype(v.type, PyObject) || isSubtype(v.type, Module) ||
           isSubtype(v.type, Class) || isSubtype(v.type, Function) ||
-          isSubtype(v.type, ClassObject) || isSubtype(v.type, None) {
+          isSubtype(v.type, ClassObject) || isSubtype(v.type, NoneType) {
     return v.str();
   }
 
@@ -1177,7 +1179,7 @@ module Python {
   Function implements writeSerializable;
   Class implements writeSerializable;
   ClassObject implements writeSerializable;
-  None implements writeSerializable;
+  NoneType implements writeSerializable;
 
   @chpldoc.nodoc
   override proc Module.serialize(writer, ref serializer) throws do
@@ -1192,7 +1194,7 @@ module Python {
   override proc ClassObject.serialize(writer, ref serializer) throws do
     writer.write(this:string);
   @chpldoc.nodoc
-  proc None.serialize(writer, ref serializer) throws do
+  proc NoneType.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
