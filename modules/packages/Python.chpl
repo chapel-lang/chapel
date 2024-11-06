@@ -225,6 +225,20 @@ module Python {
   private use CWChar;
   private use OS.POSIX only getenv;
 
+  // TODO: this must be first to avoid use-before-def, but that makes it first in the docs
+  // is there a way to avoid this?
+  /* Represents the python NoneType */
+  record NoneType {
+    /*
+      Returns the string representation of None.
+
+      Equivalent to calling ``str(None)`` in Python.
+    */
+    proc str(): string do return "None";
+  }
+  /* Represents the python value 'None' */
+  const None = new NoneType();
+
   /*
     Represents the python interpreter. All code using the Python module should
     create and maintain a single instance of this class.
@@ -405,7 +419,7 @@ module Python {
       } else if isSubtype(t, ClassObject) {
         return val.obj!.get();
       } else if t == NoneType {
-        return nil;
+        return Py_None;
       } else {
         halt("Unsupported toPython type: '" + t:string + "'");
       }
@@ -459,7 +473,7 @@ module Python {
       } else if isSubtype(t, ClassObject) || isSubtype(t, ClassObject?) {
         return new ClassObject(new PyObject(this, obj));
       } else if t == NoneType {
-        return new NoneType();
+        return None;
       } else {
         halt("Unsupported fromPython type: '" + t:string + "'");
       }
@@ -973,18 +987,6 @@ module Python {
     }
   }
 
-  /* Represents the python NoneType */
-  record NoneType {
-    /*
-      Returns the string representation of None.
-
-      Equivalent to calling ``str(None)`` in Python.
-    */
-    proc str(): string do return "None";
-  }
-  /* Represents the python value 'None' */
-  const None = new NoneType();
-
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one
     thread is executing python code at a time. Each thread should have its own
@@ -1323,6 +1325,7 @@ module Python {
 
     extern var Py_False: c_ptr(void);
     extern var Py_True: c_ptr(void);
+    extern "chpl_Py_None" var Py_None: c_ptr(void);
 
     /*
       Sequences

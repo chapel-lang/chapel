@@ -34,4 +34,6 @@ static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 
+const PyObject* chpl_Py_None = Py_None;
+
 #endif
