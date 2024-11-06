@@ -378,6 +378,7 @@ bool fPrintChplSettings = false;
 bool fDetailedErrors = false;
 
 bool fDynoResolver = false;
+bool fDynoResolveOnly = false;
 bool fDynoScopeResolve = true;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
@@ -803,6 +804,7 @@ static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
   // Check if skipping for the above reason or any other early stop.
   bool shouldSkipMakeBinary =
       debugCompilationPhaseOnly || fParseOnly || countTokens || printTokens ||
+      fDynoResolveOnly ||
       (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
 
   return shouldSkipMakeBinary;
@@ -1512,6 +1514,7 @@ static ArgumentDescription arg_desc[] = {
  {"warn-unstable-internal", ' ', NULL, "Enable [disable] unstable warnings in internal modules", "N", &fWarnUnstableInternal, NULL, NULL},
  {"warn-unstable-standard", ' ', NULL, "Enable [disable] unstable warnings in standard modules", "N", &fWarnUnstableStandard, NULL, NULL},
  {"dyno", ' ', NULL, "Enable [disable] using the dyno resolver", "N", &fDynoResolver, "CHPL_DYNO", NULL},
+ {"dyno-resolve-only", ' ', NULL, "Enable [disable] using the dyno resolver and stopping compilation", "N", &fDynoResolveOnly, "CHPL_DYNO_RESOLVE_ONLY", NULL},
  {"dyno-scope-resolve", ' ', NULL, "Enable [disable] using dyno for scope resolution", "N", &fDynoScopeResolve, "CHPL_DYNO_SCOPE_RESOLVE", NULL},
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},

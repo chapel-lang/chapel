@@ -282,7 +282,7 @@ static void loadAndConvertModules(UastConverter& c) {
 
   // Compute the set of functions to fully resolve when using --dyno.
   // This allows us to avoid resolving functions that aren't called.
-  if (fDynoResolver) {
+  if (fDynoResolver || fDynoResolveOnly) {
     chpl::resolution::CalledFnsSet calledFns;
 
     for (const auto& id : modulesToConvert) {
@@ -344,6 +344,11 @@ static void loadAndConvertModules(UastConverter& c) {
   dynoConvertInternalModule(c, "PrintModuleInitOrder");
   if (fLibraryFortran) {
     dynoConvertInternalModule(c, "ISO_Fortran_binding");
+  }
+
+  // Stop compilation here for --dyno-resolve-only
+  if (fDynoResolveOnly) {
+    clean_exit(0);
   }
 }
 
@@ -1124,7 +1129,7 @@ void parseAndConvertUast() {
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   chpl::owned<UastConverter> converter;
-  if (fDynoResolver) {
+  if (fDynoResolver || fDynoResolveOnly) {
     converter = createTypedConverter(gContext);
   } else {
     converter = createUntypedConverter(gContext);
@@ -1139,10 +1144,6 @@ void parseAndConvertUast() {
   addDynoLibFiles();
 
   loadAndConvertModules(*converter.get());
-
-  /*if (fDynoResolver) {
-    converter->createMainFunctions();
-  }*/
 
   setupDynoLibFileGeneration();
 

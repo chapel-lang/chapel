@@ -73,7 +73,7 @@
 #include <iostream>
 
 // If defined, include debug output about TConverter
-#define DEBUG_TRACE 1
+//#define DEBUG_TRACE 1
 
 using namespace chpl;
 using namespace resolution;
@@ -741,6 +741,10 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   // prepare to traverse
   ID id = mod->id();
   const ResolutionResultByPostorderID& resolved = resolveModule(context, id);
+
+  // don't actually convert for --dyno-resolve-only
+  if (fDynoResolveOnly) return;
+
   pushBlock(modSym->initFn->body);
   symbol = mod;
   curFnSymbol = modSym->initFn;
@@ -768,6 +772,9 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   if (!functionExistsAtRuntime(r)) {
     return;
   }
+
+  // don't actually convert for --dyno-resolve-only
+  if (fDynoResolveOnly) return;
 
   if (trace)
     printf("Converting function %s\n", r->id().str().c_str());

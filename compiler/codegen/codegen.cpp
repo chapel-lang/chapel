@@ -2409,7 +2409,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
 static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
-  const char* filename;
+  const char* filename = nullptr;
   if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
     restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
@@ -2430,6 +2430,10 @@ static const char* getMainModuleFilename() {
              "compilation phase");
       saveDriverTmp(mainModTmpFilename, filename);
     }
+  }
+
+  if (filename == nullptr) {
+    USR_FATAL("error getting main module filename from compilation process");
   }
 
   return filename;

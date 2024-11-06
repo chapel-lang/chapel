@@ -326,6 +326,7 @@ extern bool fLlvmPrintPasses;
 extern bool fPrintAdditionalErrors;
 
 extern bool fDynoResolver;
+extern bool fDynoResolveOnly;
 extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
