@@ -830,6 +830,26 @@ module Python {
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    pragma "last resort"
+    proc this(type retType, kwargs:?t=none): retType throws
+      where kwargs.isAssociative() {
+
+      var pyArg = Py_BuildValue("()");
+
+      var pyKwargs;
+      if t != nothing {
+        pyKwargs = interpreter.toPython(kwargs);
+      } else {
+        pyKwargs = nil;
+      }
+
+      var pyRes = PyObject_Call(this.fn!.get(), pyArg, pyKwargs);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+      return res;
+    }
+
 
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.fn!.get(), attr.c_str());
