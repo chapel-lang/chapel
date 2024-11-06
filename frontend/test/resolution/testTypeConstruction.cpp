@@ -1395,10 +1395,12 @@ static void testRecursiveTypeConstructorGeneric() {
 }
 
 static void testRecursiveTypeConstructorMutual() {
-  printf("testRecursiveTypeConstructor\n");
-  Context ctx;
+  printf("testRecursiveTypeConstructorMutual\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
   Context* context = &ctx;
   ErrorGuard guard(context);
+  setupModuleSearchPaths(context, false, false, {}, {});
 
   auto p = parseTypeAndFieldsOfX(context,
       R"""(
