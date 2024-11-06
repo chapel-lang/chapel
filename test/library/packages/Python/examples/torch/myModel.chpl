@@ -35,7 +35,7 @@ proc main() {
   var loss_fn = MSELoss();
   var target = tensor(owned PyObject, [[2.0,]]);
   var loss = loss_fn(owned ClassObject, pred, target);
-  loss.call(None, "backward");
+  loss.call(NoneType, "backward");
 
   // update the model's parameters
   var learning_rate = 0.01;
