@@ -1737,6 +1737,12 @@ static void testInitGenericAfterConcrete() {
   }
 }
 
+static std::string toString(QualifiedType type) {
+  std::stringstream ss;
+  type.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  return ss.str();
+}
+
 static void testNilFieldInit() {
   std::string program = R"""(
     class C { var x: int; }
@@ -1747,26 +1753,60 @@ static void testNilFieldInit() {
       }
     }
 
-    var x: R;
+    // exists to work around current lack of default-init at module scope
+    proc test() {
+      var x: R;
+      return x;
+    }
+    var a = test();
+    var b = new R();
   )""";
   auto config = getConfigWithHome();
   Context ctx(config);
   Context* context = &ctx;
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
-  ResolutionContext rcval(context);
-  auto rc = &rcval;
-  auto m = parseModule(context, std::move(program));
-  auto recordDecl = m->stmt(1)->toAggregateDecl();
-  auto initFunc = recordDecl->declOrComment(1)->toFunction();
-  assert(initFunc);
 
-  auto untyped = UntypedFnSignature::get(context, initFunc);
-  auto typed = typedSignatureInitial(rc, untyped);
-  auto inFn = resolveFunction(rc, typed, nullptr);
-  assert(inFn);
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
 
-  assert(guard.errors().size() == 0);
+  assert(toString(vars["a"]) == "R");
+  assert(toString(vars["b"]) == "R");
+}
+
+static void testGenericFieldInit() {
+  std::string program = R"""(
+    record R {
+      var x : integral;
+
+      proc init(arg) {
+        this.x = arg;
+      }
+    }
+
+    var a = new R(5);
+    var b = new R(10:uint);
+    var c = new R("test");
+    )""";
+
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
+
+  assert(guard.numErrors() == 1);
+  auto& err = guard.error(0);
+  assert(err->type() == ErrorType::IncompatibleTypeAndInit);
+  assert(err->location(context).firstLine() == 6);
+
+  // Note: These type strings are not stabilized
+  assert(toString(vars["a"]) == "R(var int(64))");
+  assert(toString(vars["b"]) == "R(var uint(64))");
+  assert(toString(vars["c"]) == "R(var ErroneousType)");
+
+  guard.realizeErrors();
 }
 
 // TODO:
@@ -1816,6 +1856,8 @@ int main() {
   testInitGenericAfterConcrete();
 
   testNilFieldInit();
+
+  testGenericFieldInit();
 
   return 0;
 }
