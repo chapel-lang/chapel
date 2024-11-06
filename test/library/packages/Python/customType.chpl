@@ -12,9 +12,9 @@ class myRecConverter: TypeConverter {
   override proc handlesType(type T): bool {
     return T == myRec;
   }
-  override proc toPython(interpreter: borrowed Interpreter, type T, value: T): c_ptr(void) throws {
+  override proc toPython(interpreter: borrowed Interpreter, type T, const value: T): c_ptr(void) throws {
     if T != myRec then halt("Expected myRec");
-    var pyObj: unmanaged PyObject = owned.release(pyClsType.newInstance(value.x, value.y));
+    var pyObj: unmanaged PyObject = owned.release(pyClsType(value.x, value.y));
     pyObj.isOwned = false;
     var ptr = pyObj.get();
     delete pyObj;
