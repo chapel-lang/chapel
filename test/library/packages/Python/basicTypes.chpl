@@ -1,35 +1,79 @@
 use Python;
 import Reflection;
+import List;
+
+config const print = false;
 
 
 proc roundTripFunction(func: borrowed) {
 
   proc testType(type t, value: t) {
-    writeln("  type: ", t:string, " value: ", value);
+    if print then writeln("  type: ", t:string, " value: ", value);
     var res = func(t, value);
-    writeln("    res: ", res);
+    if print then writeln("    res: ", res);
+    assert(res == value);
   }
 
-  testType(int, 42);
+  testType(int(8), 42);
+  testType(int(16), 42);
+  testType(int(32), 42);
+  testType(int(64), 42);
+  testType(uint(8), 42);
+  testType(uint(16), 42);
+  testType(uint(32), 42);
+  testType(uint(64), 42);
+  testType(real(32), 3.14);
+  testType(real(64), 3.14);
   testType(string, "hello");
+
+  var arr: [0..<10] int = 0..<10;
+  testType(arr.type, arr);
+  var l = new List.list(arr);
+  testType(l.type, l);
 
 }
 proc roundTripClass(clsType: borrowed) {
 
   proc testType(type t, value: t, other: t) {
-    writeln("  type: ", t:string, " value: ", value);
+    var res: t;
+
+    if print then writeln("  type: ", t:string, " value: ", value);
     var obj = new ClassObject(clsType, value);
-    writeln("    obj: ", obj);
-    writeln("    obj.value: ", obj.getAttr(t, "value"));
+    if print then writeln("    obj: ", obj);
+
+    res = obj.getAttr(t, "value");
+    if print then writeln("    obj.value: ", res);
+    assert(res == value);
+
     obj.setAttr("value", other);
-    writeln("    obj.getter(): ", obj.callMethod(t, "getter"));
-    obj.callMethod(None, "setter", value);
-    writeln("    obj.value: ", obj.getAttr(t, "value"));
+    res = obj.call(t, "getter");
+    writeln("    obj.getter(): ", res);
+    if print then assert(res == other);
+
+    obj.call(None, "setter", value);
+    res = obj.getAttr(t, "value");
+    writeln("    obj.value: ", res);
+    if print then assert(res == value);
 
   }
 
-  testType(int, 42, 43);
+  testType(int(8), 42, 43);
+  testType(int(16), 42, 43);
+  testType(int(32), 42, 43);
+  testType(int(64), 42, 43);
+  testType(uint(8), 42, 43);
+  testType(uint(16), 42, 43);
+  testType(uint(32), 42, 43);
+  testType(uint(64), 42, 43);
+  testType(real(32), 3.14, 2.71);
+  testType(real(64), 3.14, 2.71);
   testType(string, "hello", "world");
+
+  var arr: [0..<10] int = 0..<10;
+  var otherArr = [arr.domain] 2;
+  testType(arr.type, arr, otherArr);
+  var l = new List.list(arr);
+  testType(l.type, l, new List.list([arr.domain] 2));
 
 }
 
@@ -38,14 +82,14 @@ proc main() {
 
   var modName = Reflection.getModuleName();
   var m = new Module(interp, modName);
-  writeln("module: ", m);
+  if print then writeln("module: ", m);
 
   var func = new Function(m, "round_trip");
-  writeln("func: ", func);
+  if print then writeln("func: ", func);
   roundTripFunction(func);
 
   var clsType = new Class(m, "RoundTrip");
-  writeln("class: ", clsType);
+  if print then writeln("class: ", clsType);
   roundTripClass(clsType);
 
 }
