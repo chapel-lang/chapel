@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from typing import List, Optional, Union, Iterable
+from typing import List, Optional, Union, Iterable, Tuple
 import chapel
 from dataclasses import dataclass
 import enum
@@ -57,6 +57,10 @@ class Component:
 def _wrap_str(s: str) -> Component:
     return Component(ComponentTag.STRING, s)
 
+
+def _wrap_in(s: Union[Component, List[Component]], wrapper: Tuple[str, str]) -> List[Component]:
+    center = s if isinstance(s, list) else [s]
+    return [_wrap_str(wrapper[0])] + center + [_wrap_str(wrapper[1])]
 
 class SymbolSignature:
     def __init__(self, node: chapel.AstNode):
@@ -288,14 +292,14 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
 
     if not node.is_parenless():
         start_idx = 1 if node.this_formal() else 0
-        comps.append(_wrap_str("("))
+        arg_list = []
         do_comma = False
         for i in range(start_idx, node.num_formals()):
             if do_comma:
-                comps.append(_wrap_str(", "))
+                arg_list.append(_wrap_str(", "))
             do_comma = True
-            comps.extend(_node_to_string(node.formal(i)))
-        comps.append(_wrap_str(")"))
+            arg_list.extend(_node_to_string(node.formal(i)))
+        comps.extend(_wrap_in(arg_list, ("(", ")")))
 
     if _intent_to_string(node.return_intent()):
         comps.append(_wrap_str(f" {_intent_to_string(node.return_intent())}"))
@@ -328,24 +332,48 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
     """
     Convert a call to a string
     """
+    if _is_special_fncall(call):
+        return _special_fncall_to_string(call)
+
     comps = []
 
     comps.extend(_node_to_string(call.called_expression()))
     openbr, closebr = ("[", "]") if call.used_square_brackets() else ("(", ")")
-    comps.append(_wrap_str(openbr))
+    call_args = []
     sep = ""
     for a in call.actuals():
-        comps.append(_wrap_str(sep))
+        call_args.append(_wrap_str(sep))
         sep = ", "
         if isinstance(a, tuple):
-            comps.append(_wrap_str(a[0]))
-            comps.append(_wrap_str(" = "))
-            comps.extend(_node_to_string(a[1]))
+            call_args.append(_wrap_str(a[0]))
+            call_args.append(_wrap_str(" = "))
+            call_args.extend(_node_to_string(a[1]))
         else:
             assert isinstance(a, chapel.AstNode)
-            comps.extend(_node_to_string(a))
-    comps.append(_wrap_str(closebr))
+            call_args.extend(_node_to_string(a))
 
+    comps.extend(_wrap_in(call_args, (openbr, closebr)))
+
+    comps = _wrap_in(comps, ("(", ")")) if call.parenth_location() else comps
+    return comps
+
+def _is_special_fncall(call: chapel.FnCall) -> bool:
+    """
+    Check if the function call is a special function call
+    """
+    called = call.called_expression()
+    if not isinstance(called, chapel.Identifier):
+        return False
+    return called.name() in ("sync", "atomic", "owned", "shared", "borrowed", "unmanaged")
+
+def _special_fncall_to_string(call: chapel.FnCall) -> List[Component]:
+    """
+    Handle cases like `sync`, `atomic`, and class modifiers
+    """
+    comps = []
+    comps.extend(_node_to_string(call.called_expression()))
+    comps.append(_wrap_str(" "))
+    comps.extend(_node_to_string(call.actual(0)))
     return comps
 
 
@@ -354,23 +382,31 @@ def _opcall_to_string(call: chapel.OpCall) -> List[Component]:
     Convert a call to a string
     """
 
-    def op_to_string(op: str) -> str:
+    def bop_to_string(op: str) -> str:
         special = {"#": "#", ":": ": "}
         return special.get(op, f" {op} ")
 
+    def uop_to_string(op: str) -> str:
+        special = {"postfix!": "!"}
+        return special.get(op, op)
+
+    def is_postfix(op: str) -> bool:
+        return op in ("postfix!", "?")
+
     comps = []
-    paren = call.parenth_location()
-    if paren:
-        comps.append(_wrap_str("("))
     if call.is_unary_op():
-        comps.append(_wrap_str(call.op()))
-        comps.extend(_node_to_string(call.actual(0)))
+        op_str = _wrap_str(uop_to_string(call.op()))
+        actual_str = _node_to_string(call.actual(0))
+        if is_postfix(call.op()):
+            comps.extend(actual_str + [op_str])
+        else:
+            comps.extend([op_str] + actual_str)
+
     else:
         comps.extend(_node_to_string(call.actual(0)))
-        comps.append(_wrap_str(op_to_string(call.op())))
+        comps.append(_wrap_str(bop_to_string(call.op())))
         comps.extend(_node_to_string(call.actual(1)))
-    if paren:
-        comps.append(_wrap_str(")"))
+    comps = _wrap_in(comps, ("(", ")")) if call.parenth_location() else comps
     return comps
 
 
@@ -471,5 +507,7 @@ def _new_to_string(new: chapel.New) -> List[Component]:
     mng = new.management()
     if mng != "" and mng != "default":
         mng = mng + " "
-    type_ = _node_to_string(new.type_expression())
-    return [_wrap_str("new "), _wrap_str(mng)] + type_
+    type_expr = new.type_expression()
+    type_str = _node_to_string(type_expr)
+
+    return [_wrap_str("new "), _wrap_str(mng)] + type_str
