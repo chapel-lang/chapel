@@ -1,9 +1,6 @@
 called no_args
 called no_args
-Caught PythonException: 'NoneType' object cannot be interpreted as an integer
-Caught PythonException: no_args() takes 0 positional arguments but 1 was given
 called one_arg with 1
-Caught PythonException: one_arg() takes 1 positional argument but 2 were given
 called two_args with 1 and 2
 called two_args with hello and world
 called two_args with None and None
@@ -29,26 +26,26 @@ called three_args_with_default with 8, 9, and 3
 called three_args_with_default with 8, 9, and 10
 called three_args_with_default with 8, 2, and 10
 called three_args_with_default_and_kwargs with 8, 2, and 3
-  kwargs: 
+  kwargs:
 called three_args_with_default_and_kwargs with 8, 9, and 3
-  kwargs: 
+  kwargs:
 called three_args_with_default_and_kwargs with 8, 9, and 10
-  kwargs: 
+  kwargs:
 called three_args_with_default_and_kwargs with 8, 10, and 3
-  kwargs: 
+  kwargs:
 called three_args_with_default_and_kwargs with 8, 2, and 11
   kwargs: abc=12
 called varargs_and_kwargs
-  args: 
-  kwargs: 
+  args:
+  kwargs:
 called varargs_and_kwargs
   args: 1
   kwargs:
 called varargs_and_kwargs
   args: 1, {'key': 'value'}
-  kwargs: 
+  kwargs:
 called varargs_and_kwargs
-  args: 
+  args:
   kwargs: a=19
 called varargs_and_kwargs
   args: 1
