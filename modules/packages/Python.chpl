@@ -42,6 +42,8 @@
 
 // TODO: add the ability to compile a chapel string into a python module/function/class/whatever
 
+// TODO: make python use chapel stdout/stderr
+
 /* Library for interfacing with Python from Chapel code.
 
   This module provides a Chapel interface to a Python interpreter.
