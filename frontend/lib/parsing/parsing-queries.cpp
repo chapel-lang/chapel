@@ -2065,5 +2065,17 @@ bool isSpecialMethodName(UniqueString name) {
   }
 }
 
+bool isCallToClassManager(const uast::FnCall* call) {
+  if (auto ident = call->calledExpression()->toIdentifier()) {
+    auto name = ident->name();
+    return name == USTR("owned") || name == USTR("_owned") ||
+           name == USTR("shared") || name == USTR("_shared") ||
+           name == USTR("unmanaged") ||
+           name == USTR("borrowed");
+  }
+
+  return false;
+}
+
 } // end namespace parsing
 } // end namespace chpl

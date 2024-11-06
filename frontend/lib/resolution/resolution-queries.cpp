@@ -1349,6 +1349,38 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityViaQualifiedTypeQuery(context, qt);
 }
 
+static bool callHasQuestionMark(const FnCall* call) {
+  for (auto actual : call->actuals()) {
+    if (auto ident = actual->toIdentifier()) {
+      if (ident->name() == "?") {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static const FnCall* unwrapClassCall(const FnCall* call) {
+  const Call* unwrapped = call;
+
+  if (parsing::isCallToClassManager(call)) {
+    if (call->numActuals() == 1) {
+      unwrapped = call->actual(0)->toCall();
+    }
+  }
+
+  if (unwrapped) {
+    if (auto opCall = unwrapped->toOpCall()) {
+      if (opCall->numActuals() == 1 && opCall->op() == "?") {
+        unwrapped = opCall->actual(0)->toFnCall();
+      }
+    }
+  }
+
+  return unwrapped ? unwrapped->toFnCall() : nullptr;
+}
+
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1396,13 +1428,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
     outIsGeneric = isNameBuiltinGenericType(context, ident->name());
     return true;
   } else if (auto call = var->typeExpression()->toFnCall()) {
-    for (auto actual : call->actuals()) {
-      if (auto ident = actual->toIdentifier()) {
-        if (ident->name() == "?") {
-          outIsGeneric = true;
-          return true;
-        }
-      }
+    auto unwrapped = unwrapClassCall(call);
+    if (unwrapped && callHasQuestionMark(unwrapped)) {
+      outIsGeneric = true;
+      return true;
     }
   }
 

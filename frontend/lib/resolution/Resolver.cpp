@@ -951,15 +951,6 @@ static void varArgTypeQueryError(Context* context,
   result.setType(errType);
 }
 
-static bool isCallToClassManager(const FnCall* call) {
-  auto ident = call->calledExpression()->toIdentifier();
-  if (!ident) return false;
-  auto name = ident->name();
-  return name == USTR("owned") || name == USTR("shared") ||
-         name == USTR("_owned") || name == USTR("_shared") ||
-         name == USTR("unmanaged") || name == USTR("borrowed");
-}
-
 static std::vector<const TypeQuery*>
 collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
   std::vector<const TypeQuery*> ret;
@@ -1048,7 +1039,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           }
         }
       }
-    } else if (isCallToClassManager(call) &&
+    } else if (parsing::isCallToClassManager(call) &&
                call->numActuals() == 1 &&
                actualTypePtr->isClassType()) {
       // Strip the owned/shared/etc. for both the formal and the type
