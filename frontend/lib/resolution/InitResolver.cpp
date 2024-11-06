@@ -838,6 +838,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
       state->initPointId = node->id();
       state->isInitialized = true;
+      initPoints.insert(node);
 
       // We could probably get away with running this less, but it's easier
       // to just attempt updating the receiver type for each field even if the
@@ -963,6 +964,10 @@ void InitResolver::checkEarlyReturn(const Return* ret) {
       (size_t)currentFieldIndex_ < fieldIdsByOrdinal_.size()) {
     ctx_->error(ret, "cannot return from initializer before initialization is complete");
   }
+}
+
+bool InitResolver::isInitPoint(const uast::AstNode* node) {
+  return initPoints.find(node) != initPoints.end();
 }
 
 } // end namespace resolution
