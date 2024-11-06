@@ -95,8 +95,17 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
                        "Variable '%s' is not initialized and has no type",
                        def->sym->name);
       } else {
-        SET_LINENO(def);
-        setAstHelp(def, def->init, new SymExpr(gSplitInit));
+        bool skip = false;
+        if (FnSymbol* inFn = toFnSymbol(def->parentSymbol)) {
+          if (inFn->isNormalized()) {
+            skip = true;
+          }
+        }
+
+        if (!skip) {
+          SET_LINENO(def);
+          setAstHelp(def, def->init, new SymExpr(gSplitInit));
+        }
       }
     }
   }

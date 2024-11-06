@@ -740,7 +740,9 @@ static void buildChplEntryPoints() {
     chplUserMain = chplGenMainExists();
   } else if (chplUserMain->hasFlag(FLAG_RESOLVED_EARLY)) {
     // set mainReturnsSomething according to the return type of main
-    if (chplUserMain->retType && chplUserMain->retType != dtUnknown) {
+    if (chplUserMain->retType &&
+        chplUserMain->retType != dtUnknown &&
+        chplUserMain->retType != dtVoid) {
       mainReturnsSomething = true;
     }
   }

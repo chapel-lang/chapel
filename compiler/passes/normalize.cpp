@@ -755,6 +755,12 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 ************************************** | *************************************/
 
 static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
+  if (Symbol* sym = toSymbol(base)) {
+    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+      return;
+    }
+  }
+
   //
   // Phase 0
   //
