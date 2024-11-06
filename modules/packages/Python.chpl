@@ -337,7 +337,7 @@ module Python {
          Most users should not need to call this directly, except when writing
          a :type:`TypeConverter`.
     */
-    proc toPython(val: ?t): c_ptr(void) throws {
+    proc toPython(const val: ?t): c_ptr(void) throws {
       for converter in this.converters {
         if converter.handlesType(t) {
           return converter.toPython(this, t, val);
@@ -654,7 +654,7 @@ module Python {
 
       The :proc:`~Interpreter.toPython` method will call this method.
     */
-    proc toPython(interpreter: borrowed Interpreter, type T, value: T): c_ptr(void) throws {
+    proc toPython(interpreter: borrowed Interpreter, type T, const value: T): c_ptr(void) throws {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -769,7 +769,7 @@ module Python {
     /*
       Call a python function with Chapel arguments and get a Chapel return value
     */
-    proc this(type retType, args...): retType throws {
+    proc this(type retType, const args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
@@ -792,7 +792,7 @@ module Python {
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
-    proc this(type retType, args..., kwargs:?t=none): retType throws
+    proc this(type retType, const args..., kwargs:?t=none): retType throws
       where kwargs.domain.isAssociative() {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
@@ -853,7 +853,7 @@ module Python {
     /*
       Create a new instance of a python class
     */
-    proc newInstance(args...): owned PyObject throws {
+    proc newInstance(const args...): owned PyObject throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
@@ -875,7 +875,7 @@ module Python {
     /*
       Create a new instance of a python class
     */
-    proc this(args...): owned ClassObject throws do return new ClassObject(this, (...args));
+    proc this(const args...): owned ClassObject throws do return new ClassObject(this, (...args));
     proc this(): owned ClassObject throws do return new ClassObject(this);
 
   }
@@ -887,7 +887,7 @@ module Python {
   class ClassObject {
     var cls: borrowed Class?;
     var obj: owned PyObject?;
-    proc init(cls: borrowed Class, args...) throws {
+    proc init(cls: borrowed Class, const args...) throws {
       this.cls = cls;
       init this;
       this.obj = cls.newInstance((...args));
@@ -930,7 +930,7 @@ module Python {
       interpreter.checkException();
     }
 
-    proc this(type retType, args...): retType throws {
+    proc this(type retType, const args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
@@ -946,7 +946,7 @@ module Python {
       return res;
     }
 
-    proc call(type retType, method: string, args...): retType throws {
+    proc call(type retType, method: string, const args...): retType throws {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
