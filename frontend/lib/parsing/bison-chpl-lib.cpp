@@ -9427,7 +9427,7 @@ yyreduce:
 
   case 529: /* opt_colon_formal_type: %empty  */
 #line 3010 "chpl.ypp"
-                        { (yyval.expr) = nullptr; }
+                        { (yyval.expr) = nullptr; CHPL_NULL_YYLLOC((yyloc)); }
 #line 9432 "bison-chpl-lib.cpp"
     break;
 
