@@ -824,7 +824,13 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       // Recompute field type in case it depends on a recently-instantiated
       // field. For example, ``var curField : typeField;``.
       auto rf = resolveFieldDecl(ctx_, currentRecvType_->getCompositeType(), fieldId, DefaultsPolicy::IGNORE_DEFAULTS);
-      auto initialFieldType = rf.fieldType(0);
+      QualifiedType initialFieldType;
+      for (int i = 0; i < rf.numFields(); i++) {
+        auto id = rf.fieldDeclId(i);
+        if (id == fieldId) {
+          initialFieldType = rf.fieldType(i);
+        }
+      }
 
       auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
       auto adjusted = QualifiedType(QualifiedType::TYPE, initialFieldType.type());

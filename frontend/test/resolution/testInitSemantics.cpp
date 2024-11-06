@@ -1834,6 +1834,8 @@ static void testGenericFieldInit() {
     auto vars = resolveTypesOfVariables(context, program, {"r"});
     assert(toString(vars["r"]) == "R(var ErroneousType)");
 
+    // TODO: error message here says 'owned C?' and 'nil' are incompatible,
+    // but should be more specific about the genericity being the problem.
     assert(guard.numErrors() == 1);
     auto& err = guard.error(0);
     assert(err->type() == ErrorType::IncompatibleTypeAndInit);
@@ -1855,6 +1857,7 @@ static void testGenericFieldInit() {
         this.x = other;
       }
 
+      // just to demonstrate we can specify a concrete formal
       proc G.init=(other: int) {
         this.T = other.type;
         this.x = other;
@@ -1878,10 +1881,8 @@ static void testGenericFieldInit() {
       var c = test("test");
       )""";
 
-    auto config = getConfigWithHome();
-    Context ctx(config);
+    Context ctx;
     Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
@@ -1890,6 +1891,44 @@ static void testGenericFieldInit() {
     assert(toString(vars["a"]) == "R(var G(int(64)))");
     assert(toString(vars["b"]) == "R(var G(uint(64)))");
     assert(toString(vars["c"]) == "R(var G(string))");
+  }
+  {
+    std::string program = R"""(
+      record G { type T; var x : T; }
+
+      proc G.init=(other: this.type) {
+        this.T = other.T;
+        this.x = other.x;
+      }
+
+      proc G.init=(other: ?t) {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      class C { var x : int; }
+
+      record R {
+        var x: G(?),
+            y: unmanaged C?,
+            z: G(?);
+
+        proc init(arg) {
+          this.x = arg;
+          this.y = nil;
+          this.z = 42.0;
+        }
+      }
+
+      var x = new R(5);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto x = resolveQualifiedTypeOfX(context, program);
+    assert(toString(x) == "R(var G(int(64)), var G(real(64)))");
   }
 }
 
