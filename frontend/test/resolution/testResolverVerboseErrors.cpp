@@ -63,7 +63,7 @@ static const char* errorExactMatch = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     4 | proc f(ref x: owned Parent) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned Parent', but the actual was a value of type 'owned Child'.
       |
@@ -89,7 +89,7 @@ static const char* errorExpectedSubType = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(type x: string) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects the type 'string', but the actual was the type 'int(64)'.
       |
@@ -118,7 +118,7 @@ static const char* errorIncompatibleMgr = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'shared C'.
       |
@@ -147,7 +147,7 @@ static const char* errorIncompatibleNilability = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'owned C?'.
       |
@@ -174,7 +174,7 @@ static const char* errorTupleSize = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(x: (?, ?, ?)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(?, ?, ?)', but the actual was a value of type '(int(64), int(64))'.
       |
@@ -200,7 +200,7 @@ static const char* errorStarVsNotStar = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(in x: 3*real) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(real(64), real(64), real(64))', but the actual was a value of type '(real(64), real(64), bool)'.
       |
@@ -310,7 +310,7 @@ static const char* errorManyCandidates = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
        |
@@ -321,7 +321,7 @@ static const char* errorManyCandidates = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     2 | proc f(x: int(16)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
        |

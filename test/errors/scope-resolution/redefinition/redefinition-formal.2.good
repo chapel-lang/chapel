@@ -3,11 +3,11 @@
   It was first defined here:
       |
     2 |   proc f(x: int, x)
-      |          ⎺⎺⎺⎺⎺⎺⎺
+      |          ⎺⎺⎺⎺⎺⎺
       |
   Redefined here:
       |
     2 |   proc f(x: int, x)
-      |                  ⎺⎺
+      |                  ⎺
       |
 
