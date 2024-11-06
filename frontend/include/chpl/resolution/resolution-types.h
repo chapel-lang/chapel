@@ -2370,6 +2370,10 @@ class ResolvedExpression {
 
   const PoiScope* poiScope() const { return poiScope_; }
 
+  bool hasAssociatedActions() const {
+    return !associatedActions_.empty();
+  }
+
   const AssociatedActions& associatedActions() const {
     return associatedActions_;
   }

@@ -186,6 +186,7 @@ struct TConverter final : UastConverter {
 
   // this one handles functions in a way that allows for instantiation
   std::unordered_map<const ResolvedFunction*, FnSymbol*> fns;
+  std::unordered_map<const ResolvedFunction*, FnSymbol*> newWrappers;
 
   // fixup lists
   std::vector<std::pair<SymExpr*, ID>> identFixups;
@@ -285,6 +286,8 @@ struct TConverter final : UastConverter {
   void convertModuleInit(const Module* mod, ModuleSymbol* modSym);
   void convertFunction(const ResolvedFunction* r);
   FnSymbol* findOrConvertFunction(const ResolvedFunction* r);
+  void convertNewWrapper(const ResolvedFunction* rInitFn);
+  FnSymbol* findOrConvertNewWrapper(const ResolvedFunction* initFn);
 
   FnSymbol* convertFunctionForGeneratedCall(resolution::CallInfo ci,
                                             const uast::Module* inMod);
@@ -397,6 +400,15 @@ struct TConverter final : UastConverter {
   ::Qualifier convertQualifier(types::QualifiedType::Kind kind);
   IntentTag convertFormalIntentQt(types::QualifiedType::Kind kind);
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym, RV& rv);
+  void convertActuals(CallExpr* c,
+                      const Call* node,
+                      const resolution::ResolvedExpression* re,
+                      RV& rv);
+  void handlePostCallActions(CallExpr* c,
+                             const Call* node,
+                             const resolution::ResolvedExpression* re,
+                             RV& rv);
+
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -504,6 +516,8 @@ Expr* TConverter::convertAST(const AstNode* node) {
 Expr* TConverter::convertExpr(const AstNode* node, RV& rv) {
   // traverse to add it to curAList
   node->traverse(rv);
+
+  CHPL_ASSERT(!curAList->empty());
 
   // remove the last thing from the current AList and return that
   return curAList->last()->remove();
@@ -804,6 +818,128 @@ FnSymbol* TConverter::findOrConvertFunction(const ResolvedFunction* r) {
   INT_ASSERT(ret);
   return ret;
 }
+
+void TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
+  // don't bother with functions that don't need to exist at runtime
+  if (!functionExistsAtRuntime(rInitFn)) {
+    return;
+  }
+
+  if (trace)
+    printf("Converting _new wrapper for %s\n", rInitFn->id().str().c_str());
+
+  // compute the containing Module and ModuleSymbol
+  const Module* inModule = nullptr;
+  ModuleSymbol* modSym = nullptr;
+  {
+    ID inModuleId = parsing::idToParentModule(context, rInitFn->id());
+    if (const AstNode* inAst = parsing::idToAst(context, inModuleId)) {
+      inModule = inAst->toModule();
+    }
+    INT_ASSERT(inModule);
+    modSym = findOrSetupModule(inModuleId);
+    INT_ASSERT(modSym);
+  }
+
+  // find or convert the init function
+  FnSymbol* initFn = findOrConvertFunction(rInitFn);
+  AggregateType* type = toAggregateType(initFn->_this->getValType());
+
+  if (initFn->throwsError()) {
+    // code below will need adjustment for this case
+    CHPL_UNIMPL("_new that throws");
+  }
+
+  // build the new wrapper. this code is based upon buildNewWrapper.
+  FnSymbol* fn = new FnSymbol(astrNew);
+
+  BlockStmt* body = fn->body;
+  VarSymbol* initTemp = newTemp("initTemp", type);
+  CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
+  VarSymbol* retVar = newTemp("ret", type);
+  retVar->addFlag(FLAG_RVV);
+
+  fn->addFlag(FLAG_NEW_WRAPPER);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+  fn->addFlag(FLAG_LLVM_RETURN_NOALIAS);
+
+  if (initFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+  }
+
+  // Add the _new function just after the relevant initFn
+  initFn->defPoint->insertAfter(new DefExpr(fn));
+
+  // set up the formals and init call based on the init function
+  SymbolMap initToNewMap;
+  for_formals(formal, initFn) {
+    if (formal != initFn->_this && formal->type != dtMethodToken) {
+      ArgSymbol* newArg = formal->copy();
+      initToNewMap.put(formal, newArg);
+      fn->insertFormalAtTail(newArg);
+      innerInit->insertAtTail(new SymExpr(newArg));
+    }
+  }
+  update_symbols(fn, &initToNewMap);
+
+  body->insertAtTail(new DefExpr(initTemp));
+
+  // compute the size and md
+  VarSymbol* size = newTemp("size", dtInt[INT_SIZE_64]);
+  body->insertAtTail(new DefExpr(size));
+  CallExpr* sizeofCall = new CallExpr(PRIM_SIZEOF_BUNDLE, type->symbol);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, size, sizeofCall));
+  VarSymbol* md = newMemDesc(type); // int(16)
+
+  // allocate and cast
+  auto sizeQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                     types::IntType::get(context, 64));
+  auto mdQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                   types::IntType::get(context, 16));
+  auto ci = resolution::CallInfo(UniqueString::get(context, "chpl_here_alloc"),
+                                 /* calledType */ types::QualifiedType(),
+                                 /* isMethodCall */ false,
+                                 /* hasQuestionArg */ false,
+                                 /* isParenless */ false,
+                                 {CallInfoActual(sizeQt),
+                                  CallInfoActual(mdQt)});
+  FnSymbol* allocateFn = convertFunctionForGeneratedCall(ci, inModule);
+
+  VarSymbol* castTmp = newTemp("cast_tmp", dtCVoidPtr);
+  body->insertAtTail(new DefExpr(castTmp));
+  CallExpr* allocateCall = new CallExpr(allocateFn, size, md);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, castTmp, allocateCall));
+  CallExpr* castCall = new CallExpr(PRIM_CAST, type, castTmp);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, castCall));
+
+  // run the initializer on the allocated class
+  body->insertAtTail(innerInit);
+
+  // return initTemp
+  body->insertAtTail(new CallExpr(PRIM_MOVE, retVar, initTemp));
+  body->insertAtTail(new CallExpr(PRIM_RETURN, retVar));
+
+  printf("Generated _new\n");
+  nprint_view(fn);
+}
+
+FnSymbol* TConverter::findOrConvertNewWrapper(const ResolvedFunction* rInitFn) {
+  // if it was already converted, return that
+  auto it = newWrappers.find(rInitFn);
+  if (it != newWrappers.end()) {
+    return it->second;
+  }
+
+  // otherwise, convert the function now
+  convertNewWrapper(rInitFn);
+  FnSymbol* ret = newWrappers[rInitFn];
+  INT_ASSERT(ret);
+  return ret;
+}
+
 
 // This runs the resolver to figure out which function to call &
 // converts that function.
@@ -1464,6 +1600,10 @@ void TConverter::helpConvertFields(const types::CompositeType* ct,
 }
 
 Type* TConverter::helpConvertBasicClassType(const types::BasicClassType* bct) {
+  printf("helpConvertBasicClassType\n");
+  bct->dump();
+  printf("\n");
+
   const ResolvedFields& rf =
     fieldsForTypeDecl(context, bct, DefaultsPolicy::USE_DEFAULTS);
 
@@ -1474,7 +1614,13 @@ Type* TConverter::helpConvertBasicClassType(const types::BasicClassType* bct) {
 
   // add the DefExpr to the module containing the type
   ID inModuleId = parsing::idToParentModule(context, bct->id());
-  ModuleSymbol* inModule = findOrSetupModule(inModuleId);
+  ModuleSymbol* inModule = nullptr;
+  if (inModuleId.isEmpty()) {
+    inModule = rootModule;
+  } else {
+    inModule = findOrSetupModule(inModuleId);
+    INT_ASSERT(inModule);
+  }
   inModule->block->insertAtTail(new DefExpr(ct->symbol));
 
   // convert the superclass as a field 'super'
@@ -1482,10 +1628,16 @@ Type* TConverter::helpConvertBasicClassType(const types::BasicClassType* bct) {
     Type* pt = convertType(parentClassType);
     VarSymbol* v = new VarSymbol("super", pt);
     v->qual = QUAL_VAL;
+    v->makeField();
+    ct->fields.insertAtTail(new DefExpr(v));
   }
 
   // convert the fields
   helpConvertFields(bct, rf, ct);
+
+  printf("helpConvertBasicClassType result\n");
+  nprint_view(ct);
+  printf("\n");
 
   return ct;
 }
@@ -1971,6 +2123,65 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
   }
 }
 
+void TConverter::convertActuals(CallExpr* c,
+                                const Call* node,
+                                const resolution::ResolvedExpression* re,
+                                RV& rv) {
+  if (auto primCall = node->toPrimCall()) {
+    // use a simple strategy to convert prim calls
+    // (assuming no named argument passing)
+    // TODO: do some associated actions need to be handled here?
+    enterCallActuals(c);
+    for (auto actual : node->actuals()) {
+      c->insertAtTail(convertExpr(actual, rv));
+    }
+    exitCallActuals();
+    return;
+  }
+
+  // otherwise
+  enterCallActuals(c);
+
+  // gather the actuals in a way that is consistent with other resolution parts
+  std::vector<const AstNode*> actualAsts;
+  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
+                                         /* raiseErrors */ false,
+                                         &actualAsts);
+
+  // consider the actual for each Formal
+  const auto& candidate = re->mostSpecific().only();
+  auto& formalActualMap = candidate.formalActualMap();
+  for (const FormalActual& fa : formalActualMap.byFormals()) {
+    const types::QualifiedType& qt = fa.formalType();
+    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+      // a 'type' actual can be left out at this point
+    } else if (qt.isParam()) {
+      // a 'param' actual can be left out at this point
+    } else {
+      if (fa.hasDefault()) {
+        CHPL_UNIMPL("default arguments");
+      } else {
+        // it's something that exists at runtime, so include it
+        Expr* actualExpr = convertExpr(actualAsts[fa.actualIdx()], rv);
+        c->insertAtTail(actualExpr);
+      }
+      // TODO handle associated actions for 'in' 'out', deinit tmp, etc
+    }
+  }
+
+  // done generating actuals
+  exitCallActuals();
+
+
+}
+
+void TConverter::handlePostCallActions(CallExpr* c,
+                                       const Call* node,
+                                       const resolution::ResolvedExpression* re,
+                                       RV& rv) {
+}
+
+
 bool TConverter::enter(const Module* node, RV& rv) {
   if (trace)
     printf("enter module %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
@@ -2389,27 +2600,45 @@ void TConverter::exit(const Return* node, RV& rv) {
 bool TConverter::enter(const Call* node, RV& rv) {
   if (trace) printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  if (auto primCall = node->toPrimCall()) {
-    CallExpr* ret = new CallExpr(primCall->prim());
-    curAList->insertAtTail(ret);
-    enterCallActuals(ret);
-    for (auto actual : node->actuals()) {
-      ret->insertAtTail(convertExpr(actual, rv));
-    }
-    exitCallActuals();
-    return false;
+  if (node->id().str() == "dd@3") {
+    gdbShouldBreakHere();
   }
-
 
   const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
-  if (re == nullptr) {
+
+  if (auto primCall = node->toPrimCall()) {
+    // there should not be associated actions for primitive calls
+    CHPL_ASSERT(!re || !re->hasAssociatedActions());
+
+    CallExpr* ret = new CallExpr(primCall->prim());
+    curAList->insertAtTail(ret);
+
+    convertActuals(ret, node, re, rv);
+    handlePostCallActions(ret, node, re, rv);
     return false;
   }
 
+  if (re == nullptr) {
+    CHPL_UNIMPL("call with no ResolvedExpression");
+    return false;
+  }
+
+  bool generateNew = false;
   const auto& candidate = re->mostSpecific().only();
   const TypedFnSignature* sig = candidate.fn();
   if (sig == nullptr) {
-    return false;
+    // For 'new unmanaged C(...)' it should generate a call to a '_new'
+    // function. The actuals are passed along to it.
+    for (const auto& action : re->associatedActions()) {
+      if (action.action() == AssociatedAction::NEW_INIT) {
+        sig = action.fn();
+        generateNew = true;
+      }
+    }
+    if (sig == nullptr) {
+      CHPL_UNIMPL("call with no most specific function");
+      return false;
+    }
   }
 
   const ResolvedFunction* resolvedFn = nullptr;
@@ -2442,47 +2671,24 @@ bool TConverter::enter(const Call* node, RV& rv) {
     return false;
   }
 
-  Symbol* calledFn = findOrConvertFunction(resolvedFn);
+  Symbol* calledFn = nullptr;
+  if (generateNew) {
+    calledFn = findOrConvertNewWrapper(resolvedFn);
+  } else {
+    calledFn = findOrConvertFunction(resolvedFn);
+  }
 
   // set up the call
   CallExpr* ret = new CallExpr(calledFn);
   curAList->insertAtTail(ret);
-  enterCallActuals(ret);
 
-  // gather the actuals in a way that is consistent with other resolution parts
-  std::vector<const AstNode*> actualAsts;
-  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
-                                         /* raiseErrors */ false,
-                                         &actualAsts);
-
-  // consider the actual for each Formal
-  auto& formalActualMap = candidate.formalActualMap();
-  for (const FormalActual& fa : formalActualMap.byFormals()) {
-    const types::QualifiedType& qt = fa.formalType();
-    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
-      // a 'type' actual can be left out at this point
-    } else if (qt.isParam()) {
-      // a 'param' actual can be left out at this point
-    } else {
-      if (fa.hasDefault()) {
-        CHPL_UNIMPL("default arguments");
-      } else {
-        // it's something that exists at runtime, so include it
-        Expr* actualExpr = convertExpr(actualAsts[fa.actualIdx()], rv);
-        ret->insertAtTail(actualExpr);
-      }
-      // TODO handle associated actions for 'in' 'out', deinit tmp, etc
-    }
-  }
-
-  // done generating actuals
-  exitCallActuals();
+  convertActuals(ret, node, re, rv);
 
   return false;
 }
 
 void TConverter::exit(const Call* node, RV& rv) {
-  if (trace) printf("exit fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
