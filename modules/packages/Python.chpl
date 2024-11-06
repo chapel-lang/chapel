@@ -187,7 +187,7 @@
   --------------
 
   For more examples of using the Python module, see the test cases in
-  `$CHPL_HOME//test/library/packages/Python/examples <https://github.com/chapel-lang/chapel/tree/main/test/library/packages/Python/examples>`_.
+  `$CHPL_HOME/test/library/packages/Python/examples <https://github.com/chapel-lang/chapel/tree/main/test/library/packages/Python/examples>`_.
 
 */
 @unstable("The Python module's interface is under active development and may change")
