@@ -58,9 +58,12 @@ def _wrap_str(s: str) -> Component:
     return Component(ComponentTag.STRING, s)
 
 
-def _wrap_in(s: Union[Component, List[Component]], wrapper: Tuple[str, str]) -> List[Component]:
+def _wrap_in(
+    s: Union[Component, List[Component]], wrapper: Tuple[str, str]
+) -> List[Component]:
     center = s if isinstance(s, list) else [s]
     return [_wrap_str(wrapper[0])] + center + [_wrap_str(wrapper[1])]
+
 
 class SymbolSignature:
     def __init__(self, node: chapel.AstNode):
@@ -357,6 +360,7 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
     comps = _wrap_in(comps, ("(", ")")) if call.parenth_location() else comps
     return comps
 
+
 def _is_special_fncall(call: chapel.FnCall) -> bool:
     """
     Check if the function call is a special function call
@@ -364,7 +368,15 @@ def _is_special_fncall(call: chapel.FnCall) -> bool:
     called = call.called_expression()
     if not isinstance(called, chapel.Identifier):
         return False
-    return called.name() in ("sync", "atomic", "owned", "shared", "borrowed", "unmanaged")
+    return called.name() in (
+        "sync",
+        "atomic",
+        "owned",
+        "shared",
+        "borrowed",
+        "unmanaged",
+    )
+
 
 def _special_fncall_to_string(call: chapel.FnCall) -> List[Component]:
     """
