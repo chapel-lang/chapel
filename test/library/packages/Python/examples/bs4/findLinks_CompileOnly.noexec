@@ -1,0 +1,2 @@
+This test requires bs4 to run, which test systems may not have.
+But it is important this test continues to compile.
