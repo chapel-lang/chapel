@@ -24,7 +24,7 @@ proc main() {
     var params = model.call(list(owned ClassObject?), "parameters");
     for p in params {
       var data_ = p!.getAttr(owned ClassObject, "data");
-      data_.call(None, "fill_", 0.9);
+      data_.call(NoneType, "fill_", 0.9);
     }
   }
 
