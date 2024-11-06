@@ -1,0 +1,61 @@
+called no_args
+called no_args
+Caught PythonException: 'NoneType' object cannot be interpreted as an integer
+Caught PythonException: no_args() takes 0 positional arguments but 1 was given
+called one_arg with 1
+Caught PythonException: one_arg() takes 1 positional argument but 2 were given
+called two_args with 1 and 2
+called two_args with hello and world
+called two_args with None and None
+called three_args with 1, 2, and 3
+called varargs
+  args:
+called varargs
+  args: 1
+called varargs
+  args: 1, 2
+called varargs
+  args: 1, 2, 3
+called varargs
+  args: 1, 2, 3, [1, 2, 3]
+called varargs
+  args: 1, 2, 3, [1, 2, 3], 4
+called varargs
+  args: 1, 2, 3, [1, 2, 3], 4, {'key2': 'value2', 'key': 'value'}
+called one_arg_with_default with 1
+called one_arg_with_default with 7
+called three_args_with_default with 8, 2, and 3
+called three_args_with_default with 8, 9, and 3
+called three_args_with_default with 8, 9, and 10
+called three_args_with_default with 8, 2, and 10
+called three_args_with_default_and_kwargs with 8, 2, and 3
+  kwargs: 
+called three_args_with_default_and_kwargs with 8, 9, and 3
+  kwargs: 
+called three_args_with_default_and_kwargs with 8, 9, and 10
+  kwargs: 
+called three_args_with_default_and_kwargs with 8, 10, and 3
+  kwargs: 
+called three_args_with_default_and_kwargs with 8, 2, and 11
+  kwargs: abc=12
+called varargs_and_kwargs
+  args: 
+  kwargs: 
+called varargs_and_kwargs
+  args: 1
+  kwargs:
+called varargs_and_kwargs
+  args: 1, {'key': 'value'}
+  kwargs: 
+called varargs_and_kwargs
+  args: 
+  kwargs: a=19
+called varargs_and_kwargs
+  args: 1
+  kwargs: a=20
+called varargs_and_kwargs
+  args: 1, 2, {'key': 'value'}
+  kwargs: a=7, b=8
+Caught PythonException: 'NoneType' object cannot be interpreted as an integer
+Caught PythonException: no_args() takes 0 positional arguments but 1 was given
+Caught PythonException: one_arg() takes 1 positional argument but 2 were given
