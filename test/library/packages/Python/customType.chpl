@@ -16,7 +16,7 @@ class myRecConverter: TypeConverter {
     if T != myRec then halt("Expected myRec");
     var pyObj = owned.release(pyClsType(value.x, value.y));
     pyObj.obj!.isOwned = false;
-    var ptr = pyObj.get();
+    var ptr = pyObj.obj!.get();
     delete pyObj;
     return ptr;
   }
