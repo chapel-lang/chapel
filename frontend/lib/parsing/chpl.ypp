@@ -3007,7 +3007,7 @@ colon_formal_type:
 ;
 
 opt_colon_formal_type:
-                        { $$ = nullptr; }
+                        { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | colon_formal_type     { $$ = $1; }
 ;
 
