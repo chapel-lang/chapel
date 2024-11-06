@@ -20,16 +20,22 @@
 
 /* Library for interfacing with Python from Chapel code.
 
+  This module provides a Chapel interface to a Python interpreter.
+  It allows manipulating native Python objects and libraries with minimal
+  wrapper code require.
 
-  Caveats
+  .. note::
 
+     This module is implemented using the Python C API, and as such, it is not
+     compatible with PyPy or other alternative Python implementations.
 
   Compiling Chapel code
   ---------------------
 
-  Building Chapel code that uses this module, . This can be done by setting
-  the ``--ccflags`` and ``--ldflags`` options when compiling Chapel code.
-  The following example shows how to build Chapel code that uses this module:
+  Building Chapel code that uses this module requires some additional flags.
+  Chapel needs the ``Python.h`` header file and the Python library to be linked
+  when compiling Chapel code that uses this module. If ``python3`` is installed,
+  this can be achieved with the following commands:
 
   .. code-block:: bash
 
@@ -40,20 +46,147 @@
      chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
           -L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION ...Chapel source files...
 
-
-  Parallel execution
+  Parallel Execution
   ------------------
 
+  Running any Python code in parallel from Chapel requires special care. Before
+  any parallel execution with Python code can occur, the thread state needs to
+  be saved. After the parallel execution, the thread state must to be restored.
+  Then for each thread, the Global Interpreter Lock (GIL) must be acquired and
+  released. This is necessary to prevent segmentation faults and deadlocks in
+  the Python interpreter.
+
+  The following demonstrates this when explicit tasks are introduced with a
+  ``coforall``:
+
+  ..
+     START_TEST
+     FILENAME: CoforallTest.chpl
+     START_GOOD
+     1 4 9 16 25 36 49 64 81 100
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     var Arr: [1..10] int = 1..10;
+
+     var interp = new Interpreter();
+     var func = new Function(interp, "lambda x,: x * x");
+
+     var ts = new threadState();
+     ts.save(); // save the thread state
+     coforall tid in 1..10 {
+       var gil = new GIL(); // acquire the GIL
+       Arr[tid] = func(int, tid);
+       gil.release(); // release the GIL
+     }
+     ts.restore(); // restore the thread state
+     writeln(Arr);
+
+  ..
+     END_TEST
+
+  When using a data-parallel ``forall``, the GIL should be acquired and released
+  as a task private variable.
+
+  ..
+     START_TEST
+     FILENAME: ForallTest.chpl
+     START_GOOD
+     1 4 9 16 25 36 49 64 81 100
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     var Arr: [1..10] int = 1..10;
+
+     var interp = new Interpreter();
+     var func = new Function(interp, "lambda x,: x * x");
+
+     var ts = new threadState();
+     ts.save(); // save the thread state
+     forall tid in 1..10 with (var gil = new GIL()) {
+       Arr[tid] = func(int, tid);
+     }
+     ts.restore(); // restore the thread state
+     writeln(Arr);
+
+  ..
+     END_TEST
+
+  In the examples above, because the GIL is being acquired and released for the
+  entirety of each task, these examples will be no faster than running the tasks
+  serially.
+
+  .. note::
+
+     Newer Python versions offer a free-threading mode that allows multiple threads concurrently, without the need for the GIL. In this mode, users can either remove the GIL acquisition code or not. Without the GIL, the GIL acquisition code will have no effect.
+
+  .. note::
+
+     In the future, it may be possible to achieve better parallelism with Python
+     by using sub-interpreters. However, sub-interpreters are not yet supported
+     in Chapel.
+
+  Using Python Modules With Distributed Code
+  -------------------------------------------
+
+  Python has no built-in support for distributed memory, so each locale must create its own interpreter (and subsequent Python objects).
+
+  The following example demonstrates how to create a Python interpreter and run a Python function on each locale:
+
+  ..
+     START_TEST
+     FILENAME: DistributedTest.chpl
+     EXECOPTS: --n=10
+     START_GOOD
+     2 3 4 5 6 7 8 9 10 11
+     END_GOOD
+
+  .. code-block:: chapel
+
+      use Python, BlockDist;
+
+      config const n = 100;
+      var Arr = blockDist.createArray({1..n}, int);
+      Arr = 1..n;
+
+      coforall l in Arr.targetLocales() {
+        on l {
+          // each locale has its own interpreter
+          const interp = new Interpreter();
+          const func = new Function(interp, "lambda x,: x + 1");
+
+          var ts = new threadState();
+          ts.save();
+          forall i in Arr.localSubdomain() with (var gil = new GIL()) {
+            Arr[i] = func(Arr.eltType, Arr[i]);
+          }
+          ts.restore();
+        }
+      }
+      writeln(Arr);
+
+  ..
+     END_TEST
+
+  In this example, ``interp`` and ``func`` only exist for the body of the
+  ``on`` block,Python objects can be made to persist beyond the scope of a
+  given ``on`` block by creating a distributed array of Python objects.
 
   Defining Custom Types
   ---------------------
+
+  To translate custom Chapel types to Python objects, users can define custom :type:`TypeConverter` classes.
 
   Example Codes
   -------------
 
   // TODO: example for bs4
-
-  // TODO: example for apply
 
   // TODO: example for pytorch
 
@@ -838,12 +971,12 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    proc deinit() do release();
+    proc ref deinit() do this.release();
 
     /*
       Acquire the GIL. If the GIL is already acquired, this is a no-op.
     */
-    proc acquire() {
+    proc ref acquire() {
       if !acquired {
         state = PyGILState_Ensure();
         acquired = true;
@@ -854,7 +987,7 @@ module Python {
 
       This method is called automatically when the record is destroyed.
     */
-    proc release() {
+    proc ref release() {
       if acquired {
         PyGILState_Release(state);
         acquired = false;
@@ -889,12 +1022,12 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    proc deinit() do release();
+    proc ref deinit() do this.restore();
 
     /*
       Saves the current thread state. If the state is already saved, this is a no-op.
     */
-    proc save() {
+    proc ref save() {
       if !saved {
         state = PyEval_SaveThread();
         saved = true;
@@ -905,7 +1038,7 @@ module Python {
 
       This method is called automatically when the record is destroyed.
     */
-    proc restore() {
+    proc ref restore() {
       if saved {
         PyEval_RestoreThread(state);
         saved = false;
