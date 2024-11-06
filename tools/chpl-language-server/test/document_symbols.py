@@ -75,7 +75,7 @@ async def test_document_symbols(client: LanguageClient):
         (rng((8, 9), (8, 16)), "type t = int", SymbolKind.TypeParameter),
         (rng((9, 10), (9, 16)), "param p = 17", SymbolKind.Constant),
         (rng((10, 10), (10, 19)), "const c: t = 18", SymbolKind.Field),
-        (rng((11, 8), (11, 13)), "var x: t", SymbolKind.Field),
+        (rng((11, 8), (11, 12)), "var x: t", SymbolKind.Field),
         (rng((12, 4), (12, 19)), "proc init()", SymbolKind.Constructor),
         (rng((13, 4), (13, 18)), "proc foo()", SymbolKind.Method),
         (
@@ -170,6 +170,21 @@ async def test_document_symbols_exprs(client: LanguageClient):
         "const g = -f.size;",
         "const h = new R();",
         "const i = new owned C();",
+        "const j: shared C? = new shared C?();",
+        "const k = (new shared C()): borrowed C?;",
+        "const l = (new shared C()): owned C;",
+        "const m: sync;",
+        "const n: sync int;",
+        "const o: owned;",
+        "const p: owned C;",
+        "const q: owned C?;",
+        "const r = 1: sync int;",
+        "const s: atomic real(64) = 1.0;",
+        "const t: R(?);",
+        "const u: R(1, ?);",
+        "const v = new (func())();",
+        "const w = new unmanaged (func(int, int))(1);",
+        "const x = (new shared (func())()): borrowed C?;",
     ]
     file = "\n".join(exprs)
 
