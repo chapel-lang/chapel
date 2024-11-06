@@ -2160,10 +2160,12 @@ struct TheseResolutionResult {
     (void) reason_; // nothing to mark
     if (callResult_) callResult_->mark(context);
     if (zipperedFailure_) zipperedFailure_->mark(context);
+    iterandType_.mark(context);
   }
 
   size_t hash() const {
-    return chpl::hash(reason_, callResult_, zipperedFailure_, zipperedFailureIndex_);
+    return chpl::hash(reason_, callResult_, zipperedFailure_,
+                      zipperedFailureIndex_, iterandType_);
   }
 
   /** Returns the reason for failure. */
