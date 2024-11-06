@@ -290,7 +290,7 @@ struct TConverter final : UastConverter {
   FnSymbol* findOrConvertNewWrapper(const ResolvedFunction* initFn);
 
   FnSymbol* convertFunctionForGeneratedCall(resolution::CallInfo ci,
-                                            const uast::Module* inMod);
+                                            const uast::AstNode* inAst);
   void createMainFunctions() override;
 
   ArgSymbol* findOrCreateFormal(const Formal* node);
@@ -334,6 +334,11 @@ struct TConverter final : UastConverter {
   Type* helpConvertIntType(const types::IntType* t);
   Type* helpConvertRealType(const types::RealType* t);
   Type* helpConvertUintType(const types::UintType* t);
+
+  Expr* defaultValueForType(const types::Type* t);
+  // if 'e' is a SymExpr, return that.
+  // Otherwise, append a DefExpr & PRIM_MOVE to curAList and returns a SymExpr.
+  SymExpr* storeInTempIfNeeded(Expr* e);
 
   Symbol* convertParam(types::QualifiedType qt);
 
@@ -506,6 +511,9 @@ struct TConverter final : UastConverter {
   bool enter(const Call* node, RV& rv);
   void exit(const Call* node, RV& rv);
 
+  bool enter(const Conditional* node, RV& rv);
+  void exit(const Conditional* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -518,6 +526,8 @@ Expr* TConverter::convertAST(const AstNode* node) {
 }
 
 Expr* TConverter::convertExpr(const AstNode* node, RV& rv) {
+  astlocMarker markAstLoc(node->id());
+
   // traverse to add it to curAList
   node->traverse(rv);
 
@@ -719,6 +729,7 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   modSym->initFn->addFlag(FLAG_RESOLVED);
   modSym->initFn->addFlag(FLAG_RESOLVED_EARLY);
   modSym->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  modSym->initFn->setNormalized(true);
 
   // add the init function to the module
   modSym->block->insertAtHead(new DefExpr(modSym->initFn));
@@ -823,10 +834,32 @@ FnSymbol* TConverter::findOrConvertFunction(const ResolvedFunction* r) {
     return it->second;
   }
 
-  // otherwise, convert the function now
+  // otherwise, convert the function
+
+  // save state
+  // this needs to happen when looking for a function called by
+  // some code that wasn't necessarily planned for in the call graph
+  // e.g. _cond_test
+  auto saveSymbol = symbol;
+  auto saveCurFnSymbol = curFnSymbol;
+  auto saveCurModuleSymbol = curModuleSymbol;
+  auto saveCurRetVar = curRetVar;
+  auto saveEpilogueLabel = epilogueLabel;
+  auto saveCurrentResolvedFunction = currentResolvedFunction;
+
+  // convert the function and return the result
   convertFunction(r);
   FnSymbol* ret = fns[r];
   INT_ASSERT(ret);
+
+  // restore state
+  symbol = saveSymbol;
+  curFnSymbol = saveCurFnSymbol;
+  curModuleSymbol = saveCurModuleSymbol;
+  curRetVar = saveCurRetVar;
+  epilogueLabel = saveEpilogueLabel;
+  currentResolvedFunction = saveCurrentResolvedFunction;
+
   return ret;
 }
 
@@ -880,6 +913,9 @@ void TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   if (initFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
   }
+  fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_RESOLVED_EARLY);
+  fn->setNormalized(true);
 
   // Add the _new function just after the relevant initFn
   initFn->defPoint->insertAfter(new DefExpr(fn));
@@ -957,12 +993,12 @@ FnSymbol* TConverter::findOrConvertNewWrapper(const ResolvedFunction* rInitFn) {
 // It does not convert the call itself.
 // It works as though the generated call were in the module initializer.
 FnSymbol* TConverter::convertFunctionForGeneratedCall(resolution::CallInfo ci,
-                                                      const uast::Module* inMod)
+                                                      const uast::AstNode* in)
 {
-  auto modScope = scopeForModule(context, inMod->id());
+  auto scope = scopeForId(context, in->id());
   const PoiScope* poiScope = nullptr;
-  auto scopeInfo = CallScopeInfo::forNormalCall(modScope, poiScope);
-  auto r = resolveGeneratedCall(context, inMod, ci, scopeInfo);
+  auto scopeInfo = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto r = resolveGeneratedCall(context, in, ci, scopeInfo);
   const auto& candidate = r.mostSpecific().only();
   const TypedFnSignature* sig = candidate.fn();
   INT_ASSERT(sig);
@@ -995,6 +1031,7 @@ void TConverter::createMainFunctions() {
     mainFn = new FnSymbol("main");
     mainFn->addFlag(FLAG_RESOLVED);
     mainFn->addFlag(FLAG_RESOLVED_EARLY);
+    mainFn->setNormalized(true);
     mainFn->retType = dtVoid;
     mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     mainModule->block->insertAtTail(new DefExpr(mainFn));
@@ -1788,6 +1825,29 @@ Type* TConverter::helpConvertUintType(const types::UintType* t) {
   return dtUInt[getUintSize(t)];
 }
 
+Expr* TConverter::defaultValueForType(const types::Type* t) {
+  Symbol* sym = nullptr;
+  if (t->isBoolType()) {
+    sym = new_BoolSymbol(false);
+  } else {
+    CHPL_UNIMPL("default value for this type");
+    sym = new_BoolSymbol(false);
+  }
+  return new SymExpr(sym);
+}
+SymExpr* TConverter::storeInTempIfNeeded(Expr* e) {
+  if (SymExpr* se = toSymExpr(e)) {
+    return se;
+  }
+
+  // otherwise, store the value in a temp
+  VarSymbol* t = newTemp();
+  t->addFlag(FLAG_EXPR_TEMP);
+  curAList->insertAtTail(new DefExpr(t));
+  curAList->insertAtTail(new CallExpr(PRIM_MOVE, t, e));
+  return new SymExpr(t);
+}
+
 // note: new_IntSymbol etc already returns existing if already created
 Symbol* TConverter::convertParam(types::QualifiedType qt) {
   const types::Param* p = qt.param();
@@ -2013,6 +2073,17 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
       move = new CallExpr(PRIM_MOVE, varSym,
                                      new CallExpr(PRIM_ADDR_OF, initExpr));
     } else {
+      if (initExpr == nullptr) {
+        // compute the default value for this type
+        if (const resolution::ResolvedExpression* rr = rv.byAstOrNull(node)) {
+          types::QualifiedType qt = rr->type();
+          if (!qt.isUnknown()) {
+            initExpr = defaultValueForType(qt.type());
+          }
+        }
+        INT_ASSERT(initExpr);
+      }
+
       move = new CallExpr(PRIM_MOVE, varSym, initExpr);
     }
     curAList->insertAtTail(move);
@@ -2275,6 +2346,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   fn->addFlag(FLAG_RESOLVED);
   fn->addFlag(FLAG_RESOLVED_EARLY);
+  fn->setNormalized(true);
 
   if (currentResolvedFunction->signature()->instantiatedFrom() != nullptr) {
     // generic instantiations are "invisible"
@@ -2703,6 +2775,112 @@ bool TConverter::enter(const Call* node, RV& rv) {
 void TConverter::exit(const Call* node, RV& rv) {
   if (trace) printf("exit call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
+
+bool TConverter::enter(const Conditional* node, RV& rv) {
+  if (trace) printf("enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  auto condRE = rv.byAst(node->condition());
+  if (condRE.type().isParamTrue()) {
+    // Don't need to process the false branch.
+    node->thenBlock()->traverse(rv);
+    return false;
+  } else if (condRE.type().isParamFalse()) {
+    if (auto elseBlock = node->elseBlock()) {
+      elseBlock->traverse(rv);
+    }
+    return false;
+  }
+
+  // Not param-known condition; visit both branches as normal.
+
+  if (node->isExpressionLevel()) {
+    /*
+    auto cond = convertExpr(node->condition(), rv);
+    INT_ASSERT(cond);
+    auto thenExpr = convertExpr(node->thenBlock(), rv);
+    INT_ASSERT(thenExpr);
+    auto elseExpr = convertExpr(node->elseBlock(), rv);
+    INT_ASSERT(elseExpr);
+    ret = new IfExpr(cond, thenExpr, elseExpr);*/
+    // TODO: is this what if expressions look like after call destructors?
+    CHPL_UNIMPL("if expr");
+
+  } else {
+    astlocMarker markAstLoc(node->id());
+
+    Expr* cond = nullptr;
+    BlockStmt* thenBlock = nullptr;
+    BlockStmt* elseBlock = nullptr;
+
+    // convert the condition
+    if (node->condition()->isVariable()) {
+      /*INT_ASSERT(ifVar->kind() == uast::Variable::CONST ||
+                 ifVar->kind() == uast::Variable::VAR);
+      INT_ASSERT(ifVar->initExpression());
+      auto varNameStr = astr(ifVar->name());
+      auto initExpr = convertExpr(ifVar->initExpression(), rv);
+      bool isConst = ifVar->kind() == uast::Variable::CONST;
+      cond = buildIfVar(varNameStr, initExpr, isConst);*/
+      // TODO: port over 'transformIfVar' from normalize.cpp;
+      // should not be generating PRIM_IF_VAR here at all
+      CHPL_UNIMPL("if var");
+    } else {
+      cond = convertExpr(node->condition(), rv);
+    }
+    INT_ASSERT(cond);
+
+
+    cond = storeInTempIfNeeded(cond);
+
+    { // if it's not a 'bool', emit a call to '_cond_test'.
+      if (auto rr = rv.byAstOrNull(node->condition())) {
+        types::QualifiedType qt = rr->type();
+        if (!qt.isUnknown()) {
+          if (!qt.type()->isBoolType()) {
+            // emit a call to '_cond_test' and store the result in a temp
+            auto ci = resolution::CallInfo(
+                                 UniqueString::get(context, "_cond_test"),
+                                 /* calledType */ types::QualifiedType(),
+                                 /* isMethodCall */ false,
+                                 /* hasQuestionArg */ false,
+                                 /* isParenless */ false,
+                                 {CallInfoActual(qt)});
+            FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
+            CallExpr* condCall = new CallExpr(condFn, cond);
+            cond = storeInTempIfNeeded(condCall);
+          }
+        }
+      }
+    }
+
+    // convert the 'then' block
+    {
+      astlocMarker markAstLoc(node->thenBlock()->id());
+      thenBlock = new BlockStmt();
+      pushBlock(thenBlock);
+      node->thenBlock()->traverse(rv);
+      popBlock();
+    }
+
+    if (node->hasElseBlock()) {
+      astlocMarker markAstLoc(node->elseBlock()->id());
+      elseBlock = new BlockStmt();
+      pushBlock(elseBlock);
+      node->elseBlock()->traverse(rv);
+      popBlock();
+    }
+
+    auto ret = new CondStmt(cond, thenBlock, elseBlock);
+    curAList->insertAtTail(ret);
+  }
+
+  return false;
+}
+
+void TConverter::exit(const Conditional* node, RV& rv) {
+  if (trace) printf("exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
   if (trace) printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
