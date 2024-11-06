@@ -385,7 +385,25 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
          formal->type->symbol->hasFlag(FLAG_GENERIC))) {
 
       if (Symbol* actual = formalIdxToActual[i - 1]) {
-        computeSubstitution(formal, actual, ctx);
+        if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
+            formal->hasFlag(FLAG_ARG_THIS)                == true &&
+            formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+            actual->getValType() == formal->getValType()) {
+          // If the "this" arg is generic, we're resolving an initializer, and
+          // the actual being passed is also still generic, don't count this as
+          // a substitution.  Otherwise, we'll end up in an infinite loop if
+          // one of the later generic args has a defaultExpr, as we will always
+          // count the this arg as a substitution and so always approach the
+          // generic arg with a defaultExpr as though a substitution was going
+          // to take place.
+
+          // Note: If we do not ignore this here, then we might return 'false'
+          // from this function when all the other formals are concrete. This
+          // could result in the rejection of a valid initializer.
+          nIgnored++;
+        } else {
+          computeSubstitution(formal, actual, ctx);
+        }
 
       } else if (formal->defaultExpr != NULL) {
         computeSubstitutionForDefaultExpr(formal, ctx);
@@ -436,19 +454,7 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
     }
 
   } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
-        formal->hasFlag(FLAG_ARG_THIS)                == true &&
-        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
-        actual->getValType() == formal->getValType()) {
-      // If the "this" arg is generic, we're resolving an initializer, and
-      // the actual being passed is also still generic, don't count this as
-      // a substitution.  Otherwise, we'll end up in an infinite loop if
-      // one of the later generic args has a defaultExpr, as we will always
-      // count the this arg as a substitution and so always approach the
-      // generic arg with a defaultExpr as though a substitution was going
-      // to take place.
-
-    } else if (Type* type = getInstantiationType(actual, formal, ctx)) {
+    if (Type* type = getInstantiationType(actual, formal, ctx)) {
       // String literal actuals aligned with non-param generic formals of
       // type dtAny will result in an instantiation of dtStringC when the
       // function is extern. In other words, let us write:
