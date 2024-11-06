@@ -366,7 +366,8 @@ static bool isRecordLike(const Type* t) {
     // no action needed for 'borrowed' or 'unmanaged'
     // (these should just default initialized to 'nil',
     //  so nothing else needs to be resolved)
-    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
+    if (! (decorator.isBorrowed() || decorator.isUnmanaged() ||
+          decorator.isUnknownManagement())) {
       return true;
     }
   } else if (t->isRecordType() || t->isUnionType()) {
