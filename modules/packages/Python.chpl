@@ -510,7 +510,7 @@ module Python {
           res.pushBack(fromPython(T.eltType, item));
         }
         return res;
-      } else if (PyIter_Check(obj) != 0) {
+      } else if (PyIter_Check(obj) != 0 || PyGen_Check(obj) != 0) {
         // if it's an iterator, we can iterate over it
         var res = new T();
         while true {
@@ -792,8 +792,9 @@ module Python {
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    pragma "last resort"
     proc this(type retType, const args..., kwargs:?t=none): retType throws
-      where kwargs.domain.isAssociative() {
+      where kwargs.isAssociative() {
       var pyArgs: args.size * c_ptr(void);
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
@@ -1138,7 +1139,7 @@ module Python {
 
       This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
     */
-    proc value(type value) {
+    proc value(type value) throws {
       return interpreter.fromPython(value, this.obj);
     }
 
@@ -1332,6 +1333,7 @@ module Python {
       Iterators
     */
     extern "chpl_PyList_Check" proc PyIter_Check(obj: c_ptr(void)): c_int;
+    extern "chpl_PyGen_Check" proc PyGen_Check(obj: c_ptr(void)): c_int;
     extern proc PyIter_Next(obj: c_ptr(void)): c_ptr(void);
 
     /*
