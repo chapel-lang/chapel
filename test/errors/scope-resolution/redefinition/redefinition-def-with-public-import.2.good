@@ -3,7 +3,7 @@
   It was first defined here:
       |
     6 |   var a: real;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺⎺
       |
   Redefined through the 'import' of 'Lib1' here:
       |
@@ -13,6 +13,6 @@
   Leading to the definition here:
       |
     2 |   var a: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺
       |
 

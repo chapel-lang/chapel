@@ -190,6 +190,6 @@
   Formals in a procedure definition must be named
        |
     37 | proc f(_: int) {}
-       |        ⎺⎺⎺⎺⎺⎺⎺
+       |        ⎺⎺⎺⎺⎺⎺
        |
 

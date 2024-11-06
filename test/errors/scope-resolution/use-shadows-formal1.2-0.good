@@ -17,12 +17,12 @@
   Leading to 'b' defined here:
       |
     2 |   var b: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺
       |
   But, there is a shadowed symbol 'a' defined here:
        |
     13 |   proc foo(a: real) {
-       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+       |            ⎺⎺⎺⎺⎺⎺⎺
        |
 
 0
