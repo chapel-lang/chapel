@@ -1811,6 +1811,38 @@ static void testGenericFieldInit() {
   }
   {
     std::string program = R"""(
+      class C {
+        type typeField;
+      }
+
+      record R {
+        var myC: owned C(?)?;
+
+        proc init() {
+          this.myC = nil;
+        }
+      }
+
+      var r  = new R();
+      )""";
+    auto config = getConfigWithHome();
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"r"});
+    assert(toString(vars["r"]) == "R(var ErroneousType)");
+
+    assert(guard.numErrors() == 1);
+    auto& err = guard.error(0);
+    assert(err->type() == ErrorType::IncompatibleTypeAndInit);
+    assert(err->location(context).firstLine() == 10);
+
+    guard.realizeErrors();
+  }
+  {
+    std::string program = R"""(
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
