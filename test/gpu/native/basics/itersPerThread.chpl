@@ -50,15 +50,13 @@ proc show(name: string, arr) {
   writef("\n");
 }
 
-proc byThread(numIndices, threadIdx, blockSize, blockId, gridSize) {
-  var iters: [0..#gridSize, 0..#blockSize, 1..numIndices] bool;
-  for i in 1..numIndices do
-    iters[blockId[i], threadIdx[i], i] = true;
+proc byThread(iters, gridSize: int) {
+  const dims = iters.dims();
   writef("%2s %2s | iters\n", "bl", "th");
   for bid in 0..#gridSize {
-    for tid in 0..#blockSize {
+    for tid in dims(1) {
       writef("%2i %2i |", bid, tid);
-      for i in 1..numIndices do if iters[bid, tid, i] then writef(" %2i", i);
+      for i in dims(2) do if iters[bid, tid, i] then writef(" %2i", i);
       writef(" .\n");
     }
   }
@@ -90,6 +88,7 @@ proc check(blockSize, gridSize, threadIdx, blockDim, blockId, gridDim) {
 proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
   on here.gpus(0) {
     var threadIdx, blockDim, blockId, gridDim: [1..numIndices] int;
+    var iters: [0..numIndices, 0..#blockSize, 1..numIndices] bool;
 
     @gpu.blockSize(blockSize)
     @gpu.itersPerThread(itersPerThread, cyclic)
@@ -98,6 +97,8 @@ proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
       blockDim[i] = __primitive("gpu blockDim x");
       blockId[i] = __primitive("gpu blockIdx x");
       gridDim[i] = __primitive("gpu gridDim x");
+      iters[__primitive("gpu blockIdx x"), __primitive("gpu threadIdx x"), i]
+        = true;
     }
 
     const gridSize = gridDim[1];
@@ -109,7 +110,7 @@ proc test(numIndices: int, itersPerThread: int, blockSize: int, param cyclic) {
     check(blockSize, gridSize, threadIdx, blockDim, blockId, gridDim);
     show("threadIdx", threadIdx);
     show("blockId",   blockId);
-    byThread(numIndices, threadIdx, blockSize, blockId, gridSize);
+    byThread(iters, gridSize);
     writeln();
   }
 }

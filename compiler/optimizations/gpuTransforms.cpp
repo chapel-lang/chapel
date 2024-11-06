@@ -1095,6 +1095,7 @@ class GpuKernel {
   VarSymbol* numThreads_;
   Symbol*    localNumThreads_;
   Symbol*    localItersPerThread_;
+  Symbol*    localGlobalThreadIdx_;
   BlockStmt* userBody_; // where the loop's body goes
   BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
 
@@ -1135,7 +1136,7 @@ class GpuKernel {
 
   void generateIndexComputation();
   void generateOobCond();
-  void generateIptLoopHelp(Symbol* upperBound0, Symbol* increment);
+  Expr* generateIptLoopHelp(Symbol* upperBound0, Symbol* increment);
   void generateBlockedLoopOverIPT(Symbol* upperBound);
   void generateCyclicLoopOverIPT(Symbol* upperBound);
   void generateOobCondNoIPT(Symbol* upperBound);
@@ -1162,6 +1163,7 @@ GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , numThreads_(nullptr)
   , localNumThreads_(nullptr)
   , localItersPerThread_(nullptr)
+  , localGlobalThreadIdx_(nullptr)
   , userBody_(nullptr)
   , postBody_(nullptr)
 {
@@ -1590,6 +1592,7 @@ void GpuKernel::generateIndexComputation() {
   if (hasItersPerThread() && cyclicIPT()) {
     localNumThreads_ = maybeAddCompilerGeneratedKernelArgument(
                                numThreads_, "chpl_numThreads");
+    localGlobalThreadIdx_ = tempVar1;
   }
 
   for (std::vector<Symbol*>::size_type i=0 ; i<numIndices ; i++) {
@@ -1657,7 +1660,7 @@ void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
   fn_->insertAtTail(new CondStmt(new SymExpr(isInBounds), this->userBody_));
 }
 
-void GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
+Expr* GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
   // while loop condition variable
   VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
   Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
@@ -1674,7 +1677,9 @@ void GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
 
   whileBody->insertAtTail(whileExpr->copy());
 
-  fn_->insertAtTail(new WhileDoStmt(new SymExpr(whileVar), whileBody));
+  Expr* loop = new WhileDoStmt(new SymExpr(whileVar), whileBody);
+  fn_->insertAtTail(loop);
+  return loop;
 }
 
 /* Adds the following AST to a GPU kernel
@@ -1727,14 +1732,19 @@ void GpuKernel::generateBlockedLoopOverIPT(Symbol* upperBound) {
 /* Adds the AST for *cyclic* IPT partitioning,
  * analogously to generateBlockedLoopOverIPT():
  *
- *   for(; index[0] <= upperBound; for all i: index[i] += numThreads) {
- *     // empty block stored in this->userBody_
- *   }
+ *   if global thread idx < numThreads then
+ *     for(; index[0] <= upperBound; for all i: index[i] += numThreads) {
+ *       // empty block stored in this->userBody_
+ *     }
  *
  * Currently implemented as a while loop.
  */
 void GpuKernel::generateCyclicLoopOverIPT(Symbol* upperBound) {
-  generateIptLoopHelp(upperBound, localNumThreads_);
+  Expr* loop = generateIptLoopHelp(upperBound, localNumThreads_);
+  VarSymbol* execIters = insertNewVarAndDef(fn_->body, "execIters", dtBool);
+  fn_->insertAtTail("'move'(%S,'<'(%S,%S))", execIters,
+                    localGlobalThreadIdx_, localNumThreads_);
+  fn_->insertAtTail(new CondStmt(new SymExpr(execIters), loop->remove()));
 }
 
 void GpuKernel::generatePostBody() {
