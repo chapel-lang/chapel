@@ -18,6 +18,30 @@
  * limitations under the License.
  */
 
+
+// TODO: make a base Value class that can be used for all values
+//  the base class is essentially what PyObject is now
+
+// TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
+//  this can be done in a few ways.
+//   1. create a class that wraps the array and implements the python list interface
+//   2. create a class that wraps the array and implements the numpy array interface
+
+//  TODO: represent python context managers as Chapel context managers
+
+// TODO: create adapters for common Python types that are subclasses of a Value class
+// this will prevent needing to round trip through python for some operations
+// for example, a List, Set, Dict, Tuple, etc.
+// these should provide native like operation, so `for i in pyList` should work
+
+// TODO: there are decrefs missing all over the place
+
+// TODO: using the Py*_Check, we may be able to avoid needing to specify the type of the return value
+
+// TODO: implement operators as dunder methods
+
+// TODO: add the ability to compile a chapel string into a python module/function/class/whatever
+
 /* Library for interfacing with Python from Chapel code.
 
   This module provides a Chapel interface to a Python interpreter.
@@ -671,28 +695,6 @@ module Python {
       HaltWrappers.pureVirtualMethodHalt();
     }
   }
-
-
-  // TODO: make a base Value class that can be used for all values
-  //  the base class is essentially what PyObject is now
-
-  // TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
-  //  this can be done in a few ways.
-  //   1. create a class that wraps the array and implements the python list interface
-  //   2. create a class that wraps the array and implements the numpy array interface
-
-  //  TODO: represent python context managers as Chapel context managers
-
-  // TODO: create adapters for common Python types that are subclasses of a Value class
-  // this will prevent needing to round trip through python for some operations
-  // for example, a List, Set, Dict, Tuple, etc.
-  // these should provide native like operation, so `for i in pyList` should work
-
-  // TODO: there are decrefs missing all over the place
-
-  // TODO: using the Py*_Check, we may be able to avoid needing to specify the type of the return value
-
-  // TODO: implement operators as dunder methods
 
   /*
     Represents a Python module.
