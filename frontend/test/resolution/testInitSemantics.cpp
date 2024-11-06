@@ -1774,39 +1774,91 @@ static void testNilFieldInit() {
 }
 
 static void testGenericFieldInit() {
-  std::string program = R"""(
-    record R {
-      var x : integral;
+  {
+    std::string program = R"""(
+      record R {
+        var x : integral;
 
-      proc init(arg) {
-        this.x = arg;
+        proc init(arg) {
+          this.x = arg;
+        }
       }
-    }
 
-    var a = new R(5);
-    var b = new R(10:uint);
-    var c = new R("test");
-    )""";
+      var a = new R(5);
+      var b = new R(10:uint);
+      var c = new R("test");
+      )""";
 
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
-  setupModuleSearchPaths(context, false, false, {}, {});
-  ErrorGuard guard(context);
+    auto config = getConfigWithHome();
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
 
-  auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
+    auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
 
-  assert(guard.numErrors() == 1);
-  auto& err = guard.error(0);
-  assert(err->type() == ErrorType::IncompatibleTypeAndInit);
-  assert(err->location(context).firstLine() == 6);
+    assert(guard.numErrors() == 1);
+    auto& err = guard.error(0);
+    assert(err->type() == ErrorType::IncompatibleTypeAndInit);
+    assert(err->location(context).firstLine() == 6);
 
-  // Note: These type strings are not stabilized
-  assert(toString(vars["a"]) == "R(var int(64))");
-  assert(toString(vars["b"]) == "R(var uint(64))");
-  assert(toString(vars["c"]) == "R(var ErroneousType)");
+    // Note: These type strings are not stabilized
+    assert(toString(vars["a"]) == "R(var int(64))");
+    assert(toString(vars["b"]) == "R(var uint(64))");
+    assert(toString(vars["c"]) == "R(var ErroneousType)");
 
-  guard.realizeErrors();
+    guard.realizeErrors();
+  }
+  {
+    std::string program = R"""(
+      record G { type T; var x : T; }
+
+      proc G.init=(other: this.type) {
+        this.T = other.T;
+        this.x = other.x;
+      }
+
+      proc G.init=(other: ?t) where t != int {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      proc G.init=(other: int) {
+        this.T = other.type;
+        this.x = other;
+      }
+
+      record R {
+        var x : G(?);
+
+        proc init(arg) {
+          this.x = arg;
+        }
+      }
+
+      proc test(arg) {
+        var x = new R(arg);
+        return x;
+      }
+
+      var a = test(5);
+      var b = test(10:uint);
+      var c = test("test");
+      )""";
+
+    auto config = getConfigWithHome();
+    Context ctx(config);
+    Context* context = &ctx;
+    setupModuleSearchPaths(context, false, false, {}, {});
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
+
+    // Note: These type strings are not stabilized
+    assert(toString(vars["a"]) == "R(var G(int(64)))");
+    assert(toString(vars["b"]) == "R(var G(uint(64)))");
+    assert(toString(vars["c"]) == "R(var G(string))");
+  }
 }
 
 // TODO:
