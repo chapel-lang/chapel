@@ -325,7 +325,7 @@ module Python {
         var pvalue_str = PyObject_Str(pvalue);
         var value_str = this.fromPython(string, pvalue_str);
         Py_DECREF(pvalue_str);
-        throw new Exception(value_str);
+        throw new PythonException(value_str);
       }
     }
 
@@ -353,7 +353,7 @@ module Python {
         this.checkException();
         return v;
       } else if isRealType(t) {
-        var v = Py_BuildValue("d", val);
+        var v = PyFloat_FromDouble(val:real);
         this.checkException();
         return v;
       } else if isBoolType(t) {
@@ -477,16 +477,22 @@ module Python {
     @chpldoc.nodoc
     proc fromList(type T, obj: c_ptr(void)): T throws
       where isArrayType(T) {
-      var res: T;
-      if PySequence_Size(obj) != res.size {
-        throw new Exception("Size mismatch");
+
+      if (PySequence_Check(obj)) {
+        // if its a sequence with a known size, we can just iterate over it
+        var res: T;
+        if PySequence_Size(obj) != res.size {
+          throw new ChapelException("Size mismatch");
+        }
+        for i in 0..<res.size {
+          const idx = res.domain.orderToIndex(i);
+          res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
+          this.checkException();
+        }
+        return res;
+      } else {
+        throw new ChapelException("Can only convert a sequence with a known size to an array");
       }
-      for i in 0..<res.size {
-        const idx = res.domain.orderToIndex(i);
-        res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
-        this.checkException();
-      }
-      return res;
     }
 
     /*
@@ -494,16 +500,31 @@ module Python {
     */
     @chpldoc.nodoc
     proc fromList(type T, obj: c_ptr(void)): T throws where isSubtype(T, List.list) {
-      var res = new T();
-      while true {
-        var item = PyIter_Next(obj);
-        if item == nil {
-          break;
+
+      if (PySequence_Check(obj) != 0) {
+        // if it's a sequence with a known size, we can just iterate over it
+        var res = new T();
+        for i in 0..<PySequence_Size(obj) {
+          var item = PySequence_GetItem(obj, i);
+          this.checkException();
+          res.pushBack(fromPython(T.eltType, item));
         }
-        res.pushBack(fromPython(T.eltType, item));
-        this.checkException();
+        return res;
+      } else if (PyIter_Check(obj) != 0) {
+        // if it's an iterator, we can iterate over it
+        var res = new T();
+        while true {
+          var item = PyIter_Next(obj);
+          this.checkException();
+          if item == nil {
+            break;
+          }
+          res.pushBack(fromPython(T.eltType, item));
+        }
+        return res;
+      } else {
+        throw new ChapelException("Expected a Python list or iterable");
       }
-      return res;
     }
 
     /*
@@ -556,12 +577,28 @@ module Python {
   }
 
   /*
-    Represents a Python exception.
+    Represents a Python exception, either forwarded from Python (i.e. :proc:`Interpreter.checkException`) or thrown directly in Chapel code.
   */
   class Exception: Error {
     /*
       Creates a new exception with the given message.
     */
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+  /*
+    Represents an exception caused in the Python code, forwarded by Chapel code
+  */
+  class PythonException: Exception {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+  /*
+    Represents an exception caused by code in the Chapel module, not forwarded from Python.
+  */
+  class ChapelException: Exception {
     proc init(in message: string) {
       super.init(message);
     }
@@ -573,7 +610,7 @@ module Python {
   private inline proc checkPyStatus(in status: PyStatus) throws {
     if PyStatus_Exception(status) {
       var str = string.createCopyingBuffer(status.err_msg);
-      throw new Exception(str);
+      throw new PythonException(str);
     }
   }
 
@@ -1285,6 +1322,7 @@ module Python {
     /*
       Sequences
     */
+    extern proc PySequence_Check(obj: c_ptr(void)): c_int;
     extern proc PySequence_Size(obj: c_ptr(void)): c_long;
     extern proc PySequence_GetItem(obj: c_ptr(void), idx: c_long): c_ptr(void);
     extern proc PySequence_SetItem(obj: c_ptr(void), idx: c_long, value: c_ptr(void));
@@ -1293,12 +1331,13 @@ module Python {
     /*
       Iterators
     */
+    extern "chpl_PyList_Check" proc PyIter_Check(obj: c_ptr(void)): c_int;
     extern proc PyIter_Next(obj: c_ptr(void)): c_ptr(void);
-    extern proc PyIter_Check(obj: c_ptr(void)): c_int;
 
     /*
       Lists
     */
+    extern proc PyList_Check(obj: c_ptr(void)): c_int;
     extern proc PyList_New(size: c_long): c_ptr(void);
     extern proc PyList_SetItem(list: c_ptr(void), idx: c_long, item: c_ptr(void));
     extern proc PyList_GetItem(list: c_ptr(void), idx: c_long): c_ptr(void);
