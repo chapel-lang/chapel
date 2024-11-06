@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-chpl_home=$($1 --print-chpl-home)
-chpl_python=$($chpl_home/util/config/find-python.sh)
+chpl_python=$($CHPL_HOME/util/config/find-python.sh)
 
 PYTHON_INCLUDE_DIR=$($chpl_python -c "import sysconfig; print(sysconfig.get_paths()['include'])")
 PYTHON_LIB_DIR=$($chpl_python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
