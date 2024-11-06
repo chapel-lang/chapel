@@ -111,7 +111,8 @@ class ClassType final : public Type {
   const ClassType* withDecorator(Context* context,
                                  ClassTypeDecorator decorator) const;
 
-  /** Returns the recordType for the manager */
+  /** Returns the recordType for the manager. This will be instantiated,
+      e.g. as '_owned(C)' for some class C. */
   const RecordType* managerRecordType(Context* context) const;
 
 };

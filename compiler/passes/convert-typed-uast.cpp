@@ -303,6 +303,10 @@ struct TConverter final : UastConverter {
   AggregateType* findOrCreateUnion(const types::UnionType* ut);
   Type* findConvertedType(const types::Type* t);
   Type* findOrCreateType(const types::Type* t);
+  // convertType is the main entry point for these
+  //  * checks if it was already converted, returning the saved result
+  //  * updates the map of converted types in a way that allows
+  //    for recursive types
   Type* convertType(const types::Type* t);
 
   //Symbol* findConvertedFn(const ResolvedFunction* rfn);
@@ -1494,8 +1498,10 @@ Type* TConverter::helpConvertClassType(const types::ClassType* t) {
   if (manager == nullptr) {
     ret = at; // unamanged / borrowed is just the class type at this point
   } else {
-    // TODO: convert managed class type
-    CHPL_UNIMPL("convert managed class type");
+    // owned/shared should have had a substitution for chpl_t
+    CHPL_ASSERT(!manager->substitutions().empty());
+    // convert the managed class type
+    ret = convertType(manager);
   }
 
   return ret;
@@ -2127,7 +2133,7 @@ void TConverter::convertActuals(CallExpr* c,
                                 const Call* node,
                                 const resolution::ResolvedExpression* re,
                                 RV& rv) {
-  if (auto primCall = node->toPrimCall()) {
+  if (node->isPrimCall()) {
     // use a simple strategy to convert prim calls
     // (assuming no named argument passing)
     // TODO: do some associated actions need to be handled here?
@@ -2222,7 +2228,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     return false;
   }
 
-  if (trace) printf("Really converting Function\n");
+  if (trace) printf("Really converting Function %s\n", node->name().c_str());
 
   astlocMarker markAstLoc(node->id());
 
