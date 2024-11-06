@@ -181,7 +181,8 @@
   Defining Custom Types
   ---------------------
 
-  To translate custom Chapel types to Python objects, users can define custom :type:`TypeConverter` classes.
+  To translate custom Chapel types to Python objects, users should define and
+  register custom :type:`TypeConverter` classes.
 
   More Examples:
   --------------
