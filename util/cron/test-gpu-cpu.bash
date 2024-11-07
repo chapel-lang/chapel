@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# GPU native testing using cpu-as-device mode on a Cray CS (using none for
-# CHPL_COMM)
+# GPU native testing on a Cray CS
+#  * cpu-as-device mode
+#  * CHPL_COMM=none
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
