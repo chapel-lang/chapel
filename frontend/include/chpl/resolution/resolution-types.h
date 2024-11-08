@@ -1564,20 +1564,23 @@ class MostSpecificCandidate {
 
   const TypedFnSignature* fn_;
   owned<FormalActualMap> faMap_;
+  owned<SubstitutionsMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
+                        SubstitutionsMap promotedFormals,
                         int constRefCoercionFormal,
                         int constRefCoercionActual)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
+      promotedFormals_(new SubstitutionsMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual) {}
 
  public:
   MostSpecificCandidate()
-    : fn_(nullptr), faMap_(),
+    : fn_(nullptr), faMap_(), promotedFormals_(),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1) {}
 
@@ -1586,6 +1589,9 @@ class MostSpecificCandidate {
     fn_ = other.fn_;
     if (other.faMap_) {
       faMap_ = toOwned(new FormalActualMap(*other.faMap_));
+    }
+    if (other.promotedFormals_) {
+      promotedFormals_ = toOwned(new SubstitutionsMap(*other.promotedFormals_));
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
@@ -1597,15 +1603,19 @@ class MostSpecificCandidate {
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
-                                        const FormalActualMap& faMap);
+                                        const FormalActualMap& faMap,
+                                        const SubstitutionsMap& promotedFormals);
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
-                                        const CallInfo& info);
+                                        const CallInfo& info,
+                                        const SubstitutionsMap& promotedFormals);
 
   const TypedFnSignature* fn() const { return fn_; }
 
   const FormalActualMap& formalActualMap() const { return *faMap_; }
+
+  const SubstitutionsMap& promotedFormals() const { return *promotedFormals_; }
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
@@ -1627,6 +1637,12 @@ class MostSpecificCandidate {
       faMapsEqual = *faMap_ == *other.faMap_;
     }
 
+    bool promotedFormalsEqual = promotedFormals_ == other.promotedFormals_;
+    if (!promotedFormalsEqual && promotedFormals_ && other.promotedFormals_) {
+      // See above comment.
+      promotedFormalsEqual = *promotedFormals_ == *other.promotedFormals_;
+    }
+
     return fn_ == other.fn_ &&
            faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
@@ -1640,12 +1656,15 @@ class MostSpecificCandidate {
   void mark(Context* context) const {
     context->markPointer(fn_);
     if (faMap_) faMap_->mark(context);
+    if (promotedFormals_) {
+      chpl::mark<SubstitutionsMap>{}(context, *promotedFormals_);
+    }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, faMap_, constRefCoercionFormal_, constRefCoercionActual_);
+    return chpl::hash(fn_, faMap_, promotedFormals_, constRefCoercionFormal_, constRefCoercionActual_);
   }
 
   static bool update(MostSpecificCandidate& keep,
@@ -1656,6 +1675,7 @@ class MostSpecificCandidate {
   void swap(MostSpecificCandidate& other) {
     std::swap(fn_, other.fn_);
     std::swap(faMap_, other.faMap_);
+    std::swap(promotedFormals_, other.promotedFormals_);
     std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
     std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
   }
@@ -1849,6 +1869,13 @@ class MostSpecificCandidates {
       sig.mark(context);
     }
   }
+  size_t hash() const {
+    size_t hash = 0;
+    for (const MostSpecificCandidate& sig : candidates) {
+      hash = chpl::hash(hash, sig);
+    }
+    return chpl::hash(hash, emptyDueToAmbiguity);
+  }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
@@ -1939,6 +1966,19 @@ class CallResolutionResult {
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
   }
+
+  void mark(Context* context) const {
+    mostSpecific_.mark(context);
+    exprType_.mark(context);
+    yieldedType_.mark(context);
+    poiInfo_.mark(context);
+  }
+
+  size_t hash() const {
+    return chpl::hash(mostSpecific_, exprType_, yieldedType_, poiInfo_,
+                      speciallyHandled_, rejectedPossibleIteratorCandidates_);
+  }
+
   void swap(CallResolutionResult& other) {
     mostSpecific_.swap(other.mostSpecific_);
     exprType_.swap(other.exprType_);
@@ -1954,6 +1994,211 @@ class CallResolutionResult {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+/* The result of resolving a 'these' call. This contains more information
+   than a general call resolution result, because we can encode what threw off
+   the iteration (e.g., lack of a follower iterator)
+
+   In the case of failure due to zippering (e.g., we're iterating over a
+   loop expression, but the Nth zippred iterand doesn't have the appropriate
+   iterator), this type contains a 'zipperedFailure_' field, which contains
+   the result of trying to iterate the Nth iterand, and a 'zipperedFailureIndex_'
+   which is the index of the failed iterand.
+*/
+struct TheseResolutionResult {
+ public:
+  enum FailureReason {
+    /* We didn't fail, finding an iterator. */
+    THESE_SUCCESS = 0,
+    /* We didn't attempt to resolve this iterator, possibly because it's
+       not supported in this context. */
+    THESE_NOT_ATTEMPTED,
+    /* We tried to resolve a standalone iterator on a loop expression, but
+       loop expressions don't have standalone iterators. */
+    THESE_FAIL_NO_LOOP_EXPR_STANDALONE,
+    /* We tried to resolve a standalone iterator on a promoted expression, but
+       promoted expressions don't have standalone iterators. */
+    THESE_FAIL_NO_PROMO_STANDALONE,
+    /* We tried to resolve a parallel iterator but we're iterating over a serial
+       loop expression. */
+    THESE_FAIL_SERIAL_LOOP_EXPR,
+    /* We couldn't find the given iterator's definition. */
+    THESE_FAIL_NO_ITERATOR_WITH_TAG,
+    /* We found a leader and a follower, but the leader's yield type doesn't match
+       the follower's 'followThis'. */
+    THESE_FAIL_LEADER_FOLLOWER_MISMATCH,
+    /* We tried to resolve a zippered-like iterator (zippered loop expression,
+       promoted expressions) and one of the iterables that makes it up failed
+       to resolve. In this case, the zipperedFailure_ and zipperedFailureIndex_
+       fields are set. */
+    THESE_FAIL_ZIPPERED_ARG_FAILED,
+    /* We started resolving a zippered-like iterator using (e.g.), a leader
+       iterator. In some cases, this means we "commit" to the leader/follower
+       path, so we didn't attempt to use a serial iterator.
+
+       TODO: this doesn't match production. */
+    THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
+    /* Mismatch between the claimed promotion type and the type yielded by the
+       iterator. */
+    THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH,
+  };
+
+ private:
+  // The reason that we couldn't resolve the 'these' iterator in this case.
+  FailureReason reason_;
+  // If a call was attempted, the result of the call. Stored as a pointer
+  // to avoid the additional memory overhead of storing an empty CallResolutionResult.
+  std::unique_ptr<CallResolutionResult> callResult_;
+  // If the failure was due to one the zippered arguments failing to resolve,
+  // the failure that threw off the zippered argument.
+  std::unique_ptr<TheseResolutionResult> zipperedFailure_ = nullptr;
+  // If the failure was due to one of the zippered arguments failing to resolve,
+  // the index of the failed argument.
+  int zipperedFailureIndex_ = -1;
+  // The type of the iterand that we were trying to resolve.
+  types::QualifiedType iterandType_;
+
+  TheseResolutionResult(FailureReason reason,
+                        std::unique_ptr<CallResolutionResult> callResult,
+                        std::unique_ptr<TheseResolutionResult> zipperedResult,
+                        int zipperedResultIndex,
+                        types::QualifiedType iterandType)
+    : reason_(reason),
+      callResult_(std::move(callResult)),
+      zipperedFailure_(std::move(zipperedResult)),
+      zipperedFailureIndex_(zipperedResultIndex),
+      iterandType_(std::move(iterandType)) {}
+
+ public:
+  TheseResolutionResult() : reason_(THESE_NOT_ATTEMPTED) {}
+  TheseResolutionResult(TheseResolutionResult&& other) = default;
+  TheseResolutionResult& operator=(TheseResolutionResult&& other) = default;
+
+  // Needed because we copy error messages, which can contain 'TheseResolutionResults'.
+  TheseResolutionResult(const TheseResolutionResult& other)
+    : reason_(other.reason_),
+      iterandType_(other.iterandType_) {
+    if (other.zipperedFailure_) {
+      zipperedFailure_ = toOwned(new TheseResolutionResult(*other.zipperedFailure_));
+    }
+    if (other.callResult_) {
+      callResult_ = toOwned(new CallResolutionResult(*other.callResult_));
+    }
+  }
+
+  /** Construct a TheseResolutionResult for a successful call to 'these' on
+      a given iterand type. */
+  static TheseResolutionResult success(CallResolutionResult callResult,
+                                       types::QualifiedType iterandType) {
+    CHPL_ASSERT(!callResult.exprType().isUnknownOrErroneous());
+    auto callResultPtr =
+      toOwned(new CallResolutionResult(std::move(callResult)));
+    return TheseResolutionResult(THESE_SUCCESS, std::move(callResultPtr),
+                                 nullptr, -1, std::move(iterandType));
+  }
+
+  /** Construct a successful TheseResolutionResult without any underlying call. */
+  static TheseResolutionResult success(types::QualifiedType iterandType) {
+    return TheseResolutionResult(THESE_SUCCESS, nullptr,
+                                 nullptr, -1, std::move(iterandType));
+  }
+
+  /** Construct a TheseResolutionResult failed call to 'these' on a given
+      iterand type, with 'reason' as the reason for failure. */
+  static TheseResolutionResult failure(FailureReason reason,
+                                       types::QualifiedType iterandType) {
+    return TheseResolutionResult(reason, nullptr, nullptr, -1,
+                                 std::move(iterandType));
+  }
+
+  /** Same as the previous overload, but include the failed call resolution result. */
+  static TheseResolutionResult failure(FailureReason reason,
+                                       types::QualifiedType iterandType,
+                                       CallResolutionResult callResult) {
+    auto callResultPtr =
+      toOwned(new CallResolutionResult(std::move(callResult)));
+    return TheseResolutionResult(reason, std::move(callResultPtr),
+                                 nullptr, -1, std::move(iterandType));
+  }
+
+  /** Construct a TheseResolutionResult for a failed call to 'these' on a given
+      iterand type, caused by failing to resolve 'these' for a zippered argument
+      at a given index. */
+  static TheseResolutionResult failure(std::unique_ptr<TheseResolutionResult>
+                                       zipperedFailure, int zipperedResultIndex,
+                                       types::QualifiedType iterandType) {
+    return TheseResolutionResult(THESE_FAIL_ZIPPERED_ARG_FAILED, nullptr,
+                                 std::move(zipperedFailure),
+                                 zipperedResultIndex,
+                                 std::move(iterandType));
+  }
+
+  /** Checks whether the resolution was successful. */
+  operator bool() const { return reason_ == THESE_SUCCESS; }
+
+  bool operator==(const TheseResolutionResult& other) const {
+    bool callResultEqual = this->callResult_ == other.callResult_;
+    if (!callResultEqual && this->callResult_ && other.callResult_) {
+      callResultEqual = *this->callResult_ == *other.callResult_;
+    }
+
+    bool zipperedFailureEqual = this->zipperedFailure_ == other.zipperedFailure_;
+    if (!zipperedFailureEqual && this->zipperedFailure_ && other.zipperedFailure_) {
+      zipperedFailureEqual = *this->zipperedFailure_ == *other.zipperedFailure_;
+    }
+
+    return reason_ == other.reason_ &&
+           callResultEqual &&
+           zipperedFailureEqual &&
+           zipperedFailureIndex_ == other.zipperedFailureIndex_ &&
+           iterandType_ == other.iterandType_;
+  }
+
+  bool operator!=(const TheseResolutionResult& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    (void) reason_; // nothing to mark
+    if (callResult_) callResult_->mark(context);
+    if (zipperedFailure_) zipperedFailure_->mark(context);
+    iterandType_.mark(context);
+  }
+
+  size_t hash() const {
+    return chpl::hash(reason_, callResult_, zipperedFailure_,
+                      zipperedFailureIndex_, iterandType_);
+  }
+
+  /** Returns the reason for failure. */
+  FailureReason reason() const { return reason_; }
+
+  /** Returns the result of resolving a 'these' call, if it was attempted. */
+  const CallResolutionResult* callResult() const { return callResult_.get(); }
+
+  /** Returns the result of resolving a 'these' call on a zippered argument,
+      if it was attempted. */
+  const TheseResolutionResult* zipperedFailure() const { return zipperedFailure_.get(); }
+
+  /** Returns the index of the failed zippered argument, if the failure was due
+      to a zippered argument failing to resolve. Otherwise, returns -1. */
+  int zipperedFailureIndex() const { return zipperedFailureIndex_; }
+
+  /** Returns the type of the iterand that we were trying to resolve. */
+  const types::QualifiedType& iterandType() const { return iterandType_; }
+
+  /** Returns the type of resolving the 'these' call. */
+  types::QualifiedType exprType() const {
+    if (callResult_) return callResult_->exprType();
+    return types::QualifiedType();
+  }
+
+  /** Returns the yield type from resolving the 'these' call. */
+  types::QualifiedType yieldedType() const {
+    if (callResult_) return callResult_->yieldedType();
+    return types::QualifiedType();
+  }
 };
 
 /**
@@ -2929,6 +3174,9 @@ CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
+CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std

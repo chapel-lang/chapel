@@ -1071,7 +1071,8 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
                                           const TypedFnSignature* fn,
-                                          const FormalActualMap& faMap) {
+                                          const FormalActualMap& faMap,
+                                          const SubstitutionsMap& promotedFormals) {
   int coercionFormal = -1;
   int coercionActual = -1;
   for (auto fa : faMap.byFormals()) {
@@ -1088,14 +1089,15 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, faMap, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, faMap, promotedFormals, coercionFormal, coercionActual);
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
                                           const TypedFnSignature* fn,
-                                          const CallInfo& ci) {
+                                          const CallInfo& ci,
+                                          const SubstitutionsMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap);
+  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
@@ -1519,8 +1521,8 @@ bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
 
   if (tfs && tfs->isMethod()) {
     QualifiedType methodRcvType = tfs->formalType(0);
-    auto p = canPass(context,
-                     /* actual */ receiverType_, /* formal */ methodRcvType);
+    auto p = canPassScalar(context,
+                           /* actual */ receiverType_, /* formal */ methodRcvType);
     return p.passes();
   }
 

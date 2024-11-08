@@ -214,15 +214,21 @@ std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context,
                         std::string program,
                         const std::vector<std::string>& variables) {
-  auto m = parseModule(context, std::move(program));
-  auto& rr = resolveModule(context, m->id());
-
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+  const ModuleVec& vec = parseToplevel(context, path);
   std::unordered_map<std::string, QualifiedType> toReturn;
-  for (auto& variable : variables) {
-    auto varAst = findVariable(m, variable.c_str());
-    assert(varAst != nullptr);
-    toReturn[variable] = rr.byAst(varAst).type();
+
+  for (auto m : vec) {
+    auto& rr = resolveModule(context, m->id());
+
+    for (auto& variable : variables) {
+      if (auto varAst = findVariable(m, variable.c_str())) {
+        toReturn[variable] = rr.byAst(varAst).type();
+      }
+    }
   }
+  assert(variables.size() == toReturn.size());
   return toReturn;
 }
 

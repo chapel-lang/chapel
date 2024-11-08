@@ -1114,13 +1114,106 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   }
 }
 
+static void printTheseResults(
+    ErrorWriterBase &wr,
+    uast::Function::IteratorKind iterKind,
+    const char* iterGroupStr,
+    const char* iterKindStr,
+    const resolution::TheseResolutionResult& tr) {
+  using namespace resolution;
+
+  bool firstLine = true;
+  auto currentTr = &tr;
+
+  int depth = 1; // print one nested zippering warning
+  while (currentTr) {
+    std::string failureReason = "";
+    std::string start = "...because ";
+    if (firstLine) {
+      start = std::string("The ") +
+              iterGroupStr +
+              " version of the iterator could not be used because ";
+    }
+    const char* end = currentTr->zipperedFailure() && depth > 0 ? "..." : ".";
+
+    auto reason = currentTr->reason();
+    if (reason == TheseResolutionResult::THESE_NOT_ATTEMPTED) {
+      bool isSerial = iterKind == uast::Function::SERIAL;
+      wr.message(start, "this loop does not support ", isSerial ? "serial" : "parallel", " iterators", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE) {
+      wr.message(start, "loop expressions do not have standalone iterators", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE) {
+      wr.message(start, "promoted expressions do not have standalone iterators", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_SERIAL_LOOP_EXPR) {
+      wr.message(start, "the loop expression iterated over is explicitly serial", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG) {
+      wr.message(start, "an iterator of that kind was not defined for the type", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH) {
+      wr.message(start, "the yield type of the leader iterator does not match the type of the 'followThis' argument", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_ZIPPERED_ARG_FAILED) {
+      auto iterandType = currentTr->iterandType().type();
+      const char* combinedKind =
+        iterandType && iterandType->isPromotionIteratorType() ?
+        "promoted argument" :
+        "zippered argument";
+      wr.message(start, "one of the ", combinedKind, "s (", combinedKind ," number ",
+                        currentTr->zipperedFailureIndex() + 1,
+                        ", ", currentTr->zipperedFailure()->iterandType(),
+                        ") does not support a ", iterKindStr, " iterator", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR) {
+      wr.message(start, "the first zippered iterand had a parallel follower, "
+                        "which is prioritized over serial iteration", end);
+    } else if (reason == TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH) {
+      wr.message(start, "the claimed scalar type for promotion does not match the type yielded from the iterator", end);
+    }
+
+    depth--;
+    firstLine = false;
+    currentTr = currentTr->zipperedFailure();
+  }
+}
+
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<0>(info_);
   auto iterand = std::get<1>(info_);
   auto& iterandType = std::get<types::QualifiedType>(info_);
-  wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
-  wr.message("Used as an iterand in a loop here:");
+  auto& resolutionResults = std::get<3>(info_);
+  if (iterandType.isUnknown()) {
+    wr.heading(kind_, type_, loop, "cannot iterate over this loop's iterand.");
+  } else {
+    wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
+    wr.message("Used as an iterand in a loop here:");
+  }
   wr.code(iterand, { iterand });
+
+  bool failedLeader = false;
+  for (auto& rr : resolutionResults) {
+    auto iterKind = std::get<0>(rr);
+    auto& tr = std::get<1>(rr);
+    if (iterKind == uast::Function::LEADER) {
+      failedLeader = true;
+    } else if (iterKind == uast::Function::FOLLOWER &&
+               tr.reason() == resolution::TheseResolutionResult::THESE_NOT_ATTEMPTED &&
+               failedLeader) {
+      // We didn't match a leader, so we didn't try the follower. Nothing to report.
+      continue;
+    }
+
+    // The iter kind str will be "serial", "leader", "follower", to represent
+    // the exact kind of iterator we failed to resolve.
+    auto iterKindStr = uast::Function::iteratorKindToString(iterKind);
+
+    // The iter group str will be "serial", "leader/follower" etc., to
+    // represent the broad class of iterators we failed to resolve.
+    auto iterGroupStr = iterKindStr;
+    if (iterKind == uast::Function::LEADER ||
+        iterKind == uast::Function::FOLLOWER) {
+      iterGroupStr = "leader/follower";
+    }
+
+    wr.message("");
+    printTheseResults(wr, iterKind, iterGroupStr, iterKindStr, tr);
+  }
 }
 
 void ErrorNoMatchingEnumValue::write(ErrorWriterBase& wr) const {

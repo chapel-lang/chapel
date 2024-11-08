@@ -2014,6 +2014,13 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
+static bool allowPromotionForSig(const TypedFnSignature* sig) {
+  const UntypedFnSignature* untypedSignature = sig->untyped();
+  return
+    untypedSignature->name() != USTR("these") &&
+    untypedSignature->name() != USTR("=");
+}
+
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
 ApplicabilityResult instantiateSignature(ResolutionContext* rc,
@@ -2036,6 +2043,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   const Function* fn = nullptr;
   const AggregateDecl* ad = nullptr;
   const Enum* ed = nullptr;
+
+  auto canPassFn = allowPromotionForSig(sig) ? canPass : canPassScalar;
 
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
@@ -2132,22 +2141,31 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         useType = actualType;
       }
     } else {
-      auto got = canPass(context, actualType, formalType);
+      auto got = canPassFn(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
         return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
       }
+
+      // If promotion was involved, figure out the scalar type. We want to
+      // work with the scalar function, so we need the scalar type.
+      auto scalarType = actualType;
+      if (got.promotes()) {
+        scalarType = getPromotionType(context, actualType);
+      }
+
       if (got.instantiates()) {
         // add a substitution for a valid value
-        if (!got.converts() && !got.promotes()) {
+        if (!got.converts()) {
           // use the actual type since no conversion/promotion was needed
           addSub = true;
-          useType = actualType;
+          useType = scalarType;
         } else {
           // get instantiation type
           addSub = true;
+
           useType = getInstantiationType(context,
-                                         actualType,
+                                         scalarType,
                                          formalType);
 
           // Verify that the 'instantiation type' still accepts the actual.
@@ -2162,7 +2180,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
-          auto got = canPass(context, actualType, useTypeConcrete);
+          auto got = canPassFn(context, scalarType, useTypeConcrete);
           if (!got.passes()) {
             return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
           }
@@ -2170,13 +2188,13 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
       }
     }
 
+    // If the formal wasn't instantiated then use whatever type was computed.
+    if (!addSub) useType = formalType;
+
     if (entry.isVarArgEntry()) {
       // If any formal needs instantiating then we need to instantiate all
       // the VarArgs
       instantiateVarArgs = instantiateVarArgs || addSub;
-
-      // If the formal wasn't instantiated then use whatever type was computed.
-      if (!addSub) useType = formalType;
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
@@ -2273,7 +2291,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
       auto checkType = !useType.isUnknown() ? useType : formalType;
       // With the type and query-aware type known, make sure that they're compatible
-      auto passResult = canPass(context, checkType, qFormalType);
+      auto passResult = canPassFn(context, checkType, qFormalType);
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
         return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
@@ -2949,6 +2967,8 @@ isInitialTypedSignatureApplicable(Context* context,
     return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
   }
 
+  auto canPassFn = allowPromotionForSig(tfs) ? canPass : canPassScalar;
+
   // Next, check that the types are compatible
   int numVarArgActuals = 0;
   QualifiedType varArgType;
@@ -2974,9 +2994,9 @@ isInitialTypedSignatureApplicable(Context* context,
         }
         numVarArgActuals += 1;
 
-        got = canPass(context, actualType, getVarArgTupleElemType(formalType));
+        got = canPassFn(context, actualType, getVarArgTupleElemType(formalType));
       } else {
-        got = canPass(context, actualType, formalType);
+        got = canPassFn(context, actualType, formalType);
       }
       if (!got.passes()) {
         return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
@@ -3797,7 +3817,7 @@ static bool resolveFnCallSpecial(Context* context,
         return false;
       }
     }
-    auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
+    auto got = canPassScalar(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
     exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                 BoolParam::get(context, result));
@@ -3902,8 +3922,6 @@ resolveFnCallForTypeCtor(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedMethods(Context* context,
                                  const CallInfo& ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope,
                                  CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
   if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
@@ -3928,8 +3946,6 @@ considerCompilerGeneratedMethods(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedFunctions(Context* context,
                                    const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
   // methods and op calls considered elsewhere
   if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
@@ -3946,8 +3962,6 @@ considerCompilerGeneratedFunctions(Context* context,
 static const TypedFnSignature*
 considerCompilerGeneratedOperators(Context* context,
                                    const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
                                    CandidatesAndForwardingInfo& candidates) {
   if (!ci.isOpCall()) return nullptr;
 
@@ -3990,20 +4004,18 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
 
 static void
 considerCompilerGeneratedCandidates(Context* context,
-                                   const AstNode* astForErr,
-                                   const CallInfo& ci,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope,
-                                   CandidatesAndForwardingInfo& candidates,
-                                   std::vector<ApplicabilityResult>* rejected) {
+                                    const AstNode* astForErr,
+                                    const CallInfo& ci,
+                                    CandidatesAndForwardingInfo& candidates,
+                                    std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
+  tfs = considerCompilerGeneratedMethods(context, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(context, ci, inScope, inPoiScope, candidates);
+    tfs = considerCompilerGeneratedFunctions(context, ci, candidates);
   }
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedOperators(context, ci, inScope, inPoiScope, candidates);
+    tfs = considerCompilerGeneratedOperators(context, ci, candidates);
   }
 
   if (!tfs) return;
@@ -4022,11 +4034,10 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // need to instantiate before storing
   ResolutionContext rcval(context);
-  auto poi = pointOfInstantiationScope(context, inScope, inPoiScope);
   auto instantiated = doIsCandidateApplicableInstantiating(&rcval,
                                                            tfs,
                                                            ci,
-                                                           poi);
+                                                           /* POI */ nullptr);
   if (!instantiated.success()) {
     // failed when instantiating, likely due to dependent types.
     if (rejected) rejected->push_back(instantiated);
@@ -4306,7 +4317,6 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, astContext, fci,
-                                          inScopes.callScope(), inScopes.poiScope(),
                                           nonPoiCandidates,
                                           rejected);
       // update forwardingTo
@@ -4530,8 +4540,6 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, astContext, ci,
-                                      inScopes.callScope(),
-                                      inScopes.poiScope(),
                                       candidates,
                                       rejected);
 
@@ -4730,7 +4738,18 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   QualifiedType yieldedType;
   if (msc.fn()) {
     exprType = returnType(rc, msc.fn(), instantiationPoiScope);
-    if (msc.fn()->isIterator()) {
+
+    if (!msc.promotedFormals().empty()) {
+      yieldedType = exprType;
+      exprType = QualifiedType(
+          exprType.kind(),
+          PromotionIteratorType::get(rc->context(),
+                                     instantiationPoiScope,
+                                     msc.fn(),
+                                     msc.promotedFormals()));
+    }
+
+    if (msc.fn()->isIterator() && yieldedType.isUnknown()) {
       yieldedType = yieldType(rc, msc.fn(), instantiationPoiScope);
     }
   }
@@ -4816,6 +4835,13 @@ resolveFnCall(ResolutionContext* rc,
       bool isIterator = candidate.fn()->isIterator();
       QualifiedType rt = returnType(rc, candidate.fn(),
                                     instantiationPoiScope);
+      QualifiedType yt;
+
+      if (!candidate.promotedFormals().empty()) {
+        // this is actually a promotion; construct a promotion type instead.
+        yt = rt;
+        rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+      }
 
       if (retType && retType->type() != rt.type()) {
         // The actual iterator type for each overload will be different
@@ -4833,9 +4859,11 @@ resolveFnCall(ResolutionContext* rc,
         retType = rt;
       }
 
-      if (isIterator) {
-        QualifiedType yt = yieldType(rc, candidate.fn(),
-                                     instantiationPoiScope);
+      if (isIterator || !yt.isUnknown()) {
+        if (yt.isUnknown()) {
+          yt = yieldType(rc, candidate.fn(), instantiationPoiScope);
+        }
+
         if (yieldedType && yieldedType->type() != yt.type()) {
           context->error(candidate.fn(),
                          nullptr,
@@ -5725,12 +5753,24 @@ yieldTypeForIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-static CallResolutionResult
+static TheseResolutionResult
+callResolutionResultToTheseResolutionResult(CallResolutionResult cr, QualifiedType iterandType) {
+  if (cr.exprType().isUnknownOrErroneous() ||
+      !cr.exprType().type()->isIteratorType()) {
+    auto reason = TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG;
+    return TheseResolutionResult::failure(reason, std::move(iterandType), std::move(cr));
+  }
+
+  return TheseResolutionResult::success(cr, iterandType);
+}
+
+static TheseResolutionResult
 resolveTheseCallForFnIterator(ResolutionContext* rc,
                               const FnIteratorType* fnIt,
                               uast::Function::IteratorKind iterKind,
                               const types::QualifiedType& followThis) {
   auto& msc = findTaggedIteratorForType(rc, fnIt, iterKind);
+  auto iterandType = QualifiedType(QualifiedType::CONST_VAR, fnIt);
 
   if (msc && iterKind == Function::FOLLOWER) {
     // Additionally check that the follower type matches the expected
@@ -5738,9 +5778,10 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
     for (int i = 0; i < msc.fn()->numFormals(); i++){
       if (msc.fn()->formalName(i) == USTR("followThis")) {
         auto formalType = msc.fn()->formalType(i);
-        auto got = canPass(rc->context(), followThis, formalType);
+        auto got = canPassScalar(rc->context(), followThis, formalType);
         if (!got.passes()) {
-          return CallResolutionResult::getEmpty();
+          auto reason = TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH;
+          return TheseResolutionResult::failure(reason, std::move(iterandType));
         }
         break;
       }
@@ -5748,10 +5789,87 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
   }
 
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIt, nullptr);
-  return resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+  auto cr = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
+
+  return callResolutionResultToTheseResolutionResult(cr, std::move(iterandType));
 }
 
-static CallResolutionResult
+// Helper with shared logic between loop expression iterators and promotion,
+// in which several iterables (zippered args to loop, multiple promoted args),
+// are all part of the 'these' call.
+static TheseResolutionResult
+resolveTheseCallForZipperedArguments(ResolutionContext* rc,
+                                     const AstNode* astContext,
+                                     const IteratorType* iterType,
+                                     std::vector<QualifiedType> zippered,
+                                     uast::Function::IteratorKind iterKind,
+                                     const types::QualifiedType& followThis,
+                                     std::vector<QualifiedType>* outYieldTypes = nullptr) {
+  bool leaderOnly = iterKind == Function::LEADER;
+  bool standalone = iterKind == Function::STANDALONE;
+  bool serial = iterKind == Function::SERIAL;
+  auto iterandType = QualifiedType(QualifiedType::CONST_VAR, iterType);
+
+  // Loop expressions don't have standalone iterators.
+  if (standalone) {
+    auto reason = iterType->isLoopExprIteratorType() ?
+      TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE :
+      TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE;
+    return TheseResolutionResult::failure(reason, std::move(iterandType));
+  }
+
+  bool supportsParallel = !iterType->isLoopExprIteratorType() ||
+                          iterType->toLoopExprIteratorType()->supportsParallel();
+
+  // the loop was written as a serial loop expression, so no parallel
+  // 'these' calls are allowed.
+  if (!serial && !supportsParallel) {
+    auto reason = TheseResolutionResult::THESE_FAIL_SERIAL_LOOP_EXPR;
+    return TheseResolutionResult::failure(reason, std::move(iterandType));
+  }
+
+  auto inScopes = callScopeInfoForIterator(rc->context(), iterType, nullptr);
+  std::unique_ptr<TheseResolutionResult> failedZipResult = nullptr;
+  int index = -1;
+  for (auto receiverType : zippered) {
+    index++;
+
+    auto tr = resolveTheseCall(rc, astContext, receiverType,
+                               iterKind, followThis, inScopes);
+
+    if (!tr) {
+      failedZipResult = std::make_unique<TheseResolutionResult>(std::move(tr));
+      break;
+    }
+
+    if (outYieldTypes) {
+      outYieldTypes->push_back(tr.yieldedType());
+    }
+
+    if (leaderOnly) return tr;
+  }
+  CHPL_ASSERT(index != -1);
+
+  if (failedZipResult) {
+    return TheseResolutionResult::failure(std::move(failedZipResult), index, std::move(iterandType));
+  }
+
+  if (auto loopIt = iterType->toLoopExprIteratorType()) {
+    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
+                                   loopIt->yieldType());
+    return TheseResolutionResult::success(cr, std::move(iterandType));
+  } else {
+    CHPL_ASSERT(iterType->isPromotionIteratorType());
+    auto promoIt = iterType->toPromotionIteratorType();
+
+    auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
+    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
+                                   scalarReturn);
+    return TheseResolutionResult::success(cr, std::move(iterandType));
+  }
+}
+
+static TheseResolutionResult
 resolveTheseCallForLoopIterator(ResolutionContext* rc,
                                 const AstNode* astContext,
                                 const LoopExprIteratorType* loopIt,
@@ -5774,48 +5892,67 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
     receiverTypes.push_back(loopIt->iterand());
   }
 
-  bool leaderOnly = iterKind == Function::LEADER;
-  bool standalone = iterKind == Function::STANDALONE;
-  bool serial = iterKind == Function::SERIAL;
-
-  // Loop expressions don't have standalone iterators.
-  if (standalone)
-    return CallResolutionResult::getEmpty();
-
-  // the loop was written as a serial loop expression, so no parallel
-  // 'these' calls are allowed.
-  if (!serial && !loopIt->supportsParallel())
-    return CallResolutionResult::getEmpty();
-
-  auto inScopes = callScopeInfoForIterator(rc->context(), loopIt, nullptr);
-  bool succeeded = true;
-  for (auto receiverType : receiverTypes) {
-    auto c = resolveTheseCall(rc, astContext, receiverType,
-                              iterKind, followThis, inScopes);
-
-    if (c.exprType().isUnknownOrErroneous() ||
-        !c.exprType().type()->isIteratorType()) {
-      succeeded = false;
-      break;
-    }
-
-    if (leaderOnly) return c;
-  }
-
-  if (!succeeded) {
-    return CallResolutionResult::getEmpty();
-  }
-
-  return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
-                              loopIt->yieldType());
+  return resolveTheseCallForZipperedArguments(rc, astContext, loopIt,
+                                              receiverTypes, iterKind, followThis);
 }
 
-CallResolutionResult resolveTheseCall(ResolutionContext* rc,
-                                      const uast::AstNode* astContext,
-                                      const types::QualifiedType& receiverType,
-                                      uast::Function::IteratorKind iterKind,
-                                      const types::QualifiedType& followThis,
-                                      const CallScopeInfo& inScopes) {
+static TheseResolutionResult
+resolveTheseCallForPromotionIterator(ResolutionContext* rc,
+                                     const AstNode* astContext,
+                                     const PromotionIteratorType* promoIt,
+                                     uast::Function::IteratorKind iterKind,
+                                     const types::QualifiedType& followThis) {
+  std::vector<QualifiedType> receiverTypes;
+  std::vector<QualifiedType> scalarFormalTypes;
+  std::vector<QualifiedType> yieldTypes;
+
+  auto typedScalarFn = promoIt->scalarFn();
+  auto untypedScalarFn = typedScalarFn->untyped();
+  int numFormals = untypedScalarFn->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    auto id = untypedScalarFn->formalDecl(i)->id();
+    auto promotionType = promoIt->promotedFormals().find(id);
+    if (promotionType != promoIt->promotedFormals().end()) {
+      receiverTypes.push_back(promotionType->second);
+    }
+  }
+
+  auto tr = resolveTheseCallForZipperedArguments(rc, astContext, promoIt,
+                                                 receiverTypes, iterKind, followThis, &yieldTypes);
+
+  if (!tr) return tr;
+
+  // Skip validating yield types for leader iterators.
+  if (iterKind == Function::LEADER) return tr;
+
+  // Validate that yield types match the promotion types.
+  int index = 0;
+  for (auto ri = receiverTypes.begin(), yi = yieldTypes.begin();
+       ri != receiverTypes.end() && yi != yieldTypes.end(); ++ri, ++yi, ++index) {
+    auto promotionType = getPromotionType(rc->context(), *ri);
+    if (promotionType.type() != yi->type()) {
+      auto reason = TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH;
+      auto failureForIndex = TheseResolutionResult::failure(reason, *ri);
+      auto failureForIndexPtr =
+        std::make_unique<TheseResolutionResult>(std::move(failureForIndex));
+
+      auto zipperedFailure =
+        TheseResolutionResult::failure(std::move(failureForIndexPtr), index,
+                                       QualifiedType(QualifiedType::CONST_VAR,
+                                         promoIt));
+      return zipperedFailure;
+    }
+  }
+
+  return tr;
+}
+
+TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                       const uast::AstNode* astContext,
+                                       const types::QualifiedType& receiverType,
+                                       uast::Function::IteratorKind iterKind,
+                                       const types::QualifiedType& followThis,
+                                       const CallScopeInfo& inScopes) {
   // Handle 'these' on various iterator types, circumventing the normal
   // process (since we do not generate 'these' methods).
   if (receiverType.type()) {
@@ -5823,6 +5960,8 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
       return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
       return resolveTheseCallForLoopIterator(rc, astContext, loopIt, iterKind, followThis);
+    } else if (auto promoIt = receiverType.type()->toPromotionIteratorType()) {
+      return resolveTheseCallForPromotionIterator(rc, astContext, promoIt, iterKind, followThis);
     }
   }
 
@@ -5847,7 +5986,61 @@ CallResolutionResult resolveTheseCall(ResolutionContext* rc,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      /* actuals */ std::move(actuals));
-  return resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
+  auto cr = resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
+  return callResolutionResultToTheseResolutionResult(cr, receiverType);
+}
+
+const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt) {
+  QUERY_BEGIN(getPromotionType, context, qt);
+
+
+  auto ret = QualifiedType();
+  if (qt.isUnknownOrErroneous()) {
+    /* do nothing */
+  } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
+    ret = loopIt->yieldType();
+  } else if (auto fnIt = qt.type()->toFnIteratorType()) {
+    // TODO, the iteratorFn could be a nested function, in which case a default
+    //       resolution context is not sufficient.
+    ResolutionContext rc(context);
+    ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
+  } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
+    // TODO, the scalarFn could be a nested function, in which case a default
+    //       resolution context is not sufficient.
+    ResolutionContext rc(context);
+    ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
+  } else {
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(qt, USTR("this")));
+    auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
+        qt,
+        /* isMethodCall */ true,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false,
+        /* actuals */ std::move(actuals));
+
+    auto t = qt.type();
+    const AstNode* astContext = nullptr;
+    if (t) {
+      if (auto ct = t->getCompositeType()) {
+        if (!ct->id().isEmpty()) {
+          astContext = parsing::idToAst(context, ct->id());
+        }
+      }
+    }
+
+    // only the receiver type in the call info should be used for search
+    auto scopes = CallScopeInfo::forNormalCall(nullptr, nullptr);
+    auto c = resolveGeneratedCall(context, astContext, ci, scopes);
+
+    ret = c.exprType();
+
+    // Fix the intent to match original actual
+    ret = QualifiedType(qt.kind(), ret.type());
+
+  }
+
+  return QUERY_END(ret);
 }
 
 

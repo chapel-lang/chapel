@@ -551,12 +551,12 @@ yieldTypeForIterator(ResolutionContext* rc,
   * the 'followThis' is the type of 'followThis' for the follower iterator, if any
   * the 'inScopes' is the scope information for the call
  */
-CallResolutionResult resolveTheseCall(ResolutionContext* rc,
-                                      const uast::AstNode* iterand,
-                                      const types::QualifiedType& receiverType,
-                                      uast::Function::IteratorKind iterKind,
-                                      const types::QualifiedType& followThis,
-                                      const CallScopeInfo& inScopes);
+TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
+                                       const uast::AstNode* iterand,
+                                       const types::QualifiedType& receiverType,
+                                       uast::Function::IteratorKind iterKind,
+                                       const types::QualifiedType& followThis,
+                                       const CallScopeInfo& inScopes);
 
 // Note: Defined in default-functions.cpp
 /**
@@ -567,6 +567,10 @@ const uast::BuilderResult*
 builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
                                 UniqueString name);
+
+/** Get the 'promotion type' for the given type. E.g., the promotion type
+    for a range is the type of the range's elements. */
+const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
 
 
 } // end namespace resolution
