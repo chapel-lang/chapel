@@ -1,0 +1,19 @@
+partialGenericNested.chpl:11: In initializer:
+partialGenericNested.chpl:5: warning: partial instantiation without '?' argument
+partialGenericNested.chpl:5: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partialGenericNested.chpl:5: note: or, add arguments to instantiate the following fields in generic type 'Inner(false)':
+partialGenericNested.chpl:19: note:   generic field 'fullyGenericField'
+partialGenericNested.chpl:5: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+partialGenericNested.chpl:5: warning: please use '?' when declaring a field with generic type
+partialGenericNested.chpl:5: note: for example with 'Inner(false,?)'
+  partialGenericNested.chpl:1: called as Outer.init(param flag = false, val: int(64))
+partialGenericNested.chpl:11: In initializer:
+partialGenericNested.chpl:5: warning: partial instantiation without '?' argument
+partialGenericNested.chpl:5: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partialGenericNested.chpl:5: note: or, add arguments to instantiate the following fields in generic type 'Inner(false)':
+partialGenericNested.chpl:19: note:   generic field 'fullyGenericField'
+partialGenericNested.chpl:13: error: Cannot replace an instantiated field with another type
+partialGenericNested.chpl:13: note: field 'partialGenericField' has type 'owned Inner(false,int(64))' but is set to 'owned Inner(false,string)'
+  partialGenericNested.chpl:33: called as Outer.init(param flag = false, val: string)

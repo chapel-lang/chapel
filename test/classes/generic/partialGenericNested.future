@@ -1,0 +1,2 @@
+bug: partial generic fields without `?` don't work with nested generics
+#18664
