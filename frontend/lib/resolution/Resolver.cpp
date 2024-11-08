@@ -5100,6 +5100,8 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
 
   std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
 
+  const auto skippingAllIterands = -1;
+
   // Get the leader actual.
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
     auto iterandQt = rv.byPostorder.byAst(leader).type();
@@ -5109,8 +5111,9 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     if (loopPrefersParallel) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
-      // Note that we will not attempt a leader iterator.
-      noteTheseResolutionFailure(rv, failures, Function::LEADER, -1,
+      // Note that we will not attempt a leader/follower iterator.
+      noteTheseResolutionFailure(rv, failures, Function::LEADER,
+                                 skippingAllIterands,
                                  rv.byPostorder.byAst(leader).type(),
                                  TheseResolutionResult());
     }
@@ -5118,9 +5121,9 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     if (!loopRequiresParallel) {
       m |= IterDetails::SERIAL;
     } else {
-      // Note that we will not attempt a serial iterator.
-      noteTheseResolutionFailure(rv, failures, Function::SERIAL, -1, iterandQt,
-                                 TheseResolutionResult());
+      // Note that we will not attempt a serial iterator for any iterand.
+      noteTheseResolutionFailure(rv, failures, Function::SERIAL, skippingAllIterands,
+                                 iterandQt, TheseResolutionResult());
     }
 
     CHPL_ASSERT(m != IterDetails::NONE);
@@ -5141,8 +5144,9 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
         auto result =TheseResolutionResult::failure(
             TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
             iterandQt);
-        noteTheseResolutionFailure(rv, failures, Function::SERIAL, -1, iterandQt,
-                                   std::move(result));
+        noteTheseResolutionFailure(rv, failures, Function::SERIAL,
+                                   skippingAllIterands,
+                                   iterandQt, std::move(result));
       }
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;

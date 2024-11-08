@@ -2020,7 +2020,7 @@ struct TheseResolutionResult {
     /* We tried to resolve a standalone iterator on a promoted expression, but
        promoted expressions don't have standalone iterators. */
     THESE_FAIL_NO_PROMO_STANDALONE,
-    /* We tried to resolve a parallel iterator by we're iterating over a serial
+    /* We tried to resolve a parallel iterator but we're iterating over a serial
        loop expression. */
     THESE_FAIL_SERIAL_LOOP_EXPR,
     /* We couldn't find the given iterator's definition. */
@@ -2034,7 +2034,10 @@ struct TheseResolutionResult {
        fields are set. */
     THESE_FAIL_ZIPPERED_ARG_FAILED,
     /* We started resolving a zippered-like iterator using (e.g.), a leader
-       iterator, so we didn't attempt to use a follower iterator. */
+       iterator. In some cases, this means we "commit" to the leader/follower
+       path, so we didn't attempt to use a serial iterator.
+
+       TODO: this doesn't match production. */
     THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
     /* Mismatch between the claimed promotion type and the type yielded by the
        iterator. */

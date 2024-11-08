@@ -5947,10 +5947,14 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
     ret = loopIt->yieldType();
   } else if (auto fnIt = qt.type()->toFnIteratorType()) {
-    ResolutionContext rc(context); // TODO
+    // TODO, the iteratorFn could be a nested function, in which case a default
+    //       resolution context is not sufficient.
+    ResolutionContext rc(context);
     ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
   } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
-    ResolutionContext rc(context); // TODO
+    // TODO, the scalarFn could be a nested function, in which case a default
+    //       resolution context is not sufficient.
+    ResolutionContext rc(context);
     ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
   } else {
     std::vector<CallInfoActual> actuals;

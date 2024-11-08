@@ -1149,7 +1149,7 @@ static void printTheseResults(
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG) {
       wr.message(start, "an iterator of that kind was not defined for the type", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH) {
-      wr.message(start, "the yield type of the leader iterator doesn't match the type of the 'followeThis' argument", end);
+      wr.message(start, "the yield type of the leader iterator does not match the type of the 'followThis' argument", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_ZIPPERED_ARG_FAILED) {
       auto iterandType = currentTr->iterandType().type();
       const char* combinedKind =
