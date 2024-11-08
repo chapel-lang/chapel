@@ -3,5 +3,5 @@
 var isHammingWeightFixed: bool = true;
 
 var projFn = if isHammingWeightFixed
-  then proc (x) { return x; }
-  else proc (x) { return x; };
+  then proc(x) { return x; }
+  else proc(x) { return x; };

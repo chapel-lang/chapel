@@ -1,1 +1,1 @@
-assignInIfExpr.chpl:6: syntax error: near 'proc'
+assignInIfExpr.chpl:6: syntax error: near '{'
