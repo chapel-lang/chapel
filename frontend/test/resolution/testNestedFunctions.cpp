@@ -475,8 +475,6 @@ static void test11(Context* ctx) {
   assert(x.type()->isStringType());
 }
 
-// TODO: incorrectly chooses method over nested function
-/*
 static void test12(Context* ctx) {
   // Test ambiguity emitted between nested function and method.
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
@@ -501,10 +499,38 @@ static void test12(Context* ctx) {
       )""";
 
   auto vars = resolveTypesOfVariables(ctx, program, { "x" });
-  auto x = vars["x"];
-  assert(x.type()->isIntType());
+  assert(guard.realizeErrors());
 }
-*/
+
+static void test12b(Context* ctx) {
+  // Test ambiguity emitted between nested function and method.
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program = R"""(
+    proc myProcWithAProcAndAClass() {
+      proc asdf() do return 2;
+      class Foo {
+        proc init() {}
+      
+        proc asdf() {
+          return "test";
+        }
+      
+        proc doSomething() {
+          return asdf();
+        }
+      }
+      var f = new Foo();
+      return f.doSomething();
+    }
+    var x = myProcWithAProcAndAClass();
+    )""";
+
+  auto vars = resolveTypesOfVariables(ctx, program, { "x" });
+  assert(guard.realizeErrors());
+}
+
 
 static void test13(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
@@ -548,7 +574,8 @@ int main() {
   test9(ctx);
   test10(ctx);
   test11(ctx);
-  // test12(ctx);
+  test12(ctx);
+  test12b(ctx);
   test13(ctx);
 
   return 0;
