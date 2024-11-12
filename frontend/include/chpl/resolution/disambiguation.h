@@ -50,10 +50,6 @@ findMostSpecificCandidates(
     const Scope* callInScope,
     const PoiScope* callInPoiScope);
 
-int computeVisibilityDistance(Context* context, const Scope* scope,
-                                     const TypedFnSignature* fn,
-                                     bool allowMethods);
-
 
 } // end namespace resolution
 } // end namespace chpl

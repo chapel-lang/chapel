@@ -780,13 +780,11 @@ computeVisibilityDistanceInternal(Context* context, const Scope* scope,
 // Returns a distance measure used to compare the visibility
 // of two functions.
 //
-// Returns -1 if the function is not found or is a method 
-// and `allowMethods` is false
-int computeVisibilityDistance(Context* context, const Scope* scope,
-                                     const TypedFnSignature* fn, 
-                                     bool allowMethods=false) {
+// Returns -1 if the function is a method or if the function is not found
+static int computeVisibilityDistance(Context* context, const Scope* scope,
+                                     const TypedFnSignature* fn) {
   // is this a method?
-  if (!allowMethods && fn->untyped()->isMethod()) {
+  if (fn->untyped()->isMethod()) {
     return -1;
   }
   return computeVisibilityDistanceInternal(context, scope, fn, 0);
