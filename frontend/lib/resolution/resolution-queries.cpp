@@ -4953,7 +4953,8 @@ resolveCallInMethod(ResolutionContext* rc,
     ID methodId = asMethod.mostSpecific().only().fn()->id();
     ID functionId = asFunction.mostSpecific().only().fn()->id();
     CHPL_REPORT(rc->context(), AmbiguousCall, call, methodId, functionId);
-  } else if (asMethod.mostSpecific().foundCandidates()) {
+  } 
+  if (asMethod.mostSpecific().foundCandidates()) {
     return asMethod;
   } else {
     return asFunction;
