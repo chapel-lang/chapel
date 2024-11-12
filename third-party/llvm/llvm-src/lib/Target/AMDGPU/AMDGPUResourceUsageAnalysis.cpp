@@ -127,15 +127,15 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
       continue;
 
     MachineFunction *MF = MMI.getMachineFunction(*F);
-    assert(MF && "function must have been generated already");
-
-    auto CI =
-        CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
-    SIFunctionResourceInfo &Info = CI.first->second;
-    assert(CI.second && "should only be called once per function");
-    Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
-                                AssumedStackSizeForExternalCall);
-    HasIndirectCall |= Info.HasIndirectCall;
+    if (MF) {
+      auto CI =
+          CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
+      SIFunctionResourceInfo &Info = CI.first->second;
+      assert(CI.second && "should only be called once per function");
+      Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
+                                  AssumedStackSizeForExternalCall);
+      HasIndirectCall |= Info.HasIndirectCall;
+    }
   }
 
   // It's possible we have unreachable functions in the module which weren't
@@ -153,10 +153,11 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
 
     SIFunctionResourceInfo &Info = CI.first->second;
     MachineFunction *MF = MMI.getMachineFunction(*F);
-    assert(MF && "function must have been generated already");
-    Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
-                                AssumedStackSizeForExternalCall);
-    HasIndirectCall |= Info.HasIndirectCall;
+    if (MF) {
+      Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
+                                  AssumedStackSizeForExternalCall);
+      HasIndirectCall |= Info.HasIndirectCall;
+    }
   }
 
   if (HasIndirectCall)

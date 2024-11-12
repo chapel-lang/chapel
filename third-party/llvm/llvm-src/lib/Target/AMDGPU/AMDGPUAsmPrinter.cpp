@@ -516,6 +516,7 @@ AMDGPUAsmPrinter::getAmdhsaKernelDescriptor(const MachineFunction &MF,
 }
 
 bool AMDGPUAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
+  if (MF.empty()) return false;
   // Init target streamer lazily on the first function so that previous passes
   // can set metadata.
   if (!IsTargetStreamerInitialized)
