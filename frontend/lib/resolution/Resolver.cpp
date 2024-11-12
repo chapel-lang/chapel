@@ -1786,7 +1786,11 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (!this->curStmt) {
         bool isLocalIdent = var->id().symbolPath() == r.toId().symbolPath();
         if (isLocalIdent && r.toId().postOrderId() > var->id().postOrderId()) {
-          CHPL_REPORT(context, UseOfLaterVariable, var, r.toId());
+          // auto pair = useBeforeDefineErrorsEmitted.insert(var->id());
+          // if (pair.second) {
+          //   // insertion took place so emit the error
+          //   CHPL_REPORT(context, UseOfLaterVariable, var, r.toId());
+          // }
           auto unknownType = UnknownType::get(context);
           typeExprT = QualifiedType(QualifiedType::UNKNOWN, unknownType);
         }
@@ -3071,7 +3075,10 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   }
 
   if (error) {
-    CHPL_REPORT(context, UseOfLaterVariable, curStmt, id);
+  //   auto pair = useBeforeDefineErrorsEmitted.insert(curStmt->id());
+  //   if (pair.second) {
+  //     CHPL_REPORT(context, UseOfLaterVariable, curStmt, id);
+  //   }
     auto unknownType = UnknownType::get(context);
     return QualifiedType(QualifiedType::UNKNOWN, unknownType);
   }
@@ -3561,6 +3568,25 @@ MatchingIdsWithName Resolver::lookupIdentifier(
 }
 
 static bool
+checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
+                             const ID& target) {
+    if (node->tag() == AstTag::Identifier) {
+      if (node->id().symbolPath() == target.symbolPath()) {
+        if (target.postOrderId() > node->id().postOrderId()) {
+          // It's an error!
+          // auto targetAst = parsing::idToAst(context, target);
+          // auto pair = useBeforeDefineErrorsEmitted.insert(curStmt->id());
+          // if (pair.second) {
+            CHPL_REPORT(context, UseOfLaterVariable, node, target);
+          // }
+          return true;
+      }
+    }
+  }
+   return false;
+ }
+
+static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
                               const ID& target) {
   auto targetTag = parsing::idToTag(context, target);
@@ -3640,6 +3666,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   // Use bitwise-OR here to avoid short-circuiting.
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
+  ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
 
   return QUERY_END(ret);
 }
