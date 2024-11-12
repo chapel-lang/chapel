@@ -87,7 +87,8 @@ public:
   static char ID;
   PPCMergeStringPool() : ModulePass(ID) {}
 
-  bool runOnModule(Module &M) override { return mergeModuleStringPool(M); }
+  bool doInitialization(Module &M) override { return mergeModuleStringPool(M); }
+  bool runOnModule(Module &M) override { return false; }
 
   StringRef getPassName() const override { return "PPC Merge String Pool"; }
 
@@ -280,6 +281,17 @@ bool PPCMergeStringPool::mergeModuleStringPool(Module &M) {
     // before every use in order to compute this offset.
     replaceUsesWithGEP(GV, PooledGlobal, ElementIndex);
 
+    // Replace all the uses by metadata.
+    if (GV->isUsedByMetadata()) {
+      Constant *Indices[2] = {
+          ConstantInt::get(Type::getInt32Ty(*Context), 0),
+          ConstantInt::get(Type::getInt32Ty(*Context), ElementIndex)};
+      Constant *ConstGEP = ConstantExpr::getInBoundsGetElementPtr(
+          PooledStructType, PooledGlobal, Indices);
+      ValueAsMetadata::handleRAUW(GV, ConstGEP);
+    }
+    assert(!GV->isUsedByMetadata() && "Should be no metadata use anymore");
+
     // This GV has no more uses so we can erase it.
     if (GV->use_empty())
       GV->eraseFromParent();
@@ -288,13 +300,6 @@ bool PPCMergeStringPool::mergeModuleStringPool(Module &M) {
     ElementIndex++;
   }
   return true;
-}
-
-static bool userHasOperand(User *TheUser, GlobalVariable *GVOperand) {
-  for (Value *Op : TheUser->operands())
-    if (Op == GVOperand)
-      return true;
-  return false;
 }
 
 // For pooled strings we need to add the offset into the pool for each string.
@@ -307,29 +312,13 @@ void PPCMergeStringPool::replaceUsesWithGEP(GlobalVariable *GlobalToReplace,
   Indices.push_back(ConstantInt::get(Type::getInt32Ty(*Context), 0));
   Indices.push_back(ConstantInt::get(Type::getInt32Ty(*Context), ElementIndex));
 
-  // Need to save a temporary copy of each user list because we remove uses
-  // as we replace them.
-  SmallVector<User *> Users;
-  for (User *CurrentUser : GlobalToReplace->users())
-    Users.push_back(CurrentUser);
-
-  for (User *CurrentUser : Users) {
-    // The user was not found so it must have been replaced earlier.
-    if (!userHasOperand(CurrentUser, GlobalToReplace))
-      continue;
-
-    // We cannot replace operands in globals so we ignore those.
-    if (isa<GlobalValue>(CurrentUser))
-      continue;
-
-    Constant *ConstGEP = ConstantExpr::getInBoundsGetElementPtr(
-        PooledStructType, GPool, Indices);
-    LLVM_DEBUG(dbgs() << "Replacing this global:\n");
-    LLVM_DEBUG(GlobalToReplace->dump());
-    LLVM_DEBUG(dbgs() << "with this:\n");
-    LLVM_DEBUG(ConstGEP->dump());
-    GlobalToReplace->replaceAllUsesWith(ConstGEP);
-  }
+  Constant *ConstGEP =
+      ConstantExpr::getInBoundsGetElementPtr(PooledStructType, GPool, Indices);
+  LLVM_DEBUG(dbgs() << "Replacing this global:\n");
+  LLVM_DEBUG(GlobalToReplace->dump());
+  LLVM_DEBUG(dbgs() << "with this:\n");
+  LLVM_DEBUG(ConstGEP->dump());
+  GlobalToReplace->replaceAllUsesWith(ConstGEP);
 }
 
 } // namespace
