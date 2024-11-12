@@ -54,9 +54,11 @@ option(LLVM_INCLUDE_BENCHMARKS "Generate benchmark targets. If OFF, benchmarks c
 
 * Patched `lib/Support/APFloat.cpp` to workaround https://github.com/llvm/llvm-project/issues/81013
 ```
+diff --git a/third-party/llvm/llvm-src/lib/Support/APFloat.cpp b/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
+index 26b4f8e554..7aa332a787 100644
 --- a/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
 +++ b/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
-@@ -112,9 +112,9 @@ struct fltSemantics {
+@@ -116,9 +116,9 @@ struct fltSemantics {
    /* Number of bits actually used in the semantics. */
    unsigned int sizeInBits;
  
