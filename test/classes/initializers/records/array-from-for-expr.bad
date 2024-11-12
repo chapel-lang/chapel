@@ -1,2 +1,0 @@
-array-from-for-expr.chpl:35: In function 'main':
-array-from-for-expr.chpl:36: error: const actual is passed to a 'ref' formal of chpl__initCopy()

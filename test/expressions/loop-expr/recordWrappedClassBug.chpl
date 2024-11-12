@@ -3,7 +3,7 @@ class C {
 }
 
 record R {
-  var c: C?;  // unmanaged works
+  var c: owned C?;  // unmanaged works
 
   proc init() { }
 
@@ -13,5 +13,6 @@ record R {
 }
 
 var r = for i in 0..2 do new R(i);
+compilerWarning("elt.type: ", r.eltType : string);
 writeln(r);
 
