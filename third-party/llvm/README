@@ -74,10 +74,10 @@ index 26b4f8e554..7aa332a787 100644
 * Patched `lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp` and `lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp` to workaround https://github.com/llvm/llvm-project/issues/65188
 ```
 diff --git a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
-index 279ef8ca27..9788b9316b 100644
+index e64e28e01d..3efb9b9b99 100644
 --- a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
 +++ b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
-@@ -454,6 +454,7 @@ amdhsa::kernel_descriptor_t AMDGPUAsmPrinter::getAmdhsaKernelDescriptor(
+@@ -516,6 +516,7 @@ AMDGPUAsmPrinter::getAmdhsaKernelDescriptor(const MachineFunction &MF,
  }
  
  bool AMDGPUAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
@@ -86,10 +86,10 @@ index 279ef8ca27..9788b9316b 100644
    // can set metadata.
    if (!IsTargetStreamerInitialized)
 diff --git a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
-index 0c759e7f3b..0e3d72460e 100644
+index 146649a7e2..d92d0f1c5c 100644
 --- a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
 +++ b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
-@@ -126,14 +126,16 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
+@@ -127,15 +127,15 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
        continue;
  
      MachineFunction *MF = MMI.getMachineFunction(*F);
@@ -99,31 +99,32 @@ index 0c759e7f3b..0e3d72460e 100644
 -        CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
 -    SIFunctionResourceInfo &Info = CI.first->second;
 -    assert(CI.second && "should only be called once per function");
--    Info = analyzeResourceUsage(*MF, TM);
+-    Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
+-                                AssumedStackSizeForExternalCall);
 -    HasIndirectCall |= Info.HasIndirectCall;
 +    if (MF) {
-+      assert(MF && "function must have been generated already");
-+
 +      auto CI =
 +          CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
 +      SIFunctionResourceInfo &Info = CI.first->second;
 +      assert(CI.second && "should only be called once per function");
-+      Info = analyzeResourceUsage(*MF, TM);
++      Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
++                                  AssumedStackSizeForExternalCall);
 +      HasIndirectCall |= Info.HasIndirectCall;
 +    }
    }
  
    // It's possible we have unreachable functions in the module which weren't
-@@ -151,9 +153,11 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
+@@ -153,10 +153,11 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
  
      SIFunctionResourceInfo &Info = CI.first->second;
      MachineFunction *MF = MMI.getMachineFunction(*F);
 -    assert(MF && "function must have been generated already");
--    Info = analyzeResourceUsage(*MF, TM);
+-    Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
+-                                AssumedStackSizeForExternalCall);
 -    HasIndirectCall |= Info.HasIndirectCall;
 +    if (MF) {
-+      // assert(MF && "function must have been generated already");
-+      Info = analyzeResourceUsage(*MF, TM);
++      Info = analyzeResourceUsage(*MF, TM, AssumedStackSizeForDynamicSizeObjects,
++                                  AssumedStackSizeForExternalCall);
 +      HasIndirectCall |= Info.HasIndirectCall;
 +    }
    }
