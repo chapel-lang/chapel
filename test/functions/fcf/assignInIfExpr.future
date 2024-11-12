@@ -1,0 +1,2 @@
+bug: syntax error when assigning fcf via an if expression
+#18413
