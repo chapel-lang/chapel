@@ -116,9 +116,9 @@ struct fltSemantics {
   /* Number of bits actually used in the semantics. */
   unsigned int sizeInBits;
 
-  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior::IEEE754;
+  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior(int(fltNonfiniteBehavior::IEEE754));
 
-  fltNanEncoding nanEncoding = fltNanEncoding::IEEE;
+  fltNanEncoding nanEncoding = fltNanEncoding(int(fltNanEncoding::IEEE));
   // Returns true if any number described by this semantics can be precisely
   // represented by the specified semantics. Does not take into account
   // the value of fltNonfiniteBehavior.
