@@ -159,6 +159,17 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
 //
 
 /* begin resolution errors */
+void ErrorAmbiguousCall::write(ErrorWriterBase&wr) const {
+  auto& callName = std::get<0>(info_);
+  auto& option1 = std::get<1>(info_);
+  auto& option2 = std::get<2>(info_);
+  wr.heading(kind_, type_, locationOnly(callName), "ambiguous call to ", callName);
+  wr.note(locationOnly(option1),"found this method:");
+  wr.code(option1);
+  wr.note(locationOnly(option2), "and this function:");
+  wr.code(option2);
+}
+
 void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
   auto& name = std::get<std::string>(info_);
   auto variable = std::get<const uast::Variable*>(info_);

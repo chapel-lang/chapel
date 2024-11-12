@@ -32,6 +32,7 @@
 // Also, the macro calls in this file should each be on a single line,
 // even though that makes long lines that are normally avoided.
 
+ERROR_CLASS(AmbiguousCall, const uast::Call*, ID, ID)
 ERROR_CLASS(AmbiguousConfigName, std::string, const uast::Variable*, ID)
 ERROR_CLASS(AmbiguousConfigSet, const uast::Variable*, std::string, std::string)
 ERROR_CLASS(AmbiguousIdentifier, const uast::Identifier*, bool, resolution::MatchingIdsWithName, std::vector<resolution::ResultVisibilityTrace>)

@@ -499,8 +499,7 @@ static void test12(Context* ctx) {
       )""";
 
   auto vars = resolveTypesOfVariables(ctx, program, { "x" });
-  auto x = vars["x"];
-  assert(x.type()->isIntType());
+  assert(guard.realizeErrors());
 }
 
 static void test12b(Context* ctx) {
@@ -529,8 +528,7 @@ static void test12b(Context* ctx) {
     )""";
 
   auto vars = resolveTypesOfVariables(ctx, program, { "x" });
-  auto x = vars["x"];
-  assert(x.type()->isStringType());
+  assert(guard.realizeErrors());
 }
 
 

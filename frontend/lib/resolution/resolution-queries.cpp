@@ -4949,23 +4949,15 @@ resolveCallInMethod(ResolutionContext* rc,
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
     asMethod = resolveCall(rc, call, methodCi, inScopes, rejected);
   }
-
-  if (!asMethod.mostSpecific().foundCandidates()) {
-    return asFunction;
-  }
-  if (!asFunction.mostSpecific().foundCandidates()) {
+  if (asMethod.mostSpecific().foundCandidates() && asFunction.mostSpecific().foundCandidates()) {
+    ID methodId = asMethod.mostSpecific().only().fn()->id();
+    ID functionId = asFunction.mostSpecific().only().fn()->id();
+    CHPL_REPORT(rc->context(), AmbiguousCall, call, methodId, functionId);
+  } else if (asMethod.mostSpecific().foundCandidates()) {
     return asMethod;
-  }
-
-  auto method = asMethod.mostSpecific().only().fn();
-  auto function = asFunction.mostSpecific().only().fn();
-  auto methodDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), method, /* allowMethods */ true);
-  auto functionDistance = computeVisibilityDistance(rc->context(), inScopes.callScope(), function, /* allowMethods */ true);
-  if (functionDistance < methodDistance) {
-    return asFunction;
   } else {
-    return asMethod;
-  } 
+    return asFunction;
+  }
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
