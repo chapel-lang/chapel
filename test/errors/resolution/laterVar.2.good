@@ -1,6 +1,3 @@
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
 ─── error in laterVar.chpl:20 [UseOfLaterVariable] ───
   Statement references a variable before it is defined.
   In the following statement:

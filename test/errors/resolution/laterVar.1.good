@@ -1,6 +1,3 @@
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
-[frontend/lib/resolution/call-init-deinit.cpp:656 in resolveMoveInit] Unimplemented: value = copy init from ref
 laterVar.chpl:19: In function 'anotherone':
 laterVar.chpl:20: error: statement references a variable before it is defined
 laterVar.chpl:32: error: Cannot establish type for call expression
