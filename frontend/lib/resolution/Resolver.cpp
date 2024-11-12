@@ -1781,20 +1781,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     if (initExpr && !foundSubstitution) {
       // compute the type based upon the init expression
       ResolvedExpression& r = byPostorder.byAst(initExpr);
-      // Check that the init expression isn't something defined later in the program.
-      // don't check for this if we are in a statement as that is caught later in typeForId
-      if (!this->curStmt) {
-        bool isLocalIdent = var->id().symbolPath() == r.toId().symbolPath();
-        if (isLocalIdent && r.toId().postOrderId() > var->id().postOrderId()) {
-          // auto pair = useBeforeDefineErrorsEmitted.insert(var->id());
-          // if (pair.second) {
-          //   // insertion took place so emit the error
-          //   CHPL_REPORT(context, UseOfLaterVariable, var, r.toId());
-          // }
-          auto unknownType = UnknownType::get(context);
-          typeExprT = QualifiedType(QualifiedType::UNKNOWN, unknownType);
-        }
-      }
       initExprT = r.type();
     }
 
@@ -3059,28 +3045,12 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
                          !id.isSymbolDefiningScope());
-  bool error = false;
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
       // OK, proceed using local result
     } else {
       useLocalResult = false;
-      // attempting to get a type for a value that has a later post-order ID
-      // than curStmt should result in an error since we want resolution to
-      // behave as though things are resolved in order.
-      if (id.postOrderId() > curStmt->id().postOrderId()) {
-        error = true;
-      }
     }
-  }
-
-  if (error) {
-  //   auto pair = useBeforeDefineErrorsEmitted.insert(curStmt->id());
-  //   if (pair.second) {
-  //     CHPL_REPORT(context, UseOfLaterVariable, curStmt, id);
-  //   }
-    auto unknownType = UnknownType::get(context);
-    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
   }
 
   if (useLocalResult) {
@@ -3573,12 +3543,8 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
     if (node->tag() == AstTag::Identifier) {
       if (node->id().symbolPath() == target.symbolPath()) {
         if (target.postOrderId() > node->id().postOrderId()) {
-          // It's an error!
-          // auto targetAst = parsing::idToAst(context, target);
-          // auto pair = useBeforeDefineErrorsEmitted.insert(curStmt->id());
-          // if (pair.second) {
-            CHPL_REPORT(context, UseOfLaterVariable, node, target);
-          // }
+          // resolved to an identifier defined later
+          CHPL_REPORT(context, UseOfLaterVariable, node, target);
           return true;
       }
     }
