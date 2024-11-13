@@ -140,8 +140,13 @@ if (CHPL_HOST_MEM STREQUAL "mimalloc")
     message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
   endif()
 
-  target_link_libraries(ChplFrontend PRIVATE mimalloc-static)
-  target_link_libraries(ChplFrontendShared PRIVATE mimalloc-static)
+  # TODO: can't use static libs, that segfaults
+  # but with shared libs, users of ChplFrontend[Shared] will need to link with mimalloc
+  # so we need to make sure that the mimalloc library is installed in a place where
+  # it can be found by the users of ChplFrontendShared
+  #
+  target_link_libraries(ChplFrontend PRIVATE mimalloc)
+  target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
 endif()
 
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
