@@ -441,6 +441,8 @@ void chpl_library_init(int argc, char* argv[]) {
 // we may have initialized
 extern void chpl_deinitModules(void);
 
+bool lib_deinited = false;
+
 //
 // A wrapper around chplexit.c:chpl_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
@@ -448,6 +450,14 @@ void chpl_library_finalize(void) {
   if (!lib_inited) {
     return;
   }
+
+  if (lib_deinited) {
+    // Nothing to do, we've already been cleaned up
+    return;
+  } else {
+    lib_deinited = true;
+  }
+
   chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
   chpl_finalize(0, 1);
