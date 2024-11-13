@@ -131,24 +131,6 @@ endif()
 
 target_link_libraries(ChplFrontendShared PUBLIC ${CHPL_LLVM_LINK_ARGS})
 
-if (CHPL_HOST_MEM STREQUAL "mimalloc")
-  if (CHPL_HOST_MIMALLOC STREQUAL "bundled")
-    find_package(mimalloc REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH})
-  elseif (CHPL_HOST_MIMALLOC STREQUAL "system")
-    find_package(mimalloc REQUIRED)
-  else()
-    message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
-  endif()
-
-  # TODO: can't use static libs, that segfaults
-  # but with shared libs, users of ChplFrontend[Shared] will need to link with mimalloc
-  # so we need to make sure that the mimalloc library is installed in a place where
-  # it can be found by the users of ChplFrontendShared
-  #
-  target_link_libraries(ChplFrontend PRIVATE mimalloc)
-  target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
-endif()
-
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(ChplFrontend PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
