@@ -574,7 +574,7 @@
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt
-%type <attributeGroup> forwarding_decl_start
+%type <attributeGroup> forwarding_decl_start var_decl_start extern_export_kind
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -587,7 +587,7 @@
 %type <variableKind> var_decl_type
 
 %type <commentsAndStmt> type_alias_decl_stmt
-%type <variableKind> type_alias_decl_stmt_start
+%type <attributeGroup> type_alias_decl_stmt_start
 %type <exprList> type_alias_decl_stmt_inner_ls
 %type <commentsAndStmt> type_alias_decl_stmt_inner
 
@@ -929,11 +929,7 @@ decl_base:
 
 collect_attributes:
   {
-    auto attributeGroup = context->buildAttributeGroup(@$);
-    if (attributeGroup != nullptr) {
-      context->resetAttributeGroupPartsState();
-    }
-    context->loopAttributes.push_back(std::move(attributeGroup));
+    context->buildAndPushAttributeGroup(@$);
   }
 ;
 
@@ -1549,6 +1545,14 @@ extern_export_decl_stmt_start:
   }
 ;
 
+extern_export_kind:
+  TTYPE
+  {
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
+  }
+;
+
 extern_export_decl_stmt:
   extern_export_decl_stmt_start class_start opt_inherit
   TLCBR class_level_stmt_ls TRCBR
@@ -1588,19 +1592,19 @@ extern_export_decl_stmt:
   {
     context->storeVarDeclLinkageName($2);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI
+  var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
     context->resetDeclState();
   }
-| extern_export_decl_stmt_start opt_expr TTYPE
+| extern_export_decl_stmt_start opt_expr extern_export_kind
   {
     context->storeVarDeclLinkageName($2);
     context->noteVarDeclKind(Variable::TYPE);
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@1, $5);
+    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1615,12 +1619,7 @@ extern_block_stmt:
 no_loop_attributes:
   {
     // Even though there are no attributes, there could be loop pragmas.
-
-    auto attributeGroup = context->buildAttributeGroup(@$);
-    if (attributeGroup != nullptr) {
-      context->resetAttributeGroupPartsState();
-    }
-    context->loopAttributes.push_back(std::move(attributeGroup));
+    context->buildAndPushAttributeGroup(@$);
   }
 
 loop_stmt:
@@ -2805,7 +2804,7 @@ lifetime_ident:
 type_alias_decl_stmt:
   type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $1, $2);
     context->resetDeclState();
   }
 ;
@@ -2814,12 +2813,16 @@ type_alias_decl_stmt:
 type_alias_decl_stmt_start:
   TTYPE
   {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteVarDeclKind(Variable::TYPE);
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 | TCONFIG TTYPE
   {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 ;
 
@@ -2870,14 +2873,22 @@ var_decl_type:
 | TVAR        { $$ = context->noteVarDeclKind(Variable::VAR); }
 ;
 
+var_decl_start:
+  var_decl_type
+  {
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
+  }
+;
+
 var_decl_stmt:
   TCONFIG
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
     context->noteIsVarDeclConfig(true);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4);
+  var_decl_start var_decl_stmt_inner_ls TSEMI {
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2885,19 +2896,20 @@ var_decl_stmt:
     // Use a mid-rule action to preserve the 'on' expr
     context->noteVarDestinationExpr($2);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI
+  var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
     context->resetDeclState();
   }
-| var_decl_type var_decl_stmt_inner_ls TSEMI
+| var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $1, $2);
     context->resetDeclState();
   }
-| var_decl_type error TSEMI
+| var_decl_start error TSEMI
   {
     $$ = { .comments=nullptr, .stmt=ErroneousExpression::build(BUILDER, LOC(@2)).release() };
+    delete $1;
     context->resetDeclStateOnError();
   }
 ;

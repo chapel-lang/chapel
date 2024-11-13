@@ -214,6 +214,15 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
   return node;
 }
 
+
+void ParserContext::buildAndPushAttributeGroup(YYLTYPE locationOfDecl) {
+  auto attributeGroup = this->buildAttributeGroup(std::move(locationOfDecl));
+  if (attributeGroup != nullptr) {
+    this->resetAttributeGroupPartsState();
+  }
+  this->loopAttributes.push_back(std::move(attributeGroup));
+}
+
 PODUniqueString ParserContext::notePragma(YYLTYPE loc,
                                           AstNode* pragmaStr) {
   auto ret = PODUniqueString::get();
@@ -2749,7 +2758,10 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
 // Given a list of vars, build either a single var or a multi-decl.
 CommentsAndStmt
 ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
+                                       AttributeGroup* attributeGroupPtr,
                                        ParserExprList* vars) {
+  auto attributeGroup = toOwned(attributeGroupPtr);
+
   int numDecls = 0;
   Decl* firstDecl = nullptr;
   Decl* lastDecl = nullptr;
@@ -2778,7 +2790,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     delete vars;
     // for single element decls, we attach the attribute group to the decl
     // *note that this places the AttributeGroup as the LAST child of the decl
-    auto attributeGroup = buildAttributeGroup(locEverything);
     if (attributeGroup) {
       lastDecl->attachAttributeGroup(std::move(attributeGroup));
     }
@@ -2804,7 +2815,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-    auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributeGroup),
                                   visibility,
