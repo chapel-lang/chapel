@@ -31,7 +31,7 @@ add_custom_command(
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 add_executable(chpldoc EXCLUDE_FROM_ALL chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
-target_link_libraries(chpldoc ChplFrontend)
+target_link_libraries(chpldoc PRIVATE ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR}
