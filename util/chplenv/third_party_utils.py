@@ -249,9 +249,6 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     if pcfile == '':
         pcfile = pkg + '.pc'
 
-    install_path = get_bundled_install_path(pkg, ucp)
-    lib_dir = os.path.join(install_path, 'lib')
-
     (d, pcpath) = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
     # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
@@ -281,6 +278,15 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
 
     # add the -rpath option if it was enabled by the caller
     if add_rpath:
+        install_path = get_bundled_install_path(pkg, ucp)
+        lib_dir_paths = [os.path.join(install_path, 'lib'), os.path.join(install_path, 'lib64')]
+        lib_dir = None
+        for p in lib_dir_paths:
+            if os.path.exists(p):
+                lib_dir = p
+                break
+        if not lib_dir:
+            error("Could not find lib directory for {0} in {1}".format(pkg, lib_dir_paths))
         libs.append('-Wl,-rpath,' + lib_dir)
 
     # assuming libs_private stores system libs, like -lpthread
@@ -451,11 +457,16 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     if not os.path.exists(install_path):
         return (None, None)
 
-    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
-
-    # if we get this far, we should have a .pc file. check that it exists.
-    if not os.access(pcpath, os.R_OK):
-        error("Could not find '{0}'".format(pcpath), ValueError)
+    paths = [os.path.join(install_path, 'lib', 'pkgconfig', pcfile),
+             os.path.join(install_path, 'lib64', 'pkgconfig', pcfile)]
+    pcpath = None
+    for p in paths:
+        if os.access(p, os.R_OK):
+            pcpath = p
+            break
+    # if we get this far, we should have a .pc file.
+    if not pcpath:
+        error("Could not find .pc file for {0}".format(pkg), ValueError)
         return (None, pcpath)
 
     find_path = os.path.join('third-party', pkg, 'install', ucp)
