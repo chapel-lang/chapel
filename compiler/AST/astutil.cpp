@@ -115,14 +115,24 @@ void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
     callExprs.push_back(callExpr);
 }
 
-void collectCallExprsExceptInGpuBlock(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+void collectCallExprsForGpuEligibilityAnalysis(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   if (auto blk = toBlockStmt(ast)) {
     if (blk->isGpuPrimitivesBlock()) {
       return;
     }
   }
 
-  AST_CHILDREN_CALL(ast, collectCallExprsExceptInGpuBlock, callExprs);
+  // Skip code in the "then" branch of a GPU-CPU token, since only the "else"
+  // branch will be codegenerated for the GPU.
+  if (auto cond = toCondStmt(ast)) {
+    if (SymExpr* se = toSymExpr(cond->condExpr)) {
+      if (se->symbol() == gCpuVsGpuToken) {
+        ast = cond->elseStmt;
+      }
+    }
+  }
+
+  AST_CHILDREN_CALL(ast, collectCallExprsForGpuEligibilityAnalysis, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.push_back(callExpr);
 }
