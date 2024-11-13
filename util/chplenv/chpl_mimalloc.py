@@ -7,14 +7,16 @@ import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler
 from utils import error, memoize, warning
 
 
+def var_name(flag):
+    return 'CHPL_{0}_MIMALLOC'.format(flag.upper())
+
 @memoize
 def get(flag='target'):
 
-    var = 'CHPL_{0}_MIMALLOC'.format(flag.upper())
     mimalloc = 'none'
     if flag in ('target', 'host'):
         # mimalloc is only used if explicitly requested
-        mimalloc = overrides.get(var)
+        mimalloc = overrides.get(var_name(flag))
 
         mem = chpl_mem.get(flag)
         if mimalloc is None:
@@ -27,14 +29,19 @@ def get(flag='target'):
             # if mem is mimalloc, then mimalloc cannot be none
             if mem == 'mimalloc' and mimalloc == 'none':
                 memvar = 'CHPL_{}_MEM'.format(flag.upper())
-                error("{0} must not be 'none' when CHPL_TARGET_MEM is 'mimalloc'".format(var, memvar))
+                error("{0} must not be 'none' when {1} is 'mimalloc'".format(var_name(flag), memvar))
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     supported_mimalloc = ('none', 'bundled', 'system')
     if mimalloc not in supported_mimalloc:
-        error("{0}={1} is not supported, must be one of {2}".format(var, mimalloc, supported_mimalloc))
+        error("{0}={1} is not supported, must be one of {2}".format(var_name(flag), mimalloc, supported_mimalloc))
+
+    # if mimalloc is system, check if we can find it with pkg-config
+    # cmake handles the host case already, but we can provide better error messages here
+    if mimalloc == 'system' and not third_party_utils.pkgconfig_system_has_package("mimalloc"):
+        third_party_utils.could_not_find_pkgconfig_pkg("mimalloc", var_name(flag))
 
     return mimalloc
 
@@ -58,23 +65,20 @@ def get_uniq_cfg_path(flag):
 #  (compiler_bundled_args, compiler_system_args)
 @memoize
 def get_compile_args(flag):
-    # cmake handles 'host' mimalloc
+    # cmake handles 'host' mimalloc args
     if flag == 'host':
         return [], []
 
     mimalloc_val = get(flag)
     if mimalloc_val == 'bundled':
-        bundled, system = [], []
-        if flag == 'target':
-            bundled, system = third_party_utils.get_bundled_compile_args(
-                "mimalloc", ucp=get_uniq_cfg_path(flag)
-            )
-        # if flag == 'host':
-        #     bundled += ["-include", "mimalloc-override.h"]
-        return bundled, system
+        return third_party_utils.get_bundled_compile_args("mimalloc", ucp=get_uniq_cfg_path(flag))
     elif mimalloc_val == 'system':
-        warning("System mimalloc is not supported yet")
-        pass
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_compile_args("mimalloc")
+        if args != (None, None):
+            return args
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("mimalloc", var_name(flag))
     return [], []
 
 # flag is host or target
@@ -82,27 +86,21 @@ def get_compile_args(flag):
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args(flag):
-    # cmake handles 'host' mimalloc
+    # cmake handles 'host' mimalloc args
     if flag == 'host':
         return [], []
 
     mimalloc_val = get(flag)
     if mimalloc_val == 'bundled':
-        if flag == 'host':
-            # # use the .o file for the host
-            # install_dir = third_party_utils.get_bundled_install_path('mimalloc', ucp=get_uniq_cfg_path(flag))
-            # lib_dir = os.path.join(install_dir, 'lib')
-            # args = ([os.path.join(lib_dir, "mimalloc.o")], [])
-            args = [],[]
-        else:
-            args = third_party_utils.pkgconfig_get_bundled_link_args(
-                'mimalloc', ucp=get_uniq_cfg_path(flag)
-            )
-        return args
+        return third_party_utils.pkgconfig_get_bundled_link_args("mimalloc",ucp=get_uniq_cfg_path(flag))
     elif mimalloc_val == 'system':
-        warning("System mimalloc is not supported yet")
-        pass
-    return ([ ], [ ])
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_link_args("mimalloc")
+        if args != (None, None):
+            return args
+        else:
+            third_party_utils.could_not_find_pkgconfig_pkg("mimalloc", var_name(flag))
+    return [] , []
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
