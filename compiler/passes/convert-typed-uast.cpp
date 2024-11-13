@@ -1095,6 +1095,9 @@ void TConverter::createMainFunctions() {
   //
   if (fMinimalModules == false) {
     // figure out _endCountAlloc
+
+    // TODO: add converter or QualifiedType methods to more
+    // easily construct a QualifiedType for common values like param false.
     auto falseQt = types::QualifiedType(types::QualifiedType::PARAM,
                                         types::BoolType::get(context),
                                         types::BoolParam::get(context, false));
@@ -1282,6 +1285,7 @@ Symbol* TConverter::findOrCreateSym(const ID& id) {
 
   // otherwise, convert it according to what it is
   const AstNode* ast = parsing::idToAst(context, id);
+  // TODO: convert this to a visitor if there end up being a lot of cases
   if (auto formal = ast->toFormal()) {
     return findOrCreateFormal(formal);
   } else if (auto var = ast->toVariable()) {
@@ -1623,7 +1627,7 @@ Type* TConverter::helpConvertExternType(const types::ExternType* t) {
 }
 
 Type* TConverter::helpConvertFunctionType(const types::FunctionType* t) {
-  CHPL_UNIMPL("convertExternType");
+  CHPL_UNIMPL("convertFunctionType");
   return nullptr;
 }
 
@@ -2684,10 +2688,6 @@ void TConverter::exit(const Return* node, RV& rv) {
 
 bool TConverter::enter(const Call* node, RV& rv) {
   if (trace) printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-
-  if (node->id().str() == "dd@3") {
-    gdbShouldBreakHere();
-  }
 
   const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
 

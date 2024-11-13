@@ -186,6 +186,10 @@ const std::vector<ID>& toplevelModulesInFile(Context* context,
 
 /** Given a module ID, returns the ID of a 'main' function
     provided in that module, or the empty ID if none was present.
+
+    If there were multiple 'main' functions in that module, this
+    function returns the first one. Other parts of compilation should
+    produce a compilation error in that case.
  */
 ID findProcMainInModule(Context* context, ID modId);
 
