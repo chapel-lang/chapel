@@ -80,18 +80,21 @@ frontend: FORCE
 	@echo "Making the frontend compiler library..."
 	@cd third-party && $(MAKE) llvm
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host mimalloc
 	@cd compiler && $(MAKE) frontend
 
 frontend-shared: FORCE
 	@echo "Making the frontend compiler library (always shared)..."
 	@cd third-party && $(MAKE) llvm
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host mimalloc
 	@cd compiler && $(MAKE) frontend-shared
 
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host mimalloc
 	@cd compiler && $(MAKE)
 
 parser: FORCE

@@ -196,9 +196,12 @@ include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
+include $(THIRD_PARTY_DIR)/mimalloc/Makefile.host.include-$(CHPL_MAKE_HOST_MIMALLOC)
 else
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_JEMALLOC)
+include $(THIRD_PARTY_DIR)/mimalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_MIMALLOC)
 endif
+
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include

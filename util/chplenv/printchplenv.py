@@ -122,9 +122,11 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
     ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_MIMALLOC', RUNTIME | NOPATH, 'hostmimalloc'),
     ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
     ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC', RUNTIME | NOPATH, 'tgtmimalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
@@ -158,6 +160,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
@@ -224,6 +228,8 @@ def compute_all_values():
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC'] = chpl_mimalloc.get('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC'] = chpl_mimalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
@@ -290,6 +296,8 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('target')
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
 
@@ -385,6 +393,10 @@ def filter_tidy(chpl_env):
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_HOST_MIMALLOC':
+        return host_mem == 'mimalloc'
+    elif chpl_env.name == '  CHPL_TARGET_MIMALLOC':
+        return tgt_mem == 'mimalloc'
     elif chpl_env.name == '  CHPL_HWLOC_PCI':
         return hwloc == 'bundled'
     return True
