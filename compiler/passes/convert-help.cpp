@@ -24,8 +24,10 @@
 
 #include "convert-help.h"
 
+#include "astutil.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/chpl-syntax-printer.h"
+#include "LoopStmt.h"
 
 #include "stmt.h"
 
@@ -183,6 +185,17 @@ void LoopAttributeInfo::insertPrimitivesBlockAtHead(UastConverter& converter,
   }
 }
 
+void LoopAttributeInfo::applyToLoop(UastConverter& converter, Expr* indices, BlockStmt* body) {
+  insertPrimitivesBlockAtHead(converter, body);
+
+  if (loopIndicesMutable) {
+    std::vector<DefExpr*> defExprs;
+    collectDefExprs(indices, defExprs);
+    for (auto defExpr : defExprs) {
+      defExpr->sym->addFlag(FLAG_LOOP_INDEX_MUTABLE);
+    }
+  }
+}
 
 const char* convertLinkageNameAstr(const uast::Decl* node) {
   if (auto linkageName = node->linkageName()) {

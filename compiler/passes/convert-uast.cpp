@@ -1535,7 +1535,7 @@ struct Converter final : UastConverter {
       }
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
+      loopAttributes.applyToLoop(*this, indices, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1616,6 +1616,8 @@ struct Converter final : UastConverter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
+      auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
+      loopAttributes.applyToLoop(*this, index, block);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
                                   isForExpr, extractLlvmAttributesAndRejectOthers(context, node));
     }
@@ -1663,7 +1665,7 @@ struct Converter final : UastConverter {
       bool serialOK = false;
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
+      loopAttributes.applyToLoop(*this, indices, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1689,7 +1691,7 @@ struct Converter final : UastConverter {
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
+      loopAttributes.applyToLoop(*this, indices, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
                                       isForExpr, std::move(loopAttributes.llvmMetadata));

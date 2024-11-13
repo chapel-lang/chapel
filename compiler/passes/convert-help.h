@@ -53,6 +53,8 @@ struct LoopAttributeInfo {
   const uast::Attribute* blockSizeAttr = nullptr;
   // The @gpu.itersPerThread attribute, if one is provided by the user.
   const uast::Attribute* itersPerThreadAttr = nullptr;
+  // If true, skip marking loop indices 'const'.
+  bool loopIndicesMutable = false;
 
  private:
   LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
@@ -76,6 +78,8 @@ struct LoopAttributeInfo {
     LoopAttributeInfo into;
     into.readLlvmAttributes(context, attrs);
     into.readNativeGpuAttributes(attrs);
+    into.loopIndicesMutable =
+      attrs->hasPragma(uast::PragmaTag::PRAGMA_LOOP_INDICES_MUTABLE);
 
     return into;
   }
@@ -109,6 +113,7 @@ struct LoopAttributeInfo {
   bool insertItersPerThreadCall(UastConverter& converter, BlockStmt* body);
   BlockStmt* createPrimitivesBlock(UastConverter& converter);
   void insertPrimitivesBlockAtHead(UastConverter& converter, BlockStmt* body);
+  void applyToLoop(UastConverter& converter, Expr* indices, BlockStmt* body);
 };
 
 const char* convertLinkageNameAstr(const uast::Decl* node);
