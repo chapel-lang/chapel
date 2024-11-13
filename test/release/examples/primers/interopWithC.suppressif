@@ -1,0 +1,4 @@
+# This test currently gives this:
+# /usr/local/cuda-11.8/include/thrust/functional.h:598: error: 'square' has multiple definitions, redefined at:
+#   /usr/local/cuda-11.8/include/thrust/functional.h:598
+CHPL_GPU == nvidia

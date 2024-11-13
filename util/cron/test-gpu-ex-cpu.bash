@@ -12,8 +12,5 @@ export CHPL_GPU=cpu
 export CHPL_COMM=none
 export CHPL_GPU_NO_CPU_MODE_WARNING=y
 
-# Test also release/examples
-export CHPL_NIGHTLY_TEST_DIRS="$CHPL_NIGHTLY_TEST_DIRS release/examples"
-
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cpu"
 $CWD/nightly -cron ${nightly_args}

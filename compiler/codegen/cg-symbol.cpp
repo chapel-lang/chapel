@@ -2572,7 +2572,8 @@ void FnSymbol::codegenPrototype() {
 
     if (generatingGPUKernel) {
       func->setConvergent();
-      if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+      if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN) &&
+          !hasFlag(FLAG_GPU_SPECIALIZATION)) {
         switch (getGpuCodegenType()) {
           case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
             func->setCallingConv(llvm::CallingConv::PTX_Kernel);
@@ -3130,7 +3131,7 @@ void FnSymbol::codegenDef() {
       if( ! debug_info )
         problems = llvm::verifyFunction(*func, &llvm::errs());
       if( problems ) {
-        INT_FATAL("LLVM function verification failed");
+        INT_FATAL(this, "LLVM function verification failed");
       }
     }
 

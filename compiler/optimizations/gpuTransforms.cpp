@@ -830,6 +830,7 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
   gpuCopy->name = astr(gpuCopy->name, "_gpuError");
   gpuCopy->cname = astr(gpuCopy->cname, "_gpuError");
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+  gpuCopy->addFlag(FLAG_GPU_SPECIALIZATION); //for proper calling convention
   gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
   fn->defPoint->insertAfter(new DefExpr(gpuCopy));
 
