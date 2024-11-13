@@ -121,8 +121,8 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
-    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
-    ChapelEnv('  CHPL_HOST_MIMALLOC', RUNTIME | NOPATH, 'hostmimalloc'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', COMPILER | NOPATH, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_MIMALLOC', COMPILER | NOPATH, 'hostmimalloc'),
     ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
     ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),

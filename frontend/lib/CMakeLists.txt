@@ -139,6 +139,7 @@ if (CHPL_HOST_MEM STREQUAL "mimalloc")
   else()
     message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
   endif()
+
   target_link_libraries(ChplFrontend PRIVATE mimalloc-static)
   target_link_libraries(ChplFrontendShared PRIVATE mimalloc-static)
 endif()
