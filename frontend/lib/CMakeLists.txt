@@ -131,6 +131,12 @@ endif()
 
 target_link_libraries(ChplFrontendShared PUBLIC ${CHPL_LLVM_LINK_ARGS})
 
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+  find_package(mimalloc REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH})
+  target_link_libraries(ChplFrontend PRIVATE mimalloc-static)
+  target_link_libraries(ChplFrontendShared PRIVATE mimalloc-static)
+endif()
+
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(ChplFrontend PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)

@@ -37,6 +37,13 @@ def get(flag='host'):
             mem_val = 'jemalloc'
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
+
+    valid = ('jemalloc', 'cstdlib', 'mimalloc')
+    if mem_val not in valid:
+        var_name = 'CHPL_{0}_MEM'.format(flag.upper())
+        error("{0}={1} is not supported, must be one of {2}".format(var_name, mem_val, valid))
+        mem_val = 'error'
+
     return mem_val
 
 

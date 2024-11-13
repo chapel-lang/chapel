@@ -76,9 +76,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
-	# We also need to provide paths to system hwloc and jemalloc if they are
+  # We also need to provide paths to system hwloc and jemalloc if they are
   # enabled, since it might not be in default compiler search paths.
-	#
+  #
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
   # so in order to avoid ordering/dependencies just ignore the comm
