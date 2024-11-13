@@ -344,6 +344,9 @@ typedef struct kernel_cfg_s {
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
   void* stream;
+
+  // the pointer to the (device) halt flag, set when halt() is reached.
+  void* halt_flag;
 } kernel_cfg;
 
 static void cfg_init(kernel_cfg* cfg, const char* fn_name,
@@ -633,6 +636,32 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 }
 
+static void cfg_find_halt_flag(kernel_cfg *cfg) {
+  size_t halt_flag_size;
+  chpl_gpu_impl_load_global("chpl_haltFlag", (void**) &cfg->halt_flag,
+                            &halt_flag_size);
+  assert(cfg->halt_flag);
+  assert(halt_flag_size == sizeof(int));
+}
+
+static void cfg_set_halt_flag(kernel_cfg* cfg, int new_flag) {
+  if (!cfg->halt_flag) {
+    cfg_find_halt_flag(cfg);
+  }
+  chpl_gpu_impl_copy_host_to_device(cfg->halt_flag, (void*) &new_flag,
+                                    sizeof(new_flag), cfg->stream);
+}
+
+static int cfg_get_halt_flag(kernel_cfg* cfg) {
+  if (!cfg->halt_flag) {
+    cfg_find_halt_flag(cfg);
+  }
+  int halt_flag = 0;
+  chpl_gpu_impl_copy_device_to_host((void*) &halt_flag, cfg->halt_flag,
+                                    sizeof(halt_flag), cfg->stream);
+  return halt_flag;
+}
+
 void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
                                int n_reduce_vars, int n_host_registered_vars,
@@ -827,6 +856,8 @@ static void launch_kernel(const char* name,
 
   cfg_finalize_priv_table(cfg);
 
+  cfg_set_halt_flag(cfg, 0);
+
   CHPL_GPU_START_TIMER(kernel_time);
 
   CHPL_GPU_DEBUG("Calling impl's launcher %s\n", name);
@@ -835,6 +866,10 @@ static void launch_kernel(const char* name,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               cfg->stream, (void**)(cfg->kernel_params));
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
+
+  if (cfg_get_halt_flag(cfg)) {
+    chpl_internal_error("debug");
+  }
 
   cfg_finalize_reductions(cfg);
 
