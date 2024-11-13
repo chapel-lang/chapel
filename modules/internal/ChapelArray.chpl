@@ -3562,6 +3562,7 @@ module ChapelArray {
     }
 
     try {
+      pragma "loop indices mutable"
       for elt in ir {
 
         // Future: we should generally remove this copy.

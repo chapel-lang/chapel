@@ -9458,11 +9458,14 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
   if (rhsSym->hasFlag(FLAG_INDEX_OF_INTEREST) == true) {
     Type*   rhsType = rhs->typeInfo();
 
-    if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+    if ((lhsSym->hasFlag(FLAG_INDEX_VAR) &&
+         lhsSym->hasFlag(FLAG_LOOP_INDEX_MUTABLE) == false) ||
         // non-zip forall over a standalone iterator
         (lhsSym->hasFlag(FLAG_TEMP) &&
-         rhsSym->hasFlag(FLAG_INDEX_VAR))) {
+         rhsSym->hasFlag(FLAG_INDEX_VAR) &&
+         rhsSym->hasFlag(FLAG_LOOP_INDEX_MUTABLE) == false)) {
 
+      // ... and the loop didn't ask to be kept mutable via pragma
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
       // see also resolveIdxVar() / defaultIntentYieldsConst()
