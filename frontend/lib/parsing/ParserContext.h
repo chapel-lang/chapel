@@ -153,6 +153,9 @@ struct ParserContext {
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
+  // Same as buildAttributeGroup, but resets the state and pushes onto group stack
+  void buildAndPushAttributeGroup(YYLTYPE locationOfDecl);
+
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
@@ -641,7 +644,7 @@ struct ParserContext {
 
   // Given a list of vars, build either a single var or a multi-decl.
   CommentsAndStmt
-  buildVarOrMultiDeclStmt(YYLTYPE locEverything, ParserExprList* vars);
+  buildVarOrMultiDeclStmt(YYLTYPE locEverything, AttributeGroup* attributeGroup, ParserExprList* vars);
 
   TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                 YYLTYPE locName,

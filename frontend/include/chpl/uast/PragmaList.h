@@ -448,6 +448,9 @@ PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", ncm)
 // See ORDER_INDEPENDENT_YIELDING_LOOPS below
 PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent")
 
+PRAGMA(LOOP_INDICES_MUTABLE, ypr, "loop indices mutable", "do not opportunistically mark loop indices as 'const'")
+PRAGMA(LOOP_INDEX_MUTABLE, ypr, "loop index mutable", "do not mark this loop index as 'const'")
+
 // See POD below
 PRAGMA(NOT_POD, ypr, "not plain old data", "bit copy overridden")
 
