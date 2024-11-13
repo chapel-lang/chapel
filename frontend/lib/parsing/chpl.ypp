@@ -1612,7 +1612,16 @@ extern_block_stmt:
   }
 ;
 
-no_loop_attributes: { context->loopAttributes.push_back(nullptr); }
+no_loop_attributes:
+  {
+    // Even though there are no attributes, there could be loop pragmas.
+
+    auto attributeGroup = context->buildAttributeGroup(@$);
+    if (attributeGroup != nullptr) {
+      context->resetAttributeGroupPartsState();
+    }
+    context->loopAttributes.push_back(std::move(attributeGroup));
+  }
 
 loop_stmt:
   attribute_group collect_attributes loop_stmt_base { $$ = $3; }

@@ -477,6 +477,9 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // do nothing on an erroneous statement
     // Clean up the attribute parts.
     resetAttributeGroupPartsState();
+  } else if (cs.stmt && cs.stmt->isLoop()) {
+    // Loop pragmas are captured by the loop's own attribute handling logic.
+    // Not an error, and resetAttributeGroupPartsState() has been invoked.
   } else {
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
