@@ -574,7 +574,7 @@
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt
-%type <attributeGroup> forwarding_decl_start var_decl_start extern_export_kind
+%type <attributeGroup> forwarding_decl_start var_decl_start extern_export_kind_inner
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -1545,7 +1545,11 @@ extern_export_decl_stmt_start:
   }
 ;
 
-extern_export_kind:
+// this is a wrapper around the 'type' intent so that we can build the
+// attribute group. Attribute groups are always built right after the
+// declaration intent (or where it would be) so that they are not accidentally
+// applied to the initialization or type expression instead.
+extern_export_kind_inner:
   TTYPE
   {
     $$ = context->buildAttributeGroup(@$).release();
@@ -1597,7 +1601,7 @@ extern_export_decl_stmt:
     $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
     context->resetDeclState();
   }
-| extern_export_decl_stmt_start opt_expr extern_export_kind
+| extern_export_decl_stmt_start opt_expr extern_export_kind_inner
   {
     context->storeVarDeclLinkageName($2);
     context->noteVarDeclKind(Variable::TYPE);

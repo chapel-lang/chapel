@@ -3,12 +3,12 @@ class C {
 }
 
 record R {
-  var c: owned C?;  // unmanaged works
+  var c: owned C?;
 
   proc init() { }
 
   proc init(val: int) {
-    this.c = new C(val);  // unmanaged works
+    this.c = new C(val);
   }
 }
 
