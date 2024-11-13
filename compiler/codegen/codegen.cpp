@@ -2661,6 +2661,7 @@ static void embedGpuCode() {
 
 static void codegenGpuGlobals() {
   genGlobalInt("chpl_nodeID", -1, false, false);
+  genGlobalInt("chpl_haltFlag", 0, false, false);
   genGlobalVoidPtr("chpl_privateObjects", false, false);
 }
 #endif
