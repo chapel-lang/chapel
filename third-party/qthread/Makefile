@@ -82,6 +82,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
 	ifeq ($(CHPL_MAKE_TARGET_JEMALLOC),system)
 	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|jemalloc
   endif
+	ifeq ($(CHPL_MAKE_TARGET_MIMALLOC),system)
+	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|mimalloc
+	endif
 
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
