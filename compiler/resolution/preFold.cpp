@@ -3124,7 +3124,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
         // And it's not an array (arrays are always yielded by reference)
         // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
         if (!fieldType->symbol->hasFlag(FLAG_ARRAY) &&
-            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES) &&
+            !destSE->symbol()->hasFlag(FLAG_LOOP_INDEX_MUTABLE)) {
           destSE->symbol()->addFlag(FLAG_CONST);
         }
       } else {

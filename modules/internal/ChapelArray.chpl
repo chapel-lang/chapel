@@ -3475,6 +3475,7 @@ module ChapelArray {
 
     if chpl_iteratorFromForExpr(ir) {
       if needsInitWorkaround(result.eltType) {
+        pragma "loop indices mutable"
         for (ri, src) in zip(result.domain, ir) {
           ref r = result[ri];
           pragma "no auto destroy"
@@ -3482,6 +3483,7 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       } else {
+        pragma "loop indices mutable"
         for (r, src) in zip(result, ir) {
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided
@@ -3490,6 +3492,7 @@ module ChapelArray {
       }
     } else if chpl_iteratorFromForeachExpr(ir) {
       if needsInitWorkaround(result.eltType) {
+        pragma "loop indices mutable"
         foreach (ri, src) in zip(result.domain, ir) {
           ref r = result[ri];
           pragma "no auto destroy"
@@ -3497,6 +3500,7 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       } else {
+        pragma "loop indices mutable"
         foreach (r, src) in zip(result, ir) {
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided
@@ -3505,6 +3509,7 @@ module ChapelArray {
       }
     } else {
       if needsInitWorkaround(result.eltType) {
+        pragma "loop indices mutable"
         forall (ri, src) in zip(result.domain, ir) with (ref result) {
           ref r = result[ri];
           pragma "no auto destroy"
@@ -3512,6 +3517,7 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       } else {
+        pragma "loop indices mutable"
         forall (r, src) in zip(result, ir) {
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided
