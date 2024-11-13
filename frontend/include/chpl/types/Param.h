@@ -56,6 +56,9 @@ class Param {
     ComplexDouble(double re, double im)
       : re(re), im(im)
     { }
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return this->re != 0 || this->im != 0;
+    }
     bool operator==(const ComplexDouble& other) const {
       return this->re == other.re && this->im == other.im;
     }
@@ -67,6 +70,9 @@ class Param {
     }
   };
   struct NoneValue {
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return false;
+    }
     bool operator==(const NoneValue& other) const {
       return true;
     }
@@ -84,6 +90,9 @@ class Param {
     EnumValue(ID id, std::string str)
       : id(id), str(str)
     { }
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return true; // TODO: is this correct?
+    }
     bool operator==(const EnumValue& other) const {
       return this->id == other.id && this->str == other.str;
     }
@@ -228,6 +237,11 @@ class Param {
   #undef PARAM_NODE
   #undef PARAM_TO
 
+  // returns 'true' if the param is nonzero / true
+  virtual bool isNonZero() const = 0;
+  // returns 'true' if the param is zero / false
+  virtual bool isZero() const = 0;
+
   static const EnumParam* getEnumParam(Context* context, ID id);
 
   /// \cond DO_NOT_DOCUMENT
@@ -260,6 +274,12 @@ class Param {
     } \
     VALTYPE value() const { \
       return value_; \
+    } \
+    bool isNonZero() const override { \
+      return !!value_; \
+    } \
+    bool isZero() const override { \
+      return !value_; \
     } \
     void serialize(Serializer& ser) const override { \
       Param::serialize(ser); \

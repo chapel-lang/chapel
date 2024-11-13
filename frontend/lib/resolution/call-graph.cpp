@@ -188,6 +188,26 @@ int gatherTransitiveFnsCalledByFn(Context* context,
   return newOrder.index;
 }
 
+int gatherTransitiveFnsForFnId(Context* context,
+                               ID fnId,
+                               CalledFnsSet& called) {
+  const ResolvedFunction* fn = resolveConcreteFunction(context, fnId);
+
+  if (fn != nullptr) {
+    CalledFnOrder order = {0, 0};
+    auto pair = called.insert({fn, order});
+    if (pair.second) {
+      // insertion took place, so increment the index
+      order.index++;
+      // gather the transitive calls
+      order.depth = 1;
+      return 1 + gatherTransitiveFnsCalledByFn(context, fn, order, called);
+    }
+  }
+
+  return 0;
+}
+
 int gatherFnsCalledByModInit(Context* context,
                               ID moduleId,
                               CalledFnsSet& called) {

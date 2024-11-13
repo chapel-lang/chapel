@@ -351,23 +351,50 @@ struct FindMain {
         !fn->isMethod()) {
       mainProcsFound.push_back(fn);
     }
-    return true;
+    // no need to consider nested functions or
+    // modules nested within functions
+    return false;
   }
   void exit(const Function* fn) { }
 
   bool enter(const Module* mod) {
     modulesFound.push_back(mod);
-    return true;
+    return true; // to look for submodules or main functions
   }
   void exit(const Module* mod) { }
 
-  // traverse through anything else
   bool enter(const AstNode* ast) {
-    return true;
+    return false;
   }
   void exit(const AstNode* ast) { }
 };
 
+static const ID& findProcMainInModuleImpl(Context* context, ID modId) {
+  QUERY_BEGIN(findProcMainInModuleImpl, context, modId);
+
+  ID result;
+
+  auto findMain = FindMain(context);
+  if (const AstNode* ast = idToAst(context, modId)) {
+    if (auto mod = ast->toModule()) {
+      mod->traverse(findMain);
+    }
+  }
+
+  if (findMain.mainProcsFound.size() > 0) {
+    result = findMain.mainProcsFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findProcMainInModule(Context* context, ID modId) {
+  if (modId.isEmpty()) {
+    return ID();
+  }
+
+  return findProcMainInModuleImpl(context, modId);
+}
 
 static const ID& findMainModuleImpl(Context* context,
                                     std::vector<ID> commandLineModules,
@@ -1256,6 +1283,36 @@ bool idIsModule(Context* context, ID id) {
   }
   AstTag tag = idToTag(context, id);
   return asttags::isModule(tag);
+}
+
+static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsModuleScopeVarQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isVariable(tag)) {
+    result = true;
+    for (ID p = idToParentId(context, id);
+         !p.isEmpty();
+         p = idToParentId(context, p)) {
+      tag = idToTag(context, p);
+      if (asttags::isModule(tag)) {
+        break; // exit, result is true
+      } else if (asttags::isTupleDecl(tag) || asttags::isMultiDecl(tag)) {
+        // these are OK and still declare a top-level variable
+      } else {
+        result = false;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsModuleScopeVar(Context* context, ID id) {
+  return idIsModuleScopeVarQuery(context, id);
 }
 
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {

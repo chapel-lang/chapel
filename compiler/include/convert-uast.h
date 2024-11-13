@@ -32,6 +32,9 @@
 #include "chpl/uast/Module.h"
 #include "chpl/util/memory.h"
 
+#include <vector>
+#include <unordered_set>
+
 // base class for Converter and TConverter (typed Converter)
 class UastConverter {
  public:
@@ -48,6 +51,11 @@ class UastConverter {
   // This doesn't do anything for the untyped Converter.
   virtual void
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
+
+  virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
+
+  // Indicate which module is the main module
+  virtual void setMainModule(chpl::ID mainModule) = 0;
 
   // This function helps the TConverter to work with an untyped Converter.
   // It informs the untyped Converter about the ModuleSymbol* for the
@@ -66,11 +74,13 @@ class UastConverter {
   // apply fixups to fix SymExprs to refer to Symbols that
   // might have been created in a different order.
   virtual void postConvertApplyFixups() = 0;
+
+  // Generate main functions (for use with TConverter)
+  virtual void createMainFunctions() = 0;
 };
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context);
-
 
 #endif

@@ -432,6 +432,8 @@ static void resolveVarIntent(VarSymbol* sym) {
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (arg->defPoint->sym->hasFlag(FLAG_RESOLVED_EARLY))
+      continue;
     resolveArgIntent(arg);
   }
 

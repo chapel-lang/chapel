@@ -184,6 +184,15 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path);
 const std::vector<ID>& toplevelModulesInFile(Context* context,
                                              UniqueString path);
 
+/** Given a module ID, returns the ID of a 'main' function
+    provided in that module, or the empty ID if none was present.
+
+    If there were multiple 'main' functions in that module, this
+    function returns the first one. Other parts of compilation should
+    produce a compilation error in that case.
+ */
+ID findProcMainInModule(Context* context, ID modId);
+
 /**
   Given the modules from files named on the command line,
   determine which module is the main module, and return it.
@@ -486,6 +495,11 @@ uast::AstTag idToTag(Context* context, ID id);
   Returns true if the ID is a module.
  */
 bool idIsModule(Context* context, ID id);
+
+/**
+  Returns true if the ID is a module-scope variable.
+ */
+bool idIsModuleScopeVar(Context* context, ID id);
 
 /**
  Returns true if the ID is a parenless function.

@@ -249,6 +249,11 @@ class UniqueString final {
     return this->endsWith(suffix.c_str());
   }
 
+  /** allow 'if (myString)' to check for nonempty */
+  explicit operator bool() const {
+    return !isEmpty();
+  }
+
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
   }

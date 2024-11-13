@@ -168,7 +168,8 @@ class QualifiedType final {
   /** Returns true if kind is PARAM */
   bool isParam() const { return kind_ == Kind::PARAM; }
 
-  /** Returns 'true' if storing a BoolParam 'true';
+  /** Returns 'true' if storing a BoolParam 'true'
+      or a numeric param storing nonzero;
       'false' otherwise
    */
   bool isParamTrue() const;

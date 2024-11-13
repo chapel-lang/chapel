@@ -42,7 +42,8 @@ public:
 
   static ModuleSymbol*    mainModule();
 
-  static void             mainModuleNameSet(const ArgumentDescription* desc,
+  static void             setMainModule(ModuleSymbol* mainModule);
+  static void             setMainModuleName(const ArgumentDescription* desc,
                                             const char*                arg);
 private:
   static ModuleSymbol*    findMainModuleByName();

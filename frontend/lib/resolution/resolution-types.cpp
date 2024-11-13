@@ -185,7 +185,37 @@ static UniqueString getCallName(const uast::Call* call) {
   return name;
 }
 
-CallInfo CallInfo::createSimple(const uast::FnCall* call) {
+CallInfo CallInfo::createSimple(UniqueString calledFnName) {
+  return CallInfo(calledFnName,
+                  /* calledType */ types::QualifiedType(),
+                  /* isMethodCall */ false,
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  { });
+}
+
+CallInfo CallInfo::createSimple(UniqueString calledFnName,
+                                QualifiedType arg1type) {
+  return CallInfo(calledFnName,
+                  /* calledType */ types::QualifiedType(),
+                  /* isMethodCall */ false,
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  {CallInfoActual(arg1type)});
+}
+
+CallInfo CallInfo::createSimple(UniqueString calledFnName,
+                                QualifiedType arg1type,
+                                QualifiedType arg2type) {
+  return CallInfo(calledFnName,
+                  /* calledType */ types::QualifiedType(),
+                  /* isMethodCall */ false,
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  {CallInfoActual(arg1type), CallInfoActual(arg2type)});
+}
+
+CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
   QualifiedType calledType;

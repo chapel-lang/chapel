@@ -176,6 +176,8 @@ DefExpr*  buildClassDefExpr(const char*               name,
                             Flag                      isExtern,
                             ModTag                    modTag);
 
+AggregateType* installInternalType(AggregateType* ct, AggregateType* dt);
+
 void setupTypeIntentArg(ArgSymbol* arg);
 
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);

@@ -30,22 +30,14 @@ namespace types {
 
 bool QualifiedType::isParamTrue() const {
   if (kind_ == Kind::PARAM && param_ != nullptr) {
-    if (auto bp = param_->toBoolParam()) {
-      if (bp->value() == true) {
-        return true;
-      }
-    }
+    return param_->isNonZero();
   }
 
   return false;
 }
 bool QualifiedType::isParamFalse() const {
   if (kind_ == Kind::PARAM && param_ != nullptr) {
-    if (auto bp = param_->toBoolParam()) {
-      if (bp->value() == false) {
-        return true;
-      }
-    }
+    return param_->isZero();
   }
 
   return false;

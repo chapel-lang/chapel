@@ -59,6 +59,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
@@ -166,6 +167,9 @@ struct TConverter final : UastConverter {
   // which functions to convert with types
   CalledFnsSet functionsToConvertWithTypes;
 
+  // the main module
+  ID mainModuleId;
+
   // keeps track of which block/formals list/actuals list we are currently
   // in the process of creating
   //
@@ -182,6 +186,7 @@ struct TConverter final : UastConverter {
 
   // this one handles functions in a way that allows for instantiation
   std::unordered_map<const ResolvedFunction*, FnSymbol*> fns;
+  std::unordered_map<const ResolvedFunction*, FnSymbol*> newWrappers;
 
   // fixup lists
   std::vector<std::pair<SymExpr*, ID>> identFixups;
@@ -237,8 +242,17 @@ struct TConverter final : UastConverter {
              (int)calledFns.size());
 
     functionsToConvertWithTypes = calledFns;
-    // also tell the untyped converter about them so it can ignore them!
-    untypedConverter->setFunctionsToConvertWithTypes(calledFns);
+  }
+
+  void setSymbolsToIgnore(std::unordered_set<ID> ignore) override {
+    INT_FATAL("TConverter::setSymbolsToIgnore not implemented");
+  }
+
+  void setMainModule(ID mainModule) override {
+    if (trace)
+      printf("in setMainModule with %s\n", mainModule.str().c_str());
+
+    mainModuleId = mainModule;
   }
 
   void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
@@ -256,16 +270,13 @@ struct TConverter final : UastConverter {
     return convertExpr(node, rv);
   }
 
+  ModuleSymbol* convertModule(const Module* mod);
+
   ModuleSymbol* convertToplevelModule(const Module* mod,
                                       ModTag modTag) override;
 
-  ModuleSymbol* convertModule(const Module* mod);
-
-
   void postConvertApplyFixups() override;
 
-
-  // main entry points for converting
   void setupModulesToConvert();
   void convertFunctionsToConvert();
 
@@ -274,46 +285,70 @@ struct TConverter final : UastConverter {
 
   void convertModuleInit(const Module* mod, ModuleSymbol* modSym);
   void convertFunction(const ResolvedFunction* r);
+  FnSymbol* findOrConvertFunction(const ResolvedFunction* r);
+  void convertNewWrapper(const ResolvedFunction* rInitFn);
+  FnSymbol* findOrConvertNewWrapper(const ResolvedFunction* initFn);
+
+  FnSymbol* convertFunctionForGeneratedCall(resolution::CallInfo ci,
+                                            const uast::AstNode* inAst);
+  void createMainFunctions() override;
+
+  ArgSymbol* findOrCreateFormal(const Formal* node);
+  VarSymbol* findOrCreateVar(const Variable* node);
+  Symbol* findConvertedSym(const ID& id);
+  Symbol* findOrCreateSym(const ID& id);
+
+  AggregateType* findOrCreateClass(const types::BasicClassType* bct);
+  AggregateType* findOrCreateRecord(const types::RecordType* rt);
+  AggregateType* findOrCreateUnion(const types::UnionType* ut);
+  Type* findConvertedType(const types::Type* t);
+  Type* findOrCreateType(const types::Type* t);
+  // convertType is the main entry point for these
+  //  * checks if it was already converted, returning the saved result
+  //  * updates the map of converted types in a way that allows
+  //    for recursive types
+  Type* convertType(const types::Type* t);
+
+  //Symbol* findConvertedFn(const ResolvedFunction* rfn);
+  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
 
   // type conversion helpers
+  // note: these do not check if the type has already been converted;
+  // or update the 'convertedTypes' map; that happens in convertType.
   Type* helpConvertType(const types::Type* t);
-  Type* convertClassType(const types::ClassType* t);
-  Type* convertPtrType(const types::PtrType* t);
-  Type* convertEnumType(const types::EnumType* t);
-  Type* convertExternType(const types::ExternType* t);
-  Type* convertFunctionType(const types::FunctionType* t);
-  Type* convertBasicClassType(const types::BasicClassType* t);
-  Type* convertRecordType(const types::RecordType* t);
-  Type* convertTupleType(const types::TupleType* t);
-  Type* convertUnionType(const types::UnionType* t);
-  Type* convertBoolType(const types::BoolType* t);
-  Type* convertComplexType(const types::ComplexType* t);
-  Type* convertImagType(const types::ImagType* t);
-  Type* convertIntType(const types::IntType* t);
-  Type* convertRealType(const types::RealType* t);
-  Type* convertUintType(const types::UintType* t);
+  Type* helpConvertClassType(const types::ClassType* t);
+  Type* helpConvertPtrType(const types::PtrType* t);
+  Type* helpConvertEnumType(const types::EnumType* t);
+  Type* helpConvertExternType(const types::ExternType* t);
+  Type* helpConvertFunctionType(const types::FunctionType* t);
+  void helpConvertFields(const types::CompositeType* ct,
+                         const ResolvedFields& rf,
+                         AggregateType* at);
+  Type* helpConvertBasicClassType(const types::BasicClassType* t);
+  Type* helpConvertRecordType(const types::RecordType* t);
+  Type* helpConvertUnionType(const types::UnionType* t);
+  Type* helpConvertTupleType(const types::TupleType* t);
+  Type* helpConvertBoolType(const types::BoolType* t);
+  Type* helpConvertComplexType(const types::ComplexType* t);
+  Type* helpConvertImagType(const types::ImagType* t);
+  Type* helpConvertIntType(const types::IntType* t);
+  Type* helpConvertRealType(const types::RealType* t);
+  Type* helpConvertUintType(const types::UintType* t);
 
-  // general functions for converting types/params
-  Type* convertType(const types::Type* t);
+  Expr* defaultValueForType(const types::Type* t);
+  // if 'e' is a SymExpr, return that.
+  // Otherwise, append a DefExpr & PRIM_MOVE to curAList and returns a SymExpr.
+  SymExpr* storeInTempIfNeeded(Expr* e);
+
   Symbol* convertParam(types::QualifiedType qt);
 
   // aListStack helpers
   void pushAList(AList* lst, Expr* expr) {
-    if (trace) {
-      printf("push ");
-      nprint_view(expr);
-      printf("\n");
-    }
     aListStack.push_back({lst, expr});
     curAList = lst;
   }
   Expr* popAList() {
     CHPL_ASSERT(aListStack.size() > 0);
-    if (trace) {
-      printf("pop ");
-      nprint_view(aListStack.back().second);
-      printf("\n");
-    }
 
     Expr* ret = nullptr;
     ret = aListStack.back().second;
@@ -354,20 +389,6 @@ struct TConverter final : UastConverter {
     popAList();
   }
 
-  // methods to help track what has been converted & handle fixups
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
-  void noteIdentFixupNeeded(SymExpr* se, ID id);
-  void noteCallFixupNeeded(SymExpr* se, const ResolvedFunction* r);
-  void noteTypeFixupNeeded(Symbol* sym);
-  void noteAllContainedFixups(BaseAST* ast, int depth);
-  Symbol* findConvertedSym(const ID& id);
-  Symbol* findConvertedFn(const ResolvedFunction* rfn);
-
-  // helper methods
-  bool shouldConvertWithoutTypes(const ResolvedFunction* r) {
-    return functionsToConvertWithTypes.count(r) == 0;
-  }
-
   // helpers
   bool typeExistsAtRuntime(const types::Type* t);
   bool functionExistsAtRuntime(const ResolvedFunction* r);
@@ -385,7 +406,18 @@ struct TConverter final : UastConverter {
                              bool useLinkageName,
                              MultiDeclState* multiState = nullptr);
   void simplifyEpilogue(FnSymbol* fn);
+  ::Qualifier convertQualifier(types::QualifiedType::Kind kind);
+  IntentTag convertFormalIntentQt(types::QualifiedType::Kind kind);
   void setVariableType(const uast::VarLikeDecl* v, Symbol* sym, RV& rv);
+  void convertActuals(CallExpr* c,
+                      const Call* node,
+                      const resolution::ResolvedExpression* re,
+                      RV& rv);
+  void handlePostCallActions(CallExpr* c,
+                             const Call* node,
+                             const resolution::ResolvedExpression* re,
+                             RV& rv);
+
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -417,7 +449,6 @@ struct TConverter final : UastConverter {
   //Expr* convertRegularBinaryOrUnaryOp(const OpCall* node,
   //                                    const char* name=nullptr);
   //BlockStmt* convertTupleDeclComponents(const TupleDecl* node);
-  //FnSymbol* convertFunction(const Function* node);
   //FnSymbol* convertFunctionSignature(const FunctionSignature* node);
   //CallExpr* convertArrayType(const BracketLoop* node);
   //DefExpr* convertEnumElement(const EnumElement* node);
@@ -455,6 +486,8 @@ struct TConverter final : UastConverter {
   void exit(const ErroneousExpression* ast, RV& rv) { }
   bool enter(const EmptyStmt* ast, RV& rv) { return false; }
   void exit(const EmptyStmt* ast, RV& rv) { }
+  bool enter(const Formal* ast, RV& rv) { return false; }
+  void exit(const Formal* ast, RV& rv) { }
 
   // traversal cases to do something
   bool enter(const Module* node, RV& rv);
@@ -462,9 +495,6 @@ struct TConverter final : UastConverter {
 
   bool enter(const Function* node, RV& rv);
   void exit(const Function* node, RV& rv);
-
-  bool enter(const Formal* node, RV& rv);
-  void exit(const Formal* node, RV& rv);
 
   bool enter(const Variable* node, RV& rv);
   void exit(const Variable* node, RV& rv);
@@ -481,6 +511,9 @@ struct TConverter final : UastConverter {
   bool enter(const Call* node, RV& rv);
   void exit(const Call* node, RV& rv);
 
+  bool enter(const Conditional* node, RV& rv);
+  void exit(const Conditional* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -493,31 +526,16 @@ Expr* TConverter::convertAST(const AstNode* node) {
 }
 
 Expr* TConverter::convertExpr(const AstNode* node, RV& rv) {
+  astlocMarker markAstLoc(node->id());
+
   // traverse to add it to curAList
   node->traverse(rv);
+
+  CHPL_ASSERT(!curAList->empty());
 
   // remove the last thing from the current AList and return that
   return curAList->last()->remove();
 }
-
-ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
-                                                ModTag modTag) {
-  if (!haveSetupModules) {
-    // create empty modules so we have somewhere to put the functions!
-    setupModulesToConvert();
-    haveSetupModules = true;
-  }
-
-  if (!haveConvertedFunctions) {
-    // convert the functions!
-    convertFunctionsToConvert();
-    haveConvertedFunctions = true;
-  }
-
-  topLevelModTag = modTag;
-  return convertModule(mod);
-}
-
 
 ModuleSymbol* TConverter::convertModule(const Module* mod) {
   astlocMarker markAstLoc(mod->id());
@@ -544,6 +562,24 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
   submodulesEncountered.clear();
 
   return modSym;
+}
+
+ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
+                                                ModTag modTag) {
+  if (!haveSetupModules) {
+    // create empty modules so we have somewhere to put the functions!
+    setupModulesToConvert();
+    haveSetupModules = true;
+  }
+
+  if (!haveConvertedFunctions) {
+    // convert the functions!
+    convertFunctionsToConvert();
+    haveConvertedFunctions = true;
+  }
+
+  topLevelModTag = modTag;
+  return convertModule(mod);
 }
 
 void TConverter::postConvertApplyFixups() {
@@ -598,6 +634,21 @@ void TConverter::convertFunctionsToConvert() {
   for (auto pair : v) {
     convertFunction(pair.first);
   }
+
+  // convert also main and create chpl_gen_main
+  createMainFunctions();
+
+  // tell the untyped converter about which functions to ignore
+  // this is whatever functions we have converted already here
+  std::unordered_set<ID> ignore;
+  for (auto pair: fns) {
+    const ResolvedFunction* fn = pair.first;
+    ignore.insert(fn->id());
+  }
+  for (auto pair: globalSyms) {
+    ignore.insert(pair.first);
+  }
+  untypedConverter->setSymbolsToIgnore(ignore);
 }
 
 ModuleSymbol* TConverter::setupModule(ID modId) {
@@ -676,18 +727,35 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
 
   modSym->initFn->addFlag(FLAG_MODULE_INIT);
   modSym->initFn->addFlag(FLAG_RESOLVED);
+  modSym->initFn->addFlag(FLAG_RESOLVED_EARLY);
   modSym->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  modSym->initFn->setNormalized(true);
 
   // add the init function to the module
   modSym->block->insertAtHead(new DefExpr(modSym->initFn));
 
+
+  // If the module has the EXPORT_INIT flag then
+  // propagate it to the module's init function
+  if (modSym->hasFlag(FLAG_EXPORT_INIT) ||
+      (fLibraryCompile && modSym->modTag == MOD_USER)) {
+    modSym->initFn->addFlag(FLAG_EXPORT);
+    modSym->initFn->addFlag(FLAG_LOCAL_ARGS);
+  }
+
   // TODO: handle module deinit functions
+  // TODO: call module init functions for other modules
+
 
   // convert module-level statements into module's init function
 
   // prepare to traverse
   ID id = mod->id();
   const ResolutionResultByPostorderID& resolved = resolveModule(context, id);
+
+  // don't actually convert for --dyno-resolve-only
+  if (fDynoResolveOnly) return;
+
   pushBlock(modSym->initFn->body);
   symbol = mod;
   curFnSymbol = modSym->initFn;
@@ -708,9 +776,6 @@ void TConverter::convertModuleInit(const Module* mod, ModuleSymbol* modSym) {
   curFnSymbol = nullptr;
   curModuleSymbol = nullptr;
   popBlock();
-
-  // record any fixups that need to be handled
-  noteAllContainedFixups(modSym->initFn, 0);
 }
 
 void TConverter::convertFunction(const ResolvedFunction* r) {
@@ -718,6 +783,9 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   if (!functionExistsAtRuntime(r)) {
     return;
   }
+
+  // don't actually convert for --dyno-resolve-only
+  if (fDynoResolveOnly) return;
 
   if (trace)
     printf("Converting function %s\n", r->id().str().c_str());
@@ -750,9 +818,6 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   ResolvedVisitor<TConverter> rv(&rcval, symbol, *this, resolved);
   symbol->traverse(rv); // note: this will set curSymbol
 
-  // record any fixups that need to be handled
-  noteAllContainedFixups(curFnSymbol, 0);
-
   // tidy up after traversal
   symbol = nullptr;
   curFnSymbol = nullptr;
@@ -760,8 +825,586 @@ void TConverter::convertFunction(const ResolvedFunction* r) {
   currentResolvedFunction = nullptr;
   popBlock();
   localSyms.clear();
-
 }
+
+FnSymbol* TConverter::findOrConvertFunction(const ResolvedFunction* r) {
+  // if it was already converted, return that
+  auto it = fns.find(r);
+  if (it != fns.end()) {
+    return it->second;
+  }
+
+  // otherwise, convert the function
+
+  // save state
+  // this needs to happen when looking for a function called by
+  // some code that wasn't necessarily planned for in the call graph
+  // e.g. _cond_test
+  auto saveSymbol = symbol;
+  auto saveCurFnSymbol = curFnSymbol;
+  auto saveCurModuleSymbol = curModuleSymbol;
+  auto saveCurRetVar = curRetVar;
+  auto saveEpilogueLabel = epilogueLabel;
+  auto saveCurrentResolvedFunction = currentResolvedFunction;
+
+  // convert the function and return the result
+  convertFunction(r);
+  FnSymbol* ret = fns[r];
+  INT_ASSERT(ret);
+
+  // restore state
+  symbol = saveSymbol;
+  curFnSymbol = saveCurFnSymbol;
+  curModuleSymbol = saveCurModuleSymbol;
+  curRetVar = saveCurRetVar;
+  epilogueLabel = saveEpilogueLabel;
+  currentResolvedFunction = saveCurrentResolvedFunction;
+
+  return ret;
+}
+
+void TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
+  // don't bother with functions that don't need to exist at runtime
+  if (!functionExistsAtRuntime(rInitFn)) {
+    return;
+  }
+
+  if (trace)
+    printf("Converting _new wrapper for %s\n", rInitFn->id().str().c_str());
+
+  // compute the containing Module and ModuleSymbol
+  const Module* inModule = nullptr;
+  ModuleSymbol* modSym = nullptr;
+  {
+    ID inModuleId = parsing::idToParentModule(context, rInitFn->id());
+    if (const AstNode* inAst = parsing::idToAst(context, inModuleId)) {
+      inModule = inAst->toModule();
+    }
+    INT_ASSERT(inModule);
+    modSym = findOrSetupModule(inModuleId);
+    INT_ASSERT(modSym);
+  }
+
+  // find or convert the init function
+  FnSymbol* initFn = findOrConvertFunction(rInitFn);
+  AggregateType* type = toAggregateType(initFn->_this->getValType());
+
+  if (initFn->throwsError()) {
+    // code below will need adjustment for this case
+    CHPL_UNIMPL("_new that throws");
+  }
+
+  // build the new wrapper. this code is based upon buildNewWrapper.
+  FnSymbol* fn = new FnSymbol(astrNew);
+
+  BlockStmt* body = fn->body;
+  VarSymbol* initTemp = newTemp("initTemp", type);
+  CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
+  VarSymbol* retVar = newTemp("ret", type);
+  retVar->addFlag(FLAG_RVV);
+
+  fn->addFlag(FLAG_NEW_WRAPPER);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+  fn->addFlag(FLAG_LLVM_RETURN_NOALIAS);
+
+  if (initFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+  }
+  fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_RESOLVED_EARLY);
+  fn->setNormalized(true);
+
+  // Add the _new function just after the relevant initFn
+  initFn->defPoint->insertAfter(new DefExpr(fn));
+
+  // set up the formals and init call based on the init function
+  SymbolMap initToNewMap;
+  for_formals(formal, initFn) {
+    if (formal != initFn->_this && formal->type != dtMethodToken) {
+      ArgSymbol* newArg = formal->copy();
+      initToNewMap.put(formal, newArg);
+      fn->insertFormalAtTail(newArg);
+      innerInit->insertAtTail(new SymExpr(newArg));
+    }
+  }
+  update_symbols(fn, &initToNewMap);
+
+  body->insertAtTail(new DefExpr(initTemp));
+
+  // compute the size and md
+  VarSymbol* size = newTemp("size", dtInt[INT_SIZE_64]);
+  body->insertAtTail(new DefExpr(size));
+  CallExpr* sizeofCall = new CallExpr(PRIM_SIZEOF_BUNDLE, type->symbol);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, size, sizeofCall));
+  VarSymbol* md = newMemDesc(type); // int(16)
+
+  // allocate and cast
+  auto sizeQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                     types::IntType::get(context, 64));
+  auto mdQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                   types::IntType::get(context, 16));
+  auto ci = resolution::CallInfo(UniqueString::get(context, "chpl_here_alloc"),
+                                 /* calledType */ types::QualifiedType(),
+                                 /* isMethodCall */ false,
+                                 /* hasQuestionArg */ false,
+                                 /* isParenless */ false,
+                                 {CallInfoActual(sizeQt),
+                                  CallInfoActual(mdQt)});
+  FnSymbol* allocateFn = convertFunctionForGeneratedCall(ci, inModule);
+
+  VarSymbol* castTmp = newTemp("cast_tmp", dtCVoidPtr);
+  body->insertAtTail(new DefExpr(castTmp));
+  CallExpr* allocateCall = new CallExpr(allocateFn, size, md);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, castTmp, allocateCall));
+  CallExpr* castCall = new CallExpr(PRIM_CAST, type, castTmp);
+  body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, castCall));
+
+  // run the initializer on the allocated class
+  body->insertAtTail(innerInit);
+
+  // return initTemp
+  body->insertAtTail(new CallExpr(PRIM_MOVE, retVar, initTemp));
+  body->insertAtTail(new CallExpr(PRIM_RETURN, retVar));
+
+  printf("Generated _new\n");
+  nprint_view(fn);
+}
+
+FnSymbol* TConverter::findOrConvertNewWrapper(const ResolvedFunction* rInitFn) {
+  // if it was already converted, return that
+  auto it = newWrappers.find(rInitFn);
+  if (it != newWrappers.end()) {
+    return it->second;
+  }
+
+  // otherwise, convert the function now
+  convertNewWrapper(rInitFn);
+  FnSymbol* ret = newWrappers[rInitFn];
+  INT_ASSERT(ret);
+  return ret;
+}
+
+
+// This runs the resolver to figure out which function to call &
+// converts that function.
+// It does not convert the call itself.
+// It works as though the generated call were in the module initializer.
+FnSymbol* TConverter::convertFunctionForGeneratedCall(resolution::CallInfo ci,
+                                                      const uast::AstNode* in)
+{
+  auto scope = scopeForId(context, in->id());
+  const PoiScope* poiScope = nullptr;
+  auto scopeInfo = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto r = resolveGeneratedCall(context, in, ci, scopeInfo);
+  const auto& candidate = r.mostSpecific().only();
+  const TypedFnSignature* sig = candidate.fn();
+  INT_ASSERT(sig);
+  INT_ASSERT(sig->untyped()->idIsFunction());
+
+  chpl::resolution::ResolutionContext rcval(context);
+  const ResolvedFunction* resolvedFn = resolveFunction(&rcval, sig, poiScope);
+  INT_ASSERT(resolvedFn);
+
+  return findOrConvertFunction(resolvedFn);
+}
+
+void TConverter::createMainFunctions() {
+  const AstNode* ast = parsing::idToAst(context, mainModuleId);
+  INT_ASSERT(ast);
+  const Module* mainMod = ast->toModule();
+  INT_ASSERT(mainMod);
+  ModuleSymbol* mainModule = findOrSetupModule(mainModuleId);
+  INT_ASSERT(mainModule);
+  SET_LINENO(mainModule);
+
+  // if 'proc main' was not provided, generate an empty 'proc main'.
+  //
+  // (if there was a main function there, we would have already converted it,
+  //  since it needed to be included in the call graph).
+  ID mainFnId = parsing::findProcMainInModule(context, mainModuleId);
+  FnSymbol* mainFn = nullptr;
+  if (mainFnId.isEmpty()) {
+    // there wasn't a 'proc main' so we need to generate one.
+    mainFn = new FnSymbol("main");
+    mainFn->addFlag(FLAG_RESOLVED);
+    mainFn->addFlag(FLAG_RESOLVED_EARLY);
+    mainFn->setNormalized(true);
+    mainFn->retType = dtVoid;
+    mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    mainModule->block->insertAtTail(new DefExpr(mainFn));
+  } else {
+    // otherwise, we should have already converted 'proc main'
+    // (since it was added to the call graph). Get the converted version.
+    const ResolvedFunction* resolvedMain =
+      resolveConcreteFunction(context, mainFnId);
+    mainFn = toFnSymbol(fns[resolvedMain]);
+    INT_ASSERT(mainFn);
+  }
+
+  // set the main module global var for later phases of compilation
+  // and also the chplUserMain global.
+  ModuleSymbol::setMainModule(mainModule);
+  chplUserMain = mainFn;
+
+  // adjust cname for 'proc main'
+  chplUserMain->cname = astr("chpl_user_main");
+  if (fIdBasedMunging && !mainModule->astloc.id().isEmpty()) {
+    const char* cname = astr(mainModule->astloc.id().symbolPath().c_str(),
+                             ".main");
+    chplUserMain->cname = cname;
+  }
+
+  // generate chpl_gen_main
+  // TODO: expand this after we have 'class C' and 'record R' converting
+#if 0
+  bool mainReturnsSomething = mainFn->retType != dtVoid;
+
+  //
+  // chpl_gen_main is the entry point for the compiler-generated code.
+  // It invokes the user's code.
+  //
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
+
+  chpl_gen_main          = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->retType = dtInt[INT_SIZE_64];
+  chpl_gen_main->cname   = astr("chpl_gen_main");
+
+  chpl_gen_main->insertFormalAtTail(arg);
+
+  chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
+  chpl_gen_main->addFlag(FLAG_LOCAL_ARGS);
+  chpl_gen_main->addFlag(FLAG_COMPILER_GENERATED);
+  chpl_gen_main->addFlag(FLAG_GEN_MAIN_FUNC);
+
+  mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+
+  VarSymbol* main_ret = newTemp("ret", dtInt[INT_SIZE_64]);
+  main_ret->addFlag(FLAG_RVV);
+  VarSymbol* endCount = NULL;
+
+  chpl_gen_main->insertAtTail(new DefExpr(main_ret));
+
+  //
+  // In --minimal-modules compilation mode, we won't have any
+  // parallelism, so no need for end counts (or atomic/sync types to
+  // support them).
+  //
+  if (fMinimalModules == false) {
+    // figure out _endCountAlloc
+
+    // TODO: add converter or QualifiedType methods to more
+    // easily construct a QualifiedType for common values like param false.
+    auto falseQt = types::QualifiedType(types::QualifiedType::PARAM,
+                                        types::BoolType::get(context),
+                                        types::BoolParam::get(context, false));
+    auto ci = resolution::CallInfo(UniqueString::get(context, "_endCountAlloc"),
+                                   /* calledType */ types::QualifiedType(),
+                                   /* isMethodCall */ false,
+                                   /* hasQuestionArg */ false,
+                                   /* isParenless */ false,
+                                   {CallInfoActual(falseQt)});
+    FnSymbol* endCountAlloc = convertFunctionForGeneratedCall(ci, mainMod);
+
+    endCount = newTemp("_endCount");
+
+    chpl_gen_main->insertAtTail(new DefExpr(endCount));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             endCount,
+                                             new CallExpr(endCountAlloc)));
+
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_preUserCodeHook"));
+
+  // We have to initialize the main module explicitly.
+  // It will initialize all the modules it uses, recursively.
+  if (!fMultiLocaleInterop) {
+    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+    // also init other modules mentioned on command line
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+          mod != mainModule) {
+        chpl_gen_main->insertAtTail(new CallExpr(mod->initFn));
+      }
+    }
+
+  } else {
+    // Create an extern definition for the multilocale library server's main
+    // function.  chpl_gen_main needs to call it in the course of its run, so
+    // that we correctly set up the runtime.
+    FnSymbol* chpl_mli_smain = new FnSymbol("chpl_mli_smain");
+    chpl_mli_smain->addFlag(FLAG_EXTERN);
+    chpl_mli_smain->addFlag(FLAG_LOCAL_ARGS);
+    // Takes the connection information
+    ArgSymbol* setup_conn = new ArgSymbol(INTENT_BLANK, "setup_conn",
+                                          dtStringC);
+    chpl_mli_smain->insertFormalAtTail(setup_conn);
+
+    mainModule->block->insertAtTail(new DefExpr(chpl_mli_smain));
+
+    VarSymbol* connection = newTemp("setup_conn");
+    chpl_gen_main->insertAtTail(new DefExpr(connection));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, connection,
+                                             new CallExpr("chpl_get_mli_connection",
+                                                          arg)));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_mli_smain", connection));
+    //normalize(chpl_mli_smain);
+  }
+
+  bool main_ret_set = false;
+
+  if (!fLibraryCompile && !fDynoGenStdLib) {
+    SET_LINENO(chpl_gen_main);
+
+    if (mainHasArgs == true) {
+      VarSymbol* converted_args = newTemp("_main_args");
+
+      converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+      chpl_gen_main->insertAtTail(new DefExpr(converted_args));
+      chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                               converted_args,
+                                               new CallExpr("chpl_convert_args", arg)));
+
+      if (mainReturnsSomething) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                 main_ret,
+                                                 new CallExpr("main", converted_args)));
+        main_ret_set = true;
+
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main", converted_args));
+      }
+
+    } else {
+      if (mainReturnsSomething) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                 main_ret,
+                                                 new CallExpr("main")));
+        main_ret_set = true;
+
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main"));
+      }
+    }
+  }
+
+  if (!main_ret_set) {
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             main_ret,
+                                             new_IntSymbol(0, INT_SIZE_64)));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_rt_postUserCodeHook"));
+
+  //
+  // In --minimal-modules compilation mode, we won't be waiting on an
+  // endcount (see comment above)
+  //
+  if (fMinimalModules == false) {
+    chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount", endCount));
+    chpl_gen_main->insertAtTail(new CallExpr("chpl_deinitModules"));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
+#endif
+}
+
+// Finds or creates a Formal
+// The ArgSymbol is created on first request here, and filled in
+// and the DefExpr created wherever it should be defined.
+ArgSymbol* TConverter::findOrCreateFormal(const Formal* node) {
+  auto it = localSyms.find(node->id());
+  if (it != localSyms.end()) {
+    return toArgSymbol(it->second);
+  }
+
+  IntentTag intentTag = convertFormalIntent(node->intent());
+  astlocMarker markAstLoc(node->id());
+
+  ArgSymbol* ret = new ArgSymbol(intentTag, astr(node->name()),
+                                 /* typeExpr */ nullptr,
+                                 /* initExpr */ nullptr,
+                                 /* varargsVariable */ nullptr);
+  localSyms[node->id()] = ret;
+  return ret;
+}
+
+// Finds or creates a Variable
+// The VarSymbol is created here on first request, and filled in
+// and the DefExpr created wherever it should be defined.
+VarSymbol* TConverter::findOrCreateVar(const Variable* node) {
+  if (Symbol* sym = findConvertedSym(node->id())) {
+    return toVarSymbol(sym);
+  }
+
+  // otherwise, create something
+  // we need to decide if it should be a module-scope var or not
+  // in order to update the appropriate map.
+  bool isModuleScope = parsing::idIsModuleScopeVar(context, node->id());
+
+  astlocMarker markAstLoc(node->id());
+  VarSymbol* ret = new VarSymbol(astr(node->name()));
+  if (isModuleScope) {
+    globalSyms[node->id()] = ret;
+  } else {
+    localSyms[node->id()] = ret;
+  }
+
+  return ret;
+}
+
+// Looks for an already-converted Symbol. If none found, returns nullptr.
+Symbol* TConverter::findConvertedSym(const ID& id) {
+  { // check for local variables with that ID
+    auto it = localSyms.find(id);
+    if (it != localSyms.end()) {
+      return it->second;
+    }
+  }
+  { // check for global symbols with that ID
+    auto it = globalSyms.find(id);
+    if (it != globalSyms.end()) {
+      return it->second;
+    }
+  }
+
+  return nullptr;
+}
+
+Symbol* TConverter::findOrCreateSym(const ID& id) {
+  Symbol* ret = findConvertedSym(id);
+  if (ret != nullptr) {
+    return ret;
+  }
+
+  // otherwise, convert it according to what it is
+  const AstNode* ast = parsing::idToAst(context, id);
+  // TODO: convert this to a visitor if there end up being a lot of cases
+  if (auto formal = ast->toFormal()) {
+    return findOrCreateFormal(formal);
+  } else if (auto var = ast->toVariable()) {
+    return findOrCreateVar(var);
+  }
+
+  CHPL_UNIMPL("unhandled case in findOrCreateSym");
+  return nullptr;
+}
+
+void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
+  if (currentResolvedFunction == nullptr) {
+    globalSyms[ast->id()] = sym;
+  } else {
+    localSyms[ast->id()] = sym;
+  }
+}
+
+Type* TConverter::findConvertedType(const types::Type* t) {
+  auto it = convertedTypes.find(t);
+  if (it != convertedTypes.end()) {
+    return it->second;
+  }
+
+  return nullptr;
+}
+
+AggregateType*
+TConverter::findOrCreateClass(const types::BasicClassType* bct) {
+  AggregateType* ret = toAggregateType(findConvertedType(bct));
+  if (ret != nullptr) {
+    return ret;
+  }
+
+  if (AggregateType* dt = shouldWireWellKnownType(bct->name().c_str())) {
+    return dt;
+  }
+
+  ret = new AggregateType(AGGREGATE_CLASS);
+  convertedTypes[bct] = ret;
+  return ret;
+}
+
+AggregateType*
+TConverter::findOrCreateRecord(const types::RecordType* rt) {
+  AggregateType* ret = toAggregateType(findConvertedType(rt));
+  if (ret != nullptr) {
+    return ret;
+  }
+
+  if (AggregateType* dt = shouldWireWellKnownType(rt->name().c_str())) {
+    return dt;
+  }
+
+  ret = new AggregateType(AGGREGATE_RECORD);
+  convertedTypes[rt] = ret;
+  return ret;
+}
+
+AggregateType*
+TConverter::findOrCreateUnion(const types::UnionType* ut) {
+  AggregateType* ret = toAggregateType(findConvertedType(ut));
+  if (ret != nullptr) {
+    return ret;
+  }
+
+  ret = new AggregateType(AGGREGATE_UNION);
+  convertedTypes[ut] = ret;
+  return ret;
+}
+
+// Creates a type but if it's an AggregateType doesn't try to fill
+// in the fields. That will be done later on convertType for that type.
+// This strategy allows for recursion.
+Type* TConverter::findOrCreateType(const types::Type* t) {
+  Type* ret = findConvertedType(t);
+  if (ret != nullptr) {
+    return ret;
+  }
+
+  if (auto bct = t->toBasicClassType()) {
+    return findOrCreateClass(bct);
+  } else if (auto rt = t->toRecordType()) {
+    return findOrCreateRecord(rt);
+  } else if (auto ut = t->toUnionType()) {
+    return findOrCreateUnion(ut);
+  }
+
+  // assumption: all recursion will be through the cases handled above
+
+  ret = helpConvertType(t);
+  convertedTypes[t] = ret;
+  return ret;
+}
+
+// Converts a type. If it's an AggregateType, it will also fill in the
+// fields, but only after creating a dummy AggregateType for the map
+// that can be used in the case of recursive data structures.
+Type* TConverter::convertType(const types::Type* t) {
+  if (t == nullptr)
+    return dtUnknown;
+
+  // reuse one from the map if we have already converted it
+  {
+    auto it = convertedTypes.find(t);
+    if (it != convertedTypes.end()) {
+      return it->second;
+    }
+  }
+
+  // convert the type
+  Type* ret = helpConvertType(t);
+
+  // save the result to the map
+  convertedTypes[t] = ret;
+
+  return ret;
+}
+
 
 Type* TConverter::helpConvertType(const types::Type* t) {
   using namespace types;
@@ -812,10 +1455,10 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::AnyUninstantiatedType:        return dtUninstantiated;
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
     // declared types
-    case typetags::ClassType:   return convertClassType(t->toClassType());
-    case typetags::EnumType:    return convertEnumType(t->toEnumType());
-    case typetags::ExternType:  return convertExternType(t->toExternType());
-    case typetags::FunctionType:return convertFunctionType(t->toFunctionType());
+    case typetags::ClassType:   return helpConvertClassType(t->toClassType());
+    case typetags::EnumType:    return helpConvertEnumType(t->toEnumType());
+    case typetags::ExternType:  return helpConvertExternType(t->toExternType());
+    case typetags::FunctionType:return helpConvertFunctionType(t->toFunctionType());
 
     case typetags::ArrayType:
        CHPL_UNIMPL("convert array type");
@@ -825,22 +1468,22 @@ Type* TConverter::helpConvertType(const types::Type* t) {
       return dtUnknown; // TODO
 
     case typetags::BasicClassType:
-      return convertBasicClassType(t->toBasicClassType());
+      return helpConvertBasicClassType(t->toBasicClassType());
 
     case typetags::AnyClassType:    return dtAnyManagementNonNilable;
-    case typetags::RecordType:      return convertRecordType(t->toRecordType());
-    case typetags::TupleType:       return convertTupleType(t->toTupleType());
-    case typetags::UnionType:       return convertUnionType(t->toUnionType());
+    case typetags::RecordType:      return helpConvertRecordType(t->toRecordType());
+    case typetags::TupleType:       return helpConvertTupleType(t->toTupleType());
+    case typetags::UnionType:       return helpConvertUnionType(t->toUnionType());
 
     // primitive types
-    case typetags::BoolType:       return convertBoolType(t->toBoolType());
-    case typetags::ComplexType:    return convertComplexType(t->toComplexType());
-    case typetags::ImagType:       return convertImagType(t->toImagType());
-    case typetags::IntType:        return convertIntType(t->toIntType());
-    case typetags::RealType:       return convertRealType(t->toRealType());
-    case typetags::UintType:       return convertUintType(t->toUintType());
-    case typetags::CPtrType:       return convertPtrType(t->toPtrType());
-    case typetags::HeapBufferType: return convertPtrType(t->toPtrType());
+    case typetags::BoolType:       return helpConvertBoolType(t->toBoolType());
+    case typetags::ComplexType:    return helpConvertComplexType(t->toComplexType());
+    case typetags::ImagType:       return helpConvertImagType(t->toImagType());
+    case typetags::IntType:        return helpConvertIntType(t->toIntType());
+    case typetags::RealType:       return helpConvertRealType(t->toRealType());
+    case typetags::UintType:       return helpConvertUintType(t->toUintType());
+    case typetags::CPtrType:       return helpConvertPtrType(t->toPtrType());
+    case typetags::HeapBufferType: return helpConvertPtrType(t->toPtrType());
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -868,7 +1511,7 @@ Type* TConverter::helpConvertType(const types::Type* t) {
   return nullptr;
 }
 
-Type* TConverter::convertClassType(const types::ClassType* t) {
+Type* TConverter::helpConvertClassType(const types::ClassType* t) {
   if (auto mt = t->manageableType()) {
     if (mt->isAnyClassType()) {
       // The production compiler represents these as special builtins
@@ -891,11 +1534,28 @@ Type* TConverter::convertClassType(const types::ClassType* t) {
     }
   }
 
-  CHPL_UNIMPL("Unhandled class type");
-  return nullptr;
+  // convert the basic class type
+  const types::BasicClassType* bct = t->basicClassType();
+  Type* gotT = convertType(bct);
+  AggregateType* at = toAggregateType(gotT);
+  INT_ASSERT(at);
+
+  Type* ret = dtUnknown;
+
+  const types::RecordType* manager = t->managerRecordType(context);
+  if (manager == nullptr) {
+    ret = at; // unamanged / borrowed is just the class type at this point
+  } else {
+    // owned/shared should have had a substitution for chpl_t
+    CHPL_ASSERT(!manager->substitutions().empty());
+    // convert the managed class type
+    ret = convertType(manager);
+  }
+
+  return ret;
 }
 
-Type* TConverter::convertPtrType(const types::PtrType* t) {
+Type* TConverter::helpConvertPtrType(const types::PtrType* t) {
   // find the pointer type to instantiate
   AggregateType* base = nullptr;
   if (auto ct = t->toCPtrType()) {
@@ -905,80 +1565,183 @@ Type* TConverter::convertPtrType(const types::PtrType* t) {
     base = dtHeapBuffer;
   }
 
+  if (base->symbol == nullptr) {
+    const char* name = nullptr;
+    if (base == dtCPointer) {
+      name = "c_ptr";
+    } else if (base == dtCPointerConst) {
+      name = "c_ptrConst";
+    } else {
+      name = "_ddata";
+    }
+    base->symbol = new TypeSymbol(name, base);
+  }
+
+  if (base->numFields() == 0) {
+    // fill in the 'type eltType' field
+    VarSymbol* v = new VarSymbol(astr("eltType"), dtAny);
+    v->qual = QUAL_UNKNOWN;
+    v->makeField();
+    base->fields.insertAtTail(new DefExpr(v));
+
+    // add to globalSyms so it can be ignored in the untyped converter
+    const char* symbolPath = nullptr;
+    if (base == dtCPointer) {
+      symbolPath = "CTypes.c_ptr";
+    } else if (base == dtCPointerConst) {
+      symbolPath = "CTypes.c_ptrConst";
+    } else {
+      symbolPath = "ChapelBase._ddata";
+    }
+
+    auto id = ID(UniqueString::get(context, symbolPath));
+    globalSyms[id] = base->symbol;
+  }
+
   // handle ptr without an element type
   if (t->eltType() == nullptr) {
     return base;
   }
 
-  auto qt = types::QualifiedType(types::QualifiedType::TYPE, t);
-
-  if (base->numFields() == 0) {
-    // the proper AST for the pointer type hasn't been created yet,
-    // and we need it to proceed, so return a temporary conversion symbol.
-    return new TemporaryConversionType(qt);
-  }
-
-  // otherwise, convert the element type
+  // convert the element type
   Type* convertedEltT = convertType(t->eltType());
-  if (isTemporaryConversionType(convertedEltT)) {
-    // return a temporary conversion symbol since something is missing
-    return new TemporaryConversionType(t);
-  }
 
   // instantiate it with the element type
   // note: getInstantiation should re-use existing instantiations
   int index = 1;
-  Expr* insnPoint = nullptr; // TODO: set this to something?
+  Expr* insnPoint = nullptr; // TODO: does this need to be set?
   AggregateType* ret =
     base->getInstantiation(convertedEltT->symbol, index, insnPoint);
 
   return ret;
 }
 
-Type* TConverter::convertEnumType(const types::EnumType* t) {
+Type* TConverter::helpConvertEnumType(const types::EnumType* t) {
   CHPL_UNIMPL("convertEnumType");
   return nullptr;
 }
 
-Type* TConverter::convertExternType(const types::ExternType* t) {
+Type* TConverter::helpConvertExternType(const types::ExternType* t) {
   CHPL_UNIMPL("convertExternType");
   return nullptr;
 }
 
-Type* TConverter::convertFunctionType(const types::FunctionType* t) {
-  CHPL_UNIMPL("convertExternType");
+Type* TConverter::helpConvertFunctionType(const types::FunctionType* t) {
+  CHPL_UNIMPL("convertFunctionType");
   return nullptr;
 }
 
-Type* TConverter::convertBasicClassType(const types::BasicClassType* t) {
-  CHPL_UNIMPL("convertExternType");
-  return nullptr;
+void TConverter::helpConvertFields(const types::CompositeType* ct,
+                                   const ResolvedFields& rf,
+                                   AggregateType* at) {
+  int nFields = rf.numFields();
+  for (int i = 0; i < nFields; i++) {
+    types::QualifiedType qt = rf.fieldType(i);
+    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+      // a 'type' field can be left out at this point
+      continue;
+    } else if (qt.isParam()) {
+      // a 'param' field can be left out at this point
+      continue;
+    }
+    Type* ft = convertType(qt.type());
+    UniqueString name = rf.fieldName(i);
+    VarSymbol* v = new VarSymbol(astr(name), ft);
+    v->qual = convertQualifier(qt.kind());
+    v->makeField();
+    at->fields.insertAtTail(new DefExpr(v));
+  }
 }
 
-Type* TConverter::convertRecordType(const types::RecordType* t) {
-  if (t->isStringType()) {
-    return dtString;
-  } else if (t->isBytesType()) {
-    return dtBytes;
+Type* TConverter::helpConvertBasicClassType(const types::BasicClassType* bct) {
+  printf("helpConvertBasicClassType\n");
+  bct->dump();
+  printf("\n");
+
+  const ResolvedFields& rf =
+    fieldsForTypeDecl(context, bct, DefaultsPolicy::USE_DEFAULTS);
+
+  AggregateType* ct = findOrCreateClass(bct);
+  if (ct->symbol == nullptr) {
+    ct->symbol = new TypeSymbol(astr(bct->name()), ct);
   }
 
-  std::string msg = "unhandled record type: ";
-  msg += t == nullptr ? "(null)" : t->name().str();
-  CHPL_UNIMPL(msg.c_str());
-  return nullptr;
+  // add the DefExpr to the module containing the type
+  ID inModuleId = parsing::idToParentModule(context, bct->id());
+  ModuleSymbol* inModule = nullptr;
+  if (inModuleId.isEmpty()) {
+    inModule = rootModule;
+  } else {
+    inModule = findOrSetupModule(inModuleId);
+    INT_ASSERT(inModule);
+  }
+  inModule->block->insertAtTail(new DefExpr(ct->symbol));
+
+  // convert the superclass as a field 'super'
+  if (auto parentClassType = bct->parentClassType()) {
+    Type* pt = convertType(parentClassType);
+    VarSymbol* v = new VarSymbol("super", pt);
+    v->qual = QUAL_VAL;
+    v->makeField();
+    ct->fields.insertAtTail(new DefExpr(v));
+  }
+
+  // convert the fields
+  helpConvertFields(bct, rf, ct);
+
+  printf("helpConvertBasicClassType result\n");
+  nprint_view(ct);
+  printf("\n");
+
+  return ct;
 }
 
-Type* TConverter::convertTupleType(const types::TupleType* t) {
+Type* TConverter::helpConvertRecordType(const types::RecordType* t) {
+  const ResolvedFields& rf =
+    fieldsForTypeDecl(context, t, DefaultsPolicy::USE_DEFAULTS);
+
+  AggregateType* at = findOrCreateRecord(t);
+  if (at->symbol == nullptr) {
+    at->symbol = new TypeSymbol(astr(t->name()), at);
+  }
+
+  // add the DefExpr to the module containing the type
+  ID inModuleId = parsing::idToParentModule(context, t->id());
+  ModuleSymbol* inModule = findOrSetupModule(inModuleId);
+  inModule->block->insertAtTail(new DefExpr(at->symbol));
+
+  // convert the fields
+  helpConvertFields(t, rf, at);
+
+  return at;
+}
+
+Type* TConverter::helpConvertUnionType(const types::UnionType* t) {
+  const ResolvedFields& rf =
+    fieldsForTypeDecl(context, t, DefaultsPolicy::USE_DEFAULTS);
+
+  AggregateType* at = findOrCreateUnion(t);
+  if (at->symbol == nullptr) {
+    at->symbol = new TypeSymbol(astr(t->name()), at);
+  }
+
+  // add the DefExpr to the module containing the type
+  ID inModuleId = parsing::idToParentModule(context, t->id());
+  ModuleSymbol* inModule = findOrSetupModule(inModuleId);
+  inModule->block->insertAtTail(new DefExpr(at->symbol));
+
+  // convert the fields
+  helpConvertFields(t, rf, at);
+
+  return at;
+}
+
+Type* TConverter::helpConvertTupleType(const types::TupleType* t) {
   CHPL_UNIMPL("convertTupleType");
   return nullptr;
 }
 
-Type* TConverter::convertUnionType(const types::UnionType* t) {
-  CHPL_UNIMPL("convertUnionType");
-  return nullptr;
-}
-
-Type* TConverter::convertBoolType(const types::BoolType* t) {
+Type* TConverter::helpConvertBoolType(const types::BoolType* t) {
   return dtBool;
 }
 
@@ -994,7 +1757,7 @@ static IF1_complex_type getComplexSize(const types::ComplexType* t) {
   return COMPLEX_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertComplexType(const types::ComplexType* t) {
+Type* TConverter::helpConvertComplexType(const types::ComplexType* t) {
   return dtComplex[getComplexSize(t)];
 }
 
@@ -1010,7 +1773,7 @@ static IF1_float_type getImagSize(const types::ImagType* t) {
   return FLOAT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertImagType(const types::ImagType* t) {
+Type* TConverter::helpConvertImagType(const types::ImagType* t) {
   return dtImag[getImagSize(t)];
 }
 
@@ -1028,7 +1791,7 @@ static IF1_int_type getIntSize(const types::IntType* t) {
   return INT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertIntType(const types::IntType* t) {
+Type* TConverter::helpConvertIntType(const types::IntType* t) {
   return dtInt[getIntSize(t)];
 }
 
@@ -1044,7 +1807,7 @@ static IF1_float_type getRealSize(const types::RealType* t) {
   return FLOAT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertRealType(const types::RealType* t) {
+Type* TConverter::helpConvertRealType(const types::RealType* t) {
   return dtReal[getRealSize(t)];
 }
 
@@ -1062,31 +1825,34 @@ static IF1_int_type getUintSize(const types::UintType* t) {
   return INT_SIZE_DEFAULT;
 }
 
-Type* TConverter::convertUintType(const types::UintType* t) {
+Type* TConverter::helpConvertUintType(const types::UintType* t) {
   return dtUInt[getUintSize(t)];
 }
 
-Type* TConverter::convertType(const types::Type* t) {
-  if (t == nullptr)
-    return dtUnknown;
-
-  // reuse one from the map if we have already converted it
-  {
-    auto it = convertedTypes.find(t);
-    if (it != convertedTypes.end()) {
-      return it->second;
-    }
+Expr* TConverter::defaultValueForType(const types::Type* t) {
+  Symbol* sym = nullptr;
+  if (t->isBoolType()) {
+    sym = new_BoolSymbol(false);
+  } else {
+    CHPL_UNIMPL("default value for this type");
+    sym = new_BoolSymbol(false);
+  }
+  return new SymExpr(sym);
+}
+SymExpr* TConverter::storeInTempIfNeeded(Expr* e) {
+  if (SymExpr* se = toSymExpr(e)) {
+    return se;
   }
 
-  // convert the type
-  Type* ret = helpConvertType(t);
-
-  // save the result to the map
-  convertedTypes[t] = ret;
-
-  return ret;
+  // otherwise, store the value in a temp
+  VarSymbol* t = newTemp();
+  t->addFlag(FLAG_EXPR_TEMP);
+  curAList->insertAtTail(new DefExpr(t));
+  curAList->insertAtTail(new CallExpr(PRIM_MOVE, t, e));
+  return new SymExpr(t);
 }
 
+// note: new_IntSymbol etc already returns existing if already created
 Symbol* TConverter::convertParam(types::QualifiedType qt) {
   const types::Param* p = qt.param();
   const types::Type* t = qt.type();
@@ -1131,109 +1897,6 @@ Symbol* TConverter::convertParam(types::QualifiedType qt) {
 
   INT_FATAL("should not be reached");
   return nullptr;
-}
-
-
-void TConverter::noteAllContainedFixups(BaseAST* ast, int depth) {
-  // Traverse over 'sym' but don't go in to nested submodules/fns/aggregates
-  // since we will have already gathered from those and we don't want
-  // this to be quadratic in time.
-  //
-  // Gather the fixups that need to be done.
-  // This is a separate traversal so that the build functions
-  // can copy the AST freely.
-
-  if (depth > 0) {
-    if (isModuleSymbol(ast)) {
-      // stop if we get to a nested module
-      return;
-    }
-    if (isFnSymbol(ast)) {
-      // stop if we get to a function that isn't compiler-generated
-      return;
-    }
-    if (TypeSymbol* ts = toTypeSymbol(ast)) {
-      if (isAggregateType(ts->type)) {
-        // stop if we get to a nested class/record/union
-        return;
-      }
-    }
-  }
-  AST_CHILDREN_CALL(ast, noteAllContainedFixups, depth+1);
-
-  if (SymExpr* se = toSymExpr(ast)) {
-    if (auto tcs = toTemporaryConversionSymbol(se->symbol())) {
-      if (tcs->rfn != nullptr) {
-        noteCallFixupNeeded(se, tcs->rfn);
-      } else {
-        noteIdentFixupNeeded(se, tcs->symId);
-      }
-    }
-  }
-
-  if (Symbol* sym = toSymbol(ast)) {
-    bool noteIt = false;
-    if (auto fn = toFnSymbol(sym)) {
-      if (isTemporaryConversionType(fn->retType)) {
-        noteIt = true;
-      }
-    }
-    if (isTemporaryConversionType(sym->type)) {
-      noteIt = true;
-    }
-
-    if (noteIt) {
-      noteTypeFixupNeeded(sym);
-    }
-  }
-}
-
-Symbol* TConverter::findConvertedSym(const ID& id) {
-  { // check for local variables with that ID
-    auto it = localSyms.find(id);
-    if (it != localSyms.end()) {
-      return it->second;
-    }
-  }
-  { // check for global symbols with that ID
-    auto it = globalSyms.find(id);
-    if (it != globalSyms.end()) {
-      return it->second;
-    }
-  }
-
-  // if we could not find it, assume we just have not converted it yet.
-  return new TemporaryConversionSymbol(id);
-}
-
-Symbol* TConverter::findConvertedFn(const ResolvedFunction* rfn) {
-  // check if the function was already converted
-  auto it = fns.find(rfn);
-  if (it != fns.end()) {
-    return it->second;
-  }
-
-  return new TemporaryConversionSymbol(rfn);
-}
-
-void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
-  if (currentResolvedFunction == nullptr) {
-    globalSyms[ast->id()] = sym;
-  } else {
-    localSyms[ast->id()] = sym;
-  }
-}
-
-void TConverter::noteIdentFixupNeeded(SymExpr* se, ID id) {
-  identFixups.emplace_back(se, std::move(id));
-}
-
-void TConverter::noteCallFixupNeeded(SymExpr* se, const ResolvedFunction* r) {
-  callFixups.emplace_back(se, r);
-}
-
-void TConverter::noteTypeFixupNeeded(Symbol* sym) {
-  typeFixups.push_back(sym);
 }
 
 bool TConverter::typeExistsAtRuntime(const types::Type* t) {
@@ -1316,31 +1979,21 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
     }
   }
 
+  if (node->name() == USTR("_")) {
+    // no need to convert _
+    return nullptr;
+  }
+
   bool isRemote = node->destination() != nullptr ||
                   (multiState != nullptr && multiState->localeTemp != nullptr);
 
-  bool inTupleDecl = false; // TODO fixme
-  auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str(),
-                              inTupleDecl));
+  auto varSym = findOrCreateVar(node);
   const bool isTypeVar = node->kind() == uast::Variable::TYPE;
   bool moduleScopeVar = false;
   const uast::Module* inModule = symbol->toModule();
 
-  { // compute moduleScopeVar
-    if (inModule != nullptr) {
-      // is it within a block or within the module directly?
-      moduleScopeVar = true;
-      // TODO: make this a parsing query
-      for (auto ast = parsing::parentAst(context, node);
-           ast != nullptr && ast != inModule;
-           ast = parsing::parentAst(context, ast)) {
-        if (ast->isTupleDecl() || ast->isMultiDecl()) {
-          // these are OK and still declare a top-level variable
-        } else {
-          moduleScopeVar = false;
-        }
-      }
-    }
+  if (inModule != nullptr) {
+    moduleScopeVar = parsing::idIsModuleScopeVar(context, node->id());
   }
 
   if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
@@ -1424,6 +2077,17 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
       move = new CallExpr(PRIM_MOVE, varSym,
                                      new CallExpr(PRIM_ADDR_OF, initExpr));
     } else {
+      if (initExpr == nullptr) {
+        // compute the default value for this type
+        if (const resolution::ResolvedExpression* rr = rv.byAstOrNull(node)) {
+          types::QualifiedType qt = rr->type();
+          if (!qt.isUnknown()) {
+            initExpr = defaultValueForType(qt.type());
+          }
+        }
+        INT_ASSERT(initExpr);
+      }
+
       move = new CallExpr(PRIM_MOVE, varSym, initExpr);
     }
     curAList->insertAtTail(move);
@@ -1473,7 +2137,7 @@ void TConverter::simplifyEpilogue(FnSymbol* fn) {
   }
 }
 
-static ::Qualifier convertQualifier(types::QualifiedType::Kind kind) {
+::Qualifier TConverter::convertQualifier(types::QualifiedType::Kind kind) {
   ::Qualifier q = QUAL_UNKNOWN;
   if      (kind == types::QualifiedType::VAR)       q = QUAL_VAL;
   else if (kind == types::QualifiedType::CONST_VAR) q = QUAL_CONST_VAL;
@@ -1488,13 +2152,38 @@ static ::Qualifier convertQualifier(types::QualifiedType::Kind kind) {
   return q;
 }
 
+
+IntentTag TConverter::convertFormalIntentQt(types::QualifiedType::Kind kind)
+{
+  IntentTag t = INTENT_BLANK;
+
+  if      (kind == types::QualifiedType::VAR)            t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_VAR)      t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_REF)      t = INTENT_CONST_REF;
+  else if (kind == types::QualifiedType::REF)            t = INTENT_REF;
+  else if (kind == types::QualifiedType::IN)             t = INTENT_IN;
+  else if (kind == types::QualifiedType::CONST_IN)       t = INTENT_CONST_IN;
+  else if (kind == types::QualifiedType::OUT)            t = INTENT_OUT;
+  else if (kind == types::QualifiedType::INOUT)          t = INTENT_INOUT;
+  else if (kind == types::QualifiedType::PARAM)          t = INTENT_PARAM;
+  else if (kind == types::QualifiedType::TYPE)           t = INTENT_TYPE;
+  else if (kind == types::QualifiedType::DEFAULT_INTENT) t = INTENT_BLANK;
+
+  return t;
+}
+
 void TConverter::setVariableType(const uast::VarLikeDecl* v,
                                  Symbol* sym,
                                  RV& rv) {
+  printf("setVariableType %s\n", v->id().str().c_str());
+
   // Get the type of the variable itself
   if (const resolution::ResolvedExpression* rr = rv.byAstOrNull(v)) {
     types::QualifiedType qt = rr->type();
     if (!qt.isUnknown()) {
+      printf("qt is \n");
+      qt.dump();
+
       // Set a type for the variable
       sym->type = convertType(qt.type());
 
@@ -1502,6 +2191,14 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
       auto q = convertQualifier(qt.kind());
       if (q != QUAL_UNKNOWN)
         sym->qual = q;
+
+      // If it's a Formal / ArgSymbol, also set the intent and originalIntent
+      ArgSymbol* arg = toArgSymbol(sym);
+      const uast::Formal* fml = v->toFormal();
+      if (arg != nullptr && fml != nullptr) {
+        arg->originalIntent = convertFormalIntent(fml->intent());
+        arg->intent = convertFormalIntentQt(qt.kind());
+      }
 
       // Set the param value for the variable in paramMap, if applicable
       /*if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
@@ -1513,6 +2210,65 @@ void TConverter::setVariableType(const uast::VarLikeDecl* v,
     }
   }
 }
+
+void TConverter::convertActuals(CallExpr* c,
+                                const Call* node,
+                                const resolution::ResolvedExpression* re,
+                                RV& rv) {
+  if (node->isPrimCall()) {
+    // use a simple strategy to convert prim calls
+    // (assuming no named argument passing)
+    // TODO: do some associated actions need to be handled here?
+    enterCallActuals(c);
+    for (auto actual : node->actuals()) {
+      c->insertAtTail(convertExpr(actual, rv));
+    }
+    exitCallActuals();
+    return;
+  }
+
+  // otherwise
+  enterCallActuals(c);
+
+  // gather the actuals in a way that is consistent with other resolution parts
+  std::vector<const AstNode*> actualAsts;
+  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
+                                         /* raiseErrors */ false,
+                                         &actualAsts);
+
+  // consider the actual for each Formal
+  const auto& candidate = re->mostSpecific().only();
+  auto& formalActualMap = candidate.formalActualMap();
+  for (const FormalActual& fa : formalActualMap.byFormals()) {
+    const types::QualifiedType& qt = fa.formalType();
+    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
+      // a 'type' actual can be left out at this point
+    } else if (qt.isParam()) {
+      // a 'param' actual can be left out at this point
+    } else {
+      if (fa.hasDefault()) {
+        CHPL_UNIMPL("default arguments");
+      } else {
+        // it's something that exists at runtime, so include it
+        Expr* actualExpr = convertExpr(actualAsts[fa.actualIdx()], rv);
+        c->insertAtTail(actualExpr);
+      }
+      // TODO handle associated actions for 'in' 'out', deinit tmp, etc
+    }
+  }
+
+  // done generating actuals
+  exitCallActuals();
+
+
+}
+
+void TConverter::handlePostCallActions(CallExpr* c,
+                                       const Call* node,
+                                       const resolution::ResolvedExpression* re,
+                                       RV& rv) {
+}
+
 
 bool TConverter::enter(const Module* node, RV& rv) {
   if (trace)
@@ -1554,18 +2310,18 @@ bool TConverter::enter(const Function* node, RV& rv) {
     return false;
   }
 
-  if (trace) printf("Really converting Function\n");
+  if (trace) printf("Really converting Function %s\n", node->name().c_str());
 
   astlocMarker markAstLoc(node->id());
 
   CHPL_ASSERT(currentResolvedFunction != nullptr);
 
-  FnSymbol* fn = new FnSymbol("_");
+  FnSymbol* fn = new FnSymbol(astr(node->name()));
   curAList->insertAtTail(new DefExpr(fn));
   curFnSymbol = fn; // for setting child node's parentSymbol
 
   // note the correspondence between the ResolvedFunction & what it converts to
-  // (for calls, including recursive calls)
+  // (for calls & done here to support recursive calls)
   fns[currentResolvedFunction] = fn;
 
   fn->userString = constructUserString(node);
@@ -1593,6 +2349,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
   }
 
   fn->addFlag(FLAG_RESOLVED);
+  fn->addFlag(FLAG_RESOLVED_EARLY);
+  fn->setNormalized(true);
 
   if (currentResolvedFunction->signature()->instantiatedFrom() != nullptr) {
     // generic instantiations are "invisible"
@@ -1605,41 +2363,51 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   // Convert the formals
   if (node->numFormals() > 0) {
+    // create the formals first & put them in a map
     if (trace) printf("Converting formals\n");
     enterFormals(fn);
+    // TODO: gather the formals we want to create
+    // to un-pack tuples etc.
     for (auto decl : node->formals()) {
-      DefExpr* conv = nullptr;
       astlocMarker markAstLoc(decl->id());
 
-      // A "normal" formal.
-      if (auto formal = decl->toFormal()) {
-        conv = toDefExpr(convertExpr(formal, rv));
-        INT_ASSERT(conv);
+      // Fill in each ArgSymbol and add the DefExpr
+      if (auto fml = decl->toFormal()) {
+        Expr* typeExpr = nullptr;
+        typeExpr = convertRuntimeTypeExpression(fml->typeExpression(), rv);
+        if (typeExpr) {
+          CHPL_UNIMPL("runtime type formal");
+        }
+
+        ArgSymbol* arg = findOrCreateFormal(fml);
+        DefExpr* def = new DefExpr(arg);
+
+        attachSymbolAttributes(context, node, def->sym, moduleFromLibraryFile);
+
+        setVariableType(fml, arg, rv);
+
+        fn->insertFormalAtTail(def);
 
         // Special handling for implicit receiver formal.
-        if (formal->name() == USTR("this")) {
+        if (fml->name() == USTR("this")) {
           INT_ASSERT(convertedReceiver == nullptr);
 
-          thisTag = convertFormalIntent(formal->intent());
-
-          convertedReceiver = toArgSymbol(conv->sym);
+          convertedReceiver = arg;
           INT_ASSERT(convertedReceiver);
 
-          conv->sym->addFlag(FLAG_ARG_THIS);
+          arg->addFlag(FLAG_ARG_THIS);
 
           if (thisTag == INTENT_TYPE) {
             setupTypeIntentArg(convertedReceiver);
           }
         }
+      } else if (decl->isVarArgFormal()) {
+        // A varargs formal.
+        CHPL_UNIMPL("varargs formal");
+        // TODO: do these even exist after call destructors?
 
-      // A varargs formal.
-      } else if (auto formal = decl->toVarArgFormal()) {
-        INT_ASSERT(formal->name() != USTR("this"));
-        conv = toDefExpr(convertExpr(formal, rv));
-        INT_ASSERT(conv);
-
-      // A tuple decl, where components are formals or tuple decls.
       } else if (decl->toTupleDecl()) {
+        // A tuple decl, where components are formals or tuple decls.
         CHPL_UNIMPL("Unhandled tuple formal");
         /*
         auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
@@ -1657,13 +2425,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         */
       } else {
         CHPL_UNIMPL("Unhandled formal");
-      }
-
-      // Attaches def to function's formal list.
-      if (conv) {
-        buildFunctionFormal(fn, conv);
-        // Note the formal is converted so we can wire up SymExprs later
-        noteConvertedSym(decl, conv->sym);
       }
     }
     exitFormals(fn);
@@ -1821,34 +2582,6 @@ void TConverter::exit(const Function* node, RV& rv) {
   if (trace) printf("exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
-bool TConverter::enter(const Formal* node, RV& rv) {
-  if (trace) printf("enter formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-
-  IntentTag intentTag = convertFormalIntent(node->intent());
-
-  astlocMarker markAstLoc(node->id());
-
-  Expr* typeExpr = convertRuntimeTypeExpression(node->typeExpression(), rv);
-  Expr* initExpr = nullptr; // default args should be handled at call site
-
-  DefExpr* def =  buildArgDefExpr(intentTag, node->name().c_str(),
-                                  typeExpr,
-                                  initExpr,
-                                  /*varargsVariable*/ nullptr);
-  INT_ASSERT(def->sym);
-
-  attachSymbolAttributes(context, node, def->sym, moduleFromLibraryFile);
-
-  setVariableType(node, def->sym, rv);
-
-  curAList->insertAtTail(def);
-
-  return false;
-}
-void TConverter::exit(const Formal* node, RV& rv) {
-  if (trace) printf("exit formal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-}
-
 bool TConverter::enter(const Variable* node, RV& rv) {
   if (trace) printf("enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
@@ -1905,7 +2638,7 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
   if (re != nullptr) {
     auto id = re->toId();
     if (!id.isEmpty()) {
-      Symbol* sym = findConvertedSym(id);
+      Symbol* sym = findOrCreateSym(id);
       SymExpr* se = new SymExpr(sym);
       curAList->insertAtTail(se);
       return false;
@@ -1956,27 +2689,41 @@ void TConverter::exit(const Return* node, RV& rv) {
 bool TConverter::enter(const Call* node, RV& rv) {
   if (trace) printf("enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
+  const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
+
   if (auto primCall = node->toPrimCall()) {
+    // there should not be associated actions for primitive calls
+    CHPL_ASSERT(!re || !re->hasAssociatedActions());
+
     CallExpr* ret = new CallExpr(primCall->prim());
     curAList->insertAtTail(ret);
-    enterCallActuals(ret);
-    for (auto actual : node->actuals()) {
-      ret->insertAtTail(convertExpr(actual, rv));
-    }
-    exitCallActuals();
+
+    convertActuals(ret, node, re, rv);
+    handlePostCallActions(ret, node, re, rv);
     return false;
   }
 
-
-  const resolution::ResolvedExpression* re = rv.byAstOrNull(node);
   if (re == nullptr) {
+    CHPL_UNIMPL("call with no ResolvedExpression");
     return false;
   }
 
+  bool generateNew = false;
   const auto& candidate = re->mostSpecific().only();
   const TypedFnSignature* sig = candidate.fn();
   if (sig == nullptr) {
-    return false;
+    // For 'new unmanaged C(...)' it should generate a call to a '_new'
+    // function. The actuals are passed along to it.
+    for (const auto& action : re->associatedActions()) {
+      if (action.action() == AssociatedAction::NEW_INIT) {
+        sig = action.fn();
+        generateNew = true;
+      }
+    }
+    if (sig == nullptr) {
+      CHPL_UNIMPL("call with no most specific function");
+      return false;
+    }
   }
 
   const ResolvedFunction* resolvedFn = nullptr;
@@ -2009,48 +2756,131 @@ bool TConverter::enter(const Call* node, RV& rv) {
     return false;
   }
 
-  Symbol* calledFn = findConvertedFn(resolvedFn);
+  Symbol* calledFn = nullptr;
+  if (generateNew) {
+    calledFn = findOrConvertNewWrapper(resolvedFn);
+  } else {
+    calledFn = findOrConvertFunction(resolvedFn);
+  }
 
   // set up the call
   CallExpr* ret = new CallExpr(calledFn);
   curAList->insertAtTail(ret);
-  enterCallActuals(ret);
 
-  // gather the actuals in a way that is consistent with other resolution parts
-  std::vector<const AstNode*> actualAsts;
-  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
-                                         /* raiseErrors */ false,
-                                         &actualAsts);
-
-  // consider the actual for each Formal
-  auto& formalActualMap = candidate.formalActualMap();
-  for (const FormalActual& fa : formalActualMap.byFormals()) {
-    const types::QualifiedType& qt = fa.formalType();
-    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
-      // a 'type' actual can be left out at this point
-    } else if (qt.isParam()) {
-      // a 'param' actual can be left out at this point
-    } else {
-      if (fa.hasDefault()) {
-        CHPL_UNIMPL("default arguments");
-      } else {
-        // it's something that exists at runtime, so include it
-        Expr* actualExpr = convertExpr(actualAsts[fa.actualIdx()], rv);
-        ret->insertAtTail(actualExpr);
-      }
-      // TODO handle associated actions for 'in' 'out', deinit tmp, etc
-    }
-  }
-
-  // done generating actuals
-  exitCallActuals();
+  convertActuals(ret, node, re, rv);
 
   return false;
 }
 
 void TConverter::exit(const Call* node, RV& rv) {
-  if (trace) printf("exit fncall %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+  if (trace) printf("exit call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
+
+bool TConverter::enter(const Conditional* node, RV& rv) {
+  if (trace) printf("enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  auto condRE = rv.byAst(node->condition());
+  if (condRE.type().isParamTrue()) {
+    // Don't need to process the false branch.
+    node->thenBlock()->traverse(rv);
+    return false;
+  } else if (condRE.type().isParamFalse()) {
+    if (auto elseBlock = node->elseBlock()) {
+      elseBlock->traverse(rv);
+    }
+    return false;
+  }
+
+  // Not param-known condition; visit both branches as normal.
+
+  if (node->isExpressionLevel()) {
+    /*
+    auto cond = convertExpr(node->condition(), rv);
+    INT_ASSERT(cond);
+    auto thenExpr = convertExpr(node->thenBlock(), rv);
+    INT_ASSERT(thenExpr);
+    auto elseExpr = convertExpr(node->elseBlock(), rv);
+    INT_ASSERT(elseExpr);
+    ret = new IfExpr(cond, thenExpr, elseExpr);*/
+    // TODO: is this what if expressions look like after call destructors?
+    CHPL_UNIMPL("if expr");
+
+  } else {
+    astlocMarker markAstLoc(node->id());
+
+    Expr* cond = nullptr;
+    BlockStmt* thenBlock = nullptr;
+    BlockStmt* elseBlock = nullptr;
+
+    // convert the condition
+    if (node->condition()->isVariable()) {
+      /*INT_ASSERT(ifVar->kind() == uast::Variable::CONST ||
+                 ifVar->kind() == uast::Variable::VAR);
+      INT_ASSERT(ifVar->initExpression());
+      auto varNameStr = astr(ifVar->name());
+      auto initExpr = convertExpr(ifVar->initExpression(), rv);
+      bool isConst = ifVar->kind() == uast::Variable::CONST;
+      cond = buildIfVar(varNameStr, initExpr, isConst);*/
+      // TODO: port over 'transformIfVar' from normalize.cpp;
+      // should not be generating PRIM_IF_VAR here at all
+      CHPL_UNIMPL("if var");
+    } else {
+      cond = convertExpr(node->condition(), rv);
+    }
+    INT_ASSERT(cond);
+
+
+    cond = storeInTempIfNeeded(cond);
+
+    { // if it's not a 'bool', emit a call to '_cond_test'.
+      if (auto rr = rv.byAstOrNull(node->condition())) {
+        types::QualifiedType qt = rr->type();
+        if (!qt.isUnknown()) {
+          if (!qt.type()->isBoolType()) {
+            // emit a call to '_cond_test' and store the result in a temp
+            auto ci = resolution::CallInfo(
+                                 UniqueString::get(context, "_cond_test"),
+                                 /* calledType */ types::QualifiedType(),
+                                 /* isMethodCall */ false,
+                                 /* hasQuestionArg */ false,
+                                 /* isParenless */ false,
+                                 {CallInfoActual(qt)});
+            FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
+            CallExpr* condCall = new CallExpr(condFn, cond);
+            cond = storeInTempIfNeeded(condCall);
+          }
+        }
+      }
+    }
+
+    // convert the 'then' block
+    {
+      astlocMarker markAstLoc(node->thenBlock()->id());
+      thenBlock = new BlockStmt();
+      pushBlock(thenBlock);
+      node->thenBlock()->traverse(rv);
+      popBlock();
+    }
+
+    if (node->hasElseBlock()) {
+      astlocMarker markAstLoc(node->elseBlock()->id());
+      elseBlock = new BlockStmt();
+      pushBlock(elseBlock);
+      node->elseBlock()->traverse(rv);
+      popBlock();
+    }
+
+    auto ret = new CondStmt(cond, thenBlock, elseBlock);
+    curAList->insertAtTail(ret);
+  }
+
+  return false;
+}
+
+void TConverter::exit(const Conditional* node, RV& rv) {
+  if (trace) printf("exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
+
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
   if (trace) printf("enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));

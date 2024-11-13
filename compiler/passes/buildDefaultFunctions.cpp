@@ -736,7 +736,16 @@ static void buildChplEntryPoints() {
   // chpl_user_main is the (user) programmatic portion of the app
   //
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
-  chplUserMain = chplGenMainExists();
+  if (chplUserMain == nullptr) {
+    chplUserMain = chplGenMainExists();
+  } else if (chplUserMain->hasFlag(FLAG_RESOLVED_EARLY)) {
+    // set mainReturnsSomething according to the return type of main
+    if (chplUserMain->retType &&
+        chplUserMain->retType != dtUnknown &&
+        chplUserMain->retType != dtVoid) {
+      mainReturnsSomething = true;
+    }
+  }
 
   if (fLibraryCompile == true && chplUserMain != NULL) {
     USR_WARN(chplUserMain,

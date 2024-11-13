@@ -46,12 +46,18 @@ int gatherFnsCalledByFn(Context* context,
                         CalledFnOrder order,
                         CalledFnsSet& called);
 
-/* Gather ResolvedFunctions called transitively by this function into a set.
+/* Gather ResolvedFunctions called directly or transitively by this
+   function into a set.
    Returns the number of functions gathered. */
 int gatherTransitiveFnsCalledByFn(Context* context,
                                   const ResolvedFunction* fn,
                                   CalledFnOrder order,
                                   CalledFnsSet& called);
+
+/* Gathers a concrete function as well as the functions called by it. */
+int gatherTransitiveFnsForFnId(Context* context,
+                               ID fnId,
+                               CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called directly by module initialization code
    for this module into a set.
@@ -61,8 +67,8 @@ int gatherFnsCalledByModInit(Context* context,
                              ID moduleId,
                              CalledFnsSet& called);
 
-/* Gather ResolvedFunctions called transitively by module initialization code
-   for this module into a set.
+/* Gather ResolvedFunctions called directly or transitively by
+   module initialization code for this module into a set.
    Returns the number of functions gathered. */
 int gatherTransitiveFnsCalledByModInit(Context* context,
                                        ID moduleId,

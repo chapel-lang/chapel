@@ -1542,7 +1542,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
   return stmts;
 }
 
-static
 AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
