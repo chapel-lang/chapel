@@ -529,8 +529,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     // TODO: would it be beneficial to use idToTag in most cases here?
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      if (CompositeType::isMissingBundledType(context, id) ||
-          (id.isFabricatedId() &&
+      if ((id.isFabricatedId() &&
           id.fabricatedIdKind() == ID::FabricatedIdKind::Generated)) {
         // if there are no bundled modules selected,
         // to enable testing, just return the top-level scope for these

@@ -108,10 +108,6 @@ DomainType::getRectangularType(Context* context,
       break;
     }
   }
-  if (instanceFieldId.isEmpty()) {
-    CHPL_ASSERT(isMissingBundledRecordType(context, genericDomain->id()));
-    instanceFieldId = ID(USTR("_instance"), 0, 0);
-  }
   subs.emplace(instanceFieldId, instance);
 
   auto name = UniqueString::get(context, "_domain");

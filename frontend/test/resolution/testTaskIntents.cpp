@@ -40,14 +40,6 @@
 static bool debug = false;
 static bool verbose = false;
 
-// all contexts stored for later cleanup
-static std::vector<Context*> globalContexts;
-static Context* getNewContext() {
-  Context* ret = new Context();
-  globalContexts.push_back(ret);
-  return ret;
-}
-
 std::vector<const ErrorBase*> errors;
 
 static const Module* parseModule(Context* context, const char* src) {
@@ -230,7 +222,7 @@ static Collector customHelper(std::string program, ResolutionContext* rc, Module
 
 // helper for running task intent tests
 static void kindHelper(Qualifier kind, const std::string& constructName) {
-  Context* context = getNewContext();
+  Context* context = buildStdContext();
   ResolutionContext rcval(context);
   auto rc = &rcval;
 
@@ -309,7 +301,7 @@ static void testKinds() {
 static void reduceHelper(const std::string& constructName) {
   assert(constructName == "forall" || constructName == "coforall");
 
-  Context* context = getNewContext();
+  Context* context = buildStdContext();
   ResolutionContext rcval(context);
   auto rc = &rcval;
 
@@ -376,11 +368,6 @@ int main(int argc, char** argv) {
   testReduce();
 
   printf("\nAll tests passed successfully.\n");
-
-  // Cleanup
-  for (auto* con : globalContexts) {
-    delete con;
-  }
 
   return 0;
 }

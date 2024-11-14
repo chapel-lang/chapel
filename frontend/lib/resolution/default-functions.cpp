@@ -203,81 +203,11 @@ generateInitParts(Context* context,
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
 
-  } else if (CompositeType::isMissingBundledType(context, compType->id())) {
-    // ignore
   } else {
     CHPL_ASSERT(false && "Not possible!");
   }
 
   formalTypes.push_back(std::move(qtReceiver));
-}
-
-static void buildInitArgs(Context* context,
-                          const CompositeType* compType,
-                          const ResolvedFields& rf,
-                          std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
-                          std::vector<QualifiedType>& formalTypes) {
-
-  // TODO: super fields and invoking super
-  if (auto basic = compType->toBasicClassType()) {
-    if (auto parent = basic->parentClassType()) {
-      if (!parent->isObjectType()) {
-        const Type* manager = nullptr;
-        auto borrowedNonnilDecor =
-            ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-        auto parentReceiver =
-          ClassType::get(context, parent, manager, borrowedNonnilDecor);
-
-        // Do not add args if the parent has a user-defined initializer
-        // TODO: It would be nice to be able to generate a nice error message
-        //   for the user if they try and pass arguments for the parent in
-        //   this case.
-        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, QualifiedType::INIT_RECEIVER, USTR("init"))) {
-          const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-          auto& rf = fieldsForTypeDecl(context, parent, defaultsPolicy);
-          buildInitArgs(context, parent, rf, ufsFormals, formalTypes);
-        }
-      }
-    }
-  }
-
-  // push all fields -> formals in order
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto fieldQt = rf.fieldType(i);
-    auto formalName = rf.fieldName(i);
-    bool formalHasDefault = rf.fieldHasDefaultValue(i);
-
-    const uast::Decl* formalAst =
-      parsing::idToAst(context, rf.fieldDeclId(i))->toDecl();
-
-    // A field may not have a default value. If it is default-initializable
-    // then the formal should still take a default value (in this case the
-    // default value is for the type, e.g., '0' for 'int'.
-    // TODO: If this isn't granular enough, we can introduce a 'DefaultValue'
-    // type that can be used as a sentinel.
-    formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
-
-    UntypedFnSignature::DefaultKind defaultKind;
-    if (formalHasDefault) {
-      defaultKind = UntypedFnSignature::DK_DEFAULT;
-    } else if (rf.isGeneric()) {
-      defaultKind = UntypedFnSignature::DK_MAYBE_DEFAULT;
-    } else {
-      defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
-    }
-
-    auto fd = UntypedFnSignature::FormalDetail(formalName, defaultKind,
-                                               formalAst);
-    ufsFormals.push_back(std::move(fd));
-
-    // for types & param, use the field kind, for values use 'in' intent
-    if (fieldQt.isType() || fieldQt.isParam()) {
-      formalTypes.push_back(fieldQt);
-    } else {
-      auto qt = QualifiedType(QualifiedType::IN, fieldQt.type());
-      formalTypes.push_back(std::move(qt));
-    }
-  }
 }
 
 static void collectFields(const AstNode* ast,
@@ -441,108 +371,58 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
 
 static const TypedFnSignature*
 generateInitSignature(Context* context, const CompositeType* inCompType) {
-  const TypedFnSignature* result;
-
   if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
     if (ct->isObjectType()) {
       return nullptr;
     }
   }
 
-  // Old-style default function placeholder for certain types when the standard
-  // library isn't available.
-  if (CompositeType::isMissingBundledType(context, inCompType->id())) {
-    const CompositeType* compType = nullptr;
-    std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-    std::vector<QualifiedType> formalTypes;
-    AstList formals;
+  auto& br = buildInitializer(context, inCompType->id());
 
-    generateInitParts(context, inCompType, compType,
-                      ufsFormals, formalTypes, /*useGeneric*/ true);
-    // consult the fields to build up the remaining untyped formals
-    const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-    auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
+  auto initFn = br.topLevelExpression(0)->toFunction();
 
-    // Add field-based arguments to initializer, including those of parent class
-    // if present.
-    buildInitArgs(context, compType, rf, ufsFormals, formalTypes);
-
-    // build the untyped signature
-    auto ufs = UntypedFnSignature::get(context,
-                          /*id*/ inCompType->id(),
-                          /*name*/ USTR("init"),
-                          /*isMethod*/ true,
-                          /*isTypeConstructor*/ false,
-                          /*isCompilerGenerated*/ true,
-                          /*throws*/ false,
-                          /*idTag*/ parsing::idToTag(context, compType->id()),
-                          /*kind*/ uast::Function::Kind::PROC,
-                          /*formals*/ std::move(ufsFormals),
-                          /*whereClause*/ nullptr,
-                          /*compilerGeneratedOrigin=*/compType->id());
-
-    // now build the other pieces of the typed signature
-    bool needsInstantiation = rf.isGeneric();
-
-    result = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
-  } else {
-    auto& br = buildInitializer(context, inCompType->id());
-
-    auto initFn = br.topLevelExpression(0)->toFunction();
-
-    // compute the FormalDetails manually so that we can set the default-kind
-    // appropriately.
-    //
-    // TODO: give the Formals proper init-expressions so that we can rely on
-    // pre-existing code to create the UntypedFnSignature.
-    std::vector<UntypedFnSignature::FormalDetail> formals;
-    for (auto decl : initFn->formals()) {
-      UniqueString name;
-      bool hasDefault = false;
-      if (auto formal = decl->toFormal()) {
-        name = formal->name();
-        hasDefault = formal->initExpression() != nullptr;
-        if (decl != initFn->thisFormal()) {
-          if (formal->intent() != Formal::Intent::TYPE &&
-              formal->intent() != Formal::Intent::PARAM) {
-            if (formal->typeExpression() != nullptr) {
-              hasDefault = true;
-            }
+  // compute the FormalDetails manually so that we can set the default-kind
+  // appropriately.
+  //
+  // TODO: give the Formals proper init-expressions so that we can rely on
+  // pre-existing code to create the UntypedFnSignature.
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  for (auto decl : initFn->formals()) {
+    UniqueString name;
+    bool hasDefault = false;
+    if (auto formal = decl->toFormal()) {
+      name = formal->name();
+      hasDefault = formal->initExpression() != nullptr;
+      if (decl != initFn->thisFormal()) {
+        if (formal->intent() != Formal::Intent::TYPE &&
+            formal->intent() != Formal::Intent::PARAM) {
+          if (formal->typeExpression() != nullptr) {
+            hasDefault = true;
           }
         }
       }
-
-      auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
-                                    : UntypedFnSignature::DK_NO_DEFAULT;
-      auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
-                                                 decl, decl->isVarArgFormal());
-      formals.push_back(fd);
     }
 
-    // find the unique-ified untyped signature
-    auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
-                                     true,
-                                     /* isTypeConstructor */ false,
-                                     /* isCompilerGenerated */ true,
-                                     /* throws */ false,
-                                     /* idTag */ asttags::Function,
-                                     uast::Function::Kind::PROC,
-                                     std::move(formals), nullptr,
-                                     inCompType->id());
-
-    ResolutionContext rcval(context);
-    result = typedSignatureInitial(&rcval, uSig);
+    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                  : UntypedFnSignature::DK_NO_DEFAULT;
+    auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
+                                               decl, decl->isVarArgFormal());
+    formals.push_back(fd);
   }
 
-  return result;
+  // find the unique-ified untyped signature
+  auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
+                                   true,
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ true,
+                                   /* throws */ false,
+                                   /* idTag */ asttags::Function,
+                                   uast::Function::Kind::PROC,
+                                   std::move(formals), nullptr,
+                                   inCompType->id());
+
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, uSig);
 }
 
 static const TypedFnSignature*

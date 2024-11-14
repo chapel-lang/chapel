@@ -1682,10 +1682,7 @@ static void testNilFieldInit() {
     var a = test();
     var b = new R();
   )""";
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
@@ -1710,10 +1707,7 @@ static void testGenericFieldInit() {
       var c = new R("test");
       )""";
 
-    auto config = getConfigWithHome();
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
@@ -1746,10 +1740,7 @@ static void testGenericFieldInit() {
 
       var r  = new R();
       )""";
-    auto config = getConfigWithHome();
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"r"});
@@ -1765,6 +1756,7 @@ static void testGenericFieldInit() {
     guard.realizeErrors();
   }
   {
+    printf("one\n");
     std::string program = R"""(
       record G { type T; var x : T; }
 
@@ -1802,8 +1794,7 @@ static void testGenericFieldInit() {
       var c = test("test");
       )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});

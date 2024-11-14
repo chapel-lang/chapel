@@ -234,30 +234,6 @@ class CompositeType : public Type {
   /** Get the record _shared implementing shared */
   static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
 
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the bundled types needed
-      by the language but provided in the library (such as 'string' or 'Error').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledType(Context* context, ID id);
-
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the class types needed
-      by the language but provided in the library (such as 'ReduceScanOp').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledClassType(Context* context, ID id);
-
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the record types needed
-      by the language but provided in the library (such as 'string').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledRecordType(Context* context, ID id);
-
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);
 

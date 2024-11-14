@@ -233,11 +233,6 @@ static const RecordType* tryCreateManagerRecord(Context* context,
       subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
       break;
     }
-    if (fields.numFields() == 0) {
-      CHPL_ASSERT(CompositeType::isMissingBundledRecordType(context,
-                                                            instantiatedFrom->id()));
-      return nullptr;
-    }
   }
 
   auto name = recordId.symbolName(context);
@@ -254,39 +249,6 @@ CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
 const RecordType*
 CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
   return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
-}
-
-bool CompositeType::isMissingBundledType(Context* context, ID id) {
-  return isMissingBundledClassType(context, id) ||
-         isMissingBundledRecordType(context, id);
-}
-
-bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    return id == CompositeType::getStringType(context)->id() ||
-           id == CompositeType::getRangeType(context)->id() ||
-           id == TupleType::getGenericTupleType(context)->id() ||
-           id == CompositeType::getBytesType(context)->id() ||
-           id == CompositeType::getDistributionType(context)->id() ||
-           id == DomainType::getGenericDomainType(context)->id() ||
-           id == getOwnedRecordId(context) ||
-           id == getSharedRecordId(context);
-  }
-
-  return false;
-}
-
-bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    return id == BasicClassType::getReduceScanOpType(context)->id() ||
-           id == CompositeType::getErrorType(context)->basicClassType()->id() ||
-           id == CPtrType::getId(context) ||
-           id == CPtrType::getConstId(context);
-  }
-
-  return false;
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
