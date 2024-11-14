@@ -513,8 +513,9 @@ module Map {
       }
     }
 
-    /* Get a copy of the element stored at position `k` or a sentinel
-       value if an element at position `k` does not exist.
+    /*
+      Get a copy of the element stored at position `k` or a sentinel
+      value if an element at position `k` does not exist.
 
       :arg k: The key to lookup in the map
       :arg sentinel: The value to return if the map does not contain an
@@ -708,15 +709,15 @@ module Map {
       Adds a key-value pair to the map. If the key `k` is already present
       in the map, makes no changes and returns `false`.
 
-     :arg k: The key to add to the map
-     :type k: ``keyType``
+      :arg k: The key to add to the map
+      :type k: ``keyType``
 
-     :arg v: The value that maps to ``k``
-     :type v: ``valType``
+      :arg v: The value that maps to ``k``
+      :type v: ``valType``
 
-     :returns: `true` if `k` was not in the map and added with value `v`.
+      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
@@ -739,15 +740,15 @@ module Map {
       Replaces the value associated with the key `k` with `v`. If the
       key `k` is not in the map, makes no changes and returns `false`.
 
-     :arg k: The key whose value needs to change
-     :type k: ``keyType``
+      :arg k: The key whose value needs to change
+      :type k: ``keyType``
 
-     :arg v: The desired value to the key ``k``
-     :type v: ``valType``
+      :arg v: The desired value to the key ``k``
+      :type v: ``valType``
 
-     :returns: `true` if `k` was in the map and its value is updated with `v`.
+      :returns: `true` if `k` was in the map and its value is updated with `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
