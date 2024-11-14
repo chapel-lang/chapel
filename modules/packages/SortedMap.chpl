@@ -438,15 +438,15 @@ module SortedMap {
       Adds a key-value pair to the sortedMap. Method returns `false` if the key
       already exists in the sortedMap.
 
-     :arg k: The key to add to the sortedMap
-     :type k: keyType
+      :arg k: The key to add to the sortedMap
+      :type k: keyType
 
-     :arg v: The value that maps to ``k``
-     :type v: valueType
+      :arg v: The value that maps to ``k``
+      :type v: valueType
 
-     :returns: `true` if `k` was not in the sortedMap and added with value `v`.
+      :returns: `true` if `k` was not in the sortedMap and added with value `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
@@ -464,15 +464,15 @@ module SortedMap {
       Sets the value associated with a key. Method returns `false` if the key
       does not exist in the sortedMap.
 
-     :arg k: The key whose value needs to change
-     :type k: keyType
+      :arg k: The key whose value needs to change
+      :type k: keyType
 
-     :arg v: The desired value to the key ``k``
-     :type v: valueType
+      :arg v: The desired value to the key ``k``
+      :type v: valueType
 
-     :returns: `true` if `k` was in the sortedMap and its value is updated with `v`.
+      :returns: `true` if `k` was in the sortedMap and its value is updated with `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
@@ -500,10 +500,10 @@ module SortedMap {
     /*
       Removes a key-value pair from the sortedMap, with the given key.
 
-     :arg k: The key to remove from the sortedMap
+      :arg k: The key to remove from the sortedMap
 
-     :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
-     :rtype: bool
+      :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
+      :rtype: bool
     */
     proc ref remove(k: keyType): bool {
       _enter(); defer _leave();
