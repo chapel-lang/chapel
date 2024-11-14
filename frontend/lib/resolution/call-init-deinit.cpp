@@ -260,6 +260,9 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
+      // skip error if this is the final use before deinit
+      if (frame->deinitedVars[varId] == useAst->id()) continue;
+
       // TODO: fix this error
       context->error(useAst, "use of dead / already deinited variable");
       break;
