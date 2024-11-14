@@ -363,6 +363,20 @@ add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
 
+
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+  if (CHPL_HOST_MIMALLOC STREQUAL "bundled")
+    find_package(mimalloc REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH} NO_DEFAULT_PATH)
+  elseif (CHPL_HOST_MIMALLOC STREQUAL "system")
+    find_package(mimalloc REQUIRED)
+  else()
+    message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
+  endif()
+
+  target_link_libraries(ChplFrontend PRIVATE mimalloc)
+  target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
+endif()
+
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")
   # let the build and install rpaths be absolute (which is the default)
