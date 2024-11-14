@@ -1708,6 +1708,7 @@ static void test22() {
 }
 
 static void test23a() {
+  // Ensure the copy-elided in formal doesn't error for its final use.
   testActions("test23a",
       R"""(
       module M {
@@ -1732,6 +1733,8 @@ static void test23a() {
 }
 
 static void test23b() {
+  // Ensure the copy-elided in formal doesn't error for multiple uses in the
+  // same call.
   testActions("test23b",
       R"""(
       module M {
