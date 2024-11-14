@@ -8,14 +8,19 @@ use nightlysubs;
 sub writeFile{
     $num_args = @_;
 
-    if ($num_args != 18) {
+    if ($num_args != 17) {
         print "usage: nightly_email.pm \$status \$rawsummary \$sortedsummary \n";
-        print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$mailer \$nochangerecipient \$recipient \n";
+        print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
         print "         \$endtime \$crontab \$testdirs \$debug\n";
+
+        print "INFO: Number of arguments is $num_args\n";
+        for my $i (0 .. $#_) {
+            print "INFO: Argument $i: $_[$i]\n";
+        }
         exit 1;
     }
-    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $prevmysystemlog, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $prevmysystemlog, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
     $status = $_[0];
     $rawsummary = $_[1];
@@ -23,7 +28,6 @@ sub writeFile{
     $prevsummary = $_[3];
     $mysystemlog = $_[4];
     $prevmysystemlog = $_[5];
-    $mailer = $_[6];
     $nochangerecipient = $_[7];
     $recipient = $_[8];
     $subjectid = $_[9];
