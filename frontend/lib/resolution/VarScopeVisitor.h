@@ -305,7 +305,7 @@ struct VarFrame {
   // for copy elision:
   // Is the last mention of the variable a copy?
   // What are the copy points?
-  std::map<ID,CopyElisionState> copyElisionState;
+  std::unordered_map<ID,CopyElisionState> copyElisionState;
 
   // for call init deinit:
   // localsAndDefers contains both VarSymbol and DeferStmt in
