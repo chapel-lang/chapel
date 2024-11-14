@@ -868,7 +868,7 @@ static void launch_kernel(const char* name,
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
   if (cfg_get_halt_flag(cfg)) {
-    chpl_internal_error("debug");
+    chpl_error("halt reached in GPU kernel", cfg->ln, cfg->fn);
   }
 
   cfg_finalize_reductions(cfg);
