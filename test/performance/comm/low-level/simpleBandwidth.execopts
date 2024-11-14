@@ -1,0 +1,2 @@
+# $((1024*8*16)) = 131072
+--numTrials=3 --sizePerTask=131072 --printTime=false
