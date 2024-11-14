@@ -722,17 +722,17 @@ module ConcurrentMap {
       Adds a key-value pair to the map. Method returns `false` if the key
       already exists in the map.
 
-     :arg key: The key to add to the map
-     :type key: keyType
+      :arg key: The key to add to the map
+      :type key: keyType
 
-     :arg val: The value that maps to ``k``
-     :type kal: valueType
+      :arg val: The value that maps to ``k``
+      :type kal: valueType
 
-     :arg tok: Token for EpochManager
+      :arg tok: Token for EpochManager
 
-     :returns: `true` if `key` was not in the map and added with value `val`.
+      :returns: `true` if `key` was not in the map and added with value `val`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc add(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool throws {
       tok.pin();
@@ -756,17 +756,17 @@ module ConcurrentMap {
       Sets the value associated with a key. Method returns `false` if the key
       does not exist in the map.
 
-     :arg key: The key whose value needs to change
-     :type key: keyType
+      :arg key: The key whose value needs to change
+      :type key: keyType
 
-     :arg val: The desired value to the key ``key``
-     :type val: valueType
+      :arg val: The desired value to the key ``key``
+      :type val: valueType
 
-     :arg tok: Token for EpochManager
+      :arg tok: Token for EpochManager
 
-     :returns: `true` if `key` was in the map and its value is updated with `val`.
-               `false` otherwise.
-     :rtype: bool
+      :returns: `true` if `key` was in the map and its value is updated with `val`.
+             `false` otherwise.
+      :rtype: bool
     */
     proc set(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()): bool throws {
       tok.pin();
