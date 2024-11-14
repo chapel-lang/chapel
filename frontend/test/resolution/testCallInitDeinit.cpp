@@ -1707,8 +1707,8 @@ static void test22() {
       });
 }
 
-static void test23() {
-  testActions("test23",
+static void test23a() {
+  testActions("test23a",
       R"""(
       module M {
         record Foo {}
@@ -1718,6 +1718,30 @@ static void test23() {
         }
 
         proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23b() {
+  testActions("test23b",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x, x);
+        }
+
+        proc doSomethingElse(in x, in y) {
           return 1;
         }
 
@@ -1822,7 +1846,8 @@ int main() {
 
   test22();
 
-  test23();
+  test23a();
+  test23b();
 
   return 0;
 }
