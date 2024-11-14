@@ -65,8 +65,7 @@ bool shouldPass = true;
 bool shouldNotPass = false;
 
 static void testProgram(std::string intent, std::string management, std::vector<std::pair<ArgumentType, bool>> args) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Build the program.

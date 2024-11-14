@@ -391,8 +391,7 @@ static void test6() {
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   Context* c = context;
 
   // test that we can pass a child class to its parent class type

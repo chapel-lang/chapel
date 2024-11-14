@@ -29,8 +29,7 @@
 #include "chpl/uast/Variable.h"
 
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var x : if true then string else "not-a-type";
@@ -39,8 +38,7 @@ static void test1() {
 }
 
 static void test2() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var x : if false then "not-a-type" else int;
@@ -49,8 +47,7 @@ static void test2() {
 }
 
 static void test3() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var b : bool;
@@ -62,8 +59,7 @@ static void test3() {
 }
 
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var b : bool;
@@ -76,8 +72,7 @@ static void test4() {
 }
 
 static void test5() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          record r {}
@@ -93,8 +88,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          param b : bool;
@@ -384,8 +378,7 @@ static void testIfVarNonNilInThen() {
 }
 
 static void testIfVarBorrow() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =

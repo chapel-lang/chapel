@@ -101,8 +101,7 @@ static std::vector<QualifiedType> extractDefinedTypes(Context* context,
 template <typename F>
 void testProgram(const std::vector<ReturnVariant>& variants, F func,
                  QualifiedType::Kind kind = QualifiedType::DEFAULT_INTENT) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   auto program = buildProgram(variants);
   std::cout << "--- test program ---" << std::endl;
   std::cout << program.c_str() << std::endl;
@@ -614,8 +613,7 @@ static void testControlFlowYield1() {
     }
     )""";
 
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto mod = parseModule(context, program);
@@ -643,8 +641,7 @@ static void testControlFlowYield2() {
     }
     )""";
 
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto mod = parseModule(context, program);
@@ -911,8 +908,7 @@ static void testSelectTypes() {
     type x = foo(int);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());

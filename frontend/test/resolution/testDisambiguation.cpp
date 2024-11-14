@@ -124,8 +124,7 @@ static void checkCalledIndex(Context* context,
 }
 
 static void test1() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   checkCalledIndex(context,
       R""""(
@@ -165,8 +164,7 @@ static void test1() {
 }
 
 static void test2() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   checkCalledIndex(context,
       R""""(
@@ -211,8 +209,7 @@ static void test2() {
 }
 
 static void test3() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   checkCalledIndex(context,
       R""""(
@@ -282,8 +279,7 @@ static void test3() {
 
 // updated disambiguation based on width of argument
 static void test4() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   std::string program =
     R""""(
@@ -336,8 +332,7 @@ static void test4() {
 }
 
 static void test5() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
@@ -357,8 +352,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
