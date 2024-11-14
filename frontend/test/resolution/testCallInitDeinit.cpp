@@ -1707,6 +1707,30 @@ static void test22() {
       });
 }
 
+static void test23() {
+  testActions("test23",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1797,6 +1821,8 @@ int main() {
   test21();
 
   test22();
+
+  test23();
 
   return 0;
 }
