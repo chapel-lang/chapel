@@ -137,6 +137,7 @@ jobs:
         ./util/buildRelease/smokeTest lint
 
   publish-docs:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: make_doc
     steps:
