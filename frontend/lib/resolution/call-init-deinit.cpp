@@ -260,8 +260,8 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
-      // skip error if this is the final use before deinit
-      if (frame->deinitedVars[varId] == useAst->id()) continue;
+      // skip error if this is a final use before deinit
+      if (frame->deinitedVars[varId].count(useAst->id()) > 0) continue;
 
       // TODO: fix this error
       context->error(useAst, "use of dead / already deinited variable");
@@ -286,7 +286,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
                                              ID skipVarId,
                                              RV& rv) {
   std::set<ID> initedAnyFrame;
-  std::unordered_map<ID, ID> deinitedAnyFrame;
+  std::unordered_map<ID, std::unordered_set<ID>> deinitedAnyFrame;
 
   ssize_t n = scopeStack.size();
 
@@ -304,7 +304,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
 
   // also count outOrInoutFormals as already deinited
   for (const auto& id : outOrInoutFormals) {
-    deinitedAnyFrame.emplace(id, ID());
+    deinitedAnyFrame.insert({id, {}});
   }
 
   for (ssize_t i = n - 1; i >= 0; i--) {
@@ -325,7 +325,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
           resolveDeinit(atAst, varOrDeferId, type, rv);
         }
 
-        deinitedAnyFrame.emplace(varOrDeferId, ID());
+        deinitedAnyFrame.insert({varOrDeferId, {}});
       }
     }
   }
@@ -357,9 +357,9 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
         recordInitializationOrder(parent, id);
       }
     }
-    for (const auto& [declId, lastUseId] : frame->deinitedVars) {
+    for (const auto& [declId, lastUseIds] : frame->deinitedVars) {
       if (frame->declaredVars.count(declId) == 0) {
-        parent->deinitedVars.emplace(declId, lastUseId);
+        parent->deinitedVars.emplace(declId, lastUseIds);
       }
     }
   }
@@ -712,7 +712,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsDeclId.isEmpty());
-      frame->deinitedVars.emplace(rhsDeclId, rhsAst->id());
+      frame->deinitedVars.insert({rhsDeclId, {rhsAst->id()}});
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
@@ -974,7 +974,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
-    frame->deinitedVars.emplace(actualId, actual->id());
+    frame->deinitedVars[actualId].emplace(actual->id());
   } else {
     processInit(frame, actual, formalType, actualType, rv);
   }
@@ -1020,7 +1020,7 @@ void CallInitDeinit::processReturnThrowYield(const uast::AstNode* ast, RV& rv) {
     if (copyElidesFromSkip) {
       // if it's a yield, we need to also mark the rhs ID variable dead
       VarFrame* frame = currentFrame();
-      frame->deinitedVars.emplace(skipDeinitId, ID());
+      frame->deinitedVars.insert({skipDeinitId, {}});
 
     } else if (needsCopyOrConv) {
       QualifiedType fnRetType = returnOrYieldType();
