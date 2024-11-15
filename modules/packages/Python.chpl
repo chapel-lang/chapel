@@ -105,7 +105,7 @@
      coforall tid in 1..10 {
        var gil = new GIL(); // acquire the GIL
        Arr[tid] = func(int, tid);
-       gil.release(); // release the GIL
+       // GIL is automatically released at the end of the block
      }
      ts.restore(); // restore the thread state
      writeln(Arr);
