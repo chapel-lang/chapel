@@ -1758,6 +1758,35 @@ static void test23b() {
       });
 }
 
+static void test23c() {
+  // Ensure the copy-elided in formal doesn't error for uses across multiple
+  // calls in the same statement.
+  testActions("test23c",
+      R"""(
+      module M {
+        // necessary to resolve + operator
+        operator +(a: int, b: int) do return __primitive("+", a, b);
+
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x) + doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1851,6 +1880,7 @@ int main() {
 
   test23a();
   test23b();
+  test23c();
 
   return 0;
 }
