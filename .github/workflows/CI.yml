@@ -135,3 +135,21 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+
+  publish-docs:
+    runs-on: ubuntu-latest
+    needs: make_doc
+    steps:
+      - name: download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+
+      - name: push docs
+        run: |
+          echo "Publish docs step demo"
+          ls -l
+          cat index.html
+          # Stuff to push docs to a web server
+          # maybe using rsync
+          # rsync -avz documentation/doc/html/ user@server:/path/to/docs
