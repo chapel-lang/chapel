@@ -47,14 +47,14 @@ static bool allowFnCallsFromGPU = true;
 static int indentGPUChecksLevel = 0;
 
 // Ideally, if we do gpuSpecialization, we could safely assume that any function
-// that isn't marked with FLAG_GPU_SPECIALIZE would be executed on a CPU locale.
+// that isn't marked with FLAG_GPU_SPECIALIZATION would be executed on a CPU locale.
 // Unfortunately, as of today, this isn't the case because these functions can
 // be reached by virtual dispatch and our specialization cloning isn't
 // sophisticated enough to clone these functions and update the dispatch calls
 // as appropriate.
 //
 // The good news is it's still safe to assume that anything marked with
-// FLAG_GPU_SPECIALIZE must execute on the gpu.
+// FLAG_GPU_SPECIALIZATION must execute on the gpu.
 //
 // Anyway, of course, our hope would be to make things handle virtual dispatch
 // properly, but, in the meantime, if you want to ignore this and make
@@ -663,7 +663,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
-  return this->parentFn_->hasFlag(FLAG_GPU_CODEGEN);
+  return this->parentFn_->hasFlag(FLAG_GPU_KERNEL);
 }
 
 bool GpuizableLoop::evaluateLoop() {
@@ -830,7 +830,6 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
   gpuCopy->name = astr(gpuCopy->name, "_gpuError");
   gpuCopy->cname = astr(gpuCopy->cname, "_gpuError");
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
-  gpuCopy->addFlag(FLAG_GPU_SPECIALIZATION); //for proper calling convention
   gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
   fn->defPoint->insertAfter(new DefExpr(gpuCopy));
 
@@ -1197,9 +1196,9 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
-  fn_->addFlag(FLAG_RESOLVED);
-  fn_->addFlag(FLAG_ALWAYS_RESOLVE);
+  fn_->addFlag(FLAG_GPU_KERNEL);
   fn_->addFlag(FLAG_GPU_CODEGEN);
+  fn_->addFlag(FLAG_RESOLVED);
 
   numThreads_ = generateNumThreads(launchBlock_, this, gpuLoop);
   generateIndexComputation();
@@ -2020,17 +2019,17 @@ void GpuKernel::finalize() {
   deadExpressionElimination(this->fn_);
 }
 
+// mark 'fn' and all functions it calls with GPU_AND_CPU_CODEGEN
 void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-    if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU))
-      // fn will not to be codegen-ed, ignore it
-      return;
-    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
-    fn->addFlag(FLAG_GPU_CODEGEN);
-  } else {
-    // this function has already been handled
-    return;
-  }
+  if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ||
+      fn->hasFlag(FLAG_GPU_CODEGEN))
+    return;  // this function has already been handled
+  if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU))
+    return;  // this function will not be codegen-ed for GPUs, ignore it
+
+  // Currently we do not check whether 'fn' is also invoked from a non-kernel.
+  // Conservatively assume that it is.
+  fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
 
   errorForOuterVarAccesses(fn);
 
@@ -2254,6 +2253,24 @@ void GpuKernel::generateKernelLaunch() {
   launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
 }
 
+static void processUserGpuPragmas() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (fn->hasFlag(FLAG_GPU_KERNEL)) {
+      if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN))
+        USR_FATAL_CONT(fn, "pragmas \"GPU kernel\" and"
+                           "\"codegen for CPU and GPU\"on the same function");
+      fn->addFlag(FLAG_GPU_CODEGEN);
+    }
+    else if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) &&
+             fn->hasFlag(FLAG_GPU_CODEGEN)) {
+      USR_FATAL_CONT(fn, "pragmas \"codegen for CPU and GPU\" and"
+                         "\"codegen for GPU\" on the same function");
+    }
+  }
+  USR_STOP();
+}
+
 // Check that all references to gCpuVsGpuToken occur only within conditionals.
 // We could do it in the front end for earlier detection, however doing it here
 // allows us to catch compiler-introduced bugs as well.
@@ -2266,6 +2283,28 @@ static void checkUsesOf_cpuVsGpuToken() {
     if (! useOK)
       USR_FATAL_CONT(se, "%s is used outside of an if-condition",
                      gCpuVsGpuToken->name);
+  }
+}
+
+static void verifyCodegenFlags() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    // GPU_CODEGEN and GPU_AND_CPU_CODEGEN are mutually-exclusive
+    INT_ASSERT(fn, !( fn->hasFlag(FLAG_GPU_CODEGEN) &&
+                      fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ));
+
+    // GPU_KERNEL implies GPU_CODEGEN
+    if (fn->hasFlag(FLAG_GPU_KERNEL)) {
+      INT_ASSERT(fn, fn->hasFlag(FLAG_GPU_CODEGEN));
+    }
+
+    // NOT_CALLED_FROM_GPU and NO_GPU_CODEGEN imply
+    // no GPU_CODEGEN and no GPU_AND_CPU_CODEGEN
+    if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU) ||
+        fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      INT_ASSERT(fn, !fn->hasFlag(FLAG_GPU_CODEGEN));
+      INT_ASSERT(fn, !fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN));
+    }
   }
 }
 
@@ -2328,6 +2367,7 @@ static void cleanupForeachLoopsGuaranteedToRunOnCpu(FnSymbol *fn) {
 }
 
 static void doGpuTransforms() {
+  processUserGpuPragmas();
   if(fGpuSpecialization) {
     CreateGpuFunctionSpecializations().doit();
   }
@@ -2353,6 +2393,7 @@ static void doGpuTransforms() {
   }
 
   checkUsesOf_cpuVsGpuToken();
+  verifyCodegenFlags(); // todo: hide behind 'if (fVerify)'
 }
 
 static void logGpuizableLoops() {

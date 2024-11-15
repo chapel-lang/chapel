@@ -214,6 +214,7 @@ void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
 bool isBuiltinExternCFunction(const char* cname);
+bool needsCodegenWrtGPU(FnSymbol* fn);
 
 const char* legalizeName(const char* name);
 

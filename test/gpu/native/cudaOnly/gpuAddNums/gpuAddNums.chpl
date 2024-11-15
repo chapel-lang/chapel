@@ -76,8 +76,7 @@ extern {
 
 }
 
-pragma "codegen for GPU"
-pragma "always resolve function"
+pragma "GPU kernel"
 export proc add_nums(dst_ptr: c_ptr(real(64))){
   //var a = 1+2;
   dst_ptr[0] = dst_ptr[0]+10;

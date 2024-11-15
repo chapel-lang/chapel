@@ -834,7 +834,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
-            if (vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) {
+            if (needsCodegenWrtGPU(vfn)) {
               int classId = ct->classId;
               int fnId = i;
               int index = gMaxVMT * classId + fnId;
@@ -1821,8 +1821,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
-        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    if (needsCodegenWrtGPU(fn)) {
       functions.push_back(fn);
     }
   }
