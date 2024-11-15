@@ -7,6 +7,8 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $UTIL_CRON_DIR/common-perf.bash
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.no-local"
 
 perf_args="-performance-description no-local -performance-configs default:v,no-local:v -sync-dir-suffix no-local"

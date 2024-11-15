@@ -25,6 +25,8 @@ if [ "$gcc_version" != "11.2.0" ]; then
   exit 2
 fi
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc112"
 
 $UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

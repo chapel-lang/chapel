@@ -10,6 +10,8 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 # valgrind serializes execution, so don't limit to one executable at a time
 unset CHPL_TEST_LIMIT_RUNNING_EXECUTABLES
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="valgrind"
 
 $UTIL_CRON_DIR/nightly -cron -valgrind -examples ${nightly_args} $(get_nightly_paratest_args 8)

@@ -13,6 +13,8 @@ unset CXX
 export CHPL_HOST_COMPILER=clang
 export CHPL_TARGET_COMPILER=clang
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-clang"
 
 $UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}
