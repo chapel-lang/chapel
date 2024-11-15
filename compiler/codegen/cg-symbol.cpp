@@ -2820,7 +2820,8 @@ void FnSymbol::codegenDef() {
       func->addFnAttr(llvm::Attribute::ReadNone);
 #endif
 
-    if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+    if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) &&
+        !gCodegenGPU /* can't immediately halt on GPU */) {
       func->addFnAttr(llvm::Attribute::NoReturn);
     }
 
