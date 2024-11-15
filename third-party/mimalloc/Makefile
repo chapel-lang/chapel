@@ -14,7 +14,7 @@ CHPL_MIMALLOC_CFG_OPTIONS += \
   -DMI_BUILD_TESTS=OFF \
   -DMI_BUILD_OBJECT=OFF
 
-# if host, build shared, otherwise just build static
+# if host, build shared and static, otherwise just build static
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 CHPL_MIMALLOC_CFG_OPTIONS += -DMI_BUILD_SHARED=ON -DMI_BUILD_STATIC=ON
 else
