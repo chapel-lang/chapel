@@ -373,8 +373,14 @@ if (CHPL_HOST_MEM STREQUAL "mimalloc")
     message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
   endif()
 
-  target_link_libraries(ChplFrontend PRIVATE mimalloc)
-  target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
+  # static linking results in much faster compile times, but casues crashes on Mac
+  if (APPLE)
+    target_link_libraries(ChplFrontend PRIVATE mimalloc)
+    target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
+  else()
+    target_link_libraries(ChplFrontend PRIVATE mimalloc-static)
+    target_link_libraries(ChplFrontendShared PRIVATE mimalloc-static)
+  endif()
 endif()
 
 # Adjust the install rpath for chpl and chpldoc
