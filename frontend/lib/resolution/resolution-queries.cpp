@@ -2828,9 +2828,11 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
 
-  if (!sig->isInitializer() && sig->needsInstantiation()) {
-    CHPL_ASSERT(false && "Should only be called on concrete or fully "
-                         "instantiated functions");
+  if (!sig->isInitializer() && !sig->untyped()->isTypeConstructor() &&
+      sig->needsInstantiation()) {
+    CHPL_ASSERT(false &&
+                "Should only be called on concrete or fully "
+                "instantiated functions");
     return nullptr;
   }
 
