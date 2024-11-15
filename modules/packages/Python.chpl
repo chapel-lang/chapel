@@ -420,11 +420,11 @@ module Python {
       } else if isSubtype(t, List.list) {
         return toList(val);
       } else if isSubtype(t, Function) {
-        return val.fn!.get();
+        return val.fn.get();
       } else if isSubtype(t, PyObject) {
         return val.get();
       } else if isSubtype(t, ClassObject) {
-        return val.obj!.get();
+        return val.obj.get();
       } else if t == NoneType {
         return Py_None;
       } else {
@@ -758,29 +758,34 @@ module Python {
     @chpldoc.nodoc
     var fnName: string;
     @chpldoc.nodoc
-    var fn: owned PyObject?;
+    var fn_: owned PyObject?;
+
+    @chpldoc.nodoc
+    proc fn: borrowed PyObject do return this.fn_!;
+
     proc init(mod: borrowed Module, in fnName: string) throws {
       this.fnName = fnName;
-      this.fn = new PyObject(mod.mod.interpreter, PyObject_GetAttrString(mod.mod.get(), fnName.c_str()));
+      this.fn_ = new PyObject(mod.mod.interpreter,
+                      PyObject_GetAttrString(mod.mod.get(), fnName.c_str()));
       init this;
-      this.fn!.check();
+      this.fn.check();
     }
     proc init(in fnName: string, in fn: owned PyObject) throws {
       this.fnName = fnName;
-      this.fn = fn;
+      this.fn_ = fn;
       init this;
-      this.fn!.check();
+      this.fn.check();
     }
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
       this.fnName = "<anon>";
       init this;
-      this.fn = interpreter.compileLambda(lambdaFn);
-      this.fn!.check();
+      this.fn_ = interpreter.compileLambda(lambdaFn);
+      this.fn.check();
     }
     /*
       Get the interpreter associated with this function.
     */
-    proc interpreter do return this.fn!.interpreter;
+    proc interpreter do return this.fn.interpreter;
 
     /*
       Returns the string representation of the object.
@@ -788,7 +793,7 @@ module Python {
 
       Equivalent to calling ``str(obj)`` in Python.
     */
-    proc str(): string throws do return this.fn!.str();
+    proc str(): string throws do return this.fn.str();
 
     /*
       Call a python function with Chapel arguments and get a Chapel return value
@@ -801,16 +806,16 @@ module Python {
 
       var pyRes;
       if pyArgs.size == 1 then
-        pyRes = PyObject_CallOneArg(this.fn!.get(), pyArgs(0));
+        pyRes = PyObject_CallOneArg(this.fn.get(), pyArgs(0));
       else
-        pyRes = PyObject_CallFunctionObjArgs(this.fn!.get(), (...pyArgs), nil);
+        pyRes = PyObject_CallFunctionObjArgs(this.fn.get(), (...pyArgs), nil);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
     proc this(type retType): retType throws {
-      var pyRes = PyObject_CallNoArgs(this.fn!.get());
+      var pyRes = PyObject_CallNoArgs(this.fn.get());
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -832,7 +837,7 @@ module Python {
         pyKwargs = nil;
       }
 
-      var pyRes = PyObject_Call(this.fn!.get(), pyArg, pyKwargs);
+      var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -851,7 +856,7 @@ module Python {
         pyKwargs = nil;
       }
 
-      var pyRes = PyObject_Call(this.fn!.get(), pyArg, pyKwargs);
+      var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -860,7 +865,7 @@ module Python {
 
 
     proc getAttr(type t, attr: string): t throws {
-      var pyAttr = PyObject_GetAttrString(this.fn!.get(), attr.c_str());
+      var pyAttr = PyObject_GetAttrString(this.fn.get(), attr.c_str());
       interpreter.checkException();
 
       var res = interpreter.fromPython(t, pyAttr);
@@ -930,29 +935,35 @@ module Python {
     Represents a Python class object.
   */
   class ClassObject {
+    @chpldoc.nodoc
     var cls: borrowed Class?;
-    var obj: owned PyObject?;
+    @chpldoc.nodoc
+    var obj_: owned PyObject?;
+
+    @chpldoc.nodoc
+    proc obj: borrowed PyObject do return this.obj_!;
+
     proc init(cls: borrowed Class, const args...) throws {
       this.cls = cls;
       init this;
-      this.obj = cls.newInstance((...args));
-      this.obj!.check();
+      this.obj_ = cls.newInstance((...args));
+      this.obj.check();
     }
     proc init(cls: borrowed Class) throws {
       this.cls = cls;
       init this;
-      this.obj = cls.newInstance();
-      this.obj!.check();
+      this.obj_ = cls.newInstance();
+      this.obj.check();
     }
     proc init(in obj: owned PyObject?) throws {
-      this.obj = obj;
+      this.obj_ = obj;
       init this;
-      this.obj!.check();
+      this.obj.check();
     }
     /*
       Get the interpreter associated with this object.
     */
-    proc interpreter do return this.obj!.interpreter;
+    proc interpreter do return this.obj.interpreter;
 
     /*
       Returns the string representation of the object.
@@ -960,18 +971,18 @@ module Python {
 
       Equivalent to calling ``str(obj)`` in Python.
     */
-    proc str(): string throws do return this.obj!.str();
+    proc str(): string throws do return this.obj.str();
 
 
     proc getAttr(type t, attr: string): t throws {
-      var pyAttr = PyObject_GetAttrString(this.obj!.get(), attr.c_str());
+      var pyAttr = PyObject_GetAttrString(this.obj.get(), attr.c_str());
       interpreter.checkException();
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
     proc setAttr(attr: string, value) throws {
       var pyValue = interpreter.toPython(value);
-      PyObject_SetAttrString(this.obj!.get(), attr.c_str(), pyValue);
+      PyObject_SetAttrString(this.obj.get(), attr.c_str(), pyValue);
       interpreter.checkException();
     }
 
@@ -982,9 +993,9 @@ module Python {
       }
       var pyRes;
       if pyArgs.size == 1 then
-        pyRes = PyObject_CallOneArg(this.obj!.get(), pyArgs(0));
+        pyRes = PyObject_CallOneArg(this.obj.get(), pyArgs(0));
       else
-        pyRes = PyObject_CallFunctionObjArgs(this.obj!.get(), (...pyArgs), nil);
+        pyRes = PyObject_CallFunctionObjArgs(this.obj.get(), (...pyArgs), nil);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -999,7 +1010,7 @@ module Python {
 
       var methodName = interpreter.toPython(method);
       var pyRes = PyObject_CallMethodObjArgs(
-        this.obj!.get(), methodName, (...pyArgs), nil);
+        this.obj.get(), methodName, (...pyArgs), nil);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1007,7 +1018,7 @@ module Python {
     }
     proc call(type retType, method: string): retType throws {
       var methodName = interpreter.toPython(method);
-      var pyRes = PyObject_CallMethodNoArgs(this.obj!.get(), methodName);
+      var pyRes = PyObject_CallMethodNoArgs(this.obj.get(), methodName);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
