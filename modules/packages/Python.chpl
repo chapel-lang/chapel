@@ -382,7 +382,7 @@ module Python {
          Most users should not need to call this directly, except when writing
          a :type:`TypeConverter`.
     */
-    proc toPython(const val: ?t): c_ptr(void) throws {
+    proc toPython(const val: ?t): PyObjectPtr throws {
       for converter in this.converters {
         if converter.handlesType(t) {
           return converter.toPython(this, t, val);
@@ -440,7 +440,7 @@ module Python {
          Most users should not need to call this directly, except when writing
          a :type:`TypeConverter`.
     */
-    proc fromPython(type t, obj: c_ptr(void)): t throws {
+    proc fromPython(type t, obj: PyObjectPtr): t throws {
       for converter in this.converters {
         if converter.handlesType(t) {
           return converter.fromPython(this, t, obj);
@@ -490,7 +490,7 @@ module Python {
       Converts an array to a python list
     */
     @chpldoc.nodoc
-    proc toList(arr): c_ptr(void) throws
+    proc toList(arr): PyObjectPtr throws
       where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
       var pyList = PyList_New(arr.size);
       this.checkException();
@@ -506,7 +506,7 @@ module Python {
       Convert a chapel list to a python list
     */
     @chpldoc.nodoc
-    proc toList(l: List.list(?)): c_ptr(void) throws {
+    proc toList(l: List.list(?)): PyObjectPtr throws {
       var pyList = PyList_New(l.size);
       this.checkException();
       for i in 0..<l.size {
@@ -520,7 +520,7 @@ module Python {
       Converts a python list to an array
     */
     @chpldoc.nodoc
-    proc fromList(type T, obj: c_ptr(void)): T throws
+    proc fromList(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
 
       if (PySequence_Check(obj) == 0) then
@@ -543,7 +543,7 @@ module Python {
       Convert a python list to a Chapel list
     */
     @chpldoc.nodoc
-    proc fromList(type T, obj: c_ptr(void)): T throws where isSubtype(T, List.list) {
+    proc fromList(type T, obj: PyObjectPtr): T throws where isSubtype(T, List.list) {
 
       if (PySequence_Check(obj) != 0) {
         // if it's a sequence with a known size, we can just iterate over it
@@ -574,7 +574,7 @@ module Python {
     /*
       Converts an array to a python set
     */
-    // proc toSet(arr): c_ptr(void) throws {
+    // proc toSet(arr): PyObjectPtr throws {
     // TODO
     // }
 
@@ -583,7 +583,7 @@ module Python {
     /*
       Converts a python set to an array
     */
-    // proc fromSet(type T, obj: c_ptr(void)): T throws {
+    // proc fromSet(type T, obj: PyObjectPtr): T throws {
     // TODO
     // }
 
@@ -594,7 +594,7 @@ module Python {
       Converts an associative array to a python dictionary
     */
     @chpldoc.nodoc
-    proc toDict(arr): c_ptr(void) throws
+    proc toDict(arr): PyObjectPtr throws
       where isArrayType(arr.type) && arr.isAssociative() {
       var pyDict = PyDict_New();
       this.checkException();
@@ -612,7 +612,7 @@ module Python {
     /*
       Converts a python dictionary to an associative array
     */
-    // proc fromDict(type T, obj: c_ptr(void)): T throws {
+    // proc fromDict(type T, obj: PyObjectPtr): T throws {
       // TODO
     // }
 
@@ -666,10 +666,10 @@ module Python {
   //   proc Self.handlesType(type T): bool;
   //   proc Self.toPython(interpreter: borrowed Interpreter,
   //                      type T,
-  //                      ref value: T): c_ptr(void) throws;
+  //                      ref value: T): PyObjectPtr throws;
   //   proc Self.fromPython(interpreter: borrowed Interpreter,
   //                        type T,
-  //                        obj: c_ptr(void)): T throws;
+  //                        obj: PyObjectPtr): T throws;
   // }
 
   /*
@@ -698,7 +698,8 @@ module Python {
 
       The :proc:`~Interpreter.toPython` method will call this method.
     */
-    proc toPython(interpreter: borrowed Interpreter, type T, const value: T): c_ptr(void) throws {
+    proc toPython(interpreter: borrowed Interpreter,
+                  type T, const value: T): PyObjectPtr throws {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -710,7 +711,8 @@ module Python {
 
       The :proc:`~Interpreter.fromPython` method will call this method.
     */
-    proc fromPython(interpreter: borrowed Interpreter, type T, obj: c_ptr(void)): T throws {
+    proc fromPython(interpreter: borrowed Interpreter,
+                    type T, obj: PyObjectPtr): T throws {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -792,7 +794,7 @@ module Python {
       Call a python function with Chapel arguments and get a Chapel return value
     */
     proc this(type retType, const args...): retType throws {
-      var pyArgs: args.size * c_ptr(void);
+      var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
@@ -817,7 +819,7 @@ module Python {
     pragma "last resort"
     proc this(type retType, const args..., kwargs:?t=none): retType throws
       where kwargs.isAssociative() {
-      var pyArgs: args.size * c_ptr(void);
+      var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
@@ -897,7 +899,7 @@ module Python {
       Create a new instance of a python class
     */
     proc newInstance(const args...): owned PyObject throws {
-      var pyArgs: args.size * c_ptr(void);
+      var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
@@ -974,7 +976,7 @@ module Python {
     }
 
     proc this(type retType, const args...): retType throws {
-      var pyArgs: args.size * c_ptr(void);
+      var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
@@ -990,7 +992,7 @@ module Python {
     }
 
     proc call(type retType, method: string, const args...): retType throws {
-      var pyArgs: args.size * c_ptr(void);
+      var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
@@ -1076,7 +1078,7 @@ module Python {
   */
   record threadState {
     @chpldoc.nodoc
-    var state: c_ptr(void);
+    var state: PyThreadStatePtr;
     @chpldoc.nodoc
     var saved: bool;
     /*
@@ -1128,7 +1130,7 @@ module Python {
     */
     var interpreter: borrowed Interpreter;
     @chpldoc.nodoc
-    var obj: c_ptr(void);
+    var obj: PyObjectPtr;
     @chpldoc.nodoc
     var isOwned: bool;
 
@@ -1139,7 +1141,7 @@ module Python {
       :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
       :arg isOwned: Whether this object owns the Python object. This is true by default.
     */
-    proc init(in interpreter: borrowed Interpreter, obj: c_ptr(void), isOwned: bool = true) {
+    proc init(in interpreter: borrowed Interpreter, obj: PyObjectPtr, isOwned: bool = true) {
       this.interpreter = interpreter;
       this.obj = obj;
       this.isOwned = isOwned;
@@ -1250,6 +1252,20 @@ module Python {
     private use CTypes;
     private use super.CWChar;
 
+
+
+    /*
+      Types
+    */
+    extern type PyObject;
+    type PyObjectPtr = c_ptr(PyObject);
+    extern type PyTypeObject;
+    type PyTypeObjectPtr = c_ptr(PyTypeObject);
+
+    extern type PyThreadState;
+    type PyThreadStatePtr = c_ptr(PyThreadState);
+    extern type PyGILState_STATE;
+
     /*
       PyConfig
     */
@@ -1299,10 +1315,10 @@ module Python {
     extern proc Py_InitializeFromConfig(config_: c_ptr(PyConfig)): PyStatus;
     extern proc PyStatus_Exception(in status: PyStatus): bool;
     extern proc Py_Finalize();
-    extern proc Py_INCREF(obj: c_ptr(void));
-    extern proc Py_DECREF(obj: c_ptr(void));
-    extern proc PyObject_Str(obj: c_ptr(void)): c_ptr(void); // `str(obj)`
-    extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): c_ptr(void);
+    extern proc Py_INCREF(obj: PyObjectPtr);
+    extern proc Py_DECREF(obj: PyObjectPtr);
+    extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
+    extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
     extern const chpl_PY_VERSION_HEX: uint(64);
     extern const chpl_PY_VERSION: c_ptrConst(c_char);
@@ -1312,111 +1328,118 @@ module Python {
       Global exec functions
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
-    extern proc chpl_PyEval_GetFrameGlobals(): c_ptr(void);
+    extern proc chpl_PyEval_GetFrameGlobals(): PyObjectPtr;
 
 
     extern var Py_eval_input: c_int;
-    extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int, globals: c_ptr(void), locals: c_ptr(void)): c_ptr(void);
+    extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int,
+                             globals: PyObjectPtr, locals: PyObjectPtr): PyObjectPtr;
 
     /*
       Threading
     */
-    extern proc PyEval_SaveThread(): c_ptr(void);
-    extern proc PyEval_RestoreThread(state: c_ptr(void));
+    extern proc PyEval_SaveThread():PyThreadStatePtr;
+    extern proc PyEval_RestoreThread(state: PyThreadStatePtr);
 
-    extern type PyGILState_STATE;
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
 
     /*
       Error handling
     */
-    extern proc PyErr_Occurred(): c_ptr(void);
-    extern proc chpl_PyErr_GetRaisedException(): c_ptr(void);
+    extern proc PyErr_Occurred(): PyObjectPtr;
+    extern proc chpl_PyErr_GetRaisedException(): PyObjectPtr;
 
     /*
       Values
     */
-    extern proc Py_BuildValue(format: c_ptrConst(c_char), vals...): c_ptr(void);
-    extern proc Py_BuildValue(format: c_ptrConst(c_char)): c_ptr(void);
-    extern proc PyLong_FromLong(v: c_long): c_ptr(void);
-    extern proc PyLong_AsLong(obj: c_ptr(void)): c_long;
-    extern proc PyLong_AsInt(obj: c_ptr(void)): c_int;
-    extern proc PyLong_FromUnsignedLong(v: c_ulong): c_ptr(void);
-    extern proc PyLong_AsUnsignedLong(obj: c_ptr(void)): c_ulong;
-    extern proc PyFloat_FromDouble(r: real(64)): c_ptr(void);
-    extern proc PyFloat_AsDouble(obj: c_ptr(void)): real(64);
-    extern proc PyBool_FromLong(v: c_long): c_ptr(void);
-    extern proc PyString_FromString(s: c_ptrConst(c_char)): c_ptr(void);
-    extern proc PyUnicode_AsUTF8(obj: c_ptr(void)): c_ptr(c_char);
+    extern proc Py_BuildValue(format: c_ptrConst(c_char), vals...): PyObjectPtr;
+    extern proc Py_BuildValue(format: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyLong_FromLong(v: c_long): PyObjectPtr;
+    extern proc PyLong_AsLong(obj: PyObjectPtr): c_long;
+    extern proc PyLong_AsInt(obj: PyObjectPtr): c_int;
+    extern proc PyLong_FromUnsignedLong(v: c_ulong): PyObjectPtr;
+    extern proc PyLong_AsUnsignedLong(obj: PyObjectPtr): c_ulong;
+    extern proc PyFloat_FromDouble(r: real(64)): PyObjectPtr;
+    extern proc PyFloat_AsDouble(obj: PyObjectPtr): real(64);
+    extern proc PyBool_FromLong(v: c_long): PyObjectPtr;
+    extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptr(c_char);
 
-    extern var Py_False: c_ptr(void);
-    extern var Py_True: c_ptr(void);
-    extern "chpl_Py_None" var Py_None: c_ptr(void);
+    extern var Py_False: PyObjectPtr;
+    extern var Py_True: PyObjectPtr;
+    extern "chpl_Py_None" var Py_None: PyObjectPtr;
 
     /*
       Sequences
     */
-    extern proc PySequence_Check(obj: c_ptr(void)): c_int;
-    extern proc PySequence_Size(obj: c_ptr(void)): c_long;
-    extern proc PySequence_GetItem(obj: c_ptr(void), idx: c_long): c_ptr(void);
-    extern proc PySequence_SetItem(obj: c_ptr(void), idx: c_long, value: c_ptr(void));
+    extern proc PySequence_Check(obj: PyObjectPtr): c_int;
+    extern proc PySequence_Size(obj: PyObjectPtr): c_long;
+    extern proc PySequence_GetItem(obj: PyObjectPtr, idx: c_long): PyObjectPtr;
+    extern proc PySequence_SetItem(obj: PyObjectPtr, idx: c_long, value: PyObjectPtr);
 
 
     /*
       Iterators
     */
-    extern "chpl_PyList_Check" proc PyIter_Check(obj: c_ptr(void)): c_int;
-    extern "chpl_PyGen_Check" proc PyGen_Check(obj: c_ptr(void)): c_int;
-    extern proc PyIter_Next(obj: c_ptr(void)): c_ptr(void);
+    extern "chpl_PyList_Check" proc PyIter_Check(obj: PyObjectPtr): c_int;
+    extern "chpl_PyGen_Check" proc PyGen_Check(obj: PyObjectPtr): c_int;
+    extern proc PyIter_Next(obj: PyObjectPtr): PyObjectPtr;
 
     /*
       Lists
     */
-    extern proc PyList_Check(obj: c_ptr(void)): c_int;
-    extern proc PyList_New(size: c_long): c_ptr(void);
-    extern proc PyList_SetItem(list: c_ptr(void), idx: c_long, item: c_ptr(void));
-    extern proc PyList_GetItem(list: c_ptr(void), idx: c_long): c_ptr(void);
-    extern proc PyList_Size(list: c_ptr(void)): c_long;
-    extern proc PyList_Insert(list: c_ptr(void), idx: c_long, item: c_ptr(void));
+    extern proc PyList_Check(obj: PyObjectPtr): c_int;
+    extern proc PyList_New(size: c_long): PyObjectPtr;
+    extern proc PyList_SetItem(list: PyObjectPtr, idx: c_long, item: PyObjectPtr);
+    extern proc PyList_GetItem(list: PyObjectPtr, idx: c_long): PyObjectPtr;
+    extern proc PyList_Size(list: PyObjectPtr): c_long;
+    extern proc PyList_Insert(list: PyObjectPtr, idx: c_long, item: PyObjectPtr);
 
     /*
       Sets
     */
-    extern proc PySet_New(): c_ptr(void);
-    extern proc PySet_Add(set: c_ptr(void), item: c_ptr(void));
-    extern proc PySet_Size(set: c_ptr(void)): c_long;
+    extern proc PySet_New(): PyObjectPtr;
+    extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
+    extern proc PySet_Size(set: PyObjectPtr): c_long;
 
 
     /*
       Dictionaries
     */
-    extern proc PyDict_New(): c_ptr(void);
-    extern proc PyDict_SetItem(dict: c_ptr(void), key: c_ptr(void), value: c_ptr(void));
-    extern proc PyDict_SetItemString(dict: c_ptr(void), key: c_ptrConst(c_char), value: c_ptr(void));
-    extern proc PyDict_GetItem(dict: c_ptr(void), key: c_ptr(void)): c_ptr(void);
-    extern proc PyDict_GetItemString(dict: c_ptr(void), key: c_ptrConst(c_char)): c_ptr(void);
-    extern proc PyDict_Size(dict: c_ptr(void)): c_long;
+    extern proc PyDict_New(): PyObjectPtr;
+    extern proc PyDict_SetItem(dict: PyObjectPtr, key: PyObjectPtr, value: PyObjectPtr);
+    extern proc PyDict_SetItemString(dict: PyObjectPtr, key: c_ptrConst(c_char),
+                                     value: PyObjectPtr);
+    extern proc PyDict_GetItem(dict: PyObjectPtr, key: PyObjectPtr): PyObjectPtr;
+    extern proc PyDict_GetItemString(dict: PyObjectPtr,
+                                     key: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyDict_Size(dict: PyObjectPtr): c_long;
 
-    extern proc PyObject_GetAttrString(obj: c_ptr(void), name: c_ptrConst(c_char)): c_ptr(void);
-    extern proc PyObject_SetAttrString(obj: c_ptr(void), name: c_ptrConst(c_char), value: c_ptr(void));
+    extern proc PyObject_GetAttrString(obj: PyObjectPtr,
+                                       name: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyObject_SetAttrString(obj: PyObjectPtr,
+                                       name: c_ptrConst(c_char),
+                                       value: PyObjectPtr);
 
     /*
       Tuples
     */
-    extern proc PyTuple_Pack(size: c_long, args...): c_ptr(void);
+    extern proc PyTuple_Pack(size: c_long, args...): PyObjectPtr;
 
     /*
       Functions
     */
-    extern proc PyObject_Call(obj: c_ptr(void), args: c_ptr(void), kwargs: c_ptr(void)): c_ptr(void);
-    extern proc PyObject_CallObject(obj: c_ptr(void), args: c_ptr(void)): c_ptr(void);
-    extern proc PyObject_CallNoArgs(obj: c_ptr(void)): c_ptr(void);
-    extern proc PyObject_CallOneArg(obj: c_ptr(void), arg: c_ptr(void)): c_ptr(void);
-    extern proc PyObject_CallFunctionObjArgs(obj: c_ptr(void), args...): c_ptr(void);
+    extern proc PyObject_Call(obj: PyObjectPtr, args: PyObjectPtr, kwargs: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallObject(obj: PyObjectPtr, args: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallNoArgs(obj: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallOneArg(obj: PyObjectPtr, arg: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallFunctionObjArgs(obj: PyObjectPtr, args...): PyObjectPtr;
 
-    extern proc PyObject_CallMethodNoArgs(obj: c_ptr(void), method: c_ptr(void)): c_ptr(void);
-    extern proc PyObject_CallMethodObjArgs(obj: c_ptr(void), method: c_ptr(void), args...): c_ptr(void);
+    extern proc PyObject_CallMethodNoArgs(obj: PyObjectPtr,
+                                          method: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallMethodObjArgs(obj: PyObjectPtr,
+                                           method: PyObjectPtr, args...): PyObjectPtr;
 
   }
 }
