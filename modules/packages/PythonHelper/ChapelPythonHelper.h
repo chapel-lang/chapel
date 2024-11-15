@@ -35,14 +35,14 @@ static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 }
 
 static inline PyObject* chpl_PyErr_GetRaisedException(void) {
-#if PY_VERSION_HEX >= 0x030d0000 /* Python 3.12 */
+#if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
   return PyErr_GetRaisedException();
 #else
   // use PyErr_Fetch
-  PyObject* pytype;
+  PyObject* ptype;
   PyObject* pvalue;
   PyObject* ptraceback;
-  PyErr_Fetch(&ptype, pvalue, &ptraceback);
+  PyErr_Fetch(&ptype, &pvalue, &ptraceback);
   // for now, don't care about type and traceback
   if (ptype) Py_DECREF(ptype);
   if (ptraceback) Py_DECREF(ptraceback);
