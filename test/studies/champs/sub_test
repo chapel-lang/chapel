@@ -85,7 +85,6 @@ ls $CHAMPS_HOME
 test_compile icing
 
 if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
-  test_compile prep
   test_compile flow
   test_compile drop
   test_compile potential
@@ -93,14 +92,6 @@ if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile geo
   test_compile thermo
   test_compile postLink
-
-  # we are seeing OOM issues with the C backend that we attribute to a
-  # system/backend issue. Until we figure out what's going wrong, stop testing
-  # this executable with the C backend
-  if [ "${CHPL_TARGET_COMPILER}" != "gnu" ] ; then
-    test_compile post
-  fi
-
   test_compile stochasticIcing
   test_compile octree
   test_compile eigenSolvePost
@@ -109,6 +100,14 @@ if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile continuation
   test_compile stability
   test_compile coloring
+
+  # we are seeing OOM issues with the C backend that we attribute to a
+  # system/backend issue. Until we figure out what's going wrong, stop testing
+  # these executables with the C backend
+  if [ "${CHPL_TARGET_COMPILER}" != "gnu" ] ; then
+    test_compile prep
+    test_compile post
+  fi
 fi
 
 
