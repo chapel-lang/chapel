@@ -5,7 +5,7 @@ use lib "$FindBin::Bin";
 
 use nightlysubs;
 
-sub writeFile{
+sub nightly_email_file{
     $num_args = @_;
 
     if ($num_args != 17) {
@@ -28,17 +28,17 @@ sub writeFile{
     $prevsummary = $_[3];
     $mysystemlog = $_[4];
     $prevmysystemlog = $_[5];
-    $nochangerecipient = $_[7];
-    $recipient = $_[8];
-    $subjectid = $_[9];
-    $config_name = $_[10];
-    $revision = $_[11];
-    $rawlog = $_[12];
-    $starttime = $_[13];
-    $endtime = $_[14];
-    $crontab = $_[15];
-    $testdirs = $_[16];
-    $debug = $_[17];
+    $nochangerecipient = $_[6];
+    $recipient = $_[7];
+    $subjectid = $_[8];
+    $config_name = $_[9];
+    $revision = $_[10];
+    $rawlog = $_[11];
+    $starttime = $_[12];
+    $endtime = $_[13];
+    $crontab = $_[14];
+    $testdirs = $_[15];
+    $debug = $_[16];
 
     # Nothing sorts the system log for us; do that now, so that 'comm' is
     # given a lexically sorted input as it expects.
