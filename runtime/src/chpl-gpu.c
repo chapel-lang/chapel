@@ -417,6 +417,8 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
   for(int i = 0; i < cfg->n_host_registered; i++) {
     cfg->host_registered_vars[i] = &cfg->host_registered_var_boxes[i];
   }
+
+  cfg->halt_flag = NULL;
 }
 
 static void cfg_init_dims_1d(kernel_cfg* cfg, int64_t num_threads,
