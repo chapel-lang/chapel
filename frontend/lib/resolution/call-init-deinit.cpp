@@ -260,8 +260,11 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
-      // skip error if this is the final use before deinit
-      if (frame->deinitedVars[varId] == useAst->id()) continue;
+      // For vars dead at end of stmt, don't error for uses within stmt.
+      if (frame->deinitedVars[varId] ==
+          parsing::idToParentId(context, useAst->id())) {
+        continue;
+      }
 
       // TODO: fix this error
       context->error(useAst, "use of dead / already deinited variable");
@@ -357,9 +360,9 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
         recordInitializationOrder(parent, id);
       }
     }
-    for (const auto& [declId, lastUseId] : frame->deinitedVars) {
+    for (const auto& [declId, lastStmtId] : frame->deinitedVars) {
       if (frame->declaredVars.count(declId) == 0) {
-        parent->deinitedVars.emplace(declId, lastUseId);
+        parent->deinitedVars.emplace(declId, lastStmtId);
       }
     }
   }
@@ -712,7 +715,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsDeclId.isEmpty());
-      frame->deinitedVars.emplace(rhsDeclId, rhsAst->id());
+      frame->deinitedVars.emplace(rhsDeclId, ast->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
@@ -974,7 +977,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
-    frame->deinitedVars.emplace(actualId, actual->id());
+    frame->deinitedVars.emplace(actualId, ast->id());
   } else {
     processInit(frame, actual, formalType, actualType, rv);
   }

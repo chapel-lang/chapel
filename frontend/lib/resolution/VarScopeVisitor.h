@@ -321,7 +321,7 @@ struct VarFrame {
   std::vector<ID> initedOuterVars;
 
   // Which variables have been deinitialized early in this scope?
-  // Map of (decl ID) -> (last use before deinit ID)
+  // Map of (ID of decl) -> (ID of stmt after which it is deinited)
   std::unordered_map<ID, ID> deinitedVars;
 
   VarFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
