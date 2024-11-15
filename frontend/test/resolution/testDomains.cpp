@@ -158,101 +158,100 @@ module M {
   printf("Success: %s\n", domainType.c_str());
 }
 
-// static void testAssociative(Context* context,
-//                                   std::string domainType,
-//                                   std::string idxType,
-//                                   bool parSafe) {
-//   context->advanceToNextRevision(false);
-//   setupModuleSearchPaths(context, false, false, {}, {});
-//   ErrorGuard guard(context);
+static void testAssociative(Context* context,
+                                  std::string domainType,
+                                  std::string idxType,
+                                  bool parSafe) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
 
-//   std::string program =
-// R"""(
-// module M {
-//   var d : )""" + domainType + R"""(;
-//   type ig = )""" + idxType + R"""(;
+  std::string program =
+R"""(
+module M {
+  var d : )""" + domainType + R"""(;
+  type ig = )""" + idxType + R"""(;
 
-//   type i = d.idxType;
-//   param s = d.parSafe;
-//   param rk = d.isRectangular();
-//   param ak = d.isAssociative();
+  type i = d.idxType;
+  param s = d.parSafe;
+  param rk = d.isRectangular();
+  param ak = d.isAssociative();
 
-//   var p = d.pid();
+  var p = d.pid();
 
-//   for loopI in d {
-//     var z = loopI;
-//   }
+  for loopI in d {
+    var z = loopI;
+  }
 
-//   proc generic(arg: domain) {
-//     type GT = arg.type;
-//     return 42;
-//   }
+  proc generic(arg: domain) {
+    type GT = arg.type;
+    return 42;
+  }
 
-//   proc concrete(arg: )""" + domainType + R"""() {
-//     type CT = arg.type;
-//     return 42;
-//   }
+  proc concrete(arg: )""" + domainType + R"""() {
+    type CT = arg.type;
+    return 42;
+  }
 
-//   var g_ret = generic(d);
-//   var c_ret = concrete(d);
-// }
-// )""";
-//   // TODO: generic checks
+  var g_ret = generic(d);
+  var c_ret = concrete(d);
+}
+)""";
 
-//   auto path = UniqueString::get(context, "input.chpl");
-//   setFileText(context, path, std::move(program));
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
 
-//   const ModuleVec& vec = parseToplevel(context, path);
-//   const Module* m = vec[1]; 
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[1]; 
 
-//   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-//   QualifiedType dType = findVarType(m, rr, "d");
-//   assert(dType.type()->isDomainType());
+  QualifiedType dType = findVarType(m, rr, "d");
+  assert(dType.type()->isDomainType());
 
-//   auto fullIndexType = findVarType(m, rr, "i");
-//   assert(findVarType(m, rr, "ig") == fullIndexType);
+  auto fullIndexType = findVarType(m, rr, "i");
+  assert(findVarType(m, rr, "ig") == fullIndexType);
 
-//   assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == parSafe);
+  assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == parSafe);
 
-//   assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == false);
+  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == false);
 
-//   assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == true);
+  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == true);
 
-//   assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
+  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
-//   assert(findVarType(m, rr, "z").type() == fullIndexType.type());
+  assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
-//   {
-//     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
-//     auto res = rr.byAst(g_ret);
-//     assert(res.type().type()->isIntType());
+  {
+    const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
+    auto res = rr.byAst(g_ret);
+    assert(res.type().type()->isIntType());
 
-//     auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
-//     // Generic function, should have been instantiated
-//     assert(call->signature()->instantiatedFrom() != nullptr);
+    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    // Generic function, should have been instantiated
+    assert(call->signature()->instantiatedFrom() != nullptr);
 
-//     const Variable* GT = findOnlyNamed(m, "GT")->toVariable();
-//     assert(call->byAst(GT).type().type() == dType.type());
-//   }
+    const Variable* GT = findOnlyNamed(m, "GT")->toVariable();
+    assert(call->byAst(GT).type().type() == dType.type());
+  }
 
-//   {
-//     const Variable* c_ret = findOnlyNamed(m, "c_ret")->toVariable();
-//     auto res = rr.byAst(c_ret);
-//     assert(res.type().type()->isIntType());
+  {
+    const Variable* c_ret = findOnlyNamed(m, "c_ret")->toVariable();
+    auto res = rr.byAst(c_ret);
+    assert(res.type().type()->isIntType());
 
-//     auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
-//     // Concrete function, should not be instantiated
-//     assert(call->signature()->instantiatedFrom() == nullptr);
+    auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
+    // Concrete function, should not be instantiated
+    assert(call->signature()->instantiatedFrom() == nullptr);
 
-//     const Variable* CT = findOnlyNamed(m, "CT")->toVariable();
-//     assert(call->byAst(CT).type().type() == dType.type());
-//   }
+    const Variable* CT = findOnlyNamed(m, "CT")->toVariable();
+    assert(call->byAst(CT).type().type() == dType.type());
+  }
 
-//   assert(guard.errors().size() == 0);
+  assert(guard.errors().size() == 0);
 
-//   printf("Success: %s\n", domainType.c_str());
-// }
+  printf("Success: %s\n", domainType.c_str());
+}
 
 static void testBadPass(Context* context, std::string argType,
                         std::string actualType) {
@@ -390,26 +389,23 @@ int main() {
   testRectangular(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
   testRectangular(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
 
-  // TODO: re-enable associative
-  // testAssociative(context, "domain(int)", "int", true);
-  // testAssociative(context, "domain(int, false)", "int", false);
-  // testAssociative(context, "domain(string)", "string", true);
+  testAssociative(context, "domain(int)", "int", true);
+  testAssociative(context, "domain(int, false)", "int", false);
+  testAssociative(context, "domain(string)", "string", true);
 
   testBadPass(context, "domain(1)", "domain(2)");
   testBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
   testBadPass(context, "domain(1, int(8))", "domain(1, int(16))");
   testBadPass(context, "domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
-  // TODO: re-enable associative badPass
-  // testBadPass(context, "domain(int)", "domain(string)");
-  // testBadPass(context, "domain(1)", "domain(int)");
+  testBadPass(context, "domain(int)", "domain(string)");
+  testBadPass(context, "domain(1)", "domain(int)");
 
   testIndex(context, "domain(1)", "int");
   testIndex(context, "domain(2)", "2*int");
   testIndex(context, "domain(1, bool)", "bool");
   testIndex(context, "domain(2, bool)", "2*bool");
-  // TODO: re-enable associative indexes
-  // testIndex(context, "domain(int)", "int");
-  // testIndex(context, "domain(string)", "string");
+  testIndex(context, "domain(int)", "int");
+  testIndex(context, "domain(string)", "string");
 
   testBadDomain(context, "domain()");
   testBadDomain(context, "domain(1, 2, 3, 4)");
