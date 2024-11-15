@@ -48,7 +48,7 @@
 
   This module provides a Chapel interface to a Python interpreter.
   It allows manipulating native Python objects and libraries with minimal
-  wrapper code require.
+  wrapper code required.
 
   .. note::
 
@@ -58,9 +58,8 @@
   Compiling Chapel code
   ---------------------
 
-  Building Chapel code that uses this module requires some additional flags.
-  Chapel needs the ``Python.h`` header file and the Python library to be linked
-  when compiling Chapel code that uses this module. If ``python3`` is installed,
+  Compiling Chapel code that uses this module needs the ``Python.h`` header file
+  and requires linking with the Python library. If ``python3`` is installed,
   this can be achieved with the following commands:
 
   .. code-block:: bash
@@ -330,20 +329,27 @@ module Python {
     /*
       Compile a lambda function like 'lambda x,: x + 1'
 
-      Note: this only works with lambdas that a tuple of arguments, like 'x,' or '*args'
+      Note: this only works with lambdas that accept a tuple of arguments,
+      like 'x,' or '*args'
     */
     @chpldoc.nodoc
     proc compileLambda(l: string): owned PyObject throws {
       var globals = chpl_PyEval_GetFrameGlobals();
+      var globalsNeedDecref = false;
       // create a globals if it doesn't exist
       if !globals {
-        globals = Py_BuildValue("{}"); // TODO: need to decrement this?
+        globals = Py_BuildValue("{}");
+        globalsNeedDecref = true;
       }
       // this is the equivalent of `eval(compile(l, '<string>', 'eval'))`
       // we can also do `Py_CompileString` -> `PyFunction_New`?
       var code = PyRun_String(l.c_str(), Py_eval_input, globals, nil);
       this.checkException();
       var obj = new PyObject(this, code);
+
+      if globalsNeedDecref {
+        Py_DECREF(globals);
+      }
       return obj;
     }
 
@@ -358,14 +364,13 @@ module Python {
          most users should not need to call this method directly.
     */
     inline proc checkException() throws {
-      var ptype, pvalue, ptraceback: c_ptr(void);
-      PyErr_Fetch(c_ptrTo(ptype), c_ptrTo(pvalue), c_ptrTo(ptraceback));
-
-      if pvalue {
-        var pvalue_str = PyObject_Str(pvalue);
-        var value_str = this.fromPython(string, pvalue_str);
-        Py_DECREF(pvalue_str);
-        throw new PythonException(value_str);
+      var exc = chpl_PyErr_GetRaisedException();
+      if exc {
+        var py_str = PyObject_Str(exc);
+        var str = this.fromPython(string, py_str);
+        Py_DECREF(py_str);
+        Py_DECREF(exc);
+        throw new PythonException(str);
       }
     }
 
@@ -518,21 +523,20 @@ module Python {
     proc fromList(type T, obj: c_ptr(void)): T throws
       where isArrayType(T) {
 
-      if (PySequence_Check(obj)) {
-        // if its a sequence with a known size, we can just iterate over it
-        var res: T;
-        if PySequence_Size(obj) != res.size {
-          throw new ChapelException("Size mismatch");
-        }
-        for i in 0..<res.size {
-          const idx = res.domain.orderToIndex(i);
-          res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
-          this.checkException();
-        }
-        return res;
-      } else {
+      if (PySequence_Check(obj) == 0) then
         throw new ChapelException("Can only convert a sequence with a known size to an array");
+
+      // if its a sequence with a known size, we can just iterate over it
+      var res: T = noinit;
+      if PySequence_Size(obj) != res.size {
+        throw new ChapelException("Size mismatch");
       }
+      for i in 0..<res.size {
+        const idx = res.domain.orderToIndex(i);
+        res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
+        this.checkException();
+      }
+      return res;
     }
 
     /*
@@ -1300,6 +1304,9 @@ module Python {
     extern proc PyObject_Str(obj: c_ptr(void)): c_ptr(void); // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): c_ptr(void);
 
+    extern const chpl_PY_VERSION_HEX: uint(64);
+    extern const chpl_PY_VERSION: c_ptrConst(c_char);
+
 
     /*
       Global exec functions
@@ -1325,9 +1332,7 @@ module Python {
       Error handling
     */
     extern proc PyErr_Occurred(): c_ptr(void);
-    extern proc PyErr_Fetch(ptype: c_ptr(c_ptr(void)),
-                            pvalue: c_ptr(c_ptr(void)),
-                            ptraceback: c_ptr(c_ptr(void)));
+    extern proc chpl_PyErr_GetRaisedException(): c_ptr(void);
 
     /*
       Values

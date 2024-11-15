@@ -23,11 +23,32 @@
 
 #include <Python.h>
 
+const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
+const char* chpl_PY_VERSION = PY_VERSION;
+
 static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 #if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
   return PyEval_GetFrameGlobals();
 #else
   return PyEval_GetGlobals();
+#endif
+}
+
+static inline PyObject* chpl_PyErr_GetRaisedException(void) {
+#if PY_VERSION_HEX >= 0x030d0000 /* Python 3.12 */
+  return PyErr_GetRaisedException();
+#else
+  // use PyErr_Fetch
+  PyObject* pytype;
+  PyObject* pvalue;
+  PyObject* ptraceback;
+  PyErr_Fetch(&ptype, pvalue, &ptraceback);
+  // for now, don't care about type and traceback
+  if (ptype) Py_DECREF(ptype);
+  if (ptraceback) Py_DECREF(ptraceback);
+
+  if (pvalue) return pvalue;
+  return NULL;
 #endif
 }
 
