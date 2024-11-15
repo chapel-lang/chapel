@@ -383,6 +383,7 @@ if (INSTALLATION_MODE STREQUAL "prefix")
   set_target_properties(chpl chpldoc ChplFrontendShared
                         PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
+  # TODO: handle rpath for mimalloc in prefix installs
   install(TARGETS chpl
           RUNTIME DESTINATION bin)
   install(TARGETS chpldoc OPTIONAL
@@ -405,10 +406,23 @@ else()
       set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
     endif()
 
+    if (CHPL_HOST_MEM STREQUAL "mimalloc")
+      if (CHPL_HOST_MIMALLOC STREQUAL "bundled")
+        if(APPLE)
+          set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};@executable_path/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib")
+        else()
+          # TODO: this adds both lib and lib64 but should only add the correct one
+          set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};$ORIGIN/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib;$ORIGIN/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib64")
+        endif()
+      elseif (CHPL_HOST_MIMALLOC STREQUAL "system")
+        set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};${MIMALLOC_LIBRARY_DIR}")
+      endif()
+    endif()
+
     set_target_properties(chpl chpldoc ChplFrontendShared
                           PROPERTIES
                           BUILD_WITH_INSTALL_RPATH TRUE
-                          INSTALL_RPATH ${CHPL_INSTALL_RPATH})
+                          INSTALL_RPATH "${CHPL_INSTALL_RPATH}")
   endif()
 
   install(TARGETS chpl
