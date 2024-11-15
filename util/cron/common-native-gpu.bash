@@ -9,7 +9,7 @@ source $CWD/common.bash
 export CHPL_LLVM=system
 export CHPL_LOCALE_MODEL=gpu
 export CHPL_TEST_GPU=true
-export CHPL_NIGHTLY_TEST_DIRS="gpu/native users/engin/context"
+export CHPL_NIGHTLY_TEST_DIRS="gpu/native users/engin/context release/examples"
 
 unset CHPL_START_TEST_ARGS
 nightly_args="${nightly_args} -no-buildcheck"

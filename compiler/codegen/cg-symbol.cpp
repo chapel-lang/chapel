@@ -2306,6 +2306,17 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
 
 #endif
 
+bool needsCodegenWrtGPU(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_NO_CODEGEN))
+    return false;
+
+  if (gCodegenGPU)
+    return fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ||
+           fn->hasFlag(FLAG_GPU_CODEGEN);
+  else
+    return !fn->hasFlag(FLAG_GPU_CODEGEN);
+}
+
 // forHeader == true when generating the C header.
 GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   GenInfo* info = gGenInfo;
@@ -2501,14 +2512,7 @@ void FnSymbol::codegenPrototype() {
   GenInfo *info = gGenInfo;
 
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
-  if (hasFlag(FLAG_NO_CODEGEN))   return;
-  if (gCodegenGPU == true) {
-    if (hasFlag(FLAG_GPU_AND_CPU_CODEGEN) == false &&
-       hasFlag(FLAG_GPU_CODEGEN) == false)
-      return;
-    if (hasFlag(FLAG_NOT_CALLED_FROM_GPU))
-      return;
-  }
+  if (! needsCodegenWrtGPU(this)) return;
 
   if( info->cfile ) {
     // In C, we don't need to generate prototypes for external
@@ -2553,8 +2557,9 @@ void FnSymbol::codegenPrototype() {
       return;
     }
 
-    bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
-
+    bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_KERNEL));
+    bool generatingGPUFun = (gCodegenGPU &&
+      ( hasFlag(FLAG_GPU_CODEGEN) || hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ));
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
     if (fDynoLibGenOrUse) {
       linkage = llvm::Function::LinkOnceODRLinkage;
@@ -2570,9 +2575,9 @@ void FnSymbol::codegenPrototype() {
                                                   info->module);
     trackLLVMValue(func);
 
-    if (generatingGPUKernel) {
+    if (generatingGPUFun) {
       func->setConvergent();
-      if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+      if (hasFlag(FLAG_GPU_KERNEL)) {
         switch (getGpuCodegenType()) {
           case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
             func->setCallingConv(llvm::CallingConv::PTX_Kernel);
@@ -2758,12 +2763,7 @@ void FnSymbol::codegenDef() {
     gdbShouldBreakHere();
   }
 
-  if( hasFlag(FLAG_NO_CODEGEN) ) return;
-
-  if( (hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU) &&
-      !hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) return;
-
-  if (gCodegenGPU && hasFlag(FLAG_NOT_CALLED_FROM_GPU)) return;
+  if (!needsCodegenWrtGPU(this)) return;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();
@@ -3130,7 +3130,7 @@ void FnSymbol::codegenDef() {
       if( ! debug_info )
         problems = llvm::verifyFunction(*func, &llvm::errs());
       if( problems ) {
-        INT_FATAL("LLVM function verification failed");
+        INT_FATAL(this, "LLVM function verification failed");
       }
     }
 

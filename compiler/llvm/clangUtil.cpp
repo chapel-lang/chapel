@@ -2308,7 +2308,7 @@ void finishCodegenLLVM() {
       llvm::MDString::get(info->module->getContext(), chapel_string))
   );
 
-  if(debug_info)debug_info->finalize();
+  if (debug_info) debug_info->finalize();
 
   // finish bringing in symbols from separately compiled .dyno files
   if (fDynoLibGenOrUse && !fDynoGenLib) {
@@ -2316,11 +2316,11 @@ void finishCodegenLLVM() {
   }
 
   // Verify the LLVM module.
-  if( developer ) {
+  if (developer || fVerify) {
     bool problems;
     problems = verifyModule(*info->module, &errs());
     //problems = false;
-    if(problems) {
+    if (problems) {
       INT_FATAL("LLVM module verification failed");
     }
   }

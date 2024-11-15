@@ -12,7 +12,6 @@ extern {
 }
 
 pragma "codegen for GPU"
-pragma "always resolve function"
 extern proc printInt(x : c_int);
 
 proc testValue(){

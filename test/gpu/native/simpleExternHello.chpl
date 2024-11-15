@@ -4,7 +4,6 @@
 extern { static __device__ __host__ void externHello() {  printf("hello\n"); }; }
 
 pragma "codegen for GPU"
-pragma "always resolve function"
 extern proc externHello();
 
 on here.gpus[0] {

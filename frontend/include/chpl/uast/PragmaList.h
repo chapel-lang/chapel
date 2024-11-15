@@ -292,18 +292,21 @@ PRAGMA(GET_MODULE_NAME, ypr, "get module name", "replace calls to this function 
 
 PRAGMA(GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 PRAGMA(GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
-PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function calling convention to kernel launch")
-PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
+
+// GPU-related flags
+PRAGMA(GPU_KERNEL, npr, "GPU kernel", "GPU kernel function to be launched on the device")
+PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "this function may execute on a GPU")
+PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "this function may execute on a GPU or on a CPU")
+PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", "reachable only from `on (a GPU sublocale)`")
+PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", "this function is GPU-ineligible")
+PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "runtime error if this function is called from a gpu")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
-PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
-PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "this function will never be called from a gpu")
-PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
-
 PRAGMA(IGNORE_RUNTIME_TYPE, ypr, "ignore runtime type", "use the static type only in the return value")
 PRAGMA(IGNORE_IN_GLOBAL_ANALYSIS, ypr, "ignore in global analysis", "ignore this function in global use-before-def analysis")
+PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 PRAGMA(RVV, npr, "RVV", "variable is the return value variable")
 PRAGMA(YVV, npr, "YVV", "variable is a yield value variable")
 PRAGMA(HEAP, npr, "heap", ncm)
@@ -442,8 +445,6 @@ PRAGMA(NO_REMOTE_MEMORY_FENCE, ypr, "no remote memory fence", ncm)
 PRAGMA(NO_RENAME, npr, "no rename", ncm)
 PRAGMA(NO_RVF, ypr, "do not RVF", ncm)
 PRAGMA(NO_WIDE_CLASS, ypr, "no wide class", ncm)
-
-PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", ncm)
 
 // See ORDER_INDEPENDENT_YIELDING_LOOPS below
 PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent")
