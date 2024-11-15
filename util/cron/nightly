@@ -21,7 +21,7 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
-use nightly_email;
+use nightly_email_file;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
 $replymail = "";
