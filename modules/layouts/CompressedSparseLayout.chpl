@@ -937,7 +937,7 @@ module CompressedSparseLayout {
     }
 
     proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
-      if srcDom == destDom {
+      if !boundsChecking || srcDom == destDom {
         destClass.data = this.data;
         return true;
       } else {
@@ -946,7 +946,7 @@ module CompressedSparseLayout {
     }
 
     proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
-      if srcDom == destDom {
+      if !boundsChecking || srcDom == destDom {
         this.data = srcClass.data;
         return true;
       } else {
