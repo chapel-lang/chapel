@@ -988,9 +988,9 @@ Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {
   for (int i = 0; i < ft->numFormals(); i++) {
     auto formal = ft->formal(i);
     FcfFormalInfo info;
-    info.type = formal->type;
-    info.intent = formal->intent;
-    info.name = formal->name;
+    info.type = formal->type();
+    info.intent = formal->intent();
+    info.name = formal->name();
     formals.push_back(std::move(info));
   }
 
@@ -1110,6 +1110,10 @@ void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
     if (!fn->isGeneric() && !fn->hasFlag(FLAG_NO_FN_BODY)) {
       resolveFunction(fn);
       done = fn->isResolved();
+    } else if (fn->hasFlag(FLAG_EXTERN)) {
+      // We've resolved the extern thing to the best of our ability.
+      fn->addFlag(FLAG_RESOLVED);
+      done = true;
     }
   }
 

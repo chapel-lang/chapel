@@ -619,7 +619,8 @@ namespace {
   using FormalVec = std::vector<FunctionType::Formal>;
 }
 
-FunctionType::FunctionType(Kind kind, FormalVec formals,
+FunctionType::FunctionType(Kind kind, Width width, Linkage linkage,
+                           FormalVec formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws,
@@ -627,6 +628,8 @@ FunctionType::FunctionType(Kind kind, FormalVec formals,
                            const char* userTypeString)
     : Type(E_FunctionType, nullptr),
       kind_(kind),
+      width_(width),
+      linkage_(linkage),
       formals_(std::move(formals)),
       returnIntent_(returnIntent),
       returnType_(returnType),
@@ -639,7 +642,7 @@ void FunctionType::verify() {
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals_) {
-    if (formal.name != nullptr) {
+    if (formal.name() != nullptr) {
       isAnyFormalNamed = true;
       break;
     }
@@ -664,21 +667,33 @@ FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 const char*
 FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
+                                        FunctionType::Width width,
+                                        FunctionType::Linkage linkage,
                                         const FormalVec& formals,
                                         RetTag returnIntent,
                                         Type* returnType,
                                         bool throws) {
   std::ostringstream oss;
+
+  if (developer) {
+    oss << FunctionType::widthToString(width) << " ";
+  }
+
+  if (auto linkageStr = FunctionType::linkageToString(linkage)) {
+    oss << linkageStr << " ";
+  }
+
   oss << FunctionType::kindToString(kind) << "(";
 
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
-    bool skip = isIntentSameAsDefault(info.intent, info.type);
-    if (!skip) oss << intentToString(info.intent);
-    if (!skip && info.name) oss << " ";
-    if (info.name) oss << info.name;
-    if ((!skip || info.name) && info.type != dtAny) oss << ": ";
-    if (info.type != dtAny) oss << typeToString(info.type);
+    bool skip = isIntentSameAsDefault(info.intent(), info.type());
+
+    if (!skip) oss << intentToString(info.intent());
+    if (!skip && info.name()) oss << " ";
+    if (info.name()) oss << info.name();
+    if ((!skip || info.name()) && info.type() != dtAny) oss << ": ";
+    if (info.type() != dtAny) oss << typeToString(info.type());
     if ((i+1) != formals.size()) oss << ", ";
   }
 
@@ -706,6 +721,23 @@ const char* FunctionType::kindToString(FunctionType::Kind kind) {
   return nullptr;
 }
 
+const char* FunctionType::widthToString(FunctionType::Width width) {
+  switch (width) {
+    case LOCAL: return "local";
+    case WIDE: return "wide";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::linkageToString(FunctionType::Linkage linkage) {
+  switch (linkage) {
+    case EXTERN: return "extern";
+    case EXPORT: return "export";
+    case DEFAULT: return nullptr;
+  }
+  return nullptr;
+}
+
 const char* FunctionType::intentToString(IntentTag intent) {
   switch (intent) {
     case INTENT_IN: return "in";
@@ -715,7 +747,7 @@ const char* FunctionType::intentToString(IntentTag intent) {
     case INTENT_CONST_IN: return "const in";
     case INTENT_REF: return "ref";
     case INTENT_CONST_REF: return "const ref";
-    case INTENT_REF_MAYBE_CONST: return nullptr;
+    case INTENT_REF_MAYBE_CONST: return "const? ref";
     case INTENT_PARAM: return "param";
     case INTENT_TYPE: return "type";
     case INTENT_BLANK: return nullptr;
@@ -751,7 +783,11 @@ bool FunctionType::isIntentSameAsDefault(IntentTag intent, Type* t) {
   return ret;
 }
 
+static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType);
+
 FunctionType* FunctionType::create(FunctionType::Kind kind,
+                                   FunctionType::Width width,
+                                   FunctionType::Linkage linkage,
                                    FormalVec formals,
                                    RetTag returnIntent,
                                    Type* returnType,
@@ -759,15 +795,17 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
-    isAnyFormalNamed |= formal.name != nullptr;
-    formal.name = astr(formal.name);
+    isAnyFormalNamed |= formal.name() != nullptr;
   }
 
-  auto cstr = FunctionType::buildUserFacingTypeString(kind, formals,
+  auto cstr = FunctionType::buildUserFacingTypeString(kind, width,
+                                                      linkage,
+                                                      formals,
                                                       returnIntent,
                                                       returnType,
                                                       throws);
-  auto ret = new FunctionType(kind, std::move(formals), returnIntent,
+  auto ret = new FunctionType(kind, width, linkage, std::move(formals),
+                              returnIntent,
                               returnType,
                               throws,
                               isAnyFormalNamed,
@@ -816,14 +854,18 @@ static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
 }
 
 FunctionType* FunctionType::get(FunctionType::Kind kind,
+                                FunctionType::Width width,
+                                FunctionType::Linkage linkage,
                                 FormalVec formals,
                                 RetTag returnIntent,
                                 Type* returnType,
                                 bool throws) {
-  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
-                                     returnType,
-                                     throws);
-  auto ret = cacheFunctionTypeOrReuse(fnType);
+  auto ft = FunctionType::create(kind, width, linkage,
+                                 std::move(formals),
+                                 returnIntent,
+                                 returnType,
+                                 throws);
+  auto ret = cacheFunctionTypeOrReuse(ft);
   return ret;
 }
 
@@ -833,30 +875,62 @@ FunctionType::Kind FunctionType::determineKind(FnSymbol* fn) {
   return FunctionType::PROC;
 }
 
-FunctionType* FunctionType::get(FnSymbol* fn) {
-  FunctionType::Kind kind = determineKind(fn);
+FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXTERN)) return FunctionType::EXTERN;
+  if (fn->hasFlag(FLAG_EXPORT)) return FunctionType::EXPORT;
+  return FunctionType::DEFAULT;
+}
+
+static FunctionType*
+getFunctionTypeFromFunction(FnSymbol* fn, FunctionType::Width width) {
+  FunctionType::Kind kind = FunctionType::determineKind(fn);
+  FunctionType::Linkage linkage = FunctionType::determineLinkage(fn);
   std::vector<FunctionType::Formal> formals;
   RetTag returnIntent = fn->retTag;
   Type* returnType = fn->retType;
   bool throws = fn->throwsError();
 
   for_formals(f, fn) {
-    FunctionType::Formal info;
-    info.type = f->type;
-    info.intent = f->intent;
-    info.name = f->name;
+    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
     formals.push_back(std::move(info));
   }
 
-  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
-                                     returnType,
-                                     throws);
-  auto ret = cacheFunctionTypeOrReuse(fnType);
+  auto ret = FunctionType::get(kind, width, linkage,
+                               std::move(formals),
+                               returnIntent,
+                               returnType,
+                               throws);
   return ret;
+}
+
+FunctionType* FunctionType::get(FnSymbol* fn) {
+  return getFunctionTypeFromFunction(fn, FunctionType::WIDE);
+}
+
+FunctionType* FunctionType::getAsLocal() const {
+  return get(kind_, FunctionType::LOCAL, linkage_, formals_,
+             returnIntent_,
+             returnType_,
+             throws_);
+}
+
+FunctionType* FunctionType::getAsWide() const {
+  return get(kind_, FunctionType::WIDE, linkage_, formals_,
+             returnIntent_,
+             returnType_,
+             throws_);
 }
 
 FunctionType::Kind FunctionType::kind() const {
   return this->kind_;
+}
+
+FunctionType::Width FunctionType::width() const {
+  return this->width_;
+}
+
+FunctionType::Linkage FunctionType::linkage() const {
+  return this->linkage_;
 }
 
 int FunctionType::numFormals() const {
@@ -927,14 +1001,19 @@ const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
 const char* FunctionType::toStringMangledForCodegen() const {
   std::ostringstream oss;
 
-  oss << "chpl_" << kindToString(kind_) << "_";
+  oss << "chpl_";
+  oss << kindToString(kind_) << "_";
+  oss << widthToString(width_) << "_";
 
+  if (hasForeignLinkage()) oss << linkageToString(linkage_) << "_";
+
+  // TODO: Handle receiver differently?
   for (int i = 0; i < numFormals(); i++) {
     auto f = this->formal(i);
-    bool skip = isIntentSameAsDefault(f->intent, f->type);
-    if (!skip) oss << intentTagMnemonicMangled(f->intent);
-    oss << typeToStringMangled(f->type) << "_";
-    if (f->name) oss << f->name;
+    bool skip = isIntentSameAsDefault(f->intent(), f->type());
+    if (!skip) oss << intentTagMnemonicMangled(f->intent());
+    oss << typeToStringMangled(f->type()) << "_";
+    if (f->name()) oss << f->name();
     oss << "_";
   }
 
@@ -954,7 +1033,11 @@ size_t FunctionType::hash() const {
   std::hash<void*> hasherPtr;
   std::hash<bool> hasherBool;
 
-  size_t ret = ((size_t) kind_);
+  size_t ret = 0;
+
+  ret = chpl::hash_combine(ret, ((size_t) kind_));
+  ret = chpl::hash_combine(ret, ((size_t) width_));
+  ret = chpl::hash_combine(ret, ((size_t) linkage_));
 
   // I think it's fine to hash the pointers here because types don't really
   // have a meaningful way to distinguish on contents, and should be unique,
@@ -971,39 +1054,72 @@ size_t FunctionType::hash() const {
   return ret;
 }
 
+FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
+                             const char* name)
+    : qual_(qual), type_(type), intent_(intent) {
+  name_ = name ? astr(name) : nullptr;
+}
+
 bool
 FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
-  return this->type == rhs.type &&
-    this->intent == rhs.intent &&
-    this->name == rhs.name;
+  return this->qual_ == rhs.qual_ &&
+         this->type_ == rhs.type_ &&
+         this->intent_ == rhs.intent_ &&
+         this->name_ == rhs.name_;
 }
 
 size_t FunctionType::Formal::hash() const {
   std::hash<void*> hasherPtr;
   std::hash<const char*> hasherConstCharPtr;
 
-  size_t ret = hasherPtr(this->type);
-  ret = chpl::hash_combine(ret, ((size_t) this->intent));
-  ret = chpl::hash_combine(ret, hasherConstCharPtr(this->name));
+  size_t ret = 0;
+  ret = chpl::hash_combine(ret, ((size_t) qual_));
+  ret = chpl::hash_combine(ret, hasherPtr(type_));
+  ret = chpl::hash_combine(ret, ((size_t) intent_));
+  ret = chpl::hash_combine(ret, hasherConstCharPtr(name_));
   return ret;
 }
 
+
+Qualifier FunctionType::Formal::qual() const {
+  return qual_;
+}
+
+Type* FunctionType::Formal::type() const {
+  return type_;
+}
+
+IntentTag FunctionType::Formal::intent() const {
+  return intent_;
+}
+
+const char* FunctionType::Formal::name() const {
+  return name_;
+}
+
+QualifiedType FunctionType::Formal::qualType() const {
+  return QualifiedType(qual_, type_);
+}
+
+bool FunctionType::Formal::isRef() const {
+  return qualType().isRef();
+}
+
 bool FunctionType::Formal::isGeneric() const {
-  auto t = this->type;
-  if (t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC)) {
-    return true;
-  }
-  return false;
+  auto t = type_;
+  return t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC);
 }
 
 bool FunctionType::equals(const FunctionType* rhs) const {
   return this->kind_ == rhs->kind_ &&
-    this->formals_ == rhs->formals_ &&
-    this->returnIntent_ == rhs->returnIntent_ &&
-    this->returnType_ == rhs->returnType_ &&
-    this->throws_ == rhs->throws_ &&
-    this->isAnyFormalNamed_ == rhs->isAnyFormalNamed_ &&
-    this->userTypeString_ == rhs->userTypeString_;
+         this->width_ == rhs->width_ &&
+         this->linkage_ == rhs->linkage_ &&
+         this->formals_ == rhs->formals_ &&
+         this->returnIntent_ == rhs->returnIntent_ &&
+         this->returnType_ == rhs->returnType_ &&
+         this->throws_ == rhs->throws_ &&
+         this->isAnyFormalNamed_ == rhs->isAnyFormalNamed_ &&
+         this->userTypeString_ == rhs->userTypeString_;
 }
 
 bool FunctionType::isGeneric() const {
@@ -1018,6 +1134,26 @@ bool FunctionType::isGeneric() const {
   }
 
   return false;
+}
+
+bool FunctionType::isLocal() const {
+  return width_ == FunctionType::LOCAL;
+}
+
+bool FunctionType::isWide() const {
+  return width_ == FunctionType::WIDE;
+}
+
+bool FunctionType::isExtern() const {
+  return linkage_ == FunctionType::EXTERN;
+}
+
+bool FunctionType::isExport() const {
+  return linkage_ == FunctionType::EXPORT;
+}
+
+bool FunctionType::hasForeignLinkage() const {
+  return linkage_ != FunctionType::DEFAULT;
 }
 
 /************************************* | **************************************

@@ -173,6 +173,8 @@ public:
   GenRet                     codegenFunctionType(bool forHeader);
   GenRet                     codegenCast(GenRet fnPtr);
 
+  GenRet                     codegenAsValue();
+  GenRet                     codegenAsCallBaseExpr();
   GenRet                     codegen() override;
   void                       codegenHeaderC();
   void                       codegenPrototype() override;

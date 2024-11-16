@@ -2318,13 +2318,29 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
   return name;
 }
 
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver) {
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
+  if (isReceiver && is_complex_type(t)) return true;
+  return argMustUseCPtr(t);
+}
+
+bool argRequiresCPtr(ArgSymbol* formal) {
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return argRequiresCPtr(formal->intent, formal->type, isReceiver);
+}
+
+bool argRequiresCPtr(const FunctionType::Formal* formal) {
+  bool isReceiver = !strcmp(formal->name(), "this");
+  return argRequiresCPtr(formal->intent(), formal->type(), isReceiver);
+}
 
 static bool
 shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
-                       arg->requiresCPtr();
+                       argRequiresCPtr(arg);
 
   bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
                     arg->isRef() ||

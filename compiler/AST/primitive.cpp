@@ -1186,7 +1186,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  // Cast to the second argument at codegen time.
+  // Cast to the second argument. The conversion is done at codegen time.
+  // In most cases the cast is effectively a bitcast/'reinterpret_cast'.
   prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);

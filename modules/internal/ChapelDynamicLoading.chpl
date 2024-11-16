@@ -43,19 +43,24 @@ module ChapelDynamicLoading {
   var chpl_dynamicLoadingSupport = chpl_dynamicLoading.EAGER;
   var chpl_dynamicProcIdxCounter: atomic uint = 1;
 
-  class chpl_LocalPtrCache {
-    var procPtrToIdx = new chpl_localMap(c_ptr(void), uint);
-    var idxToProcPtr = new chpl_localMap(uint, c_ptr(void));
+  // TODO: A gadget to let one try out different types of locks. I had
+  // written a RW-lock in 'ChapelLocks' but was having trouble getting
+  // it to work. If we ever want to try something besides a spinlock
+  // then just swap the locks in here by adding overloads controlled
+  // by where clauses.
+  record chpl_lockWrapper {
     var lock: chpl_LocalSpinlock;
 
-    // TODO: A gadget to let one try out different types of locks. I had
-    // written a RW-lock in 'ChapelLocks' but was having trouble getting
-    // it to work. If we ever want to try something besides a spinlock
-    // then just swap the locks in here by adding overloads controlled
-    // by where clauses.
     inline proc useSpinlock param do return true;
-    inline proc withReadLock() ref where useSpinlock do return lock;
-    inline proc withWriteLock() ref where useSpinlock do return lock;
+    inline proc const withReadLock() ref where useSpinlock do return lock;
+    inline proc const withWriteLock() ref where useSpinlock do return lock;
+  }
+
+  class chpl_LocalPtrCache {
+    forwarding var lockWrapper = new chpl_lockWrapper();
+
+    var procPtrToIdx = new chpl_localMap(c_ptr(void), uint);
+    var idxToProcPtr = new chpl_localMap(uint, c_ptr(void));
   }
 
   // One cache of pointers guarded by a RW-lock defined per locale.
@@ -68,6 +73,68 @@ module ChapelDynamicLoading {
       chpl_perLocalePtrCache = new unmanaged chpl_LocalPtrCache();
     }
   }
+
+  // A store of of all loaded binaries which lives on Locale[0]. Each
+  // time a binary is loaded an entry will be made in the store.
+  // The interface to the stored info is the system pointer retrieved
+  // by 'dlopen'.
+  class chpl_BinaryInfoStore {
+    var lockWrapper = new chpl_lockWrapper();
+    forwarding lockWrapper;
+
+    // The key is the 'dlopen' pointer returned on Locale[0]. You are
+    // permitted to 'dlopen' a symbol multiple times, so you can get
+    // the address from the 'dlopen' call as needed to use as a key.
+    var handleToInfo: chpl_localMap(c_ptr(void), unmanaged chpl_BinaryInfo?);
+  }
+
+  // This is one per entrypoint binary and lives on Locale[0].
+  var chpl_binaryInfoStore = new unmanaged chpl_BinaryInfoStore();
+
+  // TODO: Fill out contents of error.
+  class DynamicLoadError : Error {}
+
+  // This class represents a loaded binary. It contains the state
+  // necessary to load a symbol from the binary on each locale.
+  class chpl_BinaryInfo {
+    forwarding var lockWrapper = new chpl_lockWrapper();
+
+    // This refcount is bumped and dropped by the user-facing wrapper.
+    var refCount: atomic int;
+
+    // This is the path that was used to load the binary.
+    var path: string;
+
+    // This is the set of loaded binary pointers, indexed by locale.
+    var systemPtrs: chpl_localBuffer(c_ptr(void));
+
+    // Local pointers for loaded symbols on Locale[0]. These are used
+    // to evict entries from the procedure pointer cache when the
+    // library is finally closed.
+    var procPtrToSymOnLocale0: chpl_localMap(c_ptr(void), string);
+
+    // A pointer to the parent store is used to coordinate load/unload.
+    var store: borrowed chpl_BinaryInfoStore;
+
+    // Load a new binary given a path.
+    proc type create(path: string, out e: owned DynamicLoadError?) {
+    }
+
+    proc _close() {
+      halt('Not implemented yet!');
+    }
+
+    inline proc bumpRefCount() { refCount.fetchAdd(1); }
+    inline proc dropRefCount() {
+      if refCount.fetchSub(1) <= 1 then _close();
+    }
+
+    proc loadSymbol(sym: string) {
+      halt('Not implemented yet!');
+    }
+  }
+
+
 
   // TODO: The moment I try to delete these pointers some locales will crash
   // with (what I assume is) a double-free or some other memory corruption
@@ -116,19 +183,19 @@ module ChapelDynamicLoading {
 
       if _size > 0 {
         this._ptr = allocate(T, size, true);
-        if _ptr == nil then halt('Ran out of memory when initializing!');
+        if _ptr == nil then halt('Out of memory!');
       }
-    }
-
-    proc deinit() {
-      if _ptr != nil then deallocate(_ptr);
     }
 
     inline proc size do return _size;
 
     inline proc this(idx: integral) ref {
-      if idx >= _size then halt('Index out of bounds!');
+      if idx >= _size then halt('Out of bounds!');
       return _ptr[idx];
+    }
+
+    proc deinit() {
+      if _ptr != nil then deallocate(_ptr);
     }
   }
 
@@ -139,7 +206,7 @@ module ChapelDynamicLoading {
   // cannot itself use procedure pointers.
   //
   // The map only uses simple scalars for keys and reserves the key '0'
-  // for tombstones, but I don't bother guaranteeing those things here
+  // for empty slots, but I don't bother guaranteeing those things here
   // since it's only used internally.
   record chpl_localMap {
     type K, V;
@@ -164,9 +231,9 @@ module ChapelDynamicLoading {
       use ChapelHashing;
       return (key : uint).hash();
     }
-
     inline proc _isKeyZeroBits(key: K) do return (key : uint) == 0;
-    inline proc _shouldTryToResize() do return _size >= (_slots.size >> 1);
+    inline proc _shouldTryToExpand() do return _size >= (_slots.size >> 1);
+    inline proc _shouldTryToShrink() do return false;
     inline proc _nextExpandSize(): uint do return _slots.size << 1;
     inline proc _nextShrinkSize(): uint {
       var num = _slots.size >> 1;
@@ -180,17 +247,15 @@ module ChapelDynamicLoading {
       }
     }
 
-    proc _resize(size: uint) {
-      halt('Not implemented yet!');
+    proc _resizeIfNeeded() {
+      if _shouldTryToExpand() then halt('Not implemented yet!');
+      if _shouldTryToShrink() then halt('Not implemented yet!');
     }
 
     inline proc _findSlotIdx(in key: K, out idx: uint, resize: bool): bool {
-      if _isKeyZeroBits(key) then {
-        assert(false);
-        return false;
-      }
+      assert(!_isKeyZeroBits(key));
 
-      if resize && _shouldTryToResize() then _resize(_nextExpandSize());
+      if resize then _resizeIfNeeded();
 
       const start = _hash(key) % _bufferSize;
       for w in _walk(start) {
@@ -255,100 +320,103 @@ module ChapelDynamicLoading {
   // functions like 'chpl_ftable_call' cannot keep referring to a single
   // name but will have to be passed in a binary-specific table instead.
   //
-  // I think it will be important for performance that 'on' statements
-  // and other lexically driven things that have no dynamic execution
-  // requirement continue to use a simple table lookup rather than a
-  // dynamic table lookup. So something will have to be done there.
-  //
   // We need the ftable to get the local pointer from the static index.
   // This is safe to do since it is locale private and we know we are
   // only referring to the one in our binary (the same cannot be said
   // for the runtime code once we dynamic link it).
   //
   // TODO: If I make this inline I get an internal compiler error.
-  private proc lookupPtrFromLocalFtable(idx: uint) {
+  private proc lookupPtrFromLocalFtable(idx: uint): c_ptr(void) {
     extern const chpl_ftable: c_ptr(c_ptr(void));
     extern const chpl_ftableSize: int(64);
     assert(idx < chpl_ftableSize);
     return chpl_ftable[idx];
   }
 
-  private inline proc doFetchLocalPtrForDynamicIdx(idx: uint): c_ptr(void) {
+  inline proc chpl_LocalPtrCache.set(localPtr, idx) {
+    on this do {
+      var ok1 = procPtrToIdx.set(localPtr, idx);
+      var ok2 = idxToProcPtr.set(idx, localPtr);
+      assert(ok1);
+      assert(ok2);
+    }
+  }
+
+  inline proc chpl_LocalPtrCache.get(localPtr: c_ptr(void), out idx) {
+    return procPtrToIdx.get(localPtr, idx);
+  }
+
+  inline proc chpl_LocalPtrCache.get(idx: uint, out localPtr) {
+    return idxToProcPtr.get(idx, localPtr);
+  }
+
+  inline proc fetchLocalPtrForDynamicIdx(idx: uint): c_ptr(void) {
     var ret: c_ptr(void) = nil;
 
-    manage chpl_perLocalePtrCache.withReadLock() {
-      var found = chpl_perLocalePtrCache.idxToProcPtr.get(idx, ret);
+    // There should always be an entry for this dynamic index in the
+    // local cache because all roots are emplaced when a function
+    // value is created. So just assert/halt if this is not the case.
+    local do manage chpl_perLocalePtrCache.withReadLock() {
+      var found = chpl_perLocalePtrCache.get(idx, ret);
       assert(found);
     }
+
     assert(ret != nil);
     return ret;
   }
 
-  private inline proc doFetchDynamicIdxForStaticIdx(idx: uint): uint {
+  inline proc fetchDynamicIdxForStaticIdx(idx: uint): uint {
     var ret: uint = 0;
 
     // Return the local pointer for this locale if it's already set.
-    // Try taking the read-lock once, first, since it will always be
-    // under less contention (the lock is read-favored).
-    manage chpl_perLocalePtrCache.withReadLock() {
+    local do manage chpl_perLocalePtrCache.withReadLock() {
       var localPtr = lookupPtrFromLocalFtable(idx);
-      if chpl_perLocalePtrCache.procPtrToIdx.get(localPtr, ret) {
-        return ret;
-      }
+      if chpl_perLocalePtrCache.get(localPtr, ret) then return ret;
     }
 
-    var requestedUniqueIdx = false;
-    on Locales[0] {
-      // Check once again since another task might have beaten us.
-      // Since only one task can be the first to write-lock on
-      // Locale[0] and set its pointer, we can exit the lookup if
-      // the dynamic index is already set.
-
+    // Otherwise, synchronize on Locale[0]...
+    on Locales[0] do
       manage chpl_perLocalePtrCache.withWriteLock() {
-        // Use the value of the pointer on Locale[0] to fetch.
+        var requestedUniqueIdx = false;
+
+        // Use the value of the pointer on Locale[0] as the map key.
         var localPtr = lookupPtrFromLocalFtable(idx);
 
-        if !chpl_perLocalePtrCache.procPtrToIdx.get(localPtr, ret) {
+        if !chpl_perLocalePtrCache.get(localPtr, ret) {
           // If we did not look up an existing entry, then we are
           // the task that will set the map entries for this
           // pointer. Set the index on Locale[0] to claim the job.
           ret = chpl_dynamicProcIdxCounter.fetchAdd(1);
-          chpl_perLocalePtrCache.procPtrToIdx.set(localPtr, ret);
-          chpl_perLocalePtrCache.idxToProcPtr.set(ret, localPtr);
+          chpl_perLocalePtrCache.set(localPtr, ret);
           requestedUniqueIdx = true;
         }
-      }
-    }
 
-    if !requestedUniqueIdx || numLocales == 1 {
-      assert(ret != 0);
-      return ret;
-    }
-
-    // If we reached here then we loop and set on all remaining locales.
-    forall loc in Locales[1..] with (ref chpl_perLocalePtrCache) do on loc {
-      manage chpl_perLocalePtrCache.withWriteLock() {
-        var localPtr = lookupPtrFromLocalFtable(idx);
-        var ok1 = chpl_perLocalePtrCache.procPtrToIdx.set(localPtr, ret);
-        var ok2 = chpl_perLocalePtrCache.idxToProcPtr.set(ret, localPtr);
-        assert(ok1);
-        assert(ok2);
+        // While holding the Locale[0] lock, set on all other locales.
+        if requestedUniqueIdx then
+          coforall loc in Locales[1..] do on loc do
+            local do manage chpl_perLocalePtrCache.withWriteLock() {
+              var localPtr = lookupPtrFromLocalFtable(idx);
+              chpl_perLocalePtrCache.set(localPtr, ret);
+            }
       }
-    }
+
+    assert(ret != 0);
 
     return ret;
   }
 
+  // This function is called by the compiler to lookup wide pointer indices.
   export proc chpl_dynamicProcIdxToLocalPtr(idx: uint): c_ptr(void) {
     var ret = if isDynamicLoadingEnabled
-        then doFetchLocalPtrForDynamicIdx(idx)
+        then fetchLocalPtrForDynamicIdx(idx)
         else lookupPtrFromLocalFtable(idx);
     return ret;
   }
 
+  // This function is called by the compiler to create wide pointer indices.
   export proc chpl_staticToDynamicProcIdx(idx: uint): uint {
     var ret = if isDynamicLoadingEnabled
-        then doFetchDynamicIdxForStaticIdx(idx)
+        then fetchDynamicIdxForStaticIdx(idx)
         else idx;
     return ret;
   }

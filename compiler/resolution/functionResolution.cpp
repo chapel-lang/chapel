@@ -3399,7 +3399,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     Type* actualType = actual->qualType().type();
     Symbol* actualSym = isSymExpr(actual) ? toSymExpr(actual)->symbol()
                                           : nullptr;
-    Type* formalType = ft->formal(i)->type;
+    Type* formalType = ft->formal(i)->type();
     ArgSymbol* formalSym = nullptr;
     FnSymbol* fn = nullptr;
     bool promotes = false;
@@ -10552,7 +10552,6 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
 
   auto ft = FunctionType::get(fn);
   INT_ASSERT(ft);
-
   Type* t = ft;
 
   // If we aren't using pointers, have to convert to a function class type
@@ -10658,6 +10657,28 @@ static Expr* swapInErrorSinkForCapture(FunctionType::Kind kind, Expr* use) {
 static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
   // Mark the function as a root to be added to the function table later.
   fn->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+
+  // When referred to directly, functions always produce a "wide" value.
+  // This is critical because producing the value adds the function to
+  // the dynamic procedure pointer cache.
+  // But for the sake of optimization, we want most uses of function
+  // pointers to be local pointers so that they can participate in
+  // the 'insertWideReferences' and 'loopInvariantCodeMotion' passes.
+  //
+  // TODO: Figure out if we need to start with local pointers here.
+
+  /*
+  auto localTmp = newTempConst("local_ptr");
+  auto localDef = use->replace(new DefExpr(localTmp));
+  auto ft = fn->computeAndSetType();
+  INT_ASSERT(ft && ft->isWide());
+  auto narrowCast = new CallExpr(PRIM_CAST_TO_TYPE,
+                                 new SymExpr(fn),
+                                 FunctionType::getAsLocal(ft));
+  auto move = new CallExpr(PRIM_MOVE, localTmp, narrowCast);
+  localDef->insertAfter(move);
+  */
+
   auto ret = new SymExpr(fn);
   use->replace(ret);
   return ret;
@@ -10723,14 +10744,13 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
     for (auto i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
       if (formal->isGeneric()) {
-        std::string reason;
-        auto reasons = explainGeneric(formal->type);
+        auto reasons = explainGeneric(formal->type());
         if (reasons.empty()) {
-          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+          USR_PRINT(use, "the formal '%s' is generic", formal->name());
         } else {
           for (auto& r : reasons) {
             USR_PRINT(use, "the formal '%s' is generic because %s",
-                      formal->name,
+                      formal->name(),
                       r.c_str());
           }
         }

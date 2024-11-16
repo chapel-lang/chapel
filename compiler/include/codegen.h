@@ -21,8 +21,10 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "intents.h"
 #include "baseAST.h"
 #include "LayeredValueTable.h"
+#include "type.h"
 
 #include <list>
 #include <map>
@@ -252,6 +254,10 @@ GenRet codegenProcedurePointerFetch(Expr* baseExpr);
 GenRet codegenValueMaybeDeref(Expr* baseExpr);
 void   codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
                           bool isConstant=true);
+
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver);
+bool argRequiresCPtr(ArgSymbol* formal);
+bool argRequiresCPtr(const FunctionType::Formal* formal);
 
 Type* getNamedTypeDuringCodegen(const char* name);
 void setupDefaultFilenames(void);

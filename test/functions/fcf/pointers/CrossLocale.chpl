@@ -143,7 +143,86 @@ proc test2() {
   assert(count3.read() == (numLocales * n * 32));
 }
 
+extern {
+  #include <stdio.h>
+
+  #define PADDING_SIZE 16
+  typedef struct test3_r_ {
+    int x;
+    double y;
+    int padding[PADDING_SIZE];
+  } test3_r;
+
+  test3_r test3_r_create(int x, double y);
+  void test3_r_print(test3_r x);
+
+  test3_r test3_r_create(int x, double y) {
+    test3_r ret;
+    ret.x = x;
+    ret.y = y;
+    for (int i = 0; i < PADDING_SIZE; i++) ret.padding[i] = i;
+    test3_r_print(ret);
+    return ret;
+  }
+
+  void test3_r_print(test3_r x) {
+    printf("%d, %lf - ", x.x, x.y);
+    for (int i = 0; i < PADDING_SIZE; i++) printf("%d ", x.padding[i]);
+    printf("!\n");
+  }
+}
+
+proc test3() {
+  const create = test3_r_create;
+  const print = test3_r_print;
+
+  const n = (here.id : int(32)) + 1;
+  var x = create(n, n*0.2);
+  writeln(x.x);
+  writeln(x.y);
+  print(x);
+}
+
+proc test4() {
+  writeln('--- LOOP 1: Static Calls ---');
+  for loc in Locales do on loc {
+    const n = (loc.id : int(32)) + 1;
+    var x = test3_r_create(n, n*0.2);
+    writeln(x.x);
+    writeln(x.y);
+    test3_r_print(x);
+    writeln('---');
+  }
+
+  const create = test3_r_create;
+  const print = test3_r_print;
+
+  writeln('--- LOOP 2: Indirect Calls ---');
+  for loc in Locales do on loc {
+    const n = (loc.id : int(32)) + 1;
+    var x = create(n, n*0.2);
+    writeln(x.x);
+    writeln(x.y);
+    print(x);
+    writeln('---');
+  }
+
+  writeln('--- LOOP 3: Interchange ---');
+  for loc in Locales do on loc {
+    const n = (loc.id : int(32)) + 1;
+    var x1 = test3_r_create(n, n*0.2);
+    var x2 = create(n, n*0.2);
+    writeln(x1.x, ' == ', x2.x);
+    writeln(x1.y, ' == ', x2.y);
+    print(x1);
+    test3_r_print(x2);
+    writeln('---');
+  }
+}
+
 proc main() {
   test1();
   test2();
+  test3();
+  test4();
 }

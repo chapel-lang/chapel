@@ -434,18 +434,31 @@ public:
 class FunctionType final : public Type {
  public:
   enum Kind { PROC, ITER, OPERATOR };
+  enum Width { LOCAL, WIDE };
+  enum Linkage { DEFAULT, EXTERN, EXPORT };
 
-  struct Formal {
-    Type* type = nullptr;
-    IntentTag intent = INTENT_BLANK;
-    const char* name = nullptr;
+  class Formal {
+    Qualifier qual_;
+    Type* type_;
+    IntentTag intent_ = INTENT_BLANK;
+    const char* name_ = nullptr;
+   public:
+    Formal(Qualifier qual, Type* type, IntentTag intent, const char* name);
     bool operator==(const Formal& other) const;
     size_t hash() const;
     bool isGeneric() const;
+    Qualifier qual() const;
+    Type* type() const;
+    IntentTag intent() const;
+    const char* name() const;
+    QualifiedType qualType() const;
+    bool isRef() const;
   };
 
  private:
   Kind kind_;
+  Width width_;
+  Linkage linkage_;
   std::vector<Formal> formals_;
   RetTag returnIntent_;
   Type* returnType_;
@@ -455,19 +468,23 @@ class FunctionType final : public Type {
 
   static const char*
   buildUserFacingTypeString(Kind kind,
+                            Width width,
+                            Linkage linkage,
                             const std::vector<Formal>& formals,
                             RetTag returnIntent,
                             Type* returnType,
                             bool throws);
 
-  FunctionType(Kind kind, std::vector<Formal> formals,
+  FunctionType(Kind kind, Width width, Linkage linkage,
+               std::vector<Formal> formals,
                RetTag returnIntent,
                Type* returnType,
                bool throws,
                bool isAnyFormalNamed,
                const char* userTypeString);
 
-  static FunctionType* create(Kind kind, std::vector<Formal> formals,
+  static FunctionType* create(Kind kind, Width width, Linkage linkage,
+                              std::vector<Formal> formals,
                               RetTag returnIntent,
                               Type* returnType,
                               bool throws);
@@ -481,15 +498,19 @@ class FunctionType final : public Type {
   void codegenDef() override;
 
   /*** Result is shared by functions of the same type. */
-  static FunctionType* get(Kind kind, std::vector<Formal> formals,
+  static FunctionType* get(Kind kind, Width width, Linkage linkage,
+                           std::vector<Formal> formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws);
-
-  /*** Result is shared by functions of the same type. Does not resolve. */
   static FunctionType* get(FnSymbol* fn);
 
+  FunctionType* getAsLocal() const;
+  FunctionType* getAsWide() const;
+
   Kind kind() const;
+  Width width() const;
+  Linkage linkage() const;
   int numFormals() const;
   const Formal* formal(int idx) const;
   RetTag returnIntent() const;
@@ -497,16 +518,24 @@ class FunctionType final : public Type {
   bool throws() const;
   bool isAnyFormalNamed() const;
   bool isGeneric() const;
+  bool isLocal() const;
+  bool isWide() const;
+  bool isExtern() const;
+  bool isExport() const;
+  bool hasForeignLinkage() const;
   const char* toString() const;
   const char* toStringMangledForCodegen() const;
   size_t hash() const;
   bool equals(const FunctionType* rhs) const;
 
   static FunctionType::Kind determineKind(FnSymbol* fn);
+  static FunctionType::Linkage determineLinkage(FnSymbol* fn);
   static bool isIntentSameAsDefault(IntentTag intent, Type* t);
 
   // Prints things in a 'user facing' fashion, no mangling.
   static const char* kindToString(Kind kind);
+  static const char* widthToString(Width width);
+  static const char* linkageToString(Linkage linkage);
   static const char* intentToString(IntentTag intent);
   static const char* typeToString(Type* t);
   static const char* returnIntentToString(RetTag intent);
