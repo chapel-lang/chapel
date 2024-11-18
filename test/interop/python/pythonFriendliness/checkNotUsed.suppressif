@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import subprocess
+import subprocess, os
 
-OK = True
+NotOK = False
 
 try:
   # If the `help("modules")` command doesn't work on its own, we're not going
   # to get useful information out of this test, so suppress the failure
   subproc = subprocess.run('help("modules")', check=True)
   if (subproc.returncode != 0):
-     OK = False
+     NotOK = True
 except:
-  OK = False
+  NotOK = True
 
-print(OK)
+print(NotOK and os.getenv("CHPL_TARGET_COMPILER") == "cray-prgenv-gnu")
