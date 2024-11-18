@@ -357,7 +357,7 @@ def _fncall_to_string(call: chapel.FnCall) -> List[Component]:
 
     comps.extend(_wrap_in(call_args, (openbr, closebr)))
 
-    comps = _wrap_in(comps, ("(", ")")) if call.parenth_location() else comps
+    comps = _wrap_in(comps, ("(", ")")) if call.paren_location() else comps
     return comps
 
 
@@ -418,7 +418,7 @@ def _opcall_to_string(call: chapel.OpCall) -> List[Component]:
         comps.extend(_node_to_string(call.actual(0)))
         comps.append(_wrap_str(bop_to_string(call.op())))
         comps.extend(_node_to_string(call.actual(1)))
-    comps = _wrap_in(comps, ("(", ")")) if call.parenth_location() else comps
+    comps = _wrap_in(comps, ("(", ")")) if call.paren_location() else comps
     return comps
 
 

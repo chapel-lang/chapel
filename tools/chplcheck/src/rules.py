@@ -292,7 +292,7 @@ def register_rules(driver: LintDriver):
             return True
 
         # No parentheses to speak of
-        paren_loc = subject.parenth_location()
+        paren_loc = subject.paren_location()
         if paren_loc is None:
             return True
 
@@ -305,7 +305,7 @@ def register_rules(driver: LintDriver):
         # Since we're here, these should already be non-None.
         subject = result.data
         assert subject
-        paren_loc = subject.parenth_location()
+        paren_loc = subject.paren_location()
         assert paren_loc
 
         # If parentheses span multiple lines, don't provide a fixit,
