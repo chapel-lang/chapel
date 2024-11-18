@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-import subprocess, os
+import subprocess, os, sys
 
 NotOK = False
 
 try:
   # If the `help("modules")` command doesn't work on its own, we're not going
   # to get useful information out of this test, so suppress the failure
-  subproc = subprocess.run('help("modules")', check=True)
+  subproc = subprocess.run((sys.executable, '-c', 'help("modules")'),
+                           check=True)
   if (subproc.returncode != 0):
      NotOK = True
 except:
