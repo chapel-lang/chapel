@@ -1,4 +1,10 @@
-# This test currently gives this:
+# known issues with CUDA and ROCm
+
+# CUDA 11 and 12 currently report this error:
 # /usr/local/cuda-11.8/include/thrust/functional.h:598: error: 'square' has multiple definitions, redefined at:
 #   /usr/local/cuda-11.8/include/thrust/functional.h:598
 CHPL_GPU == nvidia
+
+# ROCm 5 currently defines `x` and `y` that conflict with the ones in cHelper.c.
+# Use a heuristic to check for ROCm 5.
+CHPL_GPU_SDK_VERSION <= 5
