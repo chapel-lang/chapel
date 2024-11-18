@@ -1,0 +1,2 @@
+--no-cache-remote          # remoteCopyCountComms.good
+--no-cache-remote --fast   # remoteCopyCountComms-fast.good
