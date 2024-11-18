@@ -597,6 +597,9 @@ all:
   11/05/24:
     - text: Asynchronous GETs (#26179)
       config: 16-node-hpe-cray-ex
+  11/18/24:
+    - text: Update system LLVM to 19
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
 
 # End all
 
