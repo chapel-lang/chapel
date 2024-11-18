@@ -139,7 +139,9 @@ def get_docstring(node: AstNode, sibling_map: SiblingMap) -> Optional[str]:
     return None
 
 
-def parse_attribute(attr: Attribute, attribute: typing.Tuple[str, typing.Sequence[str]]):
+def parse_attribute(
+    attr: Attribute, attribute: typing.Tuple[str, typing.Sequence[str]]
+):
     """
     Given an Attribute AST node, and a description of the attribute in
     the form (name, formal_names), return a mapping of formal names to their

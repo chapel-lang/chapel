@@ -100,7 +100,9 @@ class ReplacementContext:
         return range_start - self.lines[self.lines_back[range_start]]
 
 
-def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames: typing.Dict[str, str]):
+def rename_formals(
+    rc: ReplacementContext, fn: chapel.Function, renames: typing.Dict[str, str]
+):
     """
     Helper iterator to be used in finder functions. Given a function
     and a map of ('original formal name' -> 'new formal name'), yields
@@ -118,7 +120,9 @@ def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames: typing.
         yield (child, name_replacer(name))
 
 
-def rename_named_actuals(rc: ReplacementContext, call: chapel.Call, renames: typing.Dict[str, str]):
+def rename_named_actuals(
+    rc: ReplacementContext, call: chapel.Call, renames: typing.Dict[str, str]
+):
     """
     Helper iterator to be used in finder functions. Given a function call expression,
     and a map of ('original name' -> 'new name'), yields
