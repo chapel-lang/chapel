@@ -33,7 +33,9 @@
   struct NAME##Object { \
     ROOT##Object parent; \
   \
+    static constexpr const char* QualifiedName = "chapel." #NAME; \
     static constexpr const char* Name = #NAME; \
+    static constexpr const char* DocStr = "An object that represents a Chapel " #NAME; \
   \
     const auto unwrap() const { return parent.value_->to##NAME(); } \
     ContextObject* context() const { return (ContextObject*) parent.contextObject; } \

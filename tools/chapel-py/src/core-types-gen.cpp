@@ -160,7 +160,7 @@ ACTUAL_ITERATOR(FnCall);
 #include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
-  TYPE.tp_name = #NAME; \
+  TYPE.tp_name = "chapel."#NAME; \
   TYPE.tp_basicsize = sizeof(NAME##Object); \
   TYPE.tp_itemsize = 0; \
   TYPE.tp_flags = FLAGS; \

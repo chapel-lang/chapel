@@ -25,7 +25,7 @@ PyTypeObject AstIterType = {
 };
 
 void setupAstIterType() {
-  AstIterType.tp_name = "AstIter";
+  AstIterType.tp_name = "chapel.AstIter";
   AstIterType.tp_basicsize = sizeof(AstIterObject);
   AstIterType.tp_itemsize = 0;
   AstIterType.tp_dealloc = (destructor) AstIterObject_dealloc;
@@ -77,7 +77,7 @@ PyTypeObject AstCallIterType = {
 };
 
 void setupAstCallIterType() {
-  AstCallIterType.tp_name = "AstCallIter";
+  AstCallIterType.tp_name = "chapel.AstCallIter";
   AstCallIterType.tp_basicsize = sizeof(AstCallIterObject);
   AstCallIterType.tp_itemsize = 0;
   AstCallIterType.tp_dealloc = (destructor) AstCallIterObject_dealloc;

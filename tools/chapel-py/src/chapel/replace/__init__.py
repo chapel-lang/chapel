@@ -17,6 +17,15 @@
 # limitations under the License.
 #
 
+"""
+=================
+Replace Utilities
+=================
+
+A set of utilities for performing search-and-replace operations on Chapel code,
+informed by Chapel's AST.
+"""
+
 import argparse
 import chapel
 import chapel
@@ -55,7 +64,7 @@ class ReplacementContext:
                     i + 1
                 )  # the next characrer is the start of the next line
 
-    def loc_to_idx(self, loc: (int, int)) -> int:
+    def loc_to_idx(self, loc: typing.Tuple[int, int]) -> int:
         """
         Given a location (as retrieved from an AST node), convert this
         location into an offset in the source file.
@@ -63,7 +72,7 @@ class ReplacementContext:
         (row, col) = loc
         return self.lines[row] + (col - 1)
 
-    def node_idx_range(self, node: chapel.AstNode) -> (int, int):
+    def node_idx_range(self, node: chapel.AstNode) -> typing.Tuple[int, int]:
         """
         Given a node, determine where it starts and ends in the given source
         file.
@@ -91,7 +100,7 @@ class ReplacementContext:
         return range_start - self.lines[self.lines_back[range_start]]
 
 
-def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames):
+def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames: typing.Dict[str, str]):
     """
     Helper iterator to be used in finder functions. Given a function
     and a map of ('original formal name' -> 'new formal name'), yields
@@ -109,7 +118,7 @@ def rename_formals(rc: ReplacementContext, fn: chapel.Function, renames):
         yield (child, name_replacer(name))
 
 
-def rename_named_actuals(rc: ReplacementContext, call: chapel.Call, renames):
+def rename_named_actuals(rc: ReplacementContext, call: chapel.Call, renames: typing.Dict[str, str]):
     """
     Helper iterator to be used in finder functions. Given a function call expression,
     and a map of ('original name' -> 'new name'), yields

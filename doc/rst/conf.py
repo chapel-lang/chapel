@@ -24,6 +24,16 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 sys.path.insert(0, os.path.abspath('../'))
 sys.path.insert(0, os.path.abspath('./'))
 
+chapel_py_dir = os.path.abspath(
+    "../../third-party/chpl-venv/install/chpl-frontend-py-deps-py"
+    + str(sys.version_info.major)
+    + str(sys.version_info.minor)
+)
+include_chapel_py_docs = False
+if os.path.exists(chapel_py_dir):
+    sys.path.insert(0, chapel_py_dir)
+    include_chapel_py_docs = True
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -33,6 +43,7 @@ needs_sphinx = '1.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinxcontrib.jquery',
     'sphinxcontrib.chapeldomain',
@@ -59,9 +70,29 @@ for line in open('../util/nitpick_ignore'):
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['meta/templates']
 
+
+# sphinx can't handle extension modules and pyi, so we have to do it ourselves
+# https://github.com/sphinx-doc/sphinx/issues/7630
+# load in the pyi file
+from process_pyi import PyiSignatures
+if include_chapel_py_docs:
+    chapel_pyi = PyiSignatures(chapel_py_dir + '/chapel/core.pyi')
+# autodoc-process-signature
+def process_signature(app, what, name, obj, options, signature, return_annotation):
+    if what == 'method':
+        _, class_name, method_name = name.rsplit('.', 2)
+        res = chapel_pyi.get(class_name, method_name)
+        if res:
+            signature, return_annotation = res
+    return signature, return_annotation
+
 # Setup CSS files
 def setup(app):
     app.add_css_file('style.css')
+
+    if include_chapel_py_docs:
+        app.connect('autodoc-process-signature', process_signature)
+        app.tags.add('chpl_include_chapel_py_docs')
 
 # The suffix of source filenames.
 source_suffix = '.rst'

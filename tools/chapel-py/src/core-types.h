@@ -48,6 +48,7 @@ static PyNumberMethods location_as_number;
 using LineColumnPair = std::tuple<int, int>;
 
 struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
+  static constexpr const char* QualifiedName = "chapel.Location";
   static constexpr const char* Name = "Location";
   static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
 
@@ -126,6 +127,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
 };
 
 struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resolution::Scope*> {
+  static constexpr const char* QualifiedName = "chapel.Scope";
   static constexpr const char* Name = "Scope";
   static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
 };
@@ -133,6 +135,7 @@ struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resol
 using VisibleSymbol = std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>;
 
 struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*> {
+  static constexpr const char* QualifiedName = "chapel.AstNode";
   static constexpr const char* Name = "AstNode";
   static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
@@ -149,6 +152,7 @@ struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::u
 using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
 struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
+  static constexpr const char* QualifiedName = "chapel.ChapelType";
   static constexpr const char* Name = "ChapelType";
   static constexpr const char* DocStr = "The base type of Chapel types";
 
@@ -163,6 +167,7 @@ struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const 
 };
 
 struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types::Param*> {
+  static constexpr const char* QualifiedName = "chapel.Param";
   static constexpr const char* Name = "Param";
   static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
 
@@ -177,6 +182,7 @@ struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types
 };
 
 struct ResolvedExpressionObject : public PythonClassWithObject<ResolvedExpressionObject, const chpl::resolution::ResolvedExpression*> {
+  static constexpr const char* QualifiedName = "chapel.ResolvedExpression";
   static constexpr const char* Name = "ResolvedExpression";
   static constexpr const char* DocStr = "Container for type information about a particular AST node.";
 };
@@ -189,6 +195,7 @@ struct MostSpecificCandidateAndPoiScope {
 };
 
 struct MostSpecificCandidateObject : public PythonClassWithObject<MostSpecificCandidateObject, MostSpecificCandidateAndPoiScope> {
+  static constexpr const char* QualifiedName = "chapel.MostSpecificCandidate";
   static constexpr const char* Name = "MostSpecificCandidate";
   static constexpr const char* DocStr = "A candidate function returned from call resolution that represents the most specific overload matching the call.";
 };
@@ -201,6 +208,7 @@ struct TypedSignatureAndPoiScope {
 };
 
 struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope> {
+  static constexpr const char* QualifiedName = "chapel.TypedSignature";
   static constexpr const char* Name = "TypedSignature";
   static constexpr const char* DocStr = "The signature of a particular function. Could include types gathered when instantiating the function";
 

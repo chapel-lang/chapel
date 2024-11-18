@@ -17,6 +17,15 @@
 # limitations under the License.
 #
 
+"""
+=============
+LSP Utilities
+=============
+
+This module contains utility functions for working with Chapel compiler types
+and the Language Server Protocol.
+"""
+
 from lsprotocol.types import Position, Range, Diagnostic, DiagnosticSeverity
 
 
