@@ -887,7 +887,7 @@ class PbsProJob(AbstractJob):
 
         # Use regex to find position of status. Then extract the one character
         # status from the job line.
-        pattern = re.compile('\sS\s')
+        pattern = re.compile(r'\sS\s')
         match = pattern.search(header_line)
         if match is not None:
             status_char = match.start() + 1
