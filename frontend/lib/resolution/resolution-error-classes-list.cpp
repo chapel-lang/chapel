@@ -1152,9 +1152,9 @@ static void printTheseResults(
       bool isSerial = iterKind == uast::Function::SERIAL;
       wr.message(start, "this loop does not support ", isSerial ? "serial" : "parallel", " iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE) {
-      wr.message(start, "loop expressions do not have standalone iterators", end);
+      wr.message(start, "loop expressions with more than one zippered iterand do not have standalone iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE) {
-      wr.message(start, "promoted expressions do not have standalone iterators", end);
+      wr.message(start, "promoted expressions with more than one zippered iterand do not have standalone iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_SERIAL_LOOP_EXPR) {
       wr.message(start, "the loop expression iterated over is explicitly serial", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG) {
