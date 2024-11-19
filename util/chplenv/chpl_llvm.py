@@ -369,6 +369,8 @@ def get_llvm_config():
 
 @memoize
 def get_llvm_version():
+    if os.environ.get('CHPL_LLVM_VERSION') is not None:
+        warning("Setting CHPL_LLVM_VERSION has no effect. Unset CHPL_LLVM_VERSION and set CHPL_LLVM_CONFIG to the desired 'llvm-config' path instead.")
     (llvm_version, _) = check_llvm_config(get_llvm_config())
     return llvm_version
 
