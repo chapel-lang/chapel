@@ -145,7 +145,7 @@ static void testAmbiguous() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
-  assert(idx.type().isErroneousType());
+  assert(idx.type().isUnknown());
   assert(guard.realizeErrors() == 1);
 }
 
