@@ -680,12 +680,8 @@ def get_gcc_prefix_dir(clang_cfg_args):
     if gcc_prefix:
         return gcc_prefix
 
-    # if gcc-toolchain or gcc-install-dir is in the config, don't try and infer anything
-    if any(
-        arg.startswith("--gcc-toolchain=")
-        or arg.startswith("--gcc-install-dir=")
-        for arg in clang_cfg_args
-    ):
+    # if gcc-install-dir is in the config, don't try and infer gcc-toolchain
+    if any(arg.startswith("--gcc-install-dir=") for arg in clang_cfg_args):
         return ''
 
     # darwin and FreeBSD default to clang
