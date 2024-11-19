@@ -119,5 +119,7 @@ fi
 
 # Work-around to remove git submodules
 #   See Cray/chapel-private#1050 for long term solution
-log_info "Clearing out git submodules in test/mason/"
-git clean -ffdx ${CHPL_HOME}/test/mason
+if [ -z "${CHPL_NIGHTLY_DO_NOTHING:-}" ]; then
+  log_info "Clearing out git submodules in test/mason/"
+  git clean -ffdx ${CHPL_HOME}/test/mason
+fi

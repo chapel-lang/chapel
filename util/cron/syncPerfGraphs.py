@@ -40,6 +40,9 @@ def main():
 
     syncLocation = os.environ.get('SYNC_LOCATION', 'LOCAL')
 
+    if os.environ.get('CHPL_NIGHTLY_DO_NOTHING'):
+        exit(0)
+
     with contextlib.closing(logFile):
         if syncLocation == "LOCAL":
             sync = syncToCrayWebhost(dirToSync, destDir, logFile, numRetries)
