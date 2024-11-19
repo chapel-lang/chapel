@@ -1285,6 +1285,8 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
                                              bool &revisit) {
   Symbol* sym = node.variable;
   CallExpr* call2 = call;
+  int targetIndex = -1;
+  int lhsFieldIndex = node.fieldIndex;
 
   if (call->isPrimitive(PRIM_ADDR_OF) ||
       call->isPrimitive(PRIM_SET_REFERENCE) ||
@@ -1293,14 +1295,38 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
     call2 = toCallExpr(call->parentExpr);
   }
 
+
   if (!call2->isPrimitive(PRIM_MOVE))
     return false;
+
+  // If the call accesses only a portion of the symbol (via member access),
+  // check if that's the portion in `node`.
+
+  if (call->isPrimitive(PRIM_GET_MEMBER)) {
+    auto at = toAggregateType(sym->type);
+    INT_ASSERT(at);
+    INT_ASSERT(toSymExpr(call->get(2)));
+    auto fieldSym = toSymExpr(call->get(2))->symbol();
+    for_fields(field, at) {
+      targetIndex++;
+      if (fieldSym == field) break;
+    }
+
+    // The LHS is no longer a tuple, but a component, so reset field index.
+    lhsFieldIndex = 0;
+  } else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+    // The LHS is no longer a tuple, but a component, so reset field index.
+    lhsFieldIndex = 0;
+  }
+  if (targetIndex != -1 && node.fieldIndex != targetIndex) {
+    return false;
+  }
 
   SymExpr* lhs       = toSymExpr(call2->get(1));
   Symbol*  lhsSymbol = lhs->symbol();
 
-  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
-    GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, lhsFieldIndex)) {
+    GraphNode srcNode = makeNode(lhsSymbol, lhsFieldIndex);
     collectedSymbols.push_back(srcNode);
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
