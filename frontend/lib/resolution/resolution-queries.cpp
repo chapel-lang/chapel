@@ -5815,8 +5815,9 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
   bool serial = iterKind == Function::SERIAL;
   auto iterandType = QualifiedType(QualifiedType::CONST_VAR, iterType);
 
-  // Loop expressions don't have standalone iterators.
-  if (standalone) {
+  // Loop expressions and promotion only support standalone iterators
+  // when there's a single iterand.
+  if (standalone && zippered.size() > 1) {
     auto reason = iterType->isLoopExprIteratorType() ?
       TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE :
       TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE;
