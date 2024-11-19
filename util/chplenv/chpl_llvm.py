@@ -672,6 +672,8 @@ def llvm_enabled():
 def _get_gcc_prefix_dir_inner():
     # helper memoization for get_gcc_prefix_dir, only should be called from there
 
+    gcc_prefix = ''
+
     # darwin and FreeBSD default to clang
     # so shouldn't need GCC prefix
     host_platform = chpl_platform.get('host')
