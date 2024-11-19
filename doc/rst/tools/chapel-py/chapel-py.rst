@@ -482,32 +482,8 @@ script implements the following features:
                new_text = record_text.replace(" {" , ", " + tag_str + " {" , 1)
            else:
                new_text = record_text.replace(record.name(), record.name() + " : " + tag_str, 1)
-   
+
            yield (record, new_text)
 
 
-.. only:: chpl_include_chapel_py_docs
-
-   API
-   ---
-
-   .. automodule:: chapel
-     :member-order: bysource
-     :members:
-     :undoc-members:
- 
-   .. automodule:: chapel.visitor
-     :member-order: bysource
-     :members:
-     :undoc-members:
-
-   .. automodule:: chapel.replace
-     :member-order: bysource
-     :members:
-     :undoc-members:
- 
-   .. automodule:: chapel.lsp
-     :member-order: bysource
-     :members:
-     :undoc-members:
- 
+.. include:: ./chapel-py-api.rst
