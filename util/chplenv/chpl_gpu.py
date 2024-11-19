@@ -476,7 +476,7 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
 def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
-    MIN_REQ_VERSION = "7"
+    MIN_REQ_VERSION = "11.7"
     MAX_REQ_VERSION = "13"
 
     cuda_version = get_sdk_version()
