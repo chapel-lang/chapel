@@ -5029,7 +5029,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   if (mask & IterDetails::SERIAL) {
     if (resolveIterDetailsForZipperedArgs(rv, ret, ics, Function::SERIAL,
-                                          ret.leaderYieldType, storeFailures)) {
+                                          QualifiedType(), storeFailures)) {
       ret.succeededAt = IterDetails::SERIAL;
       return ret;
     }
