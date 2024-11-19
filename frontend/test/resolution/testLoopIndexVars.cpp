@@ -1084,6 +1084,205 @@ static void testBracketLoopSerialFallback(Context* context) {
   });
 }
 
+static void testUnpackingFromIterator(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter i1() { yield (0.0, "hello"); }
+
+    for (a, b) in i1() {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
+
+  assert(types.at("a").type());
+  assert(types.at("a").type()->isRealType());
+  assert(types.at("b").type());
+  assert(types.at("b").type()->isStringType());
+}
+
+static void testBasicUnpacking(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter i1() { yield 0.0; }
+
+    iter i2() { yield "hello"; }
+
+    for (a, b) in zip(i1(), i2()) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
+
+  assert(types.at("a").type());
+  assert(types.at("a").type()->isRealType());
+  assert(types.at("b").type());
+  assert(types.at("b").type()->isStringType());
+}
+
+static void testBasicUnpackingFailure(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter i1() { yield 0.0; }
+
+    for (a, b) in i1() {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
+
+  assert(types.at("a").isUnknown());
+  assert(types.at("b").isUnknown());
+
+  assert(guard.numErrors() > 0);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclNotTuple);
+  guard.realizeErrors();
+}
+
+static void testForallUnpacking(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 1.0; }
+    iter i2(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i2(param tag: iterKind, followThis) where tag == iterKind.follower { yield "hello"; }
+
+    forall (a, b) in zip(i1(), i2()) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b"});
+
+  assert(!guard.realizeErrors());
+
+  assert(types.at("a").type());
+  assert(types.at("a").type()->isRealType());
+  assert(types.at("b").type());
+  assert(types.at("b").type()->isStringType());
+}
+
+static void testLoopExprZipUnpacking(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for ((a, b), (c, d)) in zip(foreach (_, _) in zip(dummy(), dummy()) do (1, "hello"),
+                                foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
+
+  assert(!guard.realizeErrors());
+
+  assert(types.at("a").type());
+  assert(types.at("a").type()->isIntType());
+  assert(types.at("b").type());
+  assert(types.at("b").type()->isStringType());
+  assert(types.at("c").type());
+  assert(types.at("c").type()->isRealType());
+  assert(types.at("d").type());
+  assert(types.at("d").type()->isBoolType());
+}
+
+static void testLoopExprZipUnpackingTooFewInner(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for ((a, ), (c, d)) in zip(foreach (_, _) in zip(dummy(), dummy()) do (1, "hello"),
+                               foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "c", "d"});
+
+  assert(guard.numErrors() > 0);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.realizeErrors());
+}
+
+static void testLoopExprZipUnpackingTooManyInner(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for ((a, b, _), (c, d)) in zip(foreach (_, _) in zip(dummy(), dummy()) do (1, "hello"),
+                                foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
+
+  assert(guard.numErrors() > 0);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.realizeErrors());
+}
+
+static void testLoopExprZipUnpackingTooFewOuter(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for ((a, b), (c, d)) in zip(foreach (_, _) in zip(dummy(), dummy()) do (1, "hello"),
+                                foreach (_, _) in zip(dummy(), dummy()) do (1.0, false),
+                                dummy()) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
+
+  assert(guard.numErrors() > 0);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.realizeErrors());
+}
+
+static void testLoopExprZipUnpackingTooManyOuter(Context* context) {
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for ((a, b), (c, d), _) in zip(foreach (_, _) in zip(dummy(), dummy()) do (1, "hello"),
+                                foreach (_, _) in zip(dummy(), dummy()) do (1.0, false)) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a", "b", "c", "d"});
+
+  assert(guard.numErrors() > 0);
+  assert(guard.error(0)->type() == ErrorType::TupleDeclMismatchedElems);
+  assert(guard.realizeErrors());
+}
+
+static void testSingletonZip(Context* context){
+  // In production, a single-iterator zip does not create a tuple.
+  // Make sure we do the same.
+  ErrorGuard guard(context);
+  auto prog =
+    R""""(
+    iter dummy() do yield 0;
+
+    for a in zip(dummy()) {}
+    )"""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  auto types = resolveTypesOfVariables(context, prog, {"a"});
+
+  assert(!guard.realizeErrors());
+
+  assert(types.at("a").type());
+  assert(types.at("a").type()->isIntType());
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1125,6 +1324,17 @@ int main() {
   testForallExpressionInForLoop(context);
 
   testBracketLoopSerialFallback(context);
+
+  testUnpackingFromIterator(context);
+  testBasicUnpacking(context);
+  testBasicUnpackingFailure(context);
+  testForallUnpacking(context);
+  testLoopExprZipUnpacking(context);
+  testLoopExprZipUnpackingTooFewInner(context);
+  testLoopExprZipUnpackingTooManyInner(context);
+  testLoopExprZipUnpackingTooFewOuter(context);
+  testLoopExprZipUnpackingTooManyOuter(context);
+  testSingletonZip(context);
 
   return 0;
 }
