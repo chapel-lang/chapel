@@ -2139,7 +2139,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
     return;
   }
 
-  const TupleType* rhsT = rhsType.type()->toTupleType();
+  const TupleType* rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
   std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
@@ -5500,7 +5500,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   if (const Decl* idx = loop->index()) {
     ResolvedExpression& re = byPostorder.byAst(idx);
-    re.setType(idxType);
+
+    if (auto td = idx->toTupleDecl()) {
+      resolveTupleUnpackDecl(td, idxType);
+    } else {
+      re.setType(idxType);
+    }
   }
 
   if (auto with = loop->withClause()) {
