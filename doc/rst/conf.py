@@ -36,7 +36,7 @@ chapel_py_dir = os.path.abspath(
     + str(sys.version_info.minor)
 )
 include_chapel_py_docs = False
-chapel_py_api_template = os.path.abspath("./tools/chapel-py/chapel-py-api-template")
+chapel_py_api_template = os.path.abspath("./tools/chapel-py/chapel-py-api-template.rst")
 chapel_py_api_rst = os.path.abspath("./tools/chapel-py/chapel-py-api.rst")
 if os.path.exists(chapel_py_dir):
     sys.path.insert(0, chapel_py_dir)
@@ -180,6 +180,10 @@ exclude_patterns = ['Makefile',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
                     'modules/standard/ChapelIO.rst',
+
+                    # exclude the chapel-py files
+                    'tools/chapel-py/chapel-py-api-template.rst',
+                    'tools/chapel-py/chapel-py-api.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
