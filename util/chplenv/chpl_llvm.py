@@ -115,6 +115,26 @@ def get_clang_version(clang_command, short=False):
 
     return got_version
 
+@memoize
+def get_clang_cfg_file(clang_command):
+    """
+    Returns the clang config file for the given clang command.
+    """
+
+    if clang_command == 'none' or clang_command is None:
+        return None
+
+    got_file = None
+    exists, ret, got_out, _ = try_run_command([clang_command, "--version"])
+    if exists and ret == 0 and got_out:
+        # fine the line that starts with "Configuration file:"
+        for line in got_out.splitlines():
+            if line.startswith("Configuration file:"):
+                got_file = line.split(":", maxsplit=1)[1].strip()
+                break
+
+    return got_file
+
 # llvm_config is the llvm-config command we want to check out.
 # returns (version_number, config_error_message)
 @memoize
@@ -590,7 +610,7 @@ def get_llvm_clang(lang):
         return ['']
 
     # tack on arguments that control clang's function
-    result = [clang] + get_clang_basic_args()
+    result = [clang] + get_clang_basic_args(clang)
     return result
 
 
@@ -649,66 +669,82 @@ def llvm_enabled():
     return False
 
 @memoize
-def get_gcc_prefix_dir():
+def _get_gcc_prefix_dir_inner():
+    # helper memoization for get_gcc_prefix_dir, only should be called from there
+
+    gcc_prefix = ''
+
+    # darwin and FreeBSD default to clang
+    # so shouldn't need GCC prefix
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin" or host_platform == "freebsd":
+        return ''
+
+    # When 'gcc' is a command other than '/usr/bin/gcc',
+    # compute the 'gcc' prefix that LLVM should use.
+    gcc_path = which('gcc')
+    if gcc_path == '/usr/bin/gcc':
+        # In this common case, nothing else needs to be done,
+        # because we can assume that clang can find this gcc.
+        pass
+    elif gcc_path is None:
+        # Nothing else we can do here
+        pass
+    else:
+        # Try to figure out the GCC prefix by running gcc
+        out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
+        out = out + err
+
+        # look for the --prefix= specified when GCC was configured
+        words = out.split()
+        for word in words:
+            if word.startswith('--prefix='):
+                gcc_prefix = word[len('--prefix='):]
+                break
+        # check that directory exists.
+        if gcc_prefix and os.path.isdir(gcc_prefix):
+            # if so, we are done.
+            pass
+        else:
+            # We didn't find a --prefix= flag, so fall back on a heuristic.
+            # try removing bin/gcc from the end
+            mydir = os.path.dirname(os.path.dirname(gcc_path))
+            if mydir and os.path.isdir(mydir):
+                # then check for mydir/include
+                inc = os.path.join(mydir, "include")
+                if os.path.isdir(inc):
+                    gcc_prefix = mydir
+                else:
+                    inc = os.path.join(mydir, "snos", "include")
+                    if os.path.isdir(inc):
+                        gcc_prefix = mydir
+
+    gcc_prefix = gcc_prefix.strip()
+    if gcc_prefix == '/usr':
+        # clang will be able to figure this out so don't
+        # bother with the argument here.
+        gcc_prefix = ''
+
+    return gcc_prefix
+
+def get_gcc_prefix_dir(clang_cfg_args):
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
     # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
     if gcc_prefix == 'none':
         return ''
 
-    if not gcc_prefix:
-        # darwin and FreeBSD default to clang
-        # so shouldn't need GCC prefix
-        host_platform = chpl_platform.get('host')
-        if host_platform == "darwin" or host_platform == "freebsd":
-            return ''
+    # return the value if it was set, regardless of whether it is valid
+    if gcc_prefix:
+        return gcc_prefix
 
-        # When 'gcc' is a command other than '/usr/bin/gcc',
-        # compute the 'gcc' prefix that LLVM should use.
-        gcc_path = which('gcc')
-        if gcc_path == '/usr/bin/gcc':
-            # In this common case, nothing else needs to be done,
-            # because we can assume that clang can find this gcc.
-            pass
-        elif gcc_path is None:
-            # Nothing else we can do here
-            pass
-        else:
-            # Try to figure out the GCC prefix by running gcc
-            out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
-            out = out + err
+    # if gcc-install-dir is in the config, don't try and infer gcc-toolchain
+    if any(arg.startswith("--gcc-install-dir=") for arg in clang_cfg_args):
+        return ''
 
-            # look for the --prefix= specified when GCC was configured
-            words = out.split()
-            for word in words:
-                if word.startswith('--prefix='):
-                    gcc_prefix = word[len('--prefix='):]
-                    break
-            # check that directory exists.
-            if gcc_prefix and os.path.isdir(gcc_prefix):
-                # if so, we are done.
-                pass
-            else:
-                # We didn't find a --prefix= flag, so fall back on a heuristic.
-                # try removing bin/gcc from the end
-                mydir = os.path.dirname(os.path.dirname(gcc_path))
-                if mydir and os.path.isdir(mydir):
-                    # then check for mydir/include
-                    inc = os.path.join(mydir, "include")
-                    if os.path.isdir(inc):
-                        gcc_prefix = mydir
-                    else:
-                        inc = os.path.join(mydir, "snos", "include")
-                        if os.path.isdir(inc):
-                            gcc_prefix = mydir
-
-        gcc_prefix = gcc_prefix.strip()
-        if gcc_prefix == '/usr':
-            # clang will be able to figure this out so don't
-            # bother with the argument here.
-            gcc_prefix = ''
-
-    return gcc_prefix
+    # this is in a separate function so the logic can be memoized
+    # this function can't be memoized because 'clang_cfg_args' is a list and cannot be hashed.
+    return _get_gcc_prefix_dir_inner()
 
 @memoize
 def get_gcc_install_dir():
@@ -854,14 +890,18 @@ def get_system_llvm_built_sdkroot():
 #
 # Returns a [ ] list of args
 @memoize
-def get_clang_basic_args():
+def get_clang_basic_args(clang_command):
     clang_args = [ ]
+
+    # read the args that clang will use by default from the config file
+    clang_cfg = get_clang_cfg_file(clang_command)
+    clang_cfg_args = parse_clang_cfg_file(clang_cfg)
 
     gcc_install_dir = get_gcc_install_dir()
     if gcc_install_dir:
         clang_args.append('--gcc-install-dir=' + gcc_install_dir)
     else:
-        gcc_prefix = get_gcc_prefix_dir()
+        gcc_prefix = get_gcc_prefix_dir(clang_cfg_args)
         if gcc_prefix:
             clang_args.append('--gcc-toolchain=' + gcc_prefix)
 
@@ -884,6 +924,28 @@ def get_clang_basic_args():
             clang_args.append('-mlinker-version=450')
 
     return clang_args
+
+def parse_clang_cfg_file(file):
+    """
+    Parse the clang config file and return a list of the arguments
+    """
+    args = []
+    if file is None or not os.path.exists(file):
+        return args
+
+    with open(file) as f:
+        cur_line = ""
+        for line in f:
+            if line.startswith('#'):
+                continue
+            cur_line += line.strip()
+            if cur_line.endswith('\\'):
+                # remove the trailing backslash and continue
+                cur_line = cur_line.removesuffix('\\')
+            else:
+                args.append(cur_line)
+                cur_line = ""
+    return args
 
 @memoize
 def gather_pe_chpl_pkgconfig_libs():
@@ -1236,7 +1298,7 @@ def get_host_link_args():
 
 # Return the isysroot argument provided by get_clang_basic_args, if any
 def get_clang_args_sdkroot():
-    args = get_clang_basic_args()
+    args = get_clang_basic_args(None)
     bundled, system = get_host_compile_args()
     args += bundled
     args += system
