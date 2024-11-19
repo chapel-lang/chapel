@@ -5270,6 +5270,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+  bool singletonZip = zip->numActuals() == 1;
   QualifiedType ret;
 
   // Compute the mask for this zip expression
@@ -5278,6 +5279,9 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
 
     const auto skippingAllIterands = -1;
     int m = IterDetails::NONE;
+    if (singletonZip) {
+      m |= IterDetails::STANDALONE;
+    }
     if (loopPrefersParallel) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
