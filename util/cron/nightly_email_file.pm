@@ -9,7 +9,7 @@ sub nightly_email_file{
     $num_args = @_;
 
     if ($num_args != 17) {
-        print "usage: nightly_email.pm \$status \$rawsummary \$sortedsummary \n";
+        print "usage: nightly_email_file.pm \$status \$rawsummary \$sortedsummary \n";
         print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
         print "         \$endtime \$crontab \$testdirs \$debug\n";
