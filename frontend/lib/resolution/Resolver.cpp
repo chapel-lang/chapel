@@ -4996,8 +4996,6 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 
   IterDetails ret;
 
-  debuggerBreakHere();
-
   if (mask & IterDetails::STANDALONE) {
     CHPL_ASSERT(ics.size() == 1);
     auto& ic = ics[0];
