@@ -2109,7 +2109,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
 
         // If the actual argument has generic or dtSplitInitType type,
         // update it to infer the type from the called function.
-        if (actualSe->symbol()->type == dtSplitInitType ||
+        if (actualSe->symbol()->type->getValType() == dtSplitInitType ||
             actualSe->symbol()->type->symbol->hasFlag(FLAG_GENERIC))
           actualSe->symbol()->type = formalType;
 
