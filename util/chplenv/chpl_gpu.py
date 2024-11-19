@@ -7,6 +7,7 @@ import chpl_compiler
 import re
 import chpl_tasks
 import chpl_home_utils
+import overrides
 from utils import error, warning, memoize, try_run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
@@ -215,6 +216,7 @@ def determine_gpu_type():
        ", ".join(GPU_TYPES.keys())))
     return None
 
+@memoize
 def get_llvm_override():
     if get() == 'amd':
         major_version = get_sdk_version().split('.')[0]
@@ -229,7 +231,7 @@ def get():
     if chpl_locale_model.get() != 'gpu':
         return 'none'
 
-    chpl_gpu_env = os.environ.get("CHPL_GPU")
+    chpl_gpu_env = overrides.get("CHPL_GPU")
     if chpl_gpu_env:
         if chpl_gpu_env not in GPU_TYPES:
             error("Only {} supported for 'CHPL_GPU'".format(list(GPU_TYPES.keys())))
@@ -247,7 +249,7 @@ def get_arch():
         return 'none'
 
     # Check if user is overriding the arch.
-    arch = os.environ.get("CHPL_GPU_ARCH")
+    arch = overrides.get("CHPL_GPU_ARCH")
     if arch:
         # arch might be specified in arch1,arch2 format, which is only supported
         # on nvidia.
@@ -295,7 +297,7 @@ def get_sdk_path(for_gpu):
         return (os.path.exists(p) and os.path.isdir(p))
 
     # use user specified if given
-    chpl_sdk_path = os.environ.get(gpu.sdk_path_env)
+    chpl_sdk_path = overrides.get(gpu.sdk_path_env)
     if chpl_sdk_path:
         if for_gpu == get() and not validate_path(chpl_sdk_path):
             _reportMissingGpuReq(
@@ -322,11 +324,12 @@ def get_sdk_path(for_gpu):
 
 @memoize
 def is_sdk_path_user_specified(for_gpu):
-    return os.environ.get(GPU_TYPES[for_gpu].sdk_path_env) is not None
+    return overrides.get(GPU_TYPES[for_gpu].sdk_path_env) is not None
 
 
+@memoize
 def get_gpu_mem_strategy():
-    memtype = os.environ.get("CHPL_GPU_MEM_STRATEGY")
+    memtype = overrides.get("CHPL_GPU_MEM_STRATEGY")
     if memtype:
         valid_options = ["array_on_device", "unified_memory"]
         if memtype not in valid_options:
@@ -394,6 +397,7 @@ def get_runtime_link_args():
 
     return bundled, system
 
+@memoize
 def get_cuda_libdevice_path():
     if get() == 'nvidia':
         compiler = get_gpu_compiler()
@@ -404,6 +408,7 @@ def get_cuda_libdevice_path():
         return libdevice
     return "none"
 
+@memoize
 def get_rocm_llvm_path():
     if get() == 'amd':
         compiler = get_gpu_compiler()
@@ -415,6 +420,7 @@ def get_rocm_llvm_path():
         return os.path.dirname(llvm_path)
     return 'none'
 
+@memoize
 def get_rocm_amdgcn_path():
     if get() == 'amd':
         compiler = get_gpu_compiler()
@@ -509,6 +515,7 @@ def _validate_cuda_version_impl():
 
     return True
 
+@memoize
 def get_sdk_version():
     gpu = GPU_TYPES[get()]
     if not gpu.real_gpu:
@@ -547,7 +554,10 @@ def validate(chplLocaleModel):
     if chplLocaleModel != "gpu":
         return True
 
-    gpu = GPU_TYPES[get()]
+    gpu_val = get()
+    if gpu_val == 'none':
+        error("CHPL_GPU cannot be set to 'none' when using the 'gpu' locale model.")
+    gpu = GPU_TYPES[gpu_val]
 
     # Run function to validate that we have a satisfactory version of our SDK
     # (e.g. CUDA or ROCm)
