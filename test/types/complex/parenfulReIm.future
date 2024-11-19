@@ -1,0 +1,3 @@
+Internal error when applying '()' to .re/.im queries on complex values
+
+This should generate a user error, not an internal error.
