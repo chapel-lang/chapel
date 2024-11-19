@@ -669,20 +669,8 @@ def llvm_enabled():
     return False
 
 @memoize
-def get_gcc_prefix_dir(clang_cfg_args):
-    gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
-
-    # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
-    if gcc_prefix == 'none':
-        return ''
-
-    # return the value if it was set, regardless of whether it is valid
-    if gcc_prefix:
-        return gcc_prefix
-
-    # if gcc-install-dir is in the config, don't try and infer gcc-toolchain
-    if any(arg.startswith("--gcc-install-dir=") for arg in clang_cfg_args):
-        return ''
+def _get_gcc_prefix_dir_inner():
+    # helper memoization for get_gcc_prefix_dir, only should be called from there
 
     # darwin and FreeBSD default to clang
     # so shouldn't need GCC prefix
@@ -736,6 +724,25 @@ def get_gcc_prefix_dir(clang_cfg_args):
         gcc_prefix = ''
 
     return gcc_prefix
+
+def get_gcc_prefix_dir(clang_cfg_args):
+    gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
+
+    # allow CHPL_LLVM_GCC_PREFIX=none to disable inferring it
+    if gcc_prefix == 'none':
+        return ''
+
+    # return the value if it was set, regardless of whether it is valid
+    if gcc_prefix:
+        return gcc_prefix
+
+    # if gcc-install-dir is in the config, don't try and infer gcc-toolchain
+    if any(arg.startswith("--gcc-install-dir=") for arg in clang_cfg_args):
+        return ''
+
+    # this is in a separate function so the logic can be memoized
+    # this function can't be memoized because 'clang_cfg_args' is a list and cannot be hashed.
+    return _get_gcc_prefix_dir_inner()
 
 @memoize
 def get_gcc_install_dir():
@@ -921,6 +928,9 @@ def parse_clang_cfg_file(file):
     Parse the clang config file and return a list of the arguments
     """
     args = []
+    if file is None or not os.path.exists(file):
+        return args
+
     with open(file) as f:
         cur_line = ""
         for line in f:
