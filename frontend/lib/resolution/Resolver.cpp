@@ -3786,71 +3786,79 @@ static void getVarLikeOrTupleTypeInit(const AstNode* ast,
 bool Resolver::enter(const MultiDecl* decl) {
   enterScope(decl);
 
-  // Establish the type or init expressions within
-  // by visiting those nodes
-  for (auto d : decl->decls()) {
-    enterScope(d);
-
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
-
-    if (typeExpr != nullptr) {
-      typeExpr->traverse(*this);
-    }
-    if (initExpr != nullptr) {
-      initExpr->traverse(*this);
-    }
-
-    exitScope(d);
-  }
-
+  // Traversal is done in exit
   return false;
 }
+
 void Resolver::exit(const MultiDecl* decl) {
-  if (scopeResolveOnly)
-    return;
+  // Move through decls in order, propagating type backwards each time one with
+  // a type or init is encountered.
+  // This effectively splits the decls into groups that share a type/init.
+  auto it = decl->decls().begin();
+  auto groupBegin = it;
+  const AstNode* curTypeExpr = nullptr;
+  const AstNode* curInitExpr = nullptr;
+  while (it != decl->decls().end()) {
+    const Decl* individualDecl = *it;
 
-  // Visit the named decls in reverse order
-  // setting the type/init.
-  auto begin = decl->declOrComments().begin();
-  auto it = decl->declOrComments().end();
-  const Type* lastType = nullptr;
-  while (it != begin) {
-    --it;
+    // Resolve type and init expressions if present.
+    getVarLikeOrTupleTypeInit(individualDecl, curTypeExpr, curInitExpr);
+    if (curTypeExpr != nullptr) {
+      curTypeExpr->traverse(*this);
+    }
+    if (curInitExpr != nullptr) {
+      curInitExpr->traverse(*this);
+    }
 
-    auto d = it->toDecl();
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+    if (!scopeResolveOnly && (curTypeExpr || curInitExpr)) {
+      // Decl with type/init encountered, resolve and propagate the type info
+      // backwards through its group.
+      auto groupEnd = std::next(it);
+      auto groupIt = groupEnd;
+      const Type* lastType = nullptr;
+      while (groupIt != groupBegin) {
+        const Decl* d = *(--groupIt);
 
-    // if it has neither init nor type, use the type from the
-    // variable to the right.
-    // e.g., in
-    //    var a, b: int
-    // a is of type int
-    const Type* t = nullptr;
-    if (typeExpr == nullptr && initExpr == nullptr) {
-      if (lastType == nullptr) {
-        // this could be split init
-        t = UnknownType::get(context);
-      } else {
-        t = lastType;
+        // Skip extracting type/init if we're on the last decl in the group
+        // (first inner loop iteration), as we've already just done so in the
+        // current iteration of the outer loop.
+        // Take null lastType to mean we're on the first inner iteration.
+        if (lastType) getVarLikeOrTupleTypeInit(d, curTypeExpr, curInitExpr);
+
+        // if it has neither init nor type, use the type from the
+        // variable to the right.
+        // e.g., in
+        //    var a, b: int
+        // a is of type int
+        const Type* t = nullptr;
+        if (curTypeExpr == nullptr && curInitExpr == nullptr) {
+          if (lastType == nullptr) {
+            // this could be split init
+            t = UnknownType::get(context);
+          } else {
+            t = lastType;
+          }
+        }
+
+        // for the functions called in these conditionals:
+        //  * if t is nullptr, just resolve it like usual
+        //  * update the type of d in byPostorder
+        if (auto v = d->toVarLikeDecl()) {
+          resolveNamedDecl(v, t);
+        } else if (auto td = d->toTupleDecl()) {
+          resolveTupleDecl(td, t);
+        }
+
+        // update lastType
+        ResolvedExpression& result = byPostorder.byAst(d);
+        lastType = result.type().type();
       }
+
+      // Advance to beginning of next group
+      groupBegin = groupEnd;
     }
 
-    // for the functions called in these conditionals:
-    //  * if t is nullptr, just resolve it like usual
-    //  * update the type of d in byPostorder
-    if (auto v = d->toVarLikeDecl()) {
-      resolveNamedDecl(v, t);
-    } else if (auto td = d->toTupleDecl()) {
-      resolveTupleDecl(td, t);
-    }
-
-    // update lastType
-    ResolvedExpression& result = byPostorder.byAst(d);
-    lastType = result.type().type();
+    ++it;
   }
 
   exitScope(decl);

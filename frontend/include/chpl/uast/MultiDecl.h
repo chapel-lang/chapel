@@ -43,7 +43,7 @@ namespace uast {
   \endrst
 
   Each of the lines above is represented by a MultiDecl containing a
-  list of VariableDecls.  Note that the initial value and/or type is inferred
+  list of Variables.  Note that the initial value and/or type is inferred
   from later declarations.
 
   Since the MultiDecl does not itself have a name, it is not
@@ -97,7 +97,7 @@ class MultiDecl final : public Decl {
                                 AstList varDecls);
 
   /**
-    Return a way to iterate over the contained VariableDecls and Comments.
+    Return a way to iterate over the contained Decls and Comments.
    */
   AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = numDeclOrComments()
@@ -108,7 +108,7 @@ class MultiDecl final : public Decl {
   }
 
   /**
-   Return the number of VariableDecls and Comments contained.
+   Return the number of Decls and Comments contained.
    */
   int numDeclOrComments() const {
     int numNonChildren = 0;
@@ -118,7 +118,7 @@ class MultiDecl final : public Decl {
   }
 
   /**
-   Return the i'th contained VariableDecl or Comment.
+   Return the i'th contained Decl or Comment.
    */
   const AstNode* declOrComment(int i) const {
     CHPL_ASSERT(i >= 0 && i < numDeclOrComments());

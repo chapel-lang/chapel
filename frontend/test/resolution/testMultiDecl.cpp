@@ -250,6 +250,34 @@ static void test6() {
   assert(xt->isIntType());
 }
 
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
+                  var a = 1, b = (1 + a);
+                )"""");
+
+  assert(M->numStmts() == 2);
+  const MultiDecl* md = M->stmt(1)->toMultiDecl();
+  assert(md);
+  auto a = md->declOrComment(0)->toVariable();
+  assert(a);
+  auto b = md->declOrComment(1)->toVariable();
+  assert(b);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type()->isIntType());
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -257,6 +285,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
