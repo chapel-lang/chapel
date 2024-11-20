@@ -222,7 +222,7 @@ module Python {
   private import List;
   private import Map;
 
-  private use CPythonInterface;
+  private use CPythonInterface except PyObject;
   private use CWChar;
   private use OS.POSIX only getenv;
 
@@ -1187,6 +1187,22 @@ module Python {
     proc value(type value) throws {
       return interpreter.fromPython(value, this.obj);
     }
+
+    proc type release(in self: owned PyObject): PyObjectPtr {
+      var selfUn: unmanaged PyObject = owned.release(self);
+      selfUn.isOwned = false;
+      var ptr: PyObjectPtr = selfUn.obj;
+      delete selfUn;
+      return ptr;
+    }
+    proc type release(in self: owned ClassObject): PyObjectPtr {
+      var pyObj: unmanaged ClassObject = owned.release(self);
+      pyObj.obj!.isOwned = false;
+      var ptr: PyObjectPtr = pyObj.obj!.get();
+      delete pyObj;
+      return ptr;
+    }
+
 
     /*
       Returns the string representation of the object.
