@@ -150,9 +150,18 @@ Expr* preFold(CallExpr* call) {
 
       thisTemp->addFlag(FLAG_EXPR_TEMP);
 
-      callExpr->replace(new UnresolvedSymExpr("this"));
+      // toCallExpr(baseExpr) lies and returns a CallExpr for ContextCall.
+      // In this case, we want to store the whole ContextCall in a temp;
+      // so, check if we were lied to.
+      Expr* receiver = nullptr;
+      if (auto cc = toContextCallExpr(callExpr->parentExpr)) {
+        receiver = cc;
+      } else {
+        receiver = callExpr;
+      }
 
-      retval = new CallExpr(PRIM_MOVE, thisTemp, callExpr);
+      receiver->replace(new UnresolvedSymExpr("this"));
+      retval = new CallExpr(PRIM_MOVE, thisTemp, receiver);
 
       call->insertAtHead(new SymExpr(thisTemp));
       call->insertAtHead(gMethodToken);

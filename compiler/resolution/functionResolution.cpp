@@ -4378,13 +4378,15 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue) {
-  CallExpr*            call         = info.call;
-  CallExpr*            refCall      = NULL;
-  CallExpr*            valueCall    = NULL;
-  CallExpr*            constRefCall = NULL;
-  CallExpr*            ccAnchor     = NULL; // the last of the above CallExprs
-  ResolutionCandidate* best         = NULL;
-  FnSymbol*            retval       = NULL;
+  CallExpr* call = info.call;
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  CallExpr* ccAnchor = NULL; // the last of the above CallExprs
+  ResolutionCandidate* best = NULL;
+  FnSymbol* retval = NULL;
+  CallExpr* partialParent = call->partialTag ? toCallExpr(call->parentExpr) :
+                                               NULL;
 
   if (bestRef      != NULL) {
     refCall = call;
@@ -4400,7 +4402,8 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     } else {
       valueCall = call->copy();
 
-      call->insertAfter(valueCall);
+      auto insertAfter = partialParent ? call->parentExpr : call;
+      insertAfter->insertAfter(valueCall);
     }
 
     instantiateBody(bestValue->fn);
@@ -4410,7 +4413,8 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   if (bestConstRef != NULL) {
     constRefCall = call->copy();
 
-    call->insertAfter(constRefCall);
+    auto insertAfter = partialParent ? call->parentExpr : call;
+    insertAfter->insertAfter(constRefCall);
 
     instantiateBody(bestConstRef->fn);
 
@@ -4500,11 +4504,21 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     // Replace the call with a new ContextCallExpr containing 2 or 3 calls
     ContextCallExpr* contextCall = new ContextCallExpr();
 
-    ccAnchor->insertAfter(contextCall);
+    if (partialParent) {
+      // If we're partial, we're actually the baseExpr of some other call;
+      // handle that below, after we've removed the previous base expression.
+    } else {
+      ccAnchor->insertAfter(contextCall);
+    }
 
     if (refCall      != NULL) refCall->remove();
     if (valueCall    != NULL) valueCall->remove();
     if (constRefCall != NULL) constRefCall->remove();
+
+    if (partialParent) {
+      partialParent->baseExpr = contextCall;
+      parent_insert_help(partialParent, contextCall);
+    }
 
     contextCall->setRefValueConstRefOptions(refCall,
                                             valueCall,
