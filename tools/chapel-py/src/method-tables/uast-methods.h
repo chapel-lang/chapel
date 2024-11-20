@@ -110,7 +110,7 @@ CLASS_BEGIN(AstNode)
                return getValidLocation(loc))
   PLAIN_GETTER(AstNode, paren_location, "Get the Location of the parentheses of this AstNode node",
                std::optional<chpl::Location>,
-               auto loc = chpl::parsing::locateExprParenthWithAst(context, node);
+               auto loc = chpl::parsing::locateExprParenWithAst(context, node);
                return getValidLocation(loc))
 CLASS_END(AstNode)
 

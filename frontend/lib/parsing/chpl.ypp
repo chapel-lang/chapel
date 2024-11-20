@@ -2559,7 +2559,7 @@ fn_decl_receiver_expr:
   ident_expr
 | TLP expr TRP
   {
-    BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
+    BUILDER->tryNoteExprParenLocation($2, LOC(@$));
     $$ = $2;
   }
 ;
@@ -3346,7 +3346,7 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3359,7 +3359,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
-    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3372,7 +3372,7 @@ new_expr:
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3386,7 +3386,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
-    BUILDER->tryNoteExprParenthLocation($4, LOC2(@3, @5));
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3596,7 +3596,7 @@ parenthesized_expr:
   TLP opt_try_expr TRP
   {
     // Use 'tryNote' here in case an expression like ((x)) comes along.
-    BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
+    BUILDER->tryNoteExprParenLocation($2, LOC(@$));
     $$ = $2;
   }
 | TLP tuple_component TCOMMA TRP

@@ -798,7 +798,7 @@ static void collectEqualPrecedenceOpsWithoutParens(Context* context,
     if (auto childOp = child->toOpCall()) {
       if (childOp->numActuals() == 2 && binOpPrecedence(childOp->op()) == prec) {
         // The child only counts as a 'problem' if it's not parenthesized.
-        if (parsing::locateExprParenthWithAst(context, childOp).line() == -1) {
+        if (parsing::locateExprParenWithAst(context, childOp).line() == -1) {
           collectEqualPrecedenceOpsWithoutParens(context, childOp, prec, ops, operands);
           return;
         }
