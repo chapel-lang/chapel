@@ -2019,7 +2019,7 @@ class CallResolutionResult {
    the iteration (e.g., lack of a follower iterator)
 
    In the case of failure due to zippering (e.g., we're iterating over a
-   loop expression, but the Nth zippred iterand doesn't have the appropriate
+   loop expression, but the Nth zippered iterand doesn't have the appropriate
    iterator), this type contains a 'zipperedFailure_' field, which contains
    the result of trying to iterate the Nth iterand, and a 'zipperedFailureIndex_'
    which is the index of the failed iterand.
