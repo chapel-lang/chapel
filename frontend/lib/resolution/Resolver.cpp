@@ -5501,8 +5501,8 @@ bool Resolver::enter(const IndexableLoop* loop) {
   if (const Decl* idx = loop->index()) {
     ResolvedExpression& re = byPostorder.byAst(idx);
 
-    if (auto td = idx->toTupleDecl()) {
-      resolveTupleUnpackDecl(td, idxType);
+    if (idx->isTupleDecl() && !scopeResolveOnly) {
+      resolveTupleUnpackDecl(idx->toTupleDecl(), idxType);
     } else {
       re.setType(idxType);
     }
