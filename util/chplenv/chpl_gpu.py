@@ -476,7 +476,7 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
 def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
-    MIN_REQ_VERSION = "7"
+    MIN_REQ_VERSION = "11.7"
     MAX_REQ_VERSION = "13"
 
     cuda_version = get_sdk_version()
@@ -511,6 +511,14 @@ def _validate_cuda_version_impl():
 
 def get_sdk_version():
     gpu = GPU_TYPES[get()]
+
+    if os.environ.get('CHPL_GPU_SDK_VERSION') is not None:
+        fixstr = "."
+        if gpu.real_gpu:
+            var = gpu.sdk_path_env
+            fixstr = " and set {} to the desired version-specific path instead.".format(var)
+        warning("Setting CHPL_GPU_SDK_VERSION has no effect. Unset CHPL_GPU_SDK_VERSION"+fixstr)
+
     if not gpu.real_gpu:
         return 'none'
     version = gpu.find_version(get_gpu_compiler())
