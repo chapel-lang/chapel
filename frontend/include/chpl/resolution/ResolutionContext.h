@@ -61,7 +61,7 @@ class MatchingIdsWithName;
   At any point in time, a 'ResolutionContext*' is either stable or unstable.
   It is unstable if it has one or more unstable frames.
 
-  When the 'ResolutionContext*' is unstable, any 'CHPL_RESOUTION_QUERY...'
+  When the 'ResolutionContext*' is unstable, any 'CHPL_RESOLUTION_QUERY...'
   will consult the passed in query arguments in order to determine if the
   'Context*' query cache can be used. If the arguments may refer to a
   nested function, then the computed result is not cached in the global
