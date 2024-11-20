@@ -1752,7 +1752,7 @@ void GpuKernel::generatePostBody() {
   fn_->insertAtTail(this->postBody_);
 }
 
-// Returns the GPU primives block within 'body', or null if none.
+// Returns the GPU primitives block within 'body', or null if none.
 // Note: this searches inside nested loops - needed for multi-dim arrays, ex:
 //   var A: [1..n,1..n] int;
 //   @gpu.blockSize foreach A {}
