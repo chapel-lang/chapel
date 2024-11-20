@@ -305,7 +305,7 @@ struct VarFrame {
   // for copy elision:
   // Is the last mention of the variable a copy?
   // What are the copy points?
-  std::map<ID,CopyElisionState> copyElisionState;
+  std::unordered_map<ID,CopyElisionState> copyElisionState;
 
   // for call init deinit:
   // localsAndDefers contains both VarSymbol and DeferStmt in
@@ -321,7 +321,8 @@ struct VarFrame {
   std::vector<ID> initedOuterVars;
 
   // Which variables have been deinitialized early in this scope?
-  std::set<ID> deinitedVars;
+  // Map of (ID of decl) -> (ID of call after which it is deinited)
+  std::unordered_map<ID, ID> deinitedVars;
 
   VarFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
 

@@ -510,7 +510,7 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   // don't copy elide if any catch clauses mention the variable
   // don't copy elide if any catch clause doesn't throw/return
-  std::map<ID,CopyElisionState> updatedState;
+  std::unordered_map<ID,CopyElisionState> updatedState;
   std::set<ID> catchMentions;
   bool allThrowOrReturn = true;
 
