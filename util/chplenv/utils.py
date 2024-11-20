@@ -26,9 +26,12 @@ def set_buffer_warnings(buffer_warnings):
     global _buffer_warnings
     _buffer_warnings = buffer_warnings
 
+def should_buffer_warnings():
+    return _buffer_warnings and not ignore_errors
+
 def warning(msg):
     if not os.environ.get('CHPLENV_SUPPRESS_WARNINGS'):
-        if _buffer_warnings:
+        if should_buffer_warnings():
             _warning_buffer.append(msg)
         else:
             sys.stderr.write('Warning: ')
@@ -50,6 +53,7 @@ def error(msg, exception=Exception):
             sys.stderr.write(''.join(out))
         else:
             # flush warnings, print error, and exit
+            # technically, there is no need to flush warnings here, but might as well
             flush_warnings()
             sys.stderr.write(''.join(out))
             sys.exit(1)
