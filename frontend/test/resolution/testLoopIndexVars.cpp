@@ -145,7 +145,7 @@ static void testAmbiguous() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto idx = rr.byAst(loop->index());
-  assert(idx.type().isErroneousType());
+  assert(idx.type().isUnknown());
   assert(guard.realizeErrors() == 1);
 }
 
@@ -1060,6 +1060,30 @@ static void testForallExpressionInForLoop(Context* context) {
                                [](const QualifiedType& t) { return t.type()->toRealType(); });
 }
 
+static void testBracketLoopSerialFallback(Context* context) {
+  // Test that a bracket loop expression falls back to the serial iterator
+  // if a leader is present, but one of the followers is not.
+  auto iters =
+    R""""(
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+
+    iter i2() { yield 0.0; }
+    iter i2(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    )"""";
+
+  // Follower iterator yields tuples of ints, so expect tuples of ints.
+  pairIteratorInLoopExpression(context, iters, "zip(i1(), i2())", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) {
+    if (auto tt = t.type()->toTupleType()) {
+      if (!tt->isStarTuple()) return false;
+      return tt->starType().type()->isRealType();
+    }
+    return false;
+  });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1099,6 +1123,8 @@ int main() {
   testForLoopExpressionInForall(context);
   testForLoopExpressionInBracketLoop(context);
   testForallExpressionInForLoop(context);
+
+  testBracketLoopSerialFallback(context);
 
   return 0;
 }
