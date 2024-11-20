@@ -4647,7 +4647,8 @@ DEFINE_PRIM(RETURN) {
     if (gGenInfo->currentFunctionABI)
       returnInfo = &info->currentFunctionABI->getReturnInfo();
 
-    if (call->parentSymbol->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+    if (call->parentSymbol->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) &&
+        !gCodegenGPU /* can't immediately halt on GPU */) {
       returnInst = irBuilder->CreateUnreachable();
       trackLLVMValue(returnInst);
     } else if (returnInfo) {
@@ -6287,6 +6288,7 @@ DEFINE_PRIM(CAST_TO_TYPE) {
 
 DEFINE_BASIC_PRIM(RT_ERROR)
 DEFINE_BASIC_PRIM(RT_WARNING)
+DEFINE_BASIC_PRIM(RT_GPU_HALT)
 DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
 

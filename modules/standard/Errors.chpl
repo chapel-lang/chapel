@@ -739,7 +739,11 @@ module Errors {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt() {
-    __primitive("chpl_error", "halt reached".c_str());
+    if chpl_cpuVsGpuToken {
+      __primitive("chpl_error", "halt reached".c_str());
+    } else {
+      __primitive("chpl_gpu_halt");
+    }
   }
 
   pragma "function terminates program"

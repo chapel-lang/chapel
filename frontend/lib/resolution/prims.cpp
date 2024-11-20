@@ -1544,6 +1544,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_CHPL_EXIT_ANY:
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:
+    case PRIM_RT_GPU_HALT:
     case PRIM_NEW_PRIV_CLASS:
     case PRIM_SET_SVEC_MEMBER:
     case PRIM_ITERATOR_RECORD_SET_SHAPE:

@@ -201,6 +201,13 @@ void chpl_internal_error(const char* message) {
   // TODO actually error
 }
 
+__device__ extern int chpl_haltFlag;
+
+__device__ static inline
+void chpl_gpu_halt(int lineno, int32_t filenameIdx) {
+  chpl_haltFlag = 1;
+}
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_COMMON_H

@@ -310,6 +310,7 @@ PRIMITIVE_G(CHPL_EXIT_ANY, "chpl_exit_any")
 
 PRIMITIVE_G(RT_ERROR, "chpl_error")
 PRIMITIVE_G(RT_WARNING, "chpl_warning")
+PRIMITIVE_G(RT_GPU_HALT, "chpl_gpu_halt")
 
 PRIMITIVE_G(NEW_PRIV_CLASS, "chpl_newPrivatizedClass")
 

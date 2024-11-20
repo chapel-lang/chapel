@@ -870,7 +870,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   std::vector<CallExpr*> calls;
 
-  collectCallExprsExceptInGpuBlock(blk, calls);
+  collectCallExprsForGpuEligibilityAnalysis(blk, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
