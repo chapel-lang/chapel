@@ -8303,7 +8303,7 @@ void doCpuAMO(void* obj,
         break;                                                    \
       }                                                           \
     }                                                             \
-  } while(0);
+  } while(0)
 
     case FI_MIN:
       switch(ofiType) {
