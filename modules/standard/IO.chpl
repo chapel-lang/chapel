@@ -7203,7 +7203,7 @@ iter fileReader.lines(
 
 /*
   Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
-  roughly equally sized chunks, where each byte offset comes immidiately after
+  roughly equally sized chunks, where each byte offset comes immediately after
   a newline.
 
   :arg f: the file to search
