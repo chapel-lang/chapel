@@ -530,7 +530,7 @@ opportunity for writes by a single task to be performed out of order. The
 remote cache does perform non-blocking writes, but has internal
 synchronization to wait for previous conflicting writes to complete before
 issuing a new write. This ensures writes by a single task are performed in
-program order. FI_ORDER_RMA_WAW has signficant performance implications, so
+program order. FI_ORDER_RMA_WAW has significant performance implications, so
 it should be avoided if possible.
 
 #### Message-order MCM Mode
