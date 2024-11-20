@@ -1,0 +1,10 @@
+I have not been able to match the output from Pytorch for this linear layer.
+The output I get from Pytorch is something like:
+
+❯ python3 layerTest.py
+Testing linear layer
+tensor([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.])
+tensor([ 1.2245,  3.2078, -1.2691,  2.9118,  5.2877])
+
+See the layerTest.py file in the same directory for the Pytorch code.
+I have tried to match the output from Pytorch by using the same seed, but I have not been able to do so.
