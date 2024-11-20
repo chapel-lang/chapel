@@ -618,6 +618,32 @@ CHPL_ATOMICS
 
      Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` for better performance, if possible. If not, please open an issue on GitHub.
 
+
+.. _readme-chplenv.CHPL_NETWORK_ATOMICS:
+
+CHPL_NETWORK_ATOMICS
+~~~~~~~~~~~~~~~~~~~~
+   Optionally, the ``CHPL_NETWORK_ATOMICS`` environment variable can be used
+   to select whether atomic operations are performed by the network or the
+   processor. This is only applicable when ``CHPL_COMM != none`` and only for
+   networks that support atomic operations. If ``CHPL_NETWORK_ATOMICS=none``
+   then atomics are implemented using active messages and processor atomics,
+   otherwise ``CHPL_NETWORK_ATOMICS`` must have the same value as
+   ``CHPL_COMM``. Note that with ``CHPL_NETWORK_ATOMICS=ofi`` support for
+   network atomics is provider-specific, and the provider is selected at
+   runtime. If the selected provider does not support network atomics then
+   atomics will be implemeted using active messages and processor atomics.
+
+   Current options are:
+
+        ======  ==============================================================
+        Value   Description
+        ======  ==============================================================
+        none    implement atomics using active messages and processor atomics
+        ofi     use network atomics if supported by the provider
+        ugni    use network atomics
+        ======  ==============================================================
+
 .. _readme-chplenv.CHPL_TIMERS:
 
 CHPL_TIMERS
