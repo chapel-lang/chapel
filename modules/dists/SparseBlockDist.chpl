@@ -553,12 +553,28 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
+  proc getLocalSubarray(localeRow, localeCol) ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
   proc getLocalSubarray(localeRow, localeCol) const ref {
     return this.locArr[localeRow, localeCol]!.myElems;
   }
 
+  proc getLocalSubarray(localeIdx) ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
   proc getLocalSubarray(localeIdx) const ref {
     return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc getLocalSubarray() ref {
+    return myLocArr!.myElems;
+  }
+
+  proc getLocalSubarray() const ref {
+    return myLocArr!.myElems;
   }
 
   proc setLocalSubarray(locNonzeroes, loc: locale = here) {
@@ -570,6 +586,22 @@ class SparseBlockArr: BaseSparseArr(?) {
                     myBlock.type:string);
     else
       myBlock.data = locNonzeroes.data;
+  }
+
+  iter localSubarrays() ref {
+    for locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
+  }
+
+  iter localSubarrays(param tag: iterKind) ref where tag == iterKind.standalone {
+    coforall locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
   }
 }
 

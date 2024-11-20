@@ -407,6 +407,14 @@ module DefaultSparse {
     override proc dsiSupportsAutoLocalAccess() param {
       return defaultSparseSupportsAutoLocalAccess;
     }
+
+    proc getCoordinates() const ref : [] rank*idxType {
+      return _indices;
+    }
+
+    proc getCoordinates() ref : [] rank*idxType {
+      return _indices;
+    }
   }
 
 
