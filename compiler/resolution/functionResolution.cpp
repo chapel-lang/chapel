@@ -4378,16 +4378,15 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue) {
-  CallExpr*            call          = info.call;
-  CallExpr*            refCall       = NULL;
-  CallExpr*            valueCall     = NULL;
-  CallExpr*            constRefCall  = NULL;
-  CallExpr*            ccAnchor      = NULL; // the last of the above CallExprs
-  ResolutionCandidate* best          = NULL;
-  FnSymbol*            retval        = NULL;
-  CallExpr*            partialParent = call->partialTag ?
-                                       toCallExpr(call->parentExpr) :
-                                       NULL;
+  CallExpr* call = info.call;
+  CallExpr* refCall = NULL;
+  CallExpr* valueCall = NULL;
+  CallExpr* constRefCall = NULL;
+  CallExpr* ccAnchor = NULL; // the last of the above CallExprs
+  ResolutionCandidate* best = NULL;
+  FnSymbol* retval = NULL;
+  CallExpr* partialParent = call->partialTag ? toCallExpr(call->parentExpr) :
+                                               NULL;
 
   if (bestRef      != NULL) {
     refCall = call;
