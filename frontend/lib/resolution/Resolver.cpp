@@ -5069,6 +5069,10 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 
   auto iterandRe = rv.byPostorder.byAst(iterand);
 
+  if (iterandRe.type().isUnknownOrErroneous()) {
+    // The iterand is unknown, no work to do.
+  }
+
   // Resolve iterators, stopping immediately when we get a valid yield type.
   // We are outside of a zippering contex, so call with only a single IterandComponent.
   std::vector<IterandComponent> ics = {
@@ -5277,6 +5281,10 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
     auto leaderQt = rv.byPostorder.byAst(leader).type();
 
+    if (leaderQt.isUnknownOrErroneous()) {
+      return QualifiedType();
+    }
+
     const auto skippingAllIterands = -1;
     int m = IterDetails::NONE;
     if (singletonZip) {
@@ -5309,6 +5317,10 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     for (int i = 1; i < zip->numActuals(); i++) {
       auto follower = zip->actual(i);
       ics.emplace_back(rv, follower, follower);
+
+      if (ics.back().iterandQt.isUnknownOrErroneous()) {
+        return QualifiedType();
+      }
     }
 
     auto result = resolveIterDetailsInPriorityOrder(rv, ics, m, &failures);
