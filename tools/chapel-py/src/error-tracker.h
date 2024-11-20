@@ -28,6 +28,7 @@
 struct ContextObject;
 
 struct ErrorObject : public PythonClassWithObject<ErrorObject, chpl::owned<chpl::ErrorBase>> {
+  static constexpr const char* QualifiedName = "chapel.Error";
   static constexpr const char* Name = "Error";
   static constexpr const char* DocStr = "An error that occurred as part of processing a file with the Chapel compiler frontend";
 };
@@ -35,6 +36,7 @@ struct ErrorObject : public PythonClassWithObject<ErrorObject, chpl::owned<chpl:
 using LocationAndNote = std::tuple<chpl::Location, std::string>;
 
 struct ErrorManagerObject : public PythonClassWithObject<ErrorManagerObject, std::tuple<>> {
+  static constexpr const char* QualifiedName = "chapel.ErrorManager";
   static constexpr const char* Name = "ErrorManager";
   static constexpr const char* DocStr = "A wrapper container to help track the errors from a Context.";
 };

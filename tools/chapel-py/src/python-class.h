@@ -69,7 +69,8 @@ struct PythonClass {
     PyTypeObject configuring = {
       PyVarObject_HEAD_INIT(NULL, 0)
     };
-    configuring.tp_name = Self::Name;
+    // tp_name must be the qualified name
+    configuring.tp_name = Self::QualifiedName;
     configuring.tp_basicsize = sizeof(Self);
     configuring.tp_itemsize = 0;
     configuring.tp_dealloc = (destructor) Self::dealloc;
@@ -126,6 +127,7 @@ PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
 // Forward-declaring doesn't cut it because we need ContextObject::PythonType.
 
 struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
+  static constexpr const char* QualifiedName = "chapel.Context";
   static constexpr const char* Name = "Context";
   static constexpr const char* DocStr = "The Chapel context object that tracks various frontend state";
 

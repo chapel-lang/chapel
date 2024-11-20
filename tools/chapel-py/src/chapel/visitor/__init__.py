@@ -17,6 +17,14 @@
 # limitations under the License.
 #
 
+"""
+=======
+Visitor
+=======
+
+This module contains utilities for defining and using visitors for :class:`chapel.AstNode` hierarchies.
+"""
+
 # use core to prevent circular dependency
 import chapel.core
 

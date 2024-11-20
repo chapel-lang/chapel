@@ -45,8 +45,9 @@ jobs:
         make frontend-docs
     - name: make check-chpldoc && make docs
       # Uses a quickstart config to keep it from running too long
+      # also builds chapel-py so those docs are included
       run: |
-        ./util/buildRelease/smokeTest quickstart docs
+        ./util/buildRelease/smokeTest quickstart chapel-py docs
     - name: upload docs
       uses: actions/upload-artifact@v4
       with:

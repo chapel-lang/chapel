@@ -81,3 +81,10 @@ cpp:identifier LOOKUP_DECLS
 cpp:identifier LOOKUP_IMPORT_AND_USE
 cpp:identifier LOOKUP_PARENTS
 cpp:identifier LOOKUP_EXTERN_BLOCKS
+
+
+# python types
+py:data typing.Optional
+py:data typing.Tuple
+py:class lsprotocol.types.Diagnostic
+py:class lsprotocol.types.Range

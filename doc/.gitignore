@@ -29,3 +29,5 @@ man.rst
 /tutorial/workbooks/*.bbl
 /tutorial/workbooks/*.blg
 /sphinx/build
+
+chapel-py-api.rst

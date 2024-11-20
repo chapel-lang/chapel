@@ -34,14 +34,14 @@ static PyMethodDef ChapelMethods[] = {
 static PyModuleDef ChapelModule {
   PyModuleDef_HEAD_INIT,
   .m_name="core",
-  .m_doc="A Python bridge for the Chapel frontend library",
+  .m_doc=PyDoc_STR("A Python bridge for the Chapel frontend library"),
   .m_size=-1 /* Per-interpreter memory (not used currently) */,
   .m_methods=ChapelMethods,
 };
 
 extern "C" {
 
-PyMODINIT_FUNC PyInit_core() {
+PyMODINIT_FUNC PyInit_core(void) {
   PyObject* chapelModule = nullptr;
 
   setupAstIterType();

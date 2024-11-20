@@ -13,6 +13,7 @@ MASON=0
 DOCS=0
 CHPL=0
 LINT=0
+CHAPEL_PY=0
 QUICKSTART=0
 TARGETS_SET=0
 
@@ -44,12 +45,17 @@ while [[ $# -gt 0 ]]; do
             TARGETS_SET=1
             shift
             ;;
+        chapel-py)
+            CHAPEL_PY=1
+            TARGETS_SET=1
+            shift
+            ;;
         quickstart)
             QUICKSTART=1
             shift
             ;;
         *)
-            echo "Usage: smokeTest [mason] [docs] [chpl] [lint] [quickstart]"
+            echo "Usage: smokeTest [mason] [docs] [chpl] [lint] [chapel-py] [quickstart]"
             exit 1
             ;;
         esac
@@ -71,7 +77,7 @@ if [ $TARGETS_SET -eq 0 ]; then
     LINT=1
 fi
 
-echo "Running with MASON=$MASON DOCS=$DOCS CHPL=$CHPL LINT=$LINT QUICKSTART=$QUICKSTART"
+echo "Running with MASON=$MASON DOCS=$DOCS CHPL=$CHPL LINT=$LINT CHAPEL_PY=$CHAPEL_PY QUICKSTART=$QUICKSTART"
 
 # Ensure environment is correctly configured to run chpl.
 export CHPL_HOME=$(cd "$CWD/../.." ; pwd)
@@ -200,6 +206,11 @@ if [ $CHPL -eq 1 ]; then
     # Compile first with parallel execution, but call `make check` without it.
     make -j${num_procs} $chpl_make_args && \
         CHPL_CHECK_DEBUG=1 make $chpl_make_args check || exit 2
+fi
+
+if [ $CHAPEL_PY -eq 1 ]; then
+    # Build chapel-py-venv
+    make -j${num_procs} chapel-py-venv || exit 2
 fi
 
 if [ $DOCS -eq 1 ]; then
