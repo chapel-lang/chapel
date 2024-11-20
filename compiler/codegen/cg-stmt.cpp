@@ -188,7 +188,7 @@ GenRet BlockStmt::codegen() {
 ********************************* | ********************************/
 
 // If this is 'if gCpuVsGpuToken then ... else ...'
-// then return the approrpiate branch, else nil.
+// then return the appropriate branch, else nil.
 static BlockStmt* chooseCpuVsGpuBranch(CondStmt* cond) {
   if (SymExpr* se = toSymExpr(cond->condExpr))
     if (se->symbol() == gCpuVsGpuToken)
