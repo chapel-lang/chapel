@@ -642,13 +642,20 @@ static void cfg_find_halt_flag(kernel_cfg *cfg) {
   size_t halt_flag_size;
   chpl_gpu_impl_load_global("chpl_haltFlag", (void**) &cfg->halt_flag,
                             &halt_flag_size);
-  assert(cfg->halt_flag);
-  assert(halt_flag_size == sizeof(int));
+
+  // halt flag might be missing if it was optimized out. In that case,
+  // we know the kernel doesn't use it, so it's ok.
+  if (cfg->halt_flag) {
+    assert(halt_flag_size == sizeof(int));
+  }
 }
 
 static void cfg_set_halt_flag(kernel_cfg* cfg, int new_flag) {
   if (!cfg->halt_flag) {
     cfg_find_halt_flag(cfg);
+  }
+  if (!cfg->halt_flag) {
+    return; // halt flag optimized out; do nothing.
   }
   chpl_gpu_impl_copy_host_to_device(cfg->halt_flag, (void*) &new_flag,
                                     sizeof(new_flag), cfg->stream);
@@ -657,6 +664,9 @@ static void cfg_set_halt_flag(kernel_cfg* cfg, int new_flag) {
 static int cfg_get_halt_flag(kernel_cfg* cfg) {
   if (!cfg->halt_flag) {
     cfg_find_halt_flag(cfg);
+  }
+  if (!cfg->halt_flag) {
+    return 0; // halt flag optimized out; it wasn't set, return 0.
   }
   int halt_flag = 0;
   chpl_gpu_impl_copy_device_to_host((void*) &halt_flag, cfg->halt_flag,
