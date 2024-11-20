@@ -5071,6 +5071,7 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 
   if (iterandRe.type().isUnknownOrErroneous()) {
     // The iterand is unknown, no work to do.
+    return {};
   }
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
@@ -5154,11 +5155,11 @@ resolveIterTypeWithTag(Resolver& rv,
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto iterandType = iterandRE.type();
+  CHPL_ASSERT(!iterandType.isUnknownOrErroneous());
 
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 
-  bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
   // For iterator forwarding, we can write serial 'for' loops over tagged iterator calls
   bool treatAsSerial = fn &&
     (fn->isSerialIterator(context) || isExplicitlyTaggedIteratorCall(context, iterandRE, fn));
@@ -5173,7 +5174,7 @@ resolveIterTypeWithTag(Resolver& rv,
     (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
 
   // The iterand was a call to a serial iterator, and we need a serial iterator.
-  if (wasMatchingIterResolved && wasIterandTypeResolved) {
+  if (wasMatchingIterResolved) {
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
@@ -5181,10 +5182,6 @@ resolveIterTypeWithTag(Resolver& rv,
     // so just create a mock one here.
     outIterPieces = { iteratingOver, TheseResolutionResult::success(iterandType) };
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
-
-  // There's nothing to do in this case, so error out.
-  } else if (needSerial && !wasIterandTypeResolved) {
-    return error;
   }
 
   // The iterand is either not an iterator (but could have a 'these' method)
