@@ -4035,10 +4035,18 @@ static bool resolveFnCallSpecial(Context* context,
     if (ci.numActuals() == 2 || ci.hasQuestionArg()) {
       auto lhs = ci.actual(0).type();
 
-      // support comparisons with '?'
-      auto rhs = ci.hasQuestionArg() ?
-                   QualifiedType(QualifiedType::TYPE, AnyType::get(context)) :
-                   ci.actual(1).type();
+      QualifiedType rhs;
+      if (ci.hasQuestionArg()) {
+        // support type and param comparisions with '?'
+        if (lhs.isType()) {
+          rhs = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        } else if (lhs.isParam()) {
+          rhs = QualifiedType(QualifiedType::PARAM, AnyType::get(context),
+                              nullptr);
+        }
+      } else {
+        rhs = ci.actual(1).type();
+      }
 
       bool bothType = lhs.kind() == QualifiedType::TYPE &&
                       rhs.kind() == QualifiedType::TYPE;
