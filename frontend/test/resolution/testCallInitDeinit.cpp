@@ -1787,6 +1787,40 @@ static void test23c() {
       });
 }
 
+static void test23d() {
+  // Ensure the copy-elided in formal doesn't error when used in nested function
+  // calls.
+  testActions("test23d",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc returnConstRef(const ref x) {
+          return x;
+        }
+
+        proc returnIn(in x) {
+          return x;
+        }
+
+        proc doSomething(in x) {
+          return doSomethingElse(returnConstRef(returnIn(x)));
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1881,6 +1915,7 @@ int main() {
   test23a();
   test23b();
   test23c();
+  test23d();
 
   return 0;
 }
