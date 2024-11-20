@@ -1603,7 +1603,7 @@ mg: &mg-base
 mg-b:
   <<: *mg-base
   08/19/24:
-    - Stencil Distribution performance improvments (#25701)
+    - Stencil Distribution performance improvements (#25701)
 
 mg.ml-time:
   05/11/17:
