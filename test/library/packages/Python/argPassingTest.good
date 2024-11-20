@@ -55,4 +55,6 @@ called varargs_and_kwargs
   kwargs: a=7, b=8
 Caught PythonException: 'NoneType' object cannot be interpreted as an integer
 Caught PythonException: no_args() takes 0 positional arguments but 1 was given
+Caught PythonException: one_arg() missing 1 required positional argument: 'a'
 Caught PythonException: one_arg() takes 1 positional argument but 2 were given
+Caught PythonException: two_args() missing 1 required positional argument: 'b'

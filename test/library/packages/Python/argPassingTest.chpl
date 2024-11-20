@@ -23,6 +23,11 @@ proc test_one_arg(mod: borrowed Module) {
 
   func(NoneType, 1);
 
+  // error: not enough args
+  try { func(NoneType); }
+  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
+  catch                    { writeln("Caught unknown exception"); }
+
   // error: too many args
   try { func(NoneType, 2, 3); }
   catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
@@ -35,6 +40,11 @@ proc test_two_args(mod: borrowed Module) {
   func(NoneType, 1, 2);
   func(NoneType, "hello", "world");
   func(NoneType, None, None);
+
+  // error: not enough args
+  try { func(NoneType, 3); }
+  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
+  catch                    { writeln("Caught unknown exception"); }
 }
 proc test_three_args(mod: borrowed Module) {
   const funcName = "three_args";
