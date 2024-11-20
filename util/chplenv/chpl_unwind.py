@@ -38,7 +38,7 @@ def get_uniq_cfg_path():
 def get_compile_args():
     unwind_val = get()
     if unwind_val == 'bundled':
-         return third_party_utils.get_bundled_compile_args('libunwind')
+        return third_party_utils.get_bundled_compile_args('libunwind')
 
     return ([ ], [ ])
 
