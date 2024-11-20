@@ -671,6 +671,7 @@ static void test19() {
   assert(vars.at("res").type()->isEnumType());
 }
 
+// Param cast to string
 static void test20() {
   Context ctx;
   auto context = &ctx;
@@ -711,6 +712,37 @@ static void test20() {
   assert(oss.str() == "R(green)");
 }
 
+// Non-param cast to string
+static void test21() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        var s = c:string;
+
+        var x = colors.red:string;
+        var y = colors.green:string;
+        var z = colors.blue:string;
+      )""", {"s", "x", "y", "z"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isStringType());
+    assert(!qt.isParam());
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+}
+
 int main() {
   test1();
   test2();
@@ -732,6 +764,7 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
 
   return 0;
 }
