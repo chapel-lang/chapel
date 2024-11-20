@@ -5077,6 +5077,11 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 
   auto iterandRe = rv.byPostorder.byAst(iterand);
 
+  if (iterandRe.type().isUnknownOrErroneous()) {
+    // The iterand is unknown, no work to do.
+    return {};
+  }
+
   // Resolve iterators, stopping immediately when we get a valid yield type.
   // We are outside of a zippering contex, so call with only a single IterandComponent.
   std::vector<IterandComponent> ics = {
@@ -5158,11 +5163,11 @@ resolveIterTypeWithTag(Resolver& rv,
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto iterandType = iterandRE.type();
+  CHPL_ASSERT(!iterandType.isUnknownOrErroneous());
 
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 
-  bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
   // For iterator forwarding, we can write serial 'for' loops over tagged iterator calls
   bool treatAsSerial = fn &&
     (fn->isSerialIterator(context) || isExplicitlyTaggedIteratorCall(context, iterandRE, fn));
@@ -5177,7 +5182,7 @@ resolveIterTypeWithTag(Resolver& rv,
     (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
 
   // The iterand was a call to a serial iterator, and we need a serial iterator.
-  if (wasMatchingIterResolved && wasIterandTypeResolved) {
+  if (wasMatchingIterResolved) {
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
@@ -5185,10 +5190,6 @@ resolveIterTypeWithTag(Resolver& rv,
     // so just create a mock one here.
     outIterPieces = { iteratingOver, TheseResolutionResult::success(iterandType) };
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
-
-  // There's nothing to do in this case, so error out.
-  } else if (needSerial && !wasIterandTypeResolved) {
-    return error;
   }
 
   // The iterand is either not an iterator (but could have a 'these' method)
@@ -5278,14 +5279,22 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+  bool singletonZip = zip->numActuals() == 1;
   QualifiedType ret;
 
   // Compute the mask for this zip expression
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
     auto leaderQt = rv.byPostorder.byAst(leader).type();
 
+    if (leaderQt.isUnknownOrErroneous()) {
+      return QualifiedType();
+    }
+
     const auto skippingAllIterands = -1;
     int m = IterDetails::NONE;
+    if (singletonZip) {
+      m |= IterDetails::STANDALONE;
+    }
     if (loopPrefersParallel) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
@@ -5313,6 +5322,10 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     for (int i = 1; i < zip->numActuals(); i++) {
       auto follower = zip->actual(i);
       ics.emplace_back(rv, follower, follower);
+
+      if (ics.back().iterandQt.isUnknownOrErroneous()) {
+        return QualifiedType();
+      }
     }
 
     auto result = resolveIterDetailsInPriorityOrder(rv, ics, m, &failures);

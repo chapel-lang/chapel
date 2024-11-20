@@ -951,8 +951,6 @@ static void testForallLoopExpressionStandalone(Context* context) {
     R""""(
     iter i1() { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
-    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
   pairIteratorInLoopExpression(context, iters, "i1()", {"forall", "do"}, {"forall", "do"},
@@ -975,14 +973,47 @@ static void testForallLoopExpressionLeaderFollower(Context* context) {
 static void testBracketLoopExpressionStandalone(Context* context) {
   auto iters =
     R""""(
-    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionStandaloneZipperedSingleton(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip(i1())", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionStandaloneZippered(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { assert(false && "should not be called"); return true; },
+                               /* expectErrors */ 1);
+}
+
+static void testBracketLoopExpressionZippered(Context* context) {
+  auto iters =
+    R""""(
     iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
     iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
     iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
     )"""";
 
-  pairIteratorInLoopExpression(context, iters, "i1()", {"[", "]"}, {"[", "]"},
-                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+  pairIteratorInLoopExpression(context, iters, "zip(i1(), i1())", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) {
+    return t.type()->isTupleType() &&
+           t.type()->toTupleType()->starType().type()->isRealType();
+  });
 }
 
 static void testBracketLoopExpressionLeaderFollower(Context* context) {
@@ -1317,6 +1348,9 @@ int main() {
   testForallLoopExpressionStandalone(context);
   testForallLoopExpressionLeaderFollower(context);
   testBracketLoopExpressionStandalone(context);
+  testBracketLoopExpressionStandaloneZippered(context);
+  testBracketLoopExpressionStandaloneZipperedSingleton(context);
+  testBracketLoopExpressionZippered(context);
   testBracketLoopExpressionLeaderFollower(context);
   testBracketLoopExpressionSerial(context);
   testForLoopExpressionInForall(context);
