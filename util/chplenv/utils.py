@@ -48,17 +48,15 @@ def error(msg, exception=Exception):
         flush_warnings()
         raise exception(msg)
     else:
-        out = ['\nError: ', msg, '\n']
+        out = '\nError: {}\n'.format(msg)
         if ignore_errors:
-            sys.stderr.write(''.join(out))
+            sys.stderr.write(out)
         else:
             # flush warnings, print error, and exit
             # technically, there is no need to flush warnings here, but might as well
             flush_warnings()
-            sys.stderr.write(''.join(out))
+            sys.stderr.write(out)
             sys.exit(1)
-
-
 
 def memoize(func):
     """Function memoizing decorator"""
