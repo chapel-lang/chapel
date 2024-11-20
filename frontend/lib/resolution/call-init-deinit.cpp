@@ -260,7 +260,7 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
-      // For vars dead at end of stmt, don't error for uses within stmt.
+      // For vars dead after a call, don't error for uses within that call.
       if (frame->deinitedVars[varId] ==
           parsing::idToParentId(context, useAst->id())) {
         continue;
