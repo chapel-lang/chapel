@@ -4032,21 +4032,9 @@ static bool resolveFnCallSpecial(Context* context,
   }
 
   if ((ci.name() == USTR("==") || ci.name() == USTR("!="))) {
-    if (ci.numActuals() == 2 || ci.hasQuestionArg()) {
+    if (ci.numActuals() == 2) {
       auto lhs = ci.actual(0).type();
-
-      QualifiedType rhs;
-      if (ci.hasQuestionArg()) {
-        // support type and param comparisions with '?'
-        if (lhs.isType()) {
-          rhs = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-        } else if (lhs.isParam()) {
-          rhs = QualifiedType(QualifiedType::PARAM, AnyType::get(context),
-                              nullptr);
-        }
-      } else {
-        rhs = ci.actual(1).type();
-      }
+      auto rhs = ci.actual(1).type();
 
       bool bothType = lhs.kind() == QualifiedType::TYPE &&
                       rhs.kind() == QualifiedType::TYPE;
@@ -4058,6 +4046,19 @@ static bool resolveFnCallSpecial(Context* context,
         exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                     BoolParam::get(context, result));
         return true;
+      }
+    } else if (ci.numActuals() == 1 && ci.hasQuestionArg()) {
+      // support type and param comparisons with '?'
+      // TODO: will likely need adjustment once we are able to compare a
+      auto arg = ci.actual(0).type();
+      if (arg.isType()) {
+        exprTypeOut =
+            QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                          BoolParam::get(context, arg.type()->isAnyType()));
+      } else if (arg.isParam()) {
+        exprTypeOut =
+            QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                          BoolParam::get(context, arg.param() == nullptr));
       }
     }
   }
