@@ -364,14 +364,14 @@ static bool cxiHybridMRMode = false;
 // OFI-specific non-blocking handle implementation
 
 // This is defined here because it is used in the forward declarations below.
-// The rountines to initialize and destroy handles, nb_handle_init and
+// The routines to initialize and destroy handles, nb_handle_init and
 // nb_handle_destroy appear in the RMA section later. The "id" is used to
 // verify that the only the task that created the handle uses it -- this
 // prevents multiple threads from simultaneously accessing the same transmit
 // context if they are not bound to threads. The semantics of
 // chpl_comm_test_nb_complete, chpl_comm_wait_nb_some, and chpl_comm_try_nb
 // some require distinguishing newly-completed handles from those that that
-// have previously commited. The "reported" field is used to distinguish
+// have previously committed. The "reported" field is used to distinguish
 // between the two. The "complete" field is set when the operation completes.
 // It is an atomic because the lower-level functions that set it require it.
 // Operations that are too large for the underlying fabric are represented by
@@ -2560,7 +2560,7 @@ void init_ofiEp(void) {
   // per worker thread, one per AM handler, and one for the process in
   // general. That will allow us to bind worker threads and AM handlers to
   // transmit contexts. If we can't get that many endpoints then transmit
-  // contexts will not be bound, which signficantly reduces performance.
+  // contexts will not be bound, which significantly reduces performance.
   //
   // For scalable endpoints we only need one transmit endpoint with enough
   // transmit contexts to bind them as described above. If max_ep_tx_ctx for
@@ -5407,7 +5407,7 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
 //
 // Sets the "done" flag via a non-blocking PUT. We are never going to wait for
 // this PUT to complete because we don't care when it completes; as a result
-// the ofi_put_nb code path isn't used because we don't need the overhad of a
+// the ofi_put_nb code path isn't used because we don't need the overhead of a
 // non-blocking handle, etc. The PUT will be forced to complete either when a
 // non-bound tci is freed, or during shutdown, whichever comes first.
 
