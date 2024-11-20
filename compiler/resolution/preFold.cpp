@@ -150,6 +150,9 @@ Expr* preFold(CallExpr* call) {
 
       thisTemp->addFlag(FLAG_EXPR_TEMP);
 
+      // toCallExpr(baseExpr) lies and returns a CallExpr for ContextCall.
+      // In this case, we want to store the whole ContextCall in a temp;
+      // so, check if we were lied to.
       Expr* receiver = nullptr;
       if (auto cc = toContextCallExpr(callExpr->parentExpr)) {
         receiver = cc;
