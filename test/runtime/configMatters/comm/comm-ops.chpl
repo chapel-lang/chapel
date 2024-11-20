@@ -7,6 +7,7 @@ config const numIters = 500000;
 config const numTasks = here.maxTaskPar;
 config const printTime = true;
 config const printDiags = false;
+config type baseType = int(64);
 
 enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM,CFAMO};
 
@@ -56,8 +57,9 @@ record padded {
 }
 
 // Create arrays and warmup / init RAD cache
-var A = blockDist.createArray(1..numTasks*2, padded(atomic int));
-var B = blockDist.createArray(1..numTasks*2, padded(int));
+type atomicType = atomic baseType;
+var A = blockDist.createArray(1..numTasks*2, padded(atomicType));
+var B = blockDist.createArray(1..numTasks*2, padded(atomicType.valType));
 for loc in Locales do on loc {
   coforall tid in 1..numTasks*2 with (ref A, ref B) {
     A[tid].val.write(0);
@@ -84,13 +86,13 @@ proc test(op: OP) {
       // AMO
       when OP.FAMO   do for i in 0..<iters do aRem.fetchAdd(1);
       when OP.NFAMO  do for i in 0..<iters do aRem.add(1);
-      when OP.CASAMO do for i in 0..<iters do aRem.compareAndSwap(i, i+1);
+      when OP.CASAMO do for i in 0..<iters:aRem.valType do aRem.compareAndSwap(i, i+1);
       when OP.GETAMO do for i in 0..<iters do bLoc = aRem.read();
       when OP.PUTAMO do for i in 0..<iters do aRem.write(bLoc);
       when OP.CFAMO  do for i in 0..<iters do aRemShared.fetchAdd(1);
       // AM
       when OP.FASTAM do for i in 0..<iters do on lRem do B.localAccess[tid].val = 0;
-      when OP.AM     do for i in 0..<iters do on lRem do B.localAccess[tid].val = thwartFastOn();
+      when OP.AM     do for i in 0..<iters do on lRem do B.localAccess[tid].val = thwartFastOn():B.localAccess[tid].val.type;
     }
   }
   stopDiags(op, iters);

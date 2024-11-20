@@ -10,13 +10,21 @@ from utils import error, memoize, warning
 @memoize
 def get(flag='target'):
     if flag == 'network':
+        valid = ['none', 'ofi', 'ugni']
         atomics_val = overrides.get('CHPL_NETWORK_ATOMICS')
+        comm_val = chpl_comm.get()
         if not atomics_val:
-            comm_val = chpl_comm.get()
             if comm_val in ['ofi', 'ugni'] and get('target') != 'locks':
                 atomics_val = comm_val
             else:
                 atomics_val = 'none'
+        elif atomics_val == 'gasnet':
+            error("CHPL_NETWORK_ATOMICS=gasnet is not supported")
+        elif atomics_val not in valid:
+            error("CHPL_NETWORK_ATOMICS must be one of " + ','.join(valid))
+        elif atomics_val != 'none' and atomics_val != comm_val:
+            error("CHPL_NETWORK_ATOMICS=%s is incompatible with CHPL_COMM=%s"
+                  % (atomics_val, comm_val))
     elif flag == 'target':
         atomics_val = overrides.get('CHPL_ATOMICS')
         is_user_specified = atomics_val is not None

@@ -2578,7 +2578,7 @@ void init_ofiEp(void) {
   if (desiredTxCtxs < numTxCtxs) {
     numTxCtxs = desiredTxCtxs;
   }
-  DBG_PRINTF(DBG_CFG,"tciTabBindTxCtxs %s numTxCtxs %d numAmHandlers %d",
+  DBG_PRINTF(DBG_CFG,"tciTabBindTxCtxs %s numTxCtxs %zd numAmHandlers %d",
              tciTabBindTxCtxs ? "true" : "false", numTxCtxs, numAmHandlers);
   const chpl_bool useScalEp = envPreferScalableTxEp
                               && ofi_info->domain_attr->max_ep_tx_ctx > 1;
@@ -4178,6 +4178,10 @@ struct amRequest_RMA_t {
 };
 
 typedef union {
+  int8_t i8;
+  uint8_t u8;
+  int16_t i16;
+  uint16_t u16;
   int32_t i32;
   uint32_t u32;
   chpl_bool32 b32;
@@ -7711,13 +7715,17 @@ static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
 
-DEFN_CHPL_COMM_ATOMIC_WRITE(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_WRITE(int64, FI_INT64, int64_t)
+
+DEFN_CHPL_COMM_ATOMIC_WRITE(int8,   FI_INT8,   int8_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int16,  FI_INT16,  int16_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int32,  FI_INT32,  int32_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(int64,  FI_INT64,  int64_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint8,  FI_UINT8,  uint8_t)
+DEFN_CHPL_COMM_ATOMIC_WRITE(uint16, FI_UINT16, uint16_t)
 DEFN_CHPL_COMM_ATOMIC_WRITE(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_WRITE(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT,  _real32)
 DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
-
 
 //
 // READ
@@ -7736,11 +7744,15 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
           FI_ATOMIC_READ, ofiType, sizeof(Type));                       \
   }
 
-DEFN_CHPL_COMM_ATOMIC_READ(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_READ(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int8,   FI_INT8,   int8_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int16,  FI_INT16,  int16_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int32,  FI_INT32,  int32_t)
+DEFN_CHPL_COMM_ATOMIC_READ(int64,  FI_INT64,  int64_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint8,  FI_UINT8,  uint8_t)
+DEFN_CHPL_COMM_ATOMIC_READ(uint16, FI_UINT16, uint16_t)
 DEFN_CHPL_COMM_ATOMIC_READ(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_READ(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT,  _real32)
 DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
 
 
@@ -7758,13 +7770,16 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
           FI_ATOMIC_WRITE, ofiType, sizeof(Type));                      \
   }
 
-DEFN_CHPL_COMM_ATOMIC_XCHG(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_XCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int8,   FI_INT8,   int8_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int16,  FI_INT16,  int16_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int32,  FI_INT32,  int32_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(int64,  FI_INT64,  int64_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint8,  FI_UINT8,  uint8_t)
+DEFN_CHPL_COMM_ATOMIC_XCHG(uint16, FI_UINT16, uint16_t)
 DEFN_CHPL_COMM_ATOMIC_XCHG(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_XCHG(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT,  _real32)
 DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
-
 
 #define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
   void chpl_comm_atomic_cmpxchg_##fnType                                \
@@ -7786,13 +7801,16 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
     if (!*result) memcpy(expected, &old_value, sizeof(Type));           \
   }
 
-DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
-DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int64, FI_INT64, int64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int8,   FI_INT8,   int8_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int16,  FI_INT16,  int16_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32,  FI_INT32,  int32_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int64,  FI_INT64,  int64_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint8,  FI_UINT8,  uint8_t)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint16, FI_UINT16, uint16_t)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT,  _real32)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
-
 
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
@@ -7834,28 +7852,65 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
           ofiOp, ofiType, sizeof(Type));                                \
   }
 
-DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint16, FI_UINT16, uint16_t)
 DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint32, FI_UINT32, uint32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(and, FI_BAND, uint64, FI_UINT64, uint64_t)
 
-DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint16, FI_UINT16, uint16_t)
 DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint32, FI_UINT32, uint32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(or, FI_BOR, uint64, FI_UINT64, uint64_t)
 
-DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint16, FI_UINT16, uint16_t)
 DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint32, FI_UINT32, uint32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(xor, FI_BXOR, uint64, FI_UINT64, uint64_t)
 
-DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int32, FI_INT32, int32_t)
-DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int64, FI_INT64, int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint16, FI_UINT16, uint16_t)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint32, FI_UINT32, uint32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint64, FI_UINT64, uint64_t)
-DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, _real32)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT,  _real32)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
 
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, uint16, FI_UINT16, uint16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, real32, FI_FLOAT,  _real32)
+DEFN_IFACE_AMO_SIMPLE_OP(min, FI_MIN, real64, FI_DOUBLE, _real64)
+
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, int8,   FI_INT8,   int8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, int16,  FI_INT16,  int16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, int32,  FI_INT32,  int32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, int64,  FI_INT64,  int64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, uint8,  FI_UINT8,  uint8_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, uint16, FI_UINT16, uint16_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, uint32, FI_UINT32, uint32_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, uint64, FI_UINT64, uint64_t)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real32, FI_FLOAT,  _real32)
+DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
 
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
@@ -7900,16 +7955,22 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
           FI_SUM, ofiType, sizeof(Type));                               \
   }
 
+#define NEGATE_I8(x)  ((x) == INT8_MIN  ? (x) : -(x))
+#define NEGATE_I16(x) ((x) == INT16_MIN ? (x) : -(x))
 #define NEGATE_I32(x) ((x) == INT32_MIN ? (x) : -(x))
 #define NEGATE_I64(x) ((x) == INT64_MIN ? (x) : -(x))
 #define NEGATE_U_OR_R(x) (-(x))
 
-DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t, NEGATE_I32)
-DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t, NEGATE_I64)
+DEFN_IFACE_AMO_SUB(int8,   FI_INT8,   int8_t,   NEGATE_I8)
+DEFN_IFACE_AMO_SUB(int16,  FI_INT16,  int16_t,  NEGATE_I16)
+DEFN_IFACE_AMO_SUB(int32,  FI_INT32,  int32_t,  NEGATE_I32)
+DEFN_IFACE_AMO_SUB(int64,  FI_INT64,  int64_t,  NEGATE_I64)
+DEFN_IFACE_AMO_SUB(uint8,  FI_UINT8,  uint8_t,  NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(uint16, FI_UINT16, uint16_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
-DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, _real32, NEGATE_U_OR_R)
-DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, _real64, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT,  _real32,  NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, _real64,  NEGATE_U_OR_R)
 
 void chpl_comm_atomic_unordered_task_fence(void) {
   DBG_PRINTF(DBG_IFACE_MCM, "%s()", __func__);
@@ -7921,6 +7982,13 @@ void chpl_comm_atomic_unordered_task_fence(void) {
 //
 // internal AMO utilities
 //
+
+#define my_valid(typ, op) \
+  (fi_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_fetch_valid(typ, op) \
+  (fi_fetch_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
+#define my_compare_valid(typ, op) \
+  (fi_compare_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
 
 static
 int computeAtomicValid(enum fi_datatype ofiType) {
@@ -7936,15 +8004,12 @@ int computeAtomicValid(enum fi_datatype ofiType) {
   struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all endpoints
   size_t count;                        // ignored
 
-#define my_valid(typ, op) \
-  (fi_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
-#define my_fetch_valid(typ, op) \
-  (fi_fetch_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
-#define my_compare_valid(typ, op) \
-  (fi_compare_atomicvalid(ep, typ, op, &count) == 0 && count > 0)
-
   // For integral types, all operations matter.
-  if (ofiType == FI_INT32
+  if (ofiType == FI_INT8
+      || ofiType == FI_UINT8
+      || ofiType == FI_INT16
+      || ofiType == FI_UINT16
+      || ofiType == FI_INT32
       || ofiType == FI_UINT32
       || ofiType == FI_INT64
       || ofiType == FI_UINT64) {
@@ -7952,29 +8017,34 @@ int computeAtomicValid(enum fi_datatype ofiType) {
             && my_valid(ofiType, FI_BOR)
             && my_valid(ofiType, FI_BAND)
             && my_valid(ofiType, FI_BXOR)
+            && my_valid(ofiType, FI_MIN)
+            && my_valid(ofiType, FI_MAX)
             && my_valid(ofiType, FI_ATOMIC_WRITE)
             && my_fetch_valid(ofiType, FI_SUM)
             && my_fetch_valid(ofiType, FI_BOR)
             && my_fetch_valid(ofiType, FI_BAND)
             && my_fetch_valid(ofiType, FI_BXOR)
+            && my_fetch_valid(ofiType, FI_MIN)
+            && my_fetch_valid(ofiType, FI_MAX)
             && my_fetch_valid(ofiType, FI_ATOMIC_READ)
             && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
             && my_compare_valid(ofiType, FI_CSWAP));
   }
 
   //
-  // For real types, only sum, read, write, and cswap matter.
+  // For real types, only sum, min, max, read, write, and cswap matter.
   //
   return (   my_valid(ofiType, FI_SUM)
+          && my_valid(ofiType, FI_MIN)
+          && my_valid(ofiType, FI_MAX)
           && my_valid(ofiType, FI_ATOMIC_WRITE)
           && my_fetch_valid(ofiType, FI_SUM)
+          && my_fetch_valid(ofiType, FI_MIN)
+          && my_fetch_valid(ofiType, FI_MAX)
           && my_fetch_valid(ofiType, FI_ATOMIC_READ)
           && my_fetch_valid(ofiType, FI_ATOMIC_WRITE)
           && my_compare_valid(ofiType, FI_CSWAP));
 
-#undef my_valid
-#undef my_fetch_valid
-#undef my_compare_valid
 }
 
 static
@@ -7983,17 +8053,64 @@ int isAtomicValid(enum fi_datatype ofiType) {
   static int validByType[FI_DATATYPE_LAST];
 
   if (!inited) {
-    validByType[FI_INT32]  = computeAtomicValid(FI_INT32);
-    validByType[FI_UINT32] = computeAtomicValid(FI_UINT32);
-    validByType[FI_INT64]  = computeAtomicValid(FI_INT64);
-    validByType[FI_UINT64] = computeAtomicValid(FI_UINT64);
-    validByType[FI_FLOAT]  = computeAtomicValid(FI_FLOAT);
-    validByType[FI_DOUBLE] = computeAtomicValid(FI_DOUBLE);
+    for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+      validByType[t]  = computeAtomicValid(t);
+    }
     inited = true;
-  }
+#ifdef CHPL_COMM_DEBUG
+    // Print a table of valid ops and types for debugging.
+    if (DBG_TEST_MASK(DBG_CFG_AMO) && (chpl_nodeID == 0) &&
+        (ofi_info->tx_attr->caps & FI_ATOMIC)) {
+      char buf[1024];
+      int offset;
 
+      DBG_PRINTF(DBG_CFG_AMO, "'+' denotes fetch supported.");
+      DBG_PRINTF(DBG_CFG_AMO, "'*' denotes compare supported.");
+      struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all
+                                           // endpoints
+
+      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+        offset = 0;
+        offset += snprintf(buf + offset, sizeof(buf) - offset, "%s: ",
+                      fi_tostr(&t, FI_TYPE_ATOMIC_TYPE));
+        for (enum fi_op op = 0; op < FI_ATOMIC_OP_LAST; op++) {
+          size_t count; // needed by macros below
+          int valid = my_valid(t, op);
+          int fetch = my_fetch_valid(t, op);
+          int compare = my_compare_valid(t, op);
+          if (valid || fetch || compare) {
+            char suffix[3];
+            char *s = suffix;
+            if (fetch) {
+              *s++ = '+';
+            }
+            if (compare) {
+              *s++ = '*';
+            }
+            *s = '\0';
+            const char *sep = " ";
+            if (op == FI_ATOMIC_OP_LAST - 1) {
+              sep = "";
+            }
+            offset += snprintf(buf + offset, sizeof(buf) - offset, "%s%s%s",
+                            fi_tostr(&op, FI_TYPE_ATOMIC_OP), suffix, sep);
+          }
+        }
+        DBG_PRINTF(DBG_CFG_AMO, "%s", buf);
+      }
+      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+        DBG_PRINTF(DBG_CFG_AMO, "%s: %s", fi_tostr(&t, FI_TYPE_ATOMIC_TYPE),
+                   validByType[t] ? "valid" : "invalid");
+      }
+    }
+#endif
+  }
   return validByType[ofiType];
 }
+
+#undef my_valid
+#undef my_fetch_valid
+#undef my_compare_valid
 
 
 static inline
@@ -8039,7 +8156,8 @@ static inline
 void doCpuAMO(void* obj,
               const void* opnd, const void* cmpr, void* result,
               enum fi_op ofiOp, enum fi_datatype ofiType, size_t size) {
-  CHK_TRUE(size == 4 || size == 8);
+
+  CHK_TRUE(size == 1 || size == 2 || size == 4 || size == 8);
 
   chpl_amo_datum_t* myOpnd = (chpl_amo_datum_t*) opnd;
   chpl_amo_datum_t* myCmpr = (chpl_amo_datum_t*) cmpr;
@@ -8047,132 +8165,179 @@ void doCpuAMO(void* obj,
 #define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
   do {                                                                  \
     if (result == NULL) {                                               \
-      (void) atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,               \
+      (void) atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,          \
                                       myOpnd->_m);                      \
     } else {                                                            \
-      *(_t*) result = atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,      \
+      *(_t*) result = atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj, \
                                                myOpnd->_m);             \
     }                                                                   \
   } while (0)
+
+// A couple of helper macros to avoid duplicated code and copy-and-paste
+// errors.
+
+#define INTEGER_CASES(_op) \
+    case FI_INT8: CPU_INT_ARITH_AMO(_op, int_least8_t, i8); break;      \
+    case FI_INT16: CPU_INT_ARITH_AMO(_op, int_least16_t, i16); break;   \
+    case FI_INT32: CPU_INT_ARITH_AMO(_op, int_least32_t, i32); break;   \
+    case FI_INT64: CPU_INT_ARITH_AMO(_op, int_least64_t, i64); break;   \
+    case FI_UINT8: CPU_INT_ARITH_AMO(_op, uint_least8_t, u8); break;    \
+    case FI_UINT16: CPU_INT_ARITH_AMO(_op, uint_least16_t, u16); break; \
+    case FI_UINT32: CPU_INT_ARITH_AMO(_op, uint_least32_t, u32); break; \
+    case FI_UINT64: CPU_INT_ARITH_AMO(_op, uint_least64_t, u64); break;
+
+#define REAL_CASES(_op) \
+    case FI_FLOAT: CPU_INT_ARITH_AMO(_op, _real32, r32); break;  \
+    case FI_DOUBLE: CPU_INT_ARITH_AMO(_op, _real64, r64); break;
+
+
+#define UNSUPPORTED_ERROR()                                        \
+  INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d", \
+                  ofiOp, ofiType);
+
 
   //
   // Here we implement AMOs which the NIC cannot or should not do.
   //
   switch (ofiOp) {
-  case FI_ATOMIC_WRITE:
-    if (result == NULL) {
-      //
-      // write
-      //
-      if (size == 4) {
-        atomic_store_uint_least32_t(obj, myOpnd->u32);
+    case FI_ATOMIC_WRITE:
+      if (result == NULL) {
+        //
+        // write
+        //
+        switch(size) {
+        case 1: atomic_store_uint_least8_t(obj, myOpnd->u8); break;
+        case 2: atomic_store_uint_least16_t(obj, myOpnd->u16); break;
+        case 4: atomic_store_uint_least32_t(obj, myOpnd->u32); break;
+        case 8: atomic_store_uint_least64_t(obj, myOpnd->u64); break;
+        }
       } else {
-        atomic_store_uint_least64_t(obj, myOpnd->u64);
+        //
+        // exchange
+        //
+        switch(size) {
+          case 1:
+            *(uint8_t*) result = atomic_exchange_uint_least8_t(obj,
+                                                               myOpnd->u8);
+            break;
+          case 2:
+            *(uint16_t*) result = atomic_exchange_uint_least16_t(obj,
+                                                                 myOpnd->u16);
+            break;
+          case 4:
+            *(uint32_t*) result = atomic_exchange_uint_least32_t(obj,
+                                                                 myOpnd->u32);
+            break;
+          case 8:
+            *(uint64_t*) result = atomic_exchange_uint_least64_t(obj,
+                                                                 myOpnd->u64);
+            break;
+        }
       }
-    } else {
-      //
-      // exchange
-      //
-      if (size == 4) {
-        *(uint32_t*) result = atomic_exchange_uint_least32_t(obj, myOpnd->u32);
-      } else {
-        *(uint64_t*) result = atomic_exchange_uint_least64_t(obj, myOpnd->u64);
+      break;
+
+    case FI_ATOMIC_READ:
+      switch(size) {
+        case 1: *(uint8_t*) result = atomic_load_uint_least8_t(obj); break;
+        case 2: *(uint16_t*) result = atomic_load_uint_least16_t(obj); break;
+        case 4: *(uint32_t*) result = atomic_load_uint_least32_t(obj); break;
+        case 8: *(uint64_t*) result = atomic_load_uint_least64_t(obj); break;
       }
-    }
-    break;
+      break;
 
-  case FI_ATOMIC_READ:
-    if (size == 4) {
-      *(uint32_t*) result = atomic_load_uint_least32_t(obj);
-    } else {
-      *(uint64_t*) result = atomic_load_uint_least64_t(obj);
-    }
-    break;
+#define CPU_INT_CSWAP_AMO(_t, _m)                               \
+  do {                                                          \
+    _t myCmprVal = myCmpr->_m;                                  \
+    (void) atomic_compare_exchange_strong_##_t(obj, &myCmprVal, \
+                                               myOpnd->_m);     \
+    *(_t*) result = myCmprVal;                                  \
+  } while (0)
 
-  case FI_CSWAP:
-    if (size == 4) {
-      uint32_t myCmprVal = myCmpr->u32;
-      (void) atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                           &myCmprVal,
-                                                           myOpnd->u32);
-      *(uint32_t*) result = myCmprVal;
-    } else {
-      uint64_t myCmprVal = myCmpr->u64;
-      (void) atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                           &myCmprVal,
-                                                           myOpnd->u64);
-      *(uint64_t*) result = myCmprVal;
-    }
-    break;
+    case FI_CSWAP:
+      switch(size){
+        case 1: CPU_INT_CSWAP_AMO(uint_least8_t, u8); break;
+        case 2: CPU_INT_CSWAP_AMO(uint_least16_t, u16); break;
+        case 4: CPU_INT_CSWAP_AMO(uint_least32_t, u32); break;
+        case 8: CPU_INT_CSWAP_AMO(uint_least64_t, u64); break;
+      }
+      break;
 
-  case FI_BAND:
-    if (ofiType == FI_INT32) {
-      CPU_INT_ARITH_AMO(and, int_least32_t, i32);
-    } else if (ofiType == FI_UINT32) {
-      CPU_INT_ARITH_AMO(and, uint_least32_t, u32);
-    } else if (ofiType == FI_INT64) {
-      CPU_INT_ARITH_AMO(and, int_least64_t, i64);
-    } else if (ofiType == FI_UINT64) {
-      CPU_INT_ARITH_AMO(and, uint_least64_t, u64);
-    } else {
-      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
-                       ofiOp, ofiType);
-    }
-    break;
+    case FI_BAND:
+      switch(ofiType){
+        INTEGER_CASES(and);
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
 
-  case FI_BOR:
-    if (ofiType == FI_INT32) {
-      CPU_INT_ARITH_AMO(or, int_least32_t, i32);
-    } else if (ofiType == FI_UINT32) {
-      CPU_INT_ARITH_AMO(or, uint_least32_t, u32);
-    } else if (ofiType == FI_INT64) {
-      CPU_INT_ARITH_AMO(or, int_least64_t, i64);
-    } else if (ofiType == FI_UINT64) {
-      CPU_INT_ARITH_AMO(or, uint_least64_t, u64);
-    } else {
-      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
-                       ofiOp, ofiType);
-    }
-    break;
+    case FI_BOR:
+      switch(ofiType){
+        INTEGER_CASES(or);
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
 
-  case FI_BXOR:
-    if (ofiType == FI_INT32) {
-      CPU_INT_ARITH_AMO(xor, int_least32_t, i32);
-    } else if (ofiType == FI_UINT32) {
-      CPU_INT_ARITH_AMO(xor, uint_least32_t, u32);
-    } else if (ofiType == FI_INT64) {
-      CPU_INT_ARITH_AMO(xor, int_least64_t, i64);
-    } else if (ofiType == FI_UINT64) {
-      CPU_INT_ARITH_AMO(xor, uint_least64_t, u64);
-    } else {
-      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
-                       ofiOp, ofiType);
-    }
-    break;
+    case FI_BXOR:
+      switch(ofiType){
+        INTEGER_CASES(xor);
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
 
-  case FI_SUM:
-    if (ofiType == FI_INT32) {
-      CPU_INT_ARITH_AMO(add, int_least32_t, i32);
-    } else if (ofiType == FI_UINT32) {
-      CPU_INT_ARITH_AMO(add, uint_least32_t, u32);
-    } else if (ofiType == FI_INT64) {
-      CPU_INT_ARITH_AMO(add, int_least64_t, i64);
-    } else if (ofiType == FI_UINT64) {
-      CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
-    } else if (ofiType == FI_FLOAT) {
-      CPU_INT_ARITH_AMO(add, _real32, r32);
-    } else if (ofiType == FI_DOUBLE) {
-      CPU_INT_ARITH_AMO(add, _real64, r64);
-    } else {
-      INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
-                       ofiOp, ofiType);
-    }
-    break;
+    case FI_SUM:
+      switch(ofiType) {
+        INTEGER_CASES(add);
+        REAL_CASES(add);
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
 
+#define CPU_MIN_MAX_AMO(_o, _t, _m)                               \
+  do {                                                            \
+    _t _val = atomic_load_##_t(obj);                              \
+    while(myOpnd->_m _o _val) {                                   \
+      if (atomic_compare_exchange_weak_##_t(obj,                  \
+                                           &_val, myOpnd->_m)) {  \
+        if (result != NULL) {                                     \
+          *(_t*) result = _val;                                   \
+        }                                                         \
+        break;                                                    \
+      }                                                           \
+    }                                                             \
+  } while(0)
 
-  default:
-    INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
-                     ofiOp, ofiType);
+    case FI_MIN:
+      switch(ofiType) {
+        case FI_INT8: CPU_MIN_MAX_AMO(<, int_least8_t, i8); break;
+        case FI_INT16: CPU_MIN_MAX_AMO(<, int_least16_t, i16); break;
+        case FI_INT32: CPU_MIN_MAX_AMO(<, int_least32_t, i32); break;
+        case FI_INT64: CPU_MIN_MAX_AMO(<, int_least64_t, i64); break;
+        case FI_UINT8: CPU_MIN_MAX_AMO(<, uint_least8_t, u8); break;
+        case FI_UINT16: CPU_MIN_MAX_AMO(<, uint_least16_t, u16); break;
+        case FI_UINT32: CPU_MIN_MAX_AMO(<, uint_least32_t, u32); break;
+        case FI_UINT64: CPU_MIN_MAX_AMO(<, uint_least64_t, u64); break;
+        case FI_FLOAT: CPU_MIN_MAX_AMO(<, _real32, r32); break;
+        case FI_DOUBLE: CPU_MIN_MAX_AMO(<, _real64, r64); break;
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
+
+    case FI_MAX:
+      switch(ofiType) {
+        case FI_INT8: CPU_MIN_MAX_AMO(>, int_least8_t, i8); break;
+        case FI_INT16: CPU_MIN_MAX_AMO(>, int_least16_t, i16); break;
+        case FI_INT32: CPU_MIN_MAX_AMO(>, int_least32_t, i32); break;
+        case FI_INT64: CPU_MIN_MAX_AMO(>, int_least64_t, i64); break;
+        case FI_UINT8: CPU_MIN_MAX_AMO(>, uint_least8_t, u8); break;
+        case FI_UINT16: CPU_MIN_MAX_AMO(>, uint_least16_t, u16); break;
+        case FI_UINT32: CPU_MIN_MAX_AMO(>, uint_least32_t, u32); break;
+        case FI_UINT64: CPU_MIN_MAX_AMO(>, uint_least64_t, u64); break;
+        case FI_FLOAT: CPU_MIN_MAX_AMO(>, _real32, r32); break;
+        case FI_DOUBLE: CPU_MIN_MAX_AMO(>, _real64, r64); break;
+        default: UNSUPPORTED_ERROR();
+      }
+      break;
+
+    default: UNSUPPORTED_ERROR();
   }
 
   if (DBG_TEST_MASK(DBG_AMO | DBG_AMO_READ)) {
@@ -8199,6 +8364,11 @@ void doCpuAMO(void* obj,
   }
 
 #undef CPU_INT_ARITH_AMO
+#undef CPU_INT_CSWAP_AMO
+#undef INTEGER_CASES
+#undef REAL_CASES
+#undef CPU_MIN_MAX_AMO
+#undef UNSUPPORTED_ERROR
 }
 
 
@@ -8740,6 +8910,8 @@ const char* amo_opName(enum fi_op ofiOp) {
   case FI_BOR: return "bor";
   case FI_BXOR: return "bxor";
   case FI_SUM: return "sum";
+  case FI_MIN: return "min";
+  case FI_MAX: return "max";
   default: return "amoOp???";
   }
 }
