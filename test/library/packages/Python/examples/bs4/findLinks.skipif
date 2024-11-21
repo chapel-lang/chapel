@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+# try and import bs4, if it fails, skip the test
+if ! $chpl_python -c "import bs4" &>/dev/null; then
+  echo "True"
+else
+  echo "False"
+fi

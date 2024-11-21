@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+
+PYTHON_INCLUDE_DIR=$($chpl_python -c "import sysconfig; print(sysconfig.get_paths()['include'])")
+PYTHON_LIB_DIR=$($chpl_python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+PYTHON_LDVERSION=$($chpl_python -c "import sysconfig; print(sysconfig.get_config_var('LDVERSION'))")
+
+echo "--ccflags -isystem$PYTHON_INCLUDE_DIR -L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION"
