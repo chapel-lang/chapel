@@ -2034,7 +2034,7 @@ void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
   errorForOuterVarAccesses(fn);
 
   std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
+  collectCallExprsForGpuEligibilityAnalysis(fn, calls);
   for_vector(CallExpr, call, calls) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       markGPUSubCalls(fn);
