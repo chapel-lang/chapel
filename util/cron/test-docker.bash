@@ -12,7 +12,7 @@
 #   'latest' and this version. Should match version in release branch name.
 
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"

@@ -2,7 +2,7 @@
 #
 # Run performance tests on an HPE Cray EX
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_SUBDIR="hpe-cray-ex"
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-hpe-cray-ex'

@@ -7,7 +7,7 @@
 # This should fail as soon as something goes awry.
 set -e
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 MASON=0
 DOCS=0

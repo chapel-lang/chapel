@@ -3,7 +3,7 @@
 # Test gasnet configuration with CHPL_LLVM=none & CHPL_TARGET_COMPILER=gnu
 # on linux64.
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-gasnet.bash
 source $CWD/common-c-backend.bash
 

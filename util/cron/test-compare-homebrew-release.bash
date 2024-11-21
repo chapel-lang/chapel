@@ -9,7 +9,7 @@
 # !IMPORTANT! Make sure BREW_CORE_REPO_PATH is set to where the homebrew-core
 # repository should go before running this script
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)

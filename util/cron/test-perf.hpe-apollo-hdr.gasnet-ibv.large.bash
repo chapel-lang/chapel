@@ -2,7 +2,7 @@
 #
 # Run performance tests on an HPE Apollo
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_SUBDIR="hpe-apollo"
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'

@@ -4,7 +4,7 @@
 
 if [ -z "$CHPL_HOME" ]; then
   # compute the chpl home directory
-  export CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+  export CHPL_HOME=$(cd $(dirname ${BASH_SOURCE[0]}) ; cd ..; cd ..; pwd)
 fi
 
 python=$($CHPL_HOME/util/config/find-python.sh)

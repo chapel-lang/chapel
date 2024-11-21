@@ -2,7 +2,7 @@
 #
 # Test gasnet (segment fast) against hellos on darwin
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-gasnet.bash
 export CHPL_GASNET_SEGMENT=fast
 source $CWD/common-darwin.bash

@@ -2,7 +2,7 @@
 #
 # Run GPU performance testing on a Cray EX
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
 source $CWD/common-hpe-cray-ex.bash
 

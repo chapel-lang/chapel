@@ -9,7 +9,7 @@
 #    https://chapel-lang.org/perf/chapcs/$SHORT_NAME
 #
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 

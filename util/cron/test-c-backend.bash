@@ -5,7 +5,7 @@
 
 # Needs /data/cf/chapel/setup_python27.bash (common-llvm)
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-c-backend.bash
 source $CWD/common-localnode-paratest.bash

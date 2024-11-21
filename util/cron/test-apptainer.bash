@@ -3,7 +3,7 @@
 # This script will build and run chapel in different linux distros using apptainer. 
 # For detailed info please refer README located at util/devel/test/apptainer/README.md
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)

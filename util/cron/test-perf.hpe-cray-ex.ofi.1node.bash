@@ -3,7 +3,7 @@
 # Run performance tests on an HPE Cray EX (build for multilocale runs, but only
 # run single locale perf tests).
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_SUBDIR="hpe-cray-ex"
 export CHPL_TEST_PERF_CONFIG_NAME='1-node-hpe-cray-ex'

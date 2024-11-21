@@ -2,7 +2,7 @@
 #
 # Test examples for default configuration on darwin
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/common-darwin.bash
 

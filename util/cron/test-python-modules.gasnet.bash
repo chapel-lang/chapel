@@ -6,7 +6,7 @@ set -e
 
 echo "Starting common setup"
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-gasnet.bash
 source $CWD/common-python-interop.bash
 

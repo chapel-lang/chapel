@@ -2,7 +2,7 @@
 #
 # Test default configuration on chplcheck and chpl-language-server tests only
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 source $CWD/common.bash
 source $CWD/common-localnode-paratest.bash

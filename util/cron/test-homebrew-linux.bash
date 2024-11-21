@@ -11,7 +11,7 @@
 
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
 source $CWD/common-tarball.bash

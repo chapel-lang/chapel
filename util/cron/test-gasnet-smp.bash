@@ -2,7 +2,7 @@
 #
 # Test gasnet smp against hellos on linux64.
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 
 # setup for smp

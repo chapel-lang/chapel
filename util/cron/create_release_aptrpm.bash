@@ -24,7 +24,7 @@ if [ -z "$DOCKER_DIR_NAME" ]; then echo "DOCKER_DIR_NAME must be set."; exit 1; 
 PARALLEL=${PARALLEL:-1}
 
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/functions.bash
 

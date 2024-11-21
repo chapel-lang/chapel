@@ -2,7 +2,7 @@
 #
 # Test a particular compiler with a specific environment on a whitebox
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
 source $CWD/common-whitebox.bash
 source $CWD/common-localnode-paratest.bash

@@ -8,7 +8,7 @@
 # TARBALL_DIR can optionally be set in the environment. If set, the tarball
 # will be copied to that directory after it is built.
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 source $CWD/functions.bash
 
