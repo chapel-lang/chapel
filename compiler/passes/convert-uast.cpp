@@ -3665,6 +3665,17 @@ struct Converter final : UastConverter {
 
   /// AggregateDecls
 
+  std::string inheritanceExprToStringForErr(const uast::AstNode* identOrDot) {
+    if (auto ident = identOrDot->toIdentifier()) {
+      return ident->name().c_str();
+    } else {
+      auto dot = identOrDot->toDot();
+      CHPL_ASSERT(dot);
+      auto receiverStr = inheritanceExprToStringForErr(dot->receiver());
+      return receiverStr + "." + dot->field().c_str();
+    }
+  }
+
   template <typename Iterable>
   void convertInheritsExprs(const Iterable& iterable,
                             std::vector<Expr*>& inherits,
@@ -3705,7 +3716,9 @@ struct Converter final : UastConverter {
 
         // Coudln't find the target, emit an error message
         USR_FATAL_CONT(inheritExpr->id(),
-                       "could not find parent class or target interface for inheritance expression");
+                       "could not find parent class or target interface '%s' "
+                       "for inheritance expression",
+                       inheritanceExprToStringForErr(ident).c_str());
       }
 
       // Couldn't find the target, so translate it literally and hand it off

@@ -1,1 +1,1 @@
-inherit-from-not-visible.chpl:8: error: unable to find parent class named 'Foo'
+inherit-from-not-visible.chpl:8: error: could not find parent class or target interface 'Foo' for inheritance expression
