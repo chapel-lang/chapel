@@ -1351,7 +1351,7 @@ module Python {
     extern proc PyStatus_Exception(in status: PyStatus): bool;
     extern proc Py_Finalize();
     extern proc Py_INCREF(obj: PyObjectPtr);
-    extern proc Py_DECREF(obj: PyObjectPtr);
+    extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
