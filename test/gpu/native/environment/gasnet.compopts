@@ -1,1 +1,1 @@
---comm gasnet
+--comm gasnet --network-atomics none
