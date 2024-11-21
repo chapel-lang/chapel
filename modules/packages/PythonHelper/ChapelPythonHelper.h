@@ -55,8 +55,8 @@ static inline PyObject* chpl_PyErr_GetRaisedException(void) {
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 
-static inline PyObject* chpl_Py_None() { return (PyObject*)Py_None; }
-static inline PyObject* chpl_Py_True() { return (PyObject*)Py_True; }
-static inline PyObject* chpl_Py_False() { return (PyObject*)Py_False; }
+static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
+static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
+static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
 
 #endif
