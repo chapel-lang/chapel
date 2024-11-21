@@ -3714,7 +3714,7 @@ struct Converter final : UastConverter {
           }
         }
 
-        // Coudln't find the target, emit an error message
+        // Couldn't find the target, emit an error message
         USR_FATAL_CONT(inheritExpr->id(),
                        "could not find parent class or target interface '%s' "
                        "for inheritance expression",
@@ -3723,6 +3723,16 @@ struct Converter final : UastConverter {
 
       // Couldn't find the target, so translate it literally and hand it off
       // to the production scope resolver.
+      //
+      // This can happen if:
+      //   * we simply didn't perform scope resolution: results == nullptr.
+      //     In this case, we may have issued an error message (if the
+      //     inheritance expression is not simple, which production doesn't
+      //     support). If the identifier is simple, though, we can get by
+      //     without Dyno's scope resolution info.
+      //   * we did perform scope resolution, but didn't get information
+      //     for this inheritance expression. In that case, we issued an error
+      //     message ("could not find parent class").
       if (converted) {
         inherits.push_back(converted);
       }
