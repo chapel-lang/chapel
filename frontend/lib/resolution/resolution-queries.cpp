@@ -2014,7 +2014,16 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
   return type;
 }
 
-static bool allowPromotionForSig(const TypedFnSignature* sig) {
+// if the signature is a function and has an AST, fn should be that AST.
+// This is used to do some other checking, like observing return intents.
+static bool allowPromotionForSig(const TypedFnSignature* sig,
+                                 const uast::Function* fn) {
+  // Functions that return 'param' or 'type' cannot be promoted
+  if (fn && (fn->returnIntent() == uast::Function::TYPE ||
+             fn->returnIntent() == uast::Function::PARAM)) {
+    return false;
+  }
+
   const UntypedFnSignature* untypedSignature = sig->untyped();
   return
     untypedSignature->name() != USTR("these") &&
@@ -2044,14 +2053,14 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   const AggregateDecl* ad = nullptr;
   const Enum* ed = nullptr;
 
-  auto canPassFn = allowPromotionForSig(sig) ? canPass : canPassScalar;
-
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
     fn = ast->toFunction();
     ad = ast->toAggregateDecl();
     ed = ast->toEnum();
   }
+
+  auto canPassFn = allowPromotionForSig(sig, fn) ? canPass : canPassScalar;
 
   // If we are instantiating a nested function, then its parents should
   // already be fully instantiated, in order for assumptions made during
@@ -2967,7 +2976,12 @@ isInitialTypedSignatureApplicable(Context* context,
     return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
   }
 
-  auto canPassFn = allowPromotionForSig(tfs) ? canPass : canPassScalar;
+  const uast::Function* fn = nullptr;
+  if (!tfs->untyped()->id().isEmpty()) {
+    auto ast = parsing::idToAst(context, tfs->untyped()->id());
+    if (ast) fn = ast->toFunction();
+  }
+  auto canPassFn = allowPromotionForSig(tfs, fn) ? canPass : canPassScalar;
 
   // Next, check that the types are compatible
   int numVarArgActuals = 0;

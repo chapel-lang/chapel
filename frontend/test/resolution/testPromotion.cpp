@@ -405,6 +405,26 @@ static void testTertiaryMethod() {
 
 }
 
+static void regressionTestRecursivePromotionTypeBug() {
+  // previously, because we allowed promotion to be applied to functions
+  // with the type and param intents, it was possible to trigger recursive
+  // queries. This PR ensures that no longer happens.
+
+  auto ctx = buildStdContext();
+  auto context = ctx.get();
+
+  auto var = resolveTypeOfX(context,
+      R"""(
+      use OS;
+      var x = createSystemError(0);
+      )""");
+
+  assert(var);
+  assert(var->isClassType());
+  assert(var->toClassType()->basicClassType()->parentClassType() ==
+         CompositeType::getErrorType(context)->basicClassType());
+}
+
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
@@ -433,6 +453,8 @@ int main() {
   }
 
   testTertiaryMethod();
+
+  regressionTestRecursivePromotionTypeBug();
 
   return 0;
 }
