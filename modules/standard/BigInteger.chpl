@@ -2934,7 +2934,7 @@ module BigInteger {
 
   /* See :proc:`mul` */
   proc mul(ref result: bigint, const ref x: bigint, y: uint) {
-    const y_ = y.safeCast(c_long);
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
       mpz_mul_ui(result.mpz, x.mpz, y_);
