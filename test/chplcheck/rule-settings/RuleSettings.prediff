@@ -7,12 +7,8 @@ function testcase() {
   shift
   local args=$@
   $CHPL_HOME/tools/chplcheck/chplcheck --add-rules rules.py $args $base.chpl > $base.$testnum.out
-  if diff -q $base.$testnum.out $base.$testnum.good; then
-    echo "testcase $testnum passed" >> $good
-    rm $base.$testnum.out
-  else
-    echo "testcase $testnum failed" >> $good
-  fi
+  # diff and cleanup on success
+  diff $base.$testnum.out $base.$testnum.good >> $good && (echo "testcase $testnum passed" && rm $base.$testnum.out) || echo "testcase $testnum failed"
 }
 
 testcase 1

@@ -293,5 +293,4 @@ def main():
 
 
 if __name__ == "__main__":
-    ret = main()
-    sys.exit(ret if ret is not None else 0)
+    sys.exit(main())
