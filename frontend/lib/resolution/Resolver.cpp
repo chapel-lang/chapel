@@ -3992,14 +3992,6 @@ void Resolver::exit(const Range* range) {
     return;
   }
 
-  const RecordType* rangeType = CompositeType::getRangeType(context);
-  if (CompositeType::isMissingBundledRecordType(context, rangeType->id())) {
-    // The range record is part of the standard library, but
-    // it's possible to invoke the resolver without the stdlib.
-    // In this case, mark ranges as UnknownType, but do not error.
-    return;
-  }
-
   // Encode the type of the range as two bits: bounded below, bounded above.
   int boundType = (range->lowerBound() != nullptr) << 1 |
                   (range->upperBound() != nullptr);
@@ -4057,11 +4049,6 @@ void Resolver::exit(const uast::Domain* decl) {
   }
 
   const DomainType* genericDomainType = DomainType::getGenericDomainType(context);
-  if (CompositeType::isMissingBundledRecordType(context, genericDomainType->id())) {
-    // If we don't have the standard library code backing the Domain type, leave
-    // it unresolved.
-    return;
-  }
 
   if (decl->numExprs() == 0) {
     // Generic domain, as in a generic-domain array

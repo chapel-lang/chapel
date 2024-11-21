@@ -770,7 +770,7 @@ void setupModuleSearchPaths(Context* context,
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(context,
                          chplHomeStr,
-                         false,
+                         minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
                          chplEnv->at("CHPL_TASKS"),
@@ -1262,10 +1262,6 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
-    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-      result = asttags::Record;
-    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-      result = asttags::Class;
     }
   }
 

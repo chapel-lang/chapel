@@ -158,8 +158,7 @@ static void testEmptyRecordCompilerGenInit() {
 }
 
 static void testTertMethodCallCrossModule() {
-  Context context;
-  Context* ctx = &context;
+  Context* ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
@@ -401,16 +400,11 @@ static void testClassManagementNilabilityInNewExpr() {
 }
 
 static void testGenericRecordUserInitDependentField() {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
+  auto path = TEST_NAME(context);
   std::string contents = R""""(
-    operator =(ref lhs: int, rhs: int) {
-      __primitive("=", lhs, rhs);
-    }
-
     record r {
       type f1;
       param f2: int;
@@ -423,23 +417,23 @@ static void testGenericRecordUserInitDependentField() {
     var obj = new r(int, 8);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module and the UAST we need.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(!guard.realizeErrors());
 
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  auto rec = mod->stmt(1)->toRecord();
+  assert(mod->numStmts() == 2);
+  auto rec = mod->stmt(0)->toRecord();
   assert(rec);
-  auto obj = mod->stmt(2)->toVariable();
+  auto obj = mod->stmt(1)->toVariable();
   assert(obj);
 
   // Resolve the module.
-  auto& rr = resolveModule(ctx, mod->id());
+  auto& rr = resolveModule(context, mod->id());
 
   // Inspect the type of the variable 'obj'.
   auto& reObj = rr.byAst(obj);
@@ -454,41 +448,41 @@ static void testGenericRecordUserInitDependentField() {
   assert(rt->substitutions().size() == 2);
 
   // Check the first field of the instantiated record via substitutions.
-  auto idf1 = parsing::fieldIdWithName(ctx, rt->id(),
-                                       UniqueString::get(ctx, "f1"));
+  auto idf1 = parsing::fieldIdWithName(context, rt->id(),
+                                       UniqueString::get(context, "f1"));
   assert(!idf1.isEmpty());
   auto qtf1 = rt->substitution(idf1);
   assert(qtf1.kind() == QualifiedType::TYPE);
-  assert(qtf1.type() == IntType::get(ctx, 0));
+  assert(qtf1.type() == IntType::get(context, 0));
   assert(qtf1.param() == nullptr);
 
   // Check the second field of the instantiated record via substitutions.
-  auto idf2 = parsing::fieldIdWithName(ctx, rt->id(),
-                                       UniqueString::get(ctx, "f2"));
+  auto idf2 = parsing::fieldIdWithName(context, rt->id(),
+                                       UniqueString::get(context, "f2"));
   assert(!idf2.isEmpty());
   auto qtf2 = rt->substitution(idf2);
   assert(qtf2.kind() == QualifiedType::PARAM);
-  assert(qtf2.type() == IntType::get(ctx, 0));
+  assert(qtf2.type() == IntType::get(context, 0));
   assert(qtf2.param()->isIntParam());
   assert(qtf2.param()->toIntParam()->value() == 8);
 
   // Now check all fields via the resolved fields query.
-  auto& rf = fieldsForTypeDecl(ctx, rt, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(context, rt, DefaultsPolicy::USE_DEFAULTS);
   assert(rf.numFields() == 3);
   assert(!rf.isGeneric());
   assert(!rf.isGenericWithDefaults());
 
   // First field is 'type int(64)'
-  auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(ctx, 0));
+  auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
   assert(rf.fieldType(0) == ft1);
 
   // Second is 'param int = 8'
-  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(ctx, 0),
-                           IntParam::get(ctx, 8));
+  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, 8));
   assert(rf.fieldType(1) == ft2);
 
   // Last is 'var int'
-  auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(ctx, 0));
+  auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(context, 0));
   assert(rf.fieldType(2) == ft3);
 
   // Confirm that the TFS for the initializer is correct.
@@ -637,14 +631,11 @@ static void testNewGenericWithDefaults() {
 }
 
 static void testCompilerGeneratedGenericNewWithDefaultInit() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    operator =(ref lhs: int, const rhs: int) {}
-    operator =(ref lhs: real, const rhs: real) {}
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -693,14 +684,11 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
 }
 
 static void testCompilerGeneratedGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    operator =(ref lhs: int, const rhs: int) {}
-    operator =(ref lhs: real, const rhs: real) {}
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -776,14 +764,11 @@ static void testCompilerGeneratedGenericNew() {
 }
 
 static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    operator =(ref lhs: int, const rhs: int) {}
-    operator =(ref lhs: real, const rhs: real) {}
     class C {
       param flag : bool;
       var x : if flag then int else real;
@@ -836,14 +821,11 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 }
 
 static void testCompilerGeneratedGenericNewClass() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    operator =(ref lhs: int, const rhs: int) {}
-    operator =(ref lhs: real, const rhs: real) {}
     class C {
       param flag : bool;
       var x : if flag then int else real;
@@ -922,17 +904,11 @@ static void testCompilerGeneratedGenericNewClass() {
 }
 
 static void testSimpleUserGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    // Need an operator= for non-compile-time values to be assigned.
-    operator =(ref lhs: numeric, rhs: numeric) {
-      __primitive("=", lhs, rhs);
-    }
-
     class C {
       var x;
 
@@ -980,17 +956,11 @@ static void testSimpleUserGenericNew() {
 }
 
 static void testUserGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    // Need an operator= for non-compile-time values to be assigned.
-    operator =(ref lhs: numeric, rhs: numeric) {
-      __primitive("=", lhs, rhs);
-    }
-
     record r {
       param flag : bool;
       var x : if flag then int else real;

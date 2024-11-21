@@ -30,8 +30,8 @@
 
 // test num fields and field num to name
 static void test1() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -58,8 +58,8 @@ static void test1() {
 //
 // test field num to name
 static void test2() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -84,8 +84,8 @@ static void test2() {
 
 // Test field by num
 static void test3() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -111,8 +111,8 @@ static void test3() {
 
 // Test is bound
 static void test4() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -146,8 +146,8 @@ static void test4() {
 
 // Test call resolves
 static void test5() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -177,10 +177,10 @@ static void test5() {
 
 // Test call resolves
 static void test6() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -210,8 +210,8 @@ static void test6() {
 //
 // Test call resolves
 static void test7() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -244,10 +244,10 @@ static void test7() {
 
 // Test call resolves
 static void test8() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -279,10 +279,10 @@ static void test8() {
 }
 
 static void test9() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
           proc f() {}

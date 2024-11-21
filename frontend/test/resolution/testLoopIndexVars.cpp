@@ -88,8 +88,7 @@ struct ParamCollector {
 
 static void testSimpleLoop(std::string loopName) {
   printf("testing simple loop '%s'\n", loopName.c_str());
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto loopText = myiter + loopName +
 R"""( i in myiter() {
@@ -123,8 +122,7 @@ R"""( i in myiter() {
 
 static void testAmbiguous() {
   printf("testAmbiguous\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -151,8 +149,7 @@ static void testAmbiguous() {
 
 static void testThese() {
   printf("testThese\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -176,8 +173,7 @@ static void testThese() {
 
 static void testTheseReturn() {
   printf("testTheseReturn\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -203,8 +199,7 @@ static void testTheseReturn() {
 
 static void testNoThese() {
   printf("testNoThese\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -229,8 +224,7 @@ static void testNoThese() {
 
 static void testAmbiguousThese() {
   printf("testAmbiguousThese\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -261,8 +255,7 @@ static void testAmbiguousThese() {
 
 static void testNoIndex() {
   printf("testNoIndex\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto iterText = myiter +
@@ -277,8 +270,7 @@ static void testNoIndex() {
 
 static void testTheseNoIndex() {
   printf("testTheseNoIndex\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto theseText = recIter +
@@ -306,8 +298,7 @@ static void testTheseNoIndex() {
 
 static void testCForLoop() {
   printf("testCForLoop\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -345,8 +336,7 @@ static void testCForLoop() {
 
 static void testParamFor() {
   printf("testParamFor\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
   //
@@ -390,8 +380,7 @@ static void testParamFor() {
 //
 static void testNestedParamFor() {
   printf("testNestedParamFor\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -446,8 +435,7 @@ static void testNestedParamFor() {
 
 static void testIndexScope0() {
   printf("testIndexScope0\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   //
@@ -477,8 +465,7 @@ static void testIndexScope0() {
 
 static void testIndexScope1() {
   printf("testIndexScope1\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Ensure that each mention of 'i' refers to the correct index variable.
@@ -1333,8 +1320,7 @@ int main() {
   testIndexScope1();
 
   // Use a single context instance to avoid re-resolving internal modules.
-  auto ctx = buildStdContext();
-  Context* context = ctx.get();
+  auto context = buildStdContext();
   testIterSigDetection(context);
   testExplicitTaggedIter(context);
   testSerialZip(context);

@@ -332,9 +332,15 @@ static const char* errorManyCandidates = R"""(
   Omitting 6 more candidates that didn't match.
 )""";
 
-static void testResolverError(const char* program, const char* error) {
+static void testResolverError(const char* program, const char* error,
+                              bool standard = true) {
+  Context* context = nullptr;
   Context ctx;
-  Context* context = &ctx;
+  if (standard) {
+    context = buildStdContext();
+  } else {
+    context = &ctx;
+  }
   ErrorGuard guard(context);
 
   while (*error == '\n') error++;
@@ -370,7 +376,8 @@ int main() {
   testResolverError(progVarArgMismatch, errorVarArgMismatch);
   testResolverError(progWhereClauseFalse, errorWhereClauseFalse);
   testResolverError(progBasic, errorBasic);
-  testResolverError(progOther, errorOther);
+  // Avoid standard modules for now to prevent very long list of candidates
+  testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
 
   return 0;

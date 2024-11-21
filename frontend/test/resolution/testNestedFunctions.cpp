@@ -560,7 +560,7 @@ static void test13(Context* ctx) {
 
 int main() {
   auto context = buildStdContext();
-  Context* ctx = turnOnWarnUnstable(context.get());
+  Context* ctx = turnOnWarnUnstable(context);
 
   test0(ctx);
   test1(ctx);

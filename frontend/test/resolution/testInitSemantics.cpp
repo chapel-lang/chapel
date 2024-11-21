@@ -25,23 +25,14 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
-#define TEST_NAME(ctx__) TEST_NAME_FROM_FN_NAME(ctx__)
-
-std::string otherOps = R"""(
-    operator =(ref lhs: int, rhs: int) {}
-    operator =(ref lhs: real, rhs: real) {}
-    operator >(ref lhs: int, rhs: int) {
-      return __primitive(">", lhs, rhs);
-    }
-    )""";
+#define TEST_NAME(context__) TEST_NAME_FROM_FN_NAME(context__)
 
 static void testFieldUseBeforeInit1(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -59,33 +50,32 @@ static void testFieldUseBeforeInit1(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.numErrors(/* countWarnings */ false) == 6);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "'x' is used before it is initialized");
-  assert(msg->location(ctx).firstLine() == 13);
+  assert(msg->location(context).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
 static void testInitReturnVoid(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -97,33 +87,32 @@ static void testInitReturnVoid(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.numErrors(/* countWarnings */ false) == 1);
 
   // Check the error (which comes last) to see if it lines up.
   auto& msg = guard.errors().back();
   assert(msg->message() == "initializers can only return 'void'");
-  assert(msg->location(ctx).firstLine() == 14);
+  assert(msg->location(context).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
 static void testInitReturnEarly(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -135,33 +124,32 @@ static void testInitReturnEarly(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 1);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "cannot return from initializer before initialization is complete");
-  assert(msg->location(ctx).firstLine() == 13);
+  assert(msg->location(context).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
 static void testInitThrow(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -173,33 +161,32 @@ static void testInitThrow(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 1);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "initializers are not yet allowed to throw errors");
-  assert(msg->location(ctx).firstLine() == 14);
+  assert(msg->location(context).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
 static void testInitTryBang(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -212,23 +199,23 @@ static void testInitTryBang(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 1);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Only catch-less try! statements are allowed in initializers for now");
-  assert(msg->location(ctx).firstLine() == 14);
+  assert(msg->location(context).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
@@ -252,12 +239,11 @@ static void testInitInsideLoops(void) {
   for (size_t i = 0; i < inits.size(); i++) {
     auto& loop = inits[i];
     auto& message = messages[i];
-    Context context;
-    Context* ctx = &context;
-    ErrorGuard guard(ctx);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
 
-    auto path = TEST_NAME(ctx);
-    std::string contents = otherOps + R""""(
+    auto path = TEST_NAME(context);
+    std::string contents = R""""(
       record r {
         var x: int;
       }
@@ -268,34 +254,33 @@ static void testInitInsideLoops(void) {
       var obj = new r();
       )"""";
 
-    setFileText(ctx, path, contents);
+    setFileText(context, path, contents);
 
     // Get the module.
-    auto& br = parseAndReportErrors(ctx, path);
+    auto& br = parseAndReportErrors(context, path);
     assert(br.numTopLevelExpressions() == 1);
     auto mod = br.topLevelExpression(0)->toModule();
     assert(mod);
 
     // Resolve the module.
-    std::ignore = resolveModule(ctx, mod->id());
+    std::ignore = resolveModule(context, mod->id());
 
     assert(guard.numErrors(/* countWarnings */ false) == 1);
 
     // Check the error (which comes last) to see if it lines up.
     auto& msg = guard.errors().back();
     assert(msg->message() == message);
-    assert(msg->location(ctx).firstLine() == 13);
+    assert(msg->location(context).firstLine() == 7);
     assert(guard.realizeErrors());
   }
 }
 
 static void testThisComplete(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x : int;
       var y : int;
@@ -309,27 +294,26 @@ static void testThisComplete(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 0);
 }
 
 static void testSecondAssign(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
     }
@@ -340,27 +324,26 @@ static void testSecondAssign(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 0);
 }
 
 static void testOutOfOrder(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x, y, z: int;
     }
@@ -371,32 +354,31 @@ static void testOutOfOrder(void) {
     var obj = new r();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 1);
 
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Field \"x\" initialized out of order");
-  assert(msg->location(ctx).firstLine() == 13);
+  assert(msg->location(context).firstLine() == 7);
   assert(guard.realizeErrors());
 }
 
 static void testInitCondBasic(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
       var y : int;
@@ -412,16 +394,16 @@ static void testInitCondBasic(void) {
     var obj = new r(false);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 0);
 
@@ -430,12 +412,11 @@ static void testInitCondBasic(void) {
 }
 
 static void testInitCondBadOrder(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record r {
       var x: int;
       var y : int;
@@ -452,43 +433,38 @@ static void testInitCondBadOrder(void) {
     var obj = new r(false);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 2);
 
   {
     auto& msg = guard.errors()[0];
     assert(msg->message() == "Field \"x\" initialized out of order");
-    assert(msg->location(ctx).firstLine() == 16);
+    assert(msg->location(context).firstLine() == 10);
   }
   {
     auto& msg = guard.errors()[1];
     assert(msg->message() == "Field \"y\" initialized out of order");
-    assert(msg->location(ctx).firstLine() == 18);
+    assert(msg->location(context).firstLine() == 12);
   }
   assert(guard.realizeErrors());
 }
 
 static void testInitCondGenericDiff(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
+  auto path = TEST_NAME(context);
   std::string contents = R""""(
-    operator >(const lhs : int, const rhs : int) {
-      return __primitive(">", lhs, rhs);
-    }
-
     record R {
       type T;
       param P : int;
@@ -508,37 +484,32 @@ static void testInitCondGenericDiff(void) {
     var r = new R(int, 11);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 1);
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
   assert(msg->message() == "Initializer must compute the same type in each branch");
-  assert(msg->location(ctx).firstLine() == 10);
+  assert(msg->location(context).firstLine() == 6);
   assert(guard.realizeErrors());
 }
 
 static void testInitCondGeneric(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
+  auto path = TEST_NAME(context);
   std::string contents = R""""(
-    operator >(const lhs : int, const rhs : int) {
-      return __primitive(">", lhs, rhs);
-    }
-
     record R {
       type T;
       param P : int;
@@ -558,31 +529,26 @@ static void testInitCondGeneric(void) {
     var r = new R(int, 11);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 0);
 }
 
 static void testInitParamCondGeneric(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = UniqueString::get(ctx, "mod");
+  auto path = UniqueString::get(context, "mod");
   std::string contents = R""""(
-    operator >(const lhs : int, const rhs : int) {
-      return __primitive(">", lhs, rhs);
-    }
-
     record R {
       type T;
       param P : int;
@@ -606,42 +572,41 @@ static void testInitParamCondGeneric(void) {
     type Y = R(int, 5);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  const ResolutionResultByPostorderID& rr = resolveModule(ctx, mod->id());
+  const ResolutionResultByPostorderID& rr = resolveModule(context, mod->id());
 
   assert(guard.errors().size() == 0);
 
   {
-    auto t = mod->stmt(2)->toVariable();
+    auto t = mod->stmt(1)->toVariable();
     auto tType = rr.byAst(t).type();
-    auto X = mod->stmt(4)->toVariable();
+    auto X = mod->stmt(3)->toVariable();
     auto XType = rr.byAst(X).type();
     assert(tType.type() == XType.type());
   }
   {
-    auto f = mod->stmt(3)->toVariable();
+    auto f = mod->stmt(2)->toVariable();
     auto fType = rr.byAst(f).type();
-    auto Y = mod->stmt(5)->toVariable();
+    auto Y = mod->stmt(4)->toVariable();
     auto YType = rr.byAst(Y).type();
     assert(fType.type() == YType.type());
   }
 }
 
 static void testNotThisDot(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record X {
       proc type foo() {
         return 5;
@@ -663,22 +628,21 @@ static void testNotThisDot(void) {
     var r : R;
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 }
 
 static void testRelevantInit(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
   //
   // Based on behavior implemented by production compiler back in:
@@ -690,14 +654,10 @@ static void testRelevantInit(void) {
   // resolve 'X.init' and 'R.init' for the formal 'x' in 'R.init'.
   //
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     record X {
       var val : int;
-    }
-
-    operator =(ref lhs: X, const rhs: X) {
-      lhs.val = rhs.val;
     }
 
     record R {
@@ -711,22 +671,21 @@ static void testRelevantInit(void) {
     var r: R;
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 }
 
 static void testOwnedUserInit(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
   // Ensure we can resolve a user-defined initializer call for an owned class,
   // which requires an implicit borrowing conversion of the receiver from owned
@@ -734,8 +693,8 @@ static void testOwnedUserInit(void) {
   // also defines an init, to ensure implicit subtype conversion to the parent
   // class doesn't make it a candidate.
 
-  auto path = TEST_NAME(ctx);
-  std::string contents = otherOps + R""""(
+  auto path = TEST_NAME(context);
+  std::string contents = R""""(
     class Parent {
       proc init() {}
     }
@@ -747,16 +706,16 @@ static void testOwnedUserInit(void) {
     var c = new owned Child();
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
   assert(mod);
 
   // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
+  std::ignore = resolveModule(context, mod->id());
 }
 
 // Replaces a placeholder with possible values to help test more programs.
@@ -826,8 +785,7 @@ static void testInitFromInit(void) {
       )""";
 
   for (auto version : getAllVersions(prog)) {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, version);
 
@@ -888,8 +846,7 @@ static void testInitInParamBranchFromInit(void) {
 
 
   for (auto version : getAllVersions(prog)) {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
@@ -973,8 +930,7 @@ static void testInitInBranchFromInit(void) {
 
   for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
@@ -1066,8 +1022,7 @@ static void testBadInitInBranchFromInit(void) {
 
   for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::ignore = resolveTypeOfXInit(context, version);
@@ -1100,8 +1055,7 @@ static void testAssignThenInit(void) {
 
   for (auto version : getAllVersions(prog)) {
     // test calling 'this.init' from another initializer.
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::ignore = resolveTypeOfXInit(context, version);
@@ -1117,12 +1071,7 @@ static void testAssignThenInit(void) {
 }
 
 static void testUseAfterInit() {
-  std::string program = otherOps + R"""(
-    operator *(const ref lhs: real, const rhs : int) : real {
-      var ret : real;
-      return ret;
-    }
-
+  std::string program = R"""(
     class PointDoubleX {
       var a, b : real;
 
@@ -1140,19 +1089,17 @@ static void testUseAfterInit() {
     var x = new PointDoubleX(1.0, 2.0);
   )""";
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::ignore = resolveTypeOfX(context, program);
 }
 
 static void testInitEqOther(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
 
-  std::string program = otherOps + R"""(
+  std::string program = R"""(
     record R {
       type T;
       var field : T;
@@ -1169,7 +1116,7 @@ static void testInitEqOther(void) {
     var y:R(?) = 42.0;
   )""";
 
-  auto results = resolveTypesOfVariables(ctx, program, {"x", "y"});
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
   auto xt = results["x"];
   assert(xt.type()->isRecordType());
   std::stringstream ss;
@@ -1209,8 +1156,7 @@ static void testInheritance() {
 
   // basic usage
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = parentChild + grandparent + R"""(
@@ -1230,8 +1176,7 @@ static void testInheritance() {
 
   // named arguments
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = parentChild + grandparent + R"""(
@@ -1251,8 +1196,7 @@ static void testInheritance() {
 
   // user-defined parent initializer
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = parentChild + R"""(
@@ -1266,8 +1210,7 @@ static void testInheritance() {
     std::ignore = resolveModule(context, m->id());
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = grandparent + R"""(
@@ -1282,8 +1225,7 @@ static void testInheritance() {
     std::ignore = resolveModule(context, m->id());
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = grandparent + R"""(
@@ -1299,8 +1241,7 @@ static void testInheritance() {
 
   // super.init example
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = grandparent + R"""(
@@ -1317,17 +1258,12 @@ static void testInheritance() {
 
   // Allow parent field access with implicit super.init
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       class Parent { var x : int; }
       class Child : Parent { var y : real; }
-
-      operator *(const lhs: int, rhs: real) : real {
-        return __primitive("*", lhs, rhs);
-      }
 
       proc Child.init() {
         this.y = x * 42.0;
@@ -1341,17 +1277,12 @@ static void testInheritance() {
 
   // Error for accessing parent field before super.init
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       class Parent { var x : int; }
       class Child : Parent { var y : real; }
-
-      operator *(const lhs: int, rhs: real) : real {
-        return __primitive("*", lhs, rhs);
-      }
 
       proc Child.init() {
         this.x = 42;
@@ -1383,8 +1314,7 @@ static void testInheritance() {
 
   // Basic generic case
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1420,8 +1350,7 @@ static void testInheritance() {
 
   // Generic parent, concrete child
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1454,8 +1383,7 @@ static void testInheritance() {
 
   // Generic grandparent, concrete parent, concrete child
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1494,11 +1422,10 @@ static void testInheritance() {
 
   // Default initializer
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       class A {
         type TA;
         var a : TA;
@@ -1520,8 +1447,7 @@ static void testInheritance() {
 
   // Default initializer when parent has user-defined initializer
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1557,8 +1483,7 @@ static void testInheritance() {
 
   // Default initializer when grandparent has user-defined initializer
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1602,8 +1527,7 @@ static void testInheritance() {
   // Make sure that existence of an interface in the inherit-exprs list
   // does not cause a super.init call to be generated.
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -1625,7 +1549,7 @@ static void testImplicitSuperInit() {
   // Ensure we resolve the body of implicit super.init() calls
   {
     // use 'test' to ensure 'q' has the right type
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       proc test(arg: uint) {}
 
       class A {
@@ -1661,8 +1585,7 @@ static void testImplicitSuperInit() {
       var y = new B("");
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
@@ -1685,7 +1608,7 @@ static void testImplicitSuperInit() {
 static void testInitGenericAfterConcrete() {
   // With generic var initialized properly
   {
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       record Foo {
         var a:int;
         var b;
@@ -1699,8 +1622,7 @@ static void testInitGenericAfterConcrete() {
       var x = myFoo.b;
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto t = resolveTypeOfX(context, program);
 
     assert(t);
@@ -1709,7 +1631,7 @@ static void testInitGenericAfterConcrete() {
 
   // With generic var not initialized, so not enough info
   {
-    std::string program = otherOps + R"""(
+    std::string program = R"""(
       record Foo {
         var a:int;
         var b;
@@ -1722,8 +1644,7 @@ static void testInitGenericAfterConcrete() {
       var x = myFoo.b;
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     auto t = resolveTypeOfX(context, program);
 
@@ -1761,10 +1682,7 @@ static void testNilFieldInit() {
     var a = test();
     var b = new R();
   )""";
-  auto config = getConfigWithHome();
-  Context ctx(config);
-  Context* context = &ctx;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
@@ -1789,10 +1707,7 @@ static void testGenericFieldInit() {
       var c = new R("test");
       )""";
 
-    auto config = getConfigWithHome();
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});
@@ -1825,10 +1740,7 @@ static void testGenericFieldInit() {
 
       var r  = new R();
       )""";
-    auto config = getConfigWithHome();
-    Context ctx(config);
-    Context* context = &ctx;
-    setupModuleSearchPaths(context, false, false, {}, {});
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"r"});
@@ -1844,6 +1756,7 @@ static void testGenericFieldInit() {
     guard.realizeErrors();
   }
   {
+    printf("one\n");
     std::string program = R"""(
       record G { type T; var x : T; }
 
@@ -1881,8 +1794,7 @@ static void testGenericFieldInit() {
       var c = test("test");
       )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context, program, {"a", "b", "c"});

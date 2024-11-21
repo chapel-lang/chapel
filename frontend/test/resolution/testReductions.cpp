@@ -124,8 +124,7 @@ static void test4(Context* context) {
 
 int main() {
   // Use a single context instance to avoid re-resolving internal modules.
-  auto ctx = buildStdContext();
-  Context* context = ctx.get();
+  auto context = buildStdContext();
 
   test1(context);
   test2(context);

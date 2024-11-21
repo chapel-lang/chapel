@@ -365,15 +365,6 @@ module M {
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
 static void testBadDomain(Context* contextWithStd, std::string domainType) {
-  // Without standard modules
-  {
-    Context ctx;
-    Context* context = &ctx;
-    ErrorGuard guard(context);
-
-    testBadDomainHelper(domainType, context, guard);
-  }
-
   // With standard modules
   {
     contextWithStd->advanceToNextRevision(false);
@@ -390,8 +381,7 @@ static void testBadDomain(Context* contextWithStd, std::string domainType) {
 int main() {
   // Set up context with standard modules, re-used between tests for
   // performance.
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  auto context = buildStdContext();
 
   testRectangular(context, "domain(1)", 1, "int", "one");
   testRectangular(context, "domain(2)", 2, "int", "one");

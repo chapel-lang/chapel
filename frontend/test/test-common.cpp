@@ -79,27 +79,27 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   return col.only();
 }
 
-std::unique_ptr<chpl::Context> buildStdContext() {
-  std::string chpl_home;
-  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
-    chpl_home = chpl_home_env;
-  } else {
-    printf("CHPL_HOME must be set");
-    exit(1);
-  }
-  Context::Configuration config;
-  config.chplHome = chpl_home;
-  Context* context = new Context(config);
-  parsing::setupModuleSearchPaths(context, false, false, {}, {});
+static std::unique_ptr<Context> _reusedContext;
 
-  // Workaround for performance issues with runAndTrackErrors:
-  // run publicSymbolsForModule on ChapelStandard
-  {
-    if (const resolution::Scope* s = resolution::scopeForAutoModule(context)) {
-      resolution::publicSymbolsForModule(context, s);
+chpl::Context* buildStdContext() {
+  if (_reusedContext.get() == nullptr) {
+    std::string chpl_home;
+    if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+      chpl_home = chpl_home_env;
+    } else {
+      printf("CHPL_HOME must be set");
+      exit(1);
     }
+    Context::Configuration config;
+    config.chplHome = chpl_home;
+    Context* context = new Context(config);
+
+    _reusedContext.reset(context);
+  } else {
+    _reusedContext->advanceToNextRevision(false);
   }
 
-  std::unique_ptr<chpl::Context> ret(context);
-  return ret;
+  parsing::setupModuleSearchPaths(_reusedContext.get(), false, false, {}, {});
+
+  return _reusedContext.get();
 }

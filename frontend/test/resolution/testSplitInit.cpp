@@ -40,15 +40,13 @@ static void testSplitInit(const char* test,
                           bool expectErrors=false) {
   printf("%s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
   testname += ".chpl";
   auto path = UniqueString::get(context, testname);
   std::string contents = "module M {\n";
-  contents += "operator =(ref lhs: int, const rhs: int) {}\n";
   contents += program;
   contents += "}";
   setFileText(context, path, contents);
@@ -1053,10 +1051,6 @@ static void test61() {
 static void test62() {
   testSplitInit("test62",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test(i: int) {
           var x;
           select i {
@@ -1079,10 +1073,6 @@ static void test62() {
 static void test63() {
   testSplitInit("test63",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test(i: int) {
           var x;
           select i {
@@ -1102,10 +1092,6 @@ static void test63() {
 static void test64() {
   testSplitInit("test64",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test(i: int) {
           var x;
           select i {
@@ -1129,10 +1115,6 @@ static void test64() {
 static void test65() {
   testSplitInit("test65",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x;
@@ -1155,10 +1137,6 @@ static void test65() {
 static void test66() {
   testSplitInit("test66",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x;
@@ -1182,10 +1160,6 @@ static void test66() {
 static void test67() {
   testSplitInit("test67a",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x, y;
@@ -1199,10 +1173,6 @@ static void test67() {
     {}, ERRORS_EXPECTED);
   testSplitInit("test67b",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x, y, z;
@@ -1216,10 +1186,6 @@ static void test67() {
     {}, ERRORS_EXPECTED);
   testSplitInit("test67c",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x, y, z;
@@ -1233,10 +1199,6 @@ static void test67() {
     {"z", "y", "x"});
   testSplitInit("test67d",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         config const i: int;
         proc test(i: int) {
           var x,y,z;
@@ -1321,10 +1283,6 @@ static void testParamTrueWhen() {
 static void test64a() {
   testSplitInit("test64a_passing",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           type T = int;
           var x;
@@ -1342,10 +1300,6 @@ static void test64a() {
     {"x"});
     testSplitInit("test64a",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           type T = real;
           var x;

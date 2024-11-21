@@ -33,8 +33,7 @@
 // returns the type of that.
 static void test1() {
   printf("test1\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -59,8 +58,7 @@ static void test1() {
 
 static void test2() {
   printf("test2\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -81,8 +79,7 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -112,8 +109,7 @@ static void test3() {
 
 static void test4() {
   printf("test4\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -138,8 +134,7 @@ static void test4() {
 
 static void test5() {
   printf("test5\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
@@ -165,8 +160,7 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -191,8 +185,7 @@ static void test6() {
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -216,8 +209,7 @@ static void test7() {
 
 static void test8() {
   printf("test8\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -240,8 +232,7 @@ static void test8() {
 
 static void test9() {
   printf("test9\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto M = parseModule(context,
                 R""""(
@@ -274,8 +265,7 @@ static void test9() {
 
 static void test9b() {
   printf("test9b\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   {
     ErrorGuard guard(context);
@@ -342,8 +332,7 @@ static void test9b() {
 
 static void test10() {
   printf("test10\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto M = parseModule(context,
                 R""""(
@@ -376,8 +365,7 @@ static void test10() {
 
 static void test11() {
   printf("test11\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -398,8 +386,7 @@ static void test11() {
 
 static void test11b() {
   printf("test11b\n");
-  auto uctx = buildStdContext();
-  auto context = uctx.get();
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Exercises a case where the frontend was attempting to resolve an '='
@@ -431,8 +418,7 @@ static void test11b() {
 
 static void test12() {
   printf("test12\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -461,8 +447,7 @@ static void test12() {
 
 static void test13() {
   printf("test13\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -496,8 +481,7 @@ static void test14() {
   printf("test14\n");
 
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qt = resolveTypeOfXInit(context,
@@ -518,8 +502,7 @@ static void test14() {
   }
 
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     // Using a homogeneous tuple type expression
@@ -541,8 +524,7 @@ static void test14() {
     assert(vars["retTwo"].type()->isIntType());
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qt = resolveTypeOfXInit(context,
@@ -568,8 +550,7 @@ static void test14() {
     guard.realizeErrors();
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context,
@@ -600,8 +581,7 @@ static void test14() {
     assert(vars["varC"].type()->isStringType());
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto vars = resolveTypesOfVariables(context,
@@ -641,8 +621,7 @@ static void test14() {
 
 static void test15() {
   printf("test15\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -663,8 +642,7 @@ static void test15() {
 
 static void test16() {
   printf("test16\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
@@ -679,8 +657,7 @@ static void test16() {
 
 static void test17() {
   printf("test17\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
                 R""""(
@@ -700,13 +677,10 @@ static void test17() {
 
 static void argHelper(std::string formal, std::string actual,
                            bool shouldResolve) {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
-    operator =(ref lhs: _tuple, const ref rhs: _tuple) {}
-
     proc foo(arg: )""" + formal + R"""() {
       return arg;
     }
@@ -745,8 +719,7 @@ static void argHelper(std::string formal, std::string actual,
 
 static void test18() {
   printf("test18\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto program = R""""(
                   var t = (1, "hello", 3.0);
@@ -771,8 +744,7 @@ static void test18() {
 // Test "get svec member[ value]" primitives
 static void test19() {
   printf("test19\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto program = R""""(
                   var t = (1, 2, 3);
@@ -862,8 +834,7 @@ static const TypedFnSignature* test20Helper(Context* context, std::string progra
 static void test20() {
   printf("test20\n");
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(v: ?t) do return v;
       var x = foo((1, "hello"));
@@ -880,8 +851,7 @@ static void test20() {
     assert(tt->elementType(1).kind() == QualifiedType::REF);
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(const v: ?t) do return v;
       var x = foo((1, "hello"));
@@ -898,8 +868,7 @@ static void test20() {
     assert(tt->elementType(1).kind() == QualifiedType::CONST_REF);
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(in v: ?t) do return v;
       var x = foo((1, "hello"));
@@ -916,8 +885,7 @@ static void test20() {
     assert(tt->elementType(1).kind() == QualifiedType::VAR);
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(const in v: ?t) do return v;
       var x = foo((1, "hello"));
@@ -934,8 +902,7 @@ static void test20() {
     assert(tt->elementType(1).kind() == QualifiedType::CONST_VAR);
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(ref v: ?t) do return v;
       var t = (1,"hello");
@@ -953,8 +920,7 @@ static void test20() {
     assert(tt->elementType(1).kind() == QualifiedType::VAR);
   }
   {
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     auto program = R"""(
       proc foo(const ref v: ?t) do return v;
       var x = foo((1,"hello"));
@@ -976,8 +942,7 @@ static void test21() {
   // Ensure that (type int, type int) tuples in type expression are properly
   // handled when they are specifying the type of var or const variable.
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   auto program = R"""(
     var x: 2*int = (7,3);
     const y: 2*int = (7,3);

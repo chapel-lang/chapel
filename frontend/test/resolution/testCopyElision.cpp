@@ -39,15 +39,15 @@ static void testCopyElision(const char* test,
                             bool expectErrors=false) {
   printf("%s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  //Context ctx;
+  //Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
   testname += ".chpl";
   auto path = UniqueString::get(context, testname);
   std::string contents = "module M {\n";
-  contents += "operator =(ref lhs: int, const rhs: int){}\n";
   contents += program;
   contents += "\n}";
   setFileText(context, path, contents);
@@ -1017,9 +1017,6 @@ static void test40() {
 static void test41() {
   testCopyElision("test41a",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
         config const cond = 2;
         proc test() {
           var x: int = 0;
@@ -1038,9 +1035,6 @@ static void test41() {
     {});
   testCopyElision("test41b",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
         config const cond = 2;
         proc test() {
           var x: int = 0;
@@ -1065,10 +1059,6 @@ static void test41() {
 static void test42() {
   testCopyElision("test42a",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1086,10 +1076,6 @@ static void test42() {
     {});
   testCopyElision("test42b",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1110,10 +1096,6 @@ static void test42() {
 static void test43() {
   testCopyElision("test43a",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1131,10 +1113,6 @@ static void test43() {
     {});
   testCopyElision("test43b",
     R""""(
-        operator ==(ref lhs: int, rhs: int) {
-          __primitive("==", lhs, rhs);
-        }
-
         proc test() {
           var c: int = 0;
           var x: int = 0;

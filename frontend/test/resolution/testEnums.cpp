@@ -29,8 +29,7 @@
 #include "chpl/uast/Variable.h"
 
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -53,8 +52,7 @@ static void test1() {
 }
 
 static void test2() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -68,8 +66,7 @@ static void test2() {
 }
 
 static void test3() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -84,8 +81,7 @@ static void test3() {
 
 // Test numeric conversions of enums
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -132,8 +128,7 @@ enumConstantValues(Context* context, const QualifiedType& qt) {
 }
 
 static void test5() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -174,8 +169,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -208,8 +202,7 @@ static void test6() {
 }
 
 static void test7() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -242,8 +235,7 @@ static void test7() {
 }
 
 static void test8() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -276,8 +268,7 @@ static void test8() {
 }
 
 static void test9() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -310,8 +301,7 @@ static void test9() {
 }
 
 static void test10() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -338,8 +328,7 @@ static void test10() {
 }
 
 static void test11() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -374,8 +363,7 @@ static void test11() {
 }
 
 static void test12() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -405,8 +393,7 @@ static void test12() {
 }
 
 static void test13() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -434,8 +421,7 @@ static void test13() {
 }
 
 static void test14() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -471,8 +457,7 @@ static void test14() {
 
 
 static void test15() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -504,8 +489,7 @@ static void test15() {
 }
 
 static void test16() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -552,8 +536,7 @@ static void test16() {
 }
 
 static void test17() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -600,8 +583,7 @@ static void test17() {
 }
 
 static void test18() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -648,16 +630,11 @@ static void test18() {
 }
 
 static void test19() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
       R"""(
-      iter type enum.these(){
-        for param i in 0..<this.size do
-          yield chpl__orderToEnum(i, this);
-      }
       enum color {
         red, green, blue
       }
@@ -673,8 +650,7 @@ static void test19() {
 
 // Param cast to string
 static void test20() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,

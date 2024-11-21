@@ -426,12 +426,12 @@ static void testNewShadowCandidates(Context* context) {
 }
 
 int main() {
-  auto ctx = buildStdContext();
-  testStandaloneWithoutSerial(ctx.get());
-  testLeaderFollowerWithoutSerial(ctx.get());
-  testIncompatibleYieldTypes(ctx.get());
-  testIteratorFnPoi(ctx.get());
-  testIteratorFnPoiIgnoresIterationScope(ctx.get());
-  testLoopExprIteratorPoi(ctx.get());
-  testNewShadowCandidates(ctx.get());
+  auto context = buildStdContext();
+  testStandaloneWithoutSerial(context);
+  testLeaderFollowerWithoutSerial(context);
+  testIncompatibleYieldTypes(context);
+  testIteratorFnPoi(context);
+  testIteratorFnPoiIgnoresIterationScope(context);
+  testLoopExprIteratorPoi(context);
+  testNewShadowCandidates(context);
 }

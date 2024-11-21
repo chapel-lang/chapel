@@ -884,10 +884,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
   }
-  bool isMissingBundledType =
-    CompositeType::isMissingBundledType(context, ct->id());
-
-  if (isObjectType || isMissingBundledType) {
+  if (isObjectType) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library
@@ -987,10 +984,7 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
   }
-  bool isMissingBundledType =
-    CompositeType::isMissingBundledType(context, ct->id());
-
-  if (isObjectType || isMissingBundledType) {
+  if (isObjectType) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
     // for built-in types like Errors when we didn't parse the standard library

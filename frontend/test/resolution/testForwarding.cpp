@@ -29,14 +29,12 @@
 static void test1() {
   printf("test1\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc ref addOne() {
@@ -61,14 +59,12 @@ static void test1() {
 static void test2() {
   printf("test2\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc ref addOne() {
@@ -96,15 +92,12 @@ static void test2() {
 static void test3() {
   printf("test3\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
-
       class C {
         forwarding var impl: unmanaged C;
       }
@@ -126,15 +119,12 @@ static void test3() {
 static void test4() {
   printf("test4\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) {}
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc init() { this.i = 0; };
@@ -161,15 +151,12 @@ static void test4() {
 static void test5a() {
   printf("test5a\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) {}
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -200,15 +187,12 @@ static void test5a() {
 static void test5b() {
   printf("test5b\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) {}
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -249,15 +233,12 @@ static void test5b() {
 static void test6a() {
   printf("test6a\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) {}
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -302,15 +283,12 @@ static void test6a() {
 static void test6b() {
   printf("test6b\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) {}
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -365,8 +343,7 @@ static void test6b() {
 static void testExpr() {
   printf("testExpr\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
@@ -396,8 +373,7 @@ static void testExpr() {
 }
 
 static void forwardForwardHelper(std::string stmt, bool isVar = false) {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string contents =
@@ -460,14 +436,12 @@ static void testForwardForwardExpr() {
 static void test7() {
   printf("test7\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         pragma "last resort"
@@ -500,8 +474,7 @@ static void test7() {
 static void test8() {
   printf("test8\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =

@@ -31,8 +31,7 @@
 static void test1() {
   // make sure that function return type computation does not throw
   // away the param.
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc p(param x: int(64), param y: int(64)) param do return __primitive("+", x, y);
@@ -48,8 +47,7 @@ static void test1() {
 
 static void test2() {
   // make sure unknown types don't slip into candidate search
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          proc test(z) {}
@@ -62,8 +60,7 @@ static void helpTest3(const std::string& theFunction) {
   // Make sure that types depending on earlier actual types are properly
   // enforced
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context, theFunction +
                                  R""""(
                                  var x = f(true, "hello", "world");
@@ -72,8 +69,7 @@ static void helpTest3(const std::string& theFunction) {
     assert(qt.type()->isStringType());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context, theFunction +
                                  R""""(
                                  var x = f(false, 0, 1);
@@ -82,8 +78,7 @@ static void helpTest3(const std::string& theFunction) {
     assert(qt.type()->isIntType());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context, theFunction +
                                  R""""(
                                  var x = f(true, 0, 1);
@@ -91,8 +86,7 @@ static void helpTest3(const std::string& theFunction) {
     assert(qt.isUnknown());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context, theFunction +
                                  R""""(
                                  var x = f(false, "hello", "world");
@@ -100,8 +94,7 @@ static void helpTest3(const std::string& theFunction) {
     assert(qt.isUnknown());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context, theFunction +
                                  R""""(
                                  var x = f(true, "hello", 0);
@@ -134,13 +127,10 @@ static void test3b() {
 
 // Test calling dependently typed type constructor, for type with param field
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
-
   // With param field type declared
   {
     printf("part 1\n");
-    context->advanceToNextRevision(true);
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     const std::string program =
@@ -165,7 +155,7 @@ static void test4() {
   // Param field of generic type
   {
     printf("part 2\n");
-    context->advanceToNextRevision(true);
+    auto context = buildStdContext();
 
     const std::string program =
       R""""(
@@ -188,7 +178,7 @@ static void test4() {
   // With param formal type declared
   {
     printf("part 3\n");
-    context->advanceToNextRevision(true);
+    auto context = buildStdContext();
 
     const std::string program =
       R""""(

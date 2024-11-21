@@ -109,8 +109,7 @@ static void testActions(const char* test,
                         bool expectErrors=false) {
   printf("### %s\n\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
@@ -550,9 +549,6 @@ static void test5d() {
   testActions("test5d",
     R""""(
       module M {
-        operator =(ref lhs: numeric, const in rhs: numeric) {
-          __primitive("=", lhs, rhs);
-        }
         record R { type T; var field : T; }
         proc R.init(type T, field = 0) {
           this.T = T;
@@ -1675,8 +1671,6 @@ static void test22() {
       R"""(
       module M {
         // call-init-deinit wants this to transmute R.c into the reciever of C.helper
-        operator =(ref lhs: borrowed C, rhs: unmanaged C) {
-        }
 
         class C {
           var x : int;

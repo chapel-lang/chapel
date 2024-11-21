@@ -28,40 +28,37 @@
 #include "chpl/uast/Module.h"
 
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt1 =  resolveTypeOfXInit(context, "var x = int == int;");
   assert(qt1.isParamTrue());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt2 =  resolveTypeOfXInit(context, "var x = int != int;");
   assert(qt2.isParamFalse());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt3 =  resolveTypeOfXInit(context, "var x = bool == int;");
   assert(qt3.isParamFalse());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt4 =  resolveTypeOfXInit(context, "var x = bool != int;");
   assert(qt4.isParamTrue());
 }
 
 static void test2() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt1 =  resolveTypeOfXInit(context, "var x = 1 == 1;");
   assert(qt1.isParamTrue());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt2 =  resolveTypeOfXInit(context, "var x = 1 != 1;");
   assert(qt2.isParamFalse());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt3 =  resolveTypeOfXInit(context, "var x = 1 == 2;");
   assert(qt3.isParamFalse());
-  ctx.advanceToNextRevision(false);
+  context->advanceToNextRevision(false);
   QualifiedType qt4 =  resolveTypeOfXInit(context, "var x = 1 != 2;");
   assert(qt4.isParamTrue());
 }
 
 static void test3() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt1 =  resolveTypeOfXInit(context,
                          R""""(
                          param p : int = 0;
@@ -71,8 +68,7 @@ static void test3() {
 }
 
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   QualifiedType qt1 =  resolveTypeOfXInit(context,

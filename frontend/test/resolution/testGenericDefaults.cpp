@@ -160,10 +160,6 @@ static void test4() {
 
 static void test5() {
   std::string common = R"""(
-    operator =(ref lhs: int, rhs : int) {
-      __primitive("=", lhs, rhs);
-    }
-
     record R {
       type T = int;
       var field : T;
@@ -181,8 +177,7 @@ static void test5() {
 
   {
     // Test methods on generics with defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc blah(x: R(string)) {
@@ -199,8 +194,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       //
@@ -230,8 +224,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc copy(arg) {
