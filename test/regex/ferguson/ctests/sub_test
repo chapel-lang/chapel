@@ -14,8 +14,6 @@ then
 fi
 
 DIR=regex/ferguson/ctests
-CC=gcc
-CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
 RSRC="$CHPL_HOME/runtime/src/qio"
 RE2_INSTALL_DIR=$($CHPL_HOME/util/config/compileline --libraries | \
