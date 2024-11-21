@@ -145,6 +145,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
 	packages/PrecisionSerializer.chpl \
+	packages/Python.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \

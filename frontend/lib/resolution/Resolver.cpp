@@ -64,7 +64,6 @@ namespace {
       NONE            = 0b0000,
       STANDALONE      = 0b0001,
       LEADER_FOLLOWER = 0b0010,
-      FOLLOWER        = 0b0100,
       SERIAL          = 0b1000,
     };
 
@@ -90,6 +89,18 @@ namespace {
 
     // This will be set to the yield type of the first iterator to succeed.
     QualifiedType idxType;
+
+    Pieces& piecesForIterKind(const Function::IteratorKind kind) {
+      switch (kind) {
+        case Function::STANDALONE: return standalone;
+        case Function::LEADER: return leader;
+        case Function::FOLLOWER: return follower;
+        case Function::SERIAL: return serial;
+        default:
+          CHPL_ASSERT(false && "shouldn't happen");
+          return serial;
+      }
+    }
   };
 }
 
@@ -106,12 +117,11 @@ resolveIterTypeWithTag(Resolver& rv,
 // Resolve iterators according to the policy set in 'mask' (see the type
 // 'IterDetails::Policy'). Resolution stops the moment an iterator is
 // found with a usable yield type.
-static IterDetails resolveIterDetails(Resolver& rv,
-                                      const AstNode* astForErr,
-                                      const AstNode* iterand,
-                                      const QualifiedType& leaderYieldType,
-                                      int mask,
-                                      bool emitError);
+static IterDetails resolveNonZipExpression(Resolver& rv,
+                                           const AstNode* astForErr,
+                                           const AstNode* iterand,
+                                           const QualifiedType& leaderYieldType,
+                                           int mask);
 
 Resolver::~Resolver() {
   if (didPushFrame) {
@@ -2129,7 +2139,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
     return;
   }
 
-  const TupleType* rhsT = rhsType.type()->toTupleType();
+  const TupleType* rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
   std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
@@ -3786,71 +3796,79 @@ static void getVarLikeOrTupleTypeInit(const AstNode* ast,
 bool Resolver::enter(const MultiDecl* decl) {
   enterScope(decl);
 
-  // Establish the type or init expressions within
-  // by visiting those nodes
-  for (auto d : decl->decls()) {
-    enterScope(d);
-
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
-
-    if (typeExpr != nullptr) {
-      typeExpr->traverse(*this);
-    }
-    if (initExpr != nullptr) {
-      initExpr->traverse(*this);
-    }
-
-    exitScope(d);
-  }
-
+  // Traversal is done in exit
   return false;
 }
+
 void Resolver::exit(const MultiDecl* decl) {
-  if (scopeResolveOnly)
-    return;
+  // Move through decls in order, propagating type backwards each time one with
+  // a type or init is encountered.
+  // This effectively splits the decls into groups that share a type/init.
+  auto it = decl->decls().begin();
+  auto groupBegin = it;
+  const AstNode* curTypeExpr = nullptr;
+  const AstNode* curInitExpr = nullptr;
+  while (it != decl->decls().end()) {
+    const Decl* individualDecl = *it;
 
-  // Visit the named decls in reverse order
-  // setting the type/init.
-  auto begin = decl->declOrComments().begin();
-  auto it = decl->declOrComments().end();
-  const Type* lastType = nullptr;
-  while (it != begin) {
-    --it;
+    // Resolve type and init expressions if present.
+    getVarLikeOrTupleTypeInit(individualDecl, curTypeExpr, curInitExpr);
+    if (curTypeExpr != nullptr) {
+      curTypeExpr->traverse(*this);
+    }
+    if (curInitExpr != nullptr) {
+      curInitExpr->traverse(*this);
+    }
 
-    auto d = it->toDecl();
-    const AstNode* typeExpr = nullptr;
-    const AstNode* initExpr = nullptr;
-    getVarLikeOrTupleTypeInit(d, typeExpr, initExpr);
+    if (!scopeResolveOnly && (curTypeExpr || curInitExpr)) {
+      // Decl with type/init encountered, resolve and propagate the type info
+      // backwards through its group.
+      auto groupEnd = std::next(it);
+      auto groupIt = groupEnd;
+      const Type* lastType = nullptr;
+      while (groupIt != groupBegin) {
+        const Decl* d = *(--groupIt);
 
-    // if it has neither init nor type, use the type from the
-    // variable to the right.
-    // e.g., in
-    //    var a, b: int
-    // a is of type int
-    const Type* t = nullptr;
-    if (typeExpr == nullptr && initExpr == nullptr) {
-      if (lastType == nullptr) {
-        // this could be split init
-        t = UnknownType::get(context);
-      } else {
-        t = lastType;
+        // Skip extracting type/init if we're on the last decl in the group
+        // (first inner loop iteration), as we've already just done so in the
+        // current iteration of the outer loop.
+        // Take null lastType to mean we're on the first inner iteration.
+        if (lastType) getVarLikeOrTupleTypeInit(d, curTypeExpr, curInitExpr);
+
+        // if it has neither init nor type, use the type from the
+        // variable to the right.
+        // e.g., in
+        //    var a, b: int
+        // a is of type int
+        const Type* t = nullptr;
+        if (curTypeExpr == nullptr && curInitExpr == nullptr) {
+          if (lastType == nullptr) {
+            // this could be split init
+            t = UnknownType::get(context);
+          } else {
+            t = lastType;
+          }
+        }
+
+        // for the functions called in these conditionals:
+        //  * if t is nullptr, just resolve it like usual
+        //  * update the type of d in byPostorder
+        if (auto v = d->toVarLikeDecl()) {
+          resolveNamedDecl(v, t);
+        } else if (auto td = d->toTupleDecl()) {
+          resolveTupleDecl(td, t);
+        }
+
+        // update lastType
+        ResolvedExpression& result = byPostorder.byAst(d);
+        lastType = result.type().type();
       }
+
+      // Advance to beginning of next group
+      groupBegin = groupEnd;
     }
 
-    // for the functions called in these conditionals:
-    //  * if t is nullptr, just resolve it like usual
-    //  * update the type of d in byPostorder
-    if (auto v = d->toVarLikeDecl()) {
-      resolveNamedDecl(v, t);
-    } else if (auto td = d->toTupleDecl()) {
-      resolveTupleDecl(td, t);
-    }
-
-    // update lastType
-    ResolvedExpression& result = byPostorder.byAst(d);
-    lastType = result.type().type();
+    ++it;
   }
 
   exitScope(decl);
@@ -4877,19 +4895,121 @@ void Resolver::exit(const New* node) {
   }
 }
 
+struct IterandComponent {
+ public:
+  QualifiedType iterandQt;
+  const AstNode* astForErr;
+  const AstNode* iterand;
+
+  const IteratorType* iteratingOver;
+
+  IterandComponent(Resolver& rv,
+                   const AstNode* astForErr,
+                   const AstNode* iterand)
+    : astForErr(astForErr), iterand(iterand) {
+    auto& iterandRe = rv.byPostorder.byAst(iterand);
+    this->iterandQt = iterandRe.type();
+    if (!this->iterandQt.isUnknownOrErroneous()) {
+      this->iteratingOver = this->iterandQt.type()->toIteratorType();
+    } else {
+      // The thing-to-be-iterated is not an iterator, but it might be iterable
+      // using its 'these()' method. Don't resolve it now, since we haven't
+      // decided on which overloads we need; resolveIterTypeWithTag will do that
+      // on finding that toIterate is null.
+
+      this->iteratingOver = nullptr;
+    }
+  }
+};
+
+using IteratorFailures = std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>>;
+
+// If index is nonzero, notes the given failure are a cause for a zippered
+// failure. Otherwise, notes it as a top-level failure.
+static void
+noteTheseResolutionFailure(Resolver& rv,
+                           IteratorFailures& failures,
+                           Function::IteratorKind kind,
+                           int index,
+                           const QualifiedType& receiver,
+                           TheseResolutionResult&& result) {
+  if (rv.scopeResolveOnly) {
+    return;
+  }
+
+  if (index != -1) {
+    auto ownedResult = std::make_unique<TheseResolutionResult>(std::move(result));
+    auto zipperedTheseResult =
+      TheseResolutionResult::failure(std::move(ownedResult), index, receiver);
+    failures.push_back({ kind, std::move(zipperedTheseResult) });
+  } else {
+    failures.push_back({ kind, std::move(result) });
+  }
+}
+
+static bool
+resolveIterDetailsForZipperedArgs(Resolver& rv,
+                                  IterDetails& outIterDetails,
+                                  const std::vector<IterandComponent>& ics,
+                                  Function::IteratorKind iterKind,
+                                  const QualifiedType& leaderYieldType,
+                                  IteratorFailures* storeFailures) {
+  bool succeededAll = true;
+  std::vector<QualifiedType> idxTypes;
+  auto kind = QualifiedType::CONST_VAR;
+  int index = 0;
+  for (auto& ic : ics) {
+    auto& pieces = outIterDetails.piecesForIterKind(iterKind);
+    auto idxType = resolveIterTypeWithTag(rv, pieces,
+                                          ic.iteratingOver, ic.astForErr,
+                                          ic.iterand, iterKind,
+                                          leaderYieldType);
+    if (idxType.isUnknownOrErroneous()) {
+      // Note the first failed resolution
+      if (succeededAll && storeFailures) {
+        noteTheseResolutionFailure(rv, *storeFailures, iterKind, index,
+                                   ic.iterandQt,
+                                   std::move(pieces.resolutionResult));
+      }
+      succeededAll = false;
+    } else if (!idxType.isConst()) {
+      kind = QualifiedType::VAR;
+    }
+
+    idxTypes.push_back(std::move(idxType));
+    index++;
+  }
+
+  if (succeededAll) {
+    CHPL_ASSERT(idxTypes.size() == ics.size());
+    if (ics.size() > 1) {
+      auto tupleType =
+        TupleType::getQualifiedTuple(rv.context, std::move(idxTypes));
+      outIterDetails.idxType = QualifiedType(kind, tupleType);
+    } else {
+      outIterDetails.idxType = idxTypes[0];
+    }
+  }
+
+  return succeededAll;
+}
+
 // This helper resolves by priority order as described in 'IterDetails'.
 static IterDetails
 resolveIterDetailsInPriorityOrder(Resolver& rv,
-                                  const IteratorType* iteratingOver,
-                                  const AstNode* astForErr,
-                                  const AstNode* iterand,
-                                  const QualifiedType& leaderYieldType,
-                                  int mask) {
+                                  const std::vector<IterandComponent>& ics,
+                                  int mask,
+                                  IteratorFailures* storeFailures = nullptr) {
+  CHPL_ASSERT(ics.size() > 0);
+
   IterDetails ret;
-  bool computedLeaderYieldType = false;
+
   if (mask & IterDetails::STANDALONE) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, iteratingOver, astForErr,
-                                         iterand, Function::STANDALONE, {});
+    CHPL_ASSERT(ics.size() == 1);
+    auto& ic = ics[0];
+    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone,
+                                         ic.iteratingOver, ic.astForErr,
+                                         ic.iterand, Function::STANDALONE, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -4897,34 +5017,27 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   }
 
   if (mask & IterDetails::LEADER_FOLLOWER) {
-    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, iteratingOver, astForErr,
-                                                 iterand, Function::LEADER,
+    auto& ic = ics[0];
+    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader,
+                                                 ic.iteratingOver, ic.astForErr,
+                                                 ic.iterand, Function::LEADER,
                                                  {});
-    computedLeaderYieldType = true;
-  } else if (mask & IterDetails::FOLLOWER) {
-    ret.leaderYieldType = leaderYieldType;
   }
 
-  if (mask & IterDetails::LEADER_FOLLOWER ||
-      mask & IterDetails::FOLLOWER) {
-    if (!ret.leaderYieldType.isUnknownOrErroneous()) {
-      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, iteratingOver, astForErr,
-                                           iterand, Function::FOLLOWER,
-                                           ret.leaderYieldType);
-      if (!ret.idxType.isUnknownOrErroneous()) {
-        ret.succeededAt = computedLeaderYieldType
-            ? IterDetails::LEADER_FOLLOWER
-            : IterDetails::FOLLOWER;
-        return ret;
-      }
+  if (mask & IterDetails::LEADER_FOLLOWER &&
+      !ret.leaderYieldType.isUnknownOrErroneous()) {
+    if (resolveIterDetailsForZipperedArgs(rv, ret, ics, Function::FOLLOWER,
+                                          ret.leaderYieldType, storeFailures)) {
+      ret.succeededAt = IterDetails::LEADER_FOLLOWER;
+      return ret;
     }
   }
 
   if (mask & IterDetails::SERIAL) {
-    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, iteratingOver, astForErr,
-                                         iterand, Function::SERIAL, {});
-    if (!ret.idxType.isUnknownOrErroneous()) {
+    if (resolveIterDetailsForZipperedArgs(rv, ret, ics, Function::SERIAL,
+                                          QualifiedType(), storeFailures)) {
       ret.succeededAt = IterDetails::SERIAL;
+      return ret;
     }
   }
 
@@ -4953,32 +5066,28 @@ issueErrorForFailedIterDetails(Context* context,
                          iterandType, std::move(failures));
 }
 
-static IterDetails resolveIterDetails(Resolver& rv,
-                                      const AstNode* astForErr,
-                                      const AstNode* iterand,
-                                      const QualifiedType& leaderYieldType,
-                                      int mask,
-                                      bool emitError) {
+static IterDetails resolveNonZipExpression(Resolver& rv,
+                                           const AstNode* astForErr,
+                                           const AstNode* iterand,
+                                           const QualifiedType& leaderYieldType,
+                                           int mask) {
   if (rv.scopeResolveOnly) {
     return {};
   }
 
   auto iterandRe = rv.byPostorder.byAst(iterand);
-  const IteratorType* iteratingOver = nullptr;
-  if (!iterandRe.type().isUnknownOrErroneous()) {
-    iteratingOver = iterandRe.type().type()->toIteratorType();
-  } else {
-    // The thing-to-be-iterated is not an iterator, but it might be iterable
-    // using its 'these()' method. Don't resolve it now, since we haven't
-    // decided on which overloads we need; resolveIterTypeWithTag will do that
-    // on finding that toIterate is null.
+
+  if (iterandRe.type().isUnknownOrErroneous()) {
+    // The iterand is unknown, no work to do.
+    return {};
   }
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
-  auto ret = resolveIterDetailsInPriorityOrder(rv, iteratingOver,
-                                               astForErr, iterand,
-                                               leaderYieldType,
-                                               mask);
+  // We are outside of a zippering contex, so call with only a single IterandComponent.
+  std::vector<IterandComponent> ics = {
+    IterandComponent(rv, astForErr, iterand)
+  };
+  auto ret = resolveIterDetailsInPriorityOrder(rv, ics, mask);
 
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
@@ -4986,11 +5095,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
   if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
-      if (emitError) {
-        ret.idxType = issueErrorForFailedIterDetails(rv.context, ret, astForErr, iterand, iterandRE.type());
-      } else {
-        ret.idxType = QualifiedType();
-      }
+      ret.idxType = issueErrorForFailedIterDetails(rv.context, ret, astForErr, iterand, iterandRE.type());
     }
   }
 
@@ -5058,11 +5163,11 @@ resolveIterTypeWithTag(Resolver& rv,
   // Inspect the resolution result to determine what should be done next.
   auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto iterandType = iterandRE.type();
+  CHPL_ASSERT(!iterandType.isUnknownOrErroneous());
 
   auto& MSC = iterandRE.mostSpecific();
   auto fn = MSC.only() ? MSC.only().fn() : nullptr;
 
-  bool wasIterandTypeResolved = !iterandType.isUnknownOrErroneous();
   // For iterator forwarding, we can write serial 'for' loops over tagged iterator calls
   bool treatAsSerial = fn &&
     (fn->isSerialIterator(context) || isExplicitlyTaggedIteratorCall(context, iterandRE, fn));
@@ -5077,7 +5182,7 @@ resolveIterTypeWithTag(Resolver& rv,
     (iterandType.type() && iterandType.type()->isLoopExprIteratorType() && needSerial);
 
   // The iterand was a call to a serial iterator, and we need a serial iterator.
-  if (wasMatchingIterResolved && wasIterandTypeResolved) {
+  if (wasMatchingIterResolved) {
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
                 iterandType.type() == iteratingOver &&
                 "an iterator was resolved, expecting an iterator type");
@@ -5085,10 +5190,6 @@ resolveIterTypeWithTag(Resolver& rv,
     // so just create a mock one here.
     outIterPieces = { iteratingOver, TheseResolutionResult::success(iterandType) };
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
-
-  // There's nothing to do in this case, so error out.
-  } else if (needSerial && !wasIterandTypeResolved) {
-    return error;
   }
 
   // The iterand is either not an iterator (but could have a 'these' method)
@@ -5170,60 +5271,37 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   return false;
 }
 
-// If index is nonzero, notes the given failure are a cause for a zippered
-// failure. Otherwise, notes it as a top-level failure.
-static void noteTheseResolutionFailure(
-    Resolver& rv,
-    std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>>& failures,
-    Function::IteratorKind kind,
-    int index,
-    const QualifiedType& receiver,
-    TheseResolutionResult&& result) {
-  if (rv.scopeResolveOnly) {
-    return;
-  }
-
-  if (index != -1) {
-    auto ownedResult = std::make_unique<TheseResolutionResult>(std::move(result));
-    auto zipperedTheseResult =
-      TheseResolutionResult::failure(std::move(ownedResult), index, receiver);
-    failures.push_back({ kind, std::move(zipperedTheseResult) });
-  } else {
-    failures.push_back({ kind, std::move(result) });
-  }
-}
-
 static QualifiedType
 resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
+  // Failures to find various iteration strategies (serial, follower) go here.
+  IteratorFailures failures;
+
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+  bool singletonZip = zip->numActuals() == 1;
   QualifiedType ret;
 
-  // We build up tuple element types by resolving all the zip actuals.
-  std::vector<QualifiedType> eltTypes;
-
-  // We determine the follower policy by resolving the leader actual.
-  auto followerPolicy = IterDetails::NONE;
-  QualifiedType leaderYieldType;
-
-  std::vector<std::tuple<Function::IteratorKind, TheseResolutionResult>> failures;
-
-  const auto skippingAllIterands = -1;
-
-  // Get the leader actual.
+  // Compute the mask for this zip expression
   if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
-    auto iterandQt = rv.byPostorder.byAst(leader).type();
+    auto leaderQt = rv.byPostorder.byAst(leader).type();
 
-    // Set the policy mask for the leader based on the loop properties.
+    if (leaderQt.isUnknownOrErroneous()) {
+      return QualifiedType();
+    }
+
+    const auto skippingAllIterands = -1;
     int m = IterDetails::NONE;
+    if (singletonZip) {
+      m |= IterDetails::STANDALONE;
+    }
     if (loopPrefersParallel) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
       // Note that we will not attempt a leader/follower iterator.
       noteTheseResolutionFailure(rv, failures, Function::LEADER,
                                  skippingAllIterands,
-                                 rv.byPostorder.byAst(leader).type(),
+                                 leaderQt,
                                  TheseResolutionResult());
     }
 
@@ -5232,103 +5310,35 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     } else {
       // Note that we will not attempt a serial iterator for any iterand.
       noteTheseResolutionFailure(rv, failures, Function::SERIAL, skippingAllIterands,
-                                 iterandQt, TheseResolutionResult());
+                                 leaderQt, TheseResolutionResult());
     }
 
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    // Resolve the leader iterator.
-    auto dt = resolveIterDetails(rv, leader, leader, {}, m, /* emitError */ false);
+    // Compute iterator components to resolve as part of zippering.
+    std::vector<IterandComponent> ics = {
+      IterandComponent(rv, leader, leader)
+    };
+    for (int i = 1; i < zip->numActuals(); i++) {
+      auto follower = zip->actual(i);
+      ics.emplace_back(rv, follower, follower);
 
-    eltTypes.push_back(dt.idxType);
-
-    // Configure what followers should do using the iterator details.
-    if (dt.succeededAt == IterDetails::LEADER_FOLLOWER) {
-      followerPolicy = IterDetails::FOLLOWER;
-      leaderYieldType = dt.leaderYieldType;
-
-      // Note that we won't be attempting a serial iterator, even thought
-      // it was supported.
-      if (!loopRequiresParallel) {
-        auto result =TheseResolutionResult::failure(
-            TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
-            iterandQt);
-        noteTheseResolutionFailure(rv, failures, Function::SERIAL,
-                                   skippingAllIterands,
-                                   iterandQt, std::move(result));
+      if (ics.back().iterandQt.isUnknownOrErroneous()) {
+        return QualifiedType();
       }
-    } else if (dt.succeededAt == IterDetails::SERIAL) {
-      followerPolicy = IterDetails::SERIAL;
+    }
 
-      // We didn't find a leader iterator, so note that as a failure in case
-      // we fail to find a serial iterator for other elements in the zip.
-      noteTheseResolutionFailure(rv, failures, Function::LEADER, 0, iterandQt,
-                                 std::move(dt.leader.resolutionResult));
-    } else {
-      ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
-
-      // If we tried to resolve the parallel iterator, note that we failed.
-      if (loopPrefersParallel) {
-        noteTheseResolutionFailure(rv, failures, Function::LEADER, 0, iterandQt,
-                                   std::move(dt.leader.resolutionResult));
-      }
-
-      // If we tried to resolve the serial iterator, note that we failed.
-      if (!loopRequiresParallel) {
-        noteTheseResolutionFailure(rv, failures, Function::SERIAL, 0, iterandQt,
-                                   std::move(dt.serial.resolutionResult));
-      }
+    auto result = resolveIterDetailsInPriorityOrder(rv, ics, m, &failures);
+    if (result.succeededAt != IterDetails::NONE) {
+      ret = result.idxType;
     }
   }
 
-  // Resolve the follower iterator or serial iterator for all followers.
-  // It is possible for the follower policy to be 'NONE', in which case
-  // no iterators will be resolved, but the follower iterands will be
-  // resolved.
-  bool failedOthers = false;
-  for (int i = 1; i < zip->numActuals(); i++) {
-    auto actual = zip->actual(i);
-    auto dt = resolveIterDetails(rv, actual, actual, leaderYieldType,
-                                 followerPolicy, /* emitError */ false);
-    auto& qt = dt.idxType;
-    if (qt.isUnknownOrErroneous() && followerPolicy != IterDetails::NONE) {
-      bool isSerial = followerPolicy == IterDetails::SERIAL;
 
-      if (!failedOthers) {
-        noteTheseResolutionFailure(rv, failures,
-                                   isSerial ? Function::SERIAL : Function::FOLLOWER,
-                                   i, rv.byPostorder.byAst(actual).type(),
-                                   std::move(isSerial ?
-                                             dt.serial.resolutionResult :
-                                             dt.follower.resolutionResult));
-      }
-
-      failedOthers = true;
-    }
-
-    eltTypes.push_back(qt);
-  }
-
-  CHPL_ASSERT(((int) eltTypes.size()) == zip->numActuals());
-
-  auto kind = QualifiedType::CONST_VAR;
-  for (auto& et : eltTypes) {
-    if (!et.isUnknownOrErroneous() && !et.isConst()) {
-      kind = QualifiedType::VAR;
-      break;
-    }
-  }
-
-  if (!rv.scopeResolveOnly && (ret.isErroneousType() || failedOthers)) {
+  if (!rv.scopeResolveOnly && ret.isUnknownOrErroneous()) {
     // Emit a NonIterable error.
     ret = CHPL_TYPE_ERROR(context, NonIterable, loop, zip,
                           QualifiedType(), std::move(failures));
-  }
-
-  if (!ret.isErroneousType()) {
-    // This 'TupleType' builder preserves references for index types.
-    auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-    ret = { kind, type };
   }
 
   auto& reZip = rv.byPostorder.byAst(zip);
@@ -5503,7 +5513,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!loopRequiresParallel) m |= IterDetails::SERIAL;
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    auto dt = resolveIterDetails(*this, loop, iterand, {}, m, /* emitError */ true);
+    auto dt = resolveNonZipExpression(*this, loop, iterand, {}, m);
     idxType = dt.idxType;
   }
 
@@ -5511,7 +5521,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   if (const Decl* idx = loop->index()) {
     ResolvedExpression& re = byPostorder.byAst(idx);
-    re.setType(idxType);
+
+    if (idx->isTupleDecl() && !scopeResolveOnly) {
+      resolveTupleUnpackDecl(idx->toTupleDecl(), idxType);
+    } else {
+      re.setType(idxType);
+    }
   }
 
   if (auto with = loop->withClause()) {
@@ -5742,8 +5757,8 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* op,
                                          const AstNode* iterand) {
   iterand->traverse(resolver);
-  auto dt = resolveIterDetails(resolver, reduceOrScan, iterand, {},
-                               IterDetails::SERIAL, /* emitError */ true);
+  auto dt = resolveNonZipExpression(resolver, reduceOrScan, iterand, {},
+                                    IterDetails::SERIAL);
   auto idxType = dt.idxType;
   if (idxType.isUnknown()) return QualifiedType();
   auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, idxType);

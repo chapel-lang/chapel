@@ -24,6 +24,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/framework/CommentID.h"
 
+#include <iterator>
 #include <string>
 
 namespace chpl {
@@ -110,7 +111,7 @@ class Comment final : public AstNode {
 template<typename CastToType>
 class AstListNoCommentsIterator {
  public:
-  using iterator_category = std::forward_iterator_tag;
+  using iterator_category = std::bidirectional_iterator_tag;
   using value_type = const CastToType*;
   using difference_type = AstList::const_iterator::difference_type;
   using pointer = const CastToType**;
@@ -118,6 +119,7 @@ class AstListNoCommentsIterator {
 
  private:
   AstList::const_iterator it;
+  AstList::const_iterator begin;
   AstList::const_iterator end;
 
  public:
@@ -126,10 +128,12 @@ class AstListNoCommentsIterator {
   AstListNoCommentsIterator() = default;
   explicit AstListNoCommentsIterator(AstList::const_iterator start,
                                      AstList::const_iterator end)
-    : it(start), end(end) {
+    : it(start), begin(start), end(end) {
 
+    // Advance beginning to the first non-comment
     while (this->it != this->end && this->it->get()->isComment()) {
       ++this->it;
+      ++this->begin;
     }
   }
   ~AstListNoCommentsIterator() = default;
@@ -164,6 +168,21 @@ class AstListNoCommentsIterator {
     do {
       ++this->it;
     } while (this->it != this->end && this->it->get()->isComment());
+    return tmp;
+  }
+
+  // needs to support predecrement and postdecrement
+  AstListNoCommentsIterator<CastToType>& operator--() {
+    do {
+      --this->it;
+    } while (this->it != this->begin && this->it->get()->isComment());
+    return *this;
+  }
+  AstListNoCommentsIterator<CastToType> operator--(int) {
+    AstListNoCommentsIterator<CastToType> tmp = *this;
+    do {
+      --this->it;
+    } while (this->it != this->begin && this->it->get()->isComment());
     return tmp;
   }
 

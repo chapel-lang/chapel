@@ -1152,9 +1152,9 @@ static void printTheseResults(
       bool isSerial = iterKind == uast::Function::SERIAL;
       wr.message(start, "this loop does not support ", isSerial ? "serial" : "parallel", " iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE) {
-      wr.message(start, "loop expressions do not have standalone iterators", end);
+      wr.message(start, "loop expressions with more than one zippered iterand do not have standalone iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE) {
-      wr.message(start, "promoted expressions do not have standalone iterators", end);
+      wr.message(start, "promoted expressions with more than one zippered iterand do not have standalone iterators", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_SERIAL_LOOP_EXPR) {
       wr.message(start, "the loop expression iterated over is explicitly serial", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG) {
@@ -1171,9 +1171,6 @@ static void printTheseResults(
                         currentTr->zipperedFailureIndex() + 1,
                         ", ", currentTr->zipperedFailure()->iterandType(),
                         ") does not support a ", iterKindStr, " iterator", end);
-    } else if (reason == TheseResolutionResult::THESE_FAIL_FOUND_DIFFERENT_ITERATOR) {
-      wr.message(start, "the first zippered iterand had a parallel follower, "
-                        "which is prioritized over serial iteration", end);
     } else if (reason == TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH) {
       wr.message(start, "the claimed scalar type for promotion does not match the type yielded from the iterator", end);
     }

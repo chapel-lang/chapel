@@ -2051,12 +2051,6 @@ struct TheseResolutionResult {
        to resolve. In this case, the zipperedFailure_ and zipperedFailureIndex_
        fields are set. */
     THESE_FAIL_ZIPPERED_ARG_FAILED,
-    /* We started resolving a zippered-like iterator using (e.g.), a leader
-       iterator. In some cases, this means we "commit" to the leader/follower
-       path, so we didn't attempt to use a serial iterator.
-
-       TODO: this doesn't match production. */
-    THESE_FAIL_FOUND_DIFFERENT_ITERATOR,
     /* Mismatch between the claimed promotion type and the type yielded by the
        iterator. */
     THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH,

@@ -247,9 +247,6 @@ static void test8() {
 }
 
 static void test9() {
-  // Disabled: promotion doesn't have standalone iterators at this time
-  return;
-
   // Promotion respects parallelism allowed by loops (invoking parallel iterator)
   runProgram(
       { "proc foo(x: int) do return true;",

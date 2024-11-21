@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+FILEDIR=$(cd "$(dirname $0)" ; pwd)
+
+chpl_home=$($1 --print-chpl-home)
+chpl_python=$($chpl_home/util/config/find-python.sh)
+
+parse_docs=./parse_docs.py
+$chpl_python $parse_docs $chpl_home/modules/packages/Python.chpl --output-dir $FILEDIR

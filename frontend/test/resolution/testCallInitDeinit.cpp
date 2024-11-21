@@ -1707,6 +1707,120 @@ static void test22() {
       });
 }
 
+static void test23a() {
+  // Ensure the copy-elided in formal doesn't error for its final use.
+  testActions("test23a",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23b() {
+  // Ensure the copy-elided in formal doesn't error for multiple uses in the
+  // same call.
+  testActions("test23b",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x, x);
+        }
+
+        proc doSomethingElse(in x, in y) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23c() {
+  // Ensure the copy-elided in formal doesn't error for uses across multiple
+  // calls in the same statement.
+  testActions("test23c",
+      R"""(
+      module M {
+        // necessary to resolve + operator
+        operator +(a: int, b: int) do return __primitive("+", a, b);
+
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x) + doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23d() {
+  // Ensure the copy-elided in formal doesn't error when used in nested function
+  // calls.
+  testActions("test23d",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc returnConstRef(const ref x) {
+          return x;
+        }
+
+        proc returnIn(in x) {
+          return x;
+        }
+
+        proc doSomething(in x) {
+          return doSomethingElse(returnConstRef(returnIn(x)));
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1797,6 +1911,11 @@ int main() {
   test21();
 
   test22();
+
+  test23a();
+  test23b();
+  test23c();
+  test23d();
 
   return 0;
 }

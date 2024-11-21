@@ -1617,9 +1617,11 @@ struct fi_info* findProvInList(struct fi_info* info,
 
   // Set the maximum message size if specified
 
-  best->ep_attr->max_msg_size =
-    chpl_env_rt_get_int("COMM_OFI_MAX_MSG_SIZE",
-                        best->ep_attr->max_msg_size);
+  if (best) {
+    best->ep_attr->max_msg_size =
+      chpl_env_rt_get_int("COMM_OFI_MAX_MSG_SIZE",
+                          best->ep_attr->max_msg_size);
+  }
 
   return (best == NULL) ? NULL : fi_dupinfo(best);
 }
