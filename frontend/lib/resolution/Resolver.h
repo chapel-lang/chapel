@@ -81,6 +81,7 @@ struct Resolver {
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
   const uast::AstNode* curStmt = nullptr;
+  const uast::AstNode* curInheritanceExpr = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
@@ -266,6 +267,7 @@ struct Resolver {
   static Resolver
   createForParentClass(Context* context,
                        const uast::AggregateDecl* decl,
+                       const uast::AstNode* inheritExpr,
                        const SubstitutionsMap& substitutions,
                        const PoiScope* poiScope,
                        ResolutionResultByPostorderID& byPostorder);
@@ -274,6 +276,7 @@ struct Resolver {
   static Resolver
   createForParentClassScopeResolve(Context* context,
                                    const uast::AggregateDecl* decl,
+                                   const uast::AstNode* inheritExpr,
                                    ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a param for loop body

@@ -87,7 +87,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =
-        Resolver::createForParentClass(context, c,
+        Resolver::createForParentClass(context, c, inheritExpr,
                                        substitutions,
                                        poiScope, r);
       inheritExpr->traverse(visitor);

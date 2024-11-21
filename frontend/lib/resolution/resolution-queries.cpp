@@ -2892,7 +2892,7 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   if (ad) {
     // These are children, but are skipped by the is*Decl conditions below.
     for (auto inheritExpr : ad->inheritExprs()) {
-      auto res = Resolver::createForScopeResolvingField(context, ad, inheritExpr, result);
+      auto res = Resolver::createForParentClassScopeResolve(context, ad, inheritExpr, result);
       inheritExpr->traverse(res);
     }
 
