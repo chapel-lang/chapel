@@ -1395,7 +1395,7 @@ module Python {
 
     extern var Py_False: PyObjectPtr;
     extern var Py_True: PyObjectPtr;
-    extern "chpl_Py_None" var Py_None: PyObjectPtr;
+    extern "chpl_Py_None" var Py_None: c_ptrConst(PyObject);
 
     /*
       Sequences
