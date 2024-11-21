@@ -1400,11 +1400,20 @@ module Python {
     extern proc PyFloat_AsDouble(obj: PyObjectPtr): real(64);
     extern proc PyBool_FromLong(v: c_long): PyObjectPtr;
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
-    extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptr(c_char);
+    extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
 
-    extern var Py_False: PyObjectPtr;
-    extern var Py_True: PyObjectPtr;
-    extern "chpl_Py_None" var Py_None: PyObjectPtr;
+    proc Py_None: PyObjectPtr {
+      extern proc chpl_Py_None(): PyObjectPtr;
+      return chpl_Py_None();
+    }
+    proc Py_True: PyObjectPtr {
+      extern proc chpl_Py_True(): PyObjectPtr;
+      return chpl_Py_True();
+    }
+    proc Py_False: PyObjectPtr {
+      extern proc chpl_Py_False(): PyObjectPtr;
+      return chpl_Py_False();
+    }
 
     /*
       Sequences

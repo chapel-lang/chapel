@@ -57,6 +57,8 @@ static inline void chpl_Py_DECREF(PyObject* o) { Py_DECREF(o); }
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 
-const PyObject* chpl_Py_None = Py_None;
+static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
+static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
+static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
 
 #endif
