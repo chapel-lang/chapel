@@ -8524,7 +8524,7 @@ yyreduce:
   case 363: /* fn_decl_receiver_expr: TLP expr TRP  */
 #line 2561 "chpl.ypp"
   {
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-1].expr), LOC((yyloc)));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-1].expr), LOC((yyloc)));
     (yyval.expr) = (yyvsp[-1].expr);
   }
 #line 8531 "bison-chpl-lib.cpp"
@@ -9940,7 +9940,7 @@ yyreduce:
   case 619: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP  */
 #line 3348 "chpl.ypp"
   {
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-4].expr), LOC2((yylsp[-5]), (yylsp[-3])));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-4].expr), LOC2((yylsp[-5]), (yylsp[-3])));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
@@ -9957,7 +9957,7 @@ yyreduce:
   case 620: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP  */
 #line 3361 "chpl.ypp"
   {
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-4].expr), LOC2((yylsp[-5]), (yylsp[-3])));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-4].expr), LOC2((yylsp[-5]), (yylsp[-3])));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals((yyvsp[-1].maybeNamedActualList), actuals, actualNames);
@@ -9974,7 +9974,7 @@ yyreduce:
   case 621: /* new_expr: TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
 #line 3374 "chpl.ypp"
   {
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-5].expr), LOC2((yylsp[-6]), (yylsp[-4])));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-5].expr), LOC2((yylsp[-6]), (yylsp[-4])));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals((yyvsp[-2].maybeNamedActualList), actuals, actualNames);
@@ -9992,7 +9992,7 @@ yyreduce:
   case 622: /* new_expr: TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION  */
 #line 3388 "chpl.ypp"
   {
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-5].expr), LOC2((yylsp[-6]), (yylsp[-4])));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-5].expr), LOC2((yylsp[-6]), (yylsp[-4])));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals((yyvsp[-2].maybeNamedActualList), actuals, actualNames);
@@ -10237,7 +10237,7 @@ yyreduce:
 #line 3597 "chpl.ypp"
   {
     // Use 'tryNote' here in case an expression like ((x)) comes along.
-    BUILDER->tryNoteExprParenthLocation((yyvsp[-1].expr), LOC((yyloc)));
+    BUILDER->tryNoteExprParenLocation((yyvsp[-1].expr), LOC((yyloc)));
     (yyval.expr) = (yyvsp[-1].expr);
   }
 #line 10244 "bison-chpl-lib.cpp"

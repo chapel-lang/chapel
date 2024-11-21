@@ -1865,7 +1865,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
-    builder->copyExprParenthLocation(e, var.get());
+    builder->copyExprParenLocation(e, var.get());
     builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
     // we don't want a new allocation of an AST node to have the same pointer
@@ -1895,8 +1895,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                std::move(elements),
                                /*typeExpression*/ nullptr,
                                /*initExpression*/ nullptr);
-    builder->copyExprParenthLocation(e, td.get());
-    builder->deleteExprParenthLocation(e);
+    builder->copyExprParenLocation(e, td.get());
+    builder->deleteExprParenLocation(e);
     // See the comment above for why we delete the location of 'e'.
     return td;
   } else {
@@ -1988,8 +1988,8 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
     auto newExpr = New::build(builder, convertLocation(location),
                               toOwned(calledExpr),
                               management);
-    builder->copyExprParenthLocation(fnCall, newExpr.get());
-    builder->deleteExprParenthLocation(fnCall);
+    builder->copyExprParenLocation(fnCall, newExpr.get());
+    builder->deleteExprParenLocation(fnCall);
     child = std::move(newExpr);
 
     // Extend the location of the call to the left and patch the location.
