@@ -73,7 +73,7 @@ def get_exclusive_nodes():
                  '--noheader',
                  '--responding',
                  '--format="NO;%D;%N;%N;None"',
-                 '--states=DRAINING']
+                 '--states=DRAIN']
     sinfo_out = run_command_wrapper(sinfo_cmd)
 
     num_exclusive_nodes = 0
