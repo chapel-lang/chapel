@@ -69,7 +69,8 @@
      PYTHON_LDVERSION=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LDVERSION'))")
 
      chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
-          -L$PYTHON_LIB_DIR -lpython$PYTHON_LDVERSION ...Chapel source files...
+          -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR \
+          -lpython$PYTHON_LDVERSION ...Chapel source files...
 
   Parallel Execution
   ------------------
