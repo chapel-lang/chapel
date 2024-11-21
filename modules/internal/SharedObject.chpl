@@ -442,7 +442,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
 
   // This is a workaround
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _shared) {
+  proc chpl__autoDestroy(const ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
 
