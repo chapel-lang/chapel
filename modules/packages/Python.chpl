@@ -1391,7 +1391,7 @@ module Python {
     extern proc PyFloat_AsDouble(obj: PyObjectPtr): real(64);
     extern proc PyBool_FromLong(v: c_long): PyObjectPtr;
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
-    extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptr(c_char);
+    extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
 
     extern var Py_False: PyObjectPtr;
     extern var Py_True: PyObjectPtr;
