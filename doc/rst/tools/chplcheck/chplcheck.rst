@@ -144,7 +144,7 @@ names are disallowed. This setting could be adjusted as follows:
 ``--setting NoFuncNamed.Name="foo"``.
 
 These settings are local to a given rule. Settings can also be global, as long
-as at least 1 rule opts into using them. For example, custom rules could confirm
+as at least 1 rule opts in to using them. For example, custom rules could conform
 to the setting ``MyIgnoreList``, which could be set as
 ``--setting MyIgnoreList="foo,bar"``.
 
@@ -407,8 +407,8 @@ rule declares rule ``TabSize`` with a setting ``Size``:
        # ...logic to check tab size...
 
 
-Tbe setting is then accessed as a keyword argument to the rule function.
-If the setting is not provided, a default value of None is used. The setting is
+The setting is then accessed as a keyword argument to the rule function.
+If the setting is not provided, a default value of ``None`` is used. The setting is
 always provided as a string, if a different type is required (like an integer or
 a comma-separated-list) the rule author must write code to convert the types.
 
