@@ -122,7 +122,7 @@ PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
 // Because the ContextObject is essential to other pieces of the API (it's attached
 // to many other Chapel objects to save the user the work of threading through
 // a Context instance), we need to declare and define it here for the next
-// template (PythonClassWithObject) to use.
+// template (PythonClassWithContext) to use.
 //
 // Forward-declaring doesn't cut it because we need ContextObject::PythonType.
 
@@ -139,7 +139,7 @@ struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
 };
 
 template <typename Self, typename T>
-struct PythonClassWithObject : public PythonClass<Self, T> {
+struct PythonClassWithContext : public PythonClass<Self, T> {
   PyObject* contextObject;
 
   static void dealloc(Self* self) {

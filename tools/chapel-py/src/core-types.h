@@ -117,7 +117,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
 
   static PyTypeObject configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    PyTypeObject configuring = PythonClassWithObject<LocationObject, chpl::Location>::configurePythonType();
+    PyTypeObject configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType();
     configuring.tp_str = (reprfunc) str;
     configuring.tp_as_number = &location_as_number;
     configuring.tp_as_number->nb_subtract = (binaryfunc) subtract;
@@ -126,7 +126,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   }
 };
 
-struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resolution::Scope*> {
+struct ScopeObject : public PythonClassWithContext<ScopeObject, const chpl::resolution::Scope*> {
   static constexpr const char* QualifiedName = "chapel.Scope";
   static constexpr const char* Name = "Scope";
   static constexpr const char* DocStr = "A scope in the Chapel program, such as a block.";
@@ -134,7 +134,7 @@ struct ScopeObject : public PythonClassWithObject<ScopeObject, const chpl::resol
 
 using VisibleSymbol = std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>;
 
-struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*> {
+struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*> {
   static constexpr const char* QualifiedName = "chapel.AstNode";
   static constexpr const char* Name = "AstNode";
   static constexpr const char* DocStr = "The base type of Chapel AST nodes";
@@ -142,7 +142,7 @@ struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::u
   static PyObject* iter(AstNodeObject *self);
 
   static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithObject<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType();
+    PyTypeObject configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType();
     configuring.tp_iter = (getiterfunc) AstNodeObject::iter;
     configuring.tp_flags = Py_TPFLAGS_BASETYPE;
     return configuring;
@@ -151,7 +151,7 @@ struct AstNodeObject : public PythonClassWithObject<AstNodeObject, const chpl::u
 
 using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
-struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*> {
+struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*> {
   static constexpr const char* QualifiedName = "chapel.ChapelType";
   static constexpr const char* Name = "ChapelType";
   static constexpr const char* DocStr = "The base type of Chapel types";
@@ -159,14 +159,14 @@ struct ChapelTypeObject  : public PythonClassWithObject<ChapelTypeObject, const 
   static PyObject* str(ChapelTypeObject* self);
 
   static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithObject<ChapelTypeObject, const chpl::types::Type*>::configurePythonType();
+    PyTypeObject configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType();
     configuring.tp_str = (reprfunc) ChapelTypeObject::str;
     configuring.tp_flags = Py_TPFLAGS_BASETYPE;
     return configuring;
   }
 };
 
-struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types::Param*> {
+struct ParamObject : public PythonClassWithContext<ParamObject, const chpl::types::Param*> {
   static constexpr const char* QualifiedName = "chapel.Param";
   static constexpr const char* Name = "Param";
   static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
@@ -174,14 +174,14 @@ struct ParamObject : public PythonClassWithObject<ParamObject, const chpl::types
   static PyObject* str(ParamObject* self);
 
   static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithObject<ParamObject, const chpl::types::Param*>::configurePythonType();
+    PyTypeObject configuring = PythonClassWithContext<ParamObject, const chpl::types::Param*>::configurePythonType();
     configuring.tp_str = (reprfunc) ParamObject::str;
     configuring.tp_flags = Py_TPFLAGS_BASETYPE;
     return configuring;
   }
 };
 
-struct ResolvedExpressionObject : public PythonClassWithObject<ResolvedExpressionObject, const chpl::resolution::ResolvedExpression*> {
+struct ResolvedExpressionObject : public PythonClassWithContext<ResolvedExpressionObject, const chpl::resolution::ResolvedExpression*> {
   static constexpr const char* QualifiedName = "chapel.ResolvedExpression";
   static constexpr const char* Name = "ResolvedExpression";
   static constexpr const char* DocStr = "Container for type information about a particular AST node.";
@@ -194,7 +194,7 @@ struct MostSpecificCandidateAndPoiScope {
   const chpl::resolution::PoiScope* poiScope;
 };
 
-struct MostSpecificCandidateObject : public PythonClassWithObject<MostSpecificCandidateObject, MostSpecificCandidateAndPoiScope> {
+struct MostSpecificCandidateObject : public PythonClassWithContext<MostSpecificCandidateObject, MostSpecificCandidateAndPoiScope> {
   static constexpr const char* QualifiedName = "chapel.MostSpecificCandidate";
   static constexpr const char* Name = "MostSpecificCandidate";
   static constexpr const char* DocStr = "A candidate function returned from call resolution that represents the most specific overload matching the call.";
@@ -207,7 +207,7 @@ struct TypedSignatureAndPoiScope {
   const chpl::resolution::PoiScope* poiScope;
 };
 
-struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope> {
+struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope> {
   static constexpr const char* QualifiedName = "chapel.TypedSignature";
   static constexpr const char* Name = "TypedSignature";
   static constexpr const char* DocStr = "The signature of a particular function. Could include types gathered when instantiating the function";
@@ -230,7 +230,7 @@ struct TypedSignatureObject : public PythonClassWithObject<TypedSignatureObject,
 
   static PyTypeObject configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    PyTypeObject configuring = PythonClassWithObject<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType();
+    PyTypeObject configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType();
     configuring.tp_hash = (hashfunc) hash;
     configuring.tp_richcompare = (richcmpfunc) richcompare;
     return configuring;
