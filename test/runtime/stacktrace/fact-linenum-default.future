@@ -1,0 +1,5 @@
+bug: debug info in a stack trace should work without needing to specify -gdwarf
+
+
+This future is a duplicate of fact-linenum.chpl, when the future is resolved
+this test can be deleted and fact-linenum.compopts modified
