@@ -259,14 +259,14 @@ module Python {
 
       // preinit
       var preconfig: PyPreConfig;
-      PyPreConfig_InitPythonConfig(c_ptrTo(preconfig));
+      PyPreConfig_InitIsolatedConfig(c_ptrTo(preconfig));
       preconfig.utf8_mode = 1;
       checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
 
       // init
       var config_: PyConfig;
       var cfgPtr = c_ptrTo(config_);
-      PyConfig_InitPythonConfig(cfgPtr);
+      PyConfig_InitIsolatedConfig(cfgPtr);
       defer PyConfig_Clear(cfgPtr);
 
       // set program name
@@ -289,15 +289,22 @@ module Python {
       // initialize
       checkPyStatus(Py_InitializeFromConfig(cfgPtr));
 
-      // add the current directory to the python path
       var sys = PyImport_ImportModule("sys");
       this.checkException();
-      var path = PyObject_GetAttrString(sys, "path");
-      this.checkException();
-      PyList_Insert(path, 0, Py_BuildValue("s", "."));
-      this.checkException();
-      Py_DECREF(path);
-      Py_DECREF(sys);
+      defer Py_DECREF(sys);
+
+      // add the current directory to the python path
+      {
+        var path = PyObject_GetAttrString(sys, "path");
+        this.checkException();
+        defer Py_DECREF(path);
+        PyList_Insert(path, 0, Py_BuildValue("s", "."));
+        this.checkException();
+      }
+      // TODO: reset stdout and stderr to Chapel's handles
+      // I think we can do this by setting sys.stdout and sys.stderr to a python
+      // object that looks like a python file but forwards calls like write to
+      // Chapel's write
     }
     @chpldoc.nodoc
     proc deinit() {
@@ -1329,6 +1336,7 @@ module Python {
       var isolated: c_int;
       var utf8_mode: c_int;
     }
+    extern proc PyPreConfig_InitIsolatedConfig(config_: c_ptr(PyPreConfig));
     extern proc PyPreConfig_InitPythonConfig(config_: c_ptr(PyPreConfig));
     extern proc Py_PreInitialize(config_: c_ptr(PyPreConfig)): PyStatus;
 
