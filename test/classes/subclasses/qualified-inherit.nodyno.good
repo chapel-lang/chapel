@@ -1,0 +1,1 @@
+qualified-inherit.chpl:7: error: only simple inheritance expressions are supported without Dyno scope resolution

@@ -3665,6 +3665,17 @@ struct Converter final : UastConverter {
 
   /// AggregateDecls
 
+  std::string inheritanceExprToStringForErr(const uast::AstNode* identOrDot) {
+    if (auto ident = identOrDot->toIdentifier()) {
+      return ident->name().c_str();
+    } else {
+      auto dot = identOrDot->toDot();
+      CHPL_ASSERT(dot);
+      auto receiverStr = inheritanceExprToStringForErr(dot->receiver());
+      return receiverStr + "." + dot->field().c_str();
+    }
+  }
+
   template <typename Iterable>
   void convertInheritsExprs(const Iterable& iterable,
                             std::vector<Expr*>& inherits,
@@ -3680,23 +3691,48 @@ struct Converter final : UastConverter {
       auto converted = convertExprOrNull(ident);
       inheritMarkedGeneric |= thisInheritMarkedGeneric;
 
-      // Don't convert the expression literally if we have a `toId`.
-      // The production scope resolver doesnt't support M.C as a class
-      // inheritance expression, but we already know what it refers to.
-      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
-      if (auto results = currentResolutionResult()) {
+      auto results = currentResolutionResult();
+      if (!(results != nullptr || ident->isIdentifier())) {
+        USR_FATAL_CONT(inheritExpr->id(),
+                       "only simple inheritance expressions are supported "
+                       "without Dyno scope resolution");
+      }
+
+      // If scope resolution is enabled, then we should already know what
+      // the inherit expression is referring to. Use that information,
+      // and error if it's not there, since the Dyno scope resolver should
+      // be fully online.
+      if (results) {
         if (auto result = results->byAstOrNull(ident)) {
           auto toId = result->toId();
           if (!toId.isEmpty()) {
-            if (auto converted = findConvertedSym(toId)) {
-              inherits.push_back(new SymExpr(converted));
-              continue;
-            }
+            auto converted = findConvertedSym(toId);
+            CHPL_ASSERT(converted &&
+                        "non-null 'results' implies scope resolution is enabled");
+            inherits.push_back(new SymExpr(converted));
+            continue;
           }
         }
+
+        // Couldn't find the target, emit an error message
+        USR_FATAL_CONT(inheritExpr->id(),
+                       "could not find parent class or target interface '%s' "
+                       "for inheritance expression",
+                       inheritanceExprToStringForErr(ident).c_str());
       }
 
-      // Couldn't find the target, so translate it literally.
+      // Couldn't find the target, so translate it literally and hand it off
+      // to the production scope resolver.
+      //
+      // This can happen if:
+      //   * we simply didn't perform scope resolution: results == nullptr.
+      //     In this case, we may have issued an error message (if the
+      //     inheritance expression is not simple, which production doesn't
+      //     support). If the identifier is simple, though, we can get by
+      //     without Dyno's scope resolution info.
+      //   * we did perform scope resolution, but didn't get information
+      //     for this inheritance expression. In that case, we issued an error
+      //     message ("could not find parent class").
       if (converted) {
         inherits.push_back(converted);
       }

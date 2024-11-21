@@ -507,10 +507,12 @@ Resolver::createForInstantiatedSignatureFields(Context* context,
 Resolver
 Resolver::createForParentClass(Context* context,
                                const AggregateDecl* decl,
+                               const AstNode* inheritExpr,
                                const SubstitutionsMap& substitutions,
                                const PoiScope* poiScope,
                                ResolutionResultByPostorderID& byId) {
   auto ret = Resolver(context, decl, byId, poiScope);
+  ret.curInheritanceExpr = inheritExpr;
   ret.substitutions = &substitutions;
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
@@ -521,9 +523,11 @@ Resolver::createForParentClass(Context* context,
 Resolver
 Resolver::createForParentClassScopeResolve(Context* context,
                                            const AggregateDecl* decl,
+                                           const AstNode* inheritExpr,
                                            ResolutionResultByPostorderID& byId)
 {
   auto ret = Resolver(context, decl, byId, /* poiScope */ nullptr);
+  ret.curInheritanceExpr = inheritExpr;
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
   ret.scopeResolveOnly = true;
@@ -4178,7 +4182,11 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
 }
 
 bool Resolver::enter(const Call* call) {
-  callNodeStack.push_back(call);
+  // At this time, we don't allow method calls in inheritance expressions,
+  // so we assume that there can't be overloading etc.
+  if (call != curInheritanceExpr) {
+    callNodeStack.push_back(call);
+  }
   auto op = call->toOpCall();
 
   if (op && initResolver) {
@@ -4509,8 +4517,11 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 void Resolver::exit(const Call* call) {
   handleCallExpr(call);
 
-  // Always remove the call from the stack to make sure it's properly set.
-  callNodeStack.pop_back();
+  // Always remove the call from the stack if we pushed it there,
+  // to make sure it's properly set.
+  if (call != curInheritanceExpr) {
+    callNodeStack.pop_back();
+  }
 }
 
 bool Resolver::enter(const Dot* dot) {

@@ -1357,7 +1357,7 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
     // Resolve the parent class type expression
     ResolutionResultByPostorderID r;
     auto visitor =
-      Resolver::createForParentClassScopeResolve(context, c, r);
+      Resolver::createForParentClassScopeResolve(context, c, inheritExpr, r);
     // Parsing excludes non-identifiers as parent class expressions.
     //
     // Intended to avoid calling methodReceiverScopes() recursively.
