@@ -1393,8 +1393,8 @@ module Python {
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
 
-    extern var Py_False: PyObjectPtr;
-    extern var Py_True: PyObjectPtr;
+    extern var Py_False: c_ptrConst(PyObject);
+    extern var Py_True: c_ptrConst(PyObject);
     extern "chpl_Py_None" var Py_None: c_ptrConst(PyObject);
 
     /*
