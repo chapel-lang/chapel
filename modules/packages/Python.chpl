@@ -870,28 +870,94 @@ module Python {
     }
   }
 
+
   /*
-    Represents a Python module.
+    Represents a Python value, it handles reference counting and is owned by default.
+
+    Most users should not need to use this directly.
   */
-  class Module {
+  class Value {
+    /*
+      The interpreter that this object is associated with.
+    */
+    var interpreter: borrowed Interpreter;
     @chpldoc.nodoc
-    var modName: string;
+    var obj: PyObjectPtr;
     @chpldoc.nodoc
-    var mod: owned PyObject;
+    var isOwned: bool;
 
     /*
-      Import a Python module by name.
+      Takes ownership of an existing Python object, pointed to by ``obj``
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
+      :arg isOwned: Whether this object owns the Python object. This is true by default.
     */
-    proc init(interpreter: borrowed Interpreter, in modName: string) throws {
-      this.modName = modName;
-      this.mod = new PyObject(interpreter, PyImport_ImportModule(modName.c_str()));
+    proc init(in interpreter: borrowed Interpreter, obj: PyObjectPtr, isOwned: bool = true) throws {
+      this.interpreter = interpreter;
+      this.obj = obj;
+      this.isOwned = isOwned;
       init this;
-      this.mod.check();
+      this.check();
     }
     /*
-      Get the interpreter associated with this module.
+      Creates a new Python object from a Chapel value.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg value: The Chapel value to convert to a Python object.
     */
-    proc interpreter do return this.mod.interpreter;
+    proc init(in interpreter: borrowed Interpreter, value: ?) throws {
+      this.interpreter = interpreter;
+      this.obj = toPython(interpreter, value);
+      this.isOwned = true;
+      init this;
+      this.check();
+    }
+    @chpldoc.nodoc
+    proc deinit() {
+      if this.isOwned then
+        Py_DECREF(this.obj);
+    }
+    proc check() throws do this.interpreter.checkException();
+    /*
+      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
+    */
+    proc get() do return this.obj;
+
+    /*
+      Returns the Chapel value of the object.
+
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
+    */
+    proc value(type value) throws {
+      return interpreter.fromPython(value, this.obj);
+    }
+
+    /*
+      Stop owning val, return the underlying ptr.
+    */
+    proc type release(in val: owned Value): PyObjectPtr {
+      var valUn: unmanaged = owned.release(val);
+      valUn.isOwned = false;
+      var ptr: PyObjectPtr = valUn.obj;
+      delete valUn;
+      return ptr;
+    }
+    /*
+      Create a new Value, taking ownership of the object.
+    */
+    proc type adopting(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, ptr, isOwned=true);
+      return val;
+    }
+    /*
+      Create a new Value, borrowing the object.
+    */
+    proc type borrowing(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, ptr, isOwned=false);
+      return val;
+    }
+
 
     /*
       Returns the string representation of the object.
@@ -899,8 +965,28 @@ module Python {
 
       Equivalent to calling ``str(obj)`` in Python.
     */
-    proc str(): string throws do return this.mod!.str();
+    proc str(): string throws {
+      var pyStr = PyObject_Str(this.obj);
+      interpreter.checkException();
+      var res = interpreter.fromPython(string, pyStr);
+      return res;
+    }
+  }
 
+  /*
+    Represents a Python module.
+  */
+  class Module: Value {
+    @chpldoc.nodoc
+    var modName: string;
+
+    /*
+      Import a Python module by name.
+    */
+    proc init(interpreter: borrowed Interpreter, in modName: string) throws {
+      super.init(interpreter, PyImport_ImportModule(modName.c_str()));
+      this.modName = modName;
+    }
   }
 
   /*
