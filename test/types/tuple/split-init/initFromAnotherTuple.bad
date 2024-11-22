@@ -1,7 +1,3 @@
-initFromAnotherTuple.chpl:3: internal error: AST-PRI-IVE-0289 chpl version 2.3.0 pre-release (868dbb73be)
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+initFromAnotherTuple.chpl:2: error: 'x' is not initialized and has no type
+initFromAnotherTuple.chpl:2: note: cannot find initialization point to split-init this variable
+initFromAnotherTuple.chpl:3: note: 'x' is used here before it is initialized
