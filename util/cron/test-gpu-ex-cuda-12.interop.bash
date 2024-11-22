@@ -18,7 +18,7 @@ module load cuda/12.4  # default is CUDA 12.5
 # This can be removed once we use CUDA 12.5
 export CHPL_LIB_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64:$CHPL_LIB_PATH"
 
-export CHPL_LLVM=bundled  # Using bundled LLVM since that's safer
+export CHPL_LLVM=system
 export CHPL_TEST_GPU=true
 export CHPL_LAUNCHER_PARTITION=griz256
 export CHPL_NIGHTLY_TEST_DIRS="gpu/interop/"
