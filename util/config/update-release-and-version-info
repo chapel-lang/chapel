@@ -2,12 +2,22 @@ import argparse
 
 # Represents a file or maybe a group of similar files that are updated the same way
 class FileUpdater:
-    def __init__(self, file_path, major_version, minor_version, patch_version, release):
+    def __init__(self, file_path, major_version, minor_version, patch_version, release, prev_major_version, prev_minor_version, prev_patch_version):
         self.file_path = file_path
         self.major_version = major_version
         self.minor_version = minor_version
         self.patch_version = patch_version
+        self.prev_major_version = prev_major_version
+        self.prev_minor_version = prev_minor_version
+        self.prev_patch_version = prev_patch_version
         self.release = release
+
+        # TODO: would be nice to have preformatted version strings in the base class
+        #       short_version would be maj.min unless patch>0, then maj.min.patch
+        #       long_version would always be maj.min.patch
+        #       These should be available for both the current and previous version numbers
+        #       they could also be overridden by the subclass if for example,
+        #       a file should never have a three digit short_version
 
     def read_file(self):
         with open(self.file_path, 'r') as f:
@@ -56,10 +66,10 @@ class ManConfUpdater(FileUpdater):
 # Updates the archivedSpecs.rst file only when moving to an official release
 class ArchivedSpecUpdater(FileUpdater):
     def update(self):
-        # TODO: this needs the OLD version number to be able to update the archive without messing up
+        # this needs the PREV version number to be able to update the archive without messing up
         if self.release:
           lines = self.read_file()
-          archive_string = "* `Chapel {}.{} <https://chapel-lang.org/docs/{}.{}/index.html>`_\n".format(self.major_version, self.minor_version - 1, self.major_version, self.minor_version - 1)
+          archive_string = "* `Chapel {}.{} <https://chapel-lang.org/docs/{}.{}/index.html>`_\n".format(self.prev_major_version, self.prev_minor_version, self.prev_major_version, self.prev_minor_version)
           any_changed = False
           if not archive_string in lines:
             for i, line in enumerate(lines):
@@ -138,8 +148,29 @@ class VersionHelpUpdater(FileUpdater):
 
 # TODO: Implement the VersionButtonUpdater with specific rules for updating the version here
 class VersionButtonUpdater(FileUpdater):
+    # steady-state: docs refers to prev-release and docs/main refers to current release
     def update(self):
-        pass
+        lines = self.read_file()
+        any_changed = False
+        cur_rel = 'var currentRelease = "{}.{}";'
+        stage_rel = 'var stagedRelease = "{}.{}";'
+        next_rel = 'var nextRelease = "{}.{}";'
+        if self.release:
+            for i, line in enumerate(lines):
+                # TODO: Store the next release in cmake too? This is a pretty naive way, just incrementing the minor version by 1.
+                if line.strip().startswith('var nextRelease = ') and not line.strip() == 'var nextRelease = "{}.{}";    // what\'s the next release? (on docs/main)'.format(self.major_version, self.minor_version + 1):
+                    any_changed = True
+                    lines[i] = '  var nextRelease = "{}.{}";    // what\'s the next release? (on docs/main)\n'.format(self.major_version, self.minor_version + 1)
+        else:
+            for i, line in enumerate(lines):
+                if line.strip().startswith('var currentRelease = ') and not line.strip() == 'var currentRelease = "{}.{}";    // what does the public have?'.format(self.prev_major_version, self.prev_minor_version):
+                    any_changed = True
+                    lines[i] = '  var currentRelease = "{}.{}";    // what does the public have?\n'.format(self.prev_major_version, self.prev_minor_version)
+                elif line.strip().startswith('var stagedRelease = ') and not line.strip() == 'var stagedRelease = "{}.{}";    // is there a release staged but not yet public?'.format(self.major_version, self.minor_version):
+                    any_changed = True
+                    lines[i] = '  var stagedRelease = "{}.{}";    // is there a release staged but not yet public?\n'.format(self.major_version, self.minor_version)
+        if any_changed:
+            self.write_file(lines)
 
 # Updates the version in the version.goodstart file
 class GoodStartUpdater(FileUpdater):
@@ -160,27 +191,30 @@ def main():
     parser.add_argument('major_version', type=int, help='The major version of Chapel')
     parser.add_argument('minor_version', type=int, help='The minor version of Chapel')
     parser.add_argument('patch_version', type=int, help='The patch version of Chapel')
+    parser.add_argument('prev_major_version', type=int, help='The previous major version of Chapel')
+    parser.add_argument('prev_minor_version', type=int, help='The previous minor version of Chapel')
+    parser.add_argument('prev_patch_version', type=int, help='The previous patch version of Chapel')
     parser.add_argument('--official-release', dest='release', action="store_true", help='Is this an official release?')
 
     args = parser.parse_args()
     for fpath in args.files:
       # Determine which updater to use based on the file name or other criteria
       if fpath.endswith('conf.py'):
-          updater = ConfPyUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = ConfPyUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('confchpl.rst') or fpath.endswith('confchpldoc.rst'):
-          updater = ManConfUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = ManConfUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('archivedSpecs.rst'):
-          updater = ArchivedSpecUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = ArchivedSpecUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('QUICKSTART.rst'):
-          updater = QuickStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = QuickStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('chplenv.rst'):
-          updater = ChplEnvUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = ChplEnvUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('versionhelp.sh') or fpath.endswith('versionhelp-chpldoc.sh'):
-          updater = VersionHelpUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = VersionHelpUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('versionButton.php'):
-          updater = VersionButtonUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = VersionButtonUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       elif fpath.endswith('version.goodstart'):
-          updater = GoodStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release)
+          updater = GoodStartUpdater(fpath, args.major_version, args.minor_version, args.patch_version, args.release, args.prev_major_version, args.prev_minor_version, args.prev_patch_version)
       else:
           raise ValueError("Unrecognized file name: {}".format(fpath))
 
