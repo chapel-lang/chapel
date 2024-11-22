@@ -409,10 +409,12 @@ module DefaultSparse {
     }
 
     proc getCoordinates() const ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
       return _indices;
     }
 
     proc getCoordinates() ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
       return _indices;
     }
   }

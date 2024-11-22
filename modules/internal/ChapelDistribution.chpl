@@ -636,6 +636,11 @@ module ChapelDistribution {
       }
     }
 
+    /* make the domain "just the right size" */
+    inline proc _fit(size: int) {
+      nnzDom = {0..<size};
+    }
+
     // This method assumes nnz is updated according to the size
     // requested. So, a bulk addition into a sparse domain should: (1)
     // calculate new nnz and update it, (2) call this method, (3) add
