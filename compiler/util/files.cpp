@@ -208,9 +208,10 @@ void restoreDriverTmp(const char* tmpFilePath,
   // Create file iff it did not already exist, for simpler reading logic in the
   // rest of the function.
   fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
+  const char* path = tmpFileDummy->pathname;
   closefile(tmpFileDummy);
 
-  std::ifstream fileStream(genIntermediateFilename(tmpFilePath));
+  std::ifstream fileStream(path);
   std::string line;
   while (std::getline(fileStream, line)) {
     restoreSavedString(line.c_str());
