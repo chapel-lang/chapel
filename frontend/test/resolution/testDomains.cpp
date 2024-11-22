@@ -177,7 +177,7 @@ module M {
   param rk = d.isRectangular();
   param ak = d.isAssociative();
 
-  var p = d.pid();
+  var p = d.pid;
 
   for loopI in d {
     var z = loopI;
