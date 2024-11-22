@@ -1,4 +1,5 @@
 #!/bin/bash
 cat $2 | grep check-http-setopt > $2.tmp
 cat $2 | grep HTTP/1 | sed 's/\r$//' >> $2.tmp
-mv $2.tmp $2
+# get rid of 'using HTTP' lines
+cat $2.tmp | grep -v 'using HTTP' > $2
