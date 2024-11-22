@@ -356,7 +356,8 @@ def get_runtime_compile_args():
     # If compiling for GPU locales, add CUDA runtime headers to include path
     bundled.append("-I" + os.path.join(incl, "gpu", gpu_type))
     if gpu_type == "nvidia":
-        system.append("-I" + os.path.join(sdk_path, "include"))
+        # treat the CUDA SDK as a system include
+        system.append("-idirafter" + os.path.join(sdk_path, "include"))
 
         # workaround an issue with __float128 not being supported by clang in device code
         system.append("-D__STRICT_ANSI__=1")
