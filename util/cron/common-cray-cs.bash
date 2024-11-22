@@ -5,7 +5,7 @@
 #             Cray CS system, otherwise silent 
 #  output: iff this seems to be a CS, CHPL_HOST_PLATFORM=cray-cs
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 function loadCSModule()
 {
@@ -24,7 +24,7 @@ if module avail craype- 2>&1 | grep -q craype- ; then
   # that wipes out. In the future this should unload only the unwanted modules,
   # making re-loading necessary.
   module purge
-  source $CWD/load-base-deps.bash
+  source $UTIL_CRON_DIR/load-base-deps.bash
 
   loadCSModule gcc/8.1.0
   loadCSModule cray-fftw

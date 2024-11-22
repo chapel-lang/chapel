@@ -9,10 +9,10 @@
 # !IMPORTANT! Make sure BREW_CORE_REPO_PATH is set to where the homebrew-core
 # repository should go before running this script
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/functions.bash
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 log_info "Moving to ${CHPL_HOME}"

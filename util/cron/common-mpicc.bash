@@ -2,8 +2,8 @@
 #
 # Configure environment for MPI module testing on linux64
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 # Currently, only fifo supported for MPI module
 export CHPL_TASKS=fifo

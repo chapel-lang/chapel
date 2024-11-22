@@ -2,9 +2,9 @@
 #
 # GPU native testing on a Cray EX
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-native-gpu.bash
-source $CWD/common-hpe-cray-ex.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common-native-gpu.bash
+source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 
 module load rocm/5.4.3  # pin to rocm 5.4.3
 
@@ -17,4 +17,4 @@ export CHPL_GPU=amd  # also detected by default
 export CHPL_GPU_ARCH=gfx90a
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-rocm-54.ofi"
-$CWD/nightly -cron ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${nightly_args}

@@ -3,9 +3,9 @@
 # Test gasnet configuration with CHPL_LLVM=none & CHPL_TARGET_COMPILER=gnu
 # on linux64.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-gasnet.bash
-source $CWD/common-c-backend.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common-gasnet.bash
+source $UTIL_CRON_DIR/common-c-backend.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.c-backend"
 
@@ -13,4 +13,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.c-backend"
 # distribution for this configuration.
 unset CHPL_NIGHTLY_TEST_DIRS
 
-$CWD/nightly -cron -multilocale ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -multilocale ${nightly_args}

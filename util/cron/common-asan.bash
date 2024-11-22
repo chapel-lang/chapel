@@ -2,7 +2,7 @@
 #
 # Configure environment for testing AddressSanitizer.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_MEM=cstdlib
 export CHPL_HOST_MEM=cstdlib

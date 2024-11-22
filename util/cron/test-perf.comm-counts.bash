@@ -2,12 +2,12 @@
 #
 # Run -perflabel cc- performance tests on a chapcs machine with gasnet
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs.comm-counts'
 
-source $CWD/common-perf.bash
-source $CWD/common-gasnet.bash
+source $UTIL_CRON_DIR/common-perf.bash
+source $UTIL_CRON_DIR/common-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.comm-counts"
 
@@ -21,4 +21,4 @@ perf_args="-performance -numtrials 1 -startdate $START_DATE -perflabel cc-"
 #  -no-buildcheck skips the "make check"
 nightly_args="${nightly_args} -no-buildcheck"
 
-$CWD/nightly -cron ${nightly_args} ${perf_args}
+$UTIL_CRON_DIR/nightly -cron ${nightly_args} ${perf_args}

@@ -4,10 +4,10 @@
 # multilocale tests only.
 #
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-gasnet.bash
-source $CWD/common-asan.bash
-source $CWD/common-localnode-paratest.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common-gasnet.bash
+source $UTIL_CRON_DIR/common-asan.bash
+source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-asan"
 
@@ -23,5 +23,5 @@ export CHPL_RT_CACHE_QUIET=true
 export CHPL_COMM_SUBSTRATE=udp
 export CHPL_GASNET_SEGMENT=everything
 
-$CWD/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 8)
+$UTIL_CRON_DIR/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 8)
 

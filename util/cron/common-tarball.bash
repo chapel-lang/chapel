@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-source $CWD/common.bash
+source $UTIL_CRON_DIR/common.bash
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 # Load functions for getting version information from the source tree

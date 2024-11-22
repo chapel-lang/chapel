@@ -2,10 +2,10 @@
 #
 # Test default configuration on full suite with baseline enabled on linux64.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
-source $CWD/common-localnode-paratest.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="baseline"
 
-$CWD/nightly -cron -baseline $(get_nightly_paratest_args)
+$UTIL_CRON_DIR/nightly -cron -baseline $(get_nightly_paratest_args)

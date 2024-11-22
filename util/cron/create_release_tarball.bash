@@ -8,9 +8,9 @@
 # TARBALL_DIR can optionally be set in the environment. If set, the tarball
 # will be copied to that directory after it is built.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/functions.bash
 
 if [ "${CHPL_VERSION+x}" != "x" ] ; then
     log_error "CHPL_VERSION must be set in the environment."
@@ -23,7 +23,7 @@ else
     no_tarball_dir=true
 fi
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 # Allow caller to tell this script to detect the current version based on the
@@ -51,7 +51,7 @@ log_info "Using release branch: ${CHPL_GEN_RELEASE_BRANCH}"
 
 tarball_output="${CHPL_HOME}/tar/chapel-${CHPL_VERSION}.tar.gz"
 
-$CWD/../buildRelease/gen_release $CHPL_VERSION
+$UTIL_CRON_DIR/../buildRelease/gen_release $CHPL_VERSION
 
 if [ "${no_tarball_dir}" != "true" ] ; then
     expected_loc="${TARBALL_DIR}/$(basename ${tarball_output})"

@@ -2,8 +2,8 @@
 #
 # Test default configuration on examples only, on linux64, with llvm 19
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 source /data/cf/chapel/setup_system_llvm.bash 19
 export CHPL_LLVM_GCC_PREFIX='none' # spack llvm is configured with proper gcc
@@ -18,4 +18,4 @@ fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm19"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -examples ${nightly_args}

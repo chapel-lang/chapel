@@ -2,11 +2,11 @@
 #
 # Configure environment for testing valgrind.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # qthreads doesn't work with valgrind, so use fifo and limit running threads to
 # stay below valgrind's --max-threads option, which defaults to 500
-source $CWD/common-fifo.bash
+source $UTIL_CRON_DIR/common-fifo.bash
 export CHPL_RT_NUM_THREADS_PER_LOCALE=450
 export CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes
 

@@ -2,10 +2,10 @@
 #
 # Test examples for default configuration on darwin
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
-source $CWD/common-darwin.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-darwin.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin"
 
-$CWD/nightly -cron -examples -blog
+$UTIL_CRON_DIR/nightly -cron -examples -blog

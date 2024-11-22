@@ -11,10 +11,10 @@
 
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
-source $CWD/common-tarball.bash
+source $UTIL_CRON_DIR/common-tarball.bash
 
 
 # Tell gen_release to use existing repo instead of creating a new one with

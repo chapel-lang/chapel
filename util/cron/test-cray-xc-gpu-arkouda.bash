@@ -2,9 +2,9 @@
 #
 # Build Arkouda on a cray-xc with GPU locale model
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-source $CWD/common.bash
+source $UTIL_CRON_DIR/common.bash
 
 # Setup for GPU:
 source /hpcdc/project/chapel/setup_system_llvm.bash $LLVM_VERSION
@@ -30,7 +30,7 @@ module load craype-x86-cascadelake
 # setup arkouda
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-xc-gpu-arkouda"
 export CHPL_TEST_ARKOUDA_PERF=false
-source $CWD/common-arkouda.bash
+source $UTIL_CRON_DIR/common-arkouda.bash
 
 # List of Arkouda server modules we exempt from testing (that goal is to
 # eventually have this be an empty list).
