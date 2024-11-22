@@ -39,9 +39,7 @@
   \
     const auto unwrap() const { \
       if (parent.value_) { \
-        PyErr_Format(PyExc_RuntimeError, \
-                     "invalid instance of class '%s'; please do not manually construct instances of this class.", \
-                      #NAME); \
+        raiseExceptionForIncorrectlyConstructedType(#NAME); \
         return static_cast<decltype(parent.value_->to##NAME())>(nullptr); \
       } \
       return parent.value_->to##NAME(); \

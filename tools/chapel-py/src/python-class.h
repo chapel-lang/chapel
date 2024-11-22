@@ -28,6 +28,16 @@ struct PerTypeMethods;
 
 struct ContextObject;
 
+/** ===== Standalone functions used throughout chapel-py ===== */
+
+static inline void raiseExceptionForIncorrectlyConstructedType(const char* type) {
+  PyErr_Format(PyExc_RuntimeError,
+               "invalid instance of class '%s'; please do not manually "
+               "construct instances of this class.",
+               type);
+}
+
+
 template <typename Self, typename T>
 struct PythonClass {
   PyObject_HEAD
@@ -57,9 +67,7 @@ struct PythonClass {
   // Returns whether everything is OK.
   bool raiseIfInvalid() {
     if (shouldReturnNone(value_)) {
-      PyErr_Format(PyExc_RuntimeError,
-                   "invalid instance of class '%s'; please do not manually construct instances of this class.",
-                   Self::PythonType.tp_name);
+      raiseExceptionForIncorrectlyConstructedType(Self::Name);
       return false;
     }
     return true;
