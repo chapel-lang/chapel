@@ -179,9 +179,7 @@ struct PythonClassWithContext : public PythonClass<Self, T> {
   PyObject* contextObject;
 
   static void dealloc(Self* self) {
-    if (self->contextObject) {
-      Py_DECREF(self->contextObject);
-    }
+    Py_XDECREF(self->contextObject);
     PythonClass<Self, T>::dealloc(self);
   }
 
