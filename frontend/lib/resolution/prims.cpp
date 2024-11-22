@@ -336,6 +336,7 @@ static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
     return QualifiedType(QualifiedType::TYPE, type);
   } else if (ci.numActuals() == 2) {
     auto type = DomainType::getAssociativeType(context,
+                                               QualifiedType(),
                                                ci.actual(0).type(),
                                                ci.actual(1).type());
     return QualifiedType(QualifiedType::TYPE, type);

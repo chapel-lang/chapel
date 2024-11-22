@@ -99,8 +99,9 @@ class DomainType final : public CompositeType {
 
   /** Return an associative domain type */
   static const DomainType* getAssociativeType(Context* context,
-                                              const QualifiedType& idxType,
-                                              const QualifiedType& parSafe);
+                                 const QualifiedType& instance,
+                                 const QualifiedType& idxType,
+                                 const QualifiedType& parSafe);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
