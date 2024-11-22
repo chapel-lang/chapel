@@ -779,6 +779,9 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  prim_def(PRIM_SPLIT_INIT_UPDATE_TYPE, "split init update type",
+           returnInfoVoid);
+
   prim_def(PRIM_INIT_REF_DECL, "init ref decl", returnInfoVoid);
 
   // indicates the body of the initializer is now in Phase 2

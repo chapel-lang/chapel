@@ -1315,6 +1315,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SPLIT_INIT_UPDATE_TYPE: {
+    INT_ASSERT(call->numActuals() == 2);
+
+    SymExpr* lhs = toSymExpr(call->get(1));
+    SymExpr* rhs = toSymExpr(call->get(2));
+
+    INT_ASSERT(lhs != NULL);
+    INT_ASSERT(rhs != NULL);
+
+    if (lhs->typeInfo() == dtSplitInitType) {
+      if (rhs->typeInfo()->getValType() != dtSplitInitType) {
+        lhs->symbol()->type = rhs->typeInfo()->getValType();
+      }
+    }
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+  }
+
   case PRIM_COERCE: {
     if (SymExpr* se = toSymExpr(call->get(2))) {
       if (dtDomain && se->symbol() == dtDomain->symbol) {

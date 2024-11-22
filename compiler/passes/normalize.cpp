@@ -1534,6 +1534,16 @@ static void insertDestructureStatements(Expr*     S1,
         S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
 
         S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
+
+        if (SymExpr* orig = toSymExpr(expr)) {
+          if (SymExpr* origInit = toSymExpr(orig->symbol()->defPoint->init)) {
+            if (origInit->symbol() == gSplitInit) {
+              S2->insertBefore(new CallExpr(PRIM_SPLIT_INIT_UPDATE_TYPE,
+                                            orig->copy(),
+                                            new SymExpr(lhsTmp)));
+            }
+          }
+        }
       }
     }
     index = index + 1;
