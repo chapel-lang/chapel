@@ -40,3 +40,25 @@ coforall loc in DS.targetLocales() do on loc {
 for block in A.localSubarrays() {
   writeln("locale ", here.id, " owns:\n", block.domain.getCoordinates());
 }
+writeln();
+
+// perform some more updates to add the local antidiagonal, and make
+// sure those occurred
+
+coforall loc in DS.targetLocales() do on loc {
+  // compute this locale's contribution to the index set, creating a
+  // diagonal pattern per locale
+  const myInds = DS.parentDom.localSubdomain();
+  var locSpsInds = A.getLocalSubarray().domain;
+
+  for i in 0..<min(myInds.dim(0).size, myInds.dim(1).size) {
+    const newInd = myInds.low + (myInds.dim(0).size-(i+1), i);
+    locSpsInds += newInd;
+  }
+
+  DS.setLocalSubdomain(locSpsInds);
+}
+
+for block in A.localSubarrays() {
+  writeln("locale ", here.id, " owns:\n", block.domain.getCoordinates());
+}
