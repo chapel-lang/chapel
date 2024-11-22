@@ -452,7 +452,13 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
   Type* copyType = NULL;
 
   Type* actualValType = actualType->getValType();
-  Type* formalValType = formalType->getValType();
+
+  // Strip 'ref' for the purposes of bypassing the check on inout formals;
+  // if no formal is provided, do not strip ref-ness.
+  Type* formalTypeToCheck = formalType;
+  if (formalSym != NULL) {
+    formalTypeToCheck = formalTypeToCheck->getValType();
+  }
 
   if (isSyncType(actualValType)) {
     copyType = getCopyTypeDuringResolution(actualValType);
@@ -460,13 +466,13 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
              actualValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // The conditions below avoid infinite loops and problems
     // relating to resolving initCopy for iterators when not needed.
-    if (formalValType == dtAny ||
-        formalValType->symbol->hasFlag(FLAG_ARRAY)) {
+    if (formalTypeToCheck == dtAny ||
+        formalTypeToCheck->symbol->hasFlag(FLAG_ARRAY)) {
       if (fn == NULL ||
           !(fn->name == astr_initCopy || fn->name == astr_autoCopy ||
             fn->name == astr_coerceMove || fn->name == astr_coerceCopy)) {
 
-        if (formalSym != NULL && inOrOutFormalNeedingCopyType(formalSym)) {
+        if (formalSym == NULL || inOrOutFormalNeedingCopyType(formalSym)) {
           copyType = getCopyTypeDuringResolution(actualValType);
         }
       }
