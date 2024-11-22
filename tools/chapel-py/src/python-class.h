@@ -28,6 +28,16 @@ struct PerTypeMethods;
 
 struct ContextObject;
 
+/** ===== Standalone functions used throughout chapel-py ===== */
+
+static inline void raiseExceptionForIncorrectlyConstructedType(const char* type) {
+  PyErr_Format(PyExc_RuntimeError,
+               "invalid instance of class '%s'; please do not manually "
+               "construct instances of this class.",
+               type);
+}
+
+
 template <typename Self, typename T>
 struct PythonClass {
   PyObject_HEAD
@@ -35,7 +45,7 @@ struct PythonClass {
 
   /** ===== Support for the method-tables API ===== */
 
-  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T&>::type;
+  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T*>::type;
 
   // If T is a pointer, allow ::create() to be called with nullptr, and
   // just return None.
@@ -50,7 +60,33 @@ struct PythonClass {
     return false;
   }
 
-  UnwrappedT unwrap() { return value_; }
+  // If we're in a bad state (object constructor invoked, but value was
+  // never set), issue a Python exception. This probably just means a user
+  // explicitly tried to create e.g. an AST Node using AstNode().
+  //
+  // Returns whether everything is OK.
+  bool raiseIfInvalid() {
+    if (shouldReturnNone(value_)) {
+      raiseExceptionForIncorrectlyConstructedType(Self::Name);
+      return false;
+    }
+    return true;
+  }
+
+  template <typename Q = T>
+  typename std::enable_if<std::is_pointer_v<Q>, UnwrappedT>::type
+  unwrap() {
+    if (!raiseIfInvalid()) return nullptr;
+    return value_;
+  }
+
+  template <typename Q = T>
+  typename std::enable_if<!std::is_pointer_v<Q>, UnwrappedT>::type
+  unwrap() {
+    if (!raiseIfInvalid()) return nullptr;
+    return &value_;
+  }
+
   ContextObject* context() { return nullptr; }
 
   /** ===== CPython API support ===== */
@@ -122,7 +158,7 @@ PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
 // Because the ContextObject is essential to other pieces of the API (it's attached
 // to many other Chapel objects to save the user the work of threading through
 // a Context instance), we need to declare and define it here for the next
-// template (PythonClassWithObject) to use.
+// template (PythonClassWithContext) to use.
 //
 // Forward-declaring doesn't cut it because we need ContextObject::PythonType.
 
@@ -139,11 +175,11 @@ struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
 };
 
 template <typename Self, typename T>
-struct PythonClassWithObject : public PythonClass<Self, T> {
+struct PythonClassWithContext : public PythonClass<Self, T> {
   PyObject* contextObject;
 
   static void dealloc(Self* self) {
-    Py_DECREF(self->contextObject);
+    Py_XDECREF(self->contextObject);
     PythonClass<Self, T>::dealloc(self);
   }
 

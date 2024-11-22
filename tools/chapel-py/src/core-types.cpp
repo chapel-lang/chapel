@@ -146,6 +146,10 @@ std::string generatePyiFile() {
 }
 
 PyObject* AstNodeObject::iter(AstNodeObject *self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("AstNode");
+    return nullptr;
+  }
   return wrapIterPair((ContextObject*) self->contextObject, self->value_->children());
 }
 
@@ -155,6 +159,10 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
 }
 
 PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Type");
+    return nullptr;
+  }
   std::stringstream ss;
   self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();
@@ -162,6 +170,10 @@ PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
 }
 
 PyObject* ParamObject::str(ParamObject* self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("Param");
+    return nullptr;
+  }
   std::stringstream ss;
   self->value_->stringify(ss, CHPL_SYNTAX);
   auto typeString = ss.str();

@@ -26,7 +26,7 @@
 
 CLASS_BEGIN(Context)
   PLAIN_GETTER(Context, introspect_parsed_files, "Inspect the list of files that have been parsed by the Context",
-               std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(&node))
+               std::vector<chpl::UniqueString>, return parsing::introspectParsedFiles(node))
   PLAIN_GETTER(Context, track_errors, "Return a context manager that tracks errors emitted by this Context",
                ErrorManagerObject*, std::ignore = node; return ErrorManagerObject::create(contextObject, std::make_tuple()))
   PLAIN_GETTER(Context, _get_pyi_file, "Generate a stub file for the Chapel AST nodes",
@@ -38,7 +38,7 @@ CLASS_BEGIN(Context)
          auto fileNameUS = std::get<0>(args);
          auto parentPathUS = chpl::UniqueString();
          auto& builderResult =
-           parsing::parseFileToBuilderResultAndCheck(&node, fileNameUS, parentPathUS);
+           parsing::parseFileToBuilderResultAndCheck(node, fileNameUS, parentPathUS);
          std::vector<const chpl::uast::AstNode*> topLevelNodes;
          for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
            topLevelNodes.push_back(builderResult.topLevelExpression(i));
@@ -49,36 +49,36 @@ CLASS_BEGIN(Context)
 
          auto& paths = std::get<0>(args);
          auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(&node, false, false, paths, filenames))
+         parsing::setupModuleSearchPaths(node, false, false, paths, filenames))
   METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
          bool(chpl::UniqueString),
 
          auto pathUS = std::get<0>(args);
-         return parsing::filePathIsInInternalModule(&node, pathUS) ||
-                parsing::filePathIsInStandardModule(&node, pathUS) ||
-                parsing::filePathIsInBundledModule(&node, pathUS))
+         return parsing::filePathIsInInternalModule(node, pathUS) ||
+                parsing::filePathIsInStandardModule(node, pathUS) ||
+                parsing::filePathIsInBundledModule(node, pathUS))
   METHOD(Context, advance_to_next_revision, "Advance the context to the next revision",
          void(bool),
 
          auto prepareToGc = std::get<0>(args);
-         node.advanceToNextRevision(prepareToGc))
+         node->advanceToNextRevision(prepareToGc))
   METHOD(Context, get_file_text, "Get the text of the file at the given path",
-         std::string(chpl::UniqueString), return parsing::fileText(&node, std::get<0>(args)).text())
+         std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)
   PLAIN_GETTER(Location, start, "Get the line-column pair where this Location starts",
-               LineColumnPair, return std::make_tuple(node.firstLine(), node.firstColumn()))
+               LineColumnPair, return std::make_tuple(node->firstLine(), node->firstColumn()))
   PLAIN_GETTER(Location, end, "Get the line-column pair where this Location ends",
-               LineColumnPair, return std::make_tuple(node.lastLine(), node.lastColumn()))
+               LineColumnPair, return std::make_tuple(node->lastLine(), node->lastColumn()))
   PLAIN_GETTER(Location, path, "Get the file path of this Location",
-               chpl::UniqueString, return node.path())
+               chpl::UniqueString, return node->path())
   METHOD(Location, clamp_left, "Get a new Location removes the left part of the current Location based on another Location",
          chpl::Location(chpl::Location),
          auto left = node;
          auto right = std::get<0>(args);
 
-         return Location(left.path(), std::max(left.start(), right.start()), left.end());
+         return Location(left->path(), std::max(left->start(), right.start()), left->end());
   )
 CLASS_END(Location)
 
@@ -123,28 +123,28 @@ CLASS_BEGIN(Error)
                std::vector<chpl::ErrorCodeSnippet>,
 
                CompatibilityWriter writer(context);
-               node->write(writer);
+               (*node)->write(writer);
                return writer.codeSnippets())
   PLAIN_GETTER(Error, location, "Get the location at which this error occurred",
-               chpl::Location, return node->location(context))
+               chpl::Location, return (*node)->location(context))
   PLAIN_GETTER(Error, message, "Retrieve the contents of this error message",
-               std::string, return node->message())
+               std::string, return (*node)->message())
   PLAIN_GETTER(Error, notes, "Get the locations and text of additional notes printed by this error",
                std::vector<LocationAndNote>,
 
                std::vector<LocationAndNote> toReturn;
                CompatibilityWriter writer(context);
-               node->write(writer);
+               (*node)->write(writer);
                for (auto& note : writer.notes()) {
                  toReturn.push_back(std::make_tuple(std::get<0>(note).computeLocation(context),
                                                     std::get<1>(note)));
                }
                return toReturn)
   PLAIN_GETTER(Error, kind, "Retrieve the kind ('error', 'warning') of this type of error",
-               const char*, return chpl::ErrorBase::getKindName(node->kind()))
+               const char*, return chpl::ErrorBase::getKindName((*node)->kind()))
   PLAIN_GETTER(Error, type, "Retrieve the unique name of this type of error",
                std::optional<const char*>,
-               const char* name = chpl::ErrorBase::getTypeName(node->type());
+               const char* name = chpl::ErrorBase::getTypeName((*node)->type());
                return name ? std::optional(name) : std::nullopt;
                )
 CLASS_END(Error)
@@ -191,7 +191,7 @@ CLASS_END(ResolvedExpression)
 
 CLASS_BEGIN(MostSpecificCandidate)
   PLAIN_GETTER(MostSpecificCandidate, function, "Get the signature of the function called by this candidate.",
-               TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node.candidate->fn(), node.poiScope }))
+               TypedSignatureObject*, return TypedSignatureObject::create(contextObject, {node->candidate->fn(), node->poiScope }))
 
   // Note: calling node.resolve().formal_actual_mapping() -- thus using the
   // below method -- should be equivalent to calling node.formal_actual_mapping().
@@ -204,7 +204,7 @@ CLASS_BEGIN(MostSpecificCandidate)
                std::vector<int> res;
 
                int i = 0;
-               while (auto formalActual = node.candidate->formalActualMap().byActualIdx(i++)) {
+               while (auto formalActual = node->candidate->formalActualMap().byActualIdx(i++)) {
                  res.push_back(formalActual->formalIdx());
                }
                return res)
@@ -215,18 +215,18 @@ CLASS_BEGIN(TypedSignature)
          std::optional<QualifiedTypeTuple>(int),
 
          auto arg = std::get<int>(args);
-         if (arg < 0 && arg >= node.signature->numFormals()) {
+         if (arg < 0 && arg >= node->signature->numFormals()) {
            return {};
          }
 
-         auto& qt = node.signature->formalType(arg);
+         auto& qt = node->signature->formalType(arg);
          if (qt.isUnknown()) {
            return {};
          }
 
          return std::make_tuple(intentToString(qt.kind()), qt.type(), qt.param()))
   PLAIN_GETTER(TypedSignature, is_instantiation, "Check if this function is an instantiation of a generic function",
-               bool, return node.signature->instantiatedFrom() != nullptr)
+               bool, return node->signature->instantiatedFrom() != nullptr)
   PLAIN_GETTER(TypedSignature, ast, "Get the AST from which this function signature is computed",
-               Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node.signature->id()))
+               Nilable<const chpl::uast::AstNode*>, return chpl::parsing::idToAst(context, node->signature->id()))
 CLASS_END(TypedSignature)
