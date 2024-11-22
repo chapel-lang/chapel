@@ -4050,15 +4050,23 @@ static bool resolveFnCallSpecial(Context* context,
     } else if (ci.numActuals() == 1 && ci.hasQuestionArg()) {
       // support type and param comparisons with '?'
       // TODO: will likely need adjustment once we are able to compare a
+      // partially-instantiated type's fields with '?'
       auto arg = ci.actual(0).type();
+      bool result = false;
+      bool haveResult = true;
       if (arg.isType()) {
-        exprTypeOut =
-            QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                          BoolParam::get(context, arg.type()->isAnyType()));
+        result = arg.type()->isAnyType();
       } else if (arg.isParam()) {
+        result = arg.param() == nullptr;
+      } else {
+        haveResult = false;
+      }
+      result = ci.name() == USTR("==") ? result : !result;
+      if (haveResult) {
         exprTypeOut =
             QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                          BoolParam::get(context, arg.param() == nullptr));
+                          BoolParam::get(context, result));
+        return true;
       }
     }
   }
