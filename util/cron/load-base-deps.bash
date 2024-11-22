@@ -4,7 +4,7 @@
 
 # Prevent loading more than once
 if [ "$CHPL_BASE_DEPS_LOADED" = "true" ]; then
-  echo "Base dependencies already loaded, exiting $0 without reloading them..."
+  echo "Base dependencies already loaded, exiting ${BASH_SOURCE[0]} without reloading them..."
   return 0
 fi
 export CHPL_BASE_DEPS_LOADED=true
