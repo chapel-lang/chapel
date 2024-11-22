@@ -271,9 +271,11 @@ module Python {
       defer PyConfig_Clear(cfgPtr);
 
       // set program name
+      const wideChapel = "chapel".c_wstr();
       checkPyStatus(
         PyConfig_SetString(
-          cfgPtr, c_ptrTo(config_.program_name), "chapel".c_wstr()));
+          cfgPtr, c_ptrTo(config_.program_name), wideChapel));
+      deallocate(wideChapel);
 
       // check VIRTUAL_ENV, if its set, make it the executable
       var venv = getenv("VIRTUAL_ENV".c_str());
@@ -282,9 +284,11 @@ module Python {
         // but by setting executable we can reuse the python logic to determine
         // the locale (in the string sense, not the chapel sense)
         const executable = string.createBorrowingBuffer(venv) + "/bin/python";
+        const wideExecutable = executable.c_wstr();
         checkPyStatus(
           PyConfig_SetString(
-            cfgPtr, c_ptrTo(config_.executable), executable.c_wstr()));
+            cfgPtr, c_ptrTo(config_.executable), wideExecutable));
+        deallocate(wideExecutable);
       }
 
       // initialize
@@ -1270,6 +1274,8 @@ module Python {
 
     /*
       Convert a Chapel string to a `wchar_t*`, this is the same as `.c_str()`
+
+      This allocates a new buffer, the caller is responsible for freeing it.
     */
     proc string.c_wstr(): c_ptr(c_wchar) {
       extern proc mbstowcs(dest: c_ptr(c_wchar), src: c_ptrConst(c_char), n: c_size_t): c_size_t;
