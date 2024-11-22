@@ -6,7 +6,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
 source $CWD/common-hpe-cray-ex.bash
 
-module load cudatoolkit  # default is CUDA 12
+module load cuda/12.4
 
 export CHPL_LLVM=system
 export CHPL_COMM=ofi
