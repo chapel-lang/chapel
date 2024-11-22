@@ -9,4 +9,3 @@ export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="test-email"
 
 $UTIL_CRON_DIR/nightly -cron -hellos ${nightly_args}
- 
