@@ -1737,10 +1737,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_IS_FCF_TYPE: {
     Type* t = call->get(1)->typeInfo();
 
-    if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS))
+    if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS) ||
+        isFunctionType(t)) {
       retval = new SymExpr(gTrue);
-    else
+    } else {
       retval = new SymExpr(gFalse);
+    }
 
     call->replace(retval);
 

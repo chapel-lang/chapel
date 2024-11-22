@@ -89,6 +89,10 @@ module ChapelBase {
   // It is unstable and experimental.
   config param fcfsUsePointerImplementation = false;
 
+  private proc enableProcPtrRoutines(type T) param {
+    return fcfsUsePointerImplementation && __primitive("is fcf type", T);
+  }
+
   //
   // assignment on primitive types
   //
@@ -172,6 +176,13 @@ module ChapelBase {
   inline operator ==(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
+  }
+
+  inline operator !=(a: ?T, b: _nilType) where enableProcPtrRoutines(T) {
+    return __primitive("!=", a, 0);
+  }
+  inline operator !=(a: _nilType, b: ?T) where enableProcPtrRoutines(T) {
+    return __primitive("!=", b, 0);
   }
 
   inline operator !=(a: _nilType, b: _nilType) param do return false;
