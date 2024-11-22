@@ -1,5 +1,6 @@
 class Chapel < Formula
   include Language::Python::Shebang
+
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
   url "https://github.com/chapel-lang/chapel/releases/download/2.2.0/chapel-2.2.0.tar.gz"
@@ -23,11 +24,8 @@ class Chapel < Formula
   depends_on "hwloc"
   depends_on "jemalloc"
   depends_on "llvm@18"
-  depends_on "pkg-config"
+  depends_on "pkgconf"
   depends_on "python@3.13"
-
-  # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
-  fails_with gcc: "5"
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
