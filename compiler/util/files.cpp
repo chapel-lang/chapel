@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
@@ -209,22 +210,11 @@ void restoreDriverTmp(const char* tmpFilePath,
   fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
   closefile(tmpFileDummy);
 
-  fileinfo* tmpFile = openTmpFile(tmpFilePath, "r");
-
-  char strBuf[4096];
-  while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
-    // Note: Using strlen here (instead of strnlen) is safe because fgets
-    // guarantees null termination.
-    size_t len = strlen(strBuf);
-    // remove trailing newline, which fgets preserves unless buffer is exceeded
-    assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
-    strBuf[--len] = '\0';
-
-    // invoke restoring function
-    restoreSavedString(strBuf);
+  std::ifstream fileStream(genIntermediateFilename(tmpFilePath));
+  std::string line;
+  while (std::getline(fileStream, line)) {
+    restoreSavedString(line.c_str());
   }
-
-  closefile(tmpFile);
 }
 
 void restoreDriverTmpMultiline(
