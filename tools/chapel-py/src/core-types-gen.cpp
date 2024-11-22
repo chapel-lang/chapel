@@ -102,7 +102,8 @@ struct InvokeHelper<void(Args...)> {
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto&& node = ((NODE##Object*) self)->unwrap(); \
+    auto* node = ((NODE##Object*) self)->unwrap(); \
+    if (!node) return nullptr; \
     auto contextObject = ((NODE##Object*) self)->context(); \
     auto context = &contextObject->value_; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
@@ -123,6 +124,7 @@ struct InvokeHelper<void(Args...)> {
 #define ACTUAL_ITERATOR(NAME)\
   PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
     auto node = ((NAME##Object*) self)->unwrap(); \
+    if (!node) return nullptr; \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
     auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \

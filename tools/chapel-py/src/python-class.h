@@ -35,7 +35,7 @@ struct PythonClass {
 
   /** ===== Support for the method-tables API ===== */
 
-  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T&>::type;
+  using UnwrappedT = typename std::conditional<std::is_pointer_v<T>, T, T*>::type;
 
   // If T is a pointer, allow ::create() to be called with nullptr, and
   // just return None.
@@ -50,7 +50,35 @@ struct PythonClass {
     return false;
   }
 
-  UnwrappedT unwrap() { return value_; }
+  // If we're in a bad state (object constructor invoked, but value was
+  // never set), issue a Python exception. This probably just means a user
+  // explicitly tried to create e.g. an AST Node using AstNode().
+  //
+  // Returns whether everything is OK.
+  bool raiseIfInvalid() {
+    if (shouldReturnNone(value_)) {
+      PyErr_Format(PyExc_RuntimeError,
+                   "invalid instance of class '%s'; please do not manually construct instances of this class.",
+                   Self::PythonType.tp_name);
+      return false;
+    }
+    return true;
+  }
+
+  template <typename Q = T>
+  typename std::enable_if<std::is_pointer_v<Q>, UnwrappedT>::type
+  unwrap() {
+    if (!raiseIfInvalid()) return nullptr;
+    return value_;
+  }
+
+  template <typename Q = T>
+  typename std::enable_if<!std::is_pointer_v<Q>, UnwrappedT>::type
+  unwrap() {
+    if (!raiseIfInvalid()) return nullptr;
+    return &value_;
+  }
+
   ContextObject* context() { return nullptr; }
 
   /** ===== CPython API support ===== */
@@ -143,7 +171,9 @@ struct PythonClassWithContext : public PythonClass<Self, T> {
   PyObject* contextObject;
 
   static void dealloc(Self* self) {
-    Py_DECREF(self->contextObject);
+    if (self->contextObject) {
+      Py_DECREF(self->contextObject);
+    }
     PythonClass<Self, T>::dealloc(self);
   }
 

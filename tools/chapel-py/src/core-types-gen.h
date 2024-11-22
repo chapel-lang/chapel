@@ -37,7 +37,15 @@
     static constexpr const char* Name = #NAME; \
     static constexpr const char* DocStr = "An object that represents a Chapel " #NAME; \
   \
-    const auto unwrap() const { return parent.value_->to##NAME(); } \
+    const auto unwrap() const { \
+      if (parent.value_) { \
+        PyErr_Format(PyExc_RuntimeError, \
+                     "invalid instance of class '%s'; please do not manually construct instances of this class.", \
+                      #NAME); \
+        return static_cast<decltype(parent.value_->to##NAME())>(nullptr); \
+      } \
+      return parent.value_->to##NAME(); \
+    } \
     ContextObject* context() const { return (ContextObject*) parent.contextObject; } \
   }; \
   \
