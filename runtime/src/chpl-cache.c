@@ -146,7 +146,7 @@ semantics (meaning that they imply an acquire and a release barrier). So in a
 real Chapel program, the required barriers would probably be hidden in whatever
 technique was used to 'notify' or 'wait'. Atomic operations on atomic-type
 variables can specify the required memory semantics (e.g., you could do
-myatomic.fetchAdd(1, memory_order_acquire) but without the order= argument
+myatomic.fetchAdd(1, chpl_memory_order_acquire) but without the order= argument
 you get a full barrier ).
 
 == Implementation Notes ==

@@ -122,7 +122,7 @@ void chpl_rmem_consist_fence(chpl_memory_order order, int ln, int32_t fn) {
     int release = 1;
     if( order == chpl_memory_order_acquire ) {
       release = 0;
-    } else if( order == memory_order_release ) {
+    } else if( order == chpl_memory_order_release ) {
       acquire = 0;
     }
 

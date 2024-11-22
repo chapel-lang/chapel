@@ -199,14 +199,14 @@ static inline type atomic_fetch_xor_ ## type(chpl_atomic_ ## type * obj, type op
 // single memory order.
 //
 // The C standard requires that an atomic_load or the compare_exchange
-// failure case not have memory_order_release or memory_order_acq_rel.
+// failure case not have chpl_memory_order_release or chpl_memory_order_acq_rel.
 // In addition, the compare_exchange failure case cannot have a stronger
 // order than the success case. We choose the strongest order we can
 // that satisfies those requirements.
 //
-#define GET_READABLE_ORDER(order) (order != memory_order_release && \
-                                   order != memory_order_acq_rel ? \
-                                   order : memory_order_acquire)
+#define GET_READABLE_ORDER(order) (order != chpl_memory_order_release && \
+                                   order != chpl_memory_order_acq_rel ? \
+                                   order : chpl_memory_order_acquire)
 
 ///////////////////////////////////////////////////////////////////////////////
 ////                   START OF REAL ATOMICS FETCH OPS                    ////
@@ -222,7 +222,7 @@ static inline type atomic_fetch_add_explicit_ ## type(chpl_atomic_ ## type * obj
   return old_val; \
 } \
 static inline type atomic_fetch_add_ ## type(chpl_atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+  return atomic_fetch_add_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
 static inline type atomic_fetch_sub_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   chpl_memory_order ld_exp_order = GET_READABLE_ORDER(order); \
@@ -234,7 +234,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(chpl_atomic_ ## type * obj
   return old_val; \
 } \
 static inline type atomic_fetch_sub_ ## type(chpl_atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+  return atomic_fetch_sub_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 }
 
 
@@ -286,7 +286,7 @@ static inline void atomic_init_spinlock_t(chpl_atomic_spinlock_t* lock) {
 static inline void atomic_destroy_spinlock_t(chpl_atomic_spinlock_t* lock) { }
 
 static inline chpl_bool atomic_try_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
-  return !atomic_load(lock) && !atomic_exchange_explicit(lock, true, memory_order_acquire);
+  return !atomic_load(lock) && !atomic_exchange_explicit(lock, true, chpl_memory_order_acquire);
 }
 
 static inline void atomic_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
@@ -296,7 +296,7 @@ static inline void atomic_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
 }
 
 static inline void atomic_unlock_spinlock_t(chpl_atomic_spinlock_t* lock) {
-  atomic_store_explicit(lock, false, memory_order_release);
+  atomic_store_explicit(lock, false, chpl_memory_order_release);
 }
 
 #ifdef __cplusplus
