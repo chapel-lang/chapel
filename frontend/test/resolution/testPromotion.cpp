@@ -410,8 +410,7 @@ static void regressionTestRecursivePromotionTypeBug() {
   // with the type and param intents, it was possible to trigger recursive
   // queries. This PR ensures that no longer happens.
 
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  auto context = buildStdContext();
 
   auto var = resolveTypeOfX(context,
       R"""(
