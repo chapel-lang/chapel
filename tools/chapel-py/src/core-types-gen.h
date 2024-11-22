@@ -38,7 +38,7 @@
     static constexpr const char* DocStr = "An object that represents a Chapel " #NAME; \
   \
     const auto unwrap() const { \
-      if (parent.value_) { \
+      if (!parent.value_) { \
         raiseExceptionForIncorrectlyConstructedType(#NAME); \
         return static_cast<decltype(parent.value_->to##NAME())>(nullptr); \
       } \
