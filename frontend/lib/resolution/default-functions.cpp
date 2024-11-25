@@ -437,6 +437,7 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
                                   USTR("this"), Formal::DEFAULT_INTENT,
                                   std::move(thisType), nullptr);
 
+  // TODO: constrain type to be same as 'typeID', possibly through 'this.type'?
   auto otherName = UniqueString::get(context, "other");
   auto otherFormal = Formal::build(builder, dummyLoc, nullptr,
                                    otherName, Formal::DEFAULT_INTENT,
