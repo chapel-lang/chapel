@@ -52,7 +52,7 @@ prefixes = {
     'launch':       'CHPL_LAUNCHER',
     'tmr':          'CHPL_TIMERS',
     'unwind':       'CHPL_UNWIND',
-    'mem':          'CHPL_MEM',
+    'mem':          'CHPL_TARGET_MEM',
     'atomics':      'CHPL_ATOMICS',
     'gmp':          'CHPL_GMP',
     'llvm':         'CHPL_LLVM',
