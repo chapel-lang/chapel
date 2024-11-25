@@ -463,7 +463,15 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // save old result when appropriate
   // no need to save old result 1st time running this query
   // no need to save new result when old one is used due to no changes
-  if (initialResult || changed==false) {
+  //
+  // but, if we issued errors, even if 'changed' is false, the issues may
+  // contain newly-allocated data from the result, so keep that data.
+  if (initialResult) {
+    // no need to save old result
+  } else if (!r->errors.empty()) {
+    r->oldResultForErrorContents = queryMap->oldResults.size();
+    queryMap->oldResults.push_back(std::move(result));
+  } else if (changed==false) {
     // no need to save old result
   } else {
     queryMap->oldResults.push_back(std::move(result));
