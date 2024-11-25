@@ -510,78 +510,75 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   return typedSignatureInitial(&rcval, uSig);
 }
 
-  // add a formal for the 'other' argument
-  auto name = UniqueString::get(context, "other");
-  auto defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
-  const uast::Decl* node = nullptr;
+const BuilderResult& buildDeinit(Context* context, ID typeID) {
+  QUERY_BEGIN(buildDeinit, context, typeID);
 
-  auto fd = UntypedFnSignature::FormalDetail(name, defaultKind, node);
-  ufsFormals.push_back(std::move(fd));
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
 
-  CHPL_ASSERT(formalTypes.size() == 1);
-  auto otherType = QualifiedType(QualifiedType::CONST_REF,
-                                 formalTypes[0].type());
-  formalTypes.push_back(std::move(otherType));
+  auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
 
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("init="),
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
+  AstList formals;
 
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
+  // Empty body. Easier to let other parts of resolution infer the contents.
+  // TODO: Insert call to parent deinit
+  AstList stmts;
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
 
-  return ret;
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("deinit"),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
 generateDeinitSignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
+  auto& br = buildDeinit(context, inCompType->id());
+  auto deinitFn = br.topLevelExpression(0)->toFunction();
 
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ false);
+  auto fd = UntypedFnSignature::FormalDetail(USTR("this"),
+                                           UntypedFnSignature::DK_NO_DEFAULT,
+                                           deinitFn->thisFormal(), false);
+  ufsFormals.push_back(fd);
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
+                        /*id*/ deinitFn->id(),
                         /*name*/ USTR("deinit"),
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idTag*/ asttags::Function,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, ufs);
+}
 
   return ret;
 }
