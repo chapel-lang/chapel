@@ -163,55 +163,6 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-// generates the untyped function signature and typed function
-// signature formal entries for the 'this' method receiver for
-// some kind of 'init' or 'init='
-static void
-generateInitParts(Context* context,
-                  const CompositeType* inCompType,
-                  const CompositeType*& compType,
-                  std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
-                  std::vector<QualifiedType>& formalTypes,
-                  bool useGeneric) {
-  // adjust to refer to fully generic signature if needed
-  auto genericCompType = inCompType->instantiatedFromCompositeType();
-  if (useGeneric && genericCompType != nullptr) {
-    compType = genericCompType;
-  } else {
-    compType = inCompType;
-  }
-
-  // start by adding a formal for the receiver
-  auto ufsReceiver =
-    UntypedFnSignature::FormalDetail(USTR("this"),
-                                     UntypedFnSignature::DK_NO_DEFAULT,
-                                     nullptr);
-  ufsFormals.push_back(std::move(ufsReceiver));
-
-  // Determine the receiver type and intent.
-  QualifiedType qtReceiver;
-
-  // If the receiver is a record type, just give it the 'ref' intent.
-  if (compType->isRecordType() || compType->isUnionType()) {
-    qtReceiver = QualifiedType(QualifiedType::REF, compType);
-
-  // If the receiver is a basic class C, use 'const in x: borrowed C'.
-  } else if (auto basic = compType->toBasicClassType()) {
-    const Type* manager = nullptr;
-    auto borrowedNonnilDecor =
-        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-    auto receiverType =
-        ClassType::get(context, basic, manager, borrowedNonnilDecor);
-    CHPL_ASSERT(receiverType);
-    qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
-
-  } else {
-    CHPL_ASSERT(false && "Not possible!");
-  }
-
-  formalTypes.push_back(std::move(qtReceiver));
-}
-
 static bool initHelper(Context* context,
                        Builder* builder,
                        const AggregateDecl* typeDecl,
@@ -406,18 +357,8 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
   return QUERY_END(result);
 }
 
-static const TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
-    if (ct->isObjectType()) {
-      return nullptr;
-    }
-  }
-
-  auto& br = buildInitializer(context, inCompType->id());
-
-  auto initFn = br.topLevelExpression(0)->toFunction();
-
+static std::vector<UntypedFnSignature::FormalDetail>
+buildInitUfsFormals(const uast::Function* initFn) {
   // compute the FormalDetails manually so that we can set the default-kind
   // appropriately.
   //
@@ -427,14 +368,19 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   for (auto decl : initFn->formals()) {
     UniqueString name;
     bool hasDefault = false;
+
     if (auto formal = decl->toFormal()) {
       name = formal->name();
-      hasDefault = formal->initExpression() != nullptr;
-      if (decl != initFn->thisFormal()) {
-        if (formal->intent() != Formal::Intent::TYPE &&
-            formal->intent() != Formal::Intent::PARAM) {
-          if (formal->typeExpression() != nullptr) {
-            hasDefault = true;
+
+      // Check if formal should have a default, which is never true for init=
+      if (initFn->name() != USTR("init=")) {
+        hasDefault = formal->initExpression() != nullptr;
+        if (decl != initFn->thisFormal()) {
+          if (formal->intent() != Formal::Intent::TYPE &&
+              formal->intent() != Formal::Intent::PARAM) {
+            if (formal->typeExpression() != nullptr) {
+              hasDefault = true;
+            }
           }
         }
       }
@@ -446,6 +392,22 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                                                decl, decl->isVarArgFormal());
     formals.push_back(fd);
   }
+
+  return formals;
+}
+
+static const TypedFnSignature*
+generateInitSignature(Context* context, const CompositeType* inCompType) {
+  if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
+    if (ct->isObjectType()) {
+      return nullptr;
+    }
+  }
+
+  auto& br = buildInitializer(context, inCompType->id());
+
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto formals = buildInitUfsFormals(initFn);
 
   // find the unique-ified untyped signature
   auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
@@ -462,14 +424,90 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   return typedSignatureInitial(&rcval, uSig);
 }
 
+const BuilderResult& buildInitEquals(Context* context, ID typeID) {
+  QUERY_BEGIN(buildInitEquals, context, typeID);
+
+  auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto thisType = Identifier::build(builder, dummyLoc, typeDecl->name());
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
+
+  auto otherName = UniqueString::get(context, "other");
+  auto otherFormal = Formal::build(builder, dummyLoc, nullptr,
+                                   otherName, Formal::DEFAULT_INTENT,
+                                   nullptr, nullptr);
+  AstList formals;
+  formals.push_back(std::move(otherFormal));
+
+  AstList stmts;
+
+  std::vector<const VarLikeDecl*> fields;
+  for (auto d : typeDecl->decls()) {
+    collectFields(d, fields);
+  }
+
+  for (auto field : fields) {
+    // Create 'this.field = other.field;' statement
+    owned<AstNode> lhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, USTR("this")),
+                                    field->name());
+    owned<AstNode> rhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, otherName),
+                                    field->name());
+    owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
+                                          std::move(lhs), std::move(rhs));
+    stmts.push_back(std::move(assign));
+  }
+
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("init="),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
+}
+
 static const TypedFnSignature*
 generateInitCopySignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
+  auto& br = buildInitEquals(context, inCompType->id());
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto formals = buildInitUfsFormals(initFn);
 
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ false);
+  // find the unique-ified untyped signature
+  auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
+                                   true,
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ true,
+                                   /* throws */ false,
+                                   /* idTag */ asttags::Function,
+                                   uast::Function::Kind::PROC,
+                                   std::move(formals), nullptr,
+                                   inCompType->id());
+
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, uSig);
+}
 
   // add a formal for the 'other' argument
   auto name = UniqueString::get(context, "other");
