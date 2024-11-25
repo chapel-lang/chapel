@@ -1482,8 +1482,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
-          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
+          // if (auto namedDecl = declForErr->toNamedDecl()) {
+          //   auto pair = namesWithErrorsEmitted.insert(namedDecl->name());
+          //   if (pair.second) {
+              CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                          initForErr, declaredType.type(), initExprType.type());
+          //   }
+          // } else {
+          //   CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+          //               initForErr, declaredType.type(), initExprType.type());
+          // }
           typePtr = ErroneousType::get(context);
         }
       } else {
@@ -1498,8 +1506,16 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                     initExprType.type(), poiScope);
         }
         if (initEq == nullptr) {
-          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
+          // if (auto namedDecl = declForErr->toNamedDecl()) {
+          //   auto pair = namesWithErrorsEmitted.insert(namedDecl->name());
+          //   if (pair.second) {
+          //     CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+          //                 initForErr, declaredType.type(), initExprType.type());
+          //   }
+          // } else {
+            CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                        initForErr, declaredType.type(), initExprType.type());
+          // }
           typePtr = ErroneousType::get(context);
         } else {
           typePtr = initEq->formalType(0).type();
@@ -3538,19 +3554,41 @@ MatchingIdsWithName Resolver::lookupIdentifier(
 }
 
 static bool
+checkForErrorSelfDefinition(Context* context, const AstNode* node,
+                            const ID& target) {
+  auto targetAst = parsing::idToAst(context, target);
+  if (node->tag() == AstTag::Identifier && target.contains(node->id())) {
+    if (targetAst && targetAst->isVarLikeDecl() ) {
+      auto nd = targetAst->toVarLikeDecl();
+      auto identNode = node->toIdentifier();
+      if (nd->name() == identNode->name()) {
+        // This is a self-reference, so it's an error.
+        CHPL_REPORT(context, SelfDefinition, nd, identNode);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool
 checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
                              const ID& target) {
+    // treat self-definition as a special case of use-before-define
+    if (checkForErrorSelfDefinition(context, node, target)) {
+      return true;
+    }
     if (node->tag() == AstTag::Identifier) {
       if (node->id().symbolPath() == target.symbolPath()) {
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
           CHPL_REPORT(context, UseOfLaterVariable, node, target);
           return true;
-      }
+        }
     }
   }
-   return false;
- }
+  return false;
+}
 
 static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
@@ -3632,7 +3670,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   // Use bitwise-OR here to avoid short-circuiting.
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
-  ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
+    ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
 
   return QUERY_END(ret);
 }

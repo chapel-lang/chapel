@@ -459,6 +459,18 @@ void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
   wr.code(cond, {var});
 }
 
+void ErrorFieldUsedBeforeInitialized::write(ErrorWriterBase& wr) const {
+  auto field = std::get<const uast::AstNode*>(info_);
+  auto laterId = std::get<ID>(info_);
+  wr.heading(kind_, type_, field,
+             "field is used before it is initialized.");
+  wr.message("In the following statement:");
+  wr.code(field);
+  wr.message("there is a reference to a field initialized later:");
+  wr.codeForDef(laterId);
+  wr.message("Fields cannot be used before they are initialized.");
+}
+
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto code = std::get<const uast::AstNode*>(info_);
   auto lastModule = std::get<1>(info_);
@@ -1910,6 +1922,18 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
     wr.message("Did you mean for class '", actualClassType,
         "' to extend 'ReduceScanOp'?");
   }
+}
+
+void ErrorSelfDefinition::write(ErrorWriterBase& wr) const {
+  const uast::NamedDecl* decl = std::get<0>(info_);
+  const uast::Identifier* ident = std::get<1>(info_);
+  wr.heading(kind_, type_, decl,
+             "'", ident->name(), "' is used to define itself.");
+  wr.message("In the following statement:");
+  wr.code(decl);
+  wr.message("the symbol '", ident->name(), "' is used to define itself here:");
+  wr.codeForDef(ident);
+  wr.message("Symbols cannot be used to define themselves.");
 }
 
 void ErrorSplitInitMismatchedConditionalTypes::write(
