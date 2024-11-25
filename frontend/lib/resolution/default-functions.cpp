@@ -1431,6 +1431,14 @@ builderResultForDefaultFunction(Context* context,
 
   if (name == USTR("init")) {
     return &buildInitializer(context, typeID);
+  } else if (name == USTR("init=")) {
+    return &buildInitEquals(context, typeID);
+  } else if (name == USTR("deinit")) {
+    return &buildDeinit(context, typeID);
+  } else if (name == USTR("serialize")) {
+    return &buildDeSerialize(context, typeID, true);
+  } else if (name == USTR("deserialize")) {
+    return &buildDeSerialize(context, typeID, false);
   } else if (typeID.symbolName(context) == name) {
     return &buildTypeConstructor(context, typeID);
   }
