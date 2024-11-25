@@ -1,7 +1,7 @@
 # This module should be insensitive to the Chapel configuration, so it
 # should be sufficient to test it only in the standard one.
 CHPL_COMM != none
-CHPL_MEM != jemalloc
+CHPL_TARGET_MEM != jemalloc
 CHPL_TASKS != qthreads
 COMPOPTS <= --baseline
 COMPOPTS <= --no-local

@@ -104,7 +104,7 @@ const char* CHPL_COMM_OFI_OOB = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_LAUNCHER = NULL;
 const char* CHPL_TIMERS = NULL;
-const char* CHPL_MEM = NULL;
+const char* CHPL_TARGET_MEM = NULL;
 const char* CHPL_MAKE = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
@@ -1802,7 +1802,7 @@ static void setChapelEnvs() {
   CHPL_TASKS           = envMap["CHPL_TASKS"];
   CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
   CHPL_TIMERS          = envMap["CHPL_TIMERS"];
-  CHPL_MEM             = envMap["CHPL_MEM"];
+  CHPL_TARGET_MEM      = envMap["CHPL_TARGET_MEM"];
   CHPL_MAKE            = envMap["CHPL_MAKE"];
   CHPL_ATOMICS         = envMap["CHPL_ATOMICS"];
   CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
