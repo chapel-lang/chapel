@@ -580,7 +580,54 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
   return typedSignatureInitial(&rcval, ufs);
 }
 
-  return ret;
+const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer) {
+  QUERY_BEGIN(buildDeSerialize, context, typeID, isSerializer);
+
+  // TODO:
+  // - use types for formals
+  // - add calls to (de)serializeDefaultImpl
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
+
+  auto writerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "writer"),
+                                 Formal::DEFAULT_INTENT, {}, nullptr);
+  auto serializerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "serializer"),
+                                 Formal::DEFAULT_INTENT, {}, nullptr);
+  AstList formals;
+  formals.push_back(std::move(writerArg));
+  formals.push_back(std::move(serializerArg));
+
+  AstList stmts;
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("serialize"),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               true, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
@@ -590,62 +637,37 @@ generateDeSerialize(Context* context, const CompositeType* compType,
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
+  auto& br = buildDeSerialize(context, compType->id(), name == USTR("serialize"));
+  auto genFn = br.topLevelExpression(0)->toFunction();
+
   ufsFormals.push_back(
       UntypedFnSignature::FormalDetail(USTR("this"),
                                        UntypedFnSignature::DK_NO_DEFAULT,
-                                       nullptr));
-
-  QualifiedType thisType;
-  if (compType->isBasicClassType()) {
-    const Type* manager = nullptr;
-    auto borrowedNonnilDecor =
-        ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-    auto receiverType =
-        ClassType::get(context, compType->toBasicClassType(), manager, borrowedNonnilDecor);
-    thisType = QualifiedType(QualifiedType::CONST_IN, receiverType);
-  } else {
-    thisType =QualifiedType(QualifiedType::CONST_REF, compType);
-  }
-  formalTypes.push_back(thisType);
-
-  // TODO: Add constraints to these arguments
+                                       genFn->thisFormal()));
   ufsFormals.push_back(
       UntypedFnSignature::FormalDetail(UniqueString::get(context, channel),
                                        UntypedFnSignature::DK_NO_DEFAULT,
-                                       nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, AnyType::get(context)));
-
+                                       genFn->formal(0)));
   ufsFormals.push_back(
       UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer),
                                        UntypedFnSignature::DK_NO_DEFAULT,
-                                       nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, AnyType::get(context)));
+                                       genFn->formal(1)));
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
+                        /*id*/ genFn->id(),
                         /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ true,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idTag*/ asttags::Function,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
-
-  return ret;
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, ufs);
 }
 
 static const TypedFnSignature*
