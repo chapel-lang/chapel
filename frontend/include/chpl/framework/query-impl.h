@@ -464,7 +464,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // no need to save old result 1st time running this query
   // no need to save new result when old one is used due to no changes
   //
-  // but, if we issued errors, even if 'changed' is false, the issues may
+  // but, if we issued errors, even if 'changed' is false, the errors may
   // contain newly-allocated data from the result, so keep that data.
   if (initialResult) {
     // no need to save old result

@@ -438,11 +438,21 @@ class QueryMap final : public QueryMapBase {
   void clearOldResults(RevisionNumber currentRevisionNumber) override {
     // Performance: Would it be better to move everything to a new map
     // rather than modify it in place as is done here?
+    std::vector<ResultType> keptOldResults;
+
     auto iter = map.begin();
     while (iter != map.end()) {
       const TheResultType& result = *iter;
       if (result.lastChecked == currentRevisionNumber) {
         // Keep the result
+
+        // if we're keeping around old data for the sake of error messages,
+        // save it here.
+        if (result.oldResultForErrorContents >= 0) {
+          keptOldResults.push_back(std::move(oldResults[result.oldResultForErrorContents]));
+          result.oldResultForErrorContents = keptOldResults.size() - 1;
+        }
+
         ++iter;
       } else {
         // Remove the result
@@ -450,7 +460,7 @@ class QueryMap final : public QueryMapBase {
       }
     }
 
-    oldResults.clear();
+    std::swap(keptOldResults, oldResults);
   }
 
   template <typename F>

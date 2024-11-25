@@ -1171,6 +1171,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    resultEntry->oldResultForErrorContents = -1;
     resultEntry->recursionErrors.clear();
     // increment the number of queries run in this revision
     numQueriesRunThisRevision_++;
