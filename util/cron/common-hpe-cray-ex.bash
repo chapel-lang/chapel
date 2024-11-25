@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 module unload $(module --terse list 2>&1 | grep PrgEnv-)
 

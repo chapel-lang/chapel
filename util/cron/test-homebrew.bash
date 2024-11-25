@@ -6,17 +6,17 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-CWD=$(cd $(dirname $0) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # common-tarball sets CHPL_HOME
-source $CWD/common-tarball.bash
+source $UTIL_CRON_DIR/common-tarball.bash
 
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
 
 export CHPL_LLVM=none
-# $CWD/common.bash sets this to none, but Homebrew builds with native
+# $UTIL_CRON_DIR/common.bash sets this to none, but Homebrew builds with native
 export CHPL_TARGET_CPU=native
 
 log_info "Moving to ${CHPL_HOME}"

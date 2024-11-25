@@ -3,10 +3,10 @@
 # This should be sourced by other scripts that wish to make use of the
 # variables set here.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/functions.bash
 
-source $CWD/load-base-deps.bash
+source $UTIL_CRON_DIR/load-base-deps.bash
 
 log_info "gcc version: $(which gcc)"
 gcc --version
@@ -63,7 +63,7 @@ function with_logging()
 if [ "${CHPL_HOME+x}" = "x" ] ; then
     log_info "CHPL_HOME is already set to: ${CHPL_HOME}"
 else
-    export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+    export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
     log_info "CHPL_HOME is not set. Defaulting to: ${CHPL_HOME}"
 fi
 log_info "CHPL_HOME is: ${CHPL_HOME}"

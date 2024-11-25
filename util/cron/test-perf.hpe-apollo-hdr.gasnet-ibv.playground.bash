@@ -2,17 +2,17 @@
 #
 # Run performance tests on an HPE Apollo
 
-CWD=$(cd $(dirname $0) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_SUBDIR="hpe-apollo"
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 
-source $CWD/common-perf.bash
+source $UTIL_CRON_DIR/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-ibv.playground"
 
-source $CWD/common-hpe-apollo.bash
-source $CWD/common-perf-hpe-apollo-hdr.bash
+source $UTIL_CRON_DIR/common-hpe-apollo.bash
+source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 
 export GASNET_PHYSMEM_MAX="0.90"
 
@@ -47,4 +47,4 @@ perf_args="-performance-description $SHORT_NAME -perflabel ml-"
 perf_args="${perf_args} -performance-configs gn-ibv-large:v,gn-ibv-fast:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}

@@ -2,9 +2,9 @@
 #
 # GPU native testing on a Cray EX (using none for CHPL_COMM)
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
-source $CWD/common-hpe-cray-ex.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 
 
 # We need 12.4 for the stream test because the CUDA driver on pinoak
@@ -24,4 +24,4 @@ export CHPL_LAUNCHER_PARTITION=griz256
 export CHPL_NIGHTLY_TEST_DIRS="gpu/interop/"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.interop"
-$CWD/nightly -cron ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${nightly_args}

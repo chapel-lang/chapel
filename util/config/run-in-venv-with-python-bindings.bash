@@ -2,7 +2,7 @@
 # Active the virtual environment (including Python bindings) and run the command supplied
 # usage: ./run-in-venv-with-python-bindings prog [args]
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 CC=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_CC)
 PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)

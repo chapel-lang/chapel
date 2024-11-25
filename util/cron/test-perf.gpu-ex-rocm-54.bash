@@ -2,13 +2,13 @@
 #
 # Run GPU performance tests
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-native-gpu.bash
-source $CWD/common-hpe-cray-ex.bash
-source $CWD/common-native-gpu-perf.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common-native-gpu.bash
+source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
+source $UTIL_CRON_DIR/common-native-gpu-perf.bash
 # make sure this comes after setting SUBDIR (set by native-gpu-perf) and
 # CONFIG_NAME
-source $CWD/common-perf.bash
+source $UTIL_CRON_DIR/common-perf.bash
 
 # everything we source above will end up sourcing `common.bash` which will then
 # source `load-base-deps.bash`. In the system we run this config,
@@ -32,4 +32,4 @@ export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi250x"
 
 nightly_args="${nightly_args} -startdate 04/04/24"
 
-$CWD/nightly -cron ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${nightly_args}

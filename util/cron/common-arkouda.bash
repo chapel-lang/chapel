@@ -2,7 +2,7 @@
 #
 # Configure environment for arkouda testing
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 COMMON_DIR=/hpcdc/project/chapel
 if [ ! -d "$COMMON_DIR" ]; then
@@ -13,7 +13,7 @@ fi
 export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
 export CHPL_TEST_GEN_ARKOUDA_GRAPHS=${CHPL_TEST_GEN_ARKOUDA_GRAPHS:-true}
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
-  source $CWD/common-perf.bash
+  source $UTIL_CRON_DIR/common-perf.bash
   ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
   export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
   export CHPL_TEST_NUM_TRIALS=3
@@ -61,18 +61,18 @@ function test_release() {
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
   git checkout $currentSha -- $CHPL_HOME/util/test/computePerfStats
   git checkout $currentSha -- $CHPL_HOME/third-party/chpl-venv/test-requirements.txt
-  $CWD/nightly -cron ${nightly_args}
+  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
 # test against Chapel nightly
 function test_nightly() {
   export CHPL_TEST_PERF_DESCRIPTION=nightly
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
-  $CWD/nightly -cron ${nightly_args}
+  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
 function test_correctness() {
-  $CWD/nightly -cron ${nightly_args}
+  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
 function sync_graphs() {

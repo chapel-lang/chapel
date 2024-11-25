@@ -2,10 +2,10 @@
 #
 # Test default configuration against examples measuring memory leaks.
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
-source $CWD/common-memleaks.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-memleaks.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="memleaks.examples"
 
-$CWD/nightly -cron -memleaks -examples
+$UTIL_CRON_DIR/nightly -cron -memleaks -examples

@@ -4,9 +4,9 @@
 # multilocale tests only.
 #
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common-gasnet.bash
-source $CWD/common-asan.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common-gasnet.bash
+source $UTIL_CRON_DIR/common-asan.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-asan.arkouda"
 
@@ -27,7 +27,7 @@ export ARKOUDA_ASAN=true
 
 export CHPL_TEST_ARKOUDA_PERF=false
 
-source $CWD/common-arkouda.bash
+source $UTIL_CRON_DIR/common-arkouda.bash
 
 export CHPL_FLAGS="--parallel-make 16 --ccflags -Og"
 

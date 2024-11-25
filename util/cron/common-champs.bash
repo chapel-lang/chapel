@@ -3,7 +3,7 @@
 # Configure environment for CHAMPS testing
 
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 COMMON_DIR=/cy/users/chapelu
 
 export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
@@ -23,7 +23,7 @@ module list
 
 module purge
 
-source $CWD/common-perf-hpe-apollo-hdr.bash
+source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 
 module list
 
@@ -41,12 +41,12 @@ module list
 export CHPL_HOST_PLATFORM=hpe-apollo
 export CHPL_TEST_LAUNCHCMD=\$CHPL_HOME/util/test/chpl_launchcmd.py
 export CHPL_LAUNCHER_TIMEOUT=pbs
-source $CWD/load-base-deps.bash
+source $UTIL_CRON_DIR/load-base-deps.bash
 
 module list
 
 # Perf configuration
-source $CWD/common-perf.bash
+source $UTIL_CRON_DIR/common-perf.bash
 CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs}
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME

@@ -15,8 +15,8 @@
 #
 # The default is cray-xc
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/functions.bash
 
 # Ensure module commands are available.
 local_bashrc=/etc/bash.bashrc.local
@@ -116,7 +116,7 @@ module unload cray-mpich
 log_info "Unloading atp module"
 module unload atp
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 
 # Set CHPL_HOST_COMPILER.
 if [ -n "${chpl_host_value}" ] ; then

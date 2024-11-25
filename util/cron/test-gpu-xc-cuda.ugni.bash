@@ -2,9 +2,9 @@
 #
 # Build Arkouda on a cray-xc with GPU locale model
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-source $CWD/common-native-gpu.bash
+source $UTIL_CRON_DIR/common-native-gpu.bash
 
 # Setup for GPU:
 module load cudatoolkit
@@ -25,4 +25,4 @@ module load craype-x86-cascadelake
 
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-xc-cuda.ugni"
-$CWD/nightly -cron ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${nightly_args}

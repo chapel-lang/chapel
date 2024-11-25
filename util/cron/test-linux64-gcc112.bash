@@ -2,8 +2,8 @@
 #
 # Test default configuration on examples only, on linux64, with compiler gcc-11.2
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
 # with a different and incompatible version of GCC
@@ -27,4 +27,4 @@ fi
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc112"
 
-$CWD/nightly -cron -examples -blog ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

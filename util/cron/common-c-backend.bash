@@ -2,7 +2,7 @@
 #
 # Configure environment for testing C backends
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # Do not set CHPL_LLVM=none here for all c-backend testing.
 # Generally speaking, we would like for tests of the C backend

@@ -3,11 +3,11 @@
 # Setup environment for LLVM testing.
 #
 # We examine the first commandline parameter,
-#   $ source $CWD/common-llvm.bash system # $1 is "system", for example
+#   $ source $UTIL_CRON_DIR/common-llvm.bash system # $1 is "system", for example
 # if $1 is "bundled" or "system", we set CHPL_LLVM = $1
 # all other cases, we set CHPL_LLVM = "bundled" for backward-compatibility
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # set CHPL_LLVM = "bundled" or "system", based on $1 if any
 # (default CHPL_LLVM = "bundled", and CHPL_LLVM = "none" is not allowed)

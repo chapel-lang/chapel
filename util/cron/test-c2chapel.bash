@@ -2,8 +2,8 @@
 #
 # Run tests that use generated c2chapel files
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="c2chapel"
 
@@ -18,4 +18,4 @@ export CHPL_NIGHTLY_TEST_DIRS="c2chapel/"
 CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 export PATH="$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$PATH"
 
-$CWD/nightly -cron
+$UTIL_CRON_DIR/nightly -cron

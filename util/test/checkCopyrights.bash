@@ -37,7 +37,7 @@ then
   exit 0;
 fi
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
 this_year=$(date '+%Y')
