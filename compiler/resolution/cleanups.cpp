@@ -124,6 +124,14 @@ static void removeUnusedFunctions() {
   }
 }
 
+static void removeTopLevelSymExprs() {
+  for_alive_in_Vec(SymExpr, se, gSymExprs) {
+    if (se->getStmtExpr() == se) {
+      se->remove();
+    }
+  }
+}
+
 static CallExpr* replaceRuntimeTypeGetField(CallExpr* call) {
   SymExpr* rt = toSymExpr(call->get(1));
 
@@ -1037,6 +1045,8 @@ void pruneResolvedTree() {
   removeTiMarks();
 
   removeUnusedFunctions();
+
+  removeTopLevelSymExprs();
 
   if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
