@@ -639,6 +639,7 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 }
 
 static void cfg_find_halt_flag(kernel_cfg *cfg) {
+#ifndef GPU_RUNTIME_CPU
   size_t halt_flag_size;
   chpl_gpu_impl_load_global("chpl_haltFlag", (void**) &cfg->halt_flag,
                             &halt_flag_size);
@@ -648,6 +649,7 @@ static void cfg_find_halt_flag(kernel_cfg *cfg) {
   if (cfg->halt_flag) {
     assert(halt_flag_size == sizeof(int));
   }
+#endif
 }
 
 static void cfg_set_halt_flag(kernel_cfg* cfg, int new_flag) {
