@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+import os
+import shutil
+
+# This test currently uses too many locales in multilocale GPU testing
+comm = os.getenv('CHPL_COMM') != 'none' 
+gpu = os.getenv('CHPL_TEST_GPU') == 'true'
+
+print(comm and gpu)
