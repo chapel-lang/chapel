@@ -132,12 +132,12 @@ static void test3() {
 }
 
 static void test4() {
-  printf("test3\n");
+  printf("test4\n");
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test3.chpl");
+  auto path = UniqueString::get(context, "test4.chpl");
   std::string contents = R""""(
     class Outer {
         var outerField: int;
