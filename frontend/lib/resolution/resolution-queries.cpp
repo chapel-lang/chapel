@@ -3081,7 +3081,8 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
           }
         }
       }
-      if (containingType) {
+      if (containingType &&
+          containingType->id() == candidateId.parentSymbolId(context)) {
         auto ret = fieldAccessor(context, containingType, ci.name());
         return ApplicabilityResult::success(ret);
       }
