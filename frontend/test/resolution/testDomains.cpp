@@ -105,7 +105,6 @@ module M {
   assert(aa.action() == AssociatedAction::RUNTIME_TYPE);
 
   QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
-  (void)fullIndexType;
 
   auto rankVarTy = findVarType(m, rr, "r");
   assert(rankVarTy == dType->rank());
