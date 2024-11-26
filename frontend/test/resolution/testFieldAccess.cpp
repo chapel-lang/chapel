@@ -169,32 +169,67 @@ static void test4() {
   scopeResolveFunction(context, innerMethod->id());
 }
 
+// Test no ambiguity for field access on record var that is a field of same name
 static void test5() {
   printf("test5\n");
   Context ctx;
   Context* context = &ctx;
-  ErrorGuard guard(context);
 
-  auto qt = resolveTypeOfXInit(context,
-                               R"""(
-    record Bar {
-      var table : int;
-    }
-
-    record Foo {
-      var table: Bar;
-
-      proc doSomething() {
-        return table.table;
+  // Simple case
+  {
+    context->advanceToNextRevision(false);
+    auto qt = resolveTypeOfXInit(context,
+                                 R"""(
+      record Bar {
+        var table : int;
       }
-    }
 
-    var myFoo = new Foo();
-    var x = myFoo.doSomething();
-   )""");
+      record Foo {
+        var table: Bar;
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  assert(qt.type()->isIntType());
+        proc doSomething() {
+          return table.table;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.doSomething();
+     )""");
+
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isIntType());
+  }
+
+  // With inheritance
+  {
+    context->advanceToNextRevision(false);
+    auto qt = resolveTypeOfXInit(context,
+                                 R"""(
+      class Parent {
+        var table : int;
+      }
+      class Child : Parent {
+      }
+
+      record Foo {
+        var table: unmanaged Child;
+
+        proc init() {
+          table = new unmanaged Child();
+        }
+
+        proc doSomething() {
+          return table.table;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.doSomething();
+     )""");
+
+    assert(qt.kind() == QualifiedType::CONST_VAR);
+    assert(qt.type()->isIntType());
+  }
 }
 
 int main() {
