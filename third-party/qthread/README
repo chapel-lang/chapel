@@ -102,3 +102,16 @@ index 2ac887ed..2312c954 100644
    pthread_exit(NULL);
 ```
 
+```
+--- a/include/qthread/qthread.h
++++ b/include/qthread/qthread.h
+@@ -87,7 +87,7 @@ using std::memory_order_relaxed;
+
+ #include "macros.h"
+
+-#define MACHINE_FENCE atomic_thread_fence(memory_order_acq_rel);
++#define MACHINE_FENCE atomic_thread_fence(memory_order_seq_cst);
+
+ #if QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
+ #define QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
+```
