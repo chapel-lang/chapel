@@ -169,11 +169,40 @@ static void test4() {
   scopeResolveFunction(context, innerMethod->id());
 }
 
+static void test5() {
+  printf("test5\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+                               R"""(
+    record Bar {
+      var table : int;
+    }
+
+    record Foo {
+      var table: Bar;
+
+      proc doSomething() {
+        return table.table;
+      }
+    }
+
+    var myFoo = new Foo();
+    var x = myFoo.doSomething();
+   )""");
+
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }
