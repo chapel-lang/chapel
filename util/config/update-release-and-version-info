@@ -1,7 +1,15 @@
 import argparse
+from enum import Enum
+
 
 # Represents a file or maybe a group of similar files that are updated the same way
 class FileUpdater:
+
+    class VersionType(Enum):
+        CURRENT = 1
+        PREVIOUS = 2
+        NEXT = 3
+
     def __init__(self, file_path, major_version, minor_version, patch_version, release, prev_major_version, prev_minor_version, prev_patch_version, next_major_version, next_minor_version, next_patch_version):
         self.file_path = file_path
         self.major_version = major_version
@@ -15,12 +23,38 @@ class FileUpdater:
         self.next_patch_version = next_patch_version
         self.release = release
 
-        # TODO: would be nice to have preformatted version strings in the base class
-        #       short_version would be maj.min unless patch>0, then maj.min.patch
-        #       long_version would always be maj.min.patch
-        #       These should be available for both the current and previous version numbers
-        #       they could also be overridden by the subclass if for example,
-        #       a file should never have a three digit short_version
+    # Get the version number in the form of "X.Y" no matter if Z is 0 or not
+    def short_version(self, type=VersionType.CURRENT):
+        if type == self.VersionType.CURRENT:
+            return "{}.{}".format(self.major_version, self.minor_version)
+        elif type == self.VersionType.PREVIOUS:
+            return "{}.{}".format(self.prev_major_version, self.prev_minor_version)
+        elif type == self.VersionType.NEXT:
+            return "{}.{}".format(self.next_major_version, self.next_minor_version)
+        else:
+            raise ValueError("Unrecognized VersionType: {}".format(type))
+
+    # Get the version number in the form of "X.Y.Z" or "X.Y" if Z is 0
+    def short_maybe_long_version(self, type=VersionType.CURRENT):
+        if type == self.VersionType.CURRENT:
+            return "{}.{}".format(self.major_version, self.minor_version) if self.patch_version == 0 else "{}.{}.{}".format(self.major_version, self.minor_version, self.patch_version)
+        elif type == self.VersionType.PREVIOUS:
+            return "{}.{}".format(self.prev_major_version, self.prev_minor_version) if self.prev_patch_version == 0 else "{}.{}.{}".format(self.prev_major_version, self.prev_minor_version, self.prev_patch_version)
+        elif type == self.VersionType.NEXT:
+            return "{}.{}".format(self.next_major_version, self.next_minor_version) if self.next_patch_version == 0 else "{}.{}.{}".format(self.next_major_version, self.next_minor_version, self.next_patch_version)
+        else:
+            raise ValueError("Unrecognized VersionType: {}".format(type))
+
+    # Get the version number in the form of "X.Y.Z"
+    def long_version(self, type=VersionType.CURRENT):
+        if type == self.VersionType.CURRENT:
+            return "{}.{}.{}".format(self.major_version, self.minor_version, self.patch_version)
+        elif type == self.VersionType.PREVIOUS:
+            return "{}.{}.{}".format(self.prev_major_version, self.prev_minor_version, self.prev_patch_version)
+        elif type == self.VersionType.NEXT:
+            return "{}.{}.{}".format(self.next_major_version, self.next_minor_version, self.next_patch_version)
+        else:
+            raise ValueError("Unrecognized VersionType: {}".format(type))
 
     def read_file(self):
         with open(self.file_path, 'r') as f:
@@ -37,8 +71,8 @@ class FileUpdater:
 class ConfPyUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
-        version_string = "chplversion = '{}.{}'\n".format(self.major_version, self.minor_version)
-        release_string = "release = '{}.{}.{} {}'\n".format(self.major_version, self.minor_version, self.patch_version, "" if self.release else "(pre-release)")
+        version_string = "chplversion = '{}'\n".format(self.short_maybe_long_version())
+        release_string = "release = '{} {}'\n".format(self.long_version(), "" if self.release else "(pre-release)")
         any_changed = False
         for i, line in enumerate(lines):
             if line.startswith('chplversion = \'') and not line == version_string:
@@ -54,10 +88,7 @@ class ConfPyUpdater(FileUpdater):
 class ManConfUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
-        if self.patch_version > 0:
-          release_string = ":Version: {}.{}.{} {}\n".format(self.major_version, self.minor_version, self.patch_version, "" if self.release else "pre-release")
-        else:
-          release_string = ":Version: {}.{} {}\n".format(self.major_version, self.minor_version, "" if self.release else "pre-release")
+        release_string = ":Version: {} {}\n".format(self.short_maybe_long_version(), "" if self.release else "pre-release")
         any_changed = False
         for i, line in enumerate(lines):
             if line.startswith(':Version: ') and not line.strip() == release_string.strip():
@@ -72,7 +103,9 @@ class ArchivedSpecUpdater(FileUpdater):
         # this needs the PREV version number to be able to update the archive without messing up
         if self.release:
           lines = self.read_file()
-          archive_string = "* `Chapel {}.{} <https://chapel-lang.org/docs/{}.{}/index.html>`_\n".format(self.prev_major_version, self.prev_minor_version, self.prev_major_version, self.prev_minor_version)
+          # add 1 or 2 spaces depending on the length of the previous minor version
+          padding = 3 - len(str(self.prev_minor_version))
+          archive_string = "* `Chapel {}{}<https://chapel-lang.org/docs/{}/index.html>`_\n".format(self.short_version(self.VersionType.PREVIOUS), ' ' * padding, self.short_version(self.VersionType.PREVIOUS))
           any_changed = False
           if not archive_string in lines:
             for i, line in enumerate(lines):
@@ -87,18 +120,18 @@ class QuickStartUpdater(FileUpdater):
     def update(self):
         if self.release:
           lines = self.read_file()
-          version_string = "1) If you don't already have the Chapel {}.{} source release, see\n".format(self.major_version, self.minor_version)
-          tar_string = "         tar xzf chapel-{}.{}.{}.tar.gz\n".format(self.major_version, self.minor_version, self.patch_version)
-          cd_string =  "         cd chapel-{}.{}.{}\n".format(self.major_version, self.minor_version, self.patch_version)
+          version_string = "1) If you don't already have the Chapel {} source release, see\n".format(self.short_maybe_long_version())
+          tar_string = "         tar xzf chapel-{}.tar.gz\n".format(self.long_version())
+          cd_string =  "         cd chapel-{}\n".format(self.long_version())
           any_changed = False
           for i, line in enumerate(lines):
               if line.startswith('1) If you don\'t already have the Chapel ') and not line.strip() == version_string.strip():
                   lines[i] = version_string
                   any_changed = True
-              elif line.startswith("         tar xzf chapel-") and not line.strip() == tar_string.strip():
+              elif line.strip().startswith("tar xzf chapel-") and not line.strip() == tar_string.strip():
                   lines[i] = tar_string
                   any_changed = True
-              elif line.startswith("         cd chapel-") and not line.strip() == cd_string.strip():
+              elif line.strip().startswith("cd chapel-") and not line.strip() == cd_string.strip():
                   lines[i] = cd_string
                   any_changed = True
           if any_changed:
@@ -109,10 +142,10 @@ class ChplEnvUpdater(FileUpdater):
     def update(self):
         if self.release:
           lines = self.read_file()
-          export_string = "        export CHPL_HOME=~/chapel-{}.{}.{}\n".format(self.major_version, self.minor_version, self.patch_version)
+          export_string = "        export CHPL_HOME=~/chapel-{}\n".format(self.long_version())
           any_changed = False
           for i, line in enumerate(lines):
-              if line.startswith('        export CHPL_HOME=~/chapel-') and not line.strip() == export_string.strip():
+              if line.strip().startswith('export CHPL_HOME=~/chapel-') and not line.strip() == export_string.strip():
                   lines[i] = export_string
                   any_changed = True
           if any_changed:
@@ -149,28 +182,25 @@ class VersionHelpUpdater(FileUpdater):
         if any_changed:
           self.write_file(lines)
 
-# TODO: Implement the VersionButtonUpdater with specific rules for updating the version here
 class VersionButtonUpdater(FileUpdater):
     # steady-state: docs refers to prev-release and docs/main refers to current release
     def update(self):
         lines = self.read_file()
         any_changed = False
-        cur_rel = 'var currentRelease = "{}.{}";'
-        stage_rel = 'var stagedRelease = "{}.{}";'
-        next_rel = 'var nextRelease = "{}.{}";'
-        if self.release:
-            for i, line in enumerate(lines):
-                if line.strip().startswith('var nextRelease = ') and not line.strip() == 'var nextRelease = "{}.{}";    // what\'s the next release? (on docs/main)'.format(self.next_major_version, self.next_minor_version):
-                    any_changed = True
-                    lines[i] = '  var nextRelease = "{}.{}";    // what\'s the next release? (on docs/main)\n'.format(self.next_major_version, self.next_minor_version)
-        else:
-            for i, line in enumerate(lines):
-                if line.strip().startswith('var currentRelease = ') and not line.strip() == 'var currentRelease = "{}.{}";    // what does the public have?'.format(self.prev_major_version, self.prev_minor_version):
-                    any_changed = True
-                    lines[i] = '  var currentRelease = "{}.{}";    // what does the public have?\n'.format(self.prev_major_version, self.prev_minor_version)
-                elif line.strip().startswith('var stagedRelease = ') and not line.strip() == 'var stagedRelease = "{}.{}";    // is there a release staged but not yet public?'.format(self.major_version, self.minor_version):
-                    any_changed = True
-                    lines[i] = '  var stagedRelease = "{}.{}";    // is there a release staged but not yet public?\n'.format(self.major_version, self.minor_version)
+        cur_rel = '  var currentRelease = "{}"; // what does the public have?\n'.format(self.short_maybe_long_version(self.VersionType.PREVIOUS))
+        staged_rel = '  var stagedRelease = "{}";  // is there a release staged but not yet public?\n'.format(self.short_maybe_long_version())
+        next_rel = '  var nextRelease = "{}";    // what\'s the next release? (on docs/main)\n'.format(self.short_maybe_long_version(self.VersionType.NEXT)) if self.release else 'var nextRelease = "{}";    // what\'s the next release? (on docs/main)\n'.format(self.short_maybe_long_version())
+
+        for i, line in enumerate(lines):
+            if line.strip().startswith('var nextRelease = ') and not line.strip() == next_rel.strip():
+                any_changed = True
+                lines[i] = next_rel
+            elif line.strip().startswith('var currentRelease = ') and not line.strip() == cur_rel.strip():
+                any_changed = True
+                lines[i] = cur_rel
+            elif line.strip().startswith('var stagedRelease = ') and not line.strip() == staged_rel.strip():
+                any_changed = True
+                lines[i] = staged_rel
         if any_changed:
             self.write_file(lines)
 
@@ -178,7 +208,7 @@ class VersionButtonUpdater(FileUpdater):
 class GoodStartUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
-        version_string = " version {}.{}.{}".format(self.major_version, self.minor_version, self.patch_version)
+        version_string = " version {}".format(self.long_version())
         any_changed = False
         for i, line in enumerate(lines):
             if line.strip().startswith('version') and not line.strip() == version_string.strip():
