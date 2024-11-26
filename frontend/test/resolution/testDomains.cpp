@@ -157,6 +157,53 @@ module M {
   printf("Success: %s\n", domainType.c_str());
 }
 
+static void testDomainLiteral(Context* context,
+                                  std::string domainLiteral,
+                                  DomainType::Kind domainKind) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program =
+R"""(
+module M {
+  var d = )""" + domainLiteral + R"""(;
+
+  type i = d.idxType;
+  param rk = d.isRectangular();
+  param ak = d.isAssociative();
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const Variable* d = m->stmt(0)->toVariable();
+  assert(d);
+  assert(d->name() == "d");
+
+  QualifiedType dQt = rr.byAst(d).type();
+  assert(dQt.type());
+  auto dType = dQt.type()->toDomainType();
+  assert(dType);
+
+  assert(findVarType(m, rr, "i") == dType->idxType());
+
+  assert(dType->kind() == domainKind);
+  bool isRectangular = domainKind == DomainType::Kind::Rectangular;
+  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == isRectangular);
+  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == !isRectangular);
+
+  assert(guard.realizeErrors() == 0);
+
+  printf("Success: %s\n", domainLiteral.c_str());
+}
+
 static void testAssociative(Context* context,
                                   std::string domainType,
                                   std::string idxType,
@@ -387,6 +434,9 @@ int main() {
   testRectangular(context, "domain(2, int(8))", 2, "int(8)", "one");
   testRectangular(context, "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
   testRectangular(context, "domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+
+  testDomainLiteral(context, "{1..10}", DomainType::Kind::Rectangular);
+  testDomainLiteral(context, "{1..10, 1..10}", DomainType::Kind::Rectangular);
 
   testAssociative(context, "domain(int)", "int", true);
   testAssociative(context, "domain(int, false)", "int", false);
