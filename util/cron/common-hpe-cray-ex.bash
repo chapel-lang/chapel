@@ -11,9 +11,6 @@ module load PrgEnv-gnu/8.4.0
 module swap gcc gcc/12.2.0
 module load cray-pmi
 
-# cray-libsci currently has a problem on the Cray EX we run on
-module unload cray-libsci
-
 export CHPL_HOST_PLATFORM=hpe-cray-ex
 
 # Work around cxi provider bugs that limit memory registration
