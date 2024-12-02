@@ -66,7 +66,7 @@ endif()
 
 # Don't pass through jemalloc for the time being.
 string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
-
+string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
