@@ -765,7 +765,7 @@ static void testAttributeOnClass(Parser* parser) {
 
 static void testMultiAttributesOnClass(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testMultiAttributesOnClass.chpl",
                                          R""""(
                                           @attribute(true)
                                           @attribute1()
@@ -806,7 +806,7 @@ static void testMultiAttributesOnClass(Parser* parser) {
 
 static void testMultiAttributesAndPragma(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testMultiAttributesAndPragma.chpl",
                                          R""""(
                                           pragma "do not RVF"
                                           @attribute(true)
@@ -875,7 +875,7 @@ static void testAttributeAndPragmaLast(Parser* parser) {
 
 static void testAttributeAndUnstable(Parser* parser) {
  ErrorGuard guard(parser->context());
- auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+ auto parseResult = parser->parseString("testAttributeAndUnstable.chpl",
                                         R""""(
                                          @unstable("we're not sure about this")
                                          @attribute(true)
@@ -902,7 +902,7 @@ static void testAttributeAndUnstable(Parser* parser) {
 
 static void testAttributeAndUnstableLast(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testAttributeAndUnstableLast.chpl",
                                          R""""(
                                          @attribute(true)
                                          @unstable
@@ -929,7 +929,7 @@ static void testAttributeAndUnstableLast(Parser* parser) {
 
 static void testAttributeAndUnstableMessage(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testAttributeAndUnstableMessage.chpl",
                                          R""""(
                                          @attribute(true)
                                          @unstable("this will be changed later")
@@ -959,7 +959,7 @@ static void testAttributeAndUnstableMessage(Parser* parser) {
 static void testAttributeAndDeprecatedLast(Parser* parser) {
   // deprecated as a token, last, no arg
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testAttributeAndDeprecatedLast.chpl",
                                          R""""(
                                          @attribute("word")
                                          @deprecated
@@ -988,7 +988,7 @@ static void testAttributeAndDeprecatedLast(Parser* parser) {
 static void testAttributeAndDeprecatedMessage(Parser* parser) {
   // deprecated as a token TDEPRECATED, last, with arg
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testAttributeAndDeprecatedMessage.chpl",
                                          R""""(
                                          @attribute("word")
                                          @deprecated(notes="try using something else")
@@ -1019,7 +1019,7 @@ static void testAttributeAndDeprecatedMessage(Parser* parser) {
 static void testAttributeAndDeprecated(Parser* parser) {
   // deprecated as an attribute @deprecated, first, no arg
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+  auto parseResult = parser->parseString("testAttributeAndDeprecated.chpl",
                                         R""""(
                                         @deprecated
                                         @attribute(true)
@@ -1052,7 +1052,8 @@ static void testAttributeNamedArgs(Parser* parser) {
     proc foo { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl", program);
+  auto parseResult =
+  parseStringAndReportErrors(parser, "testAttributeNamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1103,7 +1104,7 @@ static void testAttributeMixedNamedArgs(Parser* parser) {
     proc foo { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl", program);
+  auto parseResult = parseStringAndReportErrors(parser, "testAttributeMixedNamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
