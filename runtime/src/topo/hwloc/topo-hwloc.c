@@ -539,7 +539,7 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 //
 // Partition resources when running with co-locales. This is complicated a bit
 // by oversubscription and that the number of locales might not be evenly
-// divisable by the number of nodes. If the number of colocales is zero, then
+// divisible by the number of nodes. If the number of colocales is zero, then
 // we are oversubscribed and each locale uses all of the resources available
 // to it. Otherwise, the number of locales on the node might be less than the
 // expected number of co-locales because the "remainder" node might not have

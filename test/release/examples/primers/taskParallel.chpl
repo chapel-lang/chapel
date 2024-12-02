@@ -109,7 +109,7 @@ writeln("4: output from main task");
 
 
 
-// Also like the ``cobegin`` statement, the orignal task will not wait
+// Also like the ``cobegin`` statement, the original task will not wait
 // for any ``begin`` tasks spawned by its child tasks.
 
 writeln("5: ### The coforall loop with nested begin statements ###");

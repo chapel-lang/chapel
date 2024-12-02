@@ -343,9 +343,9 @@ static const Type* ctFromSubs(Context* context,
   const Type* ret = nullptr;
 
   if (auto rec = receiverType->toRecordType()) {
-    auto instantatiatedFrom = subs.empty() ? nullptr : root->toRecordType();
+    auto instantiatedFrom = subs.empty() ? nullptr : root->toRecordType();
     ret = RecordType::get(context, rec->id(), rec->name(),
-                          instantatiatedFrom,
+                          instantiatedFrom,
                           subs);
   } else if (auto cls = receiverType->toClassType()) {
     auto oldBasic = cls->basicClassType();

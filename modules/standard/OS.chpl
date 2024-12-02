@@ -34,7 +34,7 @@
 module OS {
   /* Support for features matching the POSIX programming interface.
 
-     The ``OS.POSIX`` modudle specifically provides POSIX.1-2017.  That standard
+     The ``OS.POSIX`` module specifically provides POSIX.1-2017.  That standard
      can be found at <https://pubs.opengroup.org/onlinepubs/9699919799/>.
 
      There is one unavoidable difference between POSIX and ``OS.POSIX``.

@@ -3116,7 +3116,7 @@ module ChapelDomain {
                        (if high(0).type == low.type then high(0).type else (low + high(0)).type);
       var ranges: size*range(eltType);
       if isTuple(low) {
-        if !isHomogeneousTuple(low) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + low.type:string + "'");
+        if !isHomogeneousTuple(low) then compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" + low.type:string + "'");
         for param i in 0..<size {
           if inclusive then
             ranges[i] = low[i]..high;
@@ -3124,7 +3124,7 @@ module ChapelDomain {
             ranges[i] = low[i]..<high;
         }
       } else {
-        if !isHomogeneousTuple(high) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + high.type:string + "'");
+        if !isHomogeneousTuple(high) then compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" + high.type:string + "'");
         for param i in 0..<size {
           if inclusive then
             ranges[i] = low..high[i];
@@ -3142,7 +3142,7 @@ module ChapelDomain {
     where isTuple(low) && isTuple(high)
   {
     if !isHomogeneousTuple(low) || !isHomogeneousTuple(high) then
-      compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+      compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" +
                     low.type:string + "' and '" + high.type:string + "'");
     else if low.size != high.size then
       compilerError("Domains defined using tuple bounds must use tuples of the same length, " +

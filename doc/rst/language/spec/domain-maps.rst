@@ -251,7 +251,7 @@ determined by its type and so does not change upon a domain assignment.
 
    .. code-block:: chapel
 
-      use BlockDist:
+      use BlockDist;
       var Dom1 = blockDist.createDomain({1..5,1..6});
       var Dom2: domain(2) = Dom1;
 

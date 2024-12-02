@@ -1373,7 +1373,7 @@ class MethodLookupHelper {
 /** This type helps lookupNameInScope and related functions.
     When performing name lookup within a method, the name
     might refer to a field or tertiary method. Such matches
-    are checked for by searching the method reciver scopes
+    are checked for by searching the method receiver scopes
     at the time that the method signature is encountered in the
     process of searching parent scopes. This type includes
     a method that can return an appropriate MethodLookupHelper

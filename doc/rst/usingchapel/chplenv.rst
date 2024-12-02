@@ -874,7 +874,7 @@ CHPL_LLVM_GCC_INSTALL_DIR
    Sometimes it's necessary to request that ``clang`` work with a
    particular version of GCC. If many versions are installed at the same
    prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
-   differentate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
+   differentiate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
    comes in!
 
    To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such

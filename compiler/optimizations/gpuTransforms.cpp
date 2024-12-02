@@ -1218,7 +1218,7 @@ void KernelArg::findReduceKind() {
   // do some pattern matching in the AST to find the reduce kind
   // This should be OK except that `accumulate` in SumReduceScanOp is the only
   // accumulate proc that's inlined. So, we'll have to do some matching on the
-  // inlined function, which is never great. Morever, if we inline another
+  // inlined function, which is never great. Moreover, if we inline another
   // accumulate function in one of the other reduction types, it'll probably be
   // an unsupported reduction.
   //
@@ -1520,7 +1520,7 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated
       this->incReductionBufs();
     }
 
-    // if reduction variable, add the function definiton for the final reduction
+    // if reduction variable, add the function definition for the final reduction
     // wrapper
     if (FnSymbol* reduceWrapper = arg.reduceWrapper()) {
       fn_->defPoint->insertBefore(new DefExpr(reduceWrapper));
@@ -1752,7 +1752,7 @@ void GpuKernel::generatePostBody() {
   fn_->insertAtTail(this->postBody_);
 }
 
-// Returns the GPU primives block within 'body', or null if none.
+// Returns the GPU primitives block within 'body', or null if none.
 // Note: this searches inside nested loops - needed for multi-dim arrays, ex:
 //   var A: [1..n,1..n] int;
 //   @gpu.blockSize foreach A {}
@@ -2452,7 +2452,7 @@ static void cleanupPrimitives() {
       //     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
       //
       // For gpuized loops GPU lowering rewrites this as needed to ensure each thread
-      // has an indpendent copy-of x, loops that are not gpuized will have remaining
+      // has an independent copy-of x, loops that are not gpuized will have remaining
       // uses of the primitive, which we process by removing the primitive but keeping
       // the copy.
       callExpr->replace(callExpr->get(1)->remove());

@@ -1020,7 +1020,7 @@ heat_2d_dist.ml-time:
   08/13/24:
     - Expand auto local access optimization to support basic offsets (#25712)
   08/19/24:
-    - Stencil Distribution performance improvments (#25701)
+    - Stencil Distribution performance improvements (#25701)
   09/04/24:
     - Extend array view elision to Block, Cyclic and Stencil (#25869)
   09/11/24:
@@ -1603,7 +1603,7 @@ mg: &mg-base
 mg-b:
   <<: *mg-base
   08/19/24:
-    - Stencil Distribution performance improvments (#25701)
+    - Stencil Distribution performance improvements (#25701)
 
 mg.ml-time:
   05/11/17:

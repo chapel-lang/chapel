@@ -404,7 +404,7 @@ static void preNormalizeHandleStaticVars() {
       // Don't put the reset call into the function body right away because
       // at this time, myStaticVar is a non-global variable, so the function
       // is capturing it. We use the function as an FCF argument to
-      // 'executeStaticWraperCleanup', and capturing FCFs do not work. The
+      // 'executeStaticWrapperCleanup', and capturing FCFs do not work. The
       // relocation of the reset call will happen after the static variable has
       // been hoisted to the module level.
       //
@@ -1776,7 +1776,7 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
       Expr* root = nullptr;
       if (call->isPrimitive(PRIM_RESOLVES) ||
 
-          // Static resolution calls are not normalizeable so that they
+          // Static resolution calls are not normalizable so that they
           // don't "spill" their call temps outside of the primitive call.
           // If they are "spilled", replacing the primitive with its result
           // will still leave behind the temps; normally these would be

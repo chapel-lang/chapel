@@ -3073,7 +3073,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
     // procs can be ruled out if their 'where' clauses are false. If even
     // one identifier is not a parenless proc, there's an ambiguity.
     //
-    // outParenlessOverloadInfo will be falsey if we found non-parenless-proc
+    // outParenlessOverloadInfo will be false if we found non-parenless-proc
     // IDs. In that case we may emit an ambiguity error later, after filtering
     // out incorrect receivers.
     outParenlessOverloadInfo =
@@ -5089,7 +5089,7 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
-  // approriate error for us already.
+  // appropriate error for us already.
   if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
@@ -5125,7 +5125,7 @@ static bool isExplicitlyTaggedIteratorCall(Context* context,
 
   // We could've ended up resolving a leader automatically from a serial
   // call (if the serial overload doesn't exist). To check that this was
-  // an explicit tag, we need to not have any ITERATE associted actions.
+  // an explicit tag, we need to not have any ITERATE associated actions.
   auto count = std::count_if(re.associatedActions().begin(),
                              re.associatedActions().end(),
                              [](const AssociatedAction& aa) {
@@ -5371,7 +5371,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
     bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
   }
 
-  // The body wasn't a type, so this isn't an array type epxression
+  // The body wasn't a type, so this isn't an array type expression
   // Make an exception for unknown or erroneous bodies, since the user may
   // have been trying to define a type but made a mistake (or we may be
   // in a partially-instantiated situation and the type is not yet known).

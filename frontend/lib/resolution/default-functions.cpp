@@ -1095,7 +1095,7 @@ generateCastToEnum(Context* context,
 const TypedFnSignature*
 getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  // Normalize recieverType to allow TYPE methods on c_ptr and _ddata, and to
+  // Normalize receiverType to allow TYPE methods on c_ptr and _ddata, and to
   // otherwise use the VAR Kind. The Param* value is also stripped away to
   // reduce queries.
   auto qt = receiverType;

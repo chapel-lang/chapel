@@ -551,7 +551,7 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
   submodulesEncountered.clear();
   convertModuleInit(mod, modSym);
 
-  // Additionally, convert any submodules encontered.
+  // Additionally, convert any submodules encountered.
   // This is handled as a follow-on step in order to avoid storing
   // various pieces of TConverter state in a stack.
   for (const uast::Module* submod : submodulesEncountered) {
@@ -1544,7 +1544,7 @@ Type* TConverter::helpConvertClassType(const types::ClassType* t) {
 
   const types::RecordType* manager = t->managerRecordType(context);
   if (manager == nullptr) {
-    ret = at; // unamanged / borrowed is just the class type at this point
+    ret = at; // unmanaged / borrowed is just the class type at this point
   } else {
     // owned/shared should have had a substitution for chpl_t
     CHPL_ASSERT(!manager->substitutions().empty());

@@ -7203,7 +7203,7 @@ iter fileReader.lines(
 
 /*
   Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
-  roughly equally sized chunks, where each byte offset comes immidiately after
+  roughly equally sized chunks, where each byte offset comes immediately after
   a newline.
 
   :arg f: the file to search
@@ -8517,7 +8517,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
         // if we need more room in the buffer, grow it
         // this will happen if we have not read all of 'maxBytes' yet
         // but there is more data in the file (as when guessReadSize
-        // was innacurate for one reason or another)
+        // was inaccurate for one reason or another)
         var requestSz = 2*buffSz;
         // make sure to at least request 16 bytes
         if requestSz < n + 16 then requestSz = n + 16;

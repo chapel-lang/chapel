@@ -260,7 +260,7 @@ class QueryMapResultBase {
   // lastChanged indicates the last revision in which the query result
   // has changed
   mutable RevisionNumber lastChanged = -1;
-  // This field exists to support isQueryRunning. When traversingg the dependencies
+  // This field exists to support isQueryRunning. When traversing the dependencies
   // of a query, we may re-run dependency queries to see if their results change.
   // Sometimes, these queries will check isQueryRunning. At this time, the
   // actual query (this) is not running, but we want to return 'true' to hide

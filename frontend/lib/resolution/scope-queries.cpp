@@ -3158,7 +3158,7 @@ void GatherMentionedModules::gatherModuleId(const ID& id) {
   if (parsing::idIsModule(context, id)) {
     auto p = idSet.insert(id);
     if (p.second) {
-      // insertion occured, so add it also to the vector
+      // insertion occurred, so add it also to the vector
       idVec.push_back(id);
     }
   }
@@ -3310,7 +3310,7 @@ void GatherMentionedModules::processUseImport(const AstNode* ast) {
   if (scope && scope->containsUseImport()) {
     auto p = scopes.insert(scope);
     if (p.second) {
-      // Insertion occured, so this is the first time visiting this scope.
+      // Insertion occurred, so this is the first time visiting this scope.
       // Gather the IDs of the used/imported modules
       const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
       if (r != nullptr) {
