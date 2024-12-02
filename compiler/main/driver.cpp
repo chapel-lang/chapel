@@ -1363,7 +1363,7 @@ static ArgumentDescription arg_desc[] = {
  {"lib-pic", ' ', "<pic>", "Specify whether to use position-dependent or position-independent code", "S", NULL, "_CHPL_LIB_PIC", setChplEnv},
  {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setChplEnv},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setChplEnv},
- {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setChplEnv},
+ {"target-mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_TARGET_MEM", setChplEnv},
  {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setChplEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setChplEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setChplEnv},
