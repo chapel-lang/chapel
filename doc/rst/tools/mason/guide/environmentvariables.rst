@@ -16,6 +16,10 @@ Mason can be configured by setting the following environment variables:
   require internet access when set to ``true``. Defaults to ``false``. Mason commands
   that support a ``--[no-]update`` flag can override the ``MASON_OFFLINE`` setting
   when ``--update`` is explicitly passed.
+- ``MASON_LICENSE_CACHE_PATH`` : Path to a directory where mason will expect a
+  cached list of licenses.  When set, will use
+  ``--reference-if-able $MASON_LICENSE_CACHE_PATH/license-list-data.git`` when
+  cloning ``https://github.com/spdx/license-list-data.git``.
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
