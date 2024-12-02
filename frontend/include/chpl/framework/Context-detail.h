@@ -296,6 +296,12 @@ class QueryMapResultBase {
   // that gets cleared on garbage collection, so also store an additional index
   // into the oldResults list that indicates we should keep that entry while
   // we have error messages.
+  //
+  // See https://github.com/chapel-lang/chapel/pull/26319 for a description
+  // of the memory error.
+  //
+  // TODO: is there a better way to ensure error messages refer to valid
+  // data without keeping around discarded query results?
   mutable ssize_t oldResultForErrorContents = -1;
 
   mutable QueryDependencyVec dependencies;

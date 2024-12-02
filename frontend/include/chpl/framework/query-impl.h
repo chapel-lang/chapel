@@ -466,6 +466,8 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   //
   // but, if we issued errors, even if 'changed' is false, the errors may
   // contain newly-allocated data from the result, so keep that data.
+  // This is a workaround for Dyno memory issues; see the comment and TODO
+  // on QueryMapResultBase::oldResultForErrorContents.
   if (initialResult) {
     // no need to save old result
   } else if (!r->errors.empty()) {
