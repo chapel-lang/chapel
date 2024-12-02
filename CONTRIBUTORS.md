@@ -7,6 +7,7 @@ Contributors to the Chapel 2.3 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
+* Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Rui Chen, individual contributor
 * Soohoon Choi, [HPE]
@@ -29,6 +30,7 @@ Contributors to the Chapel 2.3 release
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
+* Robin Voetter, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -54,7 +56,6 @@ Contributors to previous releases
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
 * David Callahan, [Cray Inc.]
-* Paul Cassella, [HPE]
 * Sanket Chaudhari, individual contributor
 * Naman Chikara, individual contributor
 * R Chinmay, individual contributor
