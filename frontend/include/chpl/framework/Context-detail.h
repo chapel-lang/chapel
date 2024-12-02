@@ -285,6 +285,24 @@ class QueryMapResultBase {
   // This is not too strongly connected to emittedErrors (which tracks whether
   // errors --- if any --- were shown to the user for this query result only)
   mutable bool errorsPresentInSelfOrDependencies = false;
+  // Errors emitted when re-computing a query can refer to memory and data
+  // that's temporarily allocated while running the computation. Then, if the
+  // output of the query is the same as before, that temporary data can
+  // be discarded, since we'll keep our old value in the query system.
+  // This is bad because we want error messages to be valid when emitted,
+  // and not refer to any deallocated data.
+  //
+  // To keep this data allocated, keep it in parentQueryMap->oldResults. But
+  // that gets cleared on garbage collection, so also store an additional index
+  // into the oldResults list that indicates we should keep that entry while
+  // we have error messages.
+  //
+  // See https://github.com/chapel-lang/chapel/pull/26319 for a description
+  // of the memory error.
+  //
+  // TODO: is there a better way to ensure error messages refer to valid
+  // data without keeping around discarded query results?
+  mutable ssize_t oldResultForErrorContents = -1;
 
   mutable QueryDependencyVec dependencies;
   mutable std::set<const QueryMapResultBase*> recursionErrors;
@@ -297,6 +315,7 @@ class QueryMapResultBase {
                      bool beingTestedForReuse,
                      bool emittedErrors,
                      bool errorsPresentInSelfOrDependencies,
+                     size_t oldResultForErrorContents,
                      std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
@@ -317,7 +336,7 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, false, false, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, false, -1, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
@@ -326,12 +345,14 @@ class QueryMapResult final : public QueryMapResultBase {
                  bool beingTestedForReuse,
                  bool emittedErrors,
                  bool errorsPresentInSelfOrDependencies,
+                 size_t oldResultForErrorContents,
                  std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
     : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
                          emittedErrors, errorsPresentInSelfOrDependencies,
+                         oldResultForErrorContents,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
@@ -423,11 +444,21 @@ class QueryMap final : public QueryMapBase {
   void clearOldResults(RevisionNumber currentRevisionNumber) override {
     // Performance: Would it be better to move everything to a new map
     // rather than modify it in place as is done here?
+    std::vector<ResultType> keptOldResults;
+
     auto iter = map.begin();
     while (iter != map.end()) {
       const TheResultType& result = *iter;
       if (result.lastChecked == currentRevisionNumber) {
         // Keep the result
+
+        // if we're keeping around old data for the sake of error messages,
+        // save it here.
+        if (result.oldResultForErrorContents >= 0) {
+          keptOldResults.push_back(std::move(oldResults[result.oldResultForErrorContents]));
+          result.oldResultForErrorContents = keptOldResults.size() - 1;
+        }
+
         ++iter;
       } else {
         // Remove the result
@@ -435,7 +466,7 @@ class QueryMap final : public QueryMapBase {
       }
     }
 
-    oldResults.clear();
+    std::swap(keptOldResults, oldResults);
   }
 
   template <typename F>

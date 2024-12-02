@@ -1171,6 +1171,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    resultEntry->oldResultForErrorContents = -1;
     resultEntry->recursionErrors.clear();
     // increment the number of queries run in this revision
     numQueriesRunThisRevision_++;
@@ -1346,6 +1347,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    bool beingTestedForReuse,
                    bool emittedErrors,
                    bool errorsPresentInSelfOrDependencies,
+                   size_t oldResultForErrorContents,
                    std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
@@ -1353,6 +1355,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
     beingTestedForReuse(beingTestedForReuse),
     emittedErrors(emittedErrors),
     errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
+    oldResultForErrorContents(oldResultForErrorContents),
     dependencies(),
     recursionErrors(std::move(recursionErrors)),
     errors(),
