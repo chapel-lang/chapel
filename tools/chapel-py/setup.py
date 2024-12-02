@@ -64,9 +64,8 @@ CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 LDFLAGS = []
 LDFLAGS += [
     "-L{}".format(chpl_lib_path),
+    "-Wl,-rpath,{}".format(chpl_lib_path),
     "-lChplFrontendShared",
-    "-Wl,-rpath",
-    chpl_lib_path,
 ]
 
 if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
