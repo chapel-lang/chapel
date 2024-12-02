@@ -3070,22 +3070,21 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       // TODO: This doesn't have anything to do with this candidate. Shouldn't
       // we be handling this somewhere else?
       auto t = ci.actual(0).type().type();
-      if (auto ct = t->getCompositeType()) {
-        if (auto containingType = isNameOfField(context, ci.name(), ct)) {
-          auto ret = fieldAccessor(context, containingType, ci.name());
-          return ApplicabilityResult::success(ret);
-        }
+      auto containingType = isNameOfField(context, ci.name(), t);
+      if (!containingType) {
         // help handle the case where we're calling a field accessor on a manger.
         // while resolving the body of a method on owned to evaluate the applicability,
         // we need to be able to resolve the field accessor on the manager.
         if (auto classType = t->toClassType()) {
           if (auto managerType = classType->managerRecordType(context)) {
-            if (auto containingType = isNameOfField(context, ci.name(), managerType)) {
-              auto ret = fieldAccessor(context, containingType, ci.name());
-              return ApplicabilityResult::success(ret);
-            }
+            containingType = isNameOfField(context, ci.name(), managerType);
           }
         }
+      }
+      if (containingType &&
+          containingType->id() == candidateId.parentSymbolId(context)) {
+        auto ret = fieldAccessor(context, containingType, ci.name());
+        return ApplicabilityResult::success(ret);
       }
     }
     // not a candidate
