@@ -267,6 +267,8 @@ module Python {
   class Interpreter {
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
+    @chpldoc.nodoc
+    var objgraph: PyObjectPtr = nil;
 
     @chpldoc.nodoc
     proc init() throws {
@@ -339,9 +341,37 @@ module Python {
       // I think we can do this by setting sys.stdout and sys.stderr to a python
       // object that looks like a python file but forwards calls like write to
       // Chapel's write
+
+      if memLeaks {
+        // import objgraph
+        this.objgraph = this.importModule("objgraph");
+        if this.objgraph == nil {
+          writeln("objgraph not found, memory leak detection disabled. Install objgraph with 'pip install objgraph'");
+        } else {
+          // objgraph.growth()
+          var growth = PyObject_GetAttrString(this.objgraph, "growth");
+          this.checkException();
+          var res = PyObject_CallFunctionObjArgs(growth, Py_None, nil);
+          this.checkException();
+          Py_DECREF(res);
+          Py_DECREF(growth);
+        }
+      }
     }
     @chpldoc.nodoc
-    proc deinit() {
+    proc deinit()  {
+
+      if memLeaks && this.objgraph != nil {
+        // note: try! is used since we can't have a throwing deinit
+        // objgraph.show_growth()
+        var show_growth = PyObject_GetAttrString(this.objgraph, "show_growth");
+        try! this.checkException();
+        PyObject_CallFunctionObjArgs(show_growth, Py_None, nil);
+        try! this.checkException();
+        Py_DECREF(show_growth);
+        Py_DECREF(this.objgraph);
+      }
+
       Py_Finalize();
     }
     /*
@@ -407,12 +437,21 @@ module Python {
     inline proc checkException() throws {
       var exc = chpl_PyErr_GetRaisedException();
       if exc {
-        var py_str = PyObject_Str(exc);
-        var str = this.fromPython(string, py_str);
-        Py_DECREF(py_str);
-        Py_DECREF(exc);
-        throw new PythonException(str);
+        throw PythonException.build(this, exc);
       }
+    }
+
+    @chpldoc.nodoc
+    inline proc importModule(in modName: string): PyObjectPtr throws {
+      var mod = PyImport_ImportModule(modName.c_str());
+      try {
+        this.checkException();
+      } catch e: ImportError {
+        return nil;
+      } catch e {
+        throw e;
+      }
+      return mod;
     }
 
     /*
@@ -676,6 +715,27 @@ module Python {
     Represents an exception caused in the Python code, forwarded by Chapel code
   */
   class PythonException: Exception {
+    proc init(in message: string) {
+      super.init(message);
+    }
+    @chpldoc.nodoc
+    proc type build(interp: borrowed Interpreter, exc: PyObjectPtr): owned PythonException throws {
+      assert(exc != nil);
+      var py_str = PyObject_Str(exc);
+      var str = interp.fromPython(string, py_str);
+      Py_DECREF(py_str);
+      Py_DECREF(exc);
+      if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
+        return new ImportError(str);
+      } else {
+        throw new PythonException(str);
+      }
+    }
+  }
+  /*
+    Represents an ImportError in the Python code
+  */
+  class ImportError: PythonException {
     proc init(in message: string) {
       super.init(message);
     }
@@ -1420,6 +1480,8 @@ module Python {
     */
     extern proc PyErr_Occurred(): PyObjectPtr;
     extern proc chpl_PyErr_GetRaisedException(): PyObjectPtr;
+    extern proc PyErr_GivenExceptionMatches(given: PyObjectPtr, exc: PyObjectPtr): c_int;
+    extern const PyExc_ImportError: PyObjectPtr;
 
     /*
       Values
