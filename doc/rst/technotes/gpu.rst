@@ -624,16 +624,17 @@ GPU kernel".
 
 There are some caveats to the current implementation:
 
+* String manipulation for printing halt messages requires a number of features
+  ill-suited for the GPU. As a result, at this time, functions that use
+  the string-enabled overloads of ``halt()`` will still not work on the GPU.
+  This will be improved in future releases.
 * Presently, halting is implemented by setting a flag from the kernel that
   is later accessed by the host program. As a consequence, kernel execution
   proceeds past the ``halt()`` call; however, once the kernel
   is executed, the program exits.
-* There is a race condition between several threads using the halt flag
-  on the same device, which can interfere with the behavior of ``halt()``.
+* There is a race condition between several Chapel tasks using the same
+  device to launch kernels, which can interfere with the behavior of ``halt()``.
   This will be fixed in future releases.
-* String manipulation for printing halt messages requires a number of features
-  ill-suited for the GPU. As a result, at this time, functions that use
-  the string-enabled overloads of ``halt()`` will still not work on the GPU.
 
 Known Limitations
 -----------------
