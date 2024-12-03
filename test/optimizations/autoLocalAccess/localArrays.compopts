@@ -1,7 +1,7 @@
--snoParSafeWarning -scase='"1D DR"' -slogAllArrEltAccess=true # localArrays-1D-DR
--snoParSafeWarning -scase='"2D DR"' -slogAllArrEltAccess=true # localArrays-2D-DR
--snoParSafeWarning -scase='"1D COO"' -slogAllArrEltAccess=true # localArrays-1D-COO
--snoParSafeWarning -scase='"2D COO"' -slogAllArrEltAccess=true # localArrays-2D-COO
--snoParSafeWarning -scase='"CSR"' -slogAllArrEltAccess=true # localArrays-CSR
--snoParSafeWarning -scase='"CSC"' -slogAllArrEltAccess=true # localArrays-CSC
--snoParSafeWarning -scase='"associative domain with string keys"' -slogAllArrEltAccess=true #localArrays-assoc
+-scase='"1D DR"' -slogAllArrEltAccess=true # localArrays-1D-DR
+-scase='"2D DR"' -slogAllArrEltAccess=true # localArrays-2D-DR
+-scase='"1D COO"' -slogAllArrEltAccess=true # localArrays-1D-COO
+-scase='"2D COO"' -slogAllArrEltAccess=true # localArrays-2D-COO
+-scase='"CSR"' -slogAllArrEltAccess=true # localArrays-CSR
+-scase='"CSC"' -slogAllArrEltAccess=true # localArrays-CSC
+-scase='"associative domain with string keys"' -slogAllArrEltAccess=true #localArrays-assoc
