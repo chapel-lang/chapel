@@ -1,1 +1,1 @@
-error: Incremental compilation is not yet supported with LLVM
+error: 'chpl' does not currently support '-j'/'--parallel-make' or '--incremental' compilation when using the LLVM back-end

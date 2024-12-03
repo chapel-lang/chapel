@@ -2042,7 +2042,7 @@ static void checkLLVMCodeGen() {
     }
 
     if (fIncrementalCompilation)
-      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+      USR_FATAL("'chpl' does not currently support '-j'/'--parallel-make' or '--incremental' compilation when using the LLVM back-end");
   }
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
@@ -2262,6 +2262,7 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 
   checkRuntimeBuilt();
+
 }
 
 static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
