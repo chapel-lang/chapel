@@ -1,4 +1,0 @@
- # assoc-domain-parsafe-changed.default.good
--snoParSafeWarning # assoc-domain-parsafe-changed.noParSafe.good
--sassocParSafeDefault # assoc-domain-parsafe-changed.parSafeDefault.good
--snoParSafeWarning -sassocParSafeDefault # assoc-domain-parsafe-changed.parSafeDefault.good # effectively the same as passing just -sassocParSafeDefault

@@ -1860,9 +1860,6 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
-  handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
-                                   /*initExpr*/ nullptr, this);
-
   return retval;
 }
 

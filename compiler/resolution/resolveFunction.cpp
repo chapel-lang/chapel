@@ -458,9 +458,6 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 
   checkSurprisingGenericDecls(fn, fn->retExprType->body.tail, nullptr);
 
-  handleDefaultAssociativeWarnings(fn, fn->retExprType->body.tail,
-                                   /*initExpr*/ nullptr, /*field*/ nullptr);
-
   retType = fn->retExprType->body.tail->typeInfo();
 
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {

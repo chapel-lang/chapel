@@ -1,5 +1,5 @@
--snoParSafeWarning -sformat=FormatKind.default # associative.default.good
--snoParSafeWarning -sformat=FormatKind.json # associative.json.good
--snoParSafeWarning -sformat=FormatKind.little # associative.little.good
--snoParSafeWarning -sformat=FormatKind.precision # associative.precision.good
--snoParSafeWarning -sformat=FormatKind.syntax # associative.syntax.good
+-sformat=FormatKind.default # associative.default.good
+-sformat=FormatKind.json # associative.json.good
+-sformat=FormatKind.little # associative.little.good
+-sformat=FormatKind.precision # associative.precision.good
+-sformat=FormatKind.syntax # associative.syntax.good

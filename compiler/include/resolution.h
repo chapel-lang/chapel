@@ -405,10 +405,6 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere);
 
-void handleDefaultAssociativeWarnings(Symbol* sym,
-                                      Expr* typeExpr, Expr* initExpr,
-                                      AggregateType* forFieldInHere);
-
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors
 // reported at once. E.g. C? can pass to C.

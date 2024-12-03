@@ -235,7 +235,6 @@ PRAGMA(EPILOGUE_LABEL, npr,
 PRAGMA(ERROR_LABEL, ypr, "error label", ncm)
 PRAGMA(EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 PRAGMA(EXPAND_TUPLES_WITH_VALUES, ypr, "expand tuples with values", ncm)
-PRAGMA(EXPLICIT_PAR_SAFE, npr, "explicit par safe", "an associative domain explicitly marked par safe by the user")
 PRAGMA(EXPORT, npr, "export", ncm)
 PRAGMA(EXPORT_INIT, ypr,
        "export init",
