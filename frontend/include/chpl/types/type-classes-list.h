@@ -100,6 +100,7 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(EnumType)
   TYPE_NODE(ExternType)
   TYPE_NODE(FunctionType)
+  TYPE_NODE(InterfaceType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
     TYPE_NODE(ArrayType)

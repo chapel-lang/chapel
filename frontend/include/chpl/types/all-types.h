@@ -36,6 +36,7 @@
 #include "chpl/types/FnIteratorType.h"
 #include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
+#include "chpl/types/InterfaceType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/IteratorType.h"
 #include "chpl/types/LoopExprIteratorType.h"
