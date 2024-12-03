@@ -167,7 +167,7 @@ namespace {
 #if HAVE_LLVM_VER >= 140
     V->removeRetAttrs(mask);
 #else
-#if HAVE_LLVM_VER > 110
+#if HAVE_LLVM_VER >= 120
     V->removeAttributes(AttributeList::ReturnIndex, mask);
 #else
     auto& ctx = V->getContext();
@@ -184,7 +184,7 @@ namespace {
 #if HAVE_LLVM_VER >= 140
     V->removeParamAttrs(idx, mask);
 #else
-#if HAVE_LLVM_VER > 110
+#if HAVE_LLVM_VER >= 120
     V->removeAttributes(idx+1, mask);
 #else
     auto& ctx = V->getContext();
