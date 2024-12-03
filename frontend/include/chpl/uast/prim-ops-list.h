@@ -58,6 +58,7 @@ PRIMITIVE_R(INIT_FIELD, "init field")
 PRIMITIVE_R(INIT_VAR, "init var")
 PRIMITIVE_R(INIT_VAR_SPLIT_DECL, "init var split decl")
 PRIMITIVE_R(INIT_VAR_SPLIT_INIT, "init var split init")
+PRIMITIVE_R(SPLIT_INIT_UPDATE_TYPE, "split init update type")
 PRIMITIVE_R(INIT_REF_DECL, "init ref decl")
 PRIMITIVE_R(INIT_DONE, "init done")
 

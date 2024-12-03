@@ -323,7 +323,6 @@ void makeRefType(Type* type) {
 
   if (type == dtMethodToken ||
       type == dtUnknown ||
-      type == dtSplitInitType ||
       type->symbol->hasFlag(FLAG_REF) ||
       type->symbol->hasFlag(FLAG_GENERIC)) {
 
@@ -3837,7 +3836,7 @@ void resolveNormalCallAdjustAssign(CallExpr* call) {
 
       // Adjust the type for formal_temp_out before trying to resolve '='
       if (SymExpr* lhsSe = toSymExpr(lhsExpr)) {
-        if (targetType == dtSplitInitType) {
+        if (targetType->getValType() == dtSplitInitType) {
           targetType = srcType;
         } else if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
           targetType = getInstantiationType(srcType, NULL, targetType, NULL,

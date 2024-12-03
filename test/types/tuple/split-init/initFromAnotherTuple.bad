@@ -1,0 +1,3 @@
+initFromAnotherTuple.chpl:2: error: 'x' is not initialized and has no type
+initFromAnotherTuple.chpl:2: note: cannot find initialization point to split-init this variable
+initFromAnotherTuple.chpl:3: note: 'x' is used here before it is initialized

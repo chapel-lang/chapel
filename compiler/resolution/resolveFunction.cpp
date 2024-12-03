@@ -1286,7 +1286,8 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
 
     SymExpr* typeSe = toSymExpr(call->get(2));
-    bool requireSplitInit = (typeSe->symbol() == dtSplitInitType->symbol);
+    bool requireSplitInit = (typeSe->symbol() ==
+                             dtSplitInitType->symbol);
 
     // Don't allow an out-formal to be split-init after a return because
     // that would leave the out-formal uninitialized.

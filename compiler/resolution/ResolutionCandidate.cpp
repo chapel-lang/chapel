@@ -1021,7 +1021,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
       if (formalIsTypeAlias == false &&
           isInitThis == false &&
           formal->originalIntent != INTENT_OUT &&
-          (actual->type == dtSplitInitType ||
+          (actual->type->getValType() == dtSplitInitType ||
            actual->type->symbol->hasFlag(FLAG_GENERIC))) {
         failingArgument = actual;
         reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;

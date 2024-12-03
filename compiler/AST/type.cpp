@@ -188,7 +188,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
   if (type == NULL ||
       type == dtUnknown ||
-      type == dtSplitInitType) {
+      type->getValType() == dtSplitInitType) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
     retval = "<any type>";

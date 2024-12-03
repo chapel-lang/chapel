@@ -1509,6 +1509,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
     case PRIM_INIT_VAR_SPLIT_INIT:
+    case PRIM_SPLIT_INIT_UPDATE_TYPE:
     case PRIM_INIT_REF_DECL:
     case PRIM_INIT_DONE:
     case PRIM_REDUCE:
