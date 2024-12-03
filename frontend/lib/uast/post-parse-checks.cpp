@@ -2113,17 +2113,14 @@ namespace uast {
 // in practice the relevant result is an error/warning being generated
 static
 const bool& checkBuilderResultQuery(Context* context, UniqueString path,
-                                    const BuilderResult* builderResult) {
-  QUERY_BEGIN(checkBuilderResultQuery, context, path, builderResult);
+                                    const AstNode* topLevelExpr) {
+  QUERY_BEGIN(checkBuilderResultQuery, context, path, topLevelExpr);
 
   bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
   bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
   auto v = Visitor(context, warnUnstable, isUserCode);
 
-  for (auto ast : builderResult->topLevelExpressions()) {
-    if (ast->isComment()) continue;
-    v.check(ast);
-  }
+  v.check(topLevelExpr);
 
   bool result = false;
   return QUERY_END(result);
@@ -2131,7 +2128,12 @@ const bool& checkBuilderResultQuery(Context* context, UniqueString path,
 
 void checkBuilderResult(Context* context, UniqueString path,
                         const BuilderResult& builderResult) {
-  checkBuilderResultQuery(context, path, &builderResult);
+  // note: const BuilderResult& should not be used as a query argument,
+  // since it might not change even if the contents change
+  for (auto ast : builderResult.topLevelExpressions()) {
+    if (ast->isComment()) continue;
+    checkBuilderResultQuery(context, path, ast);
+  }
 }
 
 
