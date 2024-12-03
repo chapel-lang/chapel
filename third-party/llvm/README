@@ -133,6 +133,41 @@ index 146649a7e2..d92d0f1c5c 100644
 
 ```
 
+* Patched `lib/Transforms/Vectorize/SLPVectorizer.cpp` with https://github.com/llvm/llvm-project/commit/709abacdc350d63c61888607edb28ce272daa0a0 to workaround https://github.com/llvm/llvm-project/issues/112577 and https://github.com/llvm/llvm-project/issues/118410
+```
+diff --git a/third-party/llvm/llvm-src/lib/Transforms/Vectorize/SLPVectorizer.cpp b/third-party/llvm/llvm-src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+index ab2b96cdc42..746ba51a981 100644
+--- a/third-party/llvm/llvm-src/lib/Transforms/Vectorize/SLPVectorizer.cpp
++++ b/third-party/llvm/llvm-src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+@@ -15440,9 +15440,25 @@ bool BoUpSLP::collectValuesToDemote(
+                 MaskedValueIsZero(I->getOperand(1), Mask, SimplifyQuery(*DL)));
+       });
+     };
++    auto AbsChecker = [&](unsigned BitWidth, unsigned OrigBitWidth) {
++      assert(BitWidth <= OrigBitWidth && "Unexpected bitwidths!");
++      return all_of(E.Scalars, [&](Value *V) {
++        auto *I = cast<Instruction>(V);
++        unsigned SignBits = OrigBitWidth - BitWidth;
++        APInt Mask = APInt::getBitsSetFrom(OrigBitWidth, BitWidth - 1);
++        unsigned Op0SignBits =
++            ComputeNumSignBits(I->getOperand(0), *DL, 0, AC, nullptr, DT);
++        return SignBits <= Op0SignBits &&
++               ((SignBits != Op0SignBits &&
++                 !isKnownNonNegative(I->getOperand(0), SimplifyQuery(*DL))) ||
++                MaskedValueIsZero(I->getOperand(0), Mask, SimplifyQuery(*DL)));
++      });
++    };
+     if (ID != Intrinsic::abs) {
+       Operands.push_back(getOperandEntry(&E, 1));
+       CallChecker = CompChecker;
++    } else {
++      CallChecker = AbsChecker;
+     }
+     InstructionCost BestCost =
+         std::numeric_limits<InstructionCost::CostType>::max();
+
+```
+
 Upgrading LLVM versions
 =======================
 
