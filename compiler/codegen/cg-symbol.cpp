@@ -661,7 +661,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // Print string contents in a comment if developer mode
       // and savec is set.
       if (developer &&
-          0 != strcmp(saveCDir, "") &&
+          !saveCDir.empty() &&
           immediate &&
           ret.chplType == dtString &&
           immediate->const_kind == CONST_KIND_STRING) {
@@ -2769,7 +2769,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (strcmp(saveCDir, "")) {
+    if (saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');

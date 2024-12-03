@@ -28,11 +28,11 @@
 #include <functional>
 #include "vec.h"
 
-extern char executableFilename[FILENAME_MAX+1];
-extern char libmodeHeadername[FILENAME_MAX+1];
-extern char fortranModulename[FILENAME_MAX+1];
-extern char pythonModulename[FILENAME_MAX+1];
-extern char saveCDir[FILENAME_MAX+1];
+extern std::string executableFilename;
+extern std::string libmodeHeadername;
+extern std::string fortranModulename;
+extern std::string pythonModulename;
+extern std::string saveCDir;
 extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
