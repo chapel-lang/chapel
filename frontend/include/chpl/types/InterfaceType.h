@@ -58,7 +58,7 @@ class InterfaceType final : public Type {
   }
 
   Genericity genericity() const override {
-    return CONCRETE;
+    return subs_.empty() ? GENERIC : CONCRETE;
   }
 
   static owned<InterfaceType> const&

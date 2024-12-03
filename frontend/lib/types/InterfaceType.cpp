@@ -28,6 +28,9 @@ namespace types {
 bool InterfaceType::validateSubstitutions(Context* context,
                                           const ID& id,
                                           SubstitutionsMap& subs) {
+  // Just a generic instance of the interface
+  if (subs.empty()) return true;
+
   auto ast = parsing::idToAst(context, id);
   if (!ast) return false;
   auto ifc = ast->toInterface();
@@ -44,7 +47,7 @@ bool InterfaceType::validateSubstitutions(Context* context,
 owned<InterfaceType> const&
 InterfaceType::getInterfaceType(Context* context, ID id, UniqueString name, SubstitutionsMap subs) {
   QUERY_BEGIN(getInterfaceType, context, id, name, subs);
-  validateSubstitutions(context, id, subs);
+  CHPL_ASSERT(validateSubstitutions(context, id, subs));
   auto result = toOwned(new InterfaceType(id, name, subs));
   return QUERY_END(result);
 }
