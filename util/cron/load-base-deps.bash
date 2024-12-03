@@ -2,12 +2,12 @@
 
 # Sources base dependencies required for all tests.
 
-# Prevent loading more than once
-if [ "$CHPL_BASE_DEPS_LOADED" = "true" ]; then
-  echo "Base dependencies already loaded, exiting ${BASH_SOURCE[0]} without reloading them..."
+# Prevent loading deps from Spack more than once
+if [ "$CHPL_SPACK_DEPS_LOADED" = "true" ]; then
+  echo "Base spack dependencies already loaded, exiting ${BASH_SOURCE[0]} without reloading them..."
   return 0
 fi
-export CHPL_BASE_DEPS_LOADED=true
+export CHPL_SPACK_DEPS_LOADED=true
 
 # For most systems, load all dependencies via spack
 if [[ "${HOSTNAME:0:6}" == "chapcs" || "${HOSTNAME:0:6}" == "chapvm" ]]; then
@@ -25,6 +25,7 @@ elif [[ "$(hostname -s)" == "richter-login" ]]; then
   fi
 else
   # For systems not using a Spack install
+  export CHPL_SPACK_DEPS_LOADED=false
 
   # load llvm
   if [ -f /hpcdc/project/chapel/setup_system_llvm.bash ] ; then
