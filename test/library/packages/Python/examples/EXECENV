@@ -3,6 +3,13 @@
 # if CHPL_TEST_VENV_DIR is set and not none, make sure to set VIRTUAL_ENV to match
 if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
   echo "VIRTUAL_ENV=$CHPL_TEST_VENV_DIR"
-else
-  echo ""
 fi
+
+# make sure to add the libs dir to the PYTHONPATH if it exists
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+MY_LIB_DIR=$FILE_DIR/python_libs
+if [ -d "$MY_LIB_DIR" ]; then
+  echo "PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH"
+fi
+
+echo ""
