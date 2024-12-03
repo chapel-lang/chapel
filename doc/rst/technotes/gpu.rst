@@ -599,6 +599,42 @@ See the `asyncTaskComm
 benchmark for a full example of a pattern that benefits from oversubscribing
 GPUs.
 
+GPU-based Halting
+~~~~~~~~~~~~~~~~~
+
+Standard Chapel has a number of features that can cause a program to exit,
+or "halt". The 2.3 release of Chapel introduced the ability to execute halting
+functions on the GPU, allowing Chapel-generated GPU kernels to halt the
+execution of the whole program. This makes it possible to both invoke halts
+directly via Chapel's :proc:`~Errors.halt`, and to invoke functions that
+themselves halt. In prior releases, doing so made code ineligible for GPU
+execution.
+
+The following program demonstrates this feature, printing "halt reached in
+GPU kernel".
+
+.. code-block:: chapel
+
+  on here.gpus[0] {
+    @assertOnGpu
+    foreach i in 1..10 {
+      halt();
+    }
+  }
+
+There are some caveats to the current implementation:
+
+* Presently, halting is implemented by setting a flag from the kernel that
+  is later accessed by the host program. As a consequence, kernel execution
+  proceeds past the ``halt()`` call; however, once the kernel
+  is executed, the program exits.
+* There is a race condition between several threads using the halt flag
+  on the same device, which can interfere with the behavior of ``halt()``.
+  This will be fixed in future releases.
+* String manipulation for printing halt messages requires a number of features
+  ill-suited for the GPU. As a result, at this time, functions that use
+  the string-enabled overloads of ``halt()`` will still not work on the GPU.
+
 Known Limitations
 -----------------
 
