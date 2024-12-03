@@ -12,6 +12,8 @@ else
   CHPL_LLVM_DEBUG := -DCMAKE_BUILD_TYPE=Release
 endif
 
+# select the LLVM targets to build
+# this can make the build faster by only building the targets needed
 ifndef CHPL_LLVM_TARGETS_TO_BUILD
   CHPL_LLVM_TARGETS_TO_BUILD := "host;X86;AArch64;NVPTX;AMDGPU"
 else
