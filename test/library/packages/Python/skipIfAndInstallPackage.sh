@@ -17,12 +17,6 @@ fi
 # try and import the first package, if it fails, try and install the packages
 if ! $chpl_python -c "import $PACKAGE" &>/dev/null; then
 
-  # if the SKIP_INSTALL env is set, then we should skip the installation
-  if [ ! -z "$SKIP_INSTALL" ]; then
-    echo "True"
-    exit 0
-  fi
-
   MY_LIB_DIR=$INSTALL_DIR/python_libs
   $chpl_python -m pip install $PACKAGE $OTHER_PACKAGES --target=$MY_LIB_DIR 2>&1
   export PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH

@@ -92,7 +92,7 @@
 # PRETEST: Script to execute before running the test. (arguments: <compiler
 #    executable>).
 # PERFNUMTRIALS: Number of trials to run for performance testing
-#
+# SUPPRESSIF: Suppress this test if certain environment conditions hold true
 #
 # TEST-SPECIFIC FILES:  These setting override or augment the directory-wide
 #  settings.  Unless otherwise specified, these files are named
@@ -1306,6 +1306,7 @@ def main():
 
         # Get the list of files starting with 'test_filename.'
         test_filename_files = fnmatch.filter(dirlist, test_filename+'.*')
+        test_filename_files += fnmatch.filter(dirlist, 'SUPPRESSIF')
         # print test_filename_files, dirlist
 
         if (perftest and (test_filename_files.count(PerfTFile(test_filename,'keys'))==0) and
@@ -1353,12 +1354,13 @@ def main():
         # Deal with these files
         do_not_test=False
         for f in test_filename_files:
+            name = os.path.basename(f)
             (root, suffix) = os.path.splitext(f)
             # sys.stdout.write("**** %s ****\n"%(f))
 
             # 'f' is of the form test_filename.SOMETHING.suffix,
             # not pertinent at the moment
-            if root != test_filename:
+            if root != test_filename and name != "SUPPRESSIF":
                 continue
 
             # Deal with these later
@@ -1416,6 +1418,30 @@ def main():
                 except (ValueError, RuntimeError) as e:
                     sys.stdout.write(str(e)+'\n')
                     sys.stdout.write('[Error processing .suppressif file for %s]\n'
+                        % os.path.join(localdir, test_filename))
+                    printEndOfTestMsg(os.path.join(localdir, test_filename), 0.0)
+                    do_not_test=True
+                    break
+
+            elif (name == "SUPPRESSIF" and (os.access(f, os.R_OK))):
+                try:
+                    suppressme=False
+                    suppresstest=runSkipIf(f)
+                    if suppresstest.strip() != "False":
+                        suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
+                    if suppressme:
+                        suppressline = ""
+                        with open(f, 'r') as suppressfile:
+                            for line in suppressfile:
+                                line = line.strip()
+                                if (line.startswith("#") and
+                                    not line.startswith("#!")):
+                                    suppressline = line.replace('#','').strip()
+                                    break
+                        futuretest='Suppress (' + suppressline + ') '
+                except (ValueError, RuntimeError) as e:
+                    sys.stdout.write(str(e)+'\n')
+                    sys.stdout.write('[Error processing SUPPRESSIF file for %s]\n'
                         % os.path.join(localdir, test_filename))
                     printEndOfTestMsg(os.path.join(localdir, test_filename), 0.0)
                     do_not_test=True
