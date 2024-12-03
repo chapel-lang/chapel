@@ -2,13 +2,6 @@
 
 # Sources base dependencies required for all tests.
 
-# Prevent loading more than once
-if [ "$CHPL_BASE_DEPS_LOADED" = "true" ]; then
-  echo "Base dependencies already loaded, exiting ${BASH_SOURCE[0]} without reloading them..."
-  return 0
-fi
-export CHPL_BASE_DEPS_LOADED=true
-
 # For most systems, load all dependencies via spack
 if [[ "${HOSTNAME:0:6}" == "chapcs" || "${HOSTNAME:0:6}" == "chapvm" ]]; then
   if [ -f /data/cf/chapel/chpl-deps/chapcs11/load_chpl_deps.bash ] ; then
