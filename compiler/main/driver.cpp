@@ -2262,7 +2262,6 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 
   checkRuntimeBuilt();
-
 }
 
 static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
