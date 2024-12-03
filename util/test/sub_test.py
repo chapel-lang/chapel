@@ -935,14 +935,15 @@ def main():
 
     #
     # directory-wide PRETEST
-    # must be run first, in case is generates any of the following files
+    # must be run first, in case it generates any of the following files
     #
     if os.access('./PRETEST', os.R_OK|os.X_OK):
         sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
         sys.stdout.flush()
         stdout = run_process(['./PRETEST', compiler],
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)[1]
+                             stderr=subprocess.STDOUT,
+                             env=os.environ)[1]
         sys.stdout.write(stdout)
         sys.stdout.flush()
 
