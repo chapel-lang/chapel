@@ -72,14 +72,14 @@ class ConfPyUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
         version_string = "chplversion = '{}'\n".format(self.short_maybe_long_version())
-        release_string = "release = '{} {}'\n".format(self.long_version(), "" if self.release else "(pre-release)")
+        release_string = "release = '{} {}".format(self.long_version(), "" if self.release else "(pre-release)").strip()
         any_changed = False
         for i, line in enumerate(lines):
-            if line.startswith('chplversion = \'') and not line == version_string:
+            if line.startswith('chplversion = \'') and not line.strip() == version_string:
                 lines[i] = version_string
                 any_changed = True
-            elif line.startswith('release = \'') and not line.strip() == release_string.strip():
-                lines[i] = release_string
+            elif line.startswith('release = \'') and not line.strip() == release_string:
+                lines[i] = release_string + "'\n"
                 any_changed = True
         if any_changed:
             self.write_file(lines)
@@ -88,11 +88,11 @@ class ConfPyUpdater(FileUpdater):
 class ManConfUpdater(FileUpdater):
     def update(self):
         lines = self.read_file()
-        release_string = ":Version: {} {}\n".format(self.short_maybe_long_version(), "" if self.release else "pre-release")
+        release_string = ":Version: {} {}".format(self.short_maybe_long_version(), "" if self.release else "pre-release").strip()
         any_changed = False
         for i, line in enumerate(lines):
-            if line.startswith(':Version: ') and not line.strip() == release_string.strip():
-                lines[i] = release_string
+            if line.startswith(':Version: ') and not line.strip() == release_string:
+                lines[i] = release_string + '\n'
                 any_changed = True
         if any_changed:
             self.write_file(lines)
