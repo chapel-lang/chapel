@@ -2045,7 +2045,6 @@ static void checkLLVMCodeGen() {
       const char* flag = (fParMake ? "-j'/'--parallel-make" : "--incremental");
       USR_WARN("'chpl' does not currently support '%s' when using the LLVM "
                "back-end (flag ignored)", flag);
-                          
     }
   }
 
