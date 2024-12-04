@@ -34,8 +34,6 @@
 // for example, a List, Set, Dict, Tuple, etc.
 // these should provide native like operation, so `for i in pyList` should work
 
-// TODO: there are decrefs missing all over the place
-
 // TODO: using the Py*_Check, we may be able to avoid needing to specify the type of the return value
 
 // TODO: implement operators as dunder methods
