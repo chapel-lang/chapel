@@ -717,9 +717,13 @@ returnTypeForTypeCtorQuery(Context* context,
 
   // handle type construction
   const AggregateDecl* ad = nullptr;
-  if (!untyped->id().isEmpty())
-    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin()))
+  const Interface* itf = nullptr;
+  if (!untyped->id().isEmpty()) {
+    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin())) {
       ad = ast->toAggregateDecl();
+      itf = ast->toInterface();
+    }
+  }
 
   if (ad) {
     // compute instantiatedFrom
@@ -789,6 +793,19 @@ returnTypeForTypeCtorQuery(Context* context,
 
     result = theType;
 
+  } else if (itf) {
+    SubstitutionsMap subs;
+
+    CHPL_ASSERT(sig->numFormals() == itf->numFormals());
+
+    int nFormals = sig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      auto& formalType = sig->formalType(i);
+      auto& formalId = itf->formal(i)->id();
+      subs.emplace(formalId, formalType);
+    }
+
+    result = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
   } else {
     // built-in type construction should be handled
     // by resolveFnCallSpecialType and not reach this point.
