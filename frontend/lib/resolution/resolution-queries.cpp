@@ -1563,7 +1563,15 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
   const TypedFnSignature* result = nullptr;
 
-  ID id = t->getCompositeType()->id();
+  ID id;
+  if (auto ct = t->getCompositeType()) {
+    id = ct->id();
+  } else if (auto ift = t->toInterfaceType()) {
+    id = ift->id();
+  } else {
+    CHPL_ASSERT(false && "invalid argument to typeConstructorInitialQuery");
+  }
+
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
 
