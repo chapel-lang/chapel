@@ -153,16 +153,15 @@ static void printMakefileIncludes(fileinfo makefile);
 static void printMakefileLibraries(fileinfo makefile, std::string name);
 
 // Return string, without any "lib" prefix if present
-// TODO: do this in a more C++ idiomatic way
 static std::string stripLibPrefix(const std::string& name) {
   std::string ret;
 
-  static const int libLength = strlen("lib");
-  bool startsWithLib = strncmp(name.c_str(), "lib", libLength) == 0;
-  if (startsWithLib) {
-    ret = name.substr(libLength);
+  static const std::string libStr = "lib";
+
+  if (name.find(libStr) != std::string::npos) {
+    ret = name.substr(libStr.length());
   } else {
-    ret = name.c_str();
+    ret = name;
   }
 
   return ret;
