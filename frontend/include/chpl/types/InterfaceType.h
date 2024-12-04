@@ -72,6 +72,12 @@ class InterfaceType final : public Type {
                                   ID id,
                                   UniqueString name,
                                   SubstitutionsMap subs);
+
+  const ID& id() const { return id_; }
+
+  UniqueString name() const { return name_; }
+
+  const SubstitutionsMap& subs() const { return subs_; }
 };
 
 } // end namespace types
