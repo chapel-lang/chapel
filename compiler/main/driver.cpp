@@ -2041,8 +2041,11 @@ static void checkLLVMCodeGen() {
       USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
     }
 
-    if (fIncrementalCompilation)
-      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+    if (fIncrementalCompilation) {
+      const char* flag = (fParMake ? "-j'/'--parallel-make" : "--incremental");
+      USR_WARN("'chpl' does not currently support '%s' when using the LLVM "
+               "back-end (flag ignored)", flag);
+    }
   }
 
   if (0 == strcmp(CHPL_LLVM, "none")) {

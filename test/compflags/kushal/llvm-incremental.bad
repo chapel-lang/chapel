@@ -1,1 +1,2 @@
-error: Incremental compilation is not yet supported with LLVM
+warning: 'chpl' does not currently support '--incremental' when using the LLVM back-end (flag ignored)
+Hello World!
