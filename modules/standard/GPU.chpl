@@ -1198,7 +1198,11 @@ module GPU
 
   /*
     Returns a DeviceAttributes record containing various properties describing
-    the GPU associated with a sublocale.
+    the GPU associated with a sublocale.  The available properties reflect a subset
+    of those available in both the `CUDA API documentation
+    <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
+    and `HIP API documentation
+    <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___global_defs.html#gacc0acd7b9bda126c6bb3dfd6e2796d7c>`_.
 
     :arg loc: GPU sublocale to get device attributes on.
    */
