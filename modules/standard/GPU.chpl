@@ -1303,7 +1303,7 @@ module GPU
   extern proc chpl_gpu_query_attribute(dev : c_int, attribute : c_int) : c_int;
 
   /*
-    Record returned by :proc:`deviceAttributes` that roperties reflect a
+    Record returned by :proc:`deviceAttributes` that properties reflect a
     subset of device properties available in both the `CUDA API documentation
     <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
     and `HIP API documentation
