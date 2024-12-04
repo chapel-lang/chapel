@@ -200,6 +200,18 @@ module ChapelLocale {
   }
 
   /*
+    If using a gpu locale, return its position in the parent locale's ``gpus``
+    array.
+
+    :returns: index of this gpu sublocale in the parent locale's ``gpus`` array.
+    :rtype: int
+  */
+  @unstable("'locale.gpuId' is unstable")
+  inline proc locale.gpuId : int {
+    return this._value.gpuId;
+  }
+
+  /*
     Get the maximum task concurrency that one can expect to
     achieve on this locale.
 
@@ -432,8 +444,7 @@ module ChapelLocale {
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
 
-    // if using a gpu locale return its position in the parent locale's
-    // `here.gpus` array
+    @chpldoc.nodoc
     proc gpuId : int do return gpuIdImpl();
 
     @chpldoc.nodoc

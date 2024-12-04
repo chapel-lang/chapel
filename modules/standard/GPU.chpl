@@ -1196,60 +1196,113 @@ module GPU
     gpuInputArr = gpuOutputArr;
   }
 
+  /*
+    Returns a DeviceAttributes record containing various properties describing
+    the GPU associated with a sublocale.
+
+    :arg loc: GPU sublocale to get device attributes on.
+   */
   proc deviceAttributes(loc) {
     return new DeviceAttributes(loc);
   }
 
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__WARP_SIZE : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_PITCH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__CLOCK_RATE : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__INTEGRATED : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__COMPUTE_MODE : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__PROCESS : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__ECC_ENABLED : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__PCI_BUS_ID : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES : c_int;
+  @chpldoc.nodoc
   extern const CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST : c_int;
 
+  @chpldoc.nodoc
   extern proc chpl_gpu_query_attribute(dev : c_int, attribute : c_int) : c_int;
 
   record DeviceAttributes {
+    @chpldoc.nodoc
     var gpuId : int;
 
+    @chpldoc.nodoc
     proc init(loc) {
       if !loc.isGpu() then halt("gpuDeviceInfo must be passed gpu locale");
       this.gpuId = 0; // TODO: Should be loc.gpuId
