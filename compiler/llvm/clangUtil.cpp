@@ -4775,6 +4775,18 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   // functions are called from the kernel
   ptxasFlags += " --suppress-stack-size-warning ";
 
+
+  // With CUDA 12.4, PIC is on by default in ptxas. However, with some large
+  // codes, we see that ptxas disables PIC and issues a warning about it. Most
+  // likely, we are not going to benefit from PIC anytime soon (I don't even
+  // know what it means for us to benefit from that? Generated GPU code as
+  // shared library... for multiple Chapel applications?). So, disable PIC for
+  // the time being.
+  const auto sdkVer = envMap["CHPL_GPU_SDK_VERSION"];
+  if (strncmp(sdkVer, "12", 2) == 0) {
+    ptxasFlags += " --position-independent-code=false ";
+  }
+
   // Run ptxas for each architecture
   std::string profiles;
   for (auto& gpuArch : gpuArches) {
