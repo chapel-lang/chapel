@@ -647,7 +647,7 @@ module Python {
         const idx = res.domain.orderToIndex(i);
         var elm = PySequence_GetItem(obj, i);
         this.checkException();
-        defer Py_DECREF(elm);
+        this.toFree.pushBack(elm);
         res[idx] = fromPython(res.eltType, elm);
         this.checkException();
       }
@@ -666,7 +666,7 @@ module Python {
         for i in 0..<PySequence_Size(obj) {
           var item = PySequence_GetItem(obj, i);
           this.checkException();
-          defer Py_DECREF(item);
+          this.toFree.pushBack(item);
           res.pushBack(fromPython(T.eltType, item));
         }
         return res;
@@ -676,7 +676,7 @@ module Python {
         while true {
           var item = PyIter_Next(obj);
           this.checkException();
-          defer Py_DECREF(item);
+          this.toFree.pushBack(item);
           if item == nil {
             break;
           }
