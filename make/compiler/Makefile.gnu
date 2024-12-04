@@ -346,6 +346,16 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
 endif
 
+# Avoid warning about atomic alignment e.g.
+# the alignment of ‘_Atomic long long unsigned int’ fields changed in GCC 11.1
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM), linux32)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 11; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-psabi
+WARN_CXXFLAGS += -Wno-psabi
+SQUASH_WARN_GEN_CFLAGS += -Wno-psabi
+endif
+endif
+
 #
 # Don't warn for deprecated declarations with llvm 11 and 12, its a very noisy warning
 #
