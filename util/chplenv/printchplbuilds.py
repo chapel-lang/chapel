@@ -36,7 +36,6 @@ class State(Enum):
     TARGET_ARCH =       8
     COMM_SUBSTRATE =    9
     GASNET_SEGMENT =    10
-    GASNET_VERSION =    11
 
 # Maps component prefix to corresponding environment variable.
 
@@ -93,8 +92,7 @@ nextStates = {
     State.HWLOC:            State.RE2,
     State.RE2:              State.PREFIX,
     State.COMM_SUBSTRATE:   State.GASNET_SEGMENT,
-    State.GASNET_SEGMENT:   State.GASNET_VERSION,
-    State.GASNET_VERSION:   State.PREFIX
+    State.GASNET_SEGMENT:   State.PREFIX
 }
 
 # Some of the CHPL_*_DEBUG variables add a "-debug" suffix to the component
