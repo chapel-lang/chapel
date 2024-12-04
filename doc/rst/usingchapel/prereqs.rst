@@ -83,7 +83,7 @@ Installation
 
 We have used the following commands to install the above prerequisites:
 
-  * Alma Linux 8, 9.3, 9.4::
+  * Alma Linux 8, 9.3, 9.4, 9.5::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -170,7 +170,7 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.2, 13.3, 14.0, 14.1::
+  * FreeBSD 13.3, 13.4, 14.0, 14.1::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
@@ -200,21 +200,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish"::
-
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
-
-
-  * Ubuntu 23.10 "Mantic Minotaur"::
-
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-17-dev llvm-17 clang-17 libclang-17-dev libclang-cpp17-dev
-
-
-  * Ubuntu 24.04 "Noble Numbat"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
