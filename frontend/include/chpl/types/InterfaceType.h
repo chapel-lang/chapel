@@ -68,10 +68,10 @@ class InterfaceType final : public Type {
                    SubstitutionsMap subs);
 
  public:
-  const InterfaceType* get(Context* context,
-                           ID id,
-                           UniqueString name,
-                           SubstitutionsMap subs);
+  static const InterfaceType* get(Context* context,
+                                  ID id,
+                                  UniqueString name,
+                                  SubstitutionsMap subs);
 };
 
 } // end namespace types

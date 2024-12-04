@@ -785,6 +785,21 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
   return initialTypeForTypeDeclQuery(context, declId);
 }
 
+static const Type* const&
+initialTypeForInterfaceQuery(Context* context, ID declId) {
+  QUERY_BEGIN(initialTypeForInterfaceQuery, context, declId);
+  const Type* result = nullptr;
+  auto ast = parsing::idToAst(context, declId);
+  if (auto itf = ast->toInterface()) {
+    result = InterfaceType::get(context, itf->id(), itf->name(), /* subs */ {});
+  }
+  return QUERY_END(result);
+}
+
+const Type* initialTypeForInterface(Context* context, ID declId) {
+  return initialTypeForInterfaceQuery(context, declId);
+}
+
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const CompositeType* ct,
                                        ID fieldId,

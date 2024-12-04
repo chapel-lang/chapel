@@ -129,6 +129,11 @@ typedSignatureInitialForId(ResolutionContext* rc, ID id);
 const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
 
 /**
+  Returns a Type that represents the initial type provided by an Interface
+  declaration. */
+const types::Type* initialTypeForInterface(Context* context, ID declId);
+
+/**
   Resolve a single field decl (which could be e.g. a MultiDecl)
   within a CompositeType.
 
