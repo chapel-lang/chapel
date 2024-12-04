@@ -227,6 +227,8 @@ module Python {
   private use CWChar;
   private use OS.POSIX only getenv;
 
+  config const pyMemLeaks = false;
+
   // TODO: this must be first to avoid use-before-def, but that makes it first in the docs
   // is there a way to avoid this?
   /* Represents the python NoneType */
@@ -267,6 +269,8 @@ module Python {
   class Interpreter {
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
+    @chpldoc.nodoc
+    var toFree: List.list(PyObjectPtr);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
 
@@ -342,7 +346,7 @@ module Python {
       // object that looks like a python file but forwards calls like write to
       // Chapel's write
 
-      if memLeaks {
+      if pyMemLeaks {
         // import objgraph
         this.objgraph = this.importModule("objgraph");
         if this.objgraph == nil {
@@ -361,14 +365,32 @@ module Python {
     @chpldoc.nodoc
     proc deinit()  {
 
-      if memLeaks && this.objgraph != nil {
+      for obj in this.toFree {
+        Py_CLEAR(c_ptrTo(obj));
+      }
+
+      if pyMemLeaks && this.objgraph != nil {
         // note: try! is used since we can't have a throwing deinit
+
+        // run gc.collect() before showing growth
+        var gc = PyImport_ImportModule("gc");
+        try! this.checkException();
+        var collect = PyObject_GetAttrString(gc, "collect");
+        try! this.checkException();
+        PyObject_CallNoArgs(collect);
+        try! this.checkException();
+        Py_DECREF(collect);
+        Py_DECREF(gc);
+
+
         // objgraph.show_growth()
         var show_growth = PyObject_GetAttrString(this.objgraph, "show_growth");
         try! this.checkException();
-        PyObject_CallFunctionObjArgs(show_growth, Py_None, nil);
+
+        PyObject_CallOneArg(show_growth, Py_None);
         try! this.checkException();
         Py_DECREF(show_growth);
+
         Py_DECREF(this.objgraph);
       }
 
@@ -550,7 +572,17 @@ module Python {
         this.checkException();
         return v;
       } else if isArrayType(t) {
-        return fromList(t, obj);
+        // we need to create a dummy array to determine the type
+        pragma "no init"
+        var dummy: t;
+
+        if dummy.rank == 1 && dummy.isDefaultRectangular() {
+          return fromList(t, obj);
+        } else if dummy.isAssociative() {
+          return fromDict(t, obj);
+        } else {
+          halt("Unsupported fromPython array type: '" + t:string + "'");
+        }
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
       } else if isSubtype(t, Function) {
@@ -574,6 +606,7 @@ module Python {
       where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
       var pyList = PyList_New(arr.size);
       this.checkException();
+      this.toFree.pushBack(pyList);
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
         PyList_SetItem(pyList, i, toPython(arr[idx]));
@@ -589,6 +622,7 @@ module Python {
     proc toList(l: List.list(?)): PyObjectPtr throws {
       var pyList = PyList_New(l.size);
       this.checkException();
+      this.toFree.pushBack(pyList);
       for i in 0..<l.size {
         PyList_SetItem(pyList, i, toPython(l(i)));
         this.checkException();
@@ -607,13 +641,16 @@ module Python {
         throw new ChapelException("Can only convert a sequence with a known size to an array");
 
       // if its a sequence with a known size, we can just iterate over it
-      var res: T = noinit;
+      var res: T;
       if PySequence_Size(obj) != res.size {
         throw new ChapelException("Size mismatch");
       }
       for i in 0..<res.size {
         const idx = res.domain.orderToIndex(i);
-        res[idx] = fromPython(res.eltType, PySequence_GetItem(obj, i));
+        var elm = PySequence_GetItem(obj, i);
+        this.checkException();
+        defer Py_DECREF(elm);
+        res[idx] = fromPython(res.eltType, elm);
         this.checkException();
       }
       return res;
@@ -631,6 +668,7 @@ module Python {
         for i in 0..<PySequence_Size(obj) {
           var item = PySequence_GetItem(obj, i);
           this.checkException();
+          defer Py_DECREF(item);
           res.pushBack(fromPython(T.eltType, item));
         }
         return res;
@@ -640,6 +678,7 @@ module Python {
         while true {
           var item = PyIter_Next(obj);
           this.checkException();
+          defer Py_DECREF(item);
           if item == nil {
             break;
           }
@@ -678,6 +717,7 @@ module Python {
       where isArrayType(arr.type) && arr.isAssociative() {
       var pyDict = PyDict_New();
       this.checkException();
+      this.toFree.pushBack(pyDict);
       for key in arr.domain {
         var pyKey = toPython(key);
         var pyValue = toPython(arr[key]);
@@ -692,9 +732,33 @@ module Python {
     /*
       Converts a python dictionary to an associative array
     */
-    // proc fromDict(type T, obj: PyObjectPtr): T throws {
-      // TODO
-    // }
+    proc fromDict(type T, obj: PyObjectPtr): T throws
+      where isArrayType(T) {
+
+      // no init causes segfaults :(
+      var dummy: T;
+
+      // rebuild the array with a modifiable domain
+      var dom = dummy.domain;
+      var arr: [dom] dummy.eltType;
+
+      type keyType = arr.idxType;
+      type valType = arr.eltType;
+      var keys = PyDict_Keys(obj);
+      defer Py_DECREF(keys);
+      this.checkException();
+      for i in 0..<PyList_Size(keys) {
+        var key = PyList_GetItem(keys, i);
+        this.checkException();
+        var val = PyDict_GetItem(obj, key);
+        this.checkException();
+
+        var keyVal = this.fromPython(keyType, key);
+        dom.add(keyVal);
+        arr[keyVal] = this.fromPython(valType, val);
+      }
+      return arr;
+    }
 
     // TODO: convert python dict to chapel map
 
@@ -911,6 +975,7 @@ module Python {
       else
         pyRes = PyObject_CallFunctionObjArgs(this.fn.get(), (...pyArgs), nil);
       interpreter.checkException();
+      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -918,6 +983,7 @@ module Python {
     proc this(type retType): retType throws {
       var pyRes = PyObject_CallNoArgs(this.fn.get());
       interpreter.checkException();
+      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -940,6 +1006,7 @@ module Python {
 
       var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
       interpreter.checkException();
+      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -959,11 +1026,11 @@ module Python {
 
       var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
       interpreter.checkException();
+      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
-
 
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.fn.get(), attr.c_str());
@@ -1448,6 +1515,7 @@ module Python {
     extern proc Py_Finalize();
     extern proc Py_INCREF(obj: PyObjectPtr);
     extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
+    extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
@@ -1558,6 +1626,7 @@ module Python {
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyDict_Size(dict: PyObjectPtr): c_long;
+    extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char)): PyObjectPtr;
