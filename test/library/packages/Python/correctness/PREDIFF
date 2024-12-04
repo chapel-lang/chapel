@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-
-# if objgraph is not installed, we should remove the objgraph warning message that may appear
-# note: this is in leiu of each test having a skipif that checks for objgraph, since thats a lot of duplicated files
-cat $2 | grep -v "objgraph not found, memory leak detection disabled." > $2.tmp
-mv $2.tmp $2

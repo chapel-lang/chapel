@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-
-if [[ "$CHPL_MEM_LEAK_TESTING" == "true" ]]; then
-  # for memleaks testing, we need the objgraph package
-  FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-  $FILE_DIR/../skipIfAndInstallPackage.sh $FILE_DIR objgraph &>/dev/null
-fi

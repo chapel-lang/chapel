@@ -1,2 +1,0 @@
-# not all memory is currently cleaned up
-CHPL_MEM_LEAK_TESTING==true

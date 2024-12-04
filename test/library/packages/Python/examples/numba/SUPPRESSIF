@@ -1,2 +1,0 @@
-# this directory has not yet been enabled for memleaks testing with Python
-CHPL_MEM_LEAK_TESTING==true
