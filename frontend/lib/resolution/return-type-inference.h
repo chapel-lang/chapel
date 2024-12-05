@@ -29,6 +29,9 @@ namespace uast {
 namespace resolution {
 struct Resolver;
 
+const std::vector<InheritanceImplements>&
+getImplementedInterfaces(Context* context,
+                         const uast::AggregateDecl* ad);
 
 // this helper function computes a CompositeType based upon
 // a decl and some substitutions

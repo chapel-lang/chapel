@@ -36,6 +36,7 @@
 #include "Resolver.h"
 
 #include <cstdio>
+#include <iterator>
 #include <set>
 #include <string>
 #include <tuple>
@@ -54,12 +55,6 @@ using namespace types;
 static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
-
-/* (parent class, implemented interfaces) tuple resulting from processing
-   the inheritance expressions of a class/record. */
-using InheritanceExprResolutionResult =
-  std::pair<const BasicClassType*, std::vector<ID>>;
-
 static const InheritanceExprResolutionResult&
 processInheritanceExpressionsForAggregateQuery(Context* context,
                                                const AggregateDecl* ad,
@@ -68,7 +63,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
   const BasicClassType* parentClassType = nullptr;
   const AstNode* lastParentClass = nullptr;
-  std::vector<ID> interfaceIds;
+  std::vector<InheritanceImplements> interfaces;
   auto c = ad->toClass();
 
   for (auto inheritExpr : ad->inheritExprs()) {
@@ -102,9 +97,9 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
       lastParentClass = inheritExpr;
 
       // OK
-    } else if (!rr.toId().isEmpty() &&
-               parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
-      interfaceIds.push_back(rr.toId());
+    } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
+      interfaces.emplace_back(qt.type()->toInterfaceType()->id(),
+                              inheritExpr->id());
     } else {
       context->error(inheritExpr, "invalid parent class expression");
       parentClassType = BasicClassType::getRootClassType(context);
@@ -118,9 +113,56 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   }
 
   InheritanceExprResolutionResult result {
-    parentClassType, std::move(interfaceIds)
+    parentClassType, std::move(interfaces)
   };
   return QUERY_END(result);
+}
+
+static const std::vector<InheritanceImplements>&
+getImplementedInterfacesQuery(Context* context,
+                              const AggregateDecl* ad) {
+  QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
+  std::vector<InheritanceImplements> result;
+  std::set<ID> seen;
+  auto inheritanceResult =
+    processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
+  auto& interfaceInherits = inheritanceResult.second;
+
+  for (auto& interfaceInherit : interfaceInherits) {
+    auto insertionResult = seen.insert(interfaceInherit.first);
+
+    if (!insertionResult.second) {
+      // TODO: issue an error here for duplicate 'implements' for the same
+      // interface?
+    } else {
+      result.push_back(interfaceInherit);
+    }
+  };
+
+  auto parent = inheritanceResult.first;
+  if (!parent->isObjectType()) {
+    auto parentAst = parsing::idToAst(context, parent->id());
+    CHPL_ASSERT(parentAst);
+    auto parentAd = parentAst->toAggregateDecl();
+    CHPL_ASSERT(parentAd);
+
+    auto& parentInterfaces = getImplementedInterfacesQuery(context, parentAd);
+
+    // duplicate InheritanceImplements duplicates shouldn't be possible because
+    // the 'implements' IDs will come from the parent AST, and it's fine
+    // to have duplicate interfaces referenced in case a child wants a more
+    // specific instance.
+    std::copy(parentInterfaces.begin(), parentInterfaces.end(),
+              std::back_inserter(result));
+  }
+
+  return QUERY_END(result);
+}
+
+const std::vector<InheritanceImplements>&
+getImplementedInterfaces(Context* context,
+                         const AggregateDecl* ad) {
+  return getImplementedInterfacesQuery(context, ad);
 }
 
 // Get a Type for an AggregateDecl

@@ -2867,6 +2867,15 @@ class ResolvedFields {
   }
 };
 
+/* A pair of (implemented interface, 'implements' statement) IDs derived
+   from a single occurrences of an interface in an inheritance expression list. */
+using InheritanceImplements = std::pair<ID, ID>;
+
+/* (parent class, implemented interfaces) tuple resulting from processing
+   the inheritance expressions of a class/record. */
+using InheritanceExprResolutionResult =
+  std::pair<const types::BasicClassType*, std::vector<InheritanceImplements>>;
+
 class ResolvedParamLoop {
   public:
     using LoopBodies = std::vector<ResolutionResultByPostorderID>;
