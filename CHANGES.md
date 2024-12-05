@@ -65,8 +65,20 @@ Changes / Feature Improvements in Standard Libraries
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
 
+Name Changes for Standard Layouts and Distributions
+---------------------------------------------------
+* deprecated the `LayoutCS` module in favor of `CompressedSparseLayout`  
+  (see https://chapel-lang.org/docs/2.3/modules/layouts/CompressedSparseLayout.html)
+* deprecated the `CS` class for CSR/CSC layouts for `[csr|csc]Layout` records  
+  (see https://chapel-lang.org/docs/2.3/modules/layouts/CompressedSparseLayout.html#CompressedSparseLayout.csrLayout)
+
 Standard Layouts and Distributions
 ----------------------------------
+* added new utility methods for sparse layouts and distributions
+  - `.getCoordinates()` returns indices of nonzeroes for COO sparse arrays
+  - `.localSubarrays()` yields each locale's subarray for a block-sparse array
+  - `.getLocalSubarray()` returns the local subarray for a  block-sparse array
+  - added `ref`-returning overloads of existing `.getLocalSubarray()` methods
 
 Name Changes in Libraries
 -------------------------
@@ -76,6 +88,7 @@ Deprecated / Unstable / Removed Library Features
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* optimized inter-locale transfers of sparse CSR/CSC arrays for `--fast` runs
 
 GPU Computing
 -------------
@@ -85,6 +98,11 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* updated the task-parallel primer to refer to 'tasks' rather than 'threads'  
+  (see https://chapel-lang.org/docs/2.3/primers/taskParallel.html)
+* improved the task-parallel primer's clarity in other respects as well
+* updated Chapel's `LICENSE` file to indicate that LLVM is now Apache 2.0  
+  (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.3/LICENSE)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -130,6 +148,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* improved warnings when using `-j` or `--incremental` with the LLVM back-end
 
 Generated Executable Flags
 --------------------------
