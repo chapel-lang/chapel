@@ -55,6 +55,74 @@ static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
 
+/* (parent class, implemented interfaces) tuple resulting from processing
+   the inheritance expressions of a class/record. */
+using InheritanceExprResolutionResult =
+  std::pair<const BasicClassType*, std::vector<ID>>;
+
+static const InheritanceExprResolutionResult&
+processInheritanceExpressionsForAggregateQuery(Context* context,
+                                               const AggregateDecl* ad,
+                                               SubstitutionsMap substitutions,
+                                               const PoiScope* poiScope) {
+  QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
+  const BasicClassType* parentClassType = nullptr;
+  const AstNode* lastParentClass = nullptr;
+  std::vector<ID> interfaceIds;
+  auto c = ad->toClass();
+
+  for (auto inheritExpr : ad->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClass(context, ad, inheritExpr,
+                                     substitutions,
+                                     poiScope, r);
+    inheritExpr->traverse(visitor);
+
+    auto& rr = r.byAst(inheritExpr);
+    QualifiedType qt = rr.type();
+    if (auto t = qt.type()) {
+      if (auto bct = t->toBasicClassType()) {
+        parentClassType = bct;
+      } else if (auto ct = t->toClassType()) {
+        // safe because it's checked for null later.
+        parentClassType = ct->basicClassType();
+      }
+    }
+
+    bool foundParentClass = qt.isType() && parentClassType != nullptr;
+    if (!c && foundParentClass) {
+      // TODO: report error
+    } else if (foundParentClass) {
+      // It's a valid parent class; is it the only one? (error otherwise).
+      if (lastParentClass) {
+        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+      }
+      lastParentClass = inheritExpr;
+
+      // OK
+    } else if (!rr.toId().isEmpty() &&
+               parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
+      interfaceIds.push_back(rr.toId());
+    } else {
+      context->error(inheritExpr, "invalid parent class expression");
+      parentClassType = BasicClassType::getRootClassType(context);
+    }
+  }
+
+  // All the parent expressions could've been interfaces, and we just
+  // inherit from object.
+  if (!parentClassType) {
+    parentClassType = BasicClassType::getRootClassType(context);
+  }
+
+  InheritanceExprResolutionResult result {
+    parentClassType, std::move(interfaceIds)
+  };
+  return QUERY_END(result);
+}
+
 // Get a Type for an AggregateDecl
 // poiScope, instantiatedFrom are nullptr if not instantiating
 const CompositeType* helpGetTypeForDecl(Context* context,
@@ -81,44 +149,10 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
-    const BasicClassType* parentClassType = nullptr;
-    const AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClass(context, c, inheritExpr,
-                                       substitutions,
-                                       poiScope, r);
-      inheritExpr->traverse(visitor);
-
-      auto& rr = r.byAst(inheritExpr);
-      QualifiedType qt = rr.type();
-      if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType()) {
-          parentClassType = bct;
-        } else if (auto ct = t->toClassType()) {
-          // safe because it's checked for null later.
-          parentClassType = ct->basicClassType();
-        }
-      }
-
-      if (qt.isType() && parentClassType != nullptr) {
-        // It's a valid parent class; is it the only one? (error otherwise).
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-        }
-        lastParentClass = inheritExpr;
-
-        // OK
-      } else if (!rr.toId().isEmpty() &&
-                 parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
-        // OK, It's an interface.
-      } else {
-        context->error(inheritExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getRootClassType(context);
-      }
-    }
+    const BasicClassType* parentClassType =
+      processInheritanceExpressionsForAggregateQuery(context, ad,
+                                                     substitutions,
+                                                     poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
     // inherit from object.
