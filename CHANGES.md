@@ -28,13 +28,14 @@ released December 12, 2024
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* added package module to support interoperability with Python from Chapel
+* added new package module to support calling to Python from Chapel
 
 Updates to Chapel's Release Formats
 -----------------------------------
 * added single- and multi-locale packages for AmazonLinux 2023 and Fedora 41  
   (see https://chapel-lang.org/install-pkg.html)
 * removed Linux package support for Fedora 37, 38, and 39
+* enabled support for building Chapel with ROCm from Spack
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -71,7 +72,7 @@ Changes / Feature Improvements in Standard Libraries
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
 * expanded `PrecisionSerializer` to properly handle `complex` & `imag` values  
-  (see https://chapel-lang.org/docs/2.3/modules/packages/Python.html)
+  (see https://chapel-lang.org/docs/2.3/modules/packages/PrecisionSerializer.html)
 * improved errors thrown by `Image.mediaPipe` when `ffmpeg` is missing  
   (see https://chapel-lang.org/docs/2.3/modules/packages/Image.html#Image.mediaPipe)
 
@@ -114,11 +115,11 @@ GPU Computing
 
 Tool Improvements
 -----------------
-* enabled the `UnusedFormal` linter rule by default
 * added an `UnusedTaskIntent` linter rule to detect unused task intents
 * added an `UnusedTypeQuery` linter rule to detect unused type queries
 * added a `MissingInIntent` linter rule to detect missing `in` intents
 * made the `ControlFlowParentheses` linter rule report more precise locations
+* enabled the `UnusedFormal` linter rule by default
 * improved the code completion support for `chpl-language-server`
 * expanded the cases for pretty-printing code handled by `chpl-language-server`
 * exposed the `chplcheck` argument `--internal-prefix` to linter rules
@@ -130,16 +131,16 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.3/primers/taskParallel.html)
 * improved the task-parallel primer's clarity in other respects as well
 * updated the list of currently tested configurations in the GPU docs  
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html#tested-configurations)
+  (see https://chapel-lang.org/docs/2.3/technotes/gpu.html#tested-configurations)
 * updated Chapel's `LICENSE` file to indicate that LLVM is now Apache 2.0  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.3/LICENSE)
 
 Documentation Improvements for Tools
 ------------------------------------
 * added `chapel-py` API docs to the published documentation  
-  (see https://chapel-lang.org/docs/main/tools/chapel-py/chapel-py.html#API)
+  (see https://chapel-lang.org/docs/2.3/tools/chapel-py/chapel-py.html#API)
 * improved the documentation for `./configure` and `chplconfig`  
-  (see https://chapel-lang.org/docs/main/usingchapel/building.html#installing-chapel)
+  (see https://chapel-lang.org/docs/2.3/usingchapel/building.html#installing-chapel)
 
 Language Specification Improvements
 -----------------------------------
@@ -147,9 +148,9 @@ Language Specification Improvements
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * split AWS docs into separate sections for binary vs. source distributions  
-  (see https://chapel-lang.org/docs/main/platforms/aws.html#getting-chapel)
+  (see https://chapel-lang.org/docs/2.3/platforms/aws.html#getting-chapel)
 * replaced 'alinux2' with 'AmazonLinux 2023' in the AWS documentation  
-  (see https://chapel-lang.org/docs/main/platforms/aws.html#configuring-a-parallelcluster)
+  (see https://chapel-lang.org/docs/2.3/platforms/aws.html#configuring-a-parallelcluster)
 
 Technical Note Improvements
 ---------------------------
@@ -172,12 +173,12 @@ Generated Code Improvements
 
 Memory Improvements
 -------------------
-* removed memory leaks in several package modules  
+* closed memory leaks in several package modules  
   (`ConcurrentMap`, `EpochManager`, `LockFreeStack`, and `LockFreeQueue`)
 
 Syntax Highlighting
 -------------------
-* added missing keywords to the `vim` and `emacs` syntax highlighting
+* added missing keywords to the `vim` and `emacs` syntax highlighters
 
 Configuration / Build Changes
 -----------------------------
