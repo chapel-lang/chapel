@@ -897,20 +897,35 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
 }
 
 owned<ImplementationPoint> const&
-ImplementationPoint::getImplementationPoint(Context* context, const types::InterfaceType* ift, ID id) {
-  QUERY_BEGIN(getImplementationPoint, context, ift, id);
-  auto result = toOwned(new ImplementationPoint(ift, std::move(id)));
+ImplementationPoint::getImplementationPoint(Context* context, ID interface,
+                                            ID id, ID formal,
+                                            std::vector<ID> formals) {
+  QUERY_BEGIN(getImplementationPoint, context, interface, id, formal, formals);
+  auto result = toOwned(new ImplementationPoint(interface, std::move(id),
+                                                std::move(formal),
+                                                std::move(formals)));
   return QUERY_END(result);
 }
 
 const ImplementationPoint*
-ImplementationPoint::get(Context* context, const types::InterfaceType* ift, ID id) {
-  return getImplementationPoint(context, ift, std::move(id)).get();
+ImplementationPoint::getForInheritExpr(Context* context, ID interface,
+                                       ID id, ID formal) {
+  return getImplementationPoint(context, std::move(interface),
+                                std::move(id), std::move(formal), {}).get();
+}
+
+const ImplementationPoint*
+ImplementationPoint::getForImplementsStmt(Context* context, ID interface,
+                                          ID id, std::vector<ID> formals) {
+  return getImplementationPoint(context, std::move(interface),
+                                std::move(id), ID(), std::move(formals)).get();
 }
 
 void ImplementationPoint::mark(Context* context) const {
-  interface_->mark(context);
+  interfaceId_.mark(context);
   id_.mark(context);
+  formal_.mark(context);
+  chpl::mark<decltype(formals_)>{}(context, formals_);
 }
 
 const owned<TypedFnSignature>&

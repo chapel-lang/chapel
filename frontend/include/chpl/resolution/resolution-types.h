@@ -2871,36 +2871,57 @@ class ResolvedFields {
    from a single occurrences of an interface in an inheritance expression list. */
 struct ImplementationPoint {
  private:
-  const types::InterfaceType* interface_;
+  // The ID of the interface being implemented
+  ID interfaceId_;
+  // The ID of the implementation statement
   ID id_;
 
-  ImplementationPoint(const types::InterfaceType* interface,
-                      ID id)
-    : interface_(interface), id_(std::move(id)) {}
+  // In the special case that this implementation point is defined as an
+  // inheritance expressiom, ID of the aggregate type. This is treated specially
+  // because there's no formal AST.
+  ID formal_;
+  std::vector<ID> formals_;
+
+  ImplementationPoint(ID interface,
+                      ID id,
+                      ID formal,
+                      std::vector<ID> formals)
+    : interfaceId_(interface), id_(std::move(id)), formal_(std::move(formal)),
+      formals_(std::move(formals)) {}
 
   static owned<ImplementationPoint> const&
-  getImplementationPoint(Context* context, const types::InterfaceType* ift, ID id);
+  getImplementationPoint(Context* context, ID interface, ID id,
+                         ID formal, std::vector<ID> formals);
 
  public:
   static const ImplementationPoint*
-  get(Context* context, const types::InterfaceType* ift, ID id);
+  getForInheritExpr(Context* context, ID interface, ID id, ID formal);
+
+  static const ImplementationPoint*
+  getForImplementsStmt(Context* context, ID interface, ID id, std::vector<ID> formals);
 
   static bool update(owned<ImplementationPoint>& lhs,
                      owned<ImplementationPoint>& rhs) {
     return defaultUpdateOwned(lhs, rhs);
   }
   bool operator==(const ImplementationPoint& other) const {
-    return interface_ == other.interface_ &&
-           id_ == other.id_;
+    return interfaceId_ == other.interfaceId_ &&
+           id_ == other.id_ &&
+           formal_ == other.formal_ &&
+           formals_ == other.formals_;
   }
   bool operator!=(const ImplementationPoint& other) const {
     return !(*this == other);
   }
   void mark(Context* context) const;
 
-  const types::InterfaceType* interface() const { return interface_; }
+  const ID& interfaceId() const { return interfaceId_; }
 
   const ID& id() const { return id_; }
+
+  const ID& formal() const { return formal_; }
+
+  const std::vector<ID>& formals() const { return formals_; }
 };
 
 /* (parent class, implemented interfaces) tuple resulting from processing

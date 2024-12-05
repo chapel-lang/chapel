@@ -99,9 +99,10 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
       // OK
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
       auto implementationPoint =
-        ImplementationPoint::get(context,
-                                 qt.type()->toInterfaceType(),
-                                 inheritExpr->id());
+        ImplementationPoint::getForInheritExpr(context,
+                                               qt.type()->toInterfaceType()->id(),
+                                               inheritExpr->id(),
+                                               ad->id());
       implementationPoints.push_back(implementationPoint);
     } else {
       context->error(inheritExpr, "invalid parent class expression");
@@ -126,13 +127,13 @@ getImplementedInterfacesQuery(Context* context,
                               const AggregateDecl* ad) {
   QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
   std::vector<const ImplementationPoint*> result;
-  std::set<const InterfaceType*> seen;
+  std::set<ID> seen;
   auto inheritanceResult =
     processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
   auto& implementationPoints = inheritanceResult.second;
 
   for (auto& implementationPoint : implementationPoints) {
-    auto insertionResult = seen.insert(implementationPoint->interface());
+    auto insertionResult = seen.insert(implementationPoint->interfaceId());
 
     if (!insertionResult.second) {
       // TODO: issue an error here for duplicate 'implements' for the same
