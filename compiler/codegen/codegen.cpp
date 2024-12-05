@@ -2275,11 +2275,11 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
   // filename we haven't seen before
   std::string filename = lowerFilename;
   int version = 1;
-  while (filenames.get(filename.c_str())) {
+  while (filenames.get(astr(filename))) {
     version++;
     filename = lowerFilename + std::to_string(version);
   }
-  filenames.put(filename.c_str(), 1);
+  filenames.put(astr(filename), 1);
 
   // build the real filename using that version number -- preserves
   // case by default by going back to currentModule->name rather
@@ -2287,7 +2287,7 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
   if (version == 1) {
     filename = currentModuleName;
   } else {
-    filename = currentModuleName + version;
+    filename = currentModuleName + std::to_string(version);
   }
 
   name = astr(filename);
