@@ -281,6 +281,10 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
+
+const ImplementationPoint* resolveImplementsStatement(ResolutionContext* context,
+                                                      ID id);
+
 /**
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.

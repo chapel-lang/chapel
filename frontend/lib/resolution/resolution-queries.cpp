@@ -2835,6 +2835,53 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
+static const ImplementationPoint* const&
+resolveImplementsStatementQuery(ResolutionContext* rc, ID id) {
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveImplementsStatementQuery, rc, id);
+
+  const ImplementationPoint* result = nullptr;
+  auto ast = parsing::idToAst(rc->context(), id);
+
+  if (auto impl = ast->toImplements()) {
+    ResolutionResultByPostorderID byPostorder;
+    auto res = Resolver::createForImplementsStmt(rc, impl, byPostorder);
+    impl->traverse(res);
+
+    auto interfaceExpr = impl->interfaceExpr();
+    QualifiedType interfaceQt;
+    if (auto interfaceIdent = interfaceExpr->toIdentifier()) {
+      interfaceQt = byPostorder.byAst(interfaceIdent).type();
+    }
+
+    if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
+        interfaceQt.type()->toInterfaceType() == nullptr) {
+      // TODO: emit error message
+      return CHPL_RESOLUTION_QUERY_END(result);
+    }
+
+    ID interfaceId = interfaceQt.type()->toInterfaceType()->id();
+    std::vector<ID> formalIds;
+    if (auto typeIdent = impl->typeIdent()) {
+      formalIds.push_back(typeIdent->id());
+    } else if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
+      for (auto actual : interfaceCall->actuals()) {
+        formalIds.push_back(actual->id());
+      }
+    }
+
+    result = ImplementationPoint::getForImplementsStmt(rc->context(),
+                                                       interfaceId, id,
+                                                       std::move(formalIds));
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+const ImplementationPoint* resolveImplementsStatement(ResolutionContext* context,
+                                                      ID id) {
+  return resolveImplementsStatementQuery(context, id);
+}
+
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
     return nullptr;

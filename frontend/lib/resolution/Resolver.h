@@ -177,6 +177,12 @@ struct Resolver {
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to resolve an Implements statement
+  static Resolver
+  createForImplementsStmt(ResolutionContext* rc, const uast::Implements* implements,
+                      ResolutionResultByPostorderID& byPostorder);
+
+
   // set up Resolver to scope resolve a Module
   static Resolver
   createForScopeResolvingModuleStmt(
