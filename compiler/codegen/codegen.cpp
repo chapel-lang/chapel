@@ -3116,7 +3116,8 @@ static void codegenPartTwo() {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
         openCFile(&modulefile, filename, "c");
-        std::string path = modulefile.pathname;
+        // cut off .o extension
+        std::string path(modulefile.pathname, strlen(modulefile.pathname) - 2);
         userFileName.push_back(astr(path));
         closeCFile(&modulefile);
       }
