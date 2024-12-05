@@ -28,9 +28,13 @@ released December 12, 2024
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* added package module to support interoperability with Python from Chapel
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* added single- and multi-locale packages for AmazonLinux 2023 and Fedora 41  
+  (see https://chapel-lang.org/install-pkg.html)
+* removed Linux package support for Fedora 37, 38, and 39
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -58,12 +62,18 @@ New Standard Library Features
 
 New Package Module Features
 ---------------------------
+* added a new package module supporting calling to Python from Chapel  
+  (see https://chapel-lang.org/docs/2.3/modules/packages/Python.html)
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
+* expanded `PrecisionSerializer` to properly handle `complex` & `imag` values  
+  (see https://chapel-lang.org/docs/2.3/modules/packages/Python.html)
+* improved errors thrown by `Image.mediaPipe` when `ffmpeg` is missing  
+  (see https://chapel-lang.org/docs/2.3/modules/packages/Image.html#Image.mediaPipe)
 
 Name Changes for Standard Layouts and Distributions
 ---------------------------------------------------
@@ -85,39 +95,68 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed the previously deprecated config `fileOffsetWithoutLocking`
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * optimized inter-locale transfers of sparse CSR/CSC arrays for `--fast` runs
+* improved performance on Arm-based Macs by using a 128-bit cache line
 
 GPU Computing
 -------------
+* GPU-related `CHPL_` variables can now be set in `chplconfig` files
+* improved `chpl`'s ability to infer `CHPL_CUDA_PATH` and `CHPL_ROCM_PATH`
+* exposed the current CUDA/ROCm version in `CHPL_GPU_SDK_VERSION`
+* fixed an internal error when `CHPL_LOCALE_MODEL=gpu` and `CHPL_GPU=none`
+* CUDA headers are now treated as system headers
+* enabled support for building Chapel with ROCm from Spack
+* removed support for ROCm 4
 
 Tool Improvements
 -----------------
+* enabled the `UnusedFormal` linter rule by default
+* added an `UnusedTaskIntent` linter rule to detect unused task intents
+* added an `UnusedTypeQuery` linter rule to detect unused type queries
+* added a `MissingInIntent` linter rule to detect missing `in` intents
+* made the `ControlFlowParentheses` linter rule report more precise locations
+* improved the code completion support for `chpl-language-server`
+* expanded the cases for pretty-printing code handled by `chpl-language-server`
+* exposed the `chplcheck` argument `--internal-prefix` to linter rules
+* added `limitation_kind` & `limitations` to `VisibilityClause` in 'chapel-py'
 
 Documentation Improvements
 --------------------------
 * updated the task-parallel primer to refer to 'tasks' rather than 'threads'  
   (see https://chapel-lang.org/docs/2.3/primers/taskParallel.html)
 * improved the task-parallel primer's clarity in other respects as well
+* updated the list of currently tested configurations in the GPU docs  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html#tested-configurations)
 * updated Chapel's `LICENSE` file to indicate that LLVM is now Apache 2.0  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.3/LICENSE)
 
 Documentation Improvements for Tools
 ------------------------------------
+* added `chapel-py` API docs to the published documentation  
+  (see https://chapel-lang.org/docs/main/tools/chapel-py/chapel-py.html#API)
+* improved the documentation for `./configure` and `chplconfig`  
+  (see https://chapel-lang.org/docs/main/usingchapel/building.html#installing-chapel)
 
 Language Specification Improvements
 -----------------------------------
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* split AWS docs into separate sections for binary vs. source distributions  
+  (see https://chapel-lang.org/docs/main/platforms/aws.html#getting-chapel)
+* replaced 'alinux2' with 'AmazonLinux 2023' in the AWS documentation  
+  (see https://chapel-lang.org/docs/main/platforms/aws.html#configuring-a-parallelcluster)
 
 Technical Note Improvements
 ---------------------------
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* documented the `Image` module's support for reading and writing images
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
@@ -133,18 +172,23 @@ Generated Code Improvements
 
 Memory Improvements
 -------------------
+* removed memory leaks in several package modules  
+  (`ConcurrentMap`, `EpochManager`, `LockFreeStack`, and `LockFreeQueue`)
 
 Syntax Highlighting
 -------------------
+* added missing keywords to the `vim` and `emacs` syntax highlighting
 
 Configuration / Build Changes
 -----------------------------
+* improved ability to infer flags required by a system's C compiler
 
 Portability / Platform-specific Improvements
 --------------------------------------------
 
 Compiler Improvements
 ---------------------
+* added support for LLVM 19
 
 Compiler Flags
 --------------
@@ -155,33 +199,50 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* added warnings for setting `CHPL_LLVM_VERSION` or `CHPL_GPU_SDK_VERSION`
 
 Launchers
 ---------
+* added support for `--gpu-per-node` flags to all slurm-based launchers
+* added `CHPL_LAUNCHER_GPUS_PER_NODE` support to slurm-based GASNet launchers
+* stopped forwarding unnecessary environment variables to the GASNet launchers
 
 Runtime Library Improvements
 ----------------------------
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of LLVM to LLVM 19
+* updated the bundled version of Qthreads to 1.21
+* addressed a performance regression in Qthreads version 1.21 via a patch
 
 Bug Fixes
 ---------
+* fixed inconsistencies between `printchplenv` and `chpl --print-chpl-settings`
+* prevented an infinite loop when printing errors in Chapel module code
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bounds-checking error when multiplying a `bigint` by a `uint`
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed `complex` support from the CPU when using `CHPL_LOCALE_MODEL=gpu`
+* fixed internal error when using `CHPL_GPU=amd` w/ a HPE/Cray hugepages module
 
 Bug Fixes for Tools
 -------------------
 
 Bug Fixes for Build Issues
 --------------------------
+* made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
+* fixed an issue with `chplconfig` not supporting variables with equals signs
+* prevent `printchplenv` from inferring `CHPL_LLVM_GCC_PREFIX` when not needed
+* fixed the parsing for bundled `.pc` files
 
 Bug Fixes for the Runtime
 -------------------------
+* fixed incorrect variable names in the atomics compatibility layer
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -221,6 +282,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* fixed a handful a SyntaxWarning's caused by newer Python versions
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
