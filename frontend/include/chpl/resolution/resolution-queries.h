@@ -285,6 +285,11 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
 const ImplementationPoint* resolveImplementsStatement(ResolutionContext* context,
                                                       ID id);
 
+const std::vector<const ImplementationPoint*>*
+visibileImplementationPointsForInterface(ResolutionContext* context,
+                                         const Scope* scope,
+                                         ID interfaceId);
+
 /**
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.

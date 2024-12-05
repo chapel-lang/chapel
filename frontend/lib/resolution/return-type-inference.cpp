@@ -143,23 +143,6 @@ getImplementedInterfacesQuery(Context* context,
     }
   };
 
-  auto parent = inheritanceResult.first;
-  if (!parent->isObjectType()) {
-    auto parentAst = parsing::idToAst(context, parent->id());
-    CHPL_ASSERT(parentAst);
-    auto parentAd = parentAst->toAggregateDecl();
-    CHPL_ASSERT(parentAd);
-
-    auto& parentInterfaces = getImplementedInterfacesQuery(context, parentAd);
-
-    // duplicate InheritanceImplements duplicates shouldn't be possible because
-    // the 'implements' IDs will come from the parent AST, and it's fine
-    // to have duplicate interfaces referenced in case a child wants a more
-    // specific instance.
-    std::copy(parentInterfaces.begin(), parentInterfaces.end(),
-              std::back_inserter(result));
-  }
-
   return QUERY_END(result);
 }
 

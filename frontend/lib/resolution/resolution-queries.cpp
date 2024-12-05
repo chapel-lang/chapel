@@ -2882,6 +2882,80 @@ const ImplementationPoint* resolveImplementsStatement(ResolutionContext* context
   return resolveImplementsStatementQuery(context, id);
 }
 
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInScope(ResolutionContext* rc,
+                                   const Scope* scope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(collectImplementationPointsInScope, rc, scope);
+  CHPL_ASSERT(scope->moduleScope() == scope);
+
+  std::map<ID, std::vector<const ImplementationPoint*>> byInterfaceId;
+  auto module = parsing::idToAst(rc->context(), scope->id())->toModule();
+
+  for (auto stmt : module->stmts()) {
+    if (auto ad = stmt->toAggregateDecl()) {
+      auto& implPoints = getImplementedInterfaces(rc->context(), ad);
+      for (auto implPoint : implPoints) {
+        byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
+      }
+    } else if (auto implements = stmt->toImplements()) {
+      auto implPoint = resolveImplementsStatement(rc, implements->id());
+      if (implPoint) {
+        byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
+      }
+    }
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(byInterfaceId);
+}
+
+static void
+helpCollectVisibileImplementationPoints(ResolutionContext* rc,
+                                        const Scope* scope,
+                                        std::unordered_set<const Scope*>& seen,
+                                        std::map<ID, std::vector<const ImplementationPoint*>>& into) {
+  auto insertResult = seen.insert(scope);
+  if (!insertResult.second) return;
+
+  auto& inScope = collectImplementationPointsInScope(rc, scope);
+  for (auto& pointsForScope : inScope) {
+    auto& copyInto = into[pointsForScope.first];
+    for (auto implPoint : pointsForScope.second) {
+      copyInto.push_back(implPoint);
+    }
+  }
+
+  auto visStmts = resolveVisibilityStmts(rc->context(), scope);
+  for (auto visClause : visStmts->visibilityClauses()) {
+    auto nextScope = visClause.scope();
+    if (nextScope && asttags::isModule(nextScope->tag())) {
+      helpCollectVisibileImplementationPoints(rc, nextScope, seen, into);
+    }
+  }
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+visibleImplementationPoints(ResolutionContext* rc,
+                                         const Scope* scope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(visibleImplementationPoints, rc, scope);
+  std::map<ID, std::vector<const ImplementationPoint*>> result;
+  std::unordered_set<const Scope*> seen;
+  helpCollectVisibileImplementationPoints(rc, scope, seen, result);
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+const std::vector<const ImplementationPoint*>*
+visibileImplementationPointsForInterface(ResolutionContext* rc,
+                                         const Scope* scope,
+                                         ID id) {
+  auto& allInstantiationPoints = visibleImplementationPoints(rc, scope);
+  auto it = allInstantiationPoints.find(id);
+  if (it != allInstantiationPoints.end()) {
+    return &it->second;
+  }
+
+  return nullptr;
+}
+
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
     return nullptr;
