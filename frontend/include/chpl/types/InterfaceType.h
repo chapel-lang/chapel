@@ -73,6 +73,10 @@ class InterfaceType final : public Type {
                                   UniqueString name,
                                   SubstitutionsMap subs);
 
+  static const InterfaceType* withTypes(Context* context,
+                                        const InterfaceType* ift,
+                                        std::vector<types::QualifiedType> types);
+
   const ID& id() const { return id_; }
 
   UniqueString name() const { return name_; }

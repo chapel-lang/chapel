@@ -56,5 +56,44 @@ const InterfaceType* InterfaceType::get(Context* context, ID id, UniqueString na
   return getInterfaceType(context, id, name, subs).get();
 }
 
+static const InterfaceType* const&
+interfaceTypeWithTypesQuery(Context* context,
+                            const InterfaceType* ift,
+                            std::vector<types::QualifiedType> types) {
+  QUERY_BEGIN(interfaceTypeWithTypesQuery, context, ift, types);
+  const InterfaceType* res = nullptr;
+
+  if (ift->subs().size() > 0) {
+    // don't allow instantiating already-instantiated interfaces
+  } else {
+    auto ast = parsing::idToAst(context, ift->id());
+    CHPL_ASSERT(ast);
+    auto itf = ast->toInterface();
+    CHPL_ASSERT(itf);
+
+    if (types.size() != itf->numFormals()) {
+      // not good, wrong instantiation
+    } else {
+      InterfaceType::SubstitutionsMap subs;
+      auto typesIt = types.begin();
+      for (auto formal : itf->formals()) {
+        // Force the intent to TYPE
+        auto newType = QualifiedType(QualifiedType::TYPE, (typesIt++)->type());
+        subs.emplace(formal->id(), std::move(newType));
+      }
+
+      res = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
+    }
+  }
+
+  return QUERY_END(res);
+}
+
+const InterfaceType* InterfaceType::withTypes(Context* context,
+                                              const InterfaceType* ift,
+                                              std::vector<types::QualifiedType> types) {
+  return interfaceTypeWithTypesQuery(context, ift, std::move(types));
+}
+
 } // end namespace types
 } // end namespace chpl
