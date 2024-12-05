@@ -29,7 +29,7 @@ namespace uast {
 namespace resolution {
 struct Resolver;
 
-const std::vector<InheritanceImplements>&
+const std::vector<const ImplementationPoint*>&
 getImplementedInterfaces(Context* context,
                          const uast::AggregateDecl* ad);
 

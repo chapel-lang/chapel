@@ -63,7 +63,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
   const BasicClassType* parentClassType = nullptr;
   const AstNode* lastParentClass = nullptr;
-  std::vector<InheritanceImplements> interfaces;
+  std::vector<const ImplementationPoint*> implementationPoints;
   auto c = ad->toClass();
 
   for (auto inheritExpr : ad->inheritExprs()) {
@@ -98,8 +98,11 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
       // OK
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
-      interfaces.emplace_back(qt.type()->toInterfaceType()->id(),
-                              inheritExpr->id());
+      auto implementationPoint =
+        ImplementationPoint::get(context,
+                                 qt.type()->toInterfaceType(),
+                                 inheritExpr->id());
+      implementationPoints.push_back(implementationPoint);
     } else {
       context->error(inheritExpr, "invalid parent class expression");
       parentClassType = BasicClassType::getRootClassType(context);
@@ -113,29 +116,29 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   }
 
   InheritanceExprResolutionResult result {
-    parentClassType, std::move(interfaces)
+    parentClassType, std::move(implementationPoints)
   };
   return QUERY_END(result);
 }
 
-static const std::vector<InheritanceImplements>&
+static const std::vector<const ImplementationPoint*>&
 getImplementedInterfacesQuery(Context* context,
                               const AggregateDecl* ad) {
   QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
-  std::vector<InheritanceImplements> result;
-  std::set<ID> seen;
+  std::vector<const ImplementationPoint*> result;
+  std::set<const InterfaceType*> seen;
   auto inheritanceResult =
     processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
-  auto& interfaceInherits = inheritanceResult.second;
+  auto& implementationPoints = inheritanceResult.second;
 
-  for (auto& interfaceInherit : interfaceInherits) {
-    auto insertionResult = seen.insert(interfaceInherit.first);
+  for (auto& implementationPoint : implementationPoints) {
+    auto insertionResult = seen.insert(implementationPoint->interface());
 
     if (!insertionResult.second) {
       // TODO: issue an error here for duplicate 'implements' for the same
       // interface?
     } else {
-      result.push_back(interfaceInherit);
+      result.push_back(implementationPoint);
     }
   };
 
@@ -159,7 +162,7 @@ getImplementedInterfacesQuery(Context* context,
   return QUERY_END(result);
 }
 
-const std::vector<InheritanceImplements>&
+const std::vector<const ImplementationPoint*>&
 getImplementedInterfaces(Context* context,
                          const AggregateDecl* ad) {
   return getImplementedInterfacesQuery(context, ad);

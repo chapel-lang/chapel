@@ -2869,12 +2869,44 @@ class ResolvedFields {
 
 /* A pair of (implemented interface, 'implements' statement) IDs derived
    from a single occurrences of an interface in an inheritance expression list. */
-using InheritanceImplements = std::pair<ID, ID>;
+struct ImplementationPoint {
+ private:
+  const types::InterfaceType* interface_;
+  ID id_;
+
+  ImplementationPoint(const types::InterfaceType* interface,
+                      ID id)
+    : interface_(interface), id_(std::move(id)) {}
+
+  static owned<ImplementationPoint> const&
+  getImplementationPoint(Context* context, const types::InterfaceType* ift, ID id);
+
+ public:
+  static const ImplementationPoint*
+  get(Context* context, const types::InterfaceType* ift, ID id);
+
+  static bool update(owned<ImplementationPoint>& lhs,
+                     owned<ImplementationPoint>& rhs) {
+    return defaultUpdateOwned(lhs, rhs);
+  }
+  bool operator==(const ImplementationPoint& other) const {
+    return interface_ == other.interface_ &&
+           id_ == other.id_;
+  }
+  bool operator!=(const ImplementationPoint& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const;
+
+  const types::InterfaceType* interface() const { return interface_; }
+
+  const ID& id() const { return id_; }
+};
 
 /* (parent class, implemented interfaces) tuple resulting from processing
    the inheritance expressions of a class/record. */
 using InheritanceExprResolutionResult =
-  std::pair<const types::BasicClassType*, std::vector<InheritanceImplements>>;
+  std::pair<const types::BasicClassType*, std::vector<const ImplementationPoint*>>;
 
 class ResolvedParamLoop {
   public:

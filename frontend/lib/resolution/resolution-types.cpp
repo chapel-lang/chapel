@@ -896,6 +896,23 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
   allGenericFieldsHaveDefaultValues_ = allGenHaveDefault;
 }
 
+owned<ImplementationPoint> const&
+ImplementationPoint::getImplementationPoint(Context* context, const types::InterfaceType* ift, ID id) {
+  QUERY_BEGIN(getImplementationPoint, context, ift, id);
+  auto result = toOwned(new ImplementationPoint(ift, std::move(id)));
+  return QUERY_END(result);
+}
+
+const ImplementationPoint*
+ImplementationPoint::get(Context* context, const types::InterfaceType* ift, ID id) {
+  return getImplementationPoint(context, ift, std::move(id)).get();
+}
+
+void ImplementationPoint::mark(Context* context) const {
+  interface_->mark(context);
+  id_.mark(context);
+}
+
 const owned<TypedFnSignature>&
 TypedFnSignature::getTypedFnSignature(Context* context,
                     const UntypedFnSignature* untypedSignature,
