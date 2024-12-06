@@ -2,26 +2,24 @@ Release Changes List
 ====================
 
 TODO:
-o Brandon's entries
-o Vass's entries
-o '(http:' -> '(see http:'
-o sort items within categories
-o check placement of items into categories
-o check sorting of categories
-o check for ' vs `
-o fulfill TODOs
+* '(http:' -> '(see http:'
+* sort items within categories
+* check placement of items into categories
+* check ordering of categories relative to one another
+* check for ' vs `
+* fulfill TODOs
 * check man page or util/chpl_completion.bash for new compiler flags
 * check test/release/examples
-o check for docs/1.33/ links
-o check forced linebreaks
-o check initial '*'
-o check initial 'A-Z'
-o check 'see:'
-o check for changes put too far down in file
+* check for docs/2.2/ links
+* check forced linebreaks
+* check initial '*'
+* check initial 'A-Z'
+* check 'see:'
+* check for changes put too far down in file
+* add highlights
+* spellcheck
 o remove empty sections
 o check links
-o add highlights
-o spellcheck
 
 
 version 2.3
@@ -61,7 +59,7 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
-* added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables
+* added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables  
   (see https://chapel-lang.org/docs/2.3/language/spec/task-parallelism-and-synchronization.html#Atomics.fetchMin)
 
 Language Feature Improvements
@@ -79,7 +77,7 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
-* added an `allocations()` iterator to the `MemDiagnostics` module
+* added an `allocations()` iterator to the `MemDiagnostics` module  
   (see https://chapel-lang.org/docs/2.3/modules/standard/MemDiagnostics.html#MemDiagnostics.allocations)
 
 New Package Module Features
@@ -97,13 +95,8 @@ Changes / Feature Improvements in Package Modules
 * improved errors thrown by `Image.mediaPipe` when `ffmpeg` is missing  
   (see https://chapel-lang.org/docs/2.3/modules/packages/Image.html#Image.mediaPipe)
 
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-* deprecated the `LayoutCS` module in favor of `CompressedSparseLayout`  
-  (see https://chapel-lang.org/docs/2.3/modules/layouts/CompressedSparseLayout.html)
-
-Standard Layouts and Distributions
-----------------------------------
+New Standard Layout and Distribution Features
+---------------------------------------------
 * added new utility methods for sparse layouts and distributions
   - `.getCoordinates()` returns indices of nonzeroes for COO sparse arrays
   - `.localSubarrays()` yields each locale's subarray for a block-sparse array
@@ -111,6 +104,11 @@ Standard Layouts and Distributions
   - added `ref`-returning overloads of existing `.getLocalSubarray()` methods
 * deprecated the `CS` class for CSR/CSC layouts for `[csr|csc]Layout` records  
   (see https://chapel-lang.org/docs/2.3/modules/layouts/CompressedSparseLayout.html#CompressedSparseLayout.csrLayout)
+
+Name Changes for Standard Layouts and Distributions
+---------------------------------------------------
+* deprecated the `LayoutCS` module in favor of `CompressedSparseLayout`  
+  (see https://chapel-lang.org/docs/2.3/modules/layouts/CompressedSparseLayout.html)
 
 Name Changes in Libraries
 -------------------------
@@ -169,7 +167,7 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
-* updated the task-parallel primer in terms of terminology and clarity
+* updated the task-parallel primer in terms of terminology and clarity  
   (see https://chapel-lang.org/docs/2.3/primers/taskParallel.html)
 * updated the list of currently tested configurations in the GPU docs  
   (see https://chapel-lang.org/docs/2.3/technotes/gpu.html#tested-configurations)
@@ -186,7 +184,7 @@ Documentation Improvements for Tools
 
 Language Specification Improvements
 -----------------------------------
-* clarified the precedence of binary bitwise operations
+* clarified the precedence of binary bitwise operations  
   (see https://chapel-lang.org/docs/2.3/language/spec/expressions.html#precedence-and-associativity)
 
 Platform-Specific Documentation Improvements
@@ -388,7 +386,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for resolving nested routines that use outer variables
   - fixed a few ambiguity bugs involving nested functions and methods
   - fixed resolving `this` calls on shadowing variables
-  - allowed inits in multi-variable declsons to use a previous variable's types
+  - allowed inits in multi-variable decls to use a previous variable's types
   - enabled resolving uses of dependently-typed fields in methods
   - added a representation of the `_ddata` type
   - mapped resolution of the `owned` keyword to the `_owned` record
