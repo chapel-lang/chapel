@@ -1342,16 +1342,28 @@ bool idIsNestedFunction(Context* context, ID id) {
   return false;
 }
 
-bool idIsFunction(Context* context, ID id) {
-  // Functions always have their own ID symbol scope,
-  // and if it's not a function, we can return false
-  // without doing further work.
+template <typename Predicate>
+bool idIsSymbolDefiningScope(Context* context, ID id, Predicate&& predicate) {
   if (!id.isSymbolDefiningScope()) {
     return false;
   }
 
   AstTag tag = idToTag(context, id);
-  return asttags::isFunction(tag);
+  return predicate(tag);
+}
+
+bool idIsFunction(Context* context, ID id) {
+  // Functions always have their own ID symbol scope,
+  // and if it's not a function, we can return false
+  // without doing further work.
+  return idIsSymbolDefiningScope(context, id, asttags::isFunction);
+}
+
+bool idIsInterface(Context* context, ID id) {
+  // Interfaces always have their own ID symbol scope,
+  // and if it's not an interface, we can return false
+  // without doing further work.
+  return idIsSymbolDefiningScope(context, id, asttags::isInterface);
 }
 
 static bool
@@ -1492,14 +1504,23 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-ID idToParentFunctionId(Context* context, ID id) {
+template <typename Predicate>
+ID idToParentSymbolId(Context* context, ID id, Predicate&& predicate) {
   if (id.isEmpty()) return {};
   for (auto up = id; up; up = up.parentSymbolId(context)) {
     if (up == id) continue;
-    // Get the first parent function (a parent could be a record/class/etc).
-    if (parsing::idIsFunction(context, up)) return up;
+    // Get the first matching symbol
+    if (predicate(context, up)) return up;
   }
   return {};
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  return idToParentSymbolId(context, id, parsing::idIsFunction);
+}
+
+ID idToParentInterfaceId(Context* context, ID id) {
+  return idToParentSymbolId(context, id, parsing::idIsInterface);
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
