@@ -94,7 +94,7 @@ GPU Computing
 -------------
 * added a `.gpuId` method for GPU sublocales  
   (see https://chapel-lang.org/docs/2.3/language/spec/locales.html#ChapelLocale.locale.gpuId)
-* added a `deviceAttributes()` query to the 'GPU' module  
+* added a `deviceAttributes()` query to the `GPU` module  
   (see https://chapel-lang.org/docs/2.3/modules/standard/GPU.html#GPU.deviceAttributes)
 * `@gpu.itersPerThread` attribute can now distribute iterations round-robin  
   (see https://chapel-lang.org/docs/2.3/modules/standard/GPU.html#GPU.@gpu.itersPerThread)
@@ -124,7 +124,7 @@ Tool Improvements
 * added the ability for Mason to use a license reference repository  
   (see https://chapel-lang.org/docs/2.3/tools/mason/guide/environmentvariables.html)
 * improved errors for improper uses of built-in `chapel-py` classes
-* added `limitation_kind` & `limitations` to `VisibilityClause` in 'chapel-py'
+* added `limitation_kind` & `limitations` to `VisibilityClause` in `chapel-py`
 
 Documentation Improvements
 --------------------------
@@ -164,7 +164,7 @@ Documentation Improvements for Libraries
 
 Example Codes
 -------------
-* updated examples w.r.t. new namings in 'Sort' and 'CompressedSparseLayout'
+* updated examples w.r.t. new namings in `Sort` and `CompressedSparseLayout`
 
 Memory Improvements
 -------------------
@@ -264,7 +264,7 @@ Bug Fixes for Build Issues
 * fixed a formatting bug in the `RPATH` for the Chapel Python bindings
 * made `CHPL_LIB_PATH` ignore empty strings between paths
 * fixed a warning due to trailing spaces in linker arguments
-* fixed `chapel-py` builds when Chapel is using Address sanitization
+* fixed `chapel-py` builds when Chapel is using address sanitization
 * fixed an issue with `chplconfig` not supporting variables with equals signs
 * made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
 * stopped `printchplenv` from inferring `CHPL_LLVM_GCC_PREFIX` when not needed
@@ -289,8 +289,8 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-* '--dyno' now activates the new experimental typed converter
-* a new '--[no-]dyno-resolve-only' flag runs the dyno resolver and then stops
+* `--dyno` now activates the new experimental typed converter
+* a new `--[no-]dyno-resolve-only` flag runs the dyno resolver and then stops
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
