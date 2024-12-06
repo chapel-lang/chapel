@@ -546,7 +546,7 @@ char* chpl_get_enviro_keys(char sep)
     int keyLen = strstr(environ[i], "=") - environ[i];
 
     // if the key ends with _modshare, skip it
-    if (keyLen > 8 && strncmp(environ[i] + keyLen - 8, "_modshare", 9) == 0) {
+    if (keyLen > 8 && strncmp(environ[i] + keyLen - 9, "_modshare", 9) == 0) {
       continue;
     }
     numVars++;
@@ -563,7 +563,7 @@ char* chpl_get_enviro_keys(char sep)
 
     int keyLen = strstr(environ[i], "=") - environ[i];
     // skip keys that end with _modshare
-    if (keyLen > 8 && strncmp(environ[i] + keyLen - 8, "_modshare", 9) == 0) {
+    if (keyLen > 8 && strncmp(environ[i] + keyLen - 9, "_modshare", 9) == 0) {
       continue;
     }
     strncpy(buffer + bufferOffset, environ[i], keyLen);

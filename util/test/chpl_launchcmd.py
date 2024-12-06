@@ -57,10 +57,8 @@ def main():
     """Run the program!"""
     job = AbstractJob.init_from_environment()
     (stdout, stderr) = job.run()
-    logging.debug("I am after run {} {} {} {}", stdout, type(stdout), stderr, type(stderr))
     sys.stdout.buffer.write(stdout)
     sys.stderr.buffer.write(stderr)
-    logging.debug("I am after buffer writes")
 
 
 class AbstractJob(object):
@@ -402,8 +400,6 @@ class AbstractJob(object):
                 pass
 
             logging.info('The test finished with output of length {0}.'.format(len(output)))
-
-        logging.debug('Returning output and error from job.')
 
         return (output, error)
 
@@ -1149,7 +1145,7 @@ def _temp_dir(dir_prefix='chapel-test-tmp'):
         yield tmp_dir
     finally:
         logging.debug('Deleting temporary working directory at: {0}'.format(tmp_dir))
-        # shutil.rmtree(tmp_dir)
+        shutil.rmtree(tmp_dir)
 
 
 if __name__ == '__main__':
