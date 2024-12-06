@@ -156,7 +156,7 @@ jobs:
           do
             echo "Checking commit: $commit"
             # Get list of added, copied, or modified files from this commit.
-            newFiles=$(git diff --name-status --diff-filter=ACM $commit^ $commit)
+            newFiles=$(git diff --name-only --diff-filter=ACM $commit^ $commit)
             while read -r file; do
               if [ "$file" = "" ]; then
                   continue
