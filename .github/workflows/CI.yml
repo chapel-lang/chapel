@@ -140,7 +140,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: checkout commits on PR branch
         uses: actions/checkout@v4
         with:
           fetch-depth: $(( ${{github.event.pull_request.commits}} + 1 ))
