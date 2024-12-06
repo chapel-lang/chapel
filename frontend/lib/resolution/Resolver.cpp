@@ -629,6 +629,19 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
+// This ought to be a little better than iterating over the formals and
+// using ==, but it's a touch more brittle / sensitive to changes in AST
+// representation.
+static bool isInterfaceFormal(const Interface* interface, const ID& id) {
+  CHPL_ASSERT(interface->id().contains(id));
+
+  // Be clever: if there are no body statements, then we have to be a formal.
+  if (interface->numStmts() == 0) return true;
+
+  // Otherwise, is this id less than the first statement?
+  return id < interface->stmt(0)->id();
+}
+
 static bool
 isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
   if (!target || !ident || target.isSymbolDefiningScope()) return false;
@@ -641,15 +654,27 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
   // Need both mention and target parent IDs to make a decision.
   if (!targetParentSymbolId || !mentionParentSymbolId) return false;
 
-  // No match if the target's parent symbol is what we're resolving.
-  if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
+  // interface formals are treated as outer variables more often, because
+  // their types aren't stored in byPostorder, because they come from
+  // a SubstitutionsMap in the InterfaceType.
+  bool interfaceFormal = false;
+  if (auto interface = rv.symbol->toInterface()) {
+    if (isInterfaceFormal(interface, target)) {
+      interfaceFormal = true;
+    }
+  }
 
-  // The mention and the target should not live in the same symbol.
-  if (mentionParentSymbolId == targetParentSymbolId) return false;
+  if (!interfaceFormal) {
+    // No match if the target's parent symbol is what we're resolving.
+    if (rv.symbol && targetParentSymbolId == rv.symbol->id()) return false;
+
+    // The mention and the target should not live in the same symbol.
+    if (mentionParentSymbolId == targetParentSymbolId) return false;
+  }
 
   auto tag = parsing::idToTag(context, targetParentSymbolId);
 
-  if (tag == asttags::Function) return true;
+  if (tag == asttags::Function || tag == asttags::Interface) return true;
 
   if (tag == asttags::Module) {
     // Module-scope variables are not considered outer-variables. However,
@@ -3425,9 +3450,10 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
 
   // Otherwise, it's a variable, so walk up parent frames and look up
   // the variable's type using the resolution results.
-  } else if (ID parentFn = parsing::idToParentFunctionId(context, target)) {
+  } else if (parsing::idToParentFunctionId(context, target) ||
+             parsing::idToParentInterfaceId(context, target)) {
     if (auto f = rc->findFrameWithId(target)) {
-      type = f->resolutionById()->byId(target).type();
+      type = f->typeForContainedId(target);
       outerVariables.add(mention, target, type);
     }
   }
