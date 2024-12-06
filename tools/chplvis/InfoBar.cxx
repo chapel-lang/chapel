@@ -249,8 +249,9 @@ LocCommBox * InfoBar::getNewLocComm()
       return new LocCommBox(0, 0, LC_Box_W, LC_Box_H);
     } else {
       std::list<LocCommBox *>::iterator itr = boxCache.begin();
+      LocCommBox *box = *itr;
       boxCache.erase(itr);
-      return *itr;
+      return box;
     }
   }
 
