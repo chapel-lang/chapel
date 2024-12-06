@@ -145,8 +145,8 @@ jobs:
           fetch-depth: 0
       - name: check commits for large files
         run: |
-          baseSHA=${{github.event.pull_request.head.sha}}
-          headSHA=${{github.event.pull_request.base.sha}}
+          baseSHA=${{github.event.pull_request.base.sha}}
+          headSHA=${{github.event.pull_request.head.sha}}
           # Loop backward through commits added in the PR, starting from the
           # latest.
           for commit in $(git rev-list $baseSHA..$headSHA)
