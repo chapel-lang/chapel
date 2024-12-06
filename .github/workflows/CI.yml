@@ -154,7 +154,7 @@ jobs:
           headSHA=${{github.event.pull_request.head.sha}}
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
-            echo "Current commit: $commit"
+            echo "Checking commit: $commit"
             # Get list of added, copied, or modified files from this commit.
             newFiles=$(git diff --name-status --diff-filter=ACM $commit^ $commit)
             while read -r file; do
@@ -168,5 +168,5 @@ jobs:
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB)."
                 exit 1
               fi
-            done <<< "$files"
+            done <<< "$newFiles"
           done
