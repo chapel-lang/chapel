@@ -221,6 +221,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed a bug preventing `init=` with concrete arguments on generic records
 * fixed inconsistencies between `printchplenv` and `chpl --print-chpl-settings`
 * prevented an infinite loop when printing errors in Chapel module code
 
@@ -277,6 +278,12 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - improved resolution of default initializers
+  - added support for resolving `init=` when initializing fields
+  - added support for creation of dyno uAST in compiler-generated functions
+  - fixed an ambiguity bug involving nested functions and parenless methods
+  - fixed a bug passing `param` integral values to `param` formals
 * enabled considering common class ancestors for return type unification
 * wired up rectangular domain resolution to use module code
 * implemented cast from `borrowed` to `unmanaged`
