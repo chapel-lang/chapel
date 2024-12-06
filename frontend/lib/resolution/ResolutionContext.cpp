@@ -59,7 +59,10 @@ canUseGlobalCache(Context* context, const MatchingIdsWithName& ids) {
 }
 
 const ID& ResolutionContext::Frame::id() const {
-  if (auto ast = rv_->symbol) return ast->id();
+  if (rv_) {
+    if (auto ast = rv_->symbol) return ast->id();
+  }
+  if (ift_) return ift_->id();
   return EMPTY_AST_ID;
 }
 
@@ -70,9 +73,16 @@ const TypedFnSignature* ResolutionContext::Frame::signature() const {
   return nullptr;
 }
 
-const ResolutionResultByPostorderID*
-ResolutionContext::Frame::resolutionById() const {
-  return rv_ ? &rv_->byPostorder : nullptr;
+const types::QualifiedType
+ResolutionContext::Frame::typeForContainedId(const ID& id) const {
+  if (rv_) {
+    return rv_->byPostorder.byId(id).type();
+  }
+  if (ift_) {
+    auto subIt = ift_->subs().find(id);
+    if (subIt != ift_->subs().end()) return subIt->second;
+  }
+  return types::QualifiedType();
 }
 
 const ResolutionContext::Frame* ResolutionContext::
@@ -93,13 +103,23 @@ pushFrame(const ResolvedFunction* rf) {
   return ret;
 }
 
+const ResolutionContext::Frame* ResolutionContext::
+pushFrame(const types::InterfaceType* ift) {
+  int64_t index = (int64_t) frames_.size();
+  frames_.push_back({ift, index});
+  auto ret = lastFrame();
+  CHPL_ASSERT(!ret->isUnstable());
+  return ret;
+}
+
 bool ResolutionContext::Frame::isUnstable() const {
   return rv_ != nullptr;
 }
 
 void ResolutionContext::popFrame(Resolver* rv) {
   CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
-  CHPL_ASSERT(frames_.back().rv() == rv);
+  CHPL_ASSERT(frames_.back().rv() == rv ||
+              (rv->symbol->isInterface() && frames_.back().ift()));
 
   if (frames_.empty()) return;
   if (frames_.back().isUnstable()) numUnstableFrames_--;

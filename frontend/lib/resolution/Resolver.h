@@ -180,7 +180,14 @@ struct Resolver {
   // set up Resolver to resolve an Implements statement
   static Resolver
   createForImplementsStmt(ResolutionContext* rc, const uast::Implements* implements,
-                      ResolutionResultByPostorderID& byPostorder);
+                          ResolutionResultByPostorderID& byPostorder);
+
+  static Resolver
+  createForInterfaceStmt(ResolutionContext* rc,
+                         const uast::Interface* interface,
+                         const types::InterfaceType* ift,
+                         const uast::AstNode* stmt,
+                         ResolutionResultByPostorderID& byPostorder);
 
 
   // set up Resolver to scope resolve a Module

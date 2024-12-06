@@ -257,6 +257,30 @@ Resolver::createForImplementsStmt(ResolutionContext* rc, const uast::Implements*
 }
 
 Resolver
+Resolver::createForInterfaceStmt(ResolutionContext* rc,
+                                 const uast::Interface* interface,
+                                 const types::InterfaceType* ift,
+                                 const uast::AstNode* stmt,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  const AstNode* symbol = interface;
+  const Block* fnBody = nullptr;
+  if (auto fn = stmt->toFunction()) {
+    symbol = fn;
+    fnBody = fn->body();
+  }
+
+  auto ret = Resolver(rc->context(), symbol, byPostorder, nullptr);
+  ret.curStmt = stmt;
+  ret.byPostorder.setupForSymbol(symbol);
+  ret.rc = rc;
+  ret.signatureOnly = true;
+  ret.fnBody = fnBody;
+  rc->pushFrame(ift);
+  ret.didPushFrame = true;
+  return ret;
+}
+
+Resolver
 Resolver::createForScopeResolvingModuleStmt(
                               Context* context, const Module* mod,
                               const AstNode* modStmt,

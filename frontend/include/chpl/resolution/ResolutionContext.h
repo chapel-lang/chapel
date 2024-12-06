@@ -113,7 +113,7 @@ class ResolutionContext {
       when they are destroyed. */
   class Frame {
    public:
-    enum Kind { FUNCTION, MODULE, UNKNOWN };
+    enum Kind { FUNCTION, MODULE, INTERFACE, UNKNOWN };
 
    private:
     friend class ResolutionContext;
@@ -126,6 +126,7 @@ class ResolutionContext {
 
     Resolver* rv_ = nullptr;
     const ResolvedFunction* rf_ = nullptr;
+    const types::InterfaceType* ift_ = nullptr;
     int64_t index_ = BASE_FRAME_INDEX;
     Store cachedResults_;
     Kind kind_ = UNKNOWN;
@@ -136,6 +137,9 @@ class ResolutionContext {
     }
     Frame(const ResolvedFunction* rf, int64_t index)
       : rf_(rf), index_(index), kind_(FUNCTION) {
+    }
+    Frame(const types::InterfaceType* ift, int64_t index)
+      : ift_(ift), index_(index), kind_(FUNCTION) {
     }
 
    public:
@@ -156,11 +160,12 @@ class ResolutionContext {
 
     Resolver* rv() { return rv_; }
     const ResolvedFunction* rf() { return rf_; }
+    const types::InterfaceType* ift() { return ift_; }
 
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
     const TypedFnSignature* signature() const;
-    const ResolutionResultByPostorderID* resolutionById() const;
+    const types::QualifiedType typeForContainedId(const ID& id) const;
     bool isUnstable() const;
 
     template <typename T>
@@ -183,6 +188,7 @@ class ResolutionContext {
   Frame baseFrame_;
 
   const Frame* pushFrame(const ResolvedFunction* rf);
+  const Frame* pushFrame(const types::InterfaceType* t);
   const Frame* pushFrame(Resolver* rv, Frame::Kind kind);
   void popFrame(const ResolvedFunction* rf);
   void popFrame(Resolver* rv);
