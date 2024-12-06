@@ -9,7 +9,7 @@ released December 12, 2024
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * added a new package module that supports calling to Python from Chapel
-* improved the Chapel linter, language server, and Python bindings in many ways
+* made improvements to the Chapel linter, language server, and Python bindings
 * added new builds for AmazonLinux 2023, Fedora 41, and Spack using ROCm
 * significantly reduced overhead for many tasking idioms due to Qthreads 1.21
 * optimized key communication idioms when using `CHPL_COMM=ofi`
@@ -59,7 +59,7 @@ Changes / Feature Improvements in Package Modules
 New Standard Layout and Distribution Features
 ---------------------------------------------
 * added new utility methods for sparse layouts and distributions
-  - `.getCoordinates()` returns indices of nonzeroes for COO sparse arrays
+  - `.getCoordinates()` returns indices of non-zeroes for COO sparse arrays
   - `.localSubarrays()` yields each locale's subarray for a block-sparse array
   - `.getLocalSubarray()` returns the local subarray for a  block-sparse array
   - added `ref`-returning overloads of existing `.getLocalSubarray()` methods
@@ -88,7 +88,7 @@ Performance Optimizations / Improvements
 * optimized inter-locale transfers of sparse CSR/CSC arrays for `--fast` runs
 * optimized `CHPL_COMM=ofi` by adding support for non-blocking PUT and GET ops
 * optimized `CHPL_COMM=ofi` active messages via use of non-blocking PUTs
-* improved performance on Arm-based Macs by using a 128-bit cache line
+* improved performance on ARM-based Macs by using a 128-bit cache line
 
 GPU Computing
 -------------
@@ -880,7 +880,7 @@ Standard Layouts and Distributions
 * added a new initializer to 'LayoutCS', supporting positional arguments
 * added new utility routines for sparse arrays stored using 'LayoutCS':
   - `rows`/`cols()` queries to return the dense range of indices per dimension
-  - `[cols|rows]AndVals()` iterators that yield nonzeroes' indices and values
+  - `[cols|rows]AndVals()` iterators that yield non-zeroes' indices and values
 * enabled `.targetLocales()` queries on sparse `blockDist` domains/arrays
 * added new utility routines for sparse `blockDist`-distributed domains/arrays:
   - `setLocalSubdomain()` to assign the current locale's subdomain of nonzeroes
@@ -7681,7 +7681,7 @@ Bug Fixes
 * fixed problems when an `owned` argument is used in a later default expression
 * `isRecordType` now returns `false` for `owned` and `shared` classes
 * fixed a bug in which parsing files multiple times caused duplicate modules
-* fixed a bug in tracking number of nonzeroes for distributed sparse domains
+* fixed a bug in tracking number of non-zeroes for distributed sparse domains
 * fixed a bug in index addition to distributed CSC domains
 * fixed a bug in which missing line numbers in the IR caused an internal error
 * fixed a null-termination issue with `string.join`
