@@ -36,6 +36,8 @@ Updates to Chapel's Release Formats
   (see https://chapel-lang.org/install-pkg.html)
 * removed Linux package support for Fedora 37, 38, and 39
 * enabled support for building Chapel with ROCm from Spack
+* began publishing 'amd64' nightly Docker images, in addition to 'arm64'  
+  (see https://hub.docker.com/r/chapel/chapel/tags)
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -257,12 +259,15 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* removed a no-longer-needed workaround in `chpl_defaultDistInitPrivate()`
+* fixed a bug in `ChapelHashtable._allSlots()` follower iterator code
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* fixed a bug preventing `make test-dyno` from running in parallel on macOS
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -272,6 +277,19 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* enabled considering common class ancestors for return type unification
+* wired up rectangular domain resolution to use module code
+* implemented cast from `borrowed` to `unmanaged`
+* trivially resolve non-`param` enum-to-string and string-to-string casts
+* enabled resolving returns from within `param` for-loops
+* enabled resolving usages of dependently-typed fields in methods
+* allowed inits in multi-variable declarations to use previous variable's types
+* allowed using receiver scope information within a `param` for-loop
+* added a representation of the `_ddata` type
+* fixed resolving `this` calls on shadowing variables
+* fixed resolving uses of `type` fields in method signatures
+* fixed a bug where `forwarding` with `except` would exclude all symbols
+* fixed `already deinited` bug for `in` formal passed again as `in` argument
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -284,6 +302,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added guard to prevent test dependency loading script from being run twice
 * fixed a handful a SyntaxWarning's caused by newer Python versions
 
 Developer-oriented changes: Tool Improvements
@@ -316,7 +335,7 @@ Updates to Chapel's Release Formats
 * added several new Linux package installations supporting multiple locales  
   (see https://chapel-lang.org/install-pkg.html)
 * started publishing a `nightly` Docker image tag  
-  (see https://hub.docker.com/r/chapel/chapel)
+  (see https://hub.docker.com/r/chapel/chapel/tags)
 
 New Language Features
 ---------------------
