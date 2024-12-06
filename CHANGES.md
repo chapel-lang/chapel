@@ -64,6 +64,8 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
+* added an `allocations` iterator to the `MemDiagnostics` module
+  (see https://chapel-lang.org/docs/main/modules/standard/MemDiagnostics.html#MemDiagnostics.allocations)
 
 New Package Module Features
 ---------------------------
@@ -116,6 +118,10 @@ Performance Optimizations / Improvements
 
 GPU Computing
 -------------
+* added a `.gpuId` method for GPU sublocales  
+  (see https://chapel-lang.org/docs/2.3/language/spec/locales.html#ChapelLocale.locale.gpuId)
+* added a `deviceAttributes()` query to the 'GPU' module  
+  (see https://chapel-lang.org/docs/modules/standard/GPU.html#GPU.deviceAttributes)
 * GPU-related `CHPL_` variables can now be set in `chplconfig` files
 * improved `chpl`'s ability to infer `CHPL_CUDA_PATH` and `CHPL_ROCM_PATH`
 * exposed the current CUDA/ROCm version in `CHPL_GPU_SDK_VERSION`
@@ -203,6 +209,7 @@ Configuration / Build Changes
 * improved ability to infer flags required by a system's C compiler
 * added warnings for setting `CHPL_LLVM_VERSION` or `CHPL_GPU_SDK_VERSION`
 * improved error messages for incorrect `CHPL_NETWORK_ATOMICS` settings
+* added a proper error message for invalid `CHPL_LOCALE_MODEL` settings
 
 Portability / Platform-specific Improvements
 --------------------------------------------
