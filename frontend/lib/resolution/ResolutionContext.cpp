@@ -119,7 +119,7 @@ bool ResolutionContext::Frame::isUnstable() const {
 void ResolutionContext::popFrame(Resolver* rv) {
   CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
   CHPL_ASSERT(frames_.back().rv() == rv ||
-              (rv->symbol->isInterface() && frames_.back().ift()));
+              frames_.back().ift());
 
   if (frames_.empty()) return;
   if (frames_.back().isUnstable()) numUnstableFrames_--;

@@ -5376,14 +5376,135 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
       if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
         if (isGeneric && generic == nullptr) {
           generic = implPoint;
-        } else if (!isGeneric) {
+        } else if (!isGeneric && checkInterfaceConstraints(rc, ift, implPoint, inScopes)) {
           return implPoint;
         }
       }
     }
   }
 
+  if (generic && !checkInterfaceConstraints(rc, ift, generic, inScopes)) {
+    return nullptr;
+  }
+
   return generic;
+}
+
+static const bool&
+checkInterfaceConstraintsQuery(ResolutionContext* rc,
+                               const InterfaceType* ift,
+                               const ImplementationPoint* implPoint,
+                               const Scope* inScope,
+                               const PoiScope* inPoiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPoint, inScope, inPoiScope);
+
+  bool result = true;
+  auto itf = parsing::idToAst(rc->context(), ift->id())->toInterface();
+
+  debuggerBreakHere();
+
+  for (auto stmt : itf->stmts()) {
+    // receiver type when resolving associated types, saved to avoid re-computing
+    auto associatedReceiverType = QualifiedType();
+
+    ResolutionResultByPostorderID byPostorder;
+    auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, stmt, byPostorder);
+
+    if (auto td = stmt->toVariable()) {
+      td->traverse(resolver);
+
+      // Only associated type are valid declarations in this position
+      CHPL_ASSERT(td->storageKind() == QualifiedType::TYPE);
+
+      if (associatedReceiverType.kind() != QualifiedType::TYPE) {
+        // for associated types of multi-type interfaces, resolve the call
+        // on a tuple.
+        if (itf->numFormals() > 1) {
+          std::vector<const Type*> formalTypes;
+          for (auto formal : itf->formals()) {
+            formalTypes.push_back(ift->subs().at(formal->id()).type());
+          }
+
+          associatedReceiverType =
+            QualifiedType(QualifiedType::TYPE,
+                          TupleType::getValueTuple(rc->context(), formalTypes));
+        } else {
+          associatedReceiverType = ift->subs().at(itf->formal(0)->id());
+        }
+      }
+
+      // Set up a parenless type-proc call to compute associated type
+      auto ci = CallInfo(
+        td->name(),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ true,
+        /* hasQuestionArg */ false,
+        /* isParenless */ true,
+        /* actuals */ { { associatedReceiverType, USTR("this") } }
+      );
+      // TODO: how to note this?
+      auto c =
+        resolveGeneratedCall(rc->context(), td, ci,
+                             CallScopeInfo::forNormalCall(inScope, inPoiScope));
+
+      if (c.exprType().isUnknownOrErroneous()) {
+        result = false;
+        break;
+      } else {
+        // TODO: Store the resulting type so it can be referenced elsewhere
+      }
+    } else if (auto fn = stmt->toFunction()) {
+      for (auto formal : fn->formals()) formal->traverse(resolver);
+      if (auto ret = fn->returnType()) fn->returnType()->traverse(resolver);
+
+      // Now, try finding a matching overload in the given scope. Strip names
+      // from all actuals except "this".
+      //
+      // TODO: design: should interfaces enforce matching formal names?
+      //
+      // TODO: instantiate generic types with placeholders to ensure matching
+      //       generic signatures.
+      std::vector<CallInfoActual> actuals;
+      for (auto formal : fn->formals()) {
+        auto name = UniqueString();
+        if (auto formalDecl = formal->toFormal()) {
+          if (formalDecl->name() == USTR("this")) {
+            name = USTR("this");
+          }
+        }
+        actuals.emplace_back(byPostorder.byAst(formal).type(), name);
+      }
+
+      auto ci = CallInfo(
+        fn->name(),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ fn->isMethod(),
+        /* hasQuestionArg */ false,
+        /* isParenless */ fn->isParenless(),
+        std::move(actuals)
+      );
+      // TODO: how to note this?
+      auto c =
+        resolveGeneratedCall(rc->context(), td, ci,
+                             CallScopeInfo::forNormalCall(inScope, inPoiScope));
+
+      if (c.exprType().isUnknownOrErroneous()) {
+        result = false;
+        break;
+      } else {
+        // TODO: store the found function
+      }
+    }
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+bool checkInterfaceConstraints(ResolutionContext* rc,
+                               const InterfaceType* ift,
+                               const ImplementationPoint* implPoint,
+                               const CallScopeInfo& inScopes) {
+  return checkInterfaceConstraintsQuery(rc, ift, implPoint, inScopes.callScope(), inScopes.poiScope());
 }
 
 static const TypedFnSignature*
