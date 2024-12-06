@@ -142,7 +142,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: $(( ${{github.event.pull_request.commits}} + 1 ))
       - name: check commits for large files
         run: |
           baseSHA=${{github.event.pull_request.base.sha}}
