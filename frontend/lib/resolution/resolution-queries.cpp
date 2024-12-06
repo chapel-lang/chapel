@@ -5365,6 +5365,10 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
   auto implPoints =
     visibileImplementationPointsForInterface(rc, inScopes.lookupScope(), ift->id());
 
+  // TODO: this matches production, in which the first matching generic
+  // implementation is used if no concrete one is found. It's probably
+  // better to use the same disambiguation rules as functions, though.
+  // I don't see a particularly nice way to do that, though.
   const ImplementationPoint* generic = nullptr;
   if (implPoints) {
     for (auto implPoint : *implPoints) {
