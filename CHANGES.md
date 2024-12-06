@@ -349,6 +349,8 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - improved resolution of default initializers
   - added support for resolving `init=` when initializing fields
+  - added support for resolving nested routines that use outer variables
+  - improved resolution of type queries
   - added support for creation of dyno uAST in compiler-generated functions
   - fixed an ambiguity bug involving nested functions and parenless methods
   - fixed a bug passing `param` integral values to `param` formals
