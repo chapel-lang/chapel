@@ -50,7 +50,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
-* added support for `min` and `max` operations on atomic variables
+* added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables
   (see https://chapel-lang.org/docs/2.3/language/spec/task-parallelism-and-synchronization.html#Atomics.fetchMin)
 
 Semantic Changes / Changes to the Language Definition
@@ -221,7 +221,9 @@ Generated Executable Flags
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when incorrectly modifying `const ref` varargs
+* improved the error message for mixing `return;` and `return x;` in a routine
 * improved the error message when trying to split-initialize using tuple syntax
+* improved the error message for `proc main` with `type`/`param` return intent
 
 Launchers
 ---------
@@ -263,6 +265,7 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug that could lead to missing error messages in the language server
 
 Bug Fixes for Build Issues
 --------------------------
@@ -300,15 +303,20 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * fixed a bug preventing `make test-dyno` from running in parallel on macOS
+* removed unused Makefiles in compiler sources built with `cmake`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* '--dyno' now activates the new experimental typed converter
+* added a '--dyno-resolve-only' flag to run the dyno resolver and then stop
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* refactored the uAST-to-AST converter and created a separate typed converter
+* added a call graph analysis for the resolved uAST
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - improved resolution of default initializers
   - added support for resolving `init=` when initializing fields
