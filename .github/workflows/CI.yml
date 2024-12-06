@@ -157,6 +157,8 @@ jobs:
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
             echo "Checking commit: $commit"
+            git checkout -q $commit
+
             # Get list of added, copied, or modified files from this commit.
             newFiles=$(git diff --name-only --diff-filter=ACM $commit^ $commit)
             while read -r file; do
