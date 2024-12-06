@@ -20,6 +20,9 @@ o remove empty sections
 o check links
 o add highlights
 o spellcheck
+o Brandon's entries
+o Vass's entries
+
 
 version 2.3
 ===========
@@ -157,6 +160,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.3/technotes/gpu.html#tested-configurations)
 * updated Chapel's `LICENSE` file to indicate that LLVM is now Apache 2.0  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.3/LICENSE)
+* fixed various typos and mis-spellings
 
 Documentation Improvements for Tools
 ------------------------------------
