@@ -3,18 +3,18 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.2 release
+Contributors to the Chapel 2.3 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
+* Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
+* Rui Chen, individual contributor
 * Soohoon Choi, [HPE]
-* Sarah Coghlan, [HPE]
 * Jeremiah Corrado, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
-* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
@@ -24,11 +24,13 @@ Contributors to the Chapel 2.2 release
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Josh Milthorpe, individual contributor, [ORNL], 
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
+* Robin Voetter, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -54,12 +56,12 @@ Contributors to previous releases
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
 * David Callahan, [Cray Inc.]
-* Paul Cassella, [HPE]
 * Sanket Chaudhari, individual contributor
 * Naman Chikara, individual contributor
 * R Chinmay, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
+* Sarah Coghlan, [HPE]
 * Cristian-loan Condruz, individual contributor
 * Andrew Consroe, [HPE]
 * Anway De, individual contributor
@@ -82,6 +84,7 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
+* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
@@ -124,7 +127,6 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
-* Josh Milthorpe, [ORNL]
 * Kyle Milz, individual contributor
 * Iain Moncrief, [HPE] intern from [Oregon State University]
 * Barry Moore, [University of Pittsburgh]
