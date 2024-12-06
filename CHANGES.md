@@ -137,6 +137,8 @@ GPU Computing
   (see https://chapel-lang.org/docs/2.3/language/spec/locales.html#ChapelLocale.locale.gpuId)
 * added a `deviceAttributes()` query to the 'GPU' module  
   (see https://chapel-lang.org/docs/2.3/modules/standard/GPU.html#GPU.deviceAttributes)
+* `@gpu.itersPerThread` attribute can now distribute iterations round-robin  
+  (see https://chapel-lang.org/docs/2.3/modules/standard/GPU.html#GPU.@gpu.itersPerThread)
 * added initial support for calling `halt()` from GPUs
 
 Portability / Build Improvements for GPUs
@@ -400,6 +402,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: GPU support
 ---------------------------------------
+* `if gCpuVsGpuToken` now distinguishes between code generated for CPU vs. GPU
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
