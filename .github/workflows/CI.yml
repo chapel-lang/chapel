@@ -149,14 +149,14 @@ jobs:
           fetch-depth: 0
       - name: check commits for large files
         run: |
-              baseSHA=${{github.event.pull_request.base.sha}}
-              headSHA=${{github.event.pull_request.head.sha}}
-              # Loop through commits in reverse, starting from latest and ending
-              # at the first commit added in the PR.
-              currentSHA=$headSHA
-              while [[ "$(currentSHA)" != "$(baseSHA)" ]];
-              do
-                echo "currentSHA: $currentSHA"
-                git diff --name-only $currentSHA^ $currentSHA
-                currentSHA=$(git rev-parse $currentSHA^)
-              done
+          baseSHA=${{github.event.pull_request.base.sha}}
+          headSHA=${{github.event.pull_request.head.sha}}
+          # Loop through commits in reverse, starting from latest and ending
+          # at the first commit added in the PR.
+          currentSHA=$headSHA
+          while [[ "$(currentSHA)" != "$(baseSHA)" ]];
+          do
+            echo "currentSHA: $currentSHA"
+            git diff --name-only $currentSHA^ $currentSHA
+            currentSHA=$(git rev-parse $currentSHA^)
+          done
