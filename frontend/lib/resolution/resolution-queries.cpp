@@ -5321,25 +5321,26 @@ matchImplementationPoint(ResolutionContext* rc,
 
   if (!implPoint->formal().isEmpty()) {
     if (actuals.size() != 1) return false;
-    auto& actual = actuals[actualIdx++];
+    auto actualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
 
     auto at = initialTypeForTypeDecl(rc->context(), implPoint->formal());
-    auto aqt = QualifiedType(QualifiedType::TYPE, at);
+    auto aqt = QualifiedType(QualifiedType::CONST_VAR, at);
 
-    if (!checkFormal(actual, aqt)) return false;
+    if (!checkFormal(actualType, aqt)) return false;
   } else {
     ResolutionResultByPostorderID byPostrder;
     auto implements = parsing::idToAst(rc->context(), implPoint->id())->toImplements();
     auto resolver = Resolver::createForImplementsStmt(rc, implements, byPostrder);
     for (auto formal : implPoint->formals()) {
-      auto& actualType = actuals[actualIdx++];
+      auto actualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
       auto formalAst = parsing::idToAst(rc->context(), formal);
       formalAst->traverse(resolver);
 
-      auto rr = byPostrder.byAst(formalAst);
-      if (rr.type().isGenericOrUnknown()) return false;
+      auto& rr = byPostrder.byAst(formalAst);
+      if (rr.type().isUnknownOrErroneous()) return false;
 
-      if (!checkFormal(actualType, rr.type())) {
+      auto formalType = QualifiedType(QualifiedType::CONST_VAR, rr.type().type());
+      if (!checkFormal(actualType, formalType)) {
         return false;
       }
 
@@ -5348,7 +5349,7 @@ matchImplementationPoint(ResolutionContext* rc,
 
       // re-run type resolution, this time with type queries.
       formalAst->traverse(resolver);
-      auto newFormalType = rr.type();
+      auto newFormalType = QualifiedType(QualifiedType::CONST_VAR, rr.type().type());
 
       // Check that after computing type query information, the actual
       // can still be passed in.
@@ -5375,13 +5376,15 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
     visibileImplementationPointsForInterface(rc, inScopes.lookupScope(), ift->id());
 
   const ImplementationPoint* generic = nullptr;
-  for (auto implPoint : *implPoints) {
-    bool isGeneric = false;
-    if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
-      if (isGeneric && generic == nullptr) {
-        generic = implPoint;
-      } else if (!isGeneric) {
-        return implPoint;
+  if (implPoints) {
+    for (auto implPoint : *implPoints) {
+      bool isGeneric = false;
+      if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
+        if (isGeneric && generic == nullptr) {
+          generic = implPoint;
+        } else if (!isGeneric) {
+          return implPoint;
+        }
       }
     }
   }
