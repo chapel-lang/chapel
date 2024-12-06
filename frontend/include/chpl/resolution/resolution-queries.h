@@ -123,6 +123,14 @@ const TypedFnSignature*
 typedSignatureInitialForId(ResolutionContext* rc, ID id);
 
 /**
+  Compute an initial TypedFnSignature, but using placeholder types for
+  type queries and "any type" markers. This TypedFnSignature can serve
+  as a template for satisfying interface.
+ */
+const TypedFnSignature*
+typedSignatureTemplateForId(ResolutionContext* rc, ID id);
+
+/**
   Returns a Type that represents the initial type provided by a TypeDecl
   (e.g. Class, Record, etc). This type does not store the fields.
   */

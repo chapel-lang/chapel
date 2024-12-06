@@ -575,7 +575,8 @@ static bool errorIfParentFramesNotPresent(ResolutionContext* rc,
 
 static const TypedFnSignature*
 typedSignatureInitialImpl(ResolutionContext* rc,
-                          const UntypedFnSignature* untypedSig) {
+                          const UntypedFnSignature* untypedSig,
+                          bool usePlaceholders) {
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
@@ -626,7 +627,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   for (auto formal : fn->formals()) formal->traverse(visitor);
 
   if (!visitor.outerVariables.isEmpty()) {
-    CHPL_ASSERT(parentSignature);
+    // TODO: any additional checks here?
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -654,7 +655,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   }
 
   if (!visitor.outerVariables.isEmpty()) {
-    CHPL_ASSERT(parentSignature);
+    // TODO: any additional checks here?
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -684,7 +685,7 @@ const TypedFnSignature* const&
 typedSignatureInitial(ResolutionContext* rc,
                       const UntypedFnSignature* untypedSig) {
   CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureInitial, rc, untypedSig);
-  auto ret = typedSignatureInitialImpl(rc, untypedSig);
+  auto ret = typedSignatureInitialImpl(rc, untypedSig, /* usePlaceholders */ false);
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
@@ -701,6 +702,21 @@ typedSignatureInitialForIdQuery(ResolutionContext* rc, ID id) {
 const TypedFnSignature*
 typedSignatureInitialForId(ResolutionContext* rc, ID id) {
   return typedSignatureInitialForIdQuery(rc, std::move(id));
+}
+
+static const TypedFnSignature* const&
+typedSignatureTemplateForIdQuery(ResolutionContext* rc, ID id) {
+  CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureTemplateForIdQuery, rc, id);
+  Context* context = rc->context();
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
+  const TypedFnSignature* ret = uSig ? typedSignatureInitialImpl(rc, uSig, /* usePlaceholders */ true)
+                                     : nullptr;
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+const TypedFnSignature*
+typedSignatureTemplateForId(ResolutionContext* rc, ID id) {
+  return typedSignatureTemplateForIdQuery(rc, id);
 }
 
 // initedInParent is true if the decl variable is inited due to a parent
@@ -5454,8 +5470,9 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
         // TODO: Store the resulting type so it can be referenced elsewhere
       }
     } else if (auto fn = stmt->toFunction()) {
-      for (auto formal : fn->formals()) formal->traverse(resolver);
-      if (auto ret = fn->returnType()) fn->returnType()->traverse(resolver);
+      // Note: the Resolver pushed an interface frame above, even though we're
+      // not using it.
+      auto tfs = typedSignatureTemplateForId(rc, fn->id());
 
       // Now, try finding a matching overload in the given scope. Strip names
       // from all actuals except "this".
@@ -5465,14 +5482,15 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       // TODO: instantiate generic types with placeholders to ensure matching
       //       generic signatures.
       std::vector<CallInfoActual> actuals;
-      for (auto formal : fn->formals()) {
+      for (int i = 0; i < tfs->numFormals(); i++) {
+        auto decl = tfs->untyped()->formalDecl(i);
         auto name = UniqueString();
-        if (auto formalDecl = formal->toFormal()) {
-          if (formalDecl->name() == USTR("this")) {
+        if (auto formal = decl->toFormal()) {
+          if (formal->name() == USTR("this")) {
             name = USTR("this");
           }
         }
-        actuals.emplace_back(byPostorder.byAst(formal).type(), name);
+        actuals.emplace_back(tfs->formalType(i), name);
       }
 
       auto ci = CallInfo(
