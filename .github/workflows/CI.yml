@@ -150,7 +150,7 @@ jobs:
       - name: check commits for large files
         run: |
               baseSHA=${{github.event.pull_request.base.sha}}
-              headSHA=${{github.event.pull_request.head.sha}})
+              headSHA=${{github.event.pull_request.head.sha}}
               # Loop through commits in reverse, starting from latest and ending
               # at the first commit added in the PR.
               currentSHA=$headSHA
