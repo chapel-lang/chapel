@@ -47,11 +47,12 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables
+  (see https://chapel-lang.org/docs/2.3/language/spec/task-parallelism-and-synchronization.html#Atomics.fetchMin)
 
 Language Feature Improvements
 -----------------------------
-* added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables
-  (see https://chapel-lang.org/docs/2.3/language/spec/task-parallelism-and-synchronization.html#Atomics.fetchMin)
+* corrected how generic types with defaults are printed in many cases
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -122,6 +123,7 @@ GPU Computing
   (see https://chapel-lang.org/docs/2.3/language/spec/locales.html#ChapelLocale.locale.gpuId)
 * added a `deviceAttributes()` query to the 'GPU' module  
   (see https://chapel-lang.org/docs/modules/standard/GPU.html#GPU.deviceAttributes)
+* added initial support for calling `halt()` from GPUs
 * GPU-related `CHPL_` variables can now be set in `chplconfig` files
 * improved `chpl`'s ability to infer `CHPL_CUDA_PATH` and `CHPL_ROCM_PATH`
 * exposed the current CUDA/ROCm version in `CHPL_GPU_SDK_VERSION`
@@ -137,11 +139,13 @@ Tool Improvements
 * added a `MissingInIntent` linter rule to detect missing `in` intents
 * made the `ControlFlowParentheses` linter rule report more precise locations
 * enabled the `UnusedFormal` linter rule by default
-* improved the code completion support for `chpl-language-server`
+* improved the code completion support for `chpl-language-server` (CLS)
+* added support for go-to-definition for called routines in CLS
 * expanded the cases for pretty-printing code handled by `chpl-language-server`
 * exposed the `chplcheck` argument `--internal-prefix` to linter rules
 * added the ability for Mason to use a license reference repository  
   (see https://chapel-lang.org/docs/2.3/tools/mason/guide/environmentvariables.html)
+* improved errors for improper uses of builtin `chapel-py` classes
 * added `limitation_kind` & `limitations` to `VisibilityClause` in 'chapel-py'
 
 Documentation Improvements
@@ -229,6 +233,7 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error when incorrectly modifying `const ref` varargs
 * improved the error message for mixing `return;` and `return x;` in a routine
+* improved error messages for invalid qualified inheritance expressions
 * improved the error message when trying to split-initialize using tuple syntax
 * improved the error message for `proc main` with `type`/`param` return intent
 
@@ -253,11 +258,21 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed an internal error when applying parenthesis to a paren-less method  
+  (e.g., when writing `c.im()` rather than `c.im` for `var c: complex`)
 * fixed a bug with Python interoperability when the module isn't used
 * fixed a double-free bug with Python interoperability cleanup
 * fixed a bug preventing `init=` with concrete arguments on generic records
 * fixed inconsistencies between `printchplenv` and `chpl --print-chpl-settings`
+* fixed a constness error for task-private class variables
+* fixed constness errors due to iterables of types that contain `owned` classes
+* fixed an internal error when returning iterable expression by `ref`
+* resolved internal errors in certain `forwarding` statement cases
+* avoided duplicate instantiations of types with `param bool` fields
+* ensured correct handling of generic-with-default types in type comparisons
 * prevented an infinite loop when printing errors in Chapel module code
+* fixed compiler memory issues in reference constness analysis
+* fixed compiler memory issues when mentioning generic type as `T;`
 
 Bug Fixes for Libraries
 -----------------------
@@ -272,11 +287,18 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Tools
 -------------------
-* fixed a bug that could lead to missing error messages in the language server
+* fixed missing `chplcheck` `MisleadingIndentation` warnings for nested stmts
+* numerous bugfixes affecting the Chapel language server (CLS)
+  - fixed an infinite recursion bug when modifying standard modules
+  - fixed a bug that could lead to missing error messages
+  - fixed errors triggered by resolving calls in `OwnedObject`
+  - fixed "call hierarchy" feature to work correctly across several files
+  - fixed memory errors due to de-allocated data stored in error messages
 
 Bug Fixes for Build Issues
 --------------------------
 * fixed a formatting bug in the `RPATH` for the Chapel Python bindings
+* made `CHPL_LIB_PATH` ignore empty strings between paths
 * fixed a warning due to trailing spaces in linker arguments
 * made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
 * fixed an issue with `chplconfig` not supporting variables with equals signs
@@ -330,6 +352,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for creation of dyno uAST in compiler-generated functions
   - fixed an ambiguity bug involving nested functions and parenless methods
   - fixed a bug passing `param` integral values to `param` formals
+  - enabled resolving serial and parallel loop expressions
+  - enabled resolving promoted function calls
+  - added support for tuple variable decls with type and init expressions
 * enabled considering common class ancestors for return type unification
 * wired up rectangular domain resolution to use module code
 * implemented cast from `borrowed` to `unmanaged`
@@ -355,6 +380,7 @@ Developer-oriented changes: GPU support
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * removed deprecated GASNet-1 implementation of the runtime
+* refactored GPU co-locale assignment code to be the same across all vendors
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
