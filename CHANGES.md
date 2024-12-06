@@ -50,6 +50,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* added support for `min` and `max` operations on atomic variables
+  (see https://chapel-lang.org/docs/2.3/language/spec/task-parallelism-and-synchronization.html#Atomics.fetchMin)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -104,6 +106,8 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * optimized inter-locale transfers of sparse CSR/CSC arrays for `--fast` runs
 * improved performance on Arm-based Macs by using a 128-bit cache line
+* optimized `CHPL_COMM=ofi` by adding support for non-blocking PUT and GET ops
+* optimized `CHPL_COMM=ofi` active messages via use of non-blocking PUTs
 
 GPU Computing
 -------------
@@ -185,6 +189,8 @@ Syntax Highlighting
 Configuration / Build Changes
 -----------------------------
 * improved ability to infer flags required by a system's C compiler
+* added warnings for setting `CHPL_LLVM_VERSION` or `CHPL_GPU_SDK_VERSION`
+* improved error messages for incorrect `CHPL_NETWORK_ATOMICS` settings
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -202,7 +208,6 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
-* added warnings for setting `CHPL_LLVM_VERSION` or `CHPL_GPU_SDK_VERSION`
 
 Launchers
 ---------
@@ -212,6 +217,8 @@ Launchers
 
 Runtime Library Improvements
 ----------------------------
+* extended `ofi` network atomics to support `min`/`max` operations
+* extended `ofi` network atomics to support `atomic uint(8|16)` ops
 
 Third-Party Software Changes
 ----------------------------
@@ -232,6 +239,8 @@ Bug Fixes for Libraries
 Bug Fixes for GPU Computing
 ---------------------------
 * fixed `complex` support from the CPU when using `CHPL_LOCALE_MODEL=gpu`
+* fixed oversubscription when using`CHPL_LOCALE_MODEL=gpu`
+* fixed AMD GPU logical-to-physical ID mappings for `CHPL_COMM=ofi`
 * fixed internal error when using `CHPL_GPU=amd` w/ a HPE/Cray hugepages module
 
 Bug Fixes for Tools
@@ -247,6 +256,9 @@ Bug Fixes for Build Issues
 
 Bug Fixes for the Runtime
 -------------------------
+* fixed non-blocking strided remote memory accesses
+* unlocalized memory after non-blocking PUTs complete
+* added missing `tciFree()` calls to `chpl_comm_ensure_progress()`
 * fixed incorrect variable names in the atomics compatibility layer
 
 Developer-oriented changes: Process
@@ -304,6 +316,7 @@ Developer-oriented changes: GPU support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* removed deprecated GASNet-1 implementation of the runtime
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
@@ -312,6 +325,7 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * added guard to prevent test dependency loading script from being run twice
 * fixed a handful a SyntaxWarning's caused by newer Python versions
+* added a co-locale performance test suite for GASNet
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
