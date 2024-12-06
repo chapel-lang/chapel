@@ -288,6 +288,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * added a representation of the `_ddata` type
 * fixed resolving `this` calls on shadowing variables
 * fixed resolving uses of `type` fields in method signatures
+* fixed incorrect ambiguity resolving field access on record field of same name
 * fixed a bug where `forwarding` with `except` would exclude all symbols
 * fixed `already deinited` bug for `in` formal passed again as `in` argument
 
