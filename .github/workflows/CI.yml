@@ -140,10 +140,12 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: count PR commits
+        run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
       - name: checkout commits on PR branch
         uses: actions/checkout@v4
         with:
-          fetch-depth: $(( ${{github.event.pull_request.commits}} + 1 ))
+          fetch-depth: ${{ env.PR_NUM_COMMITS }}
       - name: check commits for large files
         run: |
           FILE_SIZE_LIMIT_KB=1024
