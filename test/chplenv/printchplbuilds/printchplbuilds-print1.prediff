@@ -22,7 +22,7 @@ builds = [l for l in builds if "_DEBUG:" not in l]
 with open(sys.argv[2], 'w') as f:
     print("\n".join(builds), file=f)
 
-# now we need to generate a good fole
+# now we need to generate a good file
 printchplenv = os.path.join(chpl_home, 'util/printchplenv')
 
 chpl_vars = [
