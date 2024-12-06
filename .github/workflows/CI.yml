@@ -140,9 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: print GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
+        run: echo "${{ toJson(github) }}"
       - name: checkout
         uses: actions/checkout@v4
         with:
