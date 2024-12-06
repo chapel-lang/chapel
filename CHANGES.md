@@ -266,6 +266,7 @@ Bug Fixes for Tools
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a formatting bug in the `RPATH` for the Chapel Python bindings
 * fixed a warning due to trailing spaces in linker arguments
 * made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
 * fixed an issue with `chplconfig` not supporting variables with equals signs
@@ -323,8 +324,11 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * allowed inits in multi-variable declarations to use previous variable's types
 * allowed using receiver scope information within a `param` for-loop
 * added a representation of the `_ddata` type
+* mapped resolution of the `owned` keyword to the `_owned` record
+* mapped resolution of the `sync` keyword to the `_syncvar` record
 * fixed resolving `this` calls on shadowing variables
 * fixed resolving uses of `type` fields in method signatures
+* fixed a disambiguation bug improperly including intents as parts of the types
 * fixed incorrect ambiguity resolving field access on record field of same name
 * fixed a bug where `forwarding` with `except` would exclude all symbols
 * fixed `already deinited` bug for `in` formal passed again as `in` argument
@@ -342,11 +346,14 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* allowed the use of semicolons in arguments to `sub_test`
 * updated versions of various Python packages relied on by `start_test`
 * added guard to prevent test dependency loading script from being run twice
 * fixed a handful a SyntaxWarning's caused by newer Python versions
 * added a co-locale performance test suite for GASNet
 * improved behavior of python interop jobs when dependencies are missing
+* added nightly blog testing to gpu, multi-locale, and correctness configs
+* increased the frequency of comparing Homebrew's released formula to our own
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
