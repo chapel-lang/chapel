@@ -97,9 +97,14 @@ Standard Layouts and Distributions
 
 Name Changes in Libraries
 -------------------------
+* renamed `[Default|Reverse]Comparator` types to `[default|reverse]Comparator`  
+  (see https://chapel-lang.org/docs/2.3/modules/standard/Sort.html#Sort.defaultComparator  
+   and https://chapel-lang.org/docs/2.3/modules/standard/Sort.html#Sort.reverseComparator)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed the deprecated `defaultComparator` and `reverseComparator` vars  
+  (see https://chapel-lang.org/docs/2.3/modules/standard/Sort.html)
 * removed the previously deprecated config `fileOffsetWithoutLocking`
 
 Performance Optimizations / Improvements
@@ -129,6 +134,8 @@ Tool Improvements
 * improved the code completion support for `chpl-language-server`
 * expanded the cases for pretty-printing code handled by `chpl-language-server`
 * exposed the `chplcheck` argument `--internal-prefix` to linter rules
+* added the ability for Mason to use a license reference repository  
+  (see https://chapel-lang.org/docs/2.3/tools/mason/guide/environmentvariables.html)
 * added `limitation_kind` & `limitations` to `VisibilityClause` in 'chapel-py'
 
 Documentation Improvements
@@ -145,11 +152,13 @@ Documentation Improvements for Tools
 ------------------------------------
 * added `chapel-py` API docs to the published documentation  
   (see https://chapel-lang.org/docs/2.3/tools/chapel-py/chapel-py.html#API)
-* improved the documentation for `./configure` and `chplconfig`  
+* improved the documentation for `./configure` and `chplconfig`   
   (see https://chapel-lang.org/docs/2.3/usingchapel/building.html#installing-chapel)
 
 Language Specification Improvements
 -----------------------------------
+* clarified the precedence of binary bitwise operations
+  (see https://chapel-lang.org/docs/2.3/language/spec/expressions.html#precedence-and-associativity)
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
@@ -164,6 +173,9 @@ Technical Note Improvements
 Documentation Improvements for Libraries
 ----------------------------------------
 * documented the `Image` module's support for reading and writing images
+* updated an outdated reference to `channel` in the `subprocess` documentation  
+  (see https://chapel-lang.org/docs/2.3/modules/standard/Subprocess.html#Subprocess.subprocess)
+* fixed a rendering issue with some `map`-based methods
 
 Documentation Improvements to the 'man' Pages
 ---------------------------------------------
@@ -208,6 +220,8 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error when incorrectly modifying `const ref` varargs
+* improved the error message when trying to split-initialize using tuple syntax
 
 Launchers
 ---------
@@ -225,9 +239,13 @@ Third-Party Software Changes
 * updated the bundled version of LLVM to LLVM 19
 * updated the bundled version of Qthreads to 1.21
 * addressed a performance regression in Qthreads version 1.21 via a patch
+* updated Python package versions used by `chpldoc`, `chapel-py` and the CLS
+* explicitly pinned `pycparserext` version relied upon by `c2chapel` to 2021.1
 
 Bug Fixes
 ---------
+* fixed a bug with Python interoperability when the module isn't used
+* fixed a double-free bug with Python interoperability cleanup
 * fixed a bug preventing `init=` with concrete arguments on generic records
 * fixed inconsistencies between `printchplenv` and `chpl --print-chpl-settings`
 * prevented an infinite loop when printing errors in Chapel module code
@@ -310,6 +328,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * fixed incorrect ambiguity resolving field access on record field of same name
 * fixed a bug where `forwarding` with `except` would exclude all symbols
 * fixed `already deinited` bug for `in` formal passed again as `in` argument
+* renamed uses of 'parenth' to 'paren' match our normal abbreviation
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -323,9 +342,11 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* updated versions of various Python packages relied on by `start_test`
 * added guard to prevent test dependency loading script from being run twice
 * fixed a handful a SyntaxWarning's caused by newer Python versions
 * added a co-locale performance test suite for GASNet
+* improved behavior of python interop jobs when dependencies are missing
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
