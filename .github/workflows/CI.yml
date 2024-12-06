@@ -150,13 +150,10 @@ jobs:
       - name: check commits for large files
         run: |
           baseSHA=${{github.event.pull_request.base.sha}}
-          headSHA=${{github.event.pull_request.head.sha}}
-          # Loop through commits in reverse, starting from latest and ending
-          # at the first commit added in the PR.
-          currentSHA=$headSHA
-          while [[ "$(currentSHA)" != "$(baseSHA)" ]];
+          # Loop backward through commits added in the PR, starting from the
+          # latest.
+          for commit in $(git rev-list main..$headSHA)
           do
-            echo "currentSHA: $currentSHA"
-            git diff --name-only $currentSHA^ $currentSHA
-            currentSHA=$(git rev-parse $currentSHA^)
+            echo "Current commit: $commit"
+            git diff --name-only $commit^ $commit
           done
