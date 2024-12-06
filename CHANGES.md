@@ -236,6 +236,7 @@ Bug Fixes for Tools
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a warning due to trailing spaces in linker arguments
 * made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
 * fixed an issue with `chplconfig` not supporting variables with equals signs
 * prevent `printchplenv` from inferring `CHPL_LLVM_GCC_PREFIX` when not needed
