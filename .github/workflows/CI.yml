@@ -139,8 +139,6 @@ jobs:
   check_large_files:
     runs-on: ubuntu-latest
     steps:
-      - name: print GitHub context
-        run: echo "${{ toJson(github) }}"
       - name: checkout
         uses: actions/checkout@v4
         with:
