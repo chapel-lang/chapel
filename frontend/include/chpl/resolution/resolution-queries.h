@@ -282,11 +282,11 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope);
 
 
-const ImplementationPoint* resolveImplementsStatement(ResolutionContext* context,
+const ImplementationPoint* resolveImplementsStatement(ResolutionContext* rc,
                                                       ID id);
 
 const std::vector<const ImplementationPoint*>*
-visibileImplementationPointsForInterface(ResolutionContext* context,
+visibileImplementationPointsForInterface(ResolutionContext* rc,
                                          const Scope* scope,
                                          ID interfaceId);
 
@@ -473,6 +473,10 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const uast::AstNode* astForScopeOrErr,
                                          const types::Type* t,
                                          const PoiScope* poiScope = nullptr);
+
+const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                           const types::InterfaceType* ift,
+                                                           const CallScopeInfo& inScopes);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.

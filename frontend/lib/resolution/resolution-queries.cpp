@@ -5300,6 +5300,95 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   return c.mostSpecific().only().fn();
 }
 
+static bool
+matchImplementationPoint(ResolutionContext* rc,
+                         const InterfaceType* ift,
+                         const std::vector<QualifiedType>& actuals,
+                         const ImplementationPoint* implPoint,
+                         bool& outIsGeneric) {
+  if (ift->id() != implPoint->interfaceId()) return false;
+
+  int actualIdx = 0;
+  auto checkFormal = [rc, &outIsGeneric](const QualifiedType actual, const QualifiedType& formal) {
+    auto got = canPassScalar(rc->context(), actual, formal);
+    if (!got.passes() || got.converts()) return false;
+
+    if (got.instantiates()) {
+      outIsGeneric = true;
+    }
+    return true;
+  };
+
+  if (!implPoint->formal().isEmpty()) {
+    if (actuals.size() != 1) return false;
+    auto& actual = actuals[actualIdx++];
+
+    auto at = initialTypeForTypeDecl(rc->context(), implPoint->formal());
+    auto aqt = QualifiedType(QualifiedType::TYPE, at);
+
+    if (!checkFormal(actual, aqt)) return false;
+  } else {
+    ResolutionResultByPostorderID byPostrder;
+    auto implements = parsing::idToAst(rc->context(), implPoint->id())->toImplements();
+    auto resolver = Resolver::createForImplementsStmt(rc, implements, byPostrder);
+    for (auto formal : implPoint->formals()) {
+      auto& actualType = actuals[actualIdx++];
+      auto formalAst = parsing::idToAst(rc->context(), formal);
+      formalAst->traverse(resolver);
+
+      auto rr = byPostrder.byAst(formalAst);
+      if (rr.type().isGenericOrUnknown()) return false;
+
+      if (!checkFormal(actualType, rr.type())) {
+        return false;
+      }
+
+      // traverse the type expression and extract type queries
+      resolver.resolveTypeQueries(formalAst, actualType);
+
+      // re-run type resolution, this time with type queries.
+      formalAst->traverse(resolver);
+      auto newFormalType = rr.type();
+
+      // Check that after computing type query information, the actual
+      // can still be passed in.
+      auto got = canPassScalar(rc->context(), actualType, newFormalType);
+      if (!got.passes()) return false;
+    }
+  }
+
+  return true;
+}
+
+const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                           const types::InterfaceType* ift,
+                                                           const CallScopeInfo& inScopes) {
+  std::vector<QualifiedType> actuals;
+  auto interfaceAst = parsing::idToAst(rc->context(), ift->id())->toInterface();
+  for (auto formal : interfaceAst->formals()) {
+    auto subIt = ift->subs().find(formal->id());
+    if (subIt == ift->subs().end()) return nullptr;
+    actuals.push_back(subIt->second);
+  }
+
+  auto implPoints =
+    visibileImplementationPointsForInterface(rc, inScopes.lookupScope(), ift->id());
+
+  const ImplementationPoint* generic = nullptr;
+  for (auto implPoint : *implPoints) {
+    bool isGeneric = false;
+    if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
+      if (isGeneric && generic == nullptr) {
+        generic = implPoint;
+      } else if (!isGeneric) {
+        return implPoint;
+      }
+    }
+  }
+
+  return generic;
+}
+
 static const TypedFnSignature*
 tryResolveAssignHelper(Context* context,
                        const uast::AstNode* astForScopeOrErr,
