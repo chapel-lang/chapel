@@ -135,6 +135,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
                             UniqueString name, bool parenless) {
   if (type == nullptr) return false;
 
+  if (type->isNothingType()) return false;
+
   if (isNameOfCompilerGeneratedMethod(name) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
     if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
@@ -210,25 +212,6 @@ generateInitParts(Context* context,
   formalTypes.push_back(std::move(qtReceiver));
 }
 
-static void collectFields(const AstNode* ast,
-                          std::vector<const VarLikeDecl*>& fields) {
-  if (auto var = ast->toVarLikeDecl()) {
-    fields.push_back(var);
-  } else if (auto multi = ast->toMultiDecl()) {
-    for (auto d : multi->decls()) {
-      collectFields(d, fields);
-    }
-  } else if (auto tup = ast->toTupleDecl()) {
-    for (auto d : tup->decls()) {
-      collectFields(d, fields);
-    }
-  } else if (auto fwd = ast->toForwardingDecl()) {
-    if (fwd->isDecl()) {
-      collectFields(fwd->expr(), fields);
-    }
-  }
-}
-
 static bool initHelper(Context* context,
                        Builder* builder,
                        const AggregateDecl* typeDecl,
@@ -276,12 +259,10 @@ static bool initHelper(Context* context,
     }
   }
 
-  std::vector<const VarLikeDecl*> fields;
-  for (auto d : typeDecl->decls()) {
-    collectFields(d, fields);
-  }
-
-  for (auto field : fields) {
+  // Note: Using lambdas here to avoid threading several arguments
+  auto addFormal = [&](const VarLikeDecl* field,
+                       const AstNode* typeExpr,
+                       const AstNode* initExpr) -> void {
     Formal::Intent kind;
     // for types & param, use the field kind, for values use 'in' intent
     if (field->storageKind() == Qualifier::TYPE ||
@@ -290,9 +271,6 @@ static bool initHelper(Context* context,
     } else {
       kind = Formal::Intent::IN;
     }
-
-    auto typeExpr = field->typeExpression();
-    auto initExpr = field->initExpression();
 
     owned<AstNode> formal = Formal::build(builder, dummyLoc,
                                           /*attributeGroup=*/nullptr,
@@ -310,6 +288,53 @@ static bool initHelper(Context* context,
     stmts.push_back(std::move(assign));
 
     formals.push_back(std::move(formal));
+  };
+
+  std::function<void (const AstNode*)> processDecl = [&addFormal, &processDecl](auto ast) {
+    if (auto var = ast->toVarLikeDecl()) {
+      addFormal(var, var->typeExpression(), var->initExpression());
+    } else if (auto multi = ast->toMultiDecl()) {
+      auto it = multi->decls().begin();
+      auto groupBegin = it;
+      const AstNode* curTypeExpr = nullptr;
+      const AstNode* curInitExpr = nullptr;
+      while (it != multi->decls().end()) {
+        const VarLikeDecl* curDecl = (*it)->toVarLikeDecl();
+
+        // TupleDecls currently not supported as fields
+        CHPL_ASSERT(curDecl != nullptr);
+
+        curTypeExpr = curDecl->typeExpression();
+        curInitExpr = curDecl->initExpression();
+
+        // Now, propagate to the previous decls forming the current 'group'.
+        // We process this group in a 'forward' direction, rather than a
+        // 'backward' direction, so that we preserve field declaration order.
+        if (curTypeExpr || curInitExpr) {
+          auto groupEnd = std::next(it);
+          auto groupIt = groupBegin;
+          while (groupIt != groupEnd) {
+            const VarLikeDecl* d = (*groupIt)->toVarLikeDecl();
+            addFormal(d, curTypeExpr, curInitExpr);
+            groupIt++;
+          }
+
+          groupBegin = groupEnd;
+        }
+
+        ++it;
+      }
+    } else if (auto tup = ast->toTupleDecl()) {
+      CHPL_ASSERT(false && "tuple decls cannot currently be used as fields");
+    } else if (auto fwd = ast->toForwardingDecl()) {
+      if (fwd->isDecl()) {
+        processDecl(fwd->expr());
+      }
+    }
+  };
+
+  for (auto d : typeDecl->decls()) {
+    processDecl(d);
   }
 
   return addSuperInit;
