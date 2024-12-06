@@ -150,10 +150,11 @@ jobs:
         run: |
           FILE_SIZE_LIMIT_KB=1024
 
-          # Loop backward through commits added in the PR, starting from the
-          # latest.
           baseSHA=${{github.event.pull_request.base.sha}}
           headSHA=${{github.event.pull_request.head.sha}}
+
+          # Loop backward through commits added in the PR, starting from the
+          # latest.
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
             echo "Checking commit: $commit"
@@ -166,8 +167,10 @@ jobs:
                   continue
               fi
               echo "Checking file: $file"
+
               file_size=$(ls -l "$file" | awk '{print $5}')
               file_size_kb=$((file_size / 1024))
+
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB)."
                 exit 1
