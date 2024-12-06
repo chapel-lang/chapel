@@ -10,7 +10,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python35"
 
 set_python_version "3.5"
 
-# Check Python version loaded correctly
+# Check correct Python version loaded
 expected_python_version="3.5.2"
 actual_python_version=$(python3 --version | cut -d' ' -f2)
 if [ "$actual_python_version" != "$expected_python_version" ]; then
