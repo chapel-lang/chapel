@@ -384,7 +384,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved resolution of type queries
   - added support for tuple variable decls with type and init expressions
   - added support for resolving nested routines that use outer variables
-  - fixed an ambiguity bug involving nested functions and parenless methods
+  - fixed a few ambiguity bugs involving nested functions and methods
   - fixed resolving `this` calls on shadowing variables
   - allowed inits in multi-variable declsons to use a previous variable's types
   - enabled resolving uses of dependently-typed fields in methods
