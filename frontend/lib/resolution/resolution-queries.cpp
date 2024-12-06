@@ -2851,6 +2851,8 @@ resolveImplementsStatementQuery(ResolutionContext* rc, ID id) {
     QualifiedType interfaceQt;
     if (auto interfaceIdent = interfaceExpr->toIdentifier()) {
       interfaceQt = byPostorder.byAst(interfaceIdent).type();
+    } else if (auto interfaceCall = interfaceExpr->toFnCall()) {
+      interfaceQt = byPostorder.byAst(interfaceCall->calledExpression()).type();
     }
 
     if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
