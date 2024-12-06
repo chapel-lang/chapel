@@ -928,6 +928,13 @@ void ImplementationPoint::mark(Context* context) const {
   chpl::mark<decltype(formals_)>{}(context, formals_);
 }
 
+void ImplementationPoint::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "implementation point for interface ";
+  interfaceId_.stringify(ss, stringKind);
+  ss << " with id ";
+  id_.stringify(ss, stringKind);
+}
+
 const owned<TypedFnSignature>&
 TypedFnSignature::getTypedFnSignature(Context* context,
                     const UntypedFnSignature* untypedSignature,

@@ -2914,6 +2914,7 @@ struct ImplementationPoint {
     return !(*this == other);
   }
   void mark(Context* context) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   const ID& interfaceId() const { return interfaceId_; }
 
