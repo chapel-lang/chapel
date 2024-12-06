@@ -12,7 +12,7 @@ set_python_version "3.5"
 
 # Check Python version loaded correctly
 expected_python_version="3.5.2"
-actual_python_version=${($python_version)[1]}
+actual_python_version=$(python3 --version | cut -d' ' -f2)
 if [ "$actual_python_version" != "$expected_python_version" ]; then
   echo "Wrong Python version"
   echo "Expected Version: $expected_python_version. Actual Version: $actual_python_version"
