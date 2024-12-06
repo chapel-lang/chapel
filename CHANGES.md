@@ -240,6 +240,7 @@ Error Messages / Semantic Checks
 * improved error messages for invalid qualified inheritance expressions
 * improved the error message when trying to split-initialize using tuple syntax
 * improved the error message for `proc main` with `type`/`param` return intent
+* improved the error message when calling `popBack()` on an empty list
 
 Launchers
 ---------
@@ -281,6 +282,8 @@ Bug Fixes
 Bug Fixes for Libraries
 -----------------------
 * fixed a bounds-checking error when multiplying a `bigint` by a `uint`
+* fixed a bug where parallel `fileReader.lines()` calls could drop a final `\n`
+* fixed a bug when running `.lines()` calls using more locales than lines
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -304,6 +307,7 @@ Bug Fixes for Build Issues
 * fixed a formatting bug in the `RPATH` for the Chapel Python bindings
 * made `CHPL_LIB_PATH` ignore empty strings between paths
 * fixed a warning due to trailing spaces in linker arguments
+* fixed `chapel-py` builds when Chapel is using Address sanitization
 * made C libraries more consistent with how they respect `CFLAGS` and `LDFLAGS`
 * fixed an issue with `chplconfig` not supporting variables with equals signs
 * prevent `printchplenv` from inferring `CHPL_LLVM_GCC_PREFIX` when not needed
