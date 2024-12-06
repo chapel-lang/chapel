@@ -5345,18 +5345,6 @@ matchImplementationPoint(ResolutionContext* rc,
       if (!checkFormal(actualType, formalType)) {
         return false;
       }
-
-      // traverse the type expression and extract type queries
-      resolver.resolveTypeQueries(formalAst, actualType);
-
-      // re-run type resolution, this time with type queries.
-      formalAst->traverse(resolver);
-      auto newFormalType = QualifiedType(QualifiedType::CONST_VAR, rr.type().type());
-
-      // Check that after computing type query information, the actual
-      // can still be passed in.
-      auto got = canPassScalar(rc->context(), actualType, newFormalType);
-      if (!got.passes()) return false;
     }
   }
 
