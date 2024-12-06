@@ -145,6 +145,8 @@ jobs:
         run: echo "$GITHUB_CONTEXT"
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: check commits for large files
         run: |
               baseSHA=${{github.event.pull_request.base.sha}}
