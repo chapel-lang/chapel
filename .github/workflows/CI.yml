@@ -172,7 +172,7 @@ jobs:
               file_size_kb=$((file_size / 1024))
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
-                echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB)."
+                echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
                 exit 1
               fi
             done <<< "$newFiles"
