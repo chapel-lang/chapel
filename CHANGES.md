@@ -18,7 +18,7 @@ TODO:
 * check for changes put too far down in file
 * add highlights
 * spellcheck
-o remove empty sections
+* remove empty sections
 o check links
 
 
@@ -51,12 +51,6 @@ Updates to Chapel's Release Formats
 * began publishing 'amd64' nightly Docker images, in addition to 'arm64'  
   (see https://hub.docker.com/r/chapel/chapel/tags)
 
-Updates to Chapel Prerequisites
--------------------------------
-
-Syntactic / Naming Changes
---------------------------
-
 New Language Features
 ---------------------
 * added support for `min`/`max`/`fetchMin`/`fetchMax` ops on atomic variables  
@@ -65,15 +59,6 @@ New Language Features
 Language Feature Improvements
 -----------------------------
 * corrected how generic types with defaults are printed in many cases
-
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
-Deprecated / Unstable / Removed Language Features
--------------------------------------------------
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -84,9 +69,6 @@ New Package Module Features
 ---------------------------
 * added a new package module supporting calling to Python from Chapel  
   (see https://chapel-lang.org/docs/2.3/modules/packages/Python.html)
-
-Changes / Feature Improvements in Standard Libraries
-----------------------------------------------------
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -194,9 +176,6 @@ Platform-Specific Documentation Improvements
 * replaced 'alinux2' with 'AmazonLinux 2023' in the AWS documentation  
   (see https://chapel-lang.org/docs/2.3/platforms/aws.html#configuring-a-parallelcluster)
 
-Technical Note Improvements
----------------------------
-
 Documentation Improvements for Libraries
 ----------------------------------------
 * documented the `Image` module's support for reading and writing images
@@ -204,18 +183,9 @@ Documentation Improvements for Libraries
   (see https://chapel-lang.org/docs/2.3/modules/standard/Subprocess.html#Subprocess.subprocess)
 * fixed a rendering issue with some `map`-based methods
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Example Codes
 -------------
 * updated examples w.r.t. new namings in 'Sort' and 'CompressedSparseLayout'
-
-Compilation Time Improvements
------------------------------
-
-Generated Code Improvements
----------------------------
 
 Memory Improvements
 -------------------
@@ -233,9 +203,6 @@ Configuration / Build Changes
 * improved error messages for incorrect `CHPL_NETWORK_ATOMICS` settings
 * added a proper error message for invalid `CHPL_LOCALE_MODEL` settings
 
-Portability / Platform-specific Improvements
---------------------------------------------
-
 Compiler Improvements
 ---------------------
 * added support for LLVM 19
@@ -243,9 +210,6 @@ Compiler Improvements
 Compiler Flags
 --------------
 * improved messaging when using `-j` or `--incremental` with the LLVM back-end
-
-Generated Executable Flags
---------------------------
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -334,22 +298,10 @@ Bug Fixes for the Runtime
 * added missing `tciFree()` calls to `chpl_comm_ensure_progress()`
 * fixed incorrect variable names in the atomics compatibility layer
 
-Developer-oriented changes: Process
------------------------------------
-
-Developer-oriented changes: Documentation
------------------------------------------
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * removed a no-longer-needed workaround in `chpl_defaultDistInitPrivate()`
 * fixed a bug in the `ChapelHashtable._allSlots()` follower iterator code
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -360,9 +312,6 @@ Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * '--dyno' now activates the new experimental typed converter
 * a new '--[no-]dyno-resolve-only' flag runs the dyno resolver and then stops
-
-Developer-oriented changes: Compiler improvements / changes
------------------------------------------------------------
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
@@ -407,9 +356,6 @@ Developer-oriented changes: Runtime improvements
 * removed the previously deprecated GASNet-1 implementation of the runtime
 * refactored GPU co-locale assignment code to be the same across all vendors
 
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * updated versions of various Python packages relied on by `start_test`
@@ -420,12 +366,6 @@ Developer-oriented changes: Testing System
 * added a co-locale performance test suite for GASNet
 * added nightly blog testing to gpu, multi-locale, and correctness configs
 * increased the frequency of comparing Homebrew's released formula to our own
-
-Developer-oriented changes: Tool Improvements
----------------------------------------------
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 2.2
