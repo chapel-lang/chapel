@@ -1,7 +1,9 @@
 find_program(
   CMAKE_CHPL_COMPILER
   NAMES "chpl"
-  DOC "chpl compiler")
+  DOC "chpl compiler"
+)
+# TODO: how to find chpl with just CHPL_HOME?
 
 set(CMAKE_CHPL_COMPILER_ENV_VAR "")
 
