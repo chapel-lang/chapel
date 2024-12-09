@@ -23,15 +23,6 @@ function set_python_version() {
   # override `python`
   export PATH=/hpcdc/project/chapel/no-python:$PATH
 
-  if [[ $major_ver -eq 2 ]]; then
-    # Do some special casing for python2:
-    # 1. Avoid using chpl_make.py and other python scripts as much as possible
-    # 2. Override `python3`
-
-    export CHPL_NIGHTLY_MAKE=gmake
-    export PATH=/hpcdc/project/chapel/no-python3:$PATH
-  fi
-
   local setup_script="/hpcdc/project/chapel/setup_python$major_ver$minor_ver.bash"
 
   if [[ -f "${setup_script}" ]] ; then
@@ -41,11 +32,7 @@ function set_python_version() {
     return 1
   fi
 
-  if [[ $major_ver -eq 2 ]]; then
-    echo "Using $(python2 --version 2>&1)"
-  else
-    echo "Using $(python3 --version)"
-  fi
+  echo "Using $(python3 --version)"
 }
 
 
