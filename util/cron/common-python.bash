@@ -2,7 +2,7 @@
 
 # a helper function to select python versions before running `nightly` but
 # *after* sourcing other `common*.bash`
-function set_python_version() {
+function set_and_check_python_version() {
   local ver_str=$1
 
   local major_ver=$(echo $ver_str | cut -d. -f1)
