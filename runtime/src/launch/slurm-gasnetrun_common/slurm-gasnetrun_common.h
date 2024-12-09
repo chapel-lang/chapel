@@ -273,11 +273,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  slurmFilename=(char *)chpl_mem_allocMany((strlen(baseSBATCHFilename) + 
-                                          snprintf(NULL, 0, "%d", (int)mypid)
-                                           + 1), sizeof(char), 
-                      CHPL_RT_MD_FILENAME, -1, 0);
-  snprintf(slurmFilename, FILENAME_MAX, "%s%d", baseSBATCHFilename, (int)mypid);
+  int slurmFilenameLen =
+      (strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+  slurmFilename = (char*)chpl_mem_allocMany(slurmFilenameLen, sizeof(char),
+                                            CHPL_RT_MD_FILENAME, -1, 0);
+  snprintf(slurmFilename, slurmFilenameLen, "%s%d", baseSBATCHFilename,
+           (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
     slurmFile = fopen(slurmFilename, "w");
@@ -314,10 +315,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
     char* format="sbatch %s\n";
-    int baseCommandLen=strlen(slurmFilename) + strlen(format);
-    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen), sizeof(char), 
-                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    snprintf(baseCommand, FILENAME_MAX, format, slurmFilename);
+    int baseCommandLen = strlen(slurmFilename) + strlen(format);
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, slurmFilename);
   } else {
     char iCom[2*FILENAME_MAX-10];
     int len = 0;
@@ -358,16 +359,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
     char* format="salloc %s";
     int baseCommandLen = strlen(format) + len;
-    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen), sizeof(char), 
-                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    snprintf(baseCommand, FILENAME_MAX, format, iCom);
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, iCom);
   }
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  
-  snprintf(command, FILENAME_MAX, "%s", baseCommand);
+  command =
+      chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+
+  snprintf(command, size, "%s", baseCommand);
   chpl_mem_free(baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");

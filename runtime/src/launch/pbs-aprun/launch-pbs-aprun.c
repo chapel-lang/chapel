@@ -236,12 +236,12 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   } else {
     mypid = 0;
   }
-  expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
-                                            snprintf(NULL, 0, "%d", (int)mypid)
-                                             + 1), 
-                          sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-  snprintf(expectFilename, FILENAME_MAX, "%s%d",
-           baseExpectFilename, (int)mypid);
+  int expectFilenameLen =
+      (strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+  expectFilename = (char*)chpl_mem_allocMany(expectFilenameLen, sizeof(char),
+                                             CHPL_RT_MD_FILENAME, -1, 0);
+  snprintf(expectFilename, expectFilenameLen, "%s%d", baseExpectFilename,
+           (int)mypid);
 
   initAprunAttributes();
   numCoresPerLocale = getCoresPerLocale();
@@ -392,7 +392,7 @@ static void chpl_launch_cleanup(void) {
     if (unlink(expectFilename)) {
       char *format="Error removing temporary file '%s': %s";
       int msgLen=strlen(format) + strlen(expectFilename) + strlen(strerror(errno)
-      char* msg=(char *)chpl_mem_allocMany(msgLen, sizeof(char), 
+      char* msg=(char *)chpl_mem_allocMany(msgLen, sizeof(char),
                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
       snprintf(msg, msgLen, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));

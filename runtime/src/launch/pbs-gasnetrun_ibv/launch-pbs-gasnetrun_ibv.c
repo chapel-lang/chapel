@@ -167,16 +167,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
-                                          snprintf(NULL, 0, "%d", (int)mypid) 
-                                          + 1), sizeof(char), 
-                        CHPL_RT_MD_FILENAME, -1, 0);
-  pbsFilename=(char *)chpl_mem_allocMany((strlen(basePBSFilename) + 
-                                        snprintf(NULL, 0, "%d", (int)mypid) + 
-                                        1), sizeof(char), CHPL_RT_MD_FILENAME, 
-                      -1, 0);
-  snprintf(expectFilename, FILENAME_MAX, "%s%d", baseExpectFilename, (int)mypid);
-  snprintf(pbsFilename, FILENAME_MAX, "%s%d", basePBSFilename, (int)mypid);
+  int expectFilenameLen =
+      (strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+  expectFilename = (char*)chpl_mem_allocMany(expectFilenameLen, sizeof(char),
+                                             CHPL_RT_MD_FILENAME, -1, 0);
+  int pbsFilenameLen =
+      (strlen(basePBSFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+  pbsFilename = (char*)chpl_mem_allocMany(pbsFilenameLen, sizeof(char),
+                                          CHPL_RT_MD_FILENAME, -1, 0);
+  snprintf(expectFilename, expectFilenameLen, "%s%d", baseExpectFilename,
+           (int)mypid);
+  snprintf(pbsFilename, pbsFilenameLen, "%s%d", basePBSFilename, (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
