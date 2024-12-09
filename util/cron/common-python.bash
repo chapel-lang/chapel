@@ -35,7 +35,7 @@ function set_python_version() {
   echo "Using $(python3 --version)"
 }
 
-# Check correct Python version loaded
+# Check correct Python version loaded, exiting with error if not
 function check_python_version() {
   local expected_python_version=$1
 
