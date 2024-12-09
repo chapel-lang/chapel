@@ -2869,7 +2869,7 @@ class ResolvedFields {
 
 /* A pair of (implemented interface, 'implements' statement) IDs derived
    from a single occurrences of an interface in an inheritance expression list. */
-struct ImplementationPoint {
+class ImplementationPoint {
  private:
   // The ID of the interface being implemented
   ID interfaceId_;
@@ -2923,6 +2923,70 @@ struct ImplementationPoint {
   const ID& formal() const { return formal_; }
 
   const std::vector<ID>& formals() const { return formals_; }
+};
+
+class ImplementationWitness {
+ public:
+  using ConstraintMap = std::unordered_map<ID, const ImplementationWitness*>;
+  using AssociatedTypeMap = SubstitutionsMap;
+  using FunctionMap = std::unordered_map<ID, ID>;
+
+ private:
+
+  ConstraintMap associatedConstraints_;
+  AssociatedTypeMap associatedTypes_;
+  FunctionMap requiredFns_;
+
+  ImplementationWitness(ConstraintMap associatedConstraints,
+                        AssociatedTypeMap associatedTypes,
+                        FunctionMap requiredFns)
+    : associatedConstraints_(std::move(associatedConstraints)),
+      associatedTypes_(std::move(associatedTypes)),
+      requiredFns_(std::move(requiredFns)) {}
+
+  static const owned<ImplementationWitness>&
+  getImplementationWitness(Context* context,
+                           ConstraintMap associatedConstraints,
+                           AssociatedTypeMap associatedTypes,
+                           FunctionMap requiredFns);
+
+ public:
+  static ImplementationWitness*
+  get(Context* context,
+      ConstraintMap associatedConstraints,
+      AssociatedTypeMap associatedTypes,
+      FunctionMap requiredFns);
+
+  static bool update(owned<ImplementationWitness>& lhs,
+                     owned<ImplementationWitness>& rhs) {
+    return defaultUpdateOwned(lhs, rhs);
+  }
+  bool operator==(const ImplementationWitness& other) const {
+    return associatedConstraints_ == other.associatedConstraints_ &&
+           associatedTypes_ == other.associatedTypes_ &&
+           requiredFns_ == other.requiredFns_;
+  }
+  bool operator!=(const ImplementationWitness& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    chpl::mark<decltype(associatedTypes_)>{}(context, associatedTypes_);
+    chpl::mark<decltype(requiredFns_)>{}(context, requiredFns_);
+    chpl::mark<decltype(associatedConstraints_)>{}(context, associatedConstraints_);
+  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  const ConstraintMap& associatedConstraints() const {
+    return associatedConstraints_;
+  }
+
+  const AssociatedTypeMap& associatedTypes() const {
+    return associatedTypes_;
+  }
+
+  const FunctionMap& requiredFns() const {
+    return requiredFns_;
+  }
 };
 
 /* (parent class, implemented interfaces) tuple resulting from processing

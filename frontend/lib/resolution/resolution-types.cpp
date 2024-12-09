@@ -935,6 +935,35 @@ void ImplementationPoint::stringify(std::ostream& ss, chpl::StringifyKind string
   id_.stringify(ss, stringKind);
 }
 
+const owned<ImplementationWitness>&
+ImplementationWitness::getImplementationWitness(Context* context,
+                                                ConstraintMap associatedConstraints,
+                                                AssociatedTypeMap associatedTypes,
+                                                FunctionMap requiredFns) {
+  QUERY_BEGIN(getImplementationWitness, context, associatedConstraints,
+              associatedTypes, requiredFns);
+
+  auto result = toOwned(new ImplementationWitness(std::move(associatedConstraints),
+                                                  std::move(associatedTypes),
+                                                  std::move(requiredFns)));
+
+  return QUERY_END(result);
+}
+
+ImplementationWitness* ImplementationWitness::get(Context* context,
+                                                  ConstraintMap associatedConstraints,
+                                                  AssociatedTypeMap associatedTypes,
+                                                  FunctionMap requiredFns) {
+  return getImplementationWitness(context, std::move(associatedConstraints),
+                                  std::move(associatedTypes),
+                                  std::move(requiredFns)).get();
+}
+
+void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "implementation witness";
+  // TODO: print the contents of the witness
+}
+
 const owned<TypedFnSignature>&
 TypedFnSignature::getTypedFnSignature(Context* context,
                     const UntypedFnSignature* untypedSignature,

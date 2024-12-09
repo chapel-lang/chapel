@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -145,8 +146,8 @@ inline size_t hashPair(const std::pair<T, U>& key) {
   return ret;
 }
 
-template <typename K, typename V>
-inline size_t hashMap(const std::map<K, V>& key) {
+template <typename Map>
+inline size_t hashMap(const Map& key) {
   size_t ret = 0;
 
   // Just iterate and hash, relying on std::map being a sorted container.
@@ -174,6 +175,11 @@ template<typename T> struct hasher<std::set<T>> {
 };
 template<typename K, typename V> struct hasher<std::map<K, V>> {
   size_t operator()(const std::map<K, V>& key) const {
+    return chpl::hashMap(key);
+  }
+};
+template<typename K, typename V> struct hasher<std::unordered_map<K, V>> {
+  size_t operator()(const std::unordered_map<K, V>& key) const {
     return chpl::hashMap(key);
   }
 };

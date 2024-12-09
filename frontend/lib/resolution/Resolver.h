@@ -186,6 +186,7 @@ struct Resolver {
   createForInterfaceStmt(ResolutionContext* rc,
                          const uast::Interface* interface,
                          const types::InterfaceType* ift,
+                         const ImplementationWitness* witness,
                          const uast::AstNode* stmt,
                          ResolutionResultByPostorderID& byPostorder);
 

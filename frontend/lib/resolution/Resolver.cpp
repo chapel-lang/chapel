@@ -260,6 +260,7 @@ Resolver
 Resolver::createForInterfaceStmt(ResolutionContext* rc,
                                  const uast::Interface* interface,
                                  const types::InterfaceType* ift,
+                                 const ImplementationWitness* witness,
                                  const uast::AstNode* stmt,
                                  ResolutionResultByPostorderID& byPostorder) {
   const AstNode* symbol = interface;
@@ -275,7 +276,7 @@ Resolver::createForInterfaceStmt(ResolutionContext* rc,
   ret.rc = rc;
   ret.signatureOnly = true;
   ret.fnBody = fnBody;
-  rc->pushFrame(ift);
+  rc->pushFrame(ift, witness);
   ret.didPushFrame = true;
   return ret;
 }

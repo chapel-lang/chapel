@@ -81,6 +81,16 @@ ResolutionContext::Frame::typeForContainedId(const ID& id) const {
   if (ift_) {
     auto subIt = ift_->subs().find(id);
     if (subIt != ift_->subs().end()) return subIt->second;
+
+    if (witness_) {
+      // search associated types
+      auto atIt = witness_->associatedTypes().find(id);
+      if (atIt != witness_->associatedTypes().end()) return atIt->second;
+
+      // TODO: search additional constraints, required functions
+    }
+  } else {
+    CHPL_ASSERT(witness_ == nullptr);
   }
   return types::QualifiedType();
 }
@@ -104,11 +114,11 @@ pushFrame(const ResolvedFunction* rf) {
 }
 
 const ResolutionContext::Frame* ResolutionContext::
-pushFrame(const types::InterfaceType* ift) {
+pushFrame(const types::InterfaceType* ift, const ImplementationWitness* witness) {
   int64_t index = (int64_t) frames_.size();
-  frames_.push_back({ift, index});
+  frames_.push_back({ift, witness, index});
   auto ret = lastFrame();
-  CHPL_ASSERT(!ret->isUnstable());
+  if (ret->isUnstable()) numUnstableFrames_++;
   return ret;
 }
 

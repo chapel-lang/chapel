@@ -40,6 +40,7 @@ class ResolvedFunction;
 class TypedFnSignature;
 class UntypedFnSignature;
 class MatchingIdsWithName;
+class ImplementationWitness;
 
 /**
   This class is used to manage stack frames that may be necessary while
@@ -127,6 +128,7 @@ class ResolutionContext {
     Resolver* rv_ = nullptr;
     const ResolvedFunction* rf_ = nullptr;
     const types::InterfaceType* ift_ = nullptr;
+    const ImplementationWitness* witness_ = nullptr;
     int64_t index_ = BASE_FRAME_INDEX;
     Store cachedResults_;
     Kind kind_ = UNKNOWN;
@@ -138,8 +140,8 @@ class ResolutionContext {
     Frame(const ResolvedFunction* rf, int64_t index)
       : rf_(rf), index_(index), kind_(FUNCTION) {
     }
-    Frame(const types::InterfaceType* ift, int64_t index)
-      : ift_(ift), index_(index), kind_(FUNCTION) {
+    Frame(const types::InterfaceType* ift, const ImplementationWitness* witness, int64_t index)
+      : ift_(ift), witness_(witness), index_(index), kind_(INTERFACE) {
     }
 
    public:
@@ -161,6 +163,7 @@ class ResolutionContext {
     Resolver* rv() { return rv_; }
     const ResolvedFunction* rf() { return rf_; }
     const types::InterfaceType* ift() { return ift_; }
+    const ImplementationWitness* witness() { return witness_; }
 
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
@@ -188,7 +191,7 @@ class ResolutionContext {
   Frame baseFrame_;
 
   const Frame* pushFrame(const ResolvedFunction* rf);
-  const Frame* pushFrame(const types::InterfaceType* t);
+  const Frame* pushFrame(const types::InterfaceType* t, const ImplementationWitness* witness);
   const Frame* pushFrame(Resolver* rv, Frame::Kind kind);
   void popFrame(const ResolvedFunction* rf);
   void popFrame(Resolver* rv);
