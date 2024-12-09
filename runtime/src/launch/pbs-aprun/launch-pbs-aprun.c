@@ -50,7 +50,7 @@ static char* walltime = NULL;
 static char* queue = NULL;
 static int generate_qsub_script = 0;
 
-static char* expectFilename=NULL;
+static char* expectFilename = NULL;
 
 extern int fileno(FILE *stream);
 
@@ -237,7 +237,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     mypid = 0;
   }
   int expectFilenameLen =
-      (strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+      strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
   expectFilename = (char*)chpl_mem_allocMany(expectFilenameLen, sizeof(char),
                                              CHPL_RT_MD_FILENAME, -1, 0);
   snprintf(expectFilename, expectFilenameLen, "%s%d", baseExpectFilename,
@@ -390,10 +390,11 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!chpl_doDryRun() && !debug) {
     if (unlink(expectFilename)) {
-      char *format="Error removing temporary file '%s': %s";
-      int msgLen=strlen(format) + strlen(expectFilename) + strlen(strerror(errno)
-      char* msg=(char *)chpl_mem_allocMany(msgLen, sizeof(char),
-                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      char* format = "Error removing temporary file '%s': %s";
+      int msgLen =
+          strlen(format) + strlen(expectFilename) + strlen(strerror(errno));
+      char* msg = (char*)chpl_mem_allocMany(msgLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
       snprintf(msg, msgLen, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);

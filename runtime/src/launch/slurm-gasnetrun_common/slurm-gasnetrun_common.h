@@ -182,7 +182,6 @@ static void propagate_environment(char* buf, size_t size)
   if (enviro_keys) chpl_append_to_cmd(buf, " -E '%s'", enviro_keys);
 }
 
-
 static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales,
                                         int32_t numLocalesPerNode) {
@@ -271,7 +270,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     mypid = getpid();
   }
   int slurmFilenameLen =
-      (strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+      strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
   slurmFilename = (char*)chpl_mem_allocMany(slurmFilenameLen, sizeof(char),
                                             CHPL_RT_MD_FILENAME, -1, 0);
   snprintf(slurmFilename, slurmFilenameLen, "%s%d", baseSBATCHFilename,

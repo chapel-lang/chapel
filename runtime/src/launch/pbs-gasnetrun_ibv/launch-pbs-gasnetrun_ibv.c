@@ -41,8 +41,8 @@ static char* walltime = NULL;
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 
-char* pbsFilename=NULL;
-char* expectFilename=NULL;
+char* pbsFilename = NULL;
+char* expectFilename = NULL;
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -168,11 +168,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   mypid = 0;
 #endif
   int expectFilenameLen =
-      (strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+      strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
   expectFilename = (char*)chpl_mem_allocMany(expectFilenameLen, sizeof(char),
                                              CHPL_RT_MD_FILENAME, -1, 0);
   int pbsFilenameLen =
-      (strlen(basePBSFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1);
+      strlen(basePBSFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
   pbsFilename = (char*)chpl_mem_allocMany(pbsFilenameLen, sizeof(char),
                                           CHPL_RT_MD_FILENAME, -1, 0);
   snprintf(expectFilename, expectFilenameLen, "%s%d", baseExpectFilename,

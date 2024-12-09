@@ -434,7 +434,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
-      int stdoutFileLen = (strlen(outputfn) + 1);
+      int stdoutFileLen = strlen(outputfn) + 1;
       stdoutFile = (char*)chpl_mem_allocMany(stdoutFileLen, sizeof(char),
                                              CHPL_RT_MD_FILENAME, -1, 0);
       snprintf(stdoutFile, stdoutFileLen, "%s", outputfn);
@@ -506,8 +506,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
-      //tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
-      //Hence free up inside this condition.
+      // tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
+      // Hence free up inside this condition.
       chpl_mem_free(tmpStdoutFileNoFmt);
     }
 
@@ -621,7 +621,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(command, size, "%s", baseCommand);
-  //free dynamically allocated memory
+  // free dynamically allocated memory
   chpl_mem_free(baseCommand);
   chpl_mem_free(stdoutFile);
   chpl_mem_free(stdoutFileNoFmt);
