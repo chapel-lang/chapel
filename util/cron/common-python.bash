@@ -5,20 +5,8 @@
 function set_python_version() {
   local ver_str=$1
 
-  # make sure the length is OK
-  if [[ ${#ver_str} -lt 3 ]] || [[ ${#ver_str} -gt 4 ]]; then
-    echo "Python version string must be in format 'x.y[z]'"
-    return 1
-  fi
-
-  # make sure the 2nd char is "."
-  if [[ "${ver_str:1:1}" != "." ]]; then
-    echo "Python version string must be in format 'x.y[z]'"
-    return 1
-  fi
-
-  local major_ver=${ver_str:0:1}
-  local minor_ver=${ver_str:2}
+  local major_ver=$(echo $ver_str | cut -d. -f1)
+  local minor_ver=$(echo $ver_str | cut -d. -f2)
 
   # override `python`
   export PATH=/hpcdc/project/chapel/no-python:$PATH
@@ -31,6 +19,8 @@ function set_python_version() {
     echo "[Warning: cannot find the python configuration script: ${setup_script}]"
     return 1
   fi
+
+  check_python_version $ver_str
 
   echo "Using $(python3 --version)"
 }
