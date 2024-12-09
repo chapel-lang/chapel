@@ -1,6 +1,6 @@
 
-# TODO: this cp is a hack, how do we tell cmake that we can't compile to object files?
-set(CMAKE_CHPL_COMPILE_OBJECT "cp <SOURCE> <OBJECT>")
+# TODO: this is a hack, how do we tell cmake that we can't compile to object files?
+set(CMAKE_CHPL_COMPILE_OBJECT "ln -s <SOURCE> <OBJECT>")
 set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_CHPL_COMPILER> -o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS>")
 # <COMPILE_FLAGS> doesn't work on link step
 
