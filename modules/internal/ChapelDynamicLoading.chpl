@@ -42,6 +42,11 @@ module ChapelDynamicLoading {
   var chpl_dynamicProcIdxCounter: atomic uint = 1;
   type allFtablesVec = chpl_localBuffer(c_ptr(c_ptr(void)));
 
+  export proc chpl_localFtable(): c_ptr(c_ptr(void)) {
+    extern const chpl_ftable: c_ptr(c_ptr(void));
+    return chpl_ftable;
+  }
+
   // This is a privatized table of 'ftable' pointers indexed by locale.
   // Every loaded codebase needs to have this vector prepared so that it
   // can call runtime functions like 'chpl_executeOn', as well as to
@@ -54,14 +59,13 @@ module ChapelDynamicLoading {
   // using the 'chpl_ftable' symbols it was linked against, otherwise there
   // is no way to call 'chpl_executeOn' at all. Once this is executed then
   // the 'chpl_ftable' symbols in the runtime can be "discarded".
-  export proc chpl_originBuildFtableVecAtStartup() {
+  export proc chpl_originBuildPrivatizedFtableVecAtStartup() {
     for loc in Locales do on loc {
       chpl_privatizedFtableVec = new allFtablesVec(numLocales);
     }
 
     for loc1 in Locales do on loc1 {
-      extern const chpl_ftable: c_ptr(c_ptr(void));
-      const ptr = chpl_ftable;
+      const ptr = chpl_localFtable();
       const n = (here.id : int);
 
       coforall loc2 in Locales with (ref chpl_privatizedFtableVec) {
@@ -71,11 +75,7 @@ module ChapelDynamicLoading {
   }
 
   // Ininitialize the privatized buffer of 'ftable' pointers.
-  chpl_originBuildFtableVecAtStartup();
-
-  proc chpl_getPrivatizedFtableVecPtr() {
-    return chpl_privatizedFtableVec.ptr();
-  }
+  chpl_originBuildPrivatizedFtableVecAtStartup();
 
   // TODO: A gadget to let one try out different types of locks. I had
   // written a RW-lock in 'ChapelLocks' but was having trouble getting
@@ -146,6 +146,10 @@ module ChapelDynamicLoading {
     inline proc get(ptr: c_ptr(void), out bin: unmanaged chpl_BinaryInfo?) {
       return _handleToInfo.get(ptr, bin);
     }
+
+    proc deinit() {
+      for slot in walk _handleToInfo do destroy(slot);
+    }
   }
 
   // This is one per entrypoint binary and lives on LOCALE-0.
@@ -164,7 +168,7 @@ module ChapelDynamicLoading {
     forwarding var lockWrapper = new chpl_lockWrapper();
 
     // This refcount is bumped and dropped by the user-facing wrapper.
-    var _refCount: atomic int = 1;
+    var _refCount: atomic int = 0;
 
     // This is the path that was used to load the binary.
     var _path: string;
@@ -190,7 +194,7 @@ module ChapelDynamicLoading {
       init this;
     }
 
-    proc deinit() do assert(_cleared);
+    proc deinit() do _close();
 
     // Load a new binary given a path.
     proc type create(path: string, out err: owned DynLibError?) {
@@ -337,12 +341,13 @@ module ChapelDynamicLoading {
     inline proc bumpRefCount() do _refCount.fetchAdd(1);
     inline proc dropRefCount() {
       if _refCount.read() <= 0 then return;
-      if _refCount.fetchSub(1) <= 1 then _close();
+      _refCount.fetchSub(1);
     }
 
     // TODO: 'T' must be a procedure type, but we cannot restrict it yet.
     // Could add a primitive "any procedure type" instead.
-    proc loadSymbol(sym: string, type T, out err: owned DynLibError?): T {
+    proc loadSymbol(sym: string, type T, out err: owned DynLibError?) {
+
       var shouldInternInPointerCache = false;
       var idx: uint = 0;
 
@@ -430,7 +435,8 @@ module ChapelDynamicLoading {
       }
 
       // Fine if 'ret' is '0', that is the wide-index equivalent of 'nil'.
-      var ret = __primitive("cast", T, idx);
+      type retType = __primitive("to extern linkage", T);
+      var ret = __primitive("cast", retType, idx);
 
       return ret;
     }
@@ -482,6 +488,10 @@ module ChapelDynamicLoading {
       }
     }
 
+    proc deinit() {
+      if _ptr != nil then deallocate(_ptr);
+    }
+
     inline proc size do return _size;
 
     inline proc ptr do return _ptr;
@@ -490,10 +500,6 @@ module ChapelDynamicLoading {
       if idx < 0 || idx >= _size then halt('Out of bounds!');
       ref ret = _ptr[idx];
       return ret;
-    }
-
-    proc deinit() {
-      if _ptr != nil then deallocate(_ptr);
     }
   }
 
@@ -540,6 +546,13 @@ module ChapelDynamicLoading {
       for idx in start..<_bufferSize do yield idx;
       if start != 0 then {
         for idx in 0..<start do yield idx;
+      }
+    }
+
+    inline iter slots() ref {
+      for idx in _walk(start=0) {
+        ref slot = _slots[idx];
+        yield slot;
       }
     }
 

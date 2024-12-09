@@ -402,6 +402,7 @@ PRIMITIVE_R(TO_BORROWED_CLASS, "to borrowed class")
 PRIMITIVE_R(TO_UNDECORATED_CLASS, "to undecorated class")
 PRIMITIVE_R(TO_NILABLE_CLASS, "to nilable class")
 PRIMITIVE_R(TO_NON_NILABLE_CLASS, "to non nilable class")
+PRIMITIVE_R(TO_EXTERN_LINKAGE, "to extern linkage")
 
 PRIMITIVE_R(SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type")
 

@@ -921,6 +921,13 @@ FunctionType* FunctionType::getAsWide() const {
              throws_);
 }
 
+FunctionType* FunctionType::getWithExternLinkage() const {
+  return get(kind_, width_, FunctionType::EXTERN, formals_,
+             returnIntent_,
+             returnType_,
+             throws_);
+}
+
 FunctionType::Kind FunctionType::kind() const {
   return this->kind_;
 }

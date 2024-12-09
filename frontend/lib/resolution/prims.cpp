@@ -1451,6 +1451,10 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primToNonNilableClass(context, call, ci, /* checked */ false);
       break;
 
+    case PRIM_TO_EXTERN_LINKAGE:
+      CHPL_UNIMPL("PRIM_TO_EXTERN_LINKAGE");
+      break;
+
     case PRIM_UINT32_AS_REAL32:
       type = primNumericTransmute<UintParam, RealParam, uint32_t, float>(
           context, call, ci, UintType::get(context, 32), RealType::get(context, 32));

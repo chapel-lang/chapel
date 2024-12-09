@@ -507,6 +507,7 @@ class FunctionType final : public Type {
 
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
+  FunctionType* getWithExternLinkage() const;
 
   Kind kind() const;
   Width width() const;

@@ -890,6 +890,23 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_TO_EXTERN_LINKAGE: {
+    INT_ASSERT(call->numActuals() == 1);
+    auto t = call->get(1)->typeInfo();
+
+    if (!isFunctionType(t)) {
+      INT_FATAL(call, "Argument to PRIM_TO_FOREIGN_LINKAGE must have "
+                      "a function type!");
+    } else {
+      auto ft = toFunctionType(t);
+      if (!ft->isExport()) t = ft->getWithExternLinkage();
+    }
+
+    retval = new SymExpr(t->symbol);
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_GET_TEST_BY_INDEX: {
     int64_t index    =        0;
 

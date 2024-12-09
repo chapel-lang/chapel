@@ -265,6 +265,21 @@ returnInfoCast(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoToExternLinkage(CallExpr* call) {
+  INT_ASSERT(call->numActuals() == 1);
+  auto q1 = call->get(1)->qualType();
+  auto qual = q1.getQual();
+  auto type = q1.type();
+  if (auto ft = toFunctionType(q1.type())) {
+    if (!ft->hasForeignLinkage()) {
+      type = ft->getWithExternLinkage();
+    }
+  }
+
+  return QualifiedType(qual, type);
+}
+
+static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
 
@@ -1235,6 +1250,7 @@ initPrimitive() {
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
+  prim_def(PRIM_TO_EXTERN_LINKAGE, "to extern linkage", returnInfoToExternLinkage);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
