@@ -298,6 +298,18 @@ static bool initHelper(Context* context,
       auto groupBegin = it;
       const AstNode* curTypeExpr = nullptr;
       const AstNode* curInitExpr = nullptr;
+
+      // Iterate over decls until we find one with either a type-expression or
+      // init-expression. Once found, the inner loop propagates the
+      // type/init-expressions to previous decls without such expressions.
+      //
+      // For example, in a multi-decl like this:
+      //
+      //   var a, b: string, c, d = 0;
+      //
+      // The outer loop would do nothing for variables, 'a' and 'c'. Then,
+      // when 'b' and 'd' are examined, their expressions will be propagated
+      // back to 'a' and 'c' during the inner loop.
       while (it != multi->decls().end()) {
         const VarLikeDecl* curDecl = (*it)->toVarLikeDecl();
 
