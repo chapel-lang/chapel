@@ -46,7 +46,8 @@ def run_build(subdir, build_type):
 
     with BuildDirContext(subdir) as (build_dir, install_dir):
         try:
-            sp.check_output(
+            print(f"[Configuring {subdir} with {build_type}]")
+            output = sp.check_output(
                 [
                     "cmake",
                     "-B",
@@ -60,6 +61,7 @@ def run_build(subdir, build_type):
                 encoding="utf-8",
                 stderr=sp.STDOUT,
             )
+            print(output)
         except sp.CalledProcessError as e:
             print(f"[Error configuring {subdir} with {build_type}]")
             print(e.output)
@@ -68,11 +70,13 @@ def run_build(subdir, build_type):
             print(f"[Finished configuring {subdir} with {build_type}]")
 
         try:
-            sp.check_output(
+            print(f"[Building {subdir} with {build_type}]")
+            output = sp.check_output(
                 ["cmake", "--build", build_dir],
                 encoding="utf-8",
                 stderr=sp.STDOUT,
             )
+            print(output)
         except sp.CalledProcessError as e:
             print(f"[Error building {subdir} with {build_type}]")
             print(e.output)
@@ -81,11 +85,13 @@ def run_build(subdir, build_type):
             print(f"[Finished building {subdir} with {build_type}]")
 
         try:
-            sp.check_output(
+            print(f"[Installing {subdir} with {build_type}]")
+            output = sp.check_output(
                 ["cmake", "--install", build_dir],
                 encoding="utf-8",
                 stderr=sp.STDOUT,
             )
+            print(output)
         except sp.CalledProcessError as e:
             print(f"[Error installing {subdir} with {build_type}]")
             print(e.output)
