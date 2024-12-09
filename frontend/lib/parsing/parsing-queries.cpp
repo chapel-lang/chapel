@@ -1337,7 +1337,7 @@ bool idIsNestedFunction(Context* context, ID id) {
   if (id.isEmpty() || !idIsFunction(context, id)) return false;
   for (auto up = id.parentSymbolId(context); up;
             up = up.parentSymbolId(context)) {
-    if (idIsFunction(context, up)) return true;
+    if (idIsFunction(context, up) || idIsInterface(context, up)) return true;
   }
   return false;
 }

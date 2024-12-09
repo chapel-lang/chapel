@@ -123,7 +123,7 @@ pushFrame(const types::InterfaceType* ift, const ImplementationWitness* witness)
 }
 
 bool ResolutionContext::Frame::isUnstable() const {
-  return rv_ != nullptr;
+  return rv_ != nullptr || ift_ != nullptr || witness_ != nullptr;
 }
 
 void ResolutionContext::popFrame(Resolver* rv) {
