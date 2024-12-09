@@ -5,4 +5,8 @@ UnusedTupleUnpack.chpl:5: node violates rule UnusedTupleUnpack
 UnusedTupleUnpack.chpl:5: node violates rule UnusedTupleUnpack
 UnusedTupleUnpack.chpl:6: node violates rule UnusedTupleUnpack
 UnusedTupleUnpack.chpl:6: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:8: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:11: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:11: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:12: node violates rule UnusedTupleUnpack
 [Success matching fixit for UnusedTupleUnpack]
