@@ -29,6 +29,9 @@
 #include "error.h"
 #include "aprun-utils.h"
 
+// #define baseSysFilename ".chpl-sys-"
+// char sysFilename[FILENAME_MAX];
+
 #define CHPL_CC_ARG "-cc"
 static const char *_ccArg = NULL;
 static const char* debug = NULL;
