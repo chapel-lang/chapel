@@ -173,17 +173,46 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static int propagate_environment(char* buf, size_t size)
+static void propagate_environment(char* buf, size_t size)
 {
-  int len = 0;
-
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
-  if (enviro_keys)
-    len += snprintf(buf, size, " -E '%s'", enviro_keys);
-  return len;
+  if (enviro_keys) appendToCmdBuf(buf, " -E '%s'", enviro_keys);
+}
+
+// Helper for appending arguments to a variable-size command buffer.
+// - Requires the buffer pointer is uninitialized on first call.
+// - After exceeding an initial allocated size estimate, each call will allocate
+//   additional memory as needed.
+static char* appendToCmdBuf(char* com, const char* format, ...) {
+  static const int initialSize = 2048;
+  static int charsWritten = 0;
+
+  if (charsWritten == 0) {
+    assert(com == NULL);
+    com = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
+                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  va_list argsForLen, argsForPrint;
+  va_start(argsForLen, format);
+  va_copy(argsForPrint, argsForLen);
+
+  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  va_end(argsForLen);
+  int newLen = charsWritten + addedLen;
+
+  if (newLen >= initialSize) {
+    com = (char*)chpl_mem_realloc(com, newLen * sizeof(char),
+                                  CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  vsnprintf(com + charsWritten, addedLen + 1, format, argsForPrint);
+  va_end(argsForPrint);
+
+  charsWritten = newLen;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -302,7 +331,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
             numLocales, numLocales);
 
-    propagate_environment(envProp, sizeof(envProp));
+    propagate_environment(envProp);
     fprintf(slurmFile, "%s", envProp);
 
     fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -320,45 +349,34 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     snprintf(baseCommand, baseCommandLen, format, slurmFilename);
   } else {
-    char iCom[2*FILENAME_MAX-10];
-    int len = 0;
+    char* iCom = NULL;
 
     if (!getSlurmDebug()) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+      appendToCmdBuf(iCom, "--quiet ");
     }
-    len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numNodes);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    if (nodeAccessStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
-    if (walltime)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--time=%s ", walltime);
-    if (nodelist)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--nodelist=%s ", nodelist);
-    if(partition)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ", partition);
-    if(exclude)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
-    if(gpusPerNode)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
-    if(projectString && strlen(projectString) > 0)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ",
-                     projectString);
-    if (constraint)
-      len += snprintf(iCom+len, sizeof(iCom)-len, " -C %s", constraint);
-    len += snprintf(iCom+len, sizeof(iCom)-len,
-                   " %s/%s/%s -n %d -N %d -c 0",
+    appendToCmdBuf(iCom, "-J %s ", jobName);
+    appendToCmdBuf(iCom, "-N %d ", numNodes);
+    appendToCmdBuf(iCom, "--ntasks=%d ", numLocales);
+    if (nodeAccessStr != NULL) appendToCmdBuf(iCom, "--%s ", nodeAccessStr);
+    if (walltime) appendToCmdBuf(iCom, "--time=%s ", walltime);
+    if (nodelist) appendToCmdBuf(iCom, "--nodelist=%s ", nodelist);
+    if (partition) appendToCmdBuf(iCom, "--partition=%s ", partition);
+    if (exclude) appendToCmdBuf(iCom, "--exclude=%s ", exclude);
+    if (gpusPerNode) appendToCmdBuf(iCom, "--gpus-per-node=%s ", gpusPerNode);
+    if (projectString && strlen(projectString) > 0)
+      appendToCmdBuf(iCom, "--account=%s ", projectString);
+    if (constraint) appendToCmdBuf(iCom, "-C %s", constraint);
+    appendToCmdBuf(iCom, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numNodes);
-    len += propagate_environment(iCom+len, sizeof(iCom) - len);
-    len += snprintf(iCom+len, sizeof(iCom)-len, " %s %s",
-                   chpl_get_real_binary_wrapper(),
+    propagate_environment(iCom);
+    appendToCmdBuf(iCom, " %s %s", chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      appendToCmdBuf(iCom, " %s", argv[i]);
     }
-    char* format="salloc %s";
-    int baseCommandLen = strlen(format) + len;
+    char* format = "salloc %s";
+    int baseCommandLen = strlen(format) + strlen(iCom) + 1;
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     snprintf(baseCommand, baseCommandLen, format, iCom);
