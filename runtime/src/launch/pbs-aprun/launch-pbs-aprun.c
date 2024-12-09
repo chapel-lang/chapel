@@ -50,7 +50,7 @@ static char* walltime = NULL;
 static char* queue = NULL;
 static int generate_qsub_script = 0;
 
-static char expectFilename[FILENAME_MAX];
+static char* expectFilename=NULL;
 
 extern int fileno(FILE *stream);
 
@@ -236,6 +236,10 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   } else {
     mypid = 0;
   }
+  expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
+                                            snprintf(NULL, 0, "%d", (int)mypid)
+                                             + 1), 
+                          sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
   snprintf(expectFilename, FILENAME_MAX, "%s%d",
            baseExpectFilename, (int)mypid);
 
@@ -386,10 +390,14 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!chpl_doDryRun() && !debug) {
     if (unlink(expectFilename)) {
-      char msg[FILENAME_MAX + 35];
-      snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
+      char *format="Error removing temporary file '%s': %s";
+      int msgLen=strlen(format) + strlen(expectFilename) + strlen(strerror(errno)
+      char* msg=(char *)chpl_mem_allocMany(msgLen, sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      snprintf(msg, msgLen, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
+      chpl_mem_free(msg);
     }
   }
 }
@@ -414,7 +422,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
                                   argv[0]);
     chpl_launch_cleanup();
   }
-
+  chpl_mem_free(expectFilename);
   return retcode;
 }
 

@@ -41,8 +41,8 @@ static char* walltime = NULL;
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 
-char pbsFilename[FILENAME_MAX];
-char expectFilename[FILENAME_MAX];
+char* pbsFilename=NULL;
+char* expectFilename=NULL;
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -167,10 +167,16 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  snprintf(expectFilename, sizeof(expectFilename), "%s%d", baseExpectFilename,
-           (int)mypid);
-  snprintf(pbsFilename, sizeof(pbsFilename), "%s%d", basePBSFilename,
-           (int)mypid);
+  expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
+                                          snprintf(NULL, 0, "%d", (int)mypid) 
+                                          + 1), sizeof(char), 
+                        CHPL_RT_MD_FILENAME, -1, 0);
+  pbsFilename=(char *)chpl_mem_allocMany((strlen(basePBSFilename) + 
+                                        snprintf(NULL, 0, "%d", (int)mypid) + 
+                                        1), sizeof(char), CHPL_RT_MD_FILENAME, 
+                      -1, 0);
+  snprintf(expectFilename, FILENAME_MAX, "%s%d", baseExpectFilename, (int)mypid);
+  snprintf(pbsFilename, FILENAME_MAX, "%s%d", basePBSFilename, (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
@@ -254,6 +260,9 @@ static void chpl_launch_cleanup(void) {
     }
   }
 #endif
+  chpl_mem_free(pbsFilename);
+  chpl_mem_free(expectFilename);
+  chpl_mem_free(sysFilename);
 }
 
 

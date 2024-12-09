@@ -50,7 +50,7 @@ static char* reservation = NULL;
 static char* exclude = NULL;
 static char* gpusPerNode = NULL;
 
-char slurmFilename[FILENAME_MAX];
+char* slurmFilename = NULL;
 
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
@@ -221,7 +221,6 @@ static chpl_bool getSlurmDebug(chpl_bool batch) {
 }
 
 
-#define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and
 // create any files needed for the launch like the batch script
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -229,7 +228,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocalesPerNode) {
   int i;
   int size;
-  char baseCommand[MAX_COM_LEN];
+  char* baseCommand=NULL;
   char* command;
   FILE* slurmFile;
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
@@ -265,9 +264,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
   const char* tmpDir    = getTmpDir();
-  char stdoutFile         [MAX_COM_LEN];
-  char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFileNoFmt [MAX_COM_LEN];
+  char* stdoutFile         = NULL;
+  char* stdoutFileNoFmt    = NULL;
+  char* tmpStdoutFileNoFmt = NULL;
 
   // Note: if numLocalesPerNode > numLocales then some cores will go unused. This
   // is by design, as it allows for scalability testing by increasing the
@@ -361,6 +360,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // if were running a batch job
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
+    slurmFilename=(char *)chpl_mem_allocMany((strlen(baseSBATCHFilename) + 
+                                            snprintf(NULL, 0, "%d", (int)mypid)
+                                            + 1), sizeof(char), 
+                          CHPL_RT_MD_FILENAME, -1, 0);
     // set the sbatch filename
     snprintf(slurmFilename, sizeof(slurmFilename), "%s%d", baseSBATCHFilename,
              (int)mypid);
@@ -432,15 +435,25 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
-      snprintf(stdoutFile, sizeof(stdoutFile), "%s", outputfn);
-      snprintf(stdoutFileNoFmt, sizeof(stdoutFileNoFmt), "%s", outputfn);
+      stdoutFile=(char *)chpl_mem_allocMany((strlen(outputfn) + 1), 
+                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFile,      FILENAME_MAX, "%s", outputfn);
+      stdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(outputfn) + 1), 
+                              sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFileNoFmt, FILENAME_MAX, "%s", outputfn);
     }
     else {
-      snprintf(stdoutFile, sizeof(stdoutFile), "%s.%s.out", argv[0], "%j");
-      snprintf(stdoutFileNoFmt, sizeof(stdoutFileNoFmt), "%s.%s.out", argv[0],
-              "$SLURM_JOB_ID");
+      char* format="%s.%s.out";
+      int stdoutFileLen = strlen(format) + strlen(argv[0])+ strlen("%j");
+      stdoutFile=(char *)chpl_mem_allocMany(stdoutFileLen, sizeof(char), 
+                          CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFile,      FILENAME_MAX, format, argv[0], "%j");
+      char* tempArg = "$SLURM_JOB_ID";
+      int stdoutFileNoFmtLen = strlen(format) + strlen(argv[0]) + strlen(tempArg);
+      stdoutFileNoFmt=(char *)chpl_mem_allocMany(stdoutFileNoFmtLen, 
+                              sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFileNoFmt, FILENAME_MAX, format, argv[0], tempArg);
     }
-
     // We have slurm use the real output file to capture slurm errors/timeouts
     // We only redirect the program output to the tmp file
     fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
@@ -452,8 +465,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      snprintf(tmpStdoutFileNoFmt, sizeof(tmpStdoutFileNoFmt),"%s/%s.%s.out",
-               tmpDir, argv[0], "$SLURM_JOB_ID");
+      char* format = "%s/%s.%s.out";
+      char* tempArg = "$SLURM_JOB_ID";
+      int tmpStdoutFileNoFmtLen = strlen(format) + strlen(tmpDir) + 
+                                    strlen(argv[0]) + strlen(tempArg);
+      tmpStdoutFileNoFmt = (char *)chpl_mem_allocMany(tmpStdoutFileNoFmtLen, 
+                                sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(tmpStdoutFileNoFmt, FILENAME_MAX, format, tmpDir, argv[0], tempArg);
     }
 
     // add the srun command
@@ -486,6 +504,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
+      //tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
+      //Hence free up inside this condition.
+      chpl_mem_free(tmpStdoutFileNoFmt);
     }
 
     // close the batch file and change permissions
@@ -497,8 +518,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // the baseCommand is what will call the batch file
-    // that was just created
-    snprintf(baseCommand, sizeof(baseCommand), "sbatch %s\n", slurmFilename);
+    // that was just created 
+    char* format = "sbatch %s\n";
+    int baseCommandLen = strlen(slurmFilename) + strlen(format);
+    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen, sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, FILENAME_MAX, format, slurmFilename);
   }
   // else we're running an interactive job
   else {
@@ -589,13 +614,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // launch the job using srun
-    snprintf(baseCommand, sizeof(baseCommand), "srun %s", iCom);
+    snprintf(baseCommand, FILENAME_MAX, format, iCom);
   }
 
   // copy baseCommand into command and return it
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  snprintf(command, size * sizeof(char), "%s", baseCommand);
+  snprintf(command, FILENAME_MAX, "%s", baseCommand);
+  //free dynamically allocated memory
+  chpl_mem_free(baseCommand);
+  chpl_mem_free(stdoutFile);
+  chpl_mem_free(stdoutFileNoFmt);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -617,7 +646,9 @@ static void chpl_launch_cleanup(void) {
     // remove sbatch file unless it was explicitly generated by the user
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
       if (unlink(slurmFilename)) {
-        char msg[FILENAME_MAX + 128];
+        char* msg=(char *)chpl_mem_allocMany((strlen(slurmFilename) + 
+                                            strlen(strerror(errno)) + 36), 
+                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
         snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
@@ -650,6 +681,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
 
     chpl_launch_cleanup();
   }
+  chpl_mem_free(slurmFilename);
   return retcode;
 }
 
