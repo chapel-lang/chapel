@@ -529,16 +529,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   }
   // else we're running an interactive job
   else {
-    char iCom[1024];
-    int len;
-
-    len = 0;
+    char* iCom = NULL;
 
     // set the job name
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--job-name=%s ", jobName);
+    chpl_append_to_cmd(iCom, "--job-name=%s ", jobName);
     if (!getSlurmDebug(/*batch=*/false)) {
       // suppress informational messages, will still display errors
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+      chpl_append_to_cmd(iCom, "--quiet ");
     }
 
     // request the number of locales, with 1 task per node, and number of cores
@@ -546,77 +543,78 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // since 1 task-per-node with n --tasks implies -n nodes
     int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
+    chpl_append_to_cmd(iCom, "--nodes=%d ", numNodes);
+    chpl_append_to_cmd(iCom, "--ntasks=%d ", numLocales);
     int localesOnNode = (numLocales < numLocalesPerNode) ?
                         numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
-                    cpusPerTask);
+    chpl_append_to_cmd(iCom, "--cpus-per-task=%d ", cpusPerTask);
 
     if (numLocalesPerNode > 1) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
+      chpl_append_to_cmd(iCom, "--cpu-bind=none ");
     }
 
     // request specified node access
     if (nodeAccessStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
+      chpl_append_to_cmd(iCom, "--%s ", nodeAccessStr);
 
     // request specified amount of memory
     if (memStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--mem=%s ", memStr);
+      chpl_append_to_cmd(iCom, "--mem=%s ", memStr);
 
     // kill the job if any program instance halts with non-zero exit status
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--kill-on-bad-exit ");
+    chpl_append_to_cmd(iCom, "--kill-on-bad-exit ");
 
     // Set the walltime if it was specified
     if (walltime) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--time=%s ",walltime);
+      chpl_append_to_cmd(iCom, "--time=%s ", walltime);
     }
 
     // Set the nodelist if it was specified
     if (nodelist) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--nodelist=%s ", nodelist);
+      chpl_append_to_cmd(iCom, "--nodelist=%s ", nodelist);
     }
 
     // Set the partition if it was specified
     if (partition) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ",
-                      partition);
+      chpl_append_to_cmd(iCom, "--partition=%s ", partition);
     }
 
     // Set the exclude list if it was specified
     if (exclude) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
+      chpl_append_to_cmd(iCom, "--exclude=%s ", exclude);
     }
 
     // Set the gpus per node if it was specified
     if (gpusPerNode) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ",
-                      gpusPerNode);
+      chpl_append_to_cmd(iCom, "--gpus-per-node=%s ", gpusPerNode);
     }
 
     // set any constraints
     if (constraint) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--constraint=%s ", constraint);
+      chpl_append_to_cmd(iCom, "--constraint=%s ", constraint);
     }
 
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
+      chpl_append_to_cmd(iCom, "--account=%s ", account);
     }
 
     // add the (possibly wrapped) binary name
-    len += snprintf(iCom+len, sizeof(iCom)-len, "%s %s",
+    chpl_append_to_cmd(iCom, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
     // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      chpl_append_to_cmd(iCom, "'%s' ", argv[i]);
     }
 
     // launch the job using srun
-    snprintf(baseCommand, FILENAME_MAX, format, iCom);
+    char* format = "srun %s";
+    int baseCommandLen = strlen(format) + strlen(iCom) + 1;
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, iCom);
   }
 
   // copy baseCommand into command and return it

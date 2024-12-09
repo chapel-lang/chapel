@@ -102,6 +102,39 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
   (*largv)[(*largc)++] = (arg);
 }
 
+// Helper for appending arguments to a variable-size command buffer.
+// - Requires the buffer pointer is uninitialized on first call.
+// - After exceeding an initial allocated size estimate, each call will allocate
+//   additional memory as needed.
+char* chpl_append_to_cmd(char* cmdBuf, const char* format, ...) {
+  static const int initialSize = 2048;
+  static int charsWritten = 0;
+
+  if (charsWritten == 0) {
+    assert(cmdBuf == NULL);
+    cmdBuf = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
+                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  va_list argsForLen, argsForPrint;
+  va_start(argsForLen, format);
+  va_copy(argsForPrint, argsForLen);
+
+  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  va_end(argsForLen);
+  int newLen = charsWritten + addedLen;
+
+  if (newLen >= initialSize) {
+    cmdBuf = (char*)chpl_mem_realloc(cmdBuf, newLen * sizeof(char),
+                                  CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  vsnprintf(cmdBuf + charsWritten, addedLen + 1, format, argsForPrint);
+  va_end(argsForPrint);
+
+  charsWritten = newLen;
+}
+
 //
 // Use this function to run short utility programs that will return less
 //  than 1024 characters of output.  The program must not expect any input.
