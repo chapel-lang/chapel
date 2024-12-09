@@ -9,14 +9,6 @@ source $UTIL_CRON_DIR/common-python.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python35"
 
 set_python_version "3.5"
-
-# Check correct Python version loaded
-expected_python_version="3.5.2"
-actual_python_version=$(python3 --version | cut -d' ' -f2)
-if [ "$actual_python_version" != "$expected_python_version" ]; then
-  echo "Wrong Python version"
-  echo "Expected Version: $expected_python_version. Actual Version: $actual_python_version"
-  exit 2
-fi
+check_python_version "3.5.2"
 
 $UTIL_CRON_DIR/nightly -cron -pythonDep ${nightly_args}
