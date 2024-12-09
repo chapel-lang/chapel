@@ -110,28 +110,31 @@ char* chpl_append_to_cmd(char* cmdBuf, const char* format, ...) {
   static const int initialSize = 2048;
   static int charsWritten = 0;
 
+  va_list argsForLen, argsForPrint;
+  va_start(argsForLen, format);
+  va_copy(argsForPrint, argsForLen);
+
+  // Allocate buffer to initial size on first call
   if (charsWritten == 0) {
     assert(cmdBuf == NULL);
     cmdBuf = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
                                     CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
-  va_list argsForLen, argsForPrint;
-  va_start(argsForLen, format);
-  va_copy(argsForPrint, argsForLen);
-
+  // Determine additional characters to be written
   const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
   va_end(argsForLen);
   int newLen = charsWritten + addedLen;
 
+  // Allocate more memory if needed
   if (newLen >= initialSize) {
     cmdBuf = (char*)chpl_mem_realloc(cmdBuf, newLen * sizeof(char),
                                   CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
+  // Write the new characters
   vsnprintf(cmdBuf + charsWritten, addedLen + 1, format, argsForPrint);
   va_end(argsForPrint);
-
   charsWritten = newLen;
 }
 
