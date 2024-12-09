@@ -28,7 +28,7 @@ from rule_types import BasicRuleResult, AdvancedRuleResult
 
 
 def variables(node: AstNode):
-    if isinstance(node, Variable):
+    if isinstance(node, (Variable, Formal)):
         if node.name() != "_":
             yield node
     elif isinstance(node, TupleDecl):
@@ -633,6 +633,9 @@ def register_rules(driver: LintDriver):
             # 'this' formals.
             if formal.name() == "this":
                 continue
+            # ignore `_`, like from a TupleDecl
+            if formal.name() == "_":
+                continue
 
             # extern functions have no bodies that can use their formals.
             if formal.parent().linkage() == "extern":
@@ -647,6 +650,8 @@ def register_rules(driver: LintDriver):
 
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
+            while isinstance(anchor, (Variable, TupleDecl)):
+                anchor = anchor.parent()
             yield AdvancedRuleResult(formals[unused], anchor)
 
     @driver.advanced_rule
