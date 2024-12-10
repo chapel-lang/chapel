@@ -5500,7 +5500,16 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     ResolutionResultByPostorderID byPostorder;
     auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness2, stmt, byPostorder);
 
+
+    // Construct an initial typed signature, which will have opaque placeholder
+    // types for 'Self', associated types, etc. Then, replace the placeholders
+    // with the substitutions we've determined, so that we may proceed to
+    // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
+    SubstitutionsMap allPlaceholders;
+    for (auto& [id, qt] : associatedTypes) allPlaceholders.emplace(id, qt);
+    for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt);
+    tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
 
     // Now, try finding a matching overload in the given scope. Strip names
     // from all actuals except "this".
