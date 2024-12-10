@@ -12,6 +12,10 @@ def get():
     osx = platform_val.startswith('darwin')
     val = overrides.get('CHPL_UNWIND')
 
+    if val and val != 'none' and val != 'bundled' and val != 'system':
+        error("Invalid CHPL_UNWIND value {0}\n"
+              "Valid values are none, bundled, or system".format(val))
+
     if linux:
         if val == 'bundled':
             return 'bundled'
