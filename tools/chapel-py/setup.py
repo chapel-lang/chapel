@@ -47,6 +47,19 @@ host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
+# For installations using --prefix, the build and final lib paths are going to
+#  differ figure out the install location now and write it to the rpath
+chpl_home_utils = os.path.join(
+    chpl_home, "util", "chplenv", "chpl_home_utils.py"
+)
+chpl_install_lib_path = (
+    subprocess.check_output(
+        ["python", chpl_home_utils, "--configured-install-lib-prefix"],
+    )
+    .decode(sys.stdout.encoding)
+    .strip()
+    .splitlines()
+)
 
 CXXFLAGS = []
 if have_llvm and have_llvm != "none":
@@ -67,6 +80,12 @@ LDFLAGS += [
     "-Wl,-rpath,{}".format(chpl_lib_path),
     "-lChplFrontendShared",
 ]
+
+if chpl_install_lib_path is not None:
+    LDFLAGS += [
+        "-L{}".format(chpl_install_lib_path),
+        "-Wl,-rpath,{}".format(chpl_install_lib_path),
+    ]
 
 if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
     if str(chpl_variables.get("CHPL_HOST_PLATFORM")) == "darwin":

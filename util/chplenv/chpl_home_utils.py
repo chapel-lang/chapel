@@ -55,6 +55,44 @@ install_path_regex = re.compile(
                                                   os.path.sep))
 
 @memoize
+def get_chpl_configured_install_lib_prefix():
+    # gets the path to the lib directory for a prefix install, or None if not
+    # a prefix install
+    chpl_home = str(os.getenv("CHPL_HOME"))
+    if os.path.exists(os.path.join(chpl_home, "configured-prefix")):
+        with open(os.path.join(chpl_home, "CMakeLists.txt"), "r") as f:
+            # read CMakeLists.txt to get the CHPL_MAJOR_VERSION and
+            # CHPL_MINOR_VERSION and then construct the path from that
+            chpl_major_version = None
+            chpl_minor_version = None
+            for line in f:
+                if "set(CHPL_MAJOR_VERSION" in line:
+                    chpl_major_version = line.split()[1].strip(")")
+                if "set(CHPL_MINOR_VERSION" in line:
+                    chpl_minor_version = line.split()[1].strip(")")
+                if (
+                    chpl_major_version is not None
+                    and chpl_minor_version is not None
+                ):
+                    break
+        assert chpl_major_version is not None and chpl_minor_version is not None
+        chpl_version_string = "{}.{}".format(
+            chpl_major_version,
+            chpl_minor_version,
+        )
+        chpl_prefix = None
+        with open(os.path.join(chpl_home, "configured-prefix"), "r") as f:
+            chpl_prefix = f.read().strip()
+        assert chpl_prefix is not None
+        return os.path.join(
+            chpl_prefix,
+            "lib",
+            "chapel",
+            chpl_version_string,
+            "compiler",
+        )
+
+@memoize
 def get_chpl_version_from_install():
     if get_prefix_install_prefix():
         chpl_home = get_chpl_home()
@@ -189,6 +227,8 @@ def _main():
     )
     parser.add_option('--using-module', action='store_const',
                       dest='func', const=using_chapel_module)
+    parser.add_option('--configured-install-lib-prefix', action='store_const',
+                      dest='func', const=get_chpl_configured_install_lib_prefix)
     (options, args) = parser.parse_args()
 
     if options.func:
