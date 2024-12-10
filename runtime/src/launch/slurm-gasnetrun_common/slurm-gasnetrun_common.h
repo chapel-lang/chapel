@@ -173,7 +173,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static void propagate_environment(char* buf)
+static void propagate_environment(char** buf)
 {
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
@@ -317,36 +317,38 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     snprintf(baseCommand, baseCommandLen, format, slurmFilename);
   } else {
     char* iCom = NULL;
+    int len = 0;
 
     if (!getSlurmDebug()) {
-      chpl_append_to_cmd(iCom, "--quiet ");
+      chpl_append_to_cmd(&iCom, &len, "--quiet ");
     }
-    chpl_append_to_cmd(iCom, "-J %s ", jobName);
-    chpl_append_to_cmd(iCom, "-N %d ", numNodes);
-    chpl_append_to_cmd(iCom, "--ntasks=%d ", numLocales);
-    if (nodeAccessStr != NULL) chpl_append_to_cmd(iCom, "--%s ", nodeAccessStr);
-    if (walltime) chpl_append_to_cmd(iCom, "--time=%s ", walltime);
-    if (nodelist) chpl_append_to_cmd(iCom, "--nodelist=%s ", nodelist);
-    if (partition) chpl_append_to_cmd(iCom, "--partition=%s ", partition);
-    if (exclude) chpl_append_to_cmd(iCom, "--exclude=%s ", exclude);
-    if (gpusPerNode) chpl_append_to_cmd(iCom, "--gpus-per-node=%s ", gpusPerNode);
+    chpl_append_to_cmd(&iCom, &len, "-J %s ", jobName);
+    chpl_append_to_cmd(&iCom, &len, "-N %d ", numNodes);
+    chpl_append_to_cmd(&iCom, &len, "--ntasks=%d ", numLocales);
+    if (nodeAccessStr != NULL) chpl_append_to_cmd(&iCom, &len, "--%s ", nodeAccessStr);
+    if (walltime) chpl_append_to_cmd(&iCom, &len, "--time=%s ", walltime);
+    if (nodelist) chpl_append_to_cmd(&iCom, &len, "--nodelist=%s ", nodelist);
+    if (partition) chpl_append_to_cmd(&iCom, &len, "--partition=%s ", partition);
+    if (exclude) chpl_append_to_cmd(&iCom, &len, "--exclude=%s ", exclude);
+    if (gpusPerNode) chpl_append_to_cmd(&iCom, &len, "--gpus-per-node=%s ", gpusPerNode);
     if (projectString && strlen(projectString) > 0)
-      chpl_append_to_cmd(iCom, "--account=%s ", projectString);
-    if (constraint) chpl_append_to_cmd(iCom, "-C %s", constraint);
-    chpl_append_to_cmd(iCom, " %s/%s/%s -n %d -N %d -c 0",
+      chpl_append_to_cmd(&iCom, &len, "--account=%s ", projectString);
+    if (constraint) chpl_append_to_cmd(&iCom, &len, "-C %s", constraint);
+    chpl_append_to_cmd(&iCom, &len, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numNodes);
-    propagate_environment(iCom);
-    chpl_append_to_cmd(iCom, " %s %s", chpl_get_real_binary_wrapper(),
+    propagate_environment(&iCom);
+    chpl_append_to_cmd(&iCom, &len, " %s %s", chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      chpl_append_to_cmd(iCom, " %s", argv[i]);
+      chpl_append_to_cmd(&iCom, &len, " %s", argv[i]);
     }
     char* format = "salloc %s";
-    int baseCommandLen = strlen(format) + strlen(iCom) + 1;
+    int baseCommandLen = strlen(format) + len + 1;
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     snprintf(baseCommand, baseCommandLen, format, iCom);
+    chpl_mem_free(iCom);
   }
 
   size = strlen(baseCommand) + 1;

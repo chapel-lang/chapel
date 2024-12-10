@@ -104,39 +104,42 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
 }
 
 // Helper for appending arguments to a variable-size command buffer.
-// - Requires the buffer pointer is uninitialized on first call.
+// - Requires cmdBufPtr points to an uninitialized pointer on first call, and
+//   charsWritten is 0.
 // - After exceeding an initial allocated size estimate, each call will allocate
 //   additional memory as needed.
-char* chpl_append_to_cmd(char* cmdBuf, const char* format, ...) {
+void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
+                        const char* format, ...) {
+  // Estimate of a buffer size that probably won't require extending, to avoid
+  // reallocations and copying.
   static const int initialSize = 2048;
-  static int charsWritten = 0;
 
   va_list argsForLen, argsForPrint;
   va_start(argsForLen, format);
   va_copy(argsForPrint, argsForLen);
 
   // Allocate buffer to initial size on first call
-  if (charsWritten == 0) {
-    assert(cmdBuf == NULL);
-    cmdBuf = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
+  if (*cmdBufPtr == NULL) {
+    assert(*charsWritten == 0);
+    *cmdBufPtr = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
                                     CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
   // Determine additional characters to be written
   const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
   va_end(argsForLen);
-  int newLen = charsWritten + addedLen;
+  int newLen = *charsWritten + addedLen;
 
   // Allocate more memory if needed
   if (newLen >= initialSize) {
-    cmdBuf = (char*)chpl_mem_realloc(cmdBuf, newLen * sizeof(char),
-                                  CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newLen * sizeof(char),
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
   // Write the new characters
-  vsnprintf(cmdBuf + charsWritten, addedLen + 1, format, argsForPrint);
+  vsnprintf(*cmdBufPtr + *charsWritten, addedLen + 1, format, argsForPrint);
   va_end(argsForPrint);
-  charsWritten = newLen;
+  *charsWritten = newLen;
 }
 
 //
