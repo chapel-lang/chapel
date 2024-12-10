@@ -43,6 +43,7 @@ target_sources(ChplFrontend-obj
                NilType.cpp
                NothingType.cpp
                Param.cpp
+               PlaceholderType.cpp
                PrimitiveType.cpp
                PtrType.cpp
                PromotionIteratorType.cpp

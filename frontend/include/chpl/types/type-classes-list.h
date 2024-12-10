@@ -44,6 +44,7 @@ TYPE_NODE(CStringType)
 TYPE_NODE(ErroneousType)
 TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
+TYPE_NODE(PlaceholderType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
 
