@@ -43,6 +43,10 @@ def run_build(subdir, build_type):
         print("[Error: CHPL_HOME not set]")
         return 1
     cmake_dir = os.path.join(chpl_home, "util", "cmake")
+    env = os.environ.copy()
+    # FIXME: we have to do this since util/cmake isn't installed anywhere yet
+    # once thats fixed, we can remove this
+    env["CMAKE_PREFIX_PATH"] = cmake_dir
 
     with BuildDirContext(subdir) as (build_dir, install_dir):
         try:
@@ -56,8 +60,8 @@ def run_build(subdir, build_type):
                     subdir,
                     "-DCMAKE_INSTALL_PREFIX={}".format(install_dir),
                     f"-DCMAKE_BUILD_TYPE={build_type}",
-                    "-DCMAKE_MODULE_PATH={}".format(cmake_dir),
                 ],
+                env=env,
                 encoding="utf-8",
                 stderr=sp.STDOUT,
             )
@@ -73,6 +77,7 @@ def run_build(subdir, build_type):
             print(f"[Building {subdir} with {build_type}]")
             output = sp.check_output(
                 ["cmake", "--build", build_dir],
+                env=env,
                 encoding="utf-8",
                 stderr=sp.STDOUT,
             )
@@ -84,20 +89,24 @@ def run_build(subdir, build_type):
         finally:
             print(f"[Finished building {subdir} with {build_type}]")
 
-        try:
-            print(f"[Installing {subdir} with {build_type}]")
-            output = sp.check_output(
-                ["cmake", "--install", build_dir],
-                encoding="utf-8",
-                stderr=sp.STDOUT,
-            )
-            print(output)
-        except sp.CalledProcessError as e:
-            print(f"[Error installing {subdir} with {build_type}]")
-            print(e.output)
-            return 1
-        finally:
-            print(f"[Finished installing {subdir} with {build_type}]")
+        if os.path.exists(os.path.join(subdir, "NOINSTALL")):
+            print(f"[Skipping install for {subdir} with {build_type}]")
+        else:
+            try:
+                print(f"[Installing {subdir} with {build_type}]")
+                output = sp.check_output(
+                    ["cmake", "--install", build_dir],
+                    env=env,
+                    encoding="utf-8",
+                    stderr=sp.STDOUT,
+                )
+                print(output)
+            except sp.CalledProcessError as e:
+                print(f"[Error installing {subdir} with {build_type}]")
+                print(e.output)
+                return 1
+            finally:
+                print(f"[Finished installing {subdir} with {build_type}]")
 
 
     print("[Success matching build process for {} with {}]".format(subdir, build_type))
