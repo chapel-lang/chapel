@@ -89,6 +89,7 @@ clobber: clean
 	rm -f chplvis
 
 install: chplvis
+	mkdir -p $(CHPL_BIN_DIR)
 	cp chplvis $(CHPL_BIN_DIR)
 
 # Dependencies
