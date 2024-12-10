@@ -65,6 +65,9 @@ class PlaceholderType final : public Type {
   }
 
   const ID& id() const { return id_; }
+
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 };
 
 } // end namespace types

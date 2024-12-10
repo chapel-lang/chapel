@@ -34,5 +34,12 @@ const PlaceholderType* PlaceholderType::get(Context* context, ID id) {
   return getPlaceholderType(context, id).get();
 }
 
+void PlaceholderType::stringify(std::ostream& ss,
+                                chpl::StringifyKind stringKind) const {
+  ss << "PlaceholderType(";
+  id_.stringify(ss, stringKind);
+  ss << ")";
+}
+
 } // end namespace types
 } // end namespace chpl
