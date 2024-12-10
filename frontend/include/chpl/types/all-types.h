@@ -43,6 +43,7 @@
 #include "chpl/types/NilType.h"
 #include "chpl/types/NothingType.h"
 #include "chpl/types/Param.h"
+#include "chpl/types/PlaceholderType.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/PtrType.h"
 #include "chpl/types/PromotionIteratorType.h"

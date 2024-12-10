@@ -3696,6 +3696,17 @@ void Resolver::exit(const uast::Init* init) {
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
+  if (usePlaceholders) {
+    // If we're resolving an interface, create a placeholder for the type
+    // query. This way, we get a concrete type for `foo(?x)`, which is
+    // desireable when validating user-provided functions against the
+    // interface signature.
+    ResolvedExpression& result = byPostorder.byAst(tq);
+    result.setType(QualifiedType(QualifiedType::TYPE,
+                                 PlaceholderType::get(context, tq->id())));
+    return false;
+  }
+
   if (skipTypeQueries) {
     return false;
   }

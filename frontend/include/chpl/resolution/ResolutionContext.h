@@ -161,9 +161,9 @@ class ResolutionContext {
     }
 
     Resolver* rv() { return rv_; }
-    const ResolvedFunction* rf() { return rf_; }
-    const types::InterfaceType* ift() { return ift_; }
-    const ImplementationWitness* witness() { return witness_; }
+    const ResolvedFunction* rf() const { return rf_; }
+    const types::InterfaceType* ift() const { return ift_; }
+    const ImplementationWitness* witness() const { return witness_; }
 
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
