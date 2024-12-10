@@ -168,7 +168,7 @@ class ResolutionContext {
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
     const TypedFnSignature* signature() const;
-    const types::QualifiedType typeForContainedId(const ID& id) const;
+    const types::QualifiedType typeForContainedId(ResolutionContext* rc, const ID& id) const;
     bool isUnstable() const;
 
     template <typename T>

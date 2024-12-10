@@ -3429,7 +3429,7 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
   } else if (parsing::idToParentFunctionId(context, target) ||
              parsing::idToParentInterfaceId(context, target)) {
     if (auto f = rc->findFrameWithId(target)) {
-      type = f->typeForContainedId(target);
+      type = f->typeForContainedId(rc, target);
       outerVariables.add(mention, target, type);
     }
   }

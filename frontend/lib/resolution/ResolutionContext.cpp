@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/ResolutionContext.h"
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/PlaceholderType.h"
 #include "Resolver.h"
 
 namespace chpl {
@@ -73,21 +74,34 @@ const TypedFnSignature* ResolutionContext::Frame::signature() const {
   return nullptr;
 }
 
+static types::QualifiedType placeholderForId(ResolutionContext* rc, const ID& id) {
+  return types::QualifiedType(types::QualifiedType::TYPE,
+                              types::PlaceholderType::get(rc->context(), id));
+}
+
 const types::QualifiedType
-ResolutionContext::Frame::typeForContainedId(const ID& id) const {
+ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id) const {
   if (rv_) {
     return rv_->byPostorder.byId(id).type();
   }
+
+  // For interfaces, just return placeholders for the associated types
+  // and the interface parameters.
+  //
+  // TODO: we don't need the interface type here, nor the witness, so we
+  // could make this lighter weight.
   if (ift_) {
     auto subIt = ift_->subs().find(id);
-    if (subIt != ift_->subs().end()) return subIt->second;
+    if (subIt != ift_->subs().end())
+      return placeholderForId(rc, subIt->first);
 
     if (witness_) {
       // search associated types
       auto atIt = witness_->associatedTypes().find(id);
-      if (atIt != witness_->associatedTypes().end()) return atIt->second;
+      if (atIt != witness_->associatedTypes().end())
+        return placeholderForId(rc, atIt->first);
 
-      // TODO: search additional constraints, required functions
+      // TODO: search additional constraints, required functions?
     }
   } else {
     CHPL_ASSERT(witness_ == nullptr);
