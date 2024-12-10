@@ -833,7 +833,9 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       }
 
       auto rhsType = initResolver_.byPostorder.byAst(rhs).type();
-      auto adjusted = QualifiedType(QualifiedType::TYPE, initialFieldType.type());
+      auto declType = initialFieldType.isType() ? AnyType::get(ctx_) :
+                                                  initialFieldType.type();
+      auto adjusted = QualifiedType(QualifiedType::TYPE, declType);
       // TODO: prevent 'getTypeForDecl' from issuing the error message, and
       // instead do something field-specific.
       auto computed = initResolver_.getTypeForDecl(node,
