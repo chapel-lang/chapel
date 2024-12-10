@@ -5029,7 +5029,7 @@ resolveCallInMethod(ResolutionContext* rc,
                     std::vector<ApplicabilityResult>* rejected) {
 
   CallResolutionResult asFunction = resolveCall(rc,call,ci,inScopes,rejected);
-  
+
   CallResolutionResult asMethod;
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);

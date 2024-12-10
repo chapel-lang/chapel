@@ -84,7 +84,10 @@ getCompilerGeneratedBinaryOp(Context* context,
                        UniqueString name);
 
 const uast::BuilderResult& buildInitializer(Context* context, ID typeID);
+const uast::BuilderResult& buildInitEquals(Context* context, ID typeID);
 const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
+const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
+const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
 
 } // end namespace resolution
 } // end namespace chpl
