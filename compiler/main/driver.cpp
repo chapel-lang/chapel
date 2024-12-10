@@ -295,6 +295,7 @@ bool fExplainVerbose = false;
 bool fParseOnly = false;
 bool fPrintCallGraph = false;
 bool fPrintAllCandidates = false;
+bool fDescribeCandidates = false;
 bool fAutoPrintCallStackOnError = true;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
@@ -1337,6 +1338,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, "CHPL_DETAILED_ERRORS", NULL},
+ {"describe-candidates", ' ', NULL, "[Don't] print the reason candidates don't match on a resolution failure", "N", &fDescribeCandidates, "CHPL_DESCRIBE_CANDIDATES", NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings},
  {"explain-call", ' ', "<function or operator name>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of function or type", "S256", fExplainInstantiation, NULL, NULL},
