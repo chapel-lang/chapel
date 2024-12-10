@@ -173,7 +173,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static void propagate_environment(char* buf, size_t size)
+static void propagate_environment(char* buf)
 {
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
