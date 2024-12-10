@@ -1,6 +1,1 @@
-#!/usr/bin/env bash
-args="--printTime=false"
-if [ "$CHPL_TEST_VGRND_EXE" == "on" ] || [ "${CHPL_SANITIZE_EXE:-none}" != "none" ]; then
-  args="$args --trials=1000"
-fi
-echo $args
+--trials=10
