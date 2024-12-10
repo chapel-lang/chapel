@@ -144,7 +144,7 @@ static void setupMakeEnvVars(std::string var, const char* value,
 
 // Save the value of the environment variable "var" into the CMake file, so it
 // can be referenced in the other variables for legibility purposes.
-static void setupCMakeEnvVars(std::string var, std::string& value,
+static void setupCMakeEnvVars(const std::string& var, const std::string& value,
                              fileinfo cmakelists) {
   fprintf(cmakelists.fptr, "set(%s %s)\n\n", var.c_str(), value.c_str());
 }
@@ -423,7 +423,7 @@ void ensureLibDirExists() {
 }
 
 void
-openLibraryHelperFile(fileinfo* fi, std::string name, const char* ext) {
+openLibraryHelperFile(fileinfo* fi, const std::string& name, const char* ext) {
   if (ext)
     fi->filename = astr(name.c_str(), ".", ext);
   else

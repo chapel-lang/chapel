@@ -349,8 +349,8 @@ void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
 Flag types:
 
   I = int
-  P = path
-  S = string
+  P = path (std::string)
+  S = string (char*)
   D = double
   f = set to false
   F = set to true

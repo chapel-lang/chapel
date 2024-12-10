@@ -512,12 +512,13 @@ static void setupChplHome(const char* argv0) {
     // detected we are installed in a prefix, calculate values from that
 
     // E.g. /usr/lib/chapel/1.16/runtime/lib
-    CHPL_RUNTIME_LIB = std::string(get_configured_prefix()) + "/lib/chapel/" +
-                       majMinorVers + "/runtime/lib";
-    CHPL_RUNTIME_INCL = std::string(get_configured_prefix()) + "/lib/chapel/" +
-                        majMinorVers + "/runtime/include";
-    CHPL_THIRD_PARTY = std::string(get_configured_prefix()) + "/lib/chapel/" +
-                       majMinorVers + "/third-party";
+    std::string configuredPrefix = get_configured_prefix();
+    CHPL_RUNTIME_LIB =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/runtime/lib";
+    CHPL_RUNTIME_INCL =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/runtime/include";
+    CHPL_THIRD_PARTY =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/third-party";
   } else {
     // set to default values based on home path
     setChplHomeDerivedVars();
