@@ -56,6 +56,10 @@ const char* astr(const std::string& s)
 {
   return astr(s.c_str());
 }
+const char* astr(std::string_view s)
+{
+  return astr(s.data());
+}
 const char* astr(UniqueString s)
 {
   return s.astr(gContext);

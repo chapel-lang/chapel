@@ -1686,7 +1686,7 @@ static void populateEnvMap() {
       // This is a driver sub-invocation, so restore and use saved output.
       restoreDriverTmpMultiline(
           printchplenvOutputFilename,
-          [&printchplenvOutput](const char* restoredOutput) {
+          [&printchplenvOutput](std::string_view restoredOutput) {
             printchplenvOutput = restoredOutput;
           });
     }
@@ -1714,7 +1714,7 @@ static void populateEnvMap() {
   // If in initial driver invocation, save printchplenv command output to disk
   // for use in sub-invocations.
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
-    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput.c_str(),
+    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput,
                   /* appendNewline */ false);
   }
 
@@ -2537,7 +2537,7 @@ int main(int argc, char* argv[]) {
         tracker.ReportPassGroupTotals(&groupTimes);
 
         // Save times to file
-        std::vector<const char*> groupTimesStrs;
+        std::vector<std::string_view> groupTimesStrs;
         for (const unsigned long groupTime : groupTimes) {
           groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
         }
@@ -2547,10 +2547,10 @@ int main(int argc, char* argv[]) {
         // and report out everything.
 
         // Restore times from file
-        restoreDriverTmp(groupTimesFilename,
-                         [&groupTimes](const char* timeStr) {
-                           groupTimes.emplace_back(std::stoul(timeStr));
-                         });
+        restoreDriverTmp(
+            groupTimesFilename, [&groupTimes](std::string_view timeStr) {
+              groupTimes.emplace_back(std::stoul(std::string(timeStr)));
+            });
 
         // Unless stopping early, expect frontend, middle-end, and (incomplete)
         // backend results from compilation phase, plus the other half of

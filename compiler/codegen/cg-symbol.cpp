@@ -155,7 +155,7 @@ void addNameToPrintLlvmIrRequestedNames(const char* name) {
   llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
 
-static void addCNameToPrintLlvmIr(const char* name) {
+static void addCNameToPrintLlvmIr(std::string_view name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
@@ -312,9 +312,9 @@ void preparePrintLlvmIrForCodegen() {
   // This is so that handlePrintAsm can access them later from the makeBinary
   // phase, when we don't have a way to determine name->cname correspondence.
   if (fDriverCompilationPhase) {
-    saveDriverTmpMultiple(cnamesToPrintFilename,
-                          std::vector<const char*>(llvmPrintIrCNames.begin(),
-                                                   llvmPrintIrCNames.end()));
+    saveDriverTmpMultiple(cnamesToPrintFilename, std::vector<std::string_view>(
+                                                     llvmPrintIrCNames.begin(),
+                                                     llvmPrintIrCNames.end()));
   }
 }
 

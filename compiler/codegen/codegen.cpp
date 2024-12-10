@@ -1247,7 +1247,7 @@ static void genConfigGlobalsAndAbout() {
 
   // if we are running as compiler-driver, retrieve compile command saved to tmp
   if (!fDriverDoMonolithic) {
-    restoreDriverTmp(compileCommandFilename, [](const char* restoredCommand) {
+    restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
       compileCommand = astr(restoredCommand);
     });
   }
@@ -2402,7 +2402,7 @@ static const char* getMainModuleFilename() {
   const char* filename = nullptr;
   if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
-    restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
+    restoreDriverTmp(mainModTmpFilename, [&filename](std::string_view mainModName) {
       filename = astr(mainModName);
     });
   } else {

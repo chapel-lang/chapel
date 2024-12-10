@@ -53,6 +53,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <string>
+#include <string_view>
 #include <map>
 #include <unordered_set>
 #include <utility>
@@ -165,13 +166,13 @@ static void checkDriverTmp() {
       "attempted to save info to tmp dir before it is set up for driver use");
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+void saveDriverTmp(const char* tmpFilePath, std::string_view stringToSave,
                    bool appendNewline) {
   saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
 }
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave,
+                           std::vector<std::string_view> stringsToSave,
                            bool noNewlines) {
   checkDriverTmp();
 
@@ -195,14 +196,14 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 
   // Write into tmp file
   fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
-  for (const auto stringToSave : stringsToSave) {
-    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
+  for (auto stringToSave : stringsToSave) {
+    fprintf(file->fptr, "%s%s", stringToSave.data(), (noNewlines ? "" : "\n"));
   }
   closefile(file);
 }
 
 void restoreDriverTmp(const char* tmpFilePath,
-                      std::function<void(const char*)> restoreSavedString) {
+                      std::function<void(std::string_view)> restoreSavedString) {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   // Create file iff it did not already exist, for simpler reading logic in the
@@ -214,21 +215,20 @@ void restoreDriverTmp(const char* tmpFilePath,
   std::ifstream fileStream(path);
   std::string line;
   while (std::getline(fileStream, line)) {
-    restoreSavedString(line.c_str());
+    restoreSavedString(line);
   }
 }
 
 void restoreDriverTmpMultiline(
     const char* tmpFilePath,
-    std::function<void(const char*)> restoreSavedString) {
+    std::function<void(std::string_view)> restoreSavedString) {
   std::ostringstream os;
 
   // Just call line-by-line restore for simplicity, adding newlines back in.
   restoreDriverTmp(tmpFilePath,
-                   [&os](const char* line) { os << line << "\n"; });
+                   [&os](std::string_view line) { os << line << "\n"; });
 
-  std::string restoredString = os.str();
-  restoreSavedString(restoredString.c_str());
+  restoreSavedString(os.str());
 }
 
 void restoreLibraryAndIncludeInfo() {
@@ -236,14 +236,14 @@ void restoreLibraryAndIncludeInfo() {
              "should only be restoring library and include info in driver "
              "makeBinary phase");
 
-  restoreDriverTmp(libDirsFilename, [](const char* filename) {
-    addLibPath(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(libDirsFilename, [](std::string_view filename) {
+    addLibPath(filename.data(), /* fromCmdLine */ false);
   });
-  restoreDriverTmp(libFilesFilename, [](const char* filename) {
-    addLibFile(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(libFilesFilename, [](std::string_view filename) {
+    addLibFile(filename.data(), /* fromCmdLine */ false);
   });
-  restoreDriverTmp(incDirsFilename, [](const char* filename) {
-    addIncInfo(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(incDirsFilename, [](std::string_view filename) {
+    addIncInfo(filename.data(), /* fromCmdLine */ false);
   });
 }
 
@@ -253,7 +253,7 @@ void restoreAdditionalSourceFiles() {
 
   std::vector<const char*> additionalFilenames;
   restoreDriverTmp(additionalFilenamesListFilename,
-                   [&additionalFilenames](const char* filename) {
+                   [&additionalFilenames](std::string_view filename) {
                      additionalFilenames.push_back(astr(filename));
                    });
   addSourceFiles(additionalFilenames.size(), &additionalFilenames[0]);
@@ -521,7 +521,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {
     saveDriverTmpMultiple(
         additionalFilenamesListFilename,
-        std::vector<const char*>(inputFilenames + firstAddedIdx,
+        std::vector<std::string_view>(inputFilenames + firstAddedIdx,
                                  inputFilenames + cursor));
   }
 
