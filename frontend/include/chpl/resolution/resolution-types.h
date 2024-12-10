@@ -45,6 +45,10 @@ namespace resolution {
 
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const SubstitutionsMap& subs);
+
 /**
 
   In some situations, we may decide not to resolve a call. This could
@@ -944,6 +948,9 @@ class TypedFnSignature {
                               Context* context,
                               std::vector<types::QualifiedType> formalTypes,
                               const TypedFnSignature* inferredFrom);
+
+  const TypedFnSignature* substitute(Context* context,
+                                     const resolution::SubstitutionsMap& subs) const;
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&

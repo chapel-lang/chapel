@@ -46,6 +46,16 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const SubstitutionsMap& subs) {
+  SubstitutionsMap into;
+  for (auto [id, qt] : substituteIn) {
+    into.emplace(id, qt.substitute(context, subs));
+  }
+  return into;
+}
+
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -1030,6 +1040,27 @@ TypedFnSignature::getInferred(
                              inferredFrom->parentFn(),
                              inferredFrom->formalsInstantiatedBitmap(),
                              inferredFrom->outerVariables()).get();
+}
+
+const TypedFnSignature*
+TypedFnSignature::substitute(Context* context,
+                             const resolution::SubstitutionsMap& subs) const {
+  std::vector<QualifiedType> newFormalTypes;
+  for (const auto& formalType : formalTypes_) {
+    newFormalTypes.push_back(formalType.substitute(context, subs));
+  }
+
+  // TODO: do we need to substitute in outer variables' stored types?
+
+  return getTypedFnSignature(context, untyped(),
+                             std::move(newFormalTypes),
+                             whereClauseResult(),
+                             needsInstantiation(),
+                             isRefinementOnly_,
+                             instantiatedFrom(),
+                             parentFn(),
+                             formalsInstantiatedBitmap(),
+                             outerVariables()).get();
 }
 
 void TypedFnSignature::stringify(std::ostream& ss,

@@ -83,6 +83,13 @@ class ClassType final : public Type {
                               const Type* manager,
                               ClassTypeDecorator decorator);
 
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    return get(context,
+               Type::substitute(context, manageableType_, subs),
+               Type::substitute(context, manager_, subs), decorator_);
+  }
+
   /** Returns the ClassTypeDecorator for this ClassType.
       This decorator indicates the memory management strategy. */
   ClassTypeDecorator decorator() const { return decorator_; }

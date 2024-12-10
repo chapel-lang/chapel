@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_RECORD_TYPE_H
 #define CHPL_TYPES_RECORD_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/CompositeType.h"
 
 namespace chpl {
@@ -58,6 +59,13 @@ class RecordType final : public CompositeType {
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    return get(context, id(), name(),
+               Type::substitute(context, (const RecordType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
 
   ~RecordType() = default;

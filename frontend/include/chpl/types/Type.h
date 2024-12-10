@@ -29,9 +29,19 @@
 #include <deque>
 
 namespace chpl {
+
 namespace uast {
   class Decl;
 }
+
+namespace types {
+  class QualifiedType;
+}
+
+namespace resolution {
+  using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
+}
+
 namespace types {
 
 
@@ -158,6 +168,23 @@ class Type {
                              std::unordered_map<UniqueString,const Type*>& map);
 
   bool completeMatch(const Type* other) const;
+
+  virtual const Type* substitute(Context* context,
+                                 const resolution::SubstitutionsMap& subs) const {
+    return this;
+  }
+
+  template <typename TargetType>
+  static const TargetType* substitute(Context* context,
+                                      const TargetType* type,
+                                      const resolution::SubstitutionsMap& subs) {
+    if (!type) return type;
+    auto substituted = type->substitute(context, subs);
+    CHPL_ASSERT(substituted);
+    auto cast = substituted->template to<TargetType>();
+    CHPL_ASSERT(cast);
+    return cast;
+  }
 
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
@@ -323,6 +350,11 @@ class Type {
 
 namespace detail {
 
+template <>
+inline bool typeIs<Type>(const Type* type) {
+  return true;
+}
+
 /// \cond DO_NOT_DOCUMENT
 #define TYPE_IS(NAME) \
   template <> \
@@ -342,6 +374,16 @@ namespace detail {
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef TYPE_IS
+
+template <>
+inline const Type* typeToConst<Type>(const Type* type) {
+  return type;
+}
+
+template <>
+inline Type* typeTo<Type>(Type* type) {
+  return type;
+}
 
 /// \cond DO_NOT_DOCUMENT
 #define TYPE_TO(NAME) \

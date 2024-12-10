@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_INTERFACE_TYPE_H
 #define CHPL_TYPES_INTERFACE_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/CompositeType.h"
 #include "chpl/types/QualifiedType.h"
@@ -76,6 +77,11 @@ class InterfaceType final : public Type {
   static const InterfaceType* withTypes(Context* context,
                                         const InterfaceType* ift,
                                         std::vector<types::QualifiedType> types);
+
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    return get(context, id_, name_, resolution::substituteInMap(context, subs_, subs));
+  }
 
   const ID& id() const { return id_; }
 

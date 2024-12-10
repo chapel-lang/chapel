@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_UNION_TYPE_H
 #define CHPL_TYPES_UNION_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/CompositeType.h"
 
 namespace chpl {
@@ -55,6 +56,13 @@ class UnionType final : public CompositeType {
   static const UnionType* get(Context* context, ID id, UniqueString name,
                               const UnionType* instantiatedFrom,
                               CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    return get(context, id_, name_,
+               Type::substitute(context, (UnionType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
   ~UnionType() = default;
 

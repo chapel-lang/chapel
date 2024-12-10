@@ -21,6 +21,7 @@
 #define CHPL_TYPES_PLACEHOLDER_TYPE_H
 
 #include "chpl/types/Type.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -52,6 +53,16 @@ class PlaceholderType final : public Type {
  public:
   static const PlaceholderType* get(Context* context,
                                     ID id);
+
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    for (auto& [id, qt] : subs) {
+      if (id == id_) {
+        return qt.type();
+      }
+    }
+    return this;
+  }
 
   const ID& id() const { return id_; }
 };

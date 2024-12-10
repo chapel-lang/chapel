@@ -114,6 +114,13 @@ class LoopExprIteratorType final : public IteratorType {
                                          QualifiedType iterand,
                                          ID sourceLocation);
 
+  const Type* substitute(Context* context,
+                         const resolution::SubstitutionsMap& subs) const override {
+    return get(context, yieldType_.substitute(context, subs),
+               poiScope_, isZippered_, supportsParallel_,
+               iterand_.substitute(context, subs), sourceLocation_);
+  }
+
   const QualifiedType& yieldType() const {
     return yieldType_;
   }

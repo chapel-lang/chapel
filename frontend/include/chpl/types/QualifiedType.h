@@ -90,6 +90,11 @@ class QualifiedType final {
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
+  const QualifiedType substitute(Context* context,
+                                 const resolution::SubstitutionsMap& subs) const {
+    return QualifiedType(kind_, Type::substitute(context, type_, subs), param_);
+  }
+
   /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
   /**
