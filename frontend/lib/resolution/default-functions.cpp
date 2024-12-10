@@ -447,19 +447,22 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 
   AstList stmts;
 
-  std::vector<const VarLikeDecl*> fields;
-  for (auto d : typeDecl->decls()) {
-    collectFields(d, fields);
-  }
+  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
 
-  for (auto field : fields) {
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& rf = fieldsForTypeDecl(context, ct,
+                                               defaultsPolicy,
+                                               /* syntaxOnly */ true);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto name = rf.fieldName(i);
     // Create 'this.field = other.field;' statement
     owned<AstNode> lhs = Dot::build(builder, dummyLoc,
                                     Identifier::build(builder, dummyLoc, USTR("this")),
-                                    field->name());
+                                    name);
     owned<AstNode> rhs = Dot::build(builder, dummyLoc,
                                     Identifier::build(builder, dummyLoc, otherName),
-                                    field->name());
+                                    name);
     owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
                                           std::move(lhs), std::move(rhs));
     stmts.push_back(std::move(assign));
