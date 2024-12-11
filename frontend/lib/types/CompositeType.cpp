@@ -69,7 +69,7 @@ CompositeType::areSubsInstantiationOf(Context* context,
         // it was not an instantiation
         return false;
       }
-    } else {
+    } else if (partial->isTupleType()) {
       // If the ID isn't found, then that means the generic component doesn't
       // exist in the other type, which means this cannot be an instantiation
       // of the other type.
@@ -79,6 +79,11 @@ CompositeType::areSubsInstantiationOf(Context* context,
       // involves passing a tuple to a tuple formal with a fewer number of
       // elements. For example, passing "(1, 2, 3)" to "(int, ?)".
       return false;
+    } else {
+      // A substitution is missing in the partial type, but we have one.
+      // For a composite type, that might just mean that we are foo(X, Y),
+      // while the partial is foo(X, ?) -- partially generic. So, this is
+      // fine, don't return false.
     }
   }
 
