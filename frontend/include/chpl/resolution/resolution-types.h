@@ -3327,6 +3327,8 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ImplementationWitness::FunctionMap, (chpl::hashUnorderedMap(key)));
+CHPL_DEFINE_STD_HASH_(ImplementationWitness::ConstraintMap, (chpl::hashUnorderedMap(key)));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std

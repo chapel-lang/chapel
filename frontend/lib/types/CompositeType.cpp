@@ -266,12 +266,6 @@ const ClassType* CompositeType::getErrorType(Context* context) {
 
 using SubstitutionPair = CompositeType::SubstitutionPair;
 
-struct SubstitutionsMapCmp {
-  bool operator()(const SubstitutionPair& x, const SubstitutionPair& y) {
-    return x.first < y.first;
-  }
-};
-
 static
 std::vector<SubstitutionPair>
 sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
@@ -280,8 +274,7 @@ sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
   // it's important to sort the keys / iterate in a deterministic order here,
   // so we create a vector of pair<K,V> and sort that instead
   std::vector<SubstitutionPair> v(subs.begin(), subs.end());
-  SubstitutionsMapCmp cmp;
-  std::sort(v.begin(), v.end(), cmp);
+  std::sort(v.begin(), v.end(), FirstElementComparator<ID, QualifiedType>());
   return v;
 }
 
@@ -290,8 +283,7 @@ std::vector<SubstitutionPair> CompositeType::sortedSubstitutions(void) const {
 }
 
 size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
-  auto sorted = sortedSubstitutionsMap(subs);
-  return hashVector(sorted);
+  return hashUnorderedMap(subs);
 }
 
 void stringifySubstitutionsMap(std::ostream& streamOut,

@@ -129,6 +129,20 @@ inline size_t hashSet(const std::set<T>& key) {
   return ret;
 }
 
+template <typename K, typename V>
+struct FirstElementComparator {
+  bool operator()(const std::pair<K, V>& a, const std::pair<K, V>& b) const {
+    return a.first < b.first;
+  }
+};
+
+template <typename K, typename V>
+inline size_t hashUnorderedMap(const std::unordered_map<K, V>& key) {
+  std::vector<std::pair<K, V>> sorted(key.begin(), key.end());
+  std::sort(sorted.begin(), sorted.end(), FirstElementComparator<K, V>());
+  return hashVector(sorted);
+}
+
 template<typename T>
 inline size_t hashOwned(const chpl::owned<T>& key) {
   size_t ret = 0;
@@ -175,11 +189,6 @@ template<typename T> struct hasher<std::set<T>> {
 };
 template<typename K, typename V> struct hasher<std::map<K, V>> {
   size_t operator()(const std::map<K, V>& key) const {
-    return chpl::hashMap(key);
-  }
-};
-template<typename K, typename V> struct hasher<std::unordered_map<K, V>> {
-  size_t operator()(const std::unordered_map<K, V>& key) const {
     return chpl::hashMap(key);
   }
 };
