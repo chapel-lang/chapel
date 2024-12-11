@@ -5424,6 +5424,116 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
   return generic;
 }
 
+static ID searchFunctionByTemplate(ResolutionContext* rc,
+                                   const InterfaceType* iftForErr,
+                                   const ID& implPointForErr,
+                                   const Function* fn,
+                                   const TypedFnSignature* tfs,
+                                   const CallScopeInfo& inScopes) {
+  std::vector<ApplicabilityResult> rejected;
+  std::vector<const TypedFnSignature*> ambiguous;
+
+  std::vector<CallInfoActual> actuals;
+  for (int i = 0; i < tfs->numFormals(); i++) {
+    auto decl = tfs->untyped()->formalDecl(i);
+    auto name = UniqueString();
+    if (auto formal = decl->toFormal()) {
+      if (formal->name() == USTR("this"))
+        name = formal->name();
+    } else if (decl->isVarArgFormal()) {
+      CHPL_UNIMPL("vararg formals in interface function requirements");
+      return ID();
+    }
+    actuals.emplace_back(tfs->formalType(i), name);
+  }
+
+  CallInfo ci {
+      tfs->untyped()->name(),
+      /* calledType */ QualifiedType(),
+      /* isMethodCall */ fn->isMethod(),
+      /* hasQuestionArg */ false,
+      /* isParenless */ fn->isParenless(),
+      std::move(actuals)
+  };
+
+  auto c =
+    resolveGeneratedCall(rc->context(), fn, ci, inScopes);
+
+  bool failed = c.exprType().isUnknownOrErroneous();
+  if (failed && fn->body()) {
+    // template has a default implementation; return it, we're good.
+    return fn->id();
+  } else if (failed && c.mostSpecific().isAmbiguous()) {
+    for (auto& msc : c.mostSpecific()) {
+      ambiguous.push_back(msc.fn());
+    }
+    CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointForErr,
+                fn, std::move(ambiguous));
+
+    return ID();
+  } else if (failed) {
+    // Failed to find a call, not due to ambiguity. Re-run call and gather
+    // rejected candidates.
+    resolveGeneratedCall(rc->context(), fn, ci, inScopes, &rejected);
+    CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointForErr,
+                tfs, ci, std::move(rejected));
+    return ID();
+  }
+
+  CHPL_ASSERT(!failed);
+
+  const TypedFnSignature* foundFn = nullptr;
+  if (c.mostSpecific().numBest() > 1) {
+    CHPL_UNIMPL("return intent overloading in interface constraint checking");
+    return ID();
+  } else {
+    // There's only one function; we should still check its intent.
+    foundFn = c.mostSpecific().only().fn();
+    auto foundIntent = parsing::idToFnReturnIntent(rc->context(), foundFn->id());
+
+    if (foundIntent == fn->returnIntent()) {
+      // fine
+    } else {
+      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointForErr,
+                  tfs, foundFn);
+      return ID();
+    }
+  }
+
+  // Validate that the formal names are in the right order. We could do this
+  // by resolving a generated call with every actual being named, but this
+  // will miss some cases, like f(x: int, y: int) vs f(y: int, x: int):
+  // such calls would resolve match with and without named actuals, but the
+  // actuals are not in the right order compared to the template.
+  FormalActualMap faMap(foundFn, ci);
+
+  int lastActualPosition = -1;
+  for (auto& formalActual : faMap.byFormals()) {
+    if (formalActual.actualIdx() == -1) {
+      // Allow defaulted formals to be skipped vs. a template, so that a template
+      //
+      //    proc foo();
+      //
+      // Can match:
+      //
+      //    proc foo(x: int = 10) {}
+      continue;
+    }
+
+    if (formalActual.actualIdx() <= lastActualPosition) {
+      // the actuals in the call (which are formals from the template)
+      // are re-ordered compared to the foundFn. This is an error.
+      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointForErr,
+                  tfs, foundFn);
+      return ID();
+    }
+    lastActualPosition = formalActual.actualIdx();
+  }
+
+  // ordering is fine, so foundFn is good to go.
+  return foundFn->id();
+}
+
 static const ImplementationWitness* const&
 checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const InterfaceType* ift,
@@ -5527,48 +5637,14 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt);
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
 
-    // Now, try finding a matching overload in the given scope. Strip names
-    // from all actuals except "this".
-    //
-    // TODO: design: should interfaces enforce matching formal names?
-    //
-    // TODO: instantiate generic types with placeholders to ensure matching
-    //       generic signatures.
-    std::vector<CallInfoActual> actuals;
-    for (int i = 0; i < tfs->numFormals(); i++) {
-      auto decl = tfs->untyped()->formalDecl(i);
-      auto name = UniqueString();
-      if (auto formal = decl->toFormal()) {
-        if (formal->name() == USTR("this")) {
-          name = USTR("this");
-        }
-      }
-      actuals.emplace_back(tfs->formalType(i), name);
-    }
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+    auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
 
-    auto ci = CallInfo(
-      fn->name(),
-      /* calledType */ QualifiedType(),
-      /* isMethodCall */ fn->isMethod(),
-      /* hasQuestionArg */ false,
-      /* isParenless */ fn->isParenless(),
-      std::move(actuals)
-    );
-    // TODO: how to note this?
-    auto c =
-      resolveGeneratedCall(rc->context(), fn, ci,
-                           CallScopeInfo::forNormalCall(inScope, inPoiScope));
-
-    if (c.exprType().isUnknownOrErroneous() && fn->body()) {
-      // Using the default implementation.
-      //
-      // TODO: resolve the body of the function and validate it?
-      functions.emplace(fn->id(), fn->id());
-    } else if (c.exprType().isUnknownOrErroneous()) {
+    if (!foundId) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
     } else {
-      functions.emplace(fn->id(), c.mostSpecific().only().fn()->id());
+      functions.emplace(fn->id(), foundId);
     }
   }
 

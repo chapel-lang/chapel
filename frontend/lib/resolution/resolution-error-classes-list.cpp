@@ -610,6 +610,253 @@ void ErrorIncompatibleYieldTypes::write(ErrorWriterBase& wr) const {
   }
 }
 
+static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
+  std::string ret = "(";
+  int count = 0;
+  for (auto decl : tup->decls()) {
+    if (count != 0) {
+      ret += ",";
+    }
+    count += 1;
+
+    if (decl->isTupleDecl()) {
+      ret += buildTupleDeclName(decl->toTupleDecl());
+    } else {
+      ret += decl->toFormal()->name().str();
+    }
+  }
+
+  if (count == 1) {
+    ret += ",";
+  }
+
+  ret += ")";
+
+  return ret;
+}
+
+template <typename GetActual>
+static void printRejectedCandidates(ErrorWriterBase& wr,
+                                    const ID& anchorId,
+                                    const resolution::CallInfo& ci,
+                                    const std::vector<resolution::ApplicabilityResult>& rejected,
+                                    const char* passedThingArticle,
+                                    const char* passedThing,
+                                    const char* expectedThingArticle,
+                                    const char* expectedThing,
+                                    GetActual&& getActual) {
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
+  for (auto& candidate : rejected) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
+    auto reason = candidate.reason();
+    wr.message("");
+    if (reason == resolution::FAIL_CANNOT_PASS &&
+        /* skip printing detailed info_ here because computing the formal-actual
+           map will go poorly with an unknown formal. */
+        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+      auto fn = candidate.initialForErr();
+      resolution::FormalActualMap fa(fn, ci);
+      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto formalDecl = badPass.formal();
+      const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
+
+      wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
+      wr.code(fn->id(), { formalDecl });
+
+      std::string formalName;
+      if (auto named = formalDecl->toNamedDecl()) {
+        formalName = "'" + named->name().str() + "'";
+      } else if (formalDecl->isTupleDecl()) {
+        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
+      }
+
+      if (badPass.formalType().isUnknown()) {
+        // The formal type can be unknown in an initial instantiation if it
+        // depends on the previous formals' types. In that case, don't print it
+        // and say something nicer.
+        wr.message("The instantiated type of ", expectedThing, " ", formalName,
+                   " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
+      } else {
+        wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
+                   ", but the ", passedThing, " was ", badPass.actualType(), ".");
+      }
+
+      if (actualExpr) {
+        wr.code(actualExpr, { actualExpr });
+      }
+
+      auto formalReason = candidate.formalReason();
+      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
+        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
+        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
+
+        wr.message("The ", expectedThing, " expects a ", nilabilityStr(formalDec), " class, "
+                   "but the ", passedThing, " is ", nilabilityStr(actualDec), ".");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
+        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
+        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
+
+        wr.message("A class with '", actualMgr, "' management cannot be passed to ", expectedThingArticle, " ", expectedThing, " with '", formalMgr, "' management.");
+      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
+        wr.message("Formals with kind '", badPass.formalType().kind(),
+                   "' expect the ", passedThing, " to be a subtype, but '", badPass.actualType().type(),
+                   "' is not a subtype of '", badPass.formalType().type(), "'.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        wr.message("A tuple with ", actualTup->numElements(),
+                   " elements cannot be passed to a tuple formal with ",
+                   formalTup->numElements(), " elements.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
+        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
+
+        wr.message("A ", expectedThing, " that ", formalStr, " a star tuple cannot accept ", passedThingArticle," ", passedThing," that ", actualStr, ".");
+      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the ", expectedThing, " and ", passedThing, " types to match exactly.");
+      }
+    } else {
+      std::string reasonStr = "";
+      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+        reasonStr = std::string("the provided ") + passedThing + "s could not be mapped to its " + expectedThing + "s:";
+      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+        reasonStr = "the number of varargs was incorrect:";
+      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
+        reasonStr = "the 'where' clause evaluated to 'false':";
+      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
+        if (ci.isParenless()) {
+          reasonStr = "it is parenful, but the call was parenless:";
+        } else {
+          reasonStr = "it is parenless, but the call was parenful:";
+        }
+      }
+      if (reasonStr.empty()) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+      } else {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because ", reasonStr);
+      }
+      wr.code(candidate.idForErr());
+    }
+  }
+
+  if (printCount < rejected.size()) {
+    wr.message("");
+    wr.note(locationOnly(anchorId), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
+  }
+}
+
+// ERROR_CLASS(InterfaceAmbiguousFn, const types::InterfaceType*, ID, const uast::Function*, std::vector<const resolution::TypedFnSignature*>)
+void ErrorInterfaceAmbiguousFn::write(ErrorWriterBase& wr) const {
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+  auto fn = std::get<const uast::Function*>(info_);
+  auto candidate = std::get<std::vector<const resolution::TypedFnSignature*>>(info_);
+
+  wr.heading(kind_, type_, implPoint, "unable to disambiguate candidates for function '", fn->name(), "'");
+  wr.codeForDef(fn->id());
+  wr.message("Required by the interface '", interface->name(), "':");
+  wr.codeForDef(interface->id());
+  wr.note(implPoint, "while checking the implementation point here:");
+  wr.code<ID>(implPoint, { implPoint });
+
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
+  for (auto sig : candidate) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
+    wr.message("");
+    wr.note(sig->id(), "one candidate was here:");
+    wr.code(sig->id());
+  }
+}
+
+// ERROR_CLASS(InterfaceInvalidIntent, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, const resolution::TypedFnSignature*)
+void ErrorInterfaceInvalidIntent::write(ErrorWriterBase& wr) const {
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+  auto fnTemplate = std::get<2>(info_);
+  auto fnReal = std::get<3>(info_);
+
+  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' has mismatched return intent ");
+  wr.codeForDef(fnTemplate->id());
+  wr.message("Required by the interface '", interface->name(), "':");
+  wr.codeForDef(interface->id());
+  wr.note(implPoint, "while checking the implementation point here:");
+  wr.code<ID>(implPoint, { implPoint });
+  wr.note(fnReal->id(), "the provided candidate does not have a matching return intent:");
+  wr.codeForDef(fnReal->id());
+}
+
+// ERROR_CLASS(InterfaceMissingAssociatedType, const types::InterfaceType*, ID, const uast::Variable*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
+void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+  auto var = std::get<const uast::Variable*>(info_);
+  auto ci = std::get<resolution::CallInfo>(info_);
+  auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+
+  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'");
+  wr.codeForDef(var->id());
+  wr.message("Required by the interface '", interface->name(), "':");
+  wr.codeForDef(interface->id());
+  wr.note(implPoint, "while checking the implementation point here:");
+  wr.code<ID>(implPoint, { implPoint });
+  wr.message("Associated types are resolved as 'type' calls on types constrained by the interface.");
+
+  printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](size_t) -> const uast::AstNode* {
+    return nullptr;
+  });
+}
+
+// ERROR_CLASS(InterfaceMissingFn, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
+void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+  auto fn = std::get<const resolution::TypedFnSignature*>(info_);
+  auto ci = std::get<resolution::CallInfo>(info_);
+  auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+
+  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'");
+  wr.codeForDef(fn->id());
+  wr.message("Required by the interface '", interface->name(), "':");
+  wr.codeForDef(interface->id());
+  wr.note(implPoint, "while checking the implementation point here:");
+  wr.code<ID>(implPoint, { implPoint });
+
+  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "cadidate formal", [fn](size_t idx) -> const uast::AstNode* {
+    if (idx >= 0 && idx < fn->numFormals()) {
+      return fn->untyped()->formalDecl(idx);
+    }
+    return nullptr;
+  });
+}
+
+// ERROR_CLASS(InterfaceReorderedFnFormals, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, const resolution::TypedFnSignature*)
+void ErrorInterfaceReorderedFnFormals::write(ErrorWriterBase& wr) const {
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+  auto fnTemplate = std::get<2>(info_);
+  auto fnReal = std::get<3>(info_);
+
+  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' does not have the same order of formal names");
+  wr.codeForDef(fnTemplate->id());
+  wr.message("Required by the interface '", interface->name(), "':");
+  wr.codeForDef(interface->id());
+  wr.note(implPoint, "while checking the implementation point here:");
+  wr.code<ID>(implPoint, { implPoint });
+  wr.note(fnReal->id(), "the provided candidate defined here does not have matching formals:");
+  wr.codeForDef(fnReal->id());
+}
+
 void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   auto primCall = std::get<const uast::PrimCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
@@ -980,31 +1227,6 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
-static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
-  std::string ret = "(";
-  int count = 0;
-  for (auto decl : tup->decls()) {
-    if (count != 0) {
-      ret += ",";
-    }
-    count += 1;
-
-    if (decl->isTupleDecl()) {
-      ret += buildTupleDeclName(decl->toTupleDecl());
-    } else {
-      ret += decl->toFormal()->name().str();
-    }
-  }
-
-  if (count == 1) {
-    ret += ",";
-  }
-
-  ret += ")";
-
-  return ret;
-}
-
 void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info_);
   auto call = node->toCall();
@@ -1014,115 +1236,12 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
 
-  unsigned int printCount = 0;
-  static const unsigned int maxPrintCount = 2;
-  for (auto& candidate : rejected) {
-    if (printCount == maxPrintCount) break;
-    printCount++;
-
-    auto reason = candidate.reason();
-    wr.message("");
-    if (reason == resolution::FAIL_CANNOT_PASS &&
-        /* skip printing detailed info_ here because computing the formal-actual
-           map will go poorly with an unknown formal. */
-        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
-      auto fn = candidate.initialForErr();
-      resolution::FormalActualMap fa(fn, ci);
-      auto badPass = fa.byFormalIdx(candidate.formalIdx());
-      auto formalDecl = badPass.formal();
-      const uast::AstNode* actualExpr = nullptr;
-      if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
-        actualExpr = call->actual(badPass.actualIdx());
-      }
-
-      wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
-      wr.code(fn->id(), { formalDecl });
-
-      std::string formalName;
-      if (auto named = formalDecl->toNamedDecl()) {
-        formalName = "'" + named->name().str() + "'";
-      } else if (formalDecl->isTupleDecl()) {
-        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
-      }
-
-      if (badPass.formalType().isUnknown()) {
-        // The formal type can be unknown in an initial instantiation if it
-        // depends on the previous formals' types. In that case, don't print it
-        // and say something nicer.
-        wr.message("The instantiated type of formal ", formalName,
-                   " does not allow actuals of type '", badPass.actualType().type(), "'.");
-      } else {
-        wr.message("The formal ", formalName, " expects ", badPass.formalType(),
-                   ", but the actual was ", badPass.actualType(), ".");
-      }
-
-      if (actualExpr) {
-        wr.code(actualExpr, { actualExpr });
-      }
-
-      auto formalReason = candidate.formalReason();
-      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
-        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
-        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
-
-        wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
-                   "but the actual is ", nilabilityStr(actualDec), ".");
-      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
-        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
-        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
-
-        wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
-      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
-        wr.message("Formals with kind '", badPass.formalType().kind(),
-                   "' expect the actual to be a subtype, but '", badPass.actualType().type(),
-                   "' is not a subtype of '", badPass.formalType().type(), "'.");
-      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
-        auto formalTup = badPass.formalType().type()->toTupleType();
-        auto actualTup = badPass.actualType().type()->toTupleType();
-
-        wr.message("A tuple with ", actualTup->numElements(),
-                   " elements cannot be passed to a tuple formal with ",
-                   formalTup->numElements(), " elements.");
-      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
-        auto formalTup = badPass.formalType().type()->toTupleType();
-        auto actualTup = badPass.actualType().type()->toTupleType();
-
-        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
-        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
-
-        wr.message("A formal that ", formalStr, " a star tuple cannot accept an actual actual that ", actualStr, ".");
-      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
-        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
-      }
-    } else {
-      const char* reasonStr = nullptr;
-      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
-        reasonStr = "the provided actuals could not be mapped to its formals:";
-      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
-        reasonStr = "the number of varargs was incorrect:";
-      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
-        reasonStr = "the 'where' clause evaluated to 'false':";
-      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
-        if (ci.isParenless()) {
-          reasonStr = "it is parenful, but the call was parenless:";
-        } else {
-          reasonStr = "it is parenless, but the call was parenful:";
-        }
-      }
-      if (!reasonStr) {
-        wr.note(candidate.idForErr(), "the following candidate didn't match:");
-      } else {
-        wr.note(candidate.idForErr(), "the following candidate didn't match ",
-                "because ", reasonStr);
-      }
-      wr.code(candidate.idForErr());
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [call](int idx) -> const uast::AstNode* {
+    if (call && 0 <= idx && idx < call->numActuals()) {
+      return call->actual(idx);
     }
-  }
-
-  if (printCount < rejected.size()) {
-    wr.message("");
-    wr.note(locationOnly(node), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
-  }
+    return nullptr;
+  });
 }
 
 static void printTheseResults(

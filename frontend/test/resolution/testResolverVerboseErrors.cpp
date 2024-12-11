@@ -207,7 +207,7 @@ static const char* errorStarVsNotStar = R"""(
     3 | f((1.0, 1.0, true));
       |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  A formal that is a star tuple cannot accept an actual actual that is not.
+  A formal that is a star tuple cannot accept an actual that is not.
 )""";
 
 static const char* progVarArgMismatch = R"""(
