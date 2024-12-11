@@ -39,6 +39,7 @@ def _build_ignore_fixit(
     ignore.description = "Ignore this warning"
     return ignore
 
+
 @dataclass
 class RuleLocation:
     path_: str
@@ -47,8 +48,10 @@ class RuleLocation:
 
     def path(self) -> str:
         return self.path_
+
     def start(self) -> typing.Tuple[int, int]:
         return self.start_
+
     def end(self) -> typing.Tuple[int, int]:
         return self.end_
 
@@ -188,7 +191,10 @@ class LocationRuleResult:
         to_return = self._fixits
         return to_return
 
-_LocationRuleResult = typing.Iterator[typing.Union[RuleLocation, LocationRuleResult]]
+
+_LocationRuleResult = typing.Iterator[
+    typing.Union[RuleLocation, LocationRuleResult]
+]
 """Internal type for location rule results"""
 
 
@@ -198,11 +204,14 @@ LocationRuleCheck = typing.Callable[
 """Function type for location rules"""
 
 
-
-RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult, _LocationRuleResult]
+RuleResult = typing.Union[
+    _BasicRuleResult, _AdvancedRuleResult, _LocationRuleResult
+]
 """Union type for all rule results"""
 
-CheckResult = typing.Tuple[RuleLocation, typing.Optional[chapel.AstNode], str, typing.List[Fixit]]
+CheckResult = typing.Tuple[
+    RuleLocation, typing.Optional[chapel.AstNode], str, typing.List[Fixit]
+]
 
 
 VarResultType = typing.TypeVar("VarResultType")
@@ -386,13 +395,18 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
             loc = RuleLocation.from_chapel(node.location())
             yield (loc, node, self.name, fixits)
 
+
 class LocationRule(Rule[LocationRuleResult]):
     """
     Class containing all information for the driver about advanced
     """
 
     def __init__(
-        self, driver, name: str, check_func: LocationRuleCheck, settings: typing.List[str]
+        self,
+        driver,
+        name: str,
+        check_func: LocationRuleCheck,
+        settings: typing.List[str],
     ) -> None:
         super().__init__(driver, name, settings)
         self.check_func = check_func

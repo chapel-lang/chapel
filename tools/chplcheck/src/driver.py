@@ -72,7 +72,9 @@ class LintDriver:
         # Use a dict in case a rule is registered multiple times.
         to_return = {}
 
-        for rule in itertools.chain(self.BasicRules, self.AdvancedRules, self.LocationRules):
+        for rule in itertools.chain(
+            self.BasicRules, self.AdvancedRules, self.LocationRules
+        ):
             to_return[rule.name] = rule.check_func.__doc__
 
         to_return = list(to_return.items())
@@ -139,7 +141,11 @@ class LintDriver:
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: Union[rule_types.BasicRule, rule_types.AdvancedRule, rule_types.LocationRule],
+        rule: Union[
+            rule_types.BasicRule,
+            rule_types.AdvancedRule,
+            rule_types.LocationRule,
+        ],
     ) -> Iterator[rule_types.CheckResult]:
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -193,7 +199,9 @@ class LintDriver:
 
         def decorator_fixit(func):
             found = False
-            for rule in itertools.chain(self.BasicRules, self.AdvancedRules, self.LocationRules):
+            for rule in itertools.chain(
+                self.BasicRules, self.AdvancedRules, self.LocationRules
+            ):
                 if rule.name == checkfunc.__name__:
                     rule.fixit_funcs.append(func)
                     found = True
@@ -253,7 +261,9 @@ class LintDriver:
         else:
             return decorator_advanced_rule(_func)
 
-    def location_rule(self, _func=None, *, default=True, settings: List[str]=[]):
+    def location_rule(
+        self, _func=None, *, default=True, settings: List[str] = []
+    ):
         """
         This method is a decorator for adding location-only based rules to the
         driver. A location rule is a function that gets called on a filepath
@@ -296,7 +306,9 @@ class LintDriver:
         """
 
         all_rule_settings = set()
-        for rule in itertools.chain(self.BasicRules, self.AdvancedRules, self.LocationRules):
+        for rule in itertools.chain(
+            self.BasicRules, self.AdvancedRules, self.LocationRules
+        ):
             all_rule_settings.update(rule.settings)
 
         unrecognized_settings = []
@@ -315,10 +327,14 @@ class LintDriver:
         """
 
         for ast in asts:
-            for rule in itertools.chain(self.BasicRules, self.AdvancedRules, self.LocationRules):
+            for rule in itertools.chain(
+                self.BasicRules, self.AdvancedRules, self.LocationRules
+            ):
                 for toreport in self._check_rule(context, ast, rule):
                     node = toreport[1]
-                    if node and self._has_internal_name(node):
+                    if not self.config.check_internal_prefixes and (
+                        not node or self.has_internal_prefix(node)
+                    ):
                         continue
 
                     yield toreport

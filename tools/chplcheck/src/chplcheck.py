@@ -38,9 +38,7 @@ from config import Config
 
 def print_violation(loc: RuleLocation, name: str):
     first_line, _ = loc.start()
-    print(
-        "{}:{}: node violates rule {}".format(loc.path(), first_line, name)
-    )
+    print("{}:{}: node violates rule {}".format(loc.path(), first_line, name))
 
 
 def load_module(driver: LintDriver, file_path: str):
