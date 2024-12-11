@@ -628,7 +628,9 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   for (auto formal : fn->formals()) formal->traverse(visitor);
 
   if (!visitor.outerVariables.isEmpty()) {
-    // TODO: any additional checks here?
+    // outer variables can come from a parent function or from
+    // an interface containing the function.
+    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -656,7 +658,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   }
 
   if (!visitor.outerVariables.isEmpty()) {
-    // TODO: any additional checks here?
+    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -5574,11 +5576,14 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-bool checkInterfaceConstraints(ResolutionContext* rc,
-                               const InterfaceType* ift,
-                               const ImplementationPoint* implPoint,
-                               const CallScopeInfo& inScopes) {
-  return checkInterfaceConstraintsQuery(rc, ift, implPoint, inScopes.callScope(), inScopes.poiScope()) != nullptr;
+const ImplementationWitness*
+checkInterfaceConstraints(ResolutionContext* rc,
+                          const InterfaceType* ift,
+                          const ImplementationPoint* implPoint,
+                          const CallScopeInfo& inScopes) {
+  return checkInterfaceConstraintsQuery(rc, ift, implPoint,
+                                        inScopes.callScope(),
+                                        inScopes.poiScope());
 }
 
 static const TypedFnSignature*

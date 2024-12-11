@@ -486,11 +486,10 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
                                                            const types::InterfaceType* ift,
                                                            const CallScopeInfo& inScopes);
 
-// TODO: return witness here
-bool checkInterfaceConstraints(ResolutionContext* rc,
-                               const types::InterfaceType* ift,
-                               const ImplementationPoint* implPoint,
-                               const CallScopeInfo& inScopes);
+const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
+                                                       const types::InterfaceType* ift,
+                                                       const ImplementationPoint* implPoint,
+                                                       const CallScopeInfo& inScopes);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.
