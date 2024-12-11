@@ -16,13 +16,13 @@ fi
 
 
 $CHPL_HOME/tools/chplcheck/chplcheck \
-  $FLAGS $1.chpl >> $2
+  $FLAGS $1.chpl >>$2 2>>$2
 
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
   mv $2.tmp $2
 fi
 
-# if there is a good-fixit file, try and run checkcheck with fixit
+# if there is a good-fixit file, try and run chplcheck with fixit
 if [ -e $1.good-fixit ]; then
 
   $CHPL_HOME/tools/chplcheck/chplcheck \
