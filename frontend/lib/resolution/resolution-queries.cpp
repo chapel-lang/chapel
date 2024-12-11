@@ -5452,7 +5452,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     byPostorderForAssociatedTypes.byId(sub.first).setType(sub.second);
   }
   auto associatedReceiverType = QualifiedType(); // cached across iterations
-  ImplementationWitness::AssociatedTypeMap associatedTypes; // ID => QT
+  ImplementationWitness::AssociatedTypeMap associatedTypes;
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
     if (!td) continue;
