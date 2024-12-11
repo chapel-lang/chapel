@@ -58,7 +58,8 @@ const char* astr(const std::string& s)
 }
 const char* astr(std::string_view s)
 {
-  return astr(s.data());
+  // Make a std::string copy of the string_view to guarantee null termination.
+  return astr(std::string(s));
 }
 const char* astr(UniqueString s)
 {
