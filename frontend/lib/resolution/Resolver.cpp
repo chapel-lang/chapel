@@ -1565,6 +1565,14 @@ static QualifiedType computeTypeDefaults(Resolver& resolver,
   return type;
 }
 
+static const Type* getAnyType(Resolver& resolver, const ID& anchor) {
+  // If we use placeholders, we don't create 'AnyTypes' anywhere,
+  // and instead invent new placeholder types.
+  return resolver.usePlaceholders
+         ? PlaceholderType::get(resolver.context, anchor)->to<Type>()
+         : AnyType::get(resolver.context)->to<Type>();
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -1728,7 +1736,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // primary method. This does not, however, mean that its type should be
         // AnyType; it is not adjusted here.
 
-        typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        typeExprT = QualifiedType(QualifiedType::TYPE, getAnyType(*this, decl->id()));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
         // (we do so if it's not a field or a formal)
@@ -2266,8 +2274,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
       // Note: we seem to rely on tuple components being 'var', and relying on
       // the tuple's kind instead. Without this, the current instantiation
       // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
-      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
-      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      std::vector<QualifiedType> eltTypes;
+      for (auto decl : td->decls()) {
+        eltTypes.push_back(QualifiedType(QualifiedType::VAR,
+                                         getAnyType(*this, decl->id())));
+      }
       auto tup = TupleType::getQualifiedTuple(context, eltTypes);
       useT = QualifiedType(declKind, tup);
     } else {
@@ -3447,7 +3458,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
-    result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    result.setType(QualifiedType(QualifiedType::TYPE, getAnyType(*this, ident->id())));
     return;
   }
 
@@ -5524,7 +5535,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   if (loop->numStmts() == 1) {
     bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
   } else {
-    bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
+    bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
   // The body wasn't a type, so this isn't an array type expression
