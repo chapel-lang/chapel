@@ -5393,15 +5393,30 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
       if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
         if (isGeneric && generic == nullptr) {
           generic = implPoint;
-        } else if (!isGeneric && checkInterfaceConstraints(rc, ift, implPoint, inScopes)) {
-          return implPoint;
+        } else if (!isGeneric) {
+          // For a concrete instantiation point, the current search scope
+          // is irrelevant; use the point's scope for the search.
+
+          auto implScope = scopeForId(rc->context(), implPoint->id());
+          auto checkScope = CallScopeInfo::forNormalCall(implScope, nullptr);
+          if (checkInterfaceConstraints(rc, ift, implPoint, checkScope)) {
+            return implPoint;
+          }
         }
       }
     }
   }
 
-  if (generic && !checkInterfaceConstraints(rc, ift, generic, inScopes)) {
-    return nullptr;
+  if (generic) {
+    // For a generic instantiation point, construct a new PoI scope from
+    // the current search scope, and use the point's scope for the search.
+
+    auto implScope = scopeForId(rc->context(), generic->id());
+    auto poiScope = pointOfInstantiationScope(rc->context(), inScopes.callScope(), inScopes.poiScope());
+    auto checkScope = CallScopeInfo::forNormalCall(implScope, poiScope);
+    if (checkInterfaceConstraints(rc, ift, generic, checkScope)) {
+      return nullptr;
+    }
   }
 
   return generic;
