@@ -182,8 +182,8 @@ module IncorrectIndentation {
     writeln("hi");
   }
 
-  // Note: 'cobegins' with one statement throw warning, so all tests here include
-  // at least two statements.
+  // Note: 'cobegins' with one statement throw warning, so all tests here
+  // include at least two statements.
 
   cobegin
   {
@@ -305,7 +305,8 @@ module IncorrectIndentation {
     proc firstProc() {} proc secondProc() {}
   }
 
-  enum color { red, green, blue }; // semicolon warning does not issue bad indentation
+  // semicolon warning does not issue bad indentation
+  enum color { red, green, blue };
 
   // Since locations are incorrectly reported with 'public' and 'private',
   // these shouldn't warn.
@@ -367,7 +368,8 @@ if 1 < 2 {
     writeln("??");
   }
 }
-  // since else statements aren't reported correctly only the misaligned child statements should warn
+  // since else statements aren't reported correctly only the misaligned child
+  // statements should warn
   if 1 < 2 {
     writeln("hi");
       writeln("??");
