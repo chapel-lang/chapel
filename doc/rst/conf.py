@@ -226,9 +226,6 @@ if not on_rtd:
         'sticky_navigation': True,
     }
 
-    analytics_id = os.environ.get('CHPLDOC_ANALYTICS_ID')
-    if analytics_id:
-        html_theme_options['analytics_id'] = analytics_id
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
