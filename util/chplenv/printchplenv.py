@@ -633,6 +633,8 @@ def main():
     ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
 
+    utils.flush_warnings()
+
 
 if __name__ == '__main__':
     main()
