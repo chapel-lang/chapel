@@ -1,1 +1,1 @@
---trials=10
+--trials=10 --printTime=false
