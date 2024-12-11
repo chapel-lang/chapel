@@ -180,7 +180,8 @@ def print_rules(driver: LintDriver, show_all=True):
     for rule, description in driver.rules_and_descriptions():
         if description is None:
             description = ""
-        description = description.strip()
+        # Only show the first line of the description
+        description = description.strip().split("\n")[0].strip()
 
         prefix = ""
         if rule not in driver.SilencedRules:
