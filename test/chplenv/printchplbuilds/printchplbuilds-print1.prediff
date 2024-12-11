@@ -25,6 +25,10 @@ with open(sys.argv[2], 'w') as f:
 # now we need to generate a good file
 printchplenv = os.path.join(chpl_home, 'util/printchplenv')
 
+# this defines the order of the variables printchplbuilds might print
+# we fill in the values from the output of printchplenv, if they exist
+# depending on the configuration, not all may be printed by printchplbuilds
+# for this reason, we can specify a filter function that will be called with the chplenv dict
 chpl_vars = [
     ("CHPL_TARGET_PLATFORM", None),
     ("CHPL_TARGET_COMPILER", None),
@@ -34,12 +38,15 @@ chpl_vars = [
     ("CHPL_COMM", None),
     ("CHPL_COMM_SUBSTRATE", None),
     ("CHPL_GASNET_SEGMENT", None),
+    ("CHPL_LIBFABRIC", None, lambda env: env["CHPL_COMM"] == "ofi"),
+    ("CHPL_COMM_OFI_OOB", None, lambda env: env["CHPL_COMM"] == "ofi"),
     ("CHPL_TASKS", None),
     ("CHPL_TIMERS", None),
     ("CHPL_UNWIND", None),
     ("CHPL_MEM", None),
     ("CHPL_ATOMICS", None),
     ("CHPL_HWLOC", None),
+    ("CHPL_HWLOC_PCI", None, lambda env: env["CHPL_HWLOC"] == "bundled"),
     ("CHPL_RE2", None),
     ("CHPL_AUX_FILESYS", None),
     ("CHPL_LIB_PIC", None),
@@ -48,13 +55,15 @@ chpl_vars = [
 chplenv_out = [l.strip() for l in sp.check_output([printchplenv, "--all", "--internal", "--simple"]).decode().splitlines()]
 chplenv = {k: v for k, v in [l.split("=", 1) for l in chplenv_out]}
 
-# fill in the chplvars
-for i, (k, v) in enumerate(chpl_vars):
-    if not v:
+# fill in the chplvars, checking the filter function if it exists
+for i, cv in enumerate(chpl_vars):
+    k, v = cv[:2]
+    if not v and (len(cv) < 3 or cv[2](chplenv)):
         chpl_vars[i] = (k, chplenv.get(k, "NA"))
 
 # write the good file
 goodfile = os.path.splitext(__file__)[0] + ".good"
 with open(goodfile, 'w') as f:
     print("<Current>", file=f)
-    print("\n".join([f"{k}: {v}" for k, v in chpl_vars]), file=f)
+    # only print the variables that have a value
+    print("\n".join([f"{cv[0]}: {cv[1]}" for cv in chpl_vars if cv[1]]), file=f)
