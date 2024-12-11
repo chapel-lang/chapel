@@ -295,8 +295,6 @@ static QualifiedType primImplementsInterface(Context* context,
                                              const PoiScope* inPoiScope) {
   if (ci.numActuals() != 2) return QualifiedType();
 
-  debuggerBreakHere();
-
   auto& type = ci.actual(0).type();
   auto& ifqt = ci.actual(1).type();
 

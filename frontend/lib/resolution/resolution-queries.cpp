@@ -5433,8 +5433,6 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   const ImplementationWitness* result = nullptr;
   auto itf = parsing::idToAst(rc->context(), ift->id())->toInterface();
 
-  debuggerBreakHere();
-
   // First, process any associated constraints, and create a "phase 1"
   // implementation witness with this information.
   // TODO: not used in production today, so not implemented,
