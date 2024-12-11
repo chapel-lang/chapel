@@ -332,8 +332,10 @@ class LintDriver:
             ):
                 for toreport in self._check_rule(context, ast, rule):
                     node = toreport[1]
-                    if not self.config.check_internal_prefixes and (
-                        not node or self.has_internal_prefix(node)
+                    if (
+                        not self.config.check_internal_prefixes
+                        and node
+                        and self.has_internal_prefix(node)
                     ):
                         continue
 
