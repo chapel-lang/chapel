@@ -5501,7 +5501,14 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
 
   // Validate that the formal names are in the right order. We could do this
   // by resolving a generated call with every actual being named, but this
-  // will miss some cases, like f(x: int, y: int) vs f(y: int, x: int):
+  // will miss some cases, like when the template is:
+  //
+  //      proc f(x: int, y: int)
+  //
+  //  and the actual function is:
+  //
+  //      proc f(y: int, x: int):
+  //
   // such calls would resolve match with and without named actuals, but the
   // actuals are not in the right order compared to the template.
   FormalActualMap faMap(foundFn, ci);
