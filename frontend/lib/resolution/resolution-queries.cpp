@@ -5456,6 +5456,7 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
       std::move(actuals)
   };
 
+  // TODO: how to note this?
   auto c =
     resolveGeneratedCall(rc->context(), fn, ci, inScopes);
 
@@ -5464,12 +5465,10 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
     // template has a default implementation; return it, we're good.
     return fn->id();
   } else if (failed && c.mostSpecific().isAmbiguous()) {
-    for (auto& msc : c.mostSpecific()) {
-      ambiguous.push_back(msc.fn());
-    }
+    // TODO: no way at this time to collected candidates rejected due to
+    //       ambiguity, so just report an empty list.
     CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointForErr,
                 fn, std::move(ambiguous));
-
     return ID();
   } else if (failed) {
     // Failed to find a call, not due to ambiguity. Re-run call and gather
@@ -5534,6 +5533,36 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
   return foundFn->id();
 }
 
+static QualifiedType searchForAssociatedType(ResolutionContext* rc,
+                                             const InterfaceType* iftForErr,
+                                             const ID& implPointForErr,
+                                             const QualifiedType& receiverType,
+                                             const Variable* td,
+                                             const CallScopeInfo& inScopes) {
+  // Set up a parenless type-proc call to compute associated type
+  auto ci = CallInfo(
+    td->name(),
+    /* calledType */ QualifiedType(),
+    /* isMethodCall */ true,
+    /* hasQuestionArg */ false,
+    /* isParenless */ true,
+    /* actuals */ { { receiverType, USTR("this") } }
+  );
+
+  // TODO: how to note this?
+  auto c =
+    resolveGeneratedCall(rc->context(), td, ci, inScopes);
+
+  if (c.exprType().isUnknownOrErroneous()) {
+    std::vector<ApplicabilityResult> rejected;
+    resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
+    CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, iftForErr,
+                implPointForErr, td, ci, std::move(rejected));
+  }
+
+  return c.exprType();
+}
+
 static const ImplementationWitness* const&
 checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const InterfaceType* ift,
@@ -5541,6 +5570,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const Scope* inScope,
                                const PoiScope* inPoiScope) {
   CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPoint, inScope, inPoiScope);
+
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
   const ImplementationWitness* result = nullptr;
   auto itf = parsing::idToAst(rc->context(), ift->id())->toInterface();
@@ -5590,25 +5621,13 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       }
     }
 
-    // Set up a parenless type-proc call to compute associated type
-    auto ci = CallInfo(
-      td->name(),
-      /* calledType */ QualifiedType(),
-      /* isMethodCall */ true,
-      /* hasQuestionArg */ false,
-      /* isParenless */ true,
-      /* actuals */ { { associatedReceiverType, USTR("this") } }
-    );
-    // TODO: how to note this?
-    auto c =
-      resolveGeneratedCall(rc->context(), td, ci,
-                           CallScopeInfo::forNormalCall(inScope, inPoiScope));
-
-    if (c.exprType().isUnknownOrErroneous()) {
+    auto foundQt = searchForAssociatedType(rc, ift, implPoint->id(),
+                                           associatedReceiverType, td, inScopes);
+    if (foundQt.isUnknownOrErroneous()) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
     } else {
-      associatedTypes.emplace(td->id(), c.exprType());
+      associatedTypes.emplace(td->id(), foundQt);
     }
   }
   auto witness2 = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, {});
@@ -5636,8 +5655,6 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     for (auto& [id, qt] : associatedTypes) allPlaceholders.emplace(id, qt);
     for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt);
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
-
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
     auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
 
     if (!foundId) {
