@@ -29,7 +29,6 @@ clean: FORCE
 	cd llvm && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
-	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
@@ -42,7 +41,6 @@ cleanall: FORCE
 	cd llvm && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
-	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
@@ -55,7 +53,6 @@ clobber: FORCE
 	cd llvm && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
-	cd fltk && $(MAKE) clobber
 
 depend:
 
