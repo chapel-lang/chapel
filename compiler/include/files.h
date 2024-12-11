@@ -98,6 +98,7 @@ void addLibFile(const char* filename, bool fromCmdLine = false);
 void addIncInfo(const char* incDir, bool fromCmdLine = false);
 
 // Save (append) provided string into the given tmp file.
+// Input string is assumed to be null-terminated.
 // For storing information that needs to be saved between driver phases.
 void saveDriverTmp(const char* tmpFilePath, std::string_view stringToSave,
                    bool appendNewline = true);
@@ -109,6 +110,7 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
                            bool noNewlines = false);
 // Feed strings from the specified tmp file (one per line) into the given
 // restoring function, which should copy any it needs to keep.
+// Restored string will be null-terminated.
 // For accessing information saved between driver phases with saveDriverTmp.
 void restoreDriverTmp(const char* tmpFilePath,
                       std::function<void(std::string_view)> restoreSavedString);
