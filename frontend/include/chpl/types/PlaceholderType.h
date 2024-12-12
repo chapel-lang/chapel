@@ -56,10 +56,9 @@ class PlaceholderType final : public Type {
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    for (auto& [id, t] : subs) {
-      if (id == id_) {
-        return t;
-      }
+    auto it = subs.find(id_);
+    if (it != subs.end()) {
+      return it->second;
     }
     return this;
   }
