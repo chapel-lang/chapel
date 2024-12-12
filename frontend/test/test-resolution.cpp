@@ -212,6 +212,21 @@ const Variable* findVariable(const ModuleVec& vec, const char* name) {
 
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context,
+                        const Module* mod,
+                        const std::vector<std::string>& variables) {
+  std::unordered_map<std::string, QualifiedType> toReturn;
+  auto& rr = resolveModule(context, mod->id());
+  for (auto& variable : variables) {
+    if (auto varAst = findVariable(mod, variable.c_str())) {
+      toReturn[variable] = rr.byAst(varAst).type();
+    }
+  }
+  assert(variables.size() == toReturn.size());
+  return toReturn;
+}
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context,
                         std::string program,
                         const std::vector<std::string>& variables) {
   auto path = UniqueString::get(context, "input.chpl");
