@@ -4,7 +4,7 @@ import sys
 import chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import using_chapel_module
 from compiler_utils import CompVersion
-from utils import memoize
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -23,6 +23,8 @@ def get():
             tasks_val = 'fifo'
         else:
             tasks_val = 'qthreads'
+
+    check_valid_var("CHPL_TASKS", tasks_val, ("fifo", "qthreads"))
     return tasks_val
 
 
