@@ -6,7 +6,7 @@ import os
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, chpl_comm_ofi_oob
 import overrides, third_party_utils
 
-from utils import error, memoize, try_run_command, warning
+from utils import error, memoize, try_run_command, warning, check_valid_var
 
 @memoize
 def get():
@@ -22,6 +22,8 @@ def get():
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
         elif chpl_platform.is_hpe_cray('target') and libfabric_val != 'system':
             warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray')
+
+        check_valid_var('CHPL_LIBFABRIC', libfabric_val, ['bundled', 'system'])
     else:
         libfabric_val = 'none'
 

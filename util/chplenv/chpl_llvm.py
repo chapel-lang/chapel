@@ -9,7 +9,7 @@ import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
 import chpl_gpu
 import homebrew_utils
-from utils import which, memoize, error, run_command, try_run_command, warning
+from utils import which, memoize, error, run_command, try_run_command, warning, check_valid_var
 from collections import defaultdict
 
 # returns a tuple of supported major LLVM versions as strings
@@ -641,6 +641,9 @@ def has_compatible_installed_llvm():
 @memoize
 def get():
     llvm_val = overrides.get('CHPL_LLVM')
+    if llvm_val:
+        check_valid_var("CHPL_LLVM", llvm_val, ['none', 'bundled', 'system'])
+
     if not llvm_val:
         llvm_val = 'unset'
 

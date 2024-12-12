@@ -4,8 +4,8 @@ import os
 import re
 import shutil
 
-import overrides
-from utils import memoize
+import chpl_platform, overrides
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -38,6 +38,7 @@ def get():
             else:
                 comm_val = 'none'
 
+    check_valid_var("CHPL_COMM", comm_val, ("none", "gasnet", "ofi", "ugni"))
     return comm_val
 
 

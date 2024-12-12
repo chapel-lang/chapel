@@ -181,6 +181,23 @@ def is_ver_in_range(versionStr, minimumStr, maximumStr):
 
     return False
 
+def check_valid_var(varname, value, valid_values):
+    """Check that a variable is set to a valid value"""
+
+    def join_words(words, conjunction='or'):
+        if len(words) == 1:
+            return words[0]
+        elif len(words) == 2:
+            return "{0} {2} {1}".format(words[0], words[1], conjunction)
+        else:
+            return "{0}, {2} {1}".format(", ".join(words[:-1]), words[-1], conjunction)
+
+    if value not in valid_values:
+        error(
+            "{0}={1} is not valid, {0} must be {2}".format(
+                varname, value, join_words(valid_values)
+            )
+        )
 
 class _UtilsTests(unittest.TestCase):
     def test_is_ver_in_range(self):
