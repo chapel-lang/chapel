@@ -255,11 +255,16 @@ Sometimes, a linter rule is not based on a pattern of AST nodes, but rather on a
 textual pattern in the source code. For example, a rule might check that all lines
 in a file are indented with spaces, not tabs. To support this, ``chplcheck`` has
 a third type of rule: location rules. These rules are specified using the
-``driver.location_rule`` decorator. Location rules yield a ``RuleLocation`` object that specifies the textual location of the issue. A ``RuleLocation`` has a path, a start position, and an end position. The start and end positions are tuples of line and column numbers, where the first character in the file is at line 1, column 1.
+``driver.location_rule`` decorator. Location rules yield a ``RuleLocation``
+object that specifies the textual location of the issue. A ``RuleLocation`` has
+a path, a start position, and an end position. The start and end positions are
+tuples of line and column numbers, where the first character in the file is at
+line 1, column 1.
 
-Alternatively, a location rule can yield ``LocationRuleResult`` objects wraps a ``RuleLocation`` object along with other data, like fixits.
+Alternatively, a location rule can yield a ``LocationRuleResult`` object which
+wraps a ``RuleLocation`` object along with other data, like fixits.
 
-The following example demonstrates a rule that location rule that checks for tabs:
+The following example demonstrates a location rule that checks for tabs:
 
 .. code-block:: python
 
