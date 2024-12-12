@@ -5646,7 +5646,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
     } else {
-      associatedTypes.emplace(td->id(), foundQt);
+      associatedTypes.emplace(td->id(), foundQt.type());
     }
   }
   auto witness2 = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, {});
@@ -5671,7 +5671,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
     PlaceholderMap allPlaceholders;
-    for (auto& [id, qt] : associatedTypes) allPlaceholders.emplace(id, qt.type());
+    for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
     for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt.type());
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
     auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
