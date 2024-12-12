@@ -812,7 +812,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   wr.code<ID>(implPoint, { implPoint });
   wr.message("Associated types are resolved as 'type' calls on types constrained by the interface.");
 
-  printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](size_t) -> const uast::AstNode* {
+  printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](int) -> const uast::AstNode* {
     return nullptr;
   });
 }
@@ -832,7 +832,7 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   wr.note(implPoint, "while checking the implementation point here:");
   wr.code<ID>(implPoint, { implPoint });
 
-  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "cadidate formal", [fn](size_t idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "cadidate formal", [fn](int idx) -> const uast::AstNode* {
     if (idx >= 0 && idx < fn->numFormals()) {
       return fn->untyped()->formalDecl(idx);
     }

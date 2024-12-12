@@ -1485,6 +1485,18 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::CPtrType:       return helpConvertPtrType(t->toPtrType());
     case typetags::HeapBufferType: return helpConvertPtrType(t->toPtrType());
 
+    // Interfaces require something clever (creating a constrained generic
+    // function), and we don't have that yet.
+    case typetags::InterfaceType:
+      CHPL_UNIMPL("convert interface type");
+      return dtUnknown; // TODO
+
+    // placeholders only occur in interface resolution and should not be
+    // reachable
+    case typetags::PlaceholderType:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
+
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
     case typetags::END_ManageableType:
