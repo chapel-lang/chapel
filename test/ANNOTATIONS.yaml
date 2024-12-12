@@ -600,6 +600,12 @@ all:
   11/18/24:
     - text: Update system LLVM to 19
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  10/29/24:
+    - text: resolve failing tests in nightly cray ex perf job by updating max heap size (#26069)
+      config: 16-node-hpe-cray-ex
+  10/30/24:
+    - text: bump up heap size for nightly cray ex perf job again (#26176)
+      config: 16-node-hpe-cray-ex
   12/12/24:
     - text: Backport Fix For Performance Regression in Qthreads 1.21 (#26328)
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
@@ -1331,6 +1337,8 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  11/18/24:
+    - Add microbenchmarks useful for exploring performance (#26240)
 # End memleaks
 
 memleaksfull:
@@ -1812,6 +1820,8 @@ ra.ml-perf:
     - Use localAccess for ra-on (#15001)
   10/09/24:
     - Non-blocking PUT in CHPL_COMM=ofi (#25977)
+  10/23/24:
+    - Make amPutDone non-blocking (#26123)
 
 ra-atomics.ml-perf:
   10/03/17:
