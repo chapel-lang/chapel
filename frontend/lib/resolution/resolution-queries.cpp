@@ -2911,18 +2911,16 @@ resolveImplementsStatementQuery(ResolutionContext* rc, ID id) {
     }
 
     ID interfaceId = interfaceQt.type()->toInterfaceType()->id();
-    std::vector<ID> formalIds;
+    std::vector<QualifiedType> actuals;
     if (auto typeIdent = impl->typeIdent()) {
-      formalIds.push_back(typeIdent->id());
+      actuals.push_back(byPostorder.byAst(typeIdent).type());
     } else if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
       for (auto actual : interfaceCall->actuals()) {
-        formalIds.push_back(actual->id());
+        actuals.push_back(byPostorder.byAst(actual).type());
       }
     }
 
-    result = ImplementationPoint::getForImplementsStmt(rc->context(),
-                                                       interfaceId, id,
-                                                       std::move(formalIds));
+    result = ImplementationPoint::get(rc->context(), interfaceId, id, std::move(actuals));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -5370,30 +5368,13 @@ matchImplementationPoint(ResolutionContext* rc,
     return true;
   };
 
-  if (!implPoint->formal().isEmpty()) {
-    if (actuals.size() != 1) return false;
-    auto actualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
+  for (auto& implPointActualType : implPoint->actuals()) {
+    if (implPointActualType.isUnknownOrErroneous()) return false;
+    auto requestedActualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
 
-    auto at = initialTypeForTypeDecl(rc->context(), implPoint->formal());
-    auto aqt = QualifiedType(QualifiedType::CONST_VAR, at);
-
-    if (!checkFormal(actualType, aqt)) return false;
-  } else {
-    ResolutionResultByPostorderID byPostrder;
-    auto implements = parsing::idToAst(rc->context(), implPoint->id())->toImplements();
-    auto resolver = Resolver::createForImplementsStmt(rc, implements, byPostrder);
-    for (auto formal : implPoint->formals()) {
-      auto actualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
-      auto formalAst = parsing::idToAst(rc->context(), formal);
-      formalAst->traverse(resolver);
-
-      auto& rr = byPostrder.byAst(formalAst);
-      if (rr.type().isUnknownOrErroneous()) return false;
-
-      auto formalType = QualifiedType(QualifiedType::CONST_VAR, rr.type().type());
-      if (!checkFormal(actualType, formalType)) {
-        return false;
-      }
+    auto formalType = QualifiedType(QualifiedType::CONST_VAR, implPointActualType.type());
+    if (!checkFormal(requestedActualType, formalType)) {
+      return false;
     }
   }
 

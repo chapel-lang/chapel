@@ -908,34 +908,25 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
 
 owned<ImplementationPoint> const&
 ImplementationPoint::getImplementationPoint(Context* context, ID interface,
-                                            ID id, ID formal,
-                                            std::vector<ID> formals) {
-  QUERY_BEGIN(getImplementationPoint, context, interface, id, formal, formals);
+                                            ID id,
+                                            std::vector<QualifiedType> actuals) {
+  QUERY_BEGIN(getImplementationPoint, context, interface, id, actuals);
   auto result = toOwned(new ImplementationPoint(interface, std::move(id),
-                                                std::move(formal),
-                                                std::move(formals)));
+                                                std::move(actuals)));
   return QUERY_END(result);
 }
 
 const ImplementationPoint*
-ImplementationPoint::getForInheritExpr(Context* context, ID interface,
-                                       ID id, ID formal) {
+ImplementationPoint::get(Context* context, ID interface,
+                         ID id, std::vector<QualifiedType> actuals) {
   return getImplementationPoint(context, std::move(interface),
-                                std::move(id), std::move(formal), {}).get();
-}
-
-const ImplementationPoint*
-ImplementationPoint::getForImplementsStmt(Context* context, ID interface,
-                                          ID id, std::vector<ID> formals) {
-  return getImplementationPoint(context, std::move(interface),
-                                std::move(id), ID(), std::move(formals)).get();
+                                std::move(id), std::move(actuals)).get();
 }
 
 void ImplementationPoint::mark(Context* context) const {
   interfaceId_.mark(context);
   id_.mark(context);
-  formal_.mark(context);
-  chpl::mark<decltype(formals_)>{}(context, formals_);
+  chpl::mark<decltype(actuals_)>{}(context, actuals_);
 }
 
 void ImplementationPoint::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {

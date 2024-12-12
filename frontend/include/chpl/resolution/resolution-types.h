@@ -2884,30 +2884,21 @@ class ImplementationPoint {
   ID interfaceId_;
   // The ID of the implementation statement
   ID id_;
-
-  // In the special case that this implementation point is defined as an
-  // inheritance expressiom, ID of the aggregate type. This is treated specially
-  // because there's no formal AST.
-  ID formal_;
-  std::vector<ID> formals_;
+  std::vector<types::QualifiedType> actuals_;
 
   ImplementationPoint(ID interface,
                       ID id,
-                      ID formal,
-                      std::vector<ID> formals)
-    : interfaceId_(interface), id_(std::move(id)), formal_(std::move(formal)),
-      formals_(std::move(formals)) {}
+                      std::vector<types::QualifiedType> actuals)
+    : interfaceId_(interface), id_(std::move(id)),
+      actuals_(std::move(actuals)) {}
 
   static owned<ImplementationPoint> const&
   getImplementationPoint(Context* context, ID interface, ID id,
-                         ID formal, std::vector<ID> formals);
+                         std::vector<types::QualifiedType> actuals);
 
  public:
   static const ImplementationPoint*
-  getForInheritExpr(Context* context, ID interface, ID id, ID formal);
-
-  static const ImplementationPoint*
-  getForImplementsStmt(Context* context, ID interface, ID id, std::vector<ID> formals);
+  get(Context* context, ID interface, ID id, std::vector<types::QualifiedType> actuals);
 
   static bool update(owned<ImplementationPoint>& lhs,
                      owned<ImplementationPoint>& rhs) {
@@ -2916,8 +2907,7 @@ class ImplementationPoint {
   bool operator==(const ImplementationPoint& other) const {
     return interfaceId_ == other.interfaceId_ &&
            id_ == other.id_ &&
-           formal_ == other.formal_ &&
-           formals_ == other.formals_;
+           actuals_ == other.actuals_;
   }
   bool operator!=(const ImplementationPoint& other) const {
     return !(*this == other);
@@ -2929,9 +2919,7 @@ class ImplementationPoint {
 
   const ID& id() const { return id_; }
 
-  const ID& formal() const { return formal_; }
-
-  const std::vector<ID>& formals() const { return formals_; }
+  const std::vector<types::QualifiedType>& actuals() const { return actuals_; }
 };
 
 class ImplementationWitness {
@@ -2997,11 +2985,6 @@ class ImplementationWitness {
     return requiredFns_;
   }
 };
-
-/* (parent class, implemented interfaces) tuple resulting from processing
-   the inheritance expressions of a class/record. */
-using InheritanceExprResolutionResult =
-  std::pair<const types::BasicClassType*, std::vector<const ImplementationPoint*>>;
 
 class ResolvedParamLoop {
   public:

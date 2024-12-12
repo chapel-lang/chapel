@@ -55,6 +55,16 @@ using namespace types;
 static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
+
+/* pair (interface ID, implementation point ID) */
+using ImplementedInterface =
+  std::pair<ID, ID>;
+
+/* (parent class, implemented interfaces) tuple resulting from processing
+   the inheritance expressions of a class/record. */
+using InheritanceExprResolutionResult =
+  std::pair<const types::BasicClassType*, std::vector<ImplementedInterface>>;
+
 static const InheritanceExprResolutionResult&
 processInheritanceExpressionsForAggregateQuery(Context* context,
                                                const AggregateDecl* ad,
@@ -63,7 +73,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
   const BasicClassType* parentClassType = nullptr;
   const AstNode* lastParentClass = nullptr;
-  std::vector<const ImplementationPoint*> implementationPoints;
+  std::vector<ImplementedInterface> implementationPoints;
   auto c = ad->toClass();
 
   for (auto inheritExpr : ad->inheritExprs()) {
@@ -98,12 +108,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
       // OK
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
-      auto implementationPoint =
-        ImplementationPoint::getForInheritExpr(context,
-                                               qt.type()->toInterfaceType()->id(),
-                                               inheritExpr->id(),
-                                               ad->id());
-      implementationPoints.push_back(implementationPoint);
+      implementationPoints.emplace_back(qt.type()->toInterfaceType()->id(), inheritExpr->id());
     } else {
       context->error(inheritExpr, "invalid parent class expression");
       parentClassType = BasicClassType::getRootClassType(context);
@@ -132,14 +137,20 @@ getImplementedInterfacesQuery(Context* context,
     processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
   auto& implementationPoints = inheritanceResult.second;
 
-  for (auto& implementationPoint : implementationPoints) {
-    auto insertionResult = seen.insert(implementationPoint->interfaceId());
+  auto initialType = QualifiedType(QualifiedType::TYPE,
+                                   initialTypeForTypeDecl(context, ad->id()));
+
+  for (auto& implementedInterface : implementationPoints) {
+    auto insertionResult = seen.insert(implementedInterface.first);
 
     if (!insertionResult.second) {
       // TODO: issue an error here for duplicate 'implements' for the same
       // interface?
     } else {
-      result.push_back(implementationPoint);
+      auto implPoint =
+        ImplementationPoint::get(context, implementedInterface.first,
+                                 implementedInterface.second, { initialType });
+      result.push_back(implPoint);
     }
   };
 
