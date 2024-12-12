@@ -76,7 +76,7 @@ class BasicClassType final : public ManageableType {
       CompositeType::SubstitutionsMap subs);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return get(context, id(), name(),
                Type::substitute(context, parentType_, subs),
                Type::substitute(context, (const BasicClassType*) instantiatedFrom_, subs),

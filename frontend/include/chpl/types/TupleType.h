@@ -102,7 +102,7 @@ class TupleType final : public CompositeType {
                QualifiedType starEltType);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return getTupleType(context,
                         Type::substitute(context, (const TupleType*) instantiatedFrom_, subs),
                         resolution::substituteInMap(context, subs_, subs),

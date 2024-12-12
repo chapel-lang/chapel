@@ -70,7 +70,7 @@ class PromotionIteratorType final : public IteratorType {
                                           resolution::SubstitutionsMap promotedFormals);
 
   virtual const Type* substitute(Context* context,
-                                 const resolution::SubstitutionsMap& subs) const override {
+                                 const PlaceholderMap& subs) const override {
     return get(context, poiScope_, scalarFn_->substitute(context, subs),
                resolution::substituteInMap(context, promotedFormals_, subs));
   }

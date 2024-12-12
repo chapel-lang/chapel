@@ -48,7 +48,7 @@ using namespace types;
 
 SubstitutionsMap substituteInMap(Context* context,
                                  const SubstitutionsMap& substituteIn,
-                                 const SubstitutionsMap& subs) {
+                                 const PlaceholderMap& subs) {
   SubstitutionsMap into;
   for (auto [id, qt] : substituteIn) {
     into.emplace(id, qt.substitute(context, subs));
@@ -1044,7 +1044,7 @@ TypedFnSignature::getInferred(
 
 const TypedFnSignature*
 TypedFnSignature::substitute(Context* context,
-                             const resolution::SubstitutionsMap& subs) const {
+                             const PlaceholderMap& subs) const {
   std::vector<QualifiedType> newFormalTypes;
   for (const auto& formalType : formalTypes_) {
     newFormalTypes.push_back(formalType.substitute(context, subs));

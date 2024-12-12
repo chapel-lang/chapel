@@ -103,7 +103,7 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& parSafe);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return getDomainType(context, id(), name(),
                          Type::substitute(context, (const DomainType*) instantiatedFrom_, subs),
                          resolution::substituteInMap(context, subs_, subs),

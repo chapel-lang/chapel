@@ -61,7 +61,7 @@ class FnIteratorType final : public IteratorType {
                                    const resolution::TypedFnSignature* iteratorFn);
 
   virtual const Type* substitute(Context* context,
-                                 const resolution::SubstitutionsMap& subs) const override {
+                                 const PlaceholderMap& subs) const override {
     return get(context, poiScope_, iteratorFn_->substitute(context, subs));
   }
 

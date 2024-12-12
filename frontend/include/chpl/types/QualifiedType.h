@@ -91,7 +91,7 @@ class QualifiedType final {
   }
 
   const QualifiedType substitute(Context* context,
-                                 const resolution::SubstitutionsMap& subs) const {
+                                 const PlaceholderMap& subs) const {
     return QualifiedType(kind_, Type::substitute(context, type_, subs), param_);
   }
 

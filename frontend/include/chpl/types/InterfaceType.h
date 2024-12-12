@@ -79,7 +79,7 @@ class InterfaceType final : public Type {
                                         std::vector<types::QualifiedType> types);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return get(context, id_, name_, resolution::substituteInMap(context, subs_, subs));
   }
 

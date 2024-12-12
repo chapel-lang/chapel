@@ -25,6 +25,7 @@
 #include "chpl/framework/mark-functions.h"
 #include "chpl/types/TypeTag.h"
 #include "chpl/uast/Pragma.h"
+#include "chpl/util/hash.h"
 
 #include <deque>
 
@@ -32,14 +33,6 @@ namespace chpl {
 
 namespace uast {
   class Decl;
-}
-
-namespace types {
-  class QualifiedType;
-}
-
-namespace resolution {
-  using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
 }
 
 namespace types {
@@ -64,6 +57,7 @@ namespace types {
 #undef TYPE_DECL
 
 class Type;
+using PlaceholderMap = std::unordered_map<ID, const Type*>;
 
 namespace detail {
 
@@ -170,14 +164,14 @@ class Type {
   bool completeMatch(const Type* other) const;
 
   virtual const Type* substitute(Context* context,
-                                 const resolution::SubstitutionsMap& subs) const {
+                                 const PlaceholderMap& subs) const {
     return this;
   }
 
   template <typename TargetType>
   static const TargetType* substitute(Context* context,
                                       const TargetType* type,
-                                      const resolution::SubstitutionsMap& subs) {
+                                      const PlaceholderMap& subs) {
     if (!type) return type;
     auto substituted = type->substitute(context, subs);
     CHPL_ASSERT(substituted);
@@ -436,5 +430,13 @@ template<> struct mark<types::Type::Genericity> {
 
 // TODO: is there a reasonable way to define std::less on Type*?
 // Comparing pointers would lead to some nondeterministic ordering.
+
+namespace std {
+  template<> struct hash<chpl::types::PlaceholderMap> {
+    inline size_t operator()(const chpl::types::PlaceholderMap& k) const{
+      return chpl::hashUnorderedMap(k);
+    }
+  };
+}
 
 #endif

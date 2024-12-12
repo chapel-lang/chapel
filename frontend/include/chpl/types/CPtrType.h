@@ -63,7 +63,7 @@ class CPtrType final : public PtrType {
   }
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return get(context, Type::substitute(context, eltType_, subs));
   }
 

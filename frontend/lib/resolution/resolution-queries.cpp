@@ -5657,9 +5657,9 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // with the substitutions we've determined, so that we may proceed to
     // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
-    SubstitutionsMap allPlaceholders;
-    for (auto& [id, qt] : associatedTypes) allPlaceholders.emplace(id, qt);
-    for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt);
+    PlaceholderMap allPlaceholders;
+    for (auto& [id, qt] : associatedTypes) allPlaceholders.emplace(id, qt.type());
+    for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt.type());
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
     auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
 

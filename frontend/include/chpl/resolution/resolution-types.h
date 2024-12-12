@@ -47,7 +47,7 @@ using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
 SubstitutionsMap substituteInMap(Context* context,
                                  const SubstitutionsMap& substituteIn,
-                                 const SubstitutionsMap& subs);
+                                 const types::PlaceholderMap& subs);
 
 /**
 
@@ -950,7 +950,7 @@ class TypedFnSignature {
                               const TypedFnSignature* inferredFrom);
 
   const TypedFnSignature* substitute(Context* context,
-                                     const resolution::SubstitutionsMap& subs) const;
+                                     const types::PlaceholderMap& subs) const;
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&

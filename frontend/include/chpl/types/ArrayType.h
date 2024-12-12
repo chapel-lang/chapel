@@ -73,7 +73,7 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& eltType);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return getArrayType(context,
                         domainType().substitute(context, subs),
                         eltType().substitute(context, subs));

@@ -84,7 +84,7 @@ class ClassType final : public Type {
                               ClassTypeDecorator decorator);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
+                         const PlaceholderMap& subs) const override {
     return get(context,
                Type::substitute(context, manageableType_, subs),
                Type::substitute(context, manager_, subs), decorator_);

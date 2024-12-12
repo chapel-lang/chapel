@@ -55,10 +55,10 @@ class PlaceholderType final : public Type {
                                     ID id);
 
   const Type* substitute(Context* context,
-                         const resolution::SubstitutionsMap& subs) const override {
-    for (auto& [id, qt] : subs) {
+                         const PlaceholderMap& subs) const override {
+    for (auto& [id, t] : subs) {
       if (id == id_) {
-        return qt.type();
+        return t;
       }
     }
     return this;
