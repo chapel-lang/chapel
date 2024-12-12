@@ -76,7 +76,7 @@ class InterfaceType final : public Type {
 
   static const InterfaceType* withTypes(Context* context,
                                         const InterfaceType* ift,
-                                        std::vector<types::QualifiedType> types);
+                                        std::vector<QualifiedType> types);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
