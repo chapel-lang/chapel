@@ -619,7 +619,7 @@ concrete or semi-concrete
 
    .. code-block:: chapel
 
-      enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
+      enum statesman { Aristotle, Roosevelt, Churchill, Plato }
 
    defines an abstract enumerated type with four constants. The function
 
@@ -634,9 +634,9 @@ concrete or semi-concrete
              writeln("Every reform movement has a lunatic fringe.");
           when statesman.Churchill do
              writeln("A joke is a very serious thing.");
-          when statesman.Kissinger do
-             { write("No one will ever win the battle of the sexes; ");
-               writeln("there's too much fraternizing with the enemy."); }
+          when statesman.Plato do
+             { write("I only wish that wisdom were the kind of thing that flowed...");
+               writeln("... from the vessel that was full to the one that was empty."); }
         }
       }
 
