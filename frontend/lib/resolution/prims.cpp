@@ -313,10 +313,10 @@ static QualifiedType primImplementsInterface(Context* context,
 
   if (!implements) {
     // TODO: no 'implements' statement, but auto-implemented.
-    return makeParamInt(context, 0);
+    return makeParamInt(context, 2);
   }
 
-  return makeParamInt(context, 2);
+  return makeParamInt(context, 0);
 }
 
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {

@@ -320,7 +320,7 @@ static void testSingleInterface(const InterfaceSource& interface,
         auto module = ModuleSource("M")
           .addInterface(interface)
           .addRecord(record, methodKind, implKind)
-          .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 2");
+          .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
         auto source = intercalate(module.allLines(), "\n");
 
         std::cout << "--- testing program ---" << std::endl;
@@ -350,7 +350,7 @@ static void testSingleInterface(const InterfaceSource& interface,
           auto moduleCheck = ModuleSource("MCheck")
             .addUsesImport("use MLib;")
             .addUsesImport(importTechnique)
-            .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 2");
+            .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
 
           auto source =
               intercalate(moduleLib.allLines(), "\n") + "\n\n"
@@ -388,7 +388,7 @@ static void testSingleInterface(const InterfaceSource& interface,
 
         implKind == ModuleSource::I_SINGLE ? moduleCheck.addSingleImplements(interface, record)
                                            : moduleCheck.addGeneralImplements(interface, record);
-        moduleCheck.addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 2");
+        moduleCheck.addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
 
         auto source =
           intercalate(moduleLib.allLines(), "\n") + "\n\n"
