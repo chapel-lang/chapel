@@ -5438,7 +5438,6 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
     auto decl = tfs->untyped()->formalDecl(i);
     auto name = UniqueString();
     if (auto formal = decl->toFormal()) {
-      if (formal->name() == USTR("this"))
         name = formal->name();
     } else if (decl->isVarArgFormal()) {
       CHPL_UNIMPL("vararg formals in interface function requirements");

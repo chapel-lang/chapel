@@ -579,6 +579,20 @@ static void testAssociatedTypeInFn() {
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 }
 
+static void testFormalNaming() {
+  auto i = InterfaceSource("myInterface",
+                           "proc Self.foo(x: int, y: int, z: int);");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int, y: int, z: int) {}")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1);
+
+  auto r2 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(y: int, x: int, z: int) {}")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r2, ErrorType::InterfaceReorderedFnFormals);
+}
+
 int main() {
   testRequiredMethodNoArgs();
   testRequiredMethodNoArgsDefault();
@@ -589,4 +603,5 @@ int main() {
   testDependentGeneric();
   testAssociatedType();
   testAssociatedTypeInFn();
+  testFormalNaming();
 }
