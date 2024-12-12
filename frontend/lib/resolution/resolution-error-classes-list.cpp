@@ -736,7 +736,10 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         } else {
           reasonStr = "it is parenless, but the call was parenful:";
         }
+      } else if (reason == resolution::FAIL_INTERFACE_NOT_TYPE_INTENT) {
+        reasonStr = "it did not return a type as required from associated type procedures:";
       }
+
       if (reasonStr.empty()) {
         wr.note(candidate.idForErr(), "the following candidate didn't match:");
       } else {

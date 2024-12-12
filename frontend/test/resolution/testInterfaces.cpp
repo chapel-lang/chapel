@@ -560,6 +560,11 @@ static void testAssociatedType() {
     .addMethod(NOT_A_TYPE_METHOD, "someType type do return int;")
     .addInterfaceConstraint(i);
   testSingleInterface(i, r4, ErrorType::InterfaceMissingAssociatedType);
+
+  auto r5 = RecordSource("myRec")
+    .addMethod(IS_A_TYPE_METHOD, "someType do return 42;")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r5, ErrorType::InterfaceMissingAssociatedType);
 }
 
 static void testAssociatedTypeInFn() {

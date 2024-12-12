@@ -5559,11 +5559,24 @@ static QualifiedType searchForAssociatedType(ResolutionContext* rc,
   auto c =
     resolveGeneratedCall(rc->context(), td, ci, inScopes);
 
-  if (c.exprType().isUnknownOrErroneous()) {
-    std::vector<ApplicabilityResult> rejected;
+  std::vector<ApplicabilityResult> rejected;
+  bool failed = c.exprType().isUnknownOrErroneous();
+  bool notType = false;
+  if (!failed) {
+    notType = !c.exprType().isType();
+    if (notType) {
+      rejected.push_back(
+          ApplicabilityResult::failure(c.mostSpecific().only().fn()->id(),
+                                       FAIL_INTERFACE_NOT_TYPE_INTENT));
+    }
+  } else {
     resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
+  }
+
+  if (failed || notType) {
     CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, iftForErr,
                 implPointForErr, td, ci, std::move(rejected));
+    return QualifiedType();
   }
 
   return c.exprType();
