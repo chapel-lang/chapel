@@ -213,12 +213,18 @@ else
 fi
 
 # Find number of locales and .good file
+NUMLOCALES=1
+GOOD=${TEST_DIR}/${TEST_JOB}.good
 if [ ${chpl_comm} == "none" ]; then
-    NUMLOCALES=1
-    GOOD=${TEST_DIR}/${TEST_JOB}.comm-none.good
+    # use comm-none specific good file if it exists
+    if [ -f ${TEST_DIR}/${TEST_JOB}.comm-none.good ]; then
+        GOOD=${TEST_DIR}/${TEST_JOB}.comm-none.good
+    fi
 else
-    NUMLOCALES="$(cat ${TEST_DIR}/NUMLOCALES)"
-    GOOD=${TEST_DIR}/${TEST_JOB}.good
+    # use specific NUMLOCALES if it exists
+    if [ -f ${TEST_DIR}/NUMLOCALES ]; then
+      NUMLOCALES="$(cat ${TEST_DIR}/NUMLOCALES)"
+    fi
 fi
 
 # Check for valid launchers

@@ -1844,6 +1844,35 @@ static void testGenericFieldInit() {
   }
 }
 
+static void testDefaultArgs() {
+  {
+    std::string program = R"""(
+      class Parent {
+        var x, y: real;
+      }
+
+      class Child : Parent {
+        var z : real;
+        var a, b: int, c, d = 42.0;
+      }
+
+      var A = new Child();
+      var B = new Child(1.0, 2.0, 3.0); // x=1.0, y=2.0, z=3.0
+      var C = new Child(y=10.0);
+      )""";
+
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"A", "B", "C"});
+
+    // Note: These type strings are not stabilized
+    assert(toString(vars["A"]) == "owned Child");
+    assert(toString(vars["B"]) == "owned Child");
+    assert(toString(vars["C"]) == "owned Child");
+  }
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1893,6 +1922,8 @@ int main() {
   testNilFieldInit();
 
   testGenericFieldInit();
+
+  testDefaultArgs();
 
   return 0;
 }

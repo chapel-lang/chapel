@@ -21,10 +21,12 @@ will help you understand the :mod:`VisualDebug` module and the
 Setup
 -----
 
-``chplvis`` is built by giving the command ``make chplvis`` at the top level of
-the chapel tree.  This also builds the GUI tool, *FLTK*, required to build and
-run ``chplvis``.  (Note: Some versions of Linux may require the standard
-package ``libx11-dev`` to be installed before *FLTK* will compile properly.)
+``chplvis`` is built by giving the command ``make chplvis`` at the top
+level of the chapel tree.  ``make chplvis`` will assume that FLTK is
+already installed and the ``fltk-config`` and ``fluid`` commands are
+available. (If necessary, you can adjust them with
+``make chplvis FLTK_CONFIG=<something> FLTK_FLUID=<something-else>``).
+
 To get the most out of this primer, you should compile and run the example
 programs and examine the :mod:`VisualDebug` results with ``chplvis``.  The
 example programs are found on the path ``examples/primers/chplvis``.  The

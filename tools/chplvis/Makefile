@@ -24,20 +24,32 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
-CHPL_MAKE_HOST_TARGET = --target
+CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 # FLTK config section
 
-FLTK_CONFIG=$(FLTK_INSTALL_DIR)/bin/fltk-config
-FLTK_FLUID=$(FLTK_INSTALL_DIR)/bin/fluid
+FLTK_CONFIG=fltk-config
+FLTK_FLUID=fluid
 
-CXXFLAGS=  -Wall -I. -g
+FLTK_COMPILE=$(shell $(FLTK_CONFIG) --use-images --cxx --cxxflags)
+FLTK_LINK=$(shell $(FLTK_CONFIG) --use-images --cxx)
+FLTK_LIBS=$(shell $(FLTK_CONFIG) --use-images --ldflags --libs)
+
+# If fltk is installed with Homebrew on ARM, need to look in /opt/homebrew
+ifeq ($(CHPL_MAKE_PLATFORM), darwin)
+ifeq ($(CHPL_MAKE_HOST_ARCH), arm64)
+  FLTK_COMPILE += -I/opt/homebrew/include
+  FLTK_LINK += -L/opt/homebrew/lib
+endif
+endif
+
+CXXFLAGS +=  -Wall -I. -g
 
 # Suffix rule for compiling .cxx files
 .SUFFIXES: .o .h .cxx
 .cxx.o:
-	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
+	$(FLTK_COMPILE) -c $(CXXFLAGS) $<
 
 
 SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocCommWin.cxx \
@@ -57,8 +69,7 @@ OFILES= $(SRCS:.cxx=.o) $(GENSRCS:.cxx=.o)
 all: chplvis
 
 chplvis: $(GENSRCS) $(OFILES)
-	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
-	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
+	$(FLTK_LINK) -o chplvis $(OFILES) $(FLTK_LIBS)
 
 chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
@@ -78,6 +89,7 @@ clobber: clean
 	rm -f chplvis
 
 install: chplvis
+	mkdir -p $(CHPL_BIN_DIR)
 	cp chplvis $(CHPL_BIN_DIR)
 
 # Dependencies

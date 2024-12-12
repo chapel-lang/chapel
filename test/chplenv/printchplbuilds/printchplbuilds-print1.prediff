@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess as sp
+
+chpl_home = sp.check_output([sys.argv[3], '--print-chpl-home']).decode().strip()
+chpl_python = sp.check_output([os.path.join(chpl_home, 'util/config/find-python.sh')]).decode().strip()
+
+printchplbuilds = os.path.join(chpl_home, 'util/chplenv/printchplbuilds.py')
+
+# get the current builds all printed in 1 column
+builds = [l.strip() for l in sp.check_output([chpl_python, printchplbuilds, "--width", "1"]).decode().splitlines()]
+# remove MTIME and all lines after it
+mtime_idx = next(i for i, line in enumerate(builds) if line.strip().startswith("MTIME"))
+builds = builds[:mtime_idx]
+
+# remove the _DEBUG variables
+builds = [l for l in builds if "_DEBUG:" not in l]
+
+# write the output of the test
+with open(sys.argv[2], 'w') as f:
+    print("\n".join(builds), file=f)
+
+# now we need to generate a good file
+printchplenv = os.path.join(chpl_home, 'util/printchplenv')
+
+# this defines the order of the variables printchplbuilds might print
+# we fill in the values from the output of printchplenv, if they exist
+# depending on the configuration, not all may be printed by printchplbuilds
+# for this reason, we can specify a filter function that will be called with the chplenv dict
+chpl_vars = [
+    ("CHPL_TARGET_PLATFORM", None),
+    ("CHPL_TARGET_COMPILER", None),
+    ("CHPL_TARGET_ARCH", None),
+    ("CHPL_TARGET_CPU", None),
+    ("CHPL_LOCALE_MODEL", None),
+    ("CHPL_COMM", None),
+    ("CHPL_COMM_SUBSTRATE", None),
+    ("CHPL_GASNET_SEGMENT", None),
+    ("CHPL_LIBFABRIC", None, lambda env: env["CHPL_COMM"] == "ofi"),
+    ("CHPL_COMM_OFI_OOB", None, lambda env: env["CHPL_COMM"] == "ofi"),
+    ("CHPL_TASKS", None),
+    ("CHPL_TIMERS", None),
+    ("CHPL_UNWIND", None),
+    ("CHPL_MEM", None),
+    ("CHPL_ATOMICS", None),
+    ("CHPL_HWLOC", None),
+    ("CHPL_HWLOC_PCI", None, lambda env: env["CHPL_HWLOC"] == "bundled"),
+    ("CHPL_RE2", None),
+    ("CHPL_AUX_FILESYS", None),
+    ("CHPL_LIB_PIC", None),
+    ("CHPL_SANITIZE_EXE", None),
+]
+chplenv_out = [l.strip() for l in sp.check_output([printchplenv, "--all", "--internal", "--simple"]).decode().splitlines()]
+chplenv = {k: v for k, v in [l.split("=", 1) for l in chplenv_out]}
+
+# fill in the chplvars, checking the filter function if it exists
+for i, cv in enumerate(chpl_vars):
+    k, v = cv[:2]
+    if not v and (len(cv) < 3 or cv[2](chplenv)):
+        chpl_vars[i] = (k, chplenv.get(k, "NA"))
+
+# write the good file
+goodfile = os.path.splitext(__file__)[0] + ".good"
+with open(goodfile, 'w') as f:
+    print("<Current>", file=f)
+    # only print the variables that have a value
+    print("\n".join([f"{cv[0]}: {cv[1]}" for cv in chpl_vars if cv[1]]), file=f)

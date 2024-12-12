@@ -176,9 +176,8 @@ always-build-cls: FORCE
 	$(MAKE) chpl-language-server; \
 	fi
 
-chplvis: compiler third-party-fltk FORCE
-	cd tools/chplvis && $(MAKE)
-	cd tools/chplvis && $(MAKE) install
+chplvis: FORCE
+	cd tools/chplvis && $(MAKE) && $(MAKE) install
 
 mason: compiler chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
@@ -223,9 +222,6 @@ compile-util-python: FORCE
 	else \
 	  echo "Not compiling Python scripts - missing compileall" ; \
 	fi
-
-third-party-fltk: FORCE
-	cd third-party/fltk && $(MAKE)
 
 clean: FORCE
 	cd compiler && $(MAKE) clean

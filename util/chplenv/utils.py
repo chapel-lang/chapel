@@ -13,12 +13,30 @@ except ImportError:
     # Backport for pre Python 3.2
     from distutils.spawn import find_executable as which
 
+# should not need this outside of this class
+_warning_buffer = []
+_buffer_warnings = True
+def flush_warnings():
+    for warning in _warning_buffer:
+        sys.stderr.write('Warning: ')
+        sys.stderr.write(warning)
+        sys.stderr.write('\n')
+    _warning_buffer.clear()
+def set_buffer_warnings(buffer_warnings):
+    global _buffer_warnings
+    _buffer_warnings = buffer_warnings
+
+def should_buffer_warnings():
+    return _buffer_warnings and not ignore_errors
 
 def warning(msg):
     if not os.environ.get('CHPLENV_SUPPRESS_WARNINGS'):
-        sys.stderr.write('Warning: ')
-        sys.stderr.write(msg)
-        sys.stderr.write('\n')
+        if should_buffer_warnings():
+            _warning_buffer.append(msg)
+        else:
+            sys.stderr.write('Warning: ')
+            sys.stderr.write(msg)
+            sys.stderr.write('\n')
 
 ignore_errors = False
 
@@ -26,14 +44,19 @@ def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
     developer = os.environ.get('CHPL_DEVELOPER')
     if developer and developer != "0" and not ignore_errors:
+        # before rasing the exception, flush the warnings
+        flush_warnings()
         raise exception(msg)
     else:
-        sys.stderr.write('\nError: ')
-        sys.stderr.write(msg)
-        sys.stderr.write('\n')
-        if not ignore_errors:
+        out = '\nError: {}\n'.format(msg)
+        if ignore_errors:
+            sys.stderr.write(out)
+        else:
+            # flush warnings, print error, and exit
+            # technically, there is no need to flush warnings here, but might as well
+            flush_warnings()
+            sys.stderr.write(out)
             sys.exit(1)
-
 
 def memoize(func):
     """Function memoizing decorator"""

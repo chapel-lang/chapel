@@ -133,6 +133,21 @@ fixits are applied:
 * ``--interactive``: Starts an interactive session where you can choose which
   fixits to apply.
 
+Rule Specific Settings
+----------------------
+
+Some rules have individual settings that can be adjusted to customize their
+behavior. These are specified from the command line as
+``--setting RuleName.SettingName=Value``.For example, a rule like
+``NoFuncNamed`` could have a setting called ``Name`` to select what function
+names are disallowed. This setting could be adjusted as follows:
+``--setting NoFuncNamed.Name="foo"``.
+
+These settings are local to a given rule. Settings can also be global, as long
+as at least 1 rule opts in to using them. For example, custom rules could conform
+to the setting ``MyIgnoreList``, which could be set as
+``--setting MyIgnoreList="foo,bar"``.
+
 Setting Up In Your Editor
 -------------------------
 
@@ -371,6 +386,33 @@ as a field on the result object.
 
    The API for defining fixits is still under development and may change in the
    future.
+
+Settings
+~~~~~~~~
+
+Some rules may need to be configurable from the command line. For example, a
+``TabSize`` rule might need to know what the tab size is set to. Rules can
+declare what settings they need with the ``settings`` argument, which is a list
+of setting names. Settings that begin with ``.`` are consided local to the rule,
+while settings that do not are considered global. For example, the following
+rule declares rule ``TabSize`` with a setting ``Size``:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function, settings=[".Size"])
+   def TabSize(context, node, Size = None):
+       s = int(Size)
+       print("Tab size is", s)
+
+       # ...logic to check tab size...
+
+
+The setting is then accessed as a keyword argument to the rule function.
+If the setting is not provided, a default value of ``None`` is used. The setting is
+always provided as a string, if a different type is required (like an integer or
+a comma-separated-list) the rule author must write code to convert the types.
+
+The ``TabSize.Size`` setting can now be set from the command line with ``--setting TabSize.Size=4``.
 
 Adding Custom Rules
 -------------------

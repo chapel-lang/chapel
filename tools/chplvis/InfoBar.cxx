@@ -194,7 +194,7 @@ void InfoBar::addLocOrComm(LocCommBox *box)
 {
   // don't double add
   if (isOnList(box)) {
-    boxCache.insert(boxCache.begin(), box);
+    boxCache.push_front(box);
     return;
   }
 
@@ -213,7 +213,7 @@ void InfoBar::addLocOrComm(LocCommBox *box)
       LocCommBox *dbox = *itr;
       remove(*itr);
       itr = infoBoxes.erase(itr);
-      boxCache.insert(boxCache.begin(), dbox);
+      boxCache.push_front(dbox);
     }
   }
 
@@ -239,7 +239,7 @@ void InfoBar::delLocOrComm(LocCommBox *box)
     x += (*itr)->w();
     itr++;
   }
-  boxCache.insert(boxCache.begin(), box);
+  boxCache.push_front(box);
   MainWindow->redraw();
 }
 
@@ -249,8 +249,9 @@ LocCommBox * InfoBar::getNewLocComm()
       return new LocCommBox(0, 0, LC_Box_W, LC_Box_H);
     } else {
       std::list<LocCommBox *>::iterator itr = boxCache.begin();
+      LocCommBox *box = *itr;
       boxCache.erase(itr);
-      return *itr;
+      return box;
     }
   }
 
@@ -263,7 +264,7 @@ void InfoBar::rmAllLocOrComm(void)
        box = *itr;
        itr = infoBoxes.erase(itr);
        remove(box);
-       boxCache.insert(boxCache.begin(), box);
+       boxCache.push_front(box);
      }
   }
 

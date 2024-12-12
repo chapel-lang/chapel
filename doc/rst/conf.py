@@ -43,6 +43,8 @@ if os.path.exists(chapel_py_dir):
     include_chapel_py_docs = True
     shutil.copyfile(chapel_py_api_template, chapel_py_api_rst)
 else:
+    if os.path.exists(chapel_py_api_rst):
+        os.remove(chapel_py_api_rst)
     pathlib.Path(chapel_py_api_rst).touch()
     msg = (
         "chapel-py not built, skipping API docs generation. "
