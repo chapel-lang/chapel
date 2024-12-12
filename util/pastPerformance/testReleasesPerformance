@@ -211,6 +211,9 @@ export CHPL_TEST_PERF_DATE="09/26/24"
 export CHPL_HOME=$chpl_release_home/chapel-2.2.0
 testReleasePerformance
 
+export CHPL_TEST_PERF_DATE="12/12/24"
+export CHPL_HOME=$chpl_release_home/chapel-2.3.0
+testReleasePerformance
 #
 # ADD NEW RELEASES HERE AS THEY ARE CREATED.
 #
