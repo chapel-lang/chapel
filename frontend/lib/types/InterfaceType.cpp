@@ -64,7 +64,7 @@ interfaceTypeWithTypesQuery(Context* context,
   QUERY_BEGIN(interfaceTypeWithTypesQuery, context, ift, types);
   const InterfaceType* res = nullptr;
 
-  if (ift->subs().size() > 0) {
+  if (ift->substitutions().size() > 0) {
     // don't allow instantiating already-instantiated interfaces
   } else {
     auto ast = parsing::idToAst(context, ift->id());

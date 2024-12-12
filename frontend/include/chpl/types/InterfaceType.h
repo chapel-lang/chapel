@@ -59,7 +59,7 @@ class InterfaceType final : public Type {
   }
 
   Genericity genericity() const override {
-    return subs_.empty() ? GENERIC : CONCRETE;
+    return MAYBE_GENERIC;
   }
 
   static owned<InterfaceType> const&
@@ -87,7 +87,7 @@ class InterfaceType final : public Type {
 
   UniqueString name() const { return name_; }
 
-  const SubstitutionsMap& subs() const { return subs_; }
+  const SubstitutionsMap& substitutions() const { return subs_; }
 };
 
 } // end namespace types

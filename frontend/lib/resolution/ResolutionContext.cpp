@@ -91,8 +91,8 @@ ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id
   // TODO: we don't need the interface type here, nor the witness, so we
   // could make this lighter weight.
   if (ift_) {
-    auto subIt = ift_->subs().find(id);
-    if (subIt != ift_->subs().end())
+    auto subIt = ift_->substitutions().find(id);
+    if (subIt != ift_->substitutions().end())
       return placeholderForId(rc, subIt->first);
 
     if (witness_) {

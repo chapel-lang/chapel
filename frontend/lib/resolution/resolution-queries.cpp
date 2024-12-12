@@ -1278,6 +1278,32 @@ static Type::Genericity getFieldsGenericity(Context* context,
   return g;
 }
 
+static Type::Genericity getInterfaceActualsGenericity(Context* context,
+                                                      const InterfaceType* ift,
+                                                      std::set<const Type*>& ignore) {
+  // add the current type to the ignore set, and stop now
+  // if it is already in the ignore set.
+  auto it = ignore.insert(ift);
+  if (it.second == false) {
+    // set already contained ct, so stop & consider it concrete
+    return Type::CONCRETE;
+  }
+
+  if (ift->substitutions().empty()) return Type::GENERIC;
+
+  auto itf = parsing::idToAst(context, ift->id())->toInterface();
+  CHPL_ASSERT(itf);
+  for (auto formal : itf->formals()) {
+    // if the substitutions aren't empty, expect substitutions for all types
+    auto& qt = ift->substitutions().at(formal->id());
+    if (getTypeGenericityIgnoring(context, qt.type(), ignore) != Type::CONCRETE) {
+      return Type::GENERIC;
+    }
+  }
+
+  return Type::CONCRETE;
+}
+
 Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
                                            std::set<const Type*>& ignore) {
   if (t == nullptr)
@@ -1305,7 +1331,11 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
-  CHPL_ASSERT(t->isCompositeType() || t->isClassType());
+  CHPL_ASSERT(t->isCompositeType() || t->isClassType() || t->isInterfaceType());
+
+  if (auto ift = t->toInterfaceType()) {
+    return getInterfaceActualsGenericity(context, ift, ignore);
+  }
 
   // the tuple type that isn't an instantiation is a generic type
   if (auto tt = t->toTupleType()) {
@@ -5376,8 +5406,8 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
   std::vector<QualifiedType> actuals;
   auto interfaceAst = parsing::idToAst(rc->context(), ift->id())->toInterface();
   for (auto formal : interfaceAst->formals()) {
-    auto subIt = ift->subs().find(formal->id());
-    if (subIt == ift->subs().end()) return nullptr;
+    auto subIt = ift->substitutions().find(formal->id());
+    if (subIt == ift->substitutions().end()) return nullptr;
     actuals.push_back(subIt->second);
   }
 
@@ -5608,7 +5638,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   // same symbol (the interface), so insert them into 'byPostorderForAssociatedTypes'
   // as a shortcut for 'resolveNamedDecl' given ift->subs().
   ResolutionResultByPostorderID byPostorderForAssociatedTypes;
-  for (auto& sub : ift->subs()) {
+  for (auto& sub : ift->substitutions()) {
     byPostorderForAssociatedTypes.byId(sub.first).setType(sub.second);
   }
   auto associatedReceiverType = QualifiedType(); // cached across iterations
@@ -5629,14 +5659,14 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       if (itf->numFormals() > 1) {
         std::vector<const Type*> formalTypes;
         for (auto formal : itf->formals()) {
-          formalTypes.push_back(ift->subs().at(formal->id()).type());
+          formalTypes.push_back(ift->substitutions().at(formal->id()).type());
         }
 
         associatedReceiverType =
           QualifiedType(QualifiedType::TYPE,
                         TupleType::getValueTuple(rc->context(), formalTypes));
       } else {
-        associatedReceiverType = ift->subs().at(itf->formal(0)->id());
+        associatedReceiverType = ift->substitutions().at(itf->formal(0)->id());
       }
     }
 
@@ -5672,7 +5702,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
     PlaceholderMap allPlaceholders;
     for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
-    for (auto& [id, qt] : ift->subs()) allPlaceholders.emplace(id, qt.type());
+    for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
     auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
 
