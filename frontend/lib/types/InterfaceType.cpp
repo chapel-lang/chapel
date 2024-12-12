@@ -36,7 +36,8 @@ bool InterfaceType::validateSubstitutions(Context* context,
   auto ifc = ast->toInterface();
   if (!ifc) return false;
 
-  if (subs.size() != ifc->numFormals()) return false;
+  CHPL_ASSERT(ifc->numFormals() >= 0);
+  if (subs.size() != (size_t) ifc->numFormals()) return false;
   for (auto fml : ifc->formals()) {
     if (subs.count(fml->id()) == 0) return false;
   }
@@ -71,7 +72,8 @@ interfaceTypeWithTypesQuery(Context* context,
     auto itf = ast->toInterface();
     CHPL_ASSERT(itf);
 
-    if (types.size() != itf->numFormals()) {
+    CHPL_ASSERT(itf->numFormals() >= 0);
+    if (types.size() != (size_t) itf->numFormals()) {
       // not good, wrong instantiation
     } else {
       InterfaceType::SubstitutionsMap subs;
