@@ -317,7 +317,10 @@ static QualifiedType primImplementsInterface(Context* context,
 
   // try automatically satisfy the interface if it's in the standard modules.
   if (parsing::idIsInBundledModule(context, ift->id())) {
-    witness = checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
+    auto runResult = context->runAndTrackErrors([&](Context* context) {
+      return checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
+    });
+    witness = runResult.result();
   }
 
   return makeParamInt(context, witness ? 1 : 2);

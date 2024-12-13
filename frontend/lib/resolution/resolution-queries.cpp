@@ -174,10 +174,8 @@ static void checkImplementationPoint(ResolutionContext* rc, const Implementation
   if (getTypeGenericity(rc->context(), implPoint->interface()) == types::Type::CONCRETE) {
     auto inScope = scopeForId(rc->context(), implPoint->id());
     auto inScopes = CallScopeInfo::forNormalCall(inScope, nullptr);
-    auto witness = checkInterfaceConstraints(rc, implPoint->interface(), implPoint->id(), inScopes);
-    if (!witness) {
-      // TODO: emit error here
-    }
+    std::ignore = checkInterfaceConstraints(rc, implPoint->interface(), implPoint->id(), inScopes);
+    // checkInterfaceConstraints emits an error already, nothing to do.
   }
 }
 
@@ -2927,24 +2925,41 @@ resolveImplementsStmtQuery(Context* context, ID id) {
 
   if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
       interfaceQt.type()->toInterfaceType() == nullptr) {
-    // TODO: emit error message
+    CHPL_REPORT(context, InvalidImplementsInterface, impl, interfaceQt);
   } else {
     auto genericInterface = interfaceQt.type()->toInterfaceType();
     std::vector<QualifiedType> actuals;
+
+    auto addActual = [&byPostorder, &actuals, context, impl](const AstNode* actual) {
+      auto& actualType = byPostorder.byAst(actual).type();
+      if (actualType.isUnknownOrErroneous()) {
+        return false;
+      } else if (!actualType.isType()) {
+        CHPL_REPORT(context, InvalidImplementsActual, impl, actual, actualType);
+        return false;
+      }
+      actuals.push_back(actualType);
+      return true;
+    };
+
+    bool addPoint = true;
     if (auto typeIdent = impl->typeIdent()) {
-      actuals.push_back(byPostorder.byAst(typeIdent).type());
+      addPoint &= addActual(typeIdent);
     }
     if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
       for (auto actual : interfaceCall->actuals()) {
-        actuals.push_back(byPostorder.byAst(actual).type());
+        if (!addPoint) break; // already found a broken actual
+        addPoint &= addActual(actual);
       }
     }
 
-    auto ift = InterfaceType::withTypes(context, genericInterface, actuals);
-    if (!ift) {
-      // TODO: emit error message
-    } else {
-      result = ImplementationPoint::get(context, ift, id);
+    if (addPoint) {
+      auto ift = InterfaceType::withTypes(context, genericInterface, actuals);
+      if (!ift) {
+        CHPL_REPORT(context, InvalidImplementsArity, impl, ift, actuals);
+      } else {
+        result = ImplementationPoint::get(context, ift, id);
+      }
     }
   }
 

@@ -98,7 +98,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
     bool foundParentClass = qt.isType() && parentClassType != nullptr;
     if (!c && foundParentClass) {
-      // TODO: report error
+      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, parentClassType);
     } else if (foundParentClass) {
       // It's a valid parent class; is it the only one? (error otherwise).
       if (lastParentClass) {
@@ -137,7 +137,7 @@ getImplementedInterfacesQuery(Context* context,
                               const AggregateDecl* ad) {
   QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
   std::vector<const ImplementationPoint*> result;
-  std::set<const InterfaceType*> seen;
+  std::map<const InterfaceType*, ID> seen;
   auto inheritanceResult =
     processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
   auto& implementationPoints = inheritanceResult.second;
@@ -146,16 +146,21 @@ getImplementedInterfacesQuery(Context* context,
                                    initialTypeForTypeDecl(context, ad->id()));
 
   for (auto& implementedInterface : implementationPoints) {
-    auto insertionResult = seen.insert(implementedInterface.first);
+    auto insertionResult = seen.insert({ implementedInterface.first, implementedInterface.second });
 
     if (!insertionResult.second) {
-      // TODO: issue an error here for duplicate 'implements' for the same
-      // interface?
+      // We already saw an 'implements' for this interface
+      CHPL_REPORT(context, InterfaceMultipleImplements, ad,
+                  implementedInterface.first, insertionResult.first->second,
+                  implementedInterface.second);
     } else {
       auto ift = InterfaceType::withTypes(context, implementedInterface.first,
                                           { initialType });
       if (!ift) {
-        // TODO: issue error message
+        // we gave it a single type, but got null back, which means it's
+        // not a unary interface.
+        CHPL_REPORT(context, InterfaceNaryInInherits, ad,
+                    implementedInterface.first, implementedInterface.second);
       } else {
         auto implPoint =
           ImplementationPoint::get(context, ift, implementedInterface.second);
