@@ -28,15 +28,37 @@
 namespace chpl {
 namespace types {
 
+/*
+  A type representing an interface constraint, either generic (as in
+  'hashable') or instantiated with a set of types as actuals (e.g.,
+  'hashable(int)').
+
+  This type does not mean that the actuals ('int' in the above example)
+  satisfy the interface; rather, it can be thought of as a claim that
+  the interface is satisfied, which may be true or false.
+
+  The following cases both create instances of InterfaceType:
+
+    record R : I {} // the 'I' has type InterfaceType(name='I', ...)
+    implements R(I); // the 'R(I)' has type InterfaceType(name='I', subs = {... => R })
+
+*/
 class InterfaceType final : public Type {
  public:
   using SubstitutionsMap = CompositeType::SubstitutionsMap;
 
  private:
+  // The ID of the interface's declaration
   ID id_;
+  // The name of the interface, for convenience
   UniqueString name_;
+  // The substitutions for the interface's formals. If the interface is
+  // generic, this will be empty; otherwise, this will have exactly one
+  // substitution for each of the interface's formals.
   SubstitutionsMap subs_;
 
+  // check that the substitutions are valid for the given interface.
+  // executed from an assertion, so does not haev an impact in release mode.
   static bool validateSubstitutions(Context* context,
                                     const ID& id,
                                     SubstitutionsMap& subs);
@@ -58,6 +80,7 @@ class InterfaceType final : public Type {
     ::chpl::mark<decltype(subs_)>{}(context, subs_);
   }
 
+  // computed from substitutions, c.f. CompositeType
   Genericity genericity() const override {
     return MAYBE_GENERIC;
   }
@@ -74,10 +97,15 @@ class InterfaceType final : public Type {
                                   UniqueString name,
                                   SubstitutionsMap subs);
 
+  /* Get an interface type, assigning the types in the list to the interface's
+     formals in order. If the number of types does not match the interface's
+     number of formals, returns nullptr.
+    */
   static const InterfaceType* withTypes(Context* context,
                                         const InterfaceType* ift,
                                         std::vector<QualifiedType> types);
 
+  /** Returns true if 'this' is an instantiation of genericType */
   bool isInstantiationOf(Context* context,
                          const InterfaceType* genericType) const;
 
@@ -86,10 +114,13 @@ class InterfaceType final : public Type {
     return get(context, id_, name_, resolution::substituteInMap(context, subs_, subs));
   }
 
+  /* Get the ID of the interface. */
   const ID& id() const { return id_; }
 
+  /* Get the name of the interface. */
   UniqueString name() const { return name_; }
 
+  /* Get the substitutions for the interface (mapping formals to thir types). */
   const SubstitutionsMap& substitutions() const { return subs_; }
 
   void stringify(std::ostream& ss, StringifyKind stringKind) const override;

@@ -204,6 +204,12 @@ CanPassResult canPassScalar(Context* context,
   return CanPassResult::canPassScalar(context, actualType, formalType);
 }
 
+/* Returns true if, all other things equal, a type with substitutions
+   'instances' is an instantiation of a type with substitutions 'generics'.
+
+   If 'allowMissing' is true, considers missing substitutions in 'generics'
+   to be "any type". Otherwise, requires that each susbtitution in
+   instances is matched by an existing substitution in generics. */
 bool canInstantiateSubstitutions(Context* context,
                                  const SubstitutionsMap& instances,
                                  const SubstitutionsMap& generics,

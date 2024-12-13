@@ -298,6 +298,10 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope);
 
 
+/**
+  Given a scope corresponding to a module, find all visible
+  implementation points for a particular interface.
+ */
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
@@ -487,10 +491,25 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const types::Type* t,
                                          const PoiScope* poiScope = nullptr);
 
+/**
+  Given an instantiated interface constraint, such as 'hashable(int)',
+  search an implementation point that matches and verify its validity.
+  If no matching implementation point is found, returns nullptr.
+
+  An implementation point can be invalid if it accepts the expected actuals
+  from the interface, but the types do not provide the required functions,
+  associated types, etc.
+  */
 const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
                                                             const types::InterfaceType* ift,
                                                             const CallScopeInfo& inScopes);
 
+/**
+  Given the location of an implementation point, check that the constraints
+  of the interface are satisfied at that position. This is used as part of
+  'findMatchingImplementationPoint', but can be used standalone if a desired
+  implementation point is already known.
+ */
 const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
                                                        const types::InterfaceType* ift,
                                                        const ID& implPointId,

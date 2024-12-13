@@ -30,6 +30,9 @@ namespace uast {
 namespace resolution {
 struct Resolver;
 
+// this helper function returns the list of interfaces that
+// are implemented by the given decl. It's defined here because this list
+// is computed as part of 'helpGetTypeForDecl'.
 const std::vector<const ImplementationPoint*>&
 getImplementedInterfaces(Context* context,
                          const uast::AggregateDecl* ad);

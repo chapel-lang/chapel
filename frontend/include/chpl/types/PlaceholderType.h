@@ -26,8 +26,43 @@
 namespace chpl {
 namespace types {
 
+/* An opaque placeholder type that was introduced for some AST node.
+   Currently, these are used for the interface resolution process, where
+   they serve both as temporary types for interface formals like 'Self',
+   and as the types of 'type queries'. In the following code:
+
+     interface I {
+       proc Self.foo(x: ?t1, y: ?t2);
+     }
+
+   All of 'Self', 't1', and 't2' will have type 'PlaceholderType(..)', with IDs given
+   by the (implicit) formal declaration and the type queries, respectively.
+
+   Because placeholder types are unique (created from a particular position
+   in the AST), they cannot be passed to any concrete function argument. This
+   means that when searcing for witnesses for 'foo', functions with concrete 'x'
+   will always be rejected (as desired). Moreover, as part of checking applicabiity,
+   placeholder types will be substituted for type queries in the candidate
+   (non-interface) function, and thus enforce a matching pattern of genericity.
+
+   As an example, the following function will match the constraint above:
+
+     proc R.foo(x, y) {}
+
+   because 'x' will be instantiated with 'PlaceholderType(t1)', and
+   'y' with 'PlaceholderType(t2)'. However, the following function will not match:
+
+     proc R.foo(x, y: x.type) {}
+
+   Because the type of 'y' will be 'PlaceholderType(t1)', which is not
+   equal to 'PlaceholderType(t2)'.
+
+   Placeholder types can be eliminated from types using the 'substitute' method,
+   which will replace them with the corresponding "real" type.
+ */
 class PlaceholderType final : public Type {
  private:
+  // the syntactic ID for which this placeholder type was created
   ID id_;
 
   PlaceholderType(ID id)
@@ -63,6 +98,7 @@ class PlaceholderType final : public Type {
     return this;
   }
 
+  /* Get the ID for this placeholder type. */
   const ID& id() const { return id_; }
 
   void stringify(std::ostream& ss,

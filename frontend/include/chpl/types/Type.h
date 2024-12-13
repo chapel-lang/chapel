@@ -163,11 +163,19 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. */
   virtual const Type* substitute(Context* context,
                                  const PlaceholderMap& subs) const {
     return this;
   }
 
+  /** For a given subclass of 'Type', replaces placeholders (as in
+      PlaceholderType in the type) according to their values in the 'subs' map,
+      handling the case in which the type is null.
+
+      Since replacing placeholders ought not to change which subclass
+      the type is, asserts and casts the result back to the same subclass. */
   template <typename TargetType>
   static const TargetType* substitute(Context* context,
                                       const TargetType* type,
