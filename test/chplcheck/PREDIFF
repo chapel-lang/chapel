@@ -16,7 +16,7 @@ fi
 
 
 $CHPL_HOME/tools/chplcheck/chplcheck \
-  $FLAGS $1.chpl >>$2 2>>$2
+  $FLAGS $1.chpl &>>$2
 
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
   mv $2.tmp $2
