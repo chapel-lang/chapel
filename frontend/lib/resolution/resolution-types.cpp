@@ -926,9 +926,9 @@ void ImplementationPoint::mark(Context* context) const {
 }
 
 void ImplementationPoint::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-  ss << "implements ";
+  ss << "implements(";
   interface_->stringify(ss, stringKind);
-  ss << " @ ";
+  ss << " via )";
   id_.stringify(ss, stringKind);
 }
 
@@ -957,8 +957,29 @@ ImplementationWitness* ImplementationWitness::get(Context* context,
 }
 
 void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-  ss << "implementation witness";
-  // TODO: print the contents of the witness
+  ss << "witness(";
+  ss << "constraints: ";
+  for (auto& c : associatedConstraints_) {
+    c.first.stringify(ss, stringKind);
+    ss << " => ";
+    c.second->stringify(ss, stringKind);
+    ss << ", ";
+  }
+  ss << "associated types: ";
+  for (auto& a : associatedTypes_) {
+    a.first.stringify(ss, stringKind);
+    ss << " => ";
+    a.second->stringify(ss, stringKind);
+    ss << ", ";
+  }
+  ss << "required functions: ";
+  for (auto& f : requiredFns_) {
+    f.first.stringify(ss, stringKind);
+    ss << " => ";
+    f.second.stringify(ss, stringKind);
+    ss << ", ";
+  }
+  ss << ")";
 }
 
 const owned<TypedFnSignature>&

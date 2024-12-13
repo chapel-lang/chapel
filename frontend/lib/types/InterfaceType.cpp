@@ -104,5 +104,14 @@ bool InterfaceType::isInstantiationOf(Context* context, const InterfaceType* oth
   return resolution::canInstantiateSubstitutions(context, subs_, other->substitutions(), /* allowMissing */ false);
 }
 
+void InterfaceType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  ss << name_;
+  if (!subs_.empty()) {
+    ss << "(";
+    CompositeType::stringifySubstitutions(ss, stringKind, subs_);
+    ss << ")";
+  }
+}
+
 } // end namespace types
 } // end namespace chpl

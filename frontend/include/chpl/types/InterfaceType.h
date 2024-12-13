@@ -91,6 +91,8 @@ class InterfaceType final : public Type {
   UniqueString name() const { return name_; }
 
   const SubstitutionsMap& substitutions() const { return subs_; }
+
+  void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
 
 } // end namespace types

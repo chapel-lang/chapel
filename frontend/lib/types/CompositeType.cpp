@@ -52,6 +52,54 @@ CompositeType::areSubsInstantiationOf(Context* context,
 CompositeType::~CompositeType() {
 }
 
+using SubstitutionPair = CompositeType::SubstitutionPair;
+
+static void stringifySortedSubstitutions(std::ostream& ss,
+                                         chpl::StringifyKind stringKind,
+                                         const std::vector<SubstitutionPair>& sorted,
+                                         bool& emittedField) {
+  for (const auto& sub : sorted) {
+    if (emittedField) ss << ", ";
+
+    if (stringKind != StringifyKind::CHPL_SYNTAX) {
+      sub.first.stringify(ss, stringKind);
+      ss << ":";
+      sub.second.stringify(ss, stringKind);
+    } else {
+      if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
+        sub.second.type()->stringify(ss, stringKind);
+      } else if (sub.second.isParam()) {
+        sub.second.param()->stringify(ss, stringKind);
+      } else {
+        // Some odd configuration; fall back to printing the qualified type.
+        CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
+        sub.second.stringify(ss, stringKind);
+      }
+    }
+
+    emittedField = true;
+  }
+}
+
+static
+std::vector<SubstitutionPair>
+sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
+  // since it's an unordered map, iteration will occur in a
+  // nondeterministic order.
+  // it's important to sort the keys / iterate in a deterministic order here,
+  // so we create a vector of pair<K,V> and sort that instead
+  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
+  std::sort(v.begin(), v.end(), FirstElementComparator<ID, QualifiedType>());
+  return v;
+}
+
+void CompositeType::stringifySubstitutions(std::ostream& ss,
+                                           chpl::StringifyKind stringKind,
+                                           const SubstitutionsMap& subs) {
+  bool emittedField = false;
+  auto sorted = sortedSubstitutionsMap(subs);
+  stringifySortedSubstitutions(ss, stringKind, sorted, emittedField);
+}
 void CompositeType::stringify(std::ostream& ss,
                               chpl::StringifyKind stringKind) const {
   // compute the parent class type for BasicClassType
@@ -97,27 +145,7 @@ void CompositeType::stringify(std::ostream& ss,
       emittedField = true;
     }
 
-    for (const auto& sub : sorted) {
-      if (emittedField) ss << ", ";
-
-      if (stringKind != StringifyKind::CHPL_SYNTAX) {
-        sub.first.stringify(ss, stringKind);
-        ss << ":";
-        sub.second.stringify(ss, stringKind);
-      } else {
-        if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
-          sub.second.type()->stringify(ss, stringKind);
-        } else if (sub.second.isParam()) {
-          sub.second.param()->stringify(ss, stringKind);
-        } else {
-          // Some odd configuration; fall back to printing the qualified type.
-          CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
-          sub.second.stringify(ss, stringKind);
-        }
-      }
-
-      emittedField = true;
-    }
+    stringifySortedSubstitutions(ss, stringKind, sorted, emittedField);
     ss << ")";
   }
 }
@@ -225,21 +253,6 @@ const ClassType* CompositeType::getErrorType(Context* context) {
                                 /* instantiatedFrom */ nullptr,
                                 SubstitutionsMap());
   return ClassType::get(context, bct, /* manager */ nullptr, dec);
-}
-
-
-using SubstitutionPair = CompositeType::SubstitutionPair;
-
-static
-std::vector<SubstitutionPair>
-sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
-  // since it's an unordered map, iteration will occur in a
-  // nondeterministic order.
-  // it's important to sort the keys / iterate in a deterministic order here,
-  // so we create a vector of pair<K,V> and sort that instead
-  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
-  std::sort(v.begin(), v.end(), FirstElementComparator<ID, QualifiedType>());
-  return v;
 }
 
 std::vector<SubstitutionPair> CompositeType::sortedSubstitutions(void) const {
