@@ -307,16 +307,20 @@ static QualifiedType primImplementsInterface(Context* context,
   if (!instantiatedIft) return QualifiedType();
 
   ResolutionContext rc(context);
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
   auto witness =
-    findMatchingImplementationPoint(&rc, instantiatedIft,
-                                    CallScopeInfo::forNormalCall(inScope, inPoiScope));
+    findMatchingImplementationPoint(&rc, instantiatedIft, inScopes);
 
-  if (!witness) {
-    // TODO: no 'implements' statement, but auto-implemented.
-    return makeParamInt(context, 2);
+  if (witness) {
+    return makeParamInt(context, 0);
   }
 
-  return makeParamInt(context, 0);
+  // try automatically satisfy the interface if it's in the standard modules.
+  if (parsing::idIsInBundledModule(context, ift->id())) {
+    witness = checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
+  }
+
+  return makeParamInt(context, witness ? 1 : 2);
 }
 
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {

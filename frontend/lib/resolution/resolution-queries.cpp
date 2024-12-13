@@ -5448,7 +5448,7 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
 
 static ID searchFunctionByTemplate(ResolutionContext* rc,
                                    const InterfaceType* iftForErr,
-                                   const ID& implPointForErr,
+                                   const ID& implPointIdForErr,
                                    const Function* fn,
                                    const TypedFnSignature* tfs,
                                    const CallScopeInfo& inScopes) {
@@ -5488,14 +5488,14 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
   } else if (failed && c.mostSpecific().isAmbiguous()) {
     // TODO: no way at this time to collected candidates rejected due to
     //       ambiguity, so just report an empty list.
-    CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointForErr,
+    CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointIdForErr,
                 fn, std::move(ambiguous));
     return ID();
   } else if (failed) {
     // Failed to find a call, not due to ambiguity. Re-run call and gather
     // rejected candidates.
     resolveGeneratedCall(rc->context(), fn, ci, inScopes, &rejected);
-    CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointForErr,
+    CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointIdForErr,
                 tfs, ci, std::move(rejected));
     return ID();
   }
@@ -5514,7 +5514,7 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
     if (foundIntent == fn->returnIntent()) {
       // fine
     } else {
-      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointForErr,
+      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointIdForErr,
                   tfs, foundFn);
       return ID();
     }
@@ -5550,7 +5550,7 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
     if (formalActual.actualIdx() <= lastActualPosition) {
       // the actuals in the call (which are formals from the template)
       // are re-ordered compared to the foundFn. This is an error.
-      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointForErr,
+      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointIdForErr,
                   tfs, foundFn);
       return ID();
     }
@@ -5563,7 +5563,7 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
 
 static QualifiedType searchForAssociatedType(ResolutionContext* rc,
                                              const InterfaceType* iftForErr,
-                                             const ID& implPointForErr,
+                                             const ID& implPointIdForErr,
                                              const QualifiedType& receiverType,
                                              const Variable* td,
                                              const CallScopeInfo& inScopes) {
@@ -5597,7 +5597,7 @@ static QualifiedType searchForAssociatedType(ResolutionContext* rc,
 
   if (failed || notType) {
     CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, iftForErr,
-                implPointForErr, td, ci, std::move(rejected));
+                implPointIdForErr, td, ci, std::move(rejected));
     return QualifiedType();
   }
 
@@ -5607,10 +5607,10 @@ static QualifiedType searchForAssociatedType(ResolutionContext* rc,
 static const ImplementationWitness* const&
 checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const InterfaceType* ift,
-                               const ID& implPointId,
+                               const ID& implPointIdForErr,
                                const Scope* inScope,
                                const PoiScope* inPoiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPointId, inScope, inPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPointIdForErr, inScope, inPoiScope);
 
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
@@ -5662,7 +5662,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       }
     }
 
-    auto foundQt = searchForAssociatedType(rc, ift, implPointId,
+    auto foundQt = searchForAssociatedType(rc, ift, implPointIdForErr,
                                            associatedReceiverType, td, inScopes);
     if (foundQt.isUnknownOrErroneous()) {
       result = nullptr;
@@ -5696,7 +5696,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
     for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
-    auto foundId = searchFunctionByTemplate(rc, ift, implPointId, fn, tfs, inScopes);
+    auto foundId = searchFunctionByTemplate(rc, ift, implPointIdForErr, fn, tfs, inScopes);
 
     if (!foundId) {
       result = nullptr;
