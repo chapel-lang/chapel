@@ -285,6 +285,15 @@ struct ModuleSource {
   }
 };
 
+static bool findError(const std::vector<owned<ErrorBase>>& errors, ErrorType type) {
+  for (auto& err : errors) {
+    if (err->type() == type) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static void testSingleInterface(const InterfaceSource& interface,
                                 const RecordSource& record,
                                 chpl::optional<ErrorType> expectedError = chpl::empty) {
@@ -297,17 +306,10 @@ static void testSingleInterface(const InterfaceSource& interface,
     std::cout << std::endl;
 
     if (expectedError) {
-      bool found = false;
-      for (auto& err : guard.errors()) {
-        if (err->type() == *expectedError) {
-          found = true;
-          break;
-        }
-      }
-      CHPL_ASSERT(found);
+      assert(findError(guard.errors(), *expectedError));
       guard.realizeErrors();
     } else {
-      CHPL_ASSERT(guard.realizeErrors() == 0);
+      assert(guard.realizeErrors() == 0);
     }
 
     context->advanceToNextRevision(false);
@@ -329,7 +331,7 @@ static void testSingleInterface(const InterfaceSource& interface,
         auto filePath = UniqueString::get(context, "M.chpl");
         setFileText(context, filePath, source);
         auto& modVec = parseToplevel(context, filePath);
-        CHPL_ASSERT(modVec.size() == 1);
+        assert(modVec.size() == 1);
 
         validateAndAdvance(module, modVec[0]);
       }
@@ -445,6 +447,23 @@ static void testRequiredMethodOneArg() {
     .addMethod(NOT_A_TYPE_METHOD, "foo(x: bool) {}")
     .addInterfaceConstraint(i);
   testSingleInterface(i, r3, ErrorType::InterfaceMissingFn);
+}
+
+static void testRequiredMethodAmbiguous() {
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1, ErrorType::InterfaceAmbiguousFn);
+}
+
+static void testRequiredMethodWrongIntent() {
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) type do return int;")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1, ErrorType::InterfaceInvalidIntent);
 }
 
 static void testTwoRequiredMethods() {
@@ -612,10 +631,102 @@ static void testFormalOrdering() {
   testSingleInterface(i, r2, ErrorType::InterfaceReorderedFnFormals);
 }
 
+static void expectError(const std::string& program, ErrorType error) {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto filePath = UniqueString::get(context, "file.chpl");
+  setFileText(context, filePath, program);
+  auto& modVec = parseToplevel(context, filePath);
+  assert(modVec.size() == 1);
+  resolveModule(context, modVec[0]->id());
+
+  assert(findError(guard.errors(), error));
+  guard.realizeErrors();
+}
+
+static void testImplementsInvalidInterface() {
+  expectError(
+    R"""(
+      record I {
+
+      }
+      int implements I;
+    )""", ErrorType::InvalidImplementsInterface);
+}
+
+static void testImplementsInvalidActual() {
+  expectError(
+    R"""(
+      interface I {
+
+      }
+      var x = 3;
+      x implements I;
+    )""", ErrorType::InvalidImplementsActual);
+
+  expectError(
+    R"""(
+    interface I {
+
+    }
+    var x = 3;
+    implements I(x);
+    )""", ErrorType::InvalidImplementsActual);
+};
+
+static void testImplementsDuplicate() {
+  expectError(
+    R"""(
+    interface I {
+
+    }
+    record R : I, I {
+
+    }
+    )""", ErrorType::InterfaceMultipleImplements);
+};
+
+static void testInvalidImplementsArity() {
+  expectError(
+    R"""(
+    interface Unary {}
+    implements Unary(int, bool);
+    )""", ErrorType::InvalidImplementsArity);
+
+  expectError(
+    R"""(
+    interface Unary(Self) {}
+    implements Unary(int, bool);
+    )""", ErrorType::InvalidImplementsArity);
+
+  expectError(
+    R"""(
+    interface Binary(L, R) {}
+    implements Binary(int);
+    )""", ErrorType::InvalidImplementsArity);
+
+  expectError(
+    R"""(
+    interface Binary(L, R) {}
+    implements Binary(int, bool, real);
+    )""", ErrorType::InvalidImplementsArity);
+
+  expectError(
+    R"""(
+    interface Binary(L, R) {}
+    record R : Binary {}
+    )""", ErrorType::InterfaceNaryInInherits);
+};
+
 int main() {
+  // tests for "basic" interface resolution (unary interfaces)
   testRequiredMethodNoArgs();
   testRequiredMethodNoArgsDefault();
   testRequiredMethodOneArg();
+  testRequiredMethodAmbiguous();
+  testRequiredMethodWrongIntent();
   testTwoRequiredMethods();
   testBasicGeneric();
   testBasicGenericTypeQuery();
@@ -624,4 +735,10 @@ int main() {
   testAssociatedTypeInFn();
   testFormalNaming();
   testFormalOrdering();
+
+  // tests for the various error message cases
+  testImplementsInvalidInterface();
+  testImplementsInvalidActual();
+  testImplementsDuplicate();
+  testInvalidImplementsArity();
 }

@@ -2927,7 +2927,7 @@ resolveImplementsStmtQuery(Context* context, ID id) {
       interfaceQt.type()->toInterfaceType() == nullptr) {
     CHPL_REPORT(context, InvalidImplementsInterface, impl, interfaceQt);
   } else {
-    auto genericInterface = interfaceQt.type()->toInterfaceType();
+    auto genericIft = interfaceQt.type()->toInterfaceType();
     std::vector<QualifiedType> actuals;
 
     auto addActual = [&byPostorder, &actuals, context, impl](const AstNode* actual) {
@@ -2954,9 +2954,9 @@ resolveImplementsStmtQuery(Context* context, ID id) {
     }
 
     if (addPoint) {
-      auto ift = InterfaceType::withTypes(context, genericInterface, actuals);
+      auto ift = InterfaceType::withTypes(context, genericIft, actuals);
       if (!ift) {
-        CHPL_REPORT(context, InvalidImplementsArity, impl, ift, actuals);
+        CHPL_REPORT(context, InvalidImplementsArity, impl, genericIft, actuals);
       } else {
         result = ImplementationPoint::get(context, ift, id);
       }
