@@ -756,14 +756,13 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
   }
 }
 
-// ERROR_CLASS(InterfaceAmbiguousFn, const types::InterfaceType*, ID, const uast::Function*, std::vector<const resolution::TypedFnSignature*>)
 void ErrorInterfaceAmbiguousFn::write(ErrorWriterBase& wr) const {
   auto interface = std::get<const types::InterfaceType*>(info_);
   auto implPoint = std::get<ID>(info_);
   auto fn = std::get<const uast::Function*>(info_);
   auto candidate = std::get<std::vector<const resolution::TypedFnSignature*>>(info_);
 
-  wr.heading(kind_, type_, implPoint, "unable to disambiguate candidates for function '", fn->name(), "'");
+  wr.heading(kind_, type_, implPoint, "unable to disambiguate candidates for function '", fn->name(), "'.");
   wr.codeForDef(fn->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
@@ -782,14 +781,13 @@ void ErrorInterfaceAmbiguousFn::write(ErrorWriterBase& wr) const {
   }
 }
 
-// ERROR_CLASS(InterfaceInvalidIntent, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, const resolution::TypedFnSignature*)
 void ErrorInterfaceInvalidIntent::write(ErrorWriterBase& wr) const {
   auto interface = std::get<const types::InterfaceType*>(info_);
   auto implPoint = std::get<ID>(info_);
   auto fnTemplate = std::get<2>(info_);
   auto fnReal = std::get<3>(info_);
 
-  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' has mismatched return intent ");
+  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' has mismatched return intent.");
   wr.codeForDef(fnTemplate->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
@@ -799,7 +797,6 @@ void ErrorInterfaceInvalidIntent::write(ErrorWriterBase& wr) const {
   wr.codeForDef(fnReal->id());
 }
 
-// ERROR_CLASS(InterfaceMissingAssociatedType, const types::InterfaceType*, ID, const uast::Variable*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
 void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   auto interface = std::get<const types::InterfaceType*>(info_);
   auto implPoint = std::get<ID>(info_);
@@ -807,7 +804,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
 
-  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'");
+  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'.");
   wr.codeForDef(var->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
@@ -820,7 +817,6 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   });
 }
 
-// ERROR_CLASS(InterfaceMissingFn, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
 void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   auto interface = std::get<const types::InterfaceType*>(info_);
   auto implPoint = std::get<ID>(info_);
@@ -828,7 +824,7 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
 
-  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'");
+  wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'.");
   wr.codeForDef(fn->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
@@ -843,14 +839,44 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   });
 }
 
-// ERROR_CLASS(InterfaceReorderedFnFormals, const types::InterfaceType*, ID, const resolution::TypedFnSignature*, const resolution::TypedFnSignature*)
+void ErrorInterfaceMultipleImplements::write(ErrorWriterBase& wr) const {
+  auto ad = std::get<const uast::AggregateDecl*>(info_);
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<2>(info_);
+  auto otherImplPoint = std::get<3>(info_);
+
+  wr.heading(kind_, type_, ad, "multiple implementations of interface '", interface->name(), "' found.");
+  wr.message("While analyzing the definition of type '", ad->name(), "', defined here:");
+  wr.codeForDef(ad);
+  wr.note(implPoint, "the interface '", interface->name(), "' is first implemented here:");
+  wr.code<ID>(implPoint, { implPoint });
+  wr.note(otherImplPoint, "it is also implemented here:");
+  wr.code<ID>(otherImplPoint, { otherImplPoint });
+}
+
+void ErrorInterfaceNaryInInherits::write(ErrorWriterBase& wr) const {
+  auto ad = std::get<const uast::AggregateDecl*>(info_);
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto implPoint = std::get<ID>(info_);
+
+  wr.heading(kind_, type_, ad, "cannot use interface '", interface->name(), "' in inheritance expression as it is not a unary interface.");
+  wr.message("While analyzing the definition of type '", ad->name(), "', defined here:");
+  wr.codeForDef(ad);
+  wr.note(implPoint, "found the interface '", interface->name(), "' in an inheritance list here:");
+  wr.code<ID>(implPoint, { implPoint });
+  wr.note(interface->id(), "However, the interface '", interface->name(), "' is defined to be a non-unary interface here:");
+  wr.codeForDef(interface->id());
+  wr.message("Only unary interfaces (those with a single type parameter like 'Self') can be used in inheritance expressions.");
+  wr.message("To implement n-ary interfaces, consider using a standalone 'implements' statement.");
+}
+
 void ErrorInterfaceReorderedFnFormals::write(ErrorWriterBase& wr) const {
   auto interface = std::get<const types::InterfaceType*>(info_);
   auto implPoint = std::get<ID>(info_);
   auto fnTemplate = std::get<2>(info_);
   auto fnReal = std::get<3>(info_);
 
-  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' does not have the same order of formal names");
+  wr.heading(kind_, type_, implPoint, "candidate for function '", fnTemplate->untyped()->name(), "' does not have the same order of formal names.");
   wr.codeForDef(fnTemplate->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
@@ -944,6 +970,37 @@ void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
   } else {
     wr.message("However, 'domain' here had too many actuals.");
   }
+}
+
+void ErrorInvalidImplementsActual::write(ErrorWriterBase& wr) const {
+  auto impl = std::get<const uast::Implements*>(info_);
+  auto actual = std::get<const uast::AstNode*>(info_);
+  auto& qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, impl, "invalid use of 'implements' with an actual that is ", qt, ".");
+  wr.codeForLocation(impl);
+  wr.message("The actual is provided here:");
+  wr.code(actual, { actual });
+  wr.message("Only 'type' actuals are allowed in implementation points.");
+}
+
+void ErrorInvalidImplementsArity::write(ErrorWriterBase& wr) const {
+  auto impl = std::get<const uast::Implements*>(info_);
+  auto interface = std::get<const types::InterfaceType*>(info_);
+  auto& actuals = std::get<std::vector<types::QualifiedType>>(info_);
+  std::ignore = actuals;
+
+  wr.heading(kind_, type_, impl, "wrong number of actuals in 'implements' statement for interface '", interface->name(), "'.");
+  wr.codeForLocation(impl);
+}
+
+void ErrorInvalidImplementsInterface::write(ErrorWriterBase& wr) const {
+  auto impl = std::get<const uast::Implements*>(info_);
+  auto& qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, impl, "invalid 'implements' statement.");
+  wr.codeForLocation(impl);
+  wr.message("The statement attempts to implement ", qt, ", which is not an interface.");
 }
 
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
@@ -1245,6 +1302,18 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
     }
     return nullptr;
   });
+}
+
+void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {
+  auto ad = std::get<const uast::AggregateDecl*>(info_);
+  auto inheritanceExpr = std::get<const uast::AstNode*>(info_);
+  auto& type = std::get<const types::Type*>(info_);
+
+  wr.heading(kind_, type_, ad, "attempt for non-class type to inherit from a type.");
+  wr.message("While analyzing the definition of type '", ad->name(), "', defined here:");
+  wr.codeForDef(ad);
+  wr.note(inheritanceExpr, "found an inheritance expression referring to type '", type, "' here:");
+  wr.code(inheritanceExpr, { inheritanceExpr });
 }
 
 static void printTheseResults(
