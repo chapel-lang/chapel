@@ -290,8 +290,8 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope);
 
 
-const ImplementationPoint* resolveImplementsStatement(ResolutionContext* rc,
-                                                      ID id);
+const ImplementationPoint* resolveImplementsStmt(ResolutionContext* rc,
+                                                 ID id);
 
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(ResolutionContext* rc,

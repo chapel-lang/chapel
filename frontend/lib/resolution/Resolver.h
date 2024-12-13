@@ -178,11 +178,6 @@ struct Resolver {
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
 
-  // set up Resolver to resolve an Implements statement
-  static Resolver
-  createForImplementsStmt(ResolutionContext* rc, const uast::Implements* implements,
-                          ResolutionResultByPostorderID& byPostorder);
-
   static Resolver
   createForInterfaceStmt(ResolutionContext* rc,
                          const uast::Interface* interface,

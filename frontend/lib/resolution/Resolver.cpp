@@ -244,19 +244,6 @@ Resolver::createForModuleStmt(ResolutionContext* rc, const Module* mod,
 }
 
 Resolver
-Resolver::createForImplementsStmt(ResolutionContext* rc, const uast::Implements* implements,
-                                  ResolutionResultByPostorderID& byPostorder) {
-  auto parentId = parsing::idToParentId(rc->context(), implements->id());
-  CHPL_ASSERT(!parentId.isEmpty());
-  auto parentAst = parsing::idToAst(rc->context(), parentId);
-  CHPL_ASSERT(parentAst);
-  auto mod = parentAst->toModule();
-  CHPL_ASSERT(mod && "implements statements not supported outside of module scope");
-
-  return createForModuleStmt(rc, mod, implements, byPostorder);
-}
-
-Resolver
 Resolver::createForInterfaceStmt(ResolutionContext* rc,
                                  const uast::Interface* interface,
                                  const types::InterfaceType* ift,
