@@ -3,36 +3,31 @@ class Chapel < Formula
 
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/2.2.0/chapel-2.2.0.tar.gz"
-  sha256 "bb16952a87127028031fd2b56781bea01ab4de7c3466f7b6a378c4d8895754b6"
+  url "https://github.com/chapel-lang/chapel/releases/download/2.3.0/chapel-2.3.0.tar.gz"
+  sha256 "0185970388aef1f1fae2a031edf060d5eac4eb6e6b1089e7e3b15a130edd8a31"
   license "Apache-2.0"
-  revision 2
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    rebuild 1
-    sha256 arm64_sequoia: "86a564896112278e0aee551ad00254242ff7eb374da45f945352beb6df974999"
-    sha256 arm64_sonoma:  "82a836c46c1742bda66bfe00cc382597007b29dd9a1261eab74316095f0b0790"
-    sha256 arm64_ventura: "617283fed12c23b9d61023f77c1b82536b9064913761dd3b266d7055242b2e1a"
-    sha256 sonoma:        "9e41f26c78876875e0d6cde3ebd54740b10d0054eb2929915ce1390fcc91ab3d"
-    sha256 ventura:       "eb0a0093cd3c9ba5a2347f07c59bae86071ca5baaa8861f094db65ca5df6c2fd"
-    sha256 x86_64_linux:  "252515f46ddc6ef16ef46edc26a4a6ad4cc352c6513a138a6a607ae5c7280f39"
+    sha256 arm64_sequoia: "6cf2cf8d58bdf2fdc9edbcd62c82eca9dc8767ddad7f8c0b0ea76236a23a1f5b"
+    sha256 arm64_sonoma:  "f0aaa6510d417808a80054911b9ebc54c3548c3a1d68d4134bad8b84f3de391d"
+    sha256 arm64_ventura: "ab6f9877d592090dfc2c0a01f4a682170db00378f94e375d0b980181039c10da"
+    sha256 sonoma:        "49941870b773ff6cbb440a89a9330328af4afa6c3fd3526b7ecd53ad99c74e6a"
+    sha256 ventura:       "782262cb21481db6e16e9f593a1bdace2d361bb384e17b3508b0d18f1e96e63c"
+    sha256 x86_64_linux:  "dc69afe8c2eb4ae3beea7d9bcb5c6d5b2d78c6bbc2061bab46fffba64be5116e"
   end
 
   depends_on "cmake"
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm@18"
+  depends_on "llvm"
   depends_on "pkgconf"
   depends_on "python@3.13"
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
-
-  # update pyyaml to support py3.13 build, upstream pr ref, https://github.com/chapel-lang/chapel/pull/26079
-  patch :DATA
 
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
@@ -130,15 +125,3 @@ class Chapel < Formula
     system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
-
-__END__
-diff --git a/third-party/chpl-venv/test-requirements.txt b/third-party/chpl-venv/test-requirements.txt
-index a8f97300..2da4f7de 100644
---- a/third-party/chpl-venv/test-requirements.txt
-+++ b/third-party/chpl-venv/test-requirements.txt
-@@ -1,4 +1,4 @@
--PyYAML==6.0.1
-+PyYAML==6.0.2
- filelock==3.12.2
- argcomplete==3.1.2
- setuptools==68.0.0
