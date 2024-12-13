@@ -35,6 +35,13 @@ namespace resolution {
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
 
 /**
+  Specialized version of resolveModuleStmt when the statement is an
+  'implements'. This does the work of constructing an 'ImplementationPoint'.
+ */
+const ImplementationPoint* resolveImplementsStmt(Context* rc,
+                                                 ID id);
+
+/**
   Resolve the contents of a Module
  */
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
@@ -289,9 +296,6 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
-
-const ImplementationPoint* resolveImplementsStmt(ResolutionContext* rc,
-                                                 ID id);
 
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(ResolutionContext* rc,

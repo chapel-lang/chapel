@@ -2885,52 +2885,45 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
 }
 
 static const ImplementationPoint* const&
-resolveImplementsStmtQuery(ResolutionContext* rc, ID id) {
-  CHPL_RESOLUTION_QUERY_BEGIN(resolveImplementsStmtQuery, rc, id);
+resolveImplementsStmtQuery(Context* context, ID id) {
+  QUERY_BEGIN(resolveImplementsStmtQuery, context, id);
   const ImplementationPoint* result = nullptr;
 
-  ID moduleId = parsing::idToParentId(rc->context(), id);
-  auto moduleAst = parsing::idToAst(rc->context(), moduleId);
-  if (const Module* mod = moduleAst->toModule()) {
-    auto ast = parsing::idToAst(rc->context(), id);
-    if (auto impl = ast->toImplements()) {
-      ResolutionResultByPostorderID byPostorder;
-      auto res = Resolver::createForModuleStmt(rc, mod, ast, byPostorder);
-      impl->traverse(res);
+  auto byPostorder = resolveModuleStmt(context, id);
+  auto ast = parsing::idToAst(context, id);
+  CHPL_ASSERT(ast->isImplements());
+  auto impl = ast->toImplements();
 
-      auto interfaceExpr = impl->interfaceExpr();
-      QualifiedType interfaceQt;
-      if (auto interfaceIdent = interfaceExpr->toIdentifier()) {
-        interfaceQt = byPostorder.byAst(interfaceIdent).type();
-      } else if (auto interfaceCall = interfaceExpr->toFnCall()) {
-        interfaceQt = byPostorder.byAst(interfaceCall->calledExpression()).type();
-      }
+  auto interfaceExpr = impl->interfaceExpr();
+  QualifiedType interfaceQt;
+  if (auto interfaceIdent = interfaceExpr->toIdentifier()) {
+    interfaceQt = byPostorder.byAst(interfaceIdent).type();
+  } else if (auto interfaceCall = interfaceExpr->toFnCall()) {
+    interfaceQt = byPostorder.byAst(interfaceCall->calledExpression()).type();
+  }
 
-      if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
-          interfaceQt.type()->toInterfaceType() == nullptr) {
-        // TODO: emit error message
-      } else {
-        ID interfaceId = interfaceQt.type()->toInterfaceType()->id();
-        std::vector<QualifiedType> actuals;
-        if (auto typeIdent = impl->typeIdent()) {
-          actuals.push_back(byPostorder.byAst(typeIdent).type());
-        }
-        if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
-          for (auto actual : interfaceCall->actuals()) {
-            actuals.push_back(byPostorder.byAst(actual).type());
-          }
-        }
-
-        result = ImplementationPoint::get(rc->context(), interfaceId, id, std::move(actuals));
+  if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
+      interfaceQt.type()->toInterfaceType() == nullptr) {
+    // TODO: emit error message
+  } else {
+    ID interfaceId = interfaceQt.type()->toInterfaceType()->id();
+    std::vector<QualifiedType> actuals;
+    if (auto typeIdent = impl->typeIdent()) {
+      actuals.push_back(byPostorder.byAst(typeIdent).type());
+    }
+    if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
+      for (auto actual : interfaceCall->actuals()) {
+        actuals.push_back(byPostorder.byAst(actual).type());
       }
     }
 
+    result = ImplementationPoint::get(context, interfaceId, id, std::move(actuals));
   }
 
-  return CHPL_RESOLUTION_QUERY_END(result);
+  return QUERY_END(result);
 }
 
-const ImplementationPoint* resolveImplementsStmt(ResolutionContext* context,
+const ImplementationPoint* resolveImplementsStmt(Context* context,
                                                  ID id) {
   return resolveImplementsStmtQuery(context, id);
 }
@@ -2951,7 +2944,7 @@ collectImplementationPointsInScope(ResolutionContext* rc,
         byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
       }
     } else if (auto implements = stmt->toImplements()) {
-      auto implPoint = resolveImplementsStmt(rc, implements->id());
+      auto implPoint = resolveImplementsStmt(rc->context(), implements->id());
       if (implPoint) {
         byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
       }
