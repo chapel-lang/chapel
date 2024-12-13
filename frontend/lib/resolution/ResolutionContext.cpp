@@ -88,8 +88,9 @@ ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id
   // For interfaces, just return placeholders for the associated types
   // and the interface parameters.
   //
-  // TODO: we don't need the interface type here, nor the witness, so we
-  // could make this lighter weight.
+  // In the future, to make generics interoperate with interface-based
+  // generics, we will need to do more here. This is pending design discussion,
+  // though.
   if (ift_) {
     auto subIt = ift_->substitutions().find(id);
     if (subIt != ift_->substitutions().end())
