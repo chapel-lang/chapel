@@ -78,6 +78,9 @@ class InterfaceType final : public Type {
                                         const InterfaceType* ift,
                                         std::vector<QualifiedType> types);
 
+  bool isInstantiationOf(Context* context,
+                         const InterfaceType* genericType) const;
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return get(context, id_, name_, resolution::substituteInMap(context, subs_, subs));

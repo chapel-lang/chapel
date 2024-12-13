@@ -2906,7 +2906,7 @@ resolveImplementsStmtQuery(Context* context, ID id) {
       interfaceQt.type()->toInterfaceType() == nullptr) {
     // TODO: emit error message
   } else {
-    ID interfaceId = interfaceQt.type()->toInterfaceType()->id();
+    auto genericInterface = interfaceQt.type()->toInterfaceType();
     std::vector<QualifiedType> actuals;
     if (auto typeIdent = impl->typeIdent()) {
       actuals.push_back(byPostorder.byAst(typeIdent).type());
@@ -2917,7 +2917,12 @@ resolveImplementsStmtQuery(Context* context, ID id) {
       }
     }
 
-    result = ImplementationPoint::get(context, interfaceId, id, std::move(actuals));
+    auto ift = InterfaceType::withTypes(context, genericInterface, actuals);
+    if (!ift) {
+      // TODO: emit error message
+    } else {
+      result = ImplementationPoint::get(context, ift, id);
+    }
   }
 
   return QUERY_END(result);
@@ -2941,12 +2946,12 @@ collectImplementationPointsInScope(ResolutionContext* rc,
     if (auto ad = stmt->toAggregateDecl()) {
       auto& implPoints = getImplementedInterfaces(rc->context(), ad);
       for (auto implPoint : implPoints) {
-        byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
+        byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
       }
     } else if (auto implements = stmt->toImplements()) {
       auto implPoint = resolveImplementsStmt(rc->context(), implements->id());
       if (implPoint) {
-        byInterfaceId[implPoint->interfaceId()].push_back(implPoint);
+        byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
       }
     }
   }
@@ -5349,46 +5354,23 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
 static bool
 matchImplementationPoint(ResolutionContext* rc,
                          const InterfaceType* ift,
-                         const std::vector<QualifiedType>& actuals,
                          const ImplementationPoint* implPoint,
                          bool& outIsGeneric) {
-  if (ift->id() != implPoint->interfaceId()) return false;
+  if (ift->id() != implPoint->interface()->id()) return false;
 
-  int actualIdx = 0;
-  auto checkFormal = [rc, &outIsGeneric](const QualifiedType actual, const QualifiedType& formal) {
-    auto got = canPassScalar(rc->context(), actual, formal);
-    if (!got.passes() || got.converts()) return false;
+  // Use 'const var' so that canPass doesn't say that a type instantiates
+  // itself.
+  auto actualT = QualifiedType(QualifiedType::CONST_VAR, ift);
+  auto formalT = QualifiedType(QualifiedType::CONST_VAR, implPoint->interface());
+  auto got = canPass(rc->context(), actualT, formalT);
 
-    if (got.instantiates()) {
-      outIsGeneric = true;
-    }
-    return true;
-  };
-
-  for (auto& implPointActualType : implPoint->actuals()) {
-    if (implPointActualType.isUnknownOrErroneous()) return false;
-    auto requestedActualType = QualifiedType(QualifiedType::CONST_VAR, actuals[actualIdx++].type());
-
-    auto formalType = QualifiedType(QualifiedType::CONST_VAR, implPointActualType.type());
-    if (!checkFormal(requestedActualType, formalType)) {
-      return false;
-    }
-  }
-
-  return true;
+  outIsGeneric = got.instantiates();
+  return got.passes();
 }
 
 const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc,
                                                            const types::InterfaceType* ift,
                                                            const CallScopeInfo& inScopes) {
-  std::vector<QualifiedType> actuals;
-  auto interfaceAst = parsing::idToAst(rc->context(), ift->id())->toInterface();
-  for (auto formal : interfaceAst->formals()) {
-    auto subIt = ift->substitutions().find(formal->id());
-    if (subIt == ift->substitutions().end()) return nullptr;
-    actuals.push_back(subIt->second);
-  }
-
   auto implPoints =
     visibileImplementationPointsForInterface(rc, inScopes.lookupScope(), ift->id());
 
@@ -5400,7 +5382,7 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
   if (implPoints) {
     for (auto implPoint : *implPoints) {
       bool isGeneric = false;
-      if (matchImplementationPoint(rc, ift, actuals, implPoint, isGeneric)) {
+      if (matchImplementationPoint(rc, ift, implPoint, isGeneric)) {
         if (isGeneric && generic == nullptr) {
           generic = implPoint;
         } else if (!isGeneric) {

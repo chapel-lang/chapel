@@ -907,32 +907,28 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
 }
 
 owned<ImplementationPoint> const&
-ImplementationPoint::getImplementationPoint(Context* context, ID interface,
-                                            ID id,
-                                            std::vector<QualifiedType> actuals) {
-  QUERY_BEGIN(getImplementationPoint, context, interface, id, actuals);
-  auto result = toOwned(new ImplementationPoint(interface, std::move(id),
-                                                std::move(actuals)));
+ImplementationPoint::getImplementationPoint(Context* context, const InterfaceType* interface,
+                                            ID id) {
+  QUERY_BEGIN(getImplementationPoint, context, interface, id);
+  auto result = toOwned(new ImplementationPoint(interface, std::move(id)));
   return QUERY_END(result);
 }
 
 const ImplementationPoint*
-ImplementationPoint::get(Context* context, ID interface,
-                         ID id, std::vector<QualifiedType> actuals) {
-  return getImplementationPoint(context, std::move(interface),
-                                std::move(id), std::move(actuals)).get();
+ImplementationPoint::get(Context* context, const InterfaceType* interface,
+                         ID id) {
+  return getImplementationPoint(context, interface, std::move(id)).get();
 }
 
 void ImplementationPoint::mark(Context* context) const {
-  interfaceId_.mark(context);
+  interface_->mark(context);
   id_.mark(context);
-  chpl::mark<decltype(actuals_)>{}(context, actuals_);
 }
 
 void ImplementationPoint::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-  ss << "implementation point for interface ";
-  interfaceId_.stringify(ss, stringKind);
-  ss << " with id ";
+  ss << "implements ";
+  interface_->stringify(ss, stringKind);
+  ss << " @ ";
   id_.stringify(ss, stringKind);
 }
 

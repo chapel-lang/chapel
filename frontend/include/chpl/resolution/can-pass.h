@@ -204,6 +204,11 @@ CanPassResult canPassScalar(Context* context,
   return CanPassResult::canPassScalar(context, actualType, formalType);
 }
 
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing);
+
 /* When trying to combine two kinds, you can't just pick one.
    For instance, if any type in the list is a value, the result
    should be a value, and if any type in the list is const, the

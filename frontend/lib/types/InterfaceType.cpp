@@ -20,6 +20,7 @@
 #include "chpl/types/InterfaceType.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/uast/Interface.h"
 
 namespace chpl {
@@ -95,6 +96,12 @@ const InterfaceType* InterfaceType::withTypes(Context* context,
                                               const InterfaceType* ift,
                                               std::vector<types::QualifiedType> types) {
   return interfaceTypeWithTypesQuery(context, ift, std::move(types));
+}
+
+bool InterfaceType::isInstantiationOf(Context* context, const InterfaceType* other) const {
+  if (id_ != other->id()) return false;
+  CHPL_ASSERT(name_ == other->name());
+  return resolution::canInstantiateSubstitutions(context, subs_, other->substitutions(), /* allowMissing */ false);
 }
 
 } // end namespace types

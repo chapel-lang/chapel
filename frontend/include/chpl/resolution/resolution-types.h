@@ -2880,34 +2880,31 @@ class ResolvedFields {
    from a single occurrences of an interface in an inheritance expression list. */
 class ImplementationPoint {
  private:
-  // The ID of the interface being implemented
-  ID interfaceId_;
+  // The interface being implemented (instantiated with the types of the arguments)
+  const types::InterfaceType* interface_;
   // The ID of the implementation statement
   ID id_;
-  std::vector<types::QualifiedType> actuals_;
 
-  ImplementationPoint(ID interface,
-                      ID id,
-                      std::vector<types::QualifiedType> actuals)
-    : interfaceId_(interface), id_(std::move(id)),
-      actuals_(std::move(actuals)) {}
+  ImplementationPoint(const types::InterfaceType* interface,
+                      ID id)
+    : interface_(interface), id_(id) {}
 
   static owned<ImplementationPoint> const&
-  getImplementationPoint(Context* context, ID interface, ID id,
-                         std::vector<types::QualifiedType> actuals);
+  getImplementationPoint(Context* context,
+                         const types::InterfaceType* interface,
+                         ID id);
 
  public:
   static const ImplementationPoint*
-  get(Context* context, ID interface, ID id, std::vector<types::QualifiedType> actuals);
+  get(Context* context, const types::InterfaceType* interface, ID id);
 
   static bool update(owned<ImplementationPoint>& lhs,
                      owned<ImplementationPoint>& rhs) {
     return defaultUpdateOwned(lhs, rhs);
   }
   bool operator==(const ImplementationPoint& other) const {
-    return interfaceId_ == other.interfaceId_ &&
-           id_ == other.id_ &&
-           actuals_ == other.actuals_;
+    return interface_ == other.interface_ &&
+           id_ == other.id_;
   }
   bool operator!=(const ImplementationPoint& other) const {
     return !(*this == other);
@@ -2915,11 +2912,9 @@ class ImplementationPoint {
   void mark(Context* context) const;
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  const ID& interfaceId() const { return interfaceId_; }
+  const types::InterfaceType* interface() const { return interface_; }
 
   const ID& id() const { return id_; }
-
-  const std::vector<types::QualifiedType>& actuals() const { return actuals_; }
 };
 
 class ImplementationWitness {

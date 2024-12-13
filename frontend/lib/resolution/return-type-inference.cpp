@@ -58,7 +58,7 @@ static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
 
 /* pair (interface ID, implementation point ID) */
 using ImplementedInterface =
-  std::pair<ID, ID>;
+  std::pair<const InterfaceType*, ID>;
 
 /* (parent class, implemented interfaces) tuple resulting from processing
    the inheritance expressions of a class/record. */
@@ -108,7 +108,12 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
       // OK
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
-      implementationPoints.emplace_back(qt.type()->toInterfaceType()->id(), inheritExpr->id());
+      auto ift = qt.type()->toInterfaceType();
+      if (!ift->substitutions().empty()) {
+        context->error(inheritExpr, "cannot specify instantiated interface type in inheritance expression");
+      } else {
+        implementationPoints.emplace_back(ift, inheritExpr->id());
+      }
     } else {
       context->error(inheritExpr, "invalid parent class expression");
       parentClassType = BasicClassType::getRootClassType(context);
@@ -132,7 +137,7 @@ getImplementedInterfacesQuery(Context* context,
                               const AggregateDecl* ad) {
   QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
   std::vector<const ImplementationPoint*> result;
-  std::set<ID> seen;
+  std::set<const InterfaceType*> seen;
   auto inheritanceResult =
     processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
   auto& implementationPoints = inheritanceResult.second;
@@ -147,10 +152,15 @@ getImplementedInterfacesQuery(Context* context,
       // TODO: issue an error here for duplicate 'implements' for the same
       // interface?
     } else {
-      auto implPoint =
-        ImplementationPoint::get(context, implementedInterface.first,
-                                 implementedInterface.second, { initialType });
-      result.push_back(implPoint);
+      auto ift = InterfaceType::withTypes(context, implementedInterface.first,
+                                          { initialType });
+      if (!ift) {
+        // TODO: issue error message
+      } else {
+        auto implPoint =
+          ImplementationPoint::get(context, ift, implementedInterface.second);
+        result.push_back(implPoint);
+      }
     }
   };
 

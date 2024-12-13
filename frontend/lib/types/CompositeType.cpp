@@ -42,52 +42,11 @@ using namespace resolution;
 bool
 CompositeType::areSubsInstantiationOf(Context* context,
                                       const CompositeType* partial) const {
-  // Check to see if the substitutions of `this` are all instantiations
-  // of the field types of `partial`
-  //
   // Note: Assumes 'this' and 'partial' share a root instantiation.
-
-  const SubstitutionsMap& mySubs = substitutions();
-  const SubstitutionsMap& pSubs = partial->substitutions();
-
-  // check, for each substitution in mySubs, that it matches
-  // or is an instantiation of pSubs.
-
-  for (const auto& mySubPair : mySubs) {
-    ID mySubId = mySubPair.first;
-    QualifiedType mySubType = mySubPair.second;
-
-    // look for a substitution in pSubs with the same ID
-    auto pSearch = pSubs.find(mySubId);
-    if (pSearch != pSubs.end()) {
-      QualifiedType pSubType = pSearch->second;
-      // check the types
-      auto r = canPass(context, mySubType, pSubType);
-      if (r.passes() && !r.promotes() && !r.converts()) {
-        // instantiation and same-type passing are allowed here
-      } else {
-        // it was not an instantiation
-        return false;
-      }
-    } else if (partial->isTupleType()) {
-      // If the ID isn't found, then that means the generic component doesn't
-      // exist in the other type, which means this cannot be an instantiation
-      // of the other type.
-      //
-      // Currently this check assumes that 'this' and 'partial' share a root
-      // instantiation, so how could we reach this condition? One path here
-      // involves passing a tuple to a tuple formal with a fewer number of
-      // elements. For example, passing "(1, 2, 3)" to "(int, ?)".
-      return false;
-    } else {
-      // A substitution is missing in the partial type, but we have one.
-      // For a composite type, that might just mean that we are foo(X, Y),
-      // while the partial is foo(X, ?) -- partially generic. So, this is
-      // fine, don't return false.
-    }
-  }
-
-  return true;
+  return canInstantiateSubstitutions(context,
+                                     substitutions(),
+                                     partial->substitutions(),
+                                     /* allowMissing */ !partial->isTupleType());
 }
 
 CompositeType::~CompositeType() {

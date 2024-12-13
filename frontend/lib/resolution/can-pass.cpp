@@ -906,6 +906,14 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
 
   // TODO: check for constrained generic types
 
+  if (auto actualIt = actualT->toInterfaceType()) {
+    if (auto formalIt = formalT->toInterfaceType()) {
+      if (actualIt->isInstantiationOf(context, formalIt)) {
+        return instantiate();
+      }
+    }
+  }
+
   if (auto actualCt = actualT->toClassType()) {
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
@@ -1202,6 +1210,53 @@ CanPassResult CanPassResult::canPass(Context* context,
   }
 
   return got;
+}
+
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing) {
+  // Check to see if the substitutions in `instaces` are all instantiations
+  // of the substitutions in `generics`
+  //
+  // check, for each substitution in mySubs, that it matches
+  // or is an instantiation of pSubs.
+
+  for (const auto& mySubPair : instances) {
+    ID mySubId = mySubPair.first;
+    QualifiedType mySubType = mySubPair.second;
+
+    // look for a substitution in pSubs with the same ID
+    auto pSearch = generics.find(mySubId);
+    if (pSearch != generics.end()) {
+      QualifiedType pSubType = pSearch->second;
+      // check the types
+      auto r = canPass(context, mySubType, pSubType);
+      if (r.passes() && !r.promotes() && !r.converts()) {
+        // instantiation and same-type passing are allowed here
+      } else {
+        // it was not an instantiation
+        return false;
+      }
+    } else if (!allowMissing) {
+      // If the ID isn't found, then that means the generic component doesn't
+      // exist in the other type, which means this cannot be an instantiation
+      // of the other type.
+      //
+      // How could we reach this condition? One path here involves passing a
+      // tuple to a tuple formal with a fewer number of elements. For example,
+      // passing "(1, 2, 3)" to "(int, ?)".
+      return false;
+    } else {
+      // A substitution is missing in the partial type, but we have one.
+      // For a composite type, that might just mean that we are foo(X, Y),
+      // while the partial is foo(X, ?) -- partially generic. So, this is
+      // fine, don't return false.
+    }
+  }
+
+  return true;
+
 }
 
 void KindProperties::invalidate() {
