@@ -1027,7 +1027,7 @@ def get_clang_prgenv_args():
 # Filters out C++ compilation flags from llvm-config.
 # The flags are passed as a list of strings.
 # Returns a list of strings containing the kept flags.
-def filter_llvm_config_flags(flags):
+def filter_llvm_config_flags(llvm_val, flags):
     ret = [ ]
 
     platform_val = chpl_platform.get('host')
@@ -1047,11 +1047,19 @@ def filter_llvm_config_flags(flags):
             flag == '-std=c++14'):
             continue # filter out these flags
 
-        # change -I flags to -idirafter flags
+        #
+        # include LLVM headers as system headers
         # this avoids warnings inside of LLVM headers by treating LLVM headers
-        # as system headers without perturbing the include search path
+        #
+        # when adding LLVM=system as system headers, we should not perturb the
+        # include search path, so use -isystem-after/-idirafter
+        #
+        # when adding LLVM=bundled, we should include the LLVM headers as system
+        # headers and prefer the bundled headers, so use -isystem
+        #
+        include_flag = '-idirafter' if llvm_val == 'system' else '-isystem'
         if flag.startswith('-I'):
-            ret.append('-idirafter' + flag[2:])
+            ret.append(include_flag + flag[2:])
             continue
 
         if flag.startswith('-W'):
@@ -1118,14 +1126,14 @@ def get_host_compile_args():
 
         # Note, the cxxflags should include the -I for the include dir
         cxxflags = run_command([llvm_config, '--cxxflags'])
-        system.extend(filter_llvm_config_flags(cxxflags.split()))
+        system.extend(filter_llvm_config_flags('system', cxxflags.split()))
 
     elif llvm_support_val == 'bundled':
         # don't try to run llvm-config if it's not built yet
         if is_included_llvm_built(llvm_val):
             # Note, the cxxflags should include the -I for the include dir
             cxxflags = run_command([llvm_config, '--cxxflags'])
-            bundled.extend(filter_llvm_config_flags(cxxflags.split()))
+            bundled.extend(filter_llvm_config_flags('bundled', cxxflags.split()))
 
         # TODO: is this still needed?
         bundled.append('-Wno-comment')
