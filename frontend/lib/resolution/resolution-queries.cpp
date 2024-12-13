@@ -170,17 +170,20 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   lhs.setType(useType);
 }
 
-static void checkImplementsStmt(ResolutionContext* rc, ID stmtId) {
-  auto implPoint = resolveImplementsStmt(rc->context(), stmtId);
+static void checkImplementationPoint(ResolutionContext* rc, const ImplementationPoint* implPoint) {
   if (getTypeGenericity(rc->context(), implPoint->interface()) == types::Type::CONCRETE) {
-    auto inScope = scopeForId(rc->context(), stmtId);
+    auto inScope = scopeForId(rc->context(), implPoint->id());
     auto inScopes = CallScopeInfo::forNormalCall(inScope, nullptr);
-    auto witness = checkInterfaceConstraints(rc, implPoint->interface(), stmtId, inScopes);
+    auto witness = checkInterfaceConstraints(rc, implPoint->interface(), implPoint->id(), inScopes);
     if (!witness) {
       // TODO: emit error here
     }
   }
 }
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInModule(Context* context,
+                                    const Module* mod);
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -237,16 +240,18 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
               updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy);
             }
           }
-
-          // if we encountered a concrete implements statement, check
-          // that it's satisfied.
-          if (child->isImplements()) {
-            checkImplementsStmt(rc, stmtId);
-          }
         }
       }
       checkThrows(rc, result, mod);
       callInitDeinit(r);
+
+      // check interface implementations in this module
+      auto implPoints = collectImplementationPointsInModule(context, mod);
+      for (const auto& pair : implPoints) {
+        for (const auto implPoint : pair.second) {
+          checkImplementationPoint(rc, implPoint);
+        }
+      }
     }
   }
 
@@ -2952,40 +2957,49 @@ const ImplementationPoint* resolveImplementsStmt(Context* context,
 }
 
 static const std::map<ID, std::vector<const ImplementationPoint*>>&
-collectImplementationPointsInScope(ResolutionContext* rc,
-                                   const Scope* scope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(collectImplementationPointsInScope, rc, scope);
-  CHPL_ASSERT(scope->moduleScope() == scope);
-
+collectImplementationPointsInModule(Context* context,
+                                    const uast::Module* module) {
+  QUERY_BEGIN(collectImplementationPointsInModule, context, module);
   std::map<ID, std::vector<const ImplementationPoint*>> byInterfaceId;
-  auto module = parsing::idToAst(rc->context(), scope->id())->toModule();
 
   for (auto stmt : module->stmts()) {
     if (auto ad = stmt->toAggregateDecl()) {
-      auto& implPoints = getImplementedInterfaces(rc->context(), ad);
+      auto& implPoints = getImplementedInterfaces(context, ad);
       for (auto implPoint : implPoints) {
         byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
       }
     } else if (auto implements = stmt->toImplements()) {
-      auto implPoint = resolveImplementsStmt(rc->context(), implements->id());
+      auto implPoint = resolveImplementsStmt(context, implements->id());
       if (implPoint) {
         byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
       }
     }
   }
 
-  return CHPL_RESOLUTION_QUERY_END(byInterfaceId);
+  return QUERY_END(byInterfaceId);
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInScope(Context* context,
+                                   const Scope* scope) {
+  QUERY_BEGIN(collectImplementationPointsInScope, context, scope);
+  CHPL_ASSERT(scope->moduleScope() == scope);
+
+  auto module = parsing::idToAst(context, scope->id())->toModule();
+  auto& result = collectImplementationPointsInModule(context, module);
+
+  return QUERY_END(result);
 }
 
 static void
-helpCollectVisibileImplementationPoints(ResolutionContext* rc,
+helpCollectVisibileImplementationPoints(Context* context,
                                         const Scope* scope,
                                         std::unordered_set<const Scope*>& seen,
                                         std::map<ID, std::vector<const ImplementationPoint*>>& into) {
   auto insertResult = seen.insert(scope);
   if (!insertResult.second) return;
 
-  auto& inScope = collectImplementationPointsInScope(rc, scope);
+  auto& inScope = collectImplementationPointsInScope(context, scope);
   for (auto& pointsForScope : inScope) {
     auto& copyInto = into[pointsForScope.first];
     for (auto implPoint : pointsForScope.second) {
@@ -2993,30 +3007,30 @@ helpCollectVisibileImplementationPoints(ResolutionContext* rc,
     }
   }
 
-  auto visStmts = resolveVisibilityStmts(rc->context(), scope);
+  auto visStmts = resolveVisibilityStmts(context, scope);
   for (auto visClause : visStmts->visibilityClauses()) {
     auto nextScope = visClause.scope();
     if (nextScope && asttags::isModule(nextScope->tag())) {
-      helpCollectVisibileImplementationPoints(rc, nextScope, seen, into);
+      helpCollectVisibileImplementationPoints(context, nextScope, seen, into);
     }
   }
 }
 
 static const std::map<ID, std::vector<const ImplementationPoint*>>&
-visibleImplementationPoints(ResolutionContext* rc,
-                                         const Scope* scope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(visibleImplementationPoints, rc, scope);
+visibleImplementationPoints(Context* context,
+                            const Scope* scope) {
+  QUERY_BEGIN(visibleImplementationPoints, context, scope);
   std::map<ID, std::vector<const ImplementationPoint*>> result;
   std::unordered_set<const Scope*> seen;
-  helpCollectVisibileImplementationPoints(rc, scope, seen, result);
-  return CHPL_RESOLUTION_QUERY_END(result);
+  helpCollectVisibileImplementationPoints(context, scope, seen, result);
+  return QUERY_END(result);
 }
 
 const std::vector<const ImplementationPoint*>*
-visibileImplementationPointsForInterface(ResolutionContext* rc,
+visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
                                          ID id) {
-  auto& allInstantiationPoints = visibleImplementationPoints(rc, scope);
+  auto& allInstantiationPoints = visibleImplementationPoints(context, scope);
   auto it = allInstantiationPoints.find(id);
   if (it != allInstantiationPoints.end()) {
     return &it->second;
@@ -5386,11 +5400,11 @@ matchImplementationPoint(ResolutionContext* rc,
   return got.passes();
 }
 
-const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc,
-                                                           const types::InterfaceType* ift,
-                                                           const CallScopeInfo& inScopes) {
+const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                            const types::InterfaceType* ift,
+                                                            const CallScopeInfo& inScopes) {
   auto implPoints =
-    visibileImplementationPointsForInterface(rc, inScopes.lookupScope(), ift->id());
+    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), ift->id());
 
   // TODO: this matches production, in which the first matching generic
   // implementation is used if no concrete one is found. It's probably
@@ -5409,8 +5423,8 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
 
           auto implScope = scopeForId(rc->context(), implPoint->id());
           auto checkScope = CallScopeInfo::forNormalCall(implScope, nullptr);
-          if (checkInterfaceConstraints(rc, ift, implPoint->id(), checkScope)) {
-            return implPoint;
+          if (auto witness = checkInterfaceConstraints(rc, ift, implPoint->id(), checkScope)) {
+            return witness;
           }
         }
       }
@@ -5424,12 +5438,12 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
     auto implScope = scopeForId(rc->context(), generic->id());
     auto poiScope = pointOfInstantiationScope(rc->context(), inScopes.callScope(), inScopes.poiScope());
     auto checkScope = CallScopeInfo::forNormalCall(implScope, poiScope);
-    if (checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
-      return nullptr;
+    if (auto witness = checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
+      return witness;
     }
   }
 
-  return generic;
+  return nullptr;
 }
 
 static ID searchFunctionByTemplate(ResolutionContext* rc,

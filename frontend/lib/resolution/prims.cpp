@@ -307,11 +307,11 @@ static QualifiedType primImplementsInterface(Context* context,
   if (!instantiatedIft) return QualifiedType();
 
   ResolutionContext rc(context);
-  auto implements =
+  auto witness =
     findMatchingImplementationPoint(&rc, instantiatedIft,
                                     CallScopeInfo::forNormalCall(inScope, inPoiScope));
 
-  if (!implements) {
+  if (!witness) {
     // TODO: no 'implements' statement, but auto-implemented.
     return makeParamInt(context, 2);
   }

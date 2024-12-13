@@ -298,7 +298,7 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
 
 
 const std::vector<const ImplementationPoint*>*
-visibileImplementationPointsForInterface(ResolutionContext* rc,
+visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
                                          ID interfaceId);
 
@@ -486,9 +486,9 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const types::Type* t,
                                          const PoiScope* poiScope = nullptr);
 
-const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc,
-                                                           const types::InterfaceType* ift,
-                                                           const CallScopeInfo& inScopes);
+const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                            const types::InterfaceType* ift,
+                                                            const CallScopeInfo& inScopes);
 
 const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
                                                        const types::InterfaceType* ift,
