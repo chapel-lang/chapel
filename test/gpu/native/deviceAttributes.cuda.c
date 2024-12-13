@@ -28,7 +28,7 @@ void runBaselineVersion(void) {
   reportAttribute("maxBlockDimX", CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X);
   reportAttribute("maxBlockDimY", CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y);
   reportAttribute("maxBlockDimZ", CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z);
-  reportAttribute("MaxGridDimX", CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X);
+  reportAttribute("maxGridDimX", CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X);
   reportAttribute("maxGridDimY", CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y);
   reportAttribute("maxGridDimZ", CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z);
   reportAttribute("maxSharedMemoryPerBlock", CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK);
