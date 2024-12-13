@@ -3022,11 +3022,12 @@ helpCollectVisibileImplementationPoints(Context* context,
     }
   }
 
-  auto visStmts = resolveVisibilityStmts(context, scope);
-  for (auto visClause : visStmts->visibilityClauses()) {
-    auto nextScope = visClause.scope();
-    if (nextScope && asttags::isModule(nextScope->tag())) {
-      helpCollectVisibileImplementationPoints(context, nextScope, seen, into);
+  if (auto visStmts = resolveVisibilityStmts(context, scope)) {
+    for (auto visClause : visStmts->visibilityClauses()) {
+      auto nextScope = visClause.scope();
+      if (nextScope && asttags::isModule(nextScope->tag())) {
+        helpCollectVisibileImplementationPoints(context, nextScope, seen, into);
+      }
     }
   }
 }
@@ -5419,7 +5420,7 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
                                                             const types::InterfaceType* ift,
                                                             const CallScopeInfo& inScopes) {
   auto implPoints =
-    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), ift->id());
+    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope()->moduleScope(), ift->id());
 
   // TODO: this matches production, in which the first matching generic
   // implementation is used if no concrete one is found. It's probably

@@ -72,7 +72,7 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
                                                const PoiScope* poiScope) {
   QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
   const BasicClassType* parentClassType = nullptr;
-  const AstNode* lastParentClass = nullptr;
+  const AstNode* parentClassNode = nullptr;
   std::vector<ImplementedInterface> implementationPoints;
   auto c = ad->toClass();
 
@@ -87,24 +87,28 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
     auto& rr = r.byAst(inheritExpr);
     QualifiedType qt = rr.type();
+    const BasicClassType* newParentClassType = nullptr;
     if (auto t = qt.type()) {
       if (auto bct = t->toBasicClassType()) {
-        parentClassType = bct;
+        newParentClassType = bct;
       } else if (auto ct = t->toClassType()) {
         // safe because it's checked for null later.
-        parentClassType = ct->basicClassType();
+        newParentClassType = ct->basicClassType();
       }
     }
 
-    bool foundParentClass = qt.isType() && parentClassType != nullptr;
+    bool foundParentClass = qt.isType() && newParentClassType != nullptr;
     if (!c && foundParentClass) {
-      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, parentClassType);
+      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, newParentClassType);
     } else if (foundParentClass) {
       // It's a valid parent class; is it the only one? (error otherwise).
-      if (lastParentClass) {
-        reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+      if (parentClassType) {
+        CHPL_ASSERT(parentClassNode);
+        reportInvalidMultipleInheritance(context, c, parentClassNode, inheritExpr);
+      } else {
+        parentClassType = newParentClassType;
+        parentClassNode = inheritExpr;
       }
-      lastParentClass = inheritExpr;
 
       // OK
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
@@ -117,13 +121,8 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
     } else {
       context->error(inheritExpr, "invalid parent class expression");
       parentClassType = BasicClassType::getRootClassType(context);
+      parentClassNode = inheritExpr;
     }
-  }
-
-  // All the parent expressions could've been interfaces, and we just
-  // inherit from object.
-  if (!parentClassType) {
-    parentClassType = BasicClassType::getRootClassType(context);
   }
 
   InheritanceExprResolutionResult result {
