@@ -54,10 +54,7 @@ update_image() {
   log_info "Starting $imageName..."
 
   # Remove any existing image with the tag before building
-  if [ -n "$release_tag" ]
-  then
-    docker image rm --force "$imageName"
-  fi
+  docker image rm --force "$imageName"
 
   # Build and push image
   # Note: We push before testing due to a limitation of Docker
