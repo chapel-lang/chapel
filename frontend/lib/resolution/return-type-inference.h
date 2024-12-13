@@ -21,6 +21,7 @@
 #define RETURN_TYPE_INFERENCE_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/interface-types.h"
 
 namespace chpl {
 namespace uast {

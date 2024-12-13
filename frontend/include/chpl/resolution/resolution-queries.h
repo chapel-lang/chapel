@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/interface-types.h"
 #include "chpl/resolution/scope-types.h"
 
 namespace chpl {
