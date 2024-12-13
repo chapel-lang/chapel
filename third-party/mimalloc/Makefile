@@ -27,6 +27,9 @@ else
 CHPL_MIMALLOC_CFG_OPTIONS += -DCMAKE_BUILD_TYPE=Release
 endif
 
+# TODO: enabled this when CHPL_SANITIZE_EXE is not none
+# CHPL_MIMALLOC_CFG_OPTIONS += -DMI_TRACK_ASAN=ON
+
 
 # if host, use the C++ compiler
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
