@@ -2,9 +2,9 @@ Unused.chpl:2: node violates rule UnusedFormal
 Unused.chpl:3: node violates rule UnusedLoopIndex
 Unused.chpl:5: node violates rule UnusedLoopIndex
 Unused.chpl:13: node violates rule UnusedLoopIndex
-Unused.chpl:20: node violates rule UnusedLoopIndex
-Unused.chpl:45: node violates rule UnusedFormal
-Unused.chpl:48: node violates rule UnusedFormal
-Unused.chpl:48: node violates rule UnusedFormal
-Unused.chpl:51: node violates rule UnusedFormal
-Unused.chpl:51: node violates rule UnusedFormal
+Unused.chpl:21: node violates rule UnusedLoopIndex
+Unused.chpl:46: node violates rule UnusedFormal
+Unused.chpl:49: node violates rule UnusedFormal
+Unused.chpl:49: node violates rule UnusedFormal
+Unused.chpl:52: node violates rule UnusedFormal
+Unused.chpl:52: node violates rule UnusedFormal
