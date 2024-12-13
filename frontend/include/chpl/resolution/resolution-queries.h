@@ -492,7 +492,7 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
 
 const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
                                                        const types::InterfaceType* ift,
-                                                       const ImplementationPoint* implPoint,
+                                                       const ID& implPointId,
                                                        const CallScopeInfo& inScopes);
 
 /**

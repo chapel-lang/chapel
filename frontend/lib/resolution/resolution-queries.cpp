@@ -170,6 +170,18 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   lhs.setType(useType);
 }
 
+static void checkImplementsStmt(ResolutionContext* rc, ID stmtId) {
+  auto implPoint = resolveImplementsStmt(rc->context(), stmtId);
+  if (getTypeGenericity(rc->context(), implPoint->interface()) == types::Type::CONCRETE) {
+    auto inScope = scopeForId(rc->context(), stmtId);
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, nullptr);
+    auto witness = checkInterfaceConstraints(rc, implPoint->interface(), stmtId, inScopes);
+    if (!witness) {
+      // TODO: emit error here
+    }
+  }
+}
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
@@ -224,6 +236,12 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
               updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy);
             }
+          }
+
+          // if we encountered a concrete implements statement, check
+          // that it's satisfied.
+          if (child->isImplements()) {
+            checkImplementsStmt(rc, stmtId);
           }
         }
       }
@@ -5391,7 +5409,7 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
 
           auto implScope = scopeForId(rc->context(), implPoint->id());
           auto checkScope = CallScopeInfo::forNormalCall(implScope, nullptr);
-          if (checkInterfaceConstraints(rc, ift, implPoint, checkScope)) {
+          if (checkInterfaceConstraints(rc, ift, implPoint->id(), checkScope)) {
             return implPoint;
           }
         }
@@ -5406,7 +5424,7 @@ const ImplementationPoint* findMatchingImplementationPoint(ResolutionContext* rc
     auto implScope = scopeForId(rc->context(), generic->id());
     auto poiScope = pointOfInstantiationScope(rc->context(), inScopes.callScope(), inScopes.poiScope());
     auto checkScope = CallScopeInfo::forNormalCall(implScope, poiScope);
-    if (checkInterfaceConstraints(rc, ift, generic, checkScope)) {
+    if (checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
       return nullptr;
     }
   }
@@ -5575,10 +5593,10 @@ static QualifiedType searchForAssociatedType(ResolutionContext* rc,
 static const ImplementationWitness* const&
 checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const InterfaceType* ift,
-                               const ImplementationPoint* implPoint,
+                               const ID& implPointId,
                                const Scope* inScope,
                                const PoiScope* inPoiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPoint, inScope, inPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPointId, inScope, inPoiScope);
 
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
@@ -5630,7 +5648,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       }
     }
 
-    auto foundQt = searchForAssociatedType(rc, ift, implPoint->id(),
+    auto foundQt = searchForAssociatedType(rc, ift, implPointId,
                                            associatedReceiverType, td, inScopes);
     if (foundQt.isUnknownOrErroneous()) {
       result = nullptr;
@@ -5664,7 +5682,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
     for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
     tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
-    auto foundId = searchFunctionByTemplate(rc, ift, implPoint->id(), fn, tfs, inScopes);
+    auto foundId = searchFunctionByTemplate(rc, ift, implPointId, fn, tfs, inScopes);
 
     if (!foundId) {
       result = nullptr;
@@ -5681,9 +5699,9 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
 const ImplementationWitness*
 checkInterfaceConstraints(ResolutionContext* rc,
                           const InterfaceType* ift,
-                          const ImplementationPoint* implPoint,
+                          const ID& implPointId,
                           const CallScopeInfo& inScopes) {
-  return checkInterfaceConstraintsQuery(rc, ift, implPoint,
+  return checkInterfaceConstraintsQuery(rc, ift, implPointId,
                                         inScopes.callScope(),
                                         inScopes.poiScope());
 }
