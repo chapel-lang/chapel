@@ -12379,7 +12379,11 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
       }
     }
     else {
-      arg = s:arg.type;
+      try {
+        arg = s:arg.type;
+      } catch {
+        error = EFORMAT;
+      }
     }
   } else {
     var empty:arg.type;
@@ -12411,6 +12415,25 @@ proc fileReader.extractMatch(m:regexMatch, ref arg) throws {
     try this._ch_ioerror(err, "in fileReader.extractMatch(m:regexMatch, ref " +
                               arg.type:string + ")");
   }
+}
+
+/*  Returns the value of a match
+
+    Assumes that the :record:`~IO.fileReader` has been marked before where
+    the captures are being returned. Will change the fileReader
+    offset to just after the match. Will not do anything
+    if error is set.
+
+    :arg m: a :record:`Regex.regexMatch` storing a location that matched
+    :arg t: the type of the value to return, defaults to string
+
+    :throws SystemError: If a match could not be extracted.
+ */
+@unstable("this overload of extractMatch is unstable pending a design discussion")
+proc fileReader.extractMatch(m: regexMatch, type t = string): t throws {
+  var arg:t;
+  try this.extractMatch(m, arg);
+  return arg;
 }
 
 // Assumes that the fileReader has been marked where the search began
