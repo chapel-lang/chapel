@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash python3 -c "import chapel" 2> /dev/null; then
+    echo "False"
+else
+    echo "True"
+fi
+
