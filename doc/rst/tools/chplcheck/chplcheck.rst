@@ -495,8 +495,7 @@ generate Sphinx documentation for the rule. This can be done by running the
 
 .. code-block:: bash
 
-   > $CHPL_HOME/doc/util/chplcheck-docs.py path/to/my/myrules.py -o
-   my/out/directory
+   > $CHPL_HOME/doc/util/chplcheck-docs.py path/to/my/myrules.py -o my/out/directory
 
 This will generate a ``rules.rst`` file in ``my/out/directory`` that contains
 the documentation for the rules in ``myrules.py``. Note that this script is
