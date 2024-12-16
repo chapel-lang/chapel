@@ -64,6 +64,8 @@ CLASS_BEGIN(Context)
          node->advanceToNextRevision(prepareToGc))
   METHOD(Context, get_file_text, "Get the text of the file at the given path",
          std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
+  METHOD(Context, get_compiler_version, "Get the version of the Chapel compiler",
+         std::string(), std::ignore = node; return chpl::getVersion())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)

@@ -26,6 +26,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/util/version-info.h"
 
 using namespace chpl;
 using namespace uast;
