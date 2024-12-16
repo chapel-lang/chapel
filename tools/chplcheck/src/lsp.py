@@ -59,9 +59,11 @@ def get_lint_diagnostics(
     diagnostics = []
     # Silence errors from scope resolution etc., especially since they
     # may be emitted from other files (dependencies).
-    # TODO: use a chapel version specific error link
+
+    # get the version, keep only the major and minor version
+    version = ".".join(context.get_compiler_version().split(".")[:2])
     base_url = (
-        "https://chapel-lang.org/docs/main/tools/chplcheck/chplcheck.html"
+        "https://chapel-lang.org/docs/{}/tools/chplcheck/chplcheck.html".format(version)
     )
     with context.track_errors() as _:
         for loc, node, rule, fixits in driver.run_checks(context, asts):
