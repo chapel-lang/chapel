@@ -270,13 +270,6 @@ module Python {
       PyConfig_InitIsolatedConfig(cfgPtr);
       defer PyConfig_Clear(cfgPtr);
 
-      // set program name
-      const wideChapel = "chapel".c_wstr();
-      checkPyStatus(
-        PyConfig_SetString(
-          cfgPtr, c_ptrTo(config_.program_name), wideChapel));
-      deallocate(wideChapel);
-
       // check VIRTUAL_ENV, if its set, make it the executable
       var venv = getenv("VIRTUAL_ENV".c_str());
       if venv != nil {
