@@ -37,7 +37,7 @@ void chpl_mem_layerInit(void) {
 
   chpl_comm_regMemHeapInfo(&start, &size);
   if (start || size) {
-    chpl_error("Your CHPL_MEM setting doesn't support the registered heap "
+    chpl_error("Your CHPL_TARGET_MEM setting doesn't support the registered heap "
                "required by your CHPL_COMM setting. You'll need to change one "
                "of these configurations.", 0, 0);
   }

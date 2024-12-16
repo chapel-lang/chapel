@@ -22,6 +22,8 @@ def get(flag='target'):
     linux = not darwin and not cygwin
 
     if flag == 'target':
+        if chpl_jemalloc:
+            warning("CHPL_JEMALLOC is deprecated, please unset it and use CHPL_TARGET_JEMALLOC")
         if chpl_target_jemalloc:
             jemalloc_val = chpl_target_jemalloc
             if chpl_jemalloc:
@@ -52,9 +54,9 @@ def get(flag='target'):
             error("CHPL_HOST_JEMALLOC=bundled is not supported on Mac for host builds")
 
     if mem_val == 'jemalloc' and jemalloc_val == 'none':
-        error("CHPL_JEMALLOC must not be 'none' when CHPL_MEM is jemalloc")
+        error("CHPL_JEMALLOC must not be 'none' when CHPL_TARGET_MEM is jemalloc")
     elif mem_val != 'jemalloc' and jemalloc_val != 'none':
-        error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
+        error("CHPL_JEMALLOC must be 'none' when CHPL_TARGET_MEM is not jemalloc")
 
     return jemalloc_val
 

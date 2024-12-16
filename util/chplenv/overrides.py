@@ -51,9 +51,9 @@ chplvars = [
              'CHPL_UNWIND',
 
              'CHPL_HOST_MEM',
-             'CHPL_TARGET_MEM', # note: not in printchplenv --all
+             'CHPL_TARGET_MEM',
              'CHPL_MEM',
-             'CHPL_JEMALLOC', # note: these 3 are not in printchplenv --all
+             'CHPL_JEMALLOC',
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
 

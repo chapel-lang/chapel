@@ -488,6 +488,11 @@ CHPL_COMM
 
 CHPL_MEM
 ~~~~~~~~
+
+   .. warning::
+
+      ``CHPL_MEM`` has been deprecated and renamed to :ref:`readme-chplenv.CHPL_TARGET_MEM`
+
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
@@ -501,8 +506,30 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
-   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
-   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+   .. note::
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
+
+.. _readme-chplenv.CHPL_TARGET_MEM:
+
+CHPL_TARGET_MEM
+~~~~~~~~~~~~~~~
+
+   Optionally, the ``CHPL_TARGET_MEM`` environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,

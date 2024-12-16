@@ -129,10 +129,14 @@ module ChplConfig {
   param CHPL_UNWIND:string;
   CHPL_UNWIND = __primitive("get compiler variable", "CHPL_UNWIND");
 
+  /* See :ref:`readme-chplenv.CHPL_TARGET_MEM` for more information. */
+  @unstable("'ChplConfig.CHPL_TARGET_MEM' is unstable and may be replaced with a different way to access this information in the future")
+  param CHPL_TARGET_MEM:string;
+  CHPL_TARGET_MEM = __primitive("get compiler variable", "CHPL_TARGET_MEM");
+
   /* See :ref:`readme-chplenv.CHPL_MEM` for more information. */
-  @unstable("'ChplConfig.CHPL_MEM' is unstable and may be replaced with a different way to access this information in the future")
-  param CHPL_MEM:string;
-  CHPL_MEM = __primitive("get compiler variable", "CHPL_MEM");
+  @deprecated("'ChplConfig.CHPL_MEM' is deprecated, please use :param:`ChplConfig.CHPL_MEM`")
+  param CHPL_MEM:string = CHPL_TARGET_MEM;
 
   /* See :ref:`readme-chplenv.CHPL_MAKE` for more information. */
   @unstable("'ChplConfig.CHPL_MAKE' is unstable and may be replaced with a different way to access this information in the future")
@@ -164,10 +168,10 @@ module ChplConfig {
   CHPL_HWLOC_PCI = __primitive("get compiler variable", "CHPL_HWLOC_PCI");
 
   @chpldoc.nodoc
-  @unstable("'ChplConfig.CHPL_JEMALLOC' is unstable and may be replaced with a different way to access this information in the future")
-  /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
-  param CHPL_JEMALLOC:string;
-  CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
+  @unstable("'ChplConfig.CHPL_TARGET_JEMALLOC' is unstable and may be replaced with a different way to access this information in the future")
+  /* See :ref:`readme-chplenv.CHPL_TARGET_JEMALLOC` for more information. */
+  param CHPL_TARGET_JEMALLOC:string;
+  CHPL_TARGET_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
 
   /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
   @unstable("'ChplConfig.CHPL_RE2' is unstable and may be replaced with a different way to access this information in the future")

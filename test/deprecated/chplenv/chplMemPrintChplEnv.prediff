@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+
+# exec printchplenv and capture stderr
+unset CHPL_TARGET_JEMALLOC
+export CHPL_JEMALLOC=bundled
+unset CHPL_TARGET_MEM
+export CHPL_MEM=jemalloc
+$CHPL_HOME/util/printchplenv --all >/dev/null 2>$2
