@@ -136,3 +136,19 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+
+    - name: Get all fututes files that have changed
+      id: changed-futures
+      uses: tj-actions/changed-files@v44
+      with:
+        recover_deleted_files: true
+        files: |
+          **.future
+
+    - name: Run futures checks
+      if: steps.changed-futures.outputs.any_changed == 'true'
+      env:
+        ALL_CHANGED_FILES: ${{ steps.changed-futures.outputs.all_changed_files }}
+        ALL_DELETED_FILES: ${{ steps.changed-futures.outputs.deleted_files }}
+      run: |
+        python3 util/devel/checkFutures.py $ALL_CHANGED_FILES $ALL_DELETED_FILES  --deleted-files $ALL_DELETED_FILES
