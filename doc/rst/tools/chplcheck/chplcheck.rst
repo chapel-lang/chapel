@@ -489,7 +489,7 @@ The linter is run as follows:
 
 Developers may also find it helpful to maintain documentation for their custom
 rules. Adding a Python docstring to the rule function will include the
-documentation in the ``--list-rules`` output. This docstring can also be use to
+documentation in the ``--list-rules`` output. This docstring can also be used to
 generate Sphinx documentation for the rule. This can be done by running the
 ``chplcheck-docs.py`` script. For example:
 
