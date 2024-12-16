@@ -136,3 +136,44 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+  check_large_files:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: count PR commits
+        run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
+      - name: checkout commits on PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.PR_NUM_COMMITS }}
+      - name: check commits for large files
+        run: |
+          FILE_SIZE_LIMIT_KB=1024
+
+          baseSHA=${{github.event.pull_request.base.sha}}
+          headSHA=${{github.event.pull_request.head.sha}}
+
+          # Loop backward through commits added in the PR, starting from the
+          # latest.
+          for commit in $(git rev-list $baseSHA..$headSHA)
+          do
+            echo "Checking commit: $commit"
+            git checkout -q $commit
+
+            # Get list of added, copied, or modified files from this commit.
+            newFiles=$(git diff --name-only --diff-filter=ACM $commit^ $commit)
+            while read -r file; do
+              if [ "$file" = "" ]; then
+                  continue
+              fi
+              echo "Checking file: $file"
+
+              file_size=$(ls -l "$file" | awk '{print $5}')
+              file_size_kb=$((file_size / 1024))
+
+              if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
+                echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
+                exit 1
+              fi
+            done <<< "$newFiles"
+          done
