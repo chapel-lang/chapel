@@ -1145,7 +1145,7 @@ makeHeapAllocations() {
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
-          if (call-isPrimitive(PRIM_ZERO_VARIABLE)) {
+          if (call->isPrimitive(PRIM_ZERO_VARIABLE)) {
             // aftering zeroing the value, we need to set it back
             // otherwise its a dead store
             call->getStmtExpr()->insertAfter(
