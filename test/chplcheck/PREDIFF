@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 FLAGS="--enable-rule ConsecutiveDecls"\
 " --enable-rule BoolLitInCondStatement"\
@@ -8,14 +8,20 @@ FLAGS="--enable-rule ConsecutiveDecls"\
 " --internal-prefix myprefix_ --internal-prefix _"\
 " --skip-unstable"
 
-$CHPL_HOME/tools/chplcheck/chplcheck \
-  $FLAGS $1.chpl >> $2
+# read extra arguments from a $1.chplcheckopts file
+# currently only supports 1 line with nothing but flags
+if [ -e $1.chplcheckopts ]; then
+  FLAGS="$FLAGS $(cat $1.chplcheckopts)"
+fi
+
+
+$CHPL_HOME/tools/chplcheck/chplcheck $FLAGS $1.chpl >>$2 2>&1
 
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
   mv $2.tmp $2
 fi
 
-# if there is a good-fixit file, try and run checkcheck with fixit
+# if there is a good-fixit file, try and run chplcheck with fixit
 if [ -e $1.good-fixit ]; then
 
   $CHPL_HOME/tools/chplcheck/chplcheck \

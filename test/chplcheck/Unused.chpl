@@ -15,7 +15,8 @@ module Unused {
       }
     }
 
-    // test with unrelated attribute; previously this (wrongly) silenced warnigns
+    // test with unrelated attribute
+    // previously this (wrongly) silenced warnings
     @chplcheck.ignore("UnusedFormal")
     for i in 1..10 {}
 

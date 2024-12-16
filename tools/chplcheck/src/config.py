@@ -114,7 +114,7 @@ class Config:
         )
         parser.add_argument(
             f"--{prefix}check-internal-prefix",
-            action="append",
+            action="store_true",
             dest="chplcheck_check_internal_prefixes",
             default=False,
             help="Check symbols with internal prefixes when linting",

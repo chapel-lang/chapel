@@ -248,6 +248,32 @@ This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
 
+Location Rules
+~~~~~~~~~~~~~~
+
+Sometimes, a linter rule is not based on a pattern of AST nodes, but rather on a
+textual pattern in the source code. For example, a rule might check that all lines
+in a file are indented with spaces, not tabs. To support this, ``chplcheck`` has
+a third type of rule: location rules. These rules are specified using the
+``driver.location_rule`` decorator. Location rules yield a ``RuleLocation``
+object that specifies the textual location of the issue. A ``RuleLocation`` has
+a path, a start position, and an end position. The start and end positions are
+tuples of line and column numbers, where the first character in the file is at
+line 1, column 1.
+
+Alternatively, a location rule can yield a ``LocationRuleResult`` object which
+wraps a ``RuleLocation`` object along with other data, like fixits.
+
+The following example demonstrates a location rule that checks for tabs:
+
+.. code-block:: python
+
+   @driver.location_rule
+   def NoTabs(context: chapel.Context, path: str, lines: List[str])
+       for line, text in enumerate(lines, start=1):
+           if '\t' in text:
+               yield RuleLocation(line, (i, 1), (i, len(line) + 1))
+
 Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
 
