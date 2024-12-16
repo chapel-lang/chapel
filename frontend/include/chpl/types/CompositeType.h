@@ -126,7 +126,7 @@ class CompositeType : public Type {
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
     return id_ == other->id_ &&
-           name_ != other->name_ &&
+           name_ == other->name_ &&
            instantiatedFrom_ == other->instantiatedFrom_ &&
            subs_ == other->subs_;
   }
