@@ -169,7 +169,6 @@ _chpl ()
 --main-module \
 --make \
 --max-c-ident-len \
---mem \
 --memory-frees \
 --minimal-modules \
 --mllvm \
@@ -397,6 +396,7 @@ _chpl ()
 --target-arch \
 --target-compiler \
 --target-cpu \
+--target-mem \
 --target-platform \
 --task-tracking \
 --tasks \
@@ -501,7 +501,6 @@ _chpl ()
 --main-module \
 --make \
 --max-c-ident-len \
---mem \
 --mllvm \
 --module-dir \
 --munge-user-idents \
@@ -611,6 +610,7 @@ _chpl ()
 --target-arch \
 --target-compiler \
 --target-cpu \
+--target-mem \
 --target-platform \
 --task-tracking \
 --tasks \

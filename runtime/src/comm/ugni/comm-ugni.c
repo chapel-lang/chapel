@@ -1989,7 +1989,7 @@ void chpl_comm_post_task_init(void)
                      0, 0);
       }
 
-      if (strcmp(CHPL_MEM, "jemalloc") == 0
+      if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
         char buf[200];
         (void) snprintf(buf, sizeof(buf),

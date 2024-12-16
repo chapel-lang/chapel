@@ -42,5 +42,5 @@ find_program(
 
 set(CMAKE_CHPL_COMPILER_ENV_VAR "")
 
-configure_file(${CMAKE_CURRENT_LIST_DIR}/CMakeChplCompiler.cmake.in
-               ${CMAKE_PLATFORM_INFO_DIR}/CMakeChplCompiler.cmake)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/CMakeCHPLCompiler.cmake.in
+               ${CMAKE_PLATFORM_INFO_DIR}/CMakeCHPLCompiler.cmake)

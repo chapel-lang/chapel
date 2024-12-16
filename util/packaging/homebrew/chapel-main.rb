@@ -50,7 +50,7 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
-      CHPL_MEM=jemalloc
+      CHPL_TARGET_MEM=jemalloc
       CHPL_TARGET_JEMALLOC=system
       CHPL_HWLOC=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config

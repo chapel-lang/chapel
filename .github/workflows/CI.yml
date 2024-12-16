@@ -153,14 +153,15 @@ jobs:
           baseSHA=${{github.event.pull_request.base.sha}}
           headSHA=${{github.event.pull_request.head.sha}}
 
+          echo "Base SHA: $baseSHA"
+          echo "Head SHA: $headSHA"
+          echo "${{github.event.pull_request.commits}} commits in PR"
+
           # Loop backward through commits added in the PR, starting from the
           # latest.
+          commitIdx=0
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
-            if [ "$commit" = "$baseSHA" ]; then
-              break
-            fi
-
             echo "Checking commit: $commit"
             git checkout -q $commit
 
@@ -180,4 +181,11 @@ jobs:
                 exit 1
               fi
             done <<< "$newFiles"
+
+            # Stop after going through the number of commits this PR has.
+            commitIdx=$((commitIdx+1))
+            if [ "$commitIdx" =  "${{github.event.pull_request.commits}}" ]; then
+              echo "Stopping after $commitIdx commits, on commit $commit"
+              break
+            fi
           done

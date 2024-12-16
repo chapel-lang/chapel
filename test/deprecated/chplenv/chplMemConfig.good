@@ -1,0 +1,1 @@
+chplMemConfig.chpl:2: warning: 'ChplConfig.CHPL_MEM' is deprecated, please use ChplConfig.CHPL_MEM

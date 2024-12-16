@@ -2,7 +2,7 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #8 version by Jeremy Zerfas
+   based on the C gcc #9 version by Jeremy Zerfas
 */
 
 use IO, CTypes;

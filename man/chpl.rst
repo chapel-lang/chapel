@@ -977,13 +977,14 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     overrides the $CHPL\_MAKE environment variable (defaults to a best guess
     based on $CHPL\_HOST\_PLATFORM).
 
+.. _man-target-mem:
 .. _man-mem:
 
-**\--mem <mem-impl>**
+**\--target-mem <mem-impl>**
 
     Specify the memory allocator used for dynamic memory management. This
-    flag corresponds with and overrides the $CHPL\_MEM environment variable
-    (defaults to a best guess based on $CHPL\_COMM).
+    flag corresponds with and overrides the $CHPL\_TARGET\_MEM environment
+    variable (defaults to a best guess based on $CHPL\_COMM).
 
 .. _man-re2:
 

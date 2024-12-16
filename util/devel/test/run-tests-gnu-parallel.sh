@@ -57,7 +57,7 @@ fi
 
 # Make sure we have basic environment.
 unset CHPL_DEVELOPER
-unset CHPL_MEM
+unset CHPL_TARGET_MEM
 unset CHPL_TASKS
 unset CHPL_COMM
 unset CHPL_ATOMICS

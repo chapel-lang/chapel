@@ -83,7 +83,7 @@ CONFIGURED=""
 if [ "$DEST_DIR_SET" -ne 0 ]
 then
   case $DEST_DIR in 
-    (/*) pathchk -- "$1";; 
+    (/*) pathchk "$DEST_DIR" || { echo "error: invalid directory name for --chpl-home: $DEST_DIR"; exit -1; };;
     (*) 
     echo "error: expected an absolute directory name for --chpl-home: $DEST_DIR"
     exit -1
@@ -94,7 +94,7 @@ then
   CONFIGURED=configured-chpl-home
 else
   case $PREFIX in 
-    (/*) pathchk -- "$1";; 
+    (/*) pathchk "$PREFIX" || { echo "error: invalid directory name for --prefix: $PREFIX"; exit -1; };;
     (*) 
     echo "error: expected an absolute directory name for --prefix: $PREFIX"
     exit -1

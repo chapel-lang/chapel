@@ -44,8 +44,8 @@ setenv CHPL_COMM none
 echo "Setting CHPL_TASKS to fifo"
 setenv CHPL_TASKS fifo
 
-echo "Setting CHPL_MEM to cstdlib"
-setenv CHPL_MEM cstdlib
+echo "Setting CHPL_TARGET_MEM to cstdlib"
+setenv CHPL_TARGET_MEM cstdlib
 
 echo "Setting CHPL_HOST_MEM to cstdlib"
 setenv CHPL_HOST_MEM cstdlib

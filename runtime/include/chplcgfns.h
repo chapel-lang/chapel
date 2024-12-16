@@ -62,7 +62,7 @@ extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
-extern const char* CHPL_MEM;
+extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
