@@ -157,6 +157,10 @@ jobs:
           # latest.
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
+            if [ "$commit" = "$baseSHA" ]; then
+              break
+            fi
+
             echo "Checking commit: $commit"
             git checkout -q $commit
 
