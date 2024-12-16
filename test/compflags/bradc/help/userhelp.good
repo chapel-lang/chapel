@@ -203,7 +203,7 @@ Compiler Configuration Options:
                                       position-independent code
       --locale-model <locale-model>   Specify locale model to use
       --make <make utility>           Make utility for generated code
-      --mem <mem-impl>                Specify the memory manager
+      --target-mem <mem-impl>         Specify the memory manager
       --re2 <re2-version>             Specify RE2 library
       --target-arch <architecture>    Target architecture / machine type
       --target-compiler <compiler>    Compiler for generated code
