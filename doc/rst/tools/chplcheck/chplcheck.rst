@@ -487,6 +487,21 @@ The linter is run as follows:
    path/to/myfile/myfile.chpl:2: node violates rule NoVariableBar
 
 
+Developers may also find it helpful to maintain documentation for their custom
+rules. Adding a Python docstring to the rule function will include the
+documentation in the ``--list-rules`` output. This docstring can also be use to
+generate Sphinx documentation for the rule. This can be done by running the
+``chplcheck-docs.py`` script. For example:
+
+.. code-block:: bash
+
+   > $CHPL_HOME/doc/util/chplcheck-docs.py path/to/my/myrules.py -o
+   my/out/directory
+
+This will generate a ``rules.rst`` file in ``my/out/directory`` that contains
+the documentation for the rules in ``myrules.py``. Note that this script is
+currently only available in the Chapel source tree.
+
 Current Rules
 -------------
 
