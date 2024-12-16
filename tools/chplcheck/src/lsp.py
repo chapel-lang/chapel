@@ -63,7 +63,9 @@ def get_lint_diagnostics(
     # get the version, keep only the major and minor version
     version = ".".join(context.get_compiler_version().split(".")[:2])
     base_url = (
-        "https://chapel-lang.org/docs/{}/tools/chplcheck/chplcheck.html".format(version)
+        "https://chapel-lang.org/docs/{}/tools/chplcheck/chplcheck.html".format(
+            version
+        )
     )
     with context.track_errors() as _:
         for loc, node, rule, fixits in driver.run_checks(context, asts):

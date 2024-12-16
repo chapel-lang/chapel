@@ -28,7 +28,9 @@ class Rule:
         lines.append(self.name)
         lines.append("~" * len(self.name))
         lines.append("")
-        lines.append("Is enabled by default? " + ("Yes" if self.default else "No"))
+        lines.append(
+            "Is enabled by default? " + ("Yes" if self.default else "No")
+        )
         lines.append("")
 
         if self.description:
@@ -58,7 +60,6 @@ class Rule:
             rstoutput = chpl2rst.gen_rst(pieces, example_file)
 
         self.example_text = rstoutput
-
 
 
 def find_rules(file: str):
@@ -147,8 +148,10 @@ def find_rules(file: str):
     rules = [get_rule(r) for r in rules_def_func.body]
     return list([r for r in rules if r is not None])
 
+
 def rst_rules(rules):
     return "\n".join([r.rst() for r in rules])
+
 
 def output_rules(rules: typing.List[Rule], output_dir: str):
     # remove the existing output directory
@@ -163,9 +166,24 @@ def output_rules(rules: typing.List[Rule], output_dir: str):
 
 def main():
     a = ap.ArgumentParser()
-    a.add_argument("-r", "--rules", default=[], action='append', help="Rules to generate documentation for")
-    a.add_argument("-o", "--output", default="chplcheck-rules-out", help="Directory where all the relevant docs files will be written")
-    a.add_argument("--examples-directory", default=None, help="Directory where all the relevant examples are located")
+    a.add_argument(
+        "-r",
+        "--rules",
+        default=[],
+        action="append",
+        help="Rules to generate documentation for",
+    )
+    a.add_argument(
+        "-o",
+        "--output",
+        default="chplcheck-rules-out",
+        help="Directory where all the relevant docs files will be written",
+    )
+    a.add_argument(
+        "--examples-directory",
+        default=None,
+        help="Directory where all the relevant examples are located",
+    )
     args = a.parse_args()
 
     rules: typing.List[Rule] = []
