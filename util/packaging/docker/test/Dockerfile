@@ -16,8 +16,11 @@ RUN mkdir -p /home/linuxbrew
 # ENV EDITOR=vim
 
 # Do the updates before applying our chapel.rb changes
-RUN brew upgrade
+# Update Homebrew itself
 RUN brew update
+# Upgrade to the latest version of all installed formulae
+RUN brew upgrade
+
 
 # necessary so that updated chapel.rb formula can be committed, which is only way it
 # will be tested
