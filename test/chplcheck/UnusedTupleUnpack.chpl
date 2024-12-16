@@ -4,3 +4,9 @@ foreach (_, _) in zip(1..10, 1..10) {}
 foreach (i, (_, _)) in zip(1..10, foreach pair in zip(1..10, 1..10) do pair) { i; }
 foreach (_, (_, _)) in zip(1..10, foreach pair in zip(1..10, 1..10) do pair) { i; }
 foreach ((_, _), _) in zip(foreach pair in zip(1..10, 1..10) do pair, 1..10) { i; }
+
+proc foo((_,_)) { }
+proc foo((_,x)) { return x; }
+proc foo((x,_)) { return x; }
+proc foo((_,(_,_))) { return x; }
+proc foo(((_,_),x)) { return x; }
