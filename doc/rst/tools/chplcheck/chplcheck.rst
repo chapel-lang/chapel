@@ -133,6 +133,21 @@ fixits are applied:
 * ``--interactive``: Starts an interactive session where you can choose which
   fixits to apply.
 
+Rule Specific Settings
+----------------------
+
+Some rules have individual settings that can be adjusted to customize their
+behavior. These are specified from the command line as
+``--setting RuleName.SettingName=Value``.For example, a rule like
+``NoFuncNamed`` could have a setting called ``Name`` to select what function
+names are disallowed. This setting could be adjusted as follows:
+``--setting NoFuncNamed.Name="foo"``.
+
+These settings are local to a given rule. Settings can also be global, as long
+as at least 1 rule opts in to using them. For example, custom rules could conform
+to the setting ``MyIgnoreList``, which could be set as
+``--setting MyIgnoreList="foo,bar"``.
+
 Setting Up In Your Editor
 -------------------------
 
@@ -232,6 +247,32 @@ checking for unused formals.
 This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
+
+Location Rules
+~~~~~~~~~~~~~~
+
+Sometimes, a linter rule is not based on a pattern of AST nodes, but rather on a
+textual pattern in the source code. For example, a rule might check that all lines
+in a file are indented with spaces, not tabs. To support this, ``chplcheck`` has
+a third type of rule: location rules. These rules are specified using the
+``driver.location_rule`` decorator. Location rules yield a ``RuleLocation``
+object that specifies the textual location of the issue. A ``RuleLocation`` has
+a path, a start position, and an end position. The start and end positions are
+tuples of line and column numbers, where the first character in the file is at
+line 1, column 1.
+
+Alternatively, a location rule can yield a ``LocationRuleResult`` object which
+wraps a ``RuleLocation`` object along with other data, like fixits.
+
+The following example demonstrates a location rule that checks for tabs:
+
+.. code-block:: python
+
+   @driver.location_rule
+   def NoTabs(context: chapel.Context, path: str, lines: List[str])
+       for line, text in enumerate(lines, start=1):
+           if '\t' in text:
+               yield RuleLocation(line, (i, 1), (i, len(line) + 1))
 
 Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -371,6 +412,33 @@ as a field on the result object.
 
    The API for defining fixits is still under development and may change in the
    future.
+
+Settings
+~~~~~~~~
+
+Some rules may need to be configurable from the command line. For example, a
+``TabSize`` rule might need to know what the tab size is set to. Rules can
+declare what settings they need with the ``settings`` argument, which is a list
+of setting names. Settings that begin with ``.`` are consided local to the rule,
+while settings that do not are considered global. For example, the following
+rule declares rule ``TabSize`` with a setting ``Size``:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function, settings=[".Size"])
+   def TabSize(context, node, Size = None):
+       s = int(Size)
+       print("Tab size is", s)
+
+       # ...logic to check tab size...
+
+
+The setting is then accessed as a keyword argument to the rule function.
+If the setting is not provided, a default value of ``None`` is used. The setting is
+always provided as a string, if a different type is required (like an integer or
+a comma-separated-list) the rule author must write code to convert the types.
+
+The ``TabSize.Size`` setting can now be set from the command line with ``--setting TabSize.Size=4``.
 
 Adding Custom Rules
 -------------------

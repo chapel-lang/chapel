@@ -241,6 +241,20 @@ module Python {
   /* Represents the python value 'None' */
   const None = new NoneType();
 
+
+  private proc getOsPathSepHelper(interp: borrowed Interpreter): string throws {
+    var os = PyImport_ImportModule("os");
+    interp.checkException();
+    defer Py_DECREF(os);
+
+    var sepPy = PyObject_GetAttrString(os, "pathsep");
+    interp.checkException();
+    defer Py_DECREF(sepPy);
+
+    var sep = interp.fromPython(string, sepPy);
+    return sep;
+  }
+
   /*
     Represents the python interpreter. All code using the Python module should
     create and maintain a single instance of this class.
@@ -298,11 +312,26 @@ module Python {
       this.checkException();
       defer Py_DECREF(sys);
 
-      // add the current directory to the python path
+      // setup sys.path
       {
         var path = PyObject_GetAttrString(sys, "path");
         this.checkException();
         defer Py_DECREF(path);
+
+        // add paths from PYTHONPATH to the front of PATH
+        var pythonPathCstr = getenv("PYTHONPATH".c_str());
+        if pythonPathCstr != nil {
+          const pythonPath = string.createBorrowingBuffer(pythonPathCstr);
+
+          var elms = pythonPath.split(getOsPathSepHelper(this));
+          for elm in elms {
+            if elm.size == 0 then continue;
+            PyList_Append(path, Py_BuildValue("s", elm.c_str()));
+            this.checkException();
+          }
+        }
+
+        // add the current directory to the python path
         PyList_Insert(path, 0, Py_BuildValue("s", "."));
         this.checkException();
       }
@@ -1446,6 +1475,7 @@ module Python {
     extern proc PyList_GetItem(list: PyObjectPtr, idx: c_long): PyObjectPtr;
     extern proc PyList_Size(list: PyObjectPtr): c_long;
     extern proc PyList_Insert(list: PyObjectPtr, idx: c_long, item: PyObjectPtr);
+    extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
 
     /*
       Sets

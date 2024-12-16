@@ -24,11 +24,16 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
-from rule_types import BasicRuleResult, AdvancedRuleResult
+from rule_types import (
+    BasicRuleResult,
+    AdvancedRuleResult,
+    LocationRuleResult,
+    RuleLocation,
+)
 
 
 def variables(node: AstNode):
-    if isinstance(node, Variable):
+    if isinstance(node, (Variable, Formal)):
         if node.name() != "_":
             yield node
     elif isinstance(node, TupleDecl):
@@ -633,6 +638,9 @@ def register_rules(driver: LintDriver):
             # 'this' formals.
             if formal.name() == "this":
                 continue
+            # ignore `_`, like from a TupleDecl
+            if formal.name() == "_":
+                continue
 
             # extern functions have no bodies that can use their formals.
             if formal.parent().linkage() == "extern":
@@ -647,6 +655,8 @@ def register_rules(driver: LintDriver):
 
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
+            while isinstance(anchor, (Variable, TupleDecl)):
+                anchor = anchor.parent()
             yield AdvancedRuleResult(formals[unused], anchor)
 
     @driver.advanced_rule
@@ -1039,3 +1049,21 @@ def register_rules(driver: LintDriver):
             )
         )
         return [fixit]
+
+    @driver.location_rule(settings=[".Max"])
+    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+        """
+        Warn for lines that exceed a maximum length.
+
+        By default, the maximum line length is 80 characters.
+        """
+
+        Max = Max or "80"  # default to 80 characters
+        try:
+            max_line_length = int(Max)
+        except ValueError:
+            raise ValueError("Invalid value for Max: '{}'".format(Max))
+
+        for i, line in enumerate(lines, start=1):
+            if len(line) > max_line_length:
+                yield RuleLocation(path, (i, 1), (i, len(line) + 1))

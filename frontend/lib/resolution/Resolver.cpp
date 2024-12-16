@@ -2704,6 +2704,17 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         }
       }
 
+      if (auto tup = rt->toTupleType()) {
+        auto field = parsing::idToAst(context, id)->toNamedDecl();
+        if (field && field->name() == USTR("size")) {
+          // Tuples don't store a 'size' in their substitutions map, so
+          // manually take care of things here.
+          auto intType = IntType::get(context, 0);
+          auto val = IntParam::get(context, tup->numElements());
+          return QualifiedType(QualifiedType::PARAM, intType, val);
+        }
+      }
+
       if (auto comprt = rt->getCompositeType()) {
         if (comprt->id() == parentId) {
           ct = comprt; // handle record, class with field

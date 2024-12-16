@@ -1075,8 +1075,8 @@ module Math {
   }
 
   private inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
+    if boundsChecking && val < 1 {
+      HaltWrappers.boundsCheckHalt("Can't take the log() of a non-positive integer");
     }
     return _logBasePow2Help(val, baseLog2);
   }

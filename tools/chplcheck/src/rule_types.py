@@ -21,7 +21,9 @@ import typing
 
 import chapel
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from fixits import Fixit, Edit
+from config import RuleSetting
 
 
 def _build_ignore_fixit(
@@ -36,6 +38,26 @@ def _build_ignore_fixit(
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
     return ignore
+
+
+@dataclass
+class RuleLocation:
+    path_: str
+    start_: typing.Tuple[int, int]
+    end_: typing.Tuple[int, int]
+
+    def path(self) -> str:
+        return self.path_
+
+    def start(self) -> typing.Tuple[int, int]:
+        return self.start_
+
+    def end(self) -> typing.Tuple[int, int]:
+        return self.end_
+
+    @classmethod
+    def from_chapel(cls, location: chapel.Location) -> "RuleLocation":
+        return RuleLocation(location.path(), location.start(), location.end())
 
 
 class BasicRuleResult:
@@ -136,10 +158,60 @@ AdvancedRuleCheck = typing.Callable[
 """Function type for advanced rules"""
 
 
-RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
+class LocationRuleResult:
+    """
+    Result type for location based rules. Rules can also return a plain RuleLocation
+    """
+
+    def __init__(
+        self,
+        location: RuleLocation,
+        fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+        data: typing.Optional[typing.Any] = None,
+    ):
+        self.location = location
+        if fixits is None:
+            self._fixits = []
+        elif isinstance(fixits, Fixit):
+            self._fixits = [fixits]
+        else:
+            self._fixits = fixits
+        self.data = data
+
+    def add_fixits(self, *fixits: Fixit):
+        """
+        Add fixits to the result.
+        """
+        self._fixits.extend(fixits)
+
+    def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
+        """
+        Get the fixits associated with this result.
+        """
+        to_return = self._fixits
+        return to_return
+
+
+_LocationRuleResult = typing.Iterator[
+    typing.Union[RuleLocation, LocationRuleResult]
+]
+"""Internal type for location rule results"""
+
+
+LocationRuleCheck = typing.Callable[
+    [chapel.Context, str, typing.List[str]], _LocationRuleResult
+]
+"""Function type for location rules"""
+
+
+RuleResult = typing.Union[
+    _BasicRuleResult, _AdvancedRuleResult, _LocationRuleResult
+]
 """Union type for all rule results"""
 
-CheckResult = typing.Tuple[chapel.AstNode, str, typing.List[Fixit]]
+CheckResult = typing.Tuple[
+    RuleLocation, typing.Optional[chapel.AstNode], str, typing.List[Fixit]
+]
 
 
 VarResultType = typing.TypeVar("VarResultType")
@@ -155,10 +227,22 @@ Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 
 class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
     # can't specify type of driver due to circular import
-    def __init__(self, driver, name: str) -> None:
+    def __init__(self, driver, name: str, settings: typing.List[str]) -> None:
         self.driver = driver
         self.name = name
+        self.settings = self._parse_settings(settings)
         self.fixit_funcs: typing.List[FixitHook[VarResultType]] = []
+
+    def _parse_settings(
+        self, settings_from_user: typing.List[str]
+    ) -> typing.List[RuleSetting]:
+        settings: typing.List[RuleSetting] = []
+        for s in settings_from_user:
+            if s.startswith("."):
+                settings.append(RuleSetting(s[1:], self.name))
+            else:
+                settings.append(RuleSetting(s))
+        return settings
 
     def _fixup_description_for_fixit(
         self, fixit: Fixit, fixit_func: FixitHook
@@ -185,6 +269,22 @@ class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
                 fixits_from_hooks.append(f)
         return fixits_from_hooks
 
+    def get_settings_kwargs(self):
+        """
+        Returns a Dict of SettingName -> SettingValue for this rule
+        """
+
+        # find all relevant settings for this rule
+        # either they have no specific rule name, or they match this rule
+        setting_kwargs = {}
+        for setting in self.settings:
+            # if setting is in the driver's settings, use that value
+            # otherwise, default to None
+            driver_setting = self.driver.config.rule_settings.get(setting)
+            setting_kwargs[setting.setting_name] = driver_setting
+
+        return setting_kwargs
+
     @abstractmethod
     def check(
         self, context: chapel.Context, root: chapel.AstNode
@@ -198,16 +298,22 @@ class BasicRule(Rule[BasicRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck
+        self,
+        driver,
+        name: str,
+        pattern: typing.Any,
+        check_func: BasicRuleCheck,
+        settings: typing.List[str],
     ) -> None:
-        super().__init__(driver, name)
+        super().__init__(driver, name, settings)
         self.pattern = pattern
         self.check_func = check_func
 
     def _check_single(
         self, context: chapel.Context, node: chapel.AstNode
     ) -> typing.Optional[CheckResult]:
-        result = self.check_func(context, node)
+        setting_kwargs = self.get_settings_kwargs()
+        result = self.check_func(context, node, **setting_kwargs)
         check, fixits = None, []
 
         # unwrap the result from the check function, and wrap it back
@@ -226,7 +332,8 @@ class BasicRule(Rule[BasicRuleResult]):
         # addition to the fixits in the result itself)
         # add the fixits from the hooks to the fixits from the rule
         fixits = self.run_fixit_hooks(context, result) + fixits
-        return (result.node, self.name, fixits)
+        loc = RuleLocation.from_chapel(result.node.location())
+        return (loc, result.node, self.name, fixits)
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode
@@ -246,15 +353,20 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
     """
 
     def __init__(
-        self, driver, name: str, check_func: AdvancedRuleCheck
+        self,
+        driver,
+        name: str,
+        check_func: AdvancedRuleCheck,
+        settings: typing.List[str],
     ) -> None:
-        super().__init__(driver, name)
+        super().__init__(driver, name, settings)
         self.check_func = check_func
 
     def check(
         self, context: chapel.Context, root: chapel.AstNode
     ) -> typing.Iterable[CheckResult]:
-        for result in self.check_func(context, root):
+        setting_kwargs = self.get_settings_kwargs()
+        for result in self.check_func(context, root, **setting_kwargs):
             if isinstance(result, AdvancedRuleResult):
                 node, anchor = result.node, result.anchor
                 fixits = result.fixits(context, self.name)
@@ -280,4 +392,47 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
             # addition to the fixits in the result itself)
             # add the fixits from the hooks to the fixits from the rule
             fixits = self.run_fixit_hooks(context, result) + fixits
-            yield (node, self.name, fixits)
+            loc = RuleLocation.from_chapel(node.location())
+            yield (loc, node, self.name, fixits)
+
+
+class LocationRule(Rule[LocationRuleResult]):
+    """
+    Class containing all information for the driver about advanced
+    """
+
+    def __init__(
+        self,
+        driver,
+        name: str,
+        check_func: LocationRuleCheck,
+        settings: typing.List[str],
+    ) -> None:
+        super().__init__(driver, name, settings)
+        self.check_func = check_func
+
+    def check(
+        self, context: chapel.Context, root: chapel.AstNode
+    ) -> typing.Iterable[CheckResult]:
+        if isinstance(root, chapel.Comment):
+            # TODO: we have no way to get the location of a comment to
+            # determine path/lines
+            yield from []
+            return
+        path = root.location().path()
+        lines = chapel.get_file_lines(context, root)
+
+        setting_kwargs = self.get_settings_kwargs()
+        for result in self.check_func(context, path, lines, **setting_kwargs):
+            if isinstance(result, LocationRuleResult):
+                fixits = result.fixits(context, self.name)
+            else:
+                fixits = []
+                result = LocationRuleResult(result)
+
+            # if we are going to warn, check for fixits from fixit hooks (in
+            # addition to the fixits in the result itself)
+            # add the fixits from the hooks to the fixits from the rule
+            fixits = self.run_fixit_hooks(context, result) + fixits
+            loc = result.location
+            yield (loc, None, self.name, fixits)

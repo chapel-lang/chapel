@@ -242,6 +242,10 @@ static bool
 compositeTypeIsPod(Context* context, const Type* t) {
   using namespace resolution;
 
+  if (auto cls = t->toClassType()) {
+    return !cls->decorator().isManaged();
+  }
+
   auto ct = t->getCompositeType();
   if (!ct) return false;
 
