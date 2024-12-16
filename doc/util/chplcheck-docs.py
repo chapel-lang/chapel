@@ -1,9 +1,10 @@
+#!/usr/bin/env python3
+
 """
 Auto-generates a *.rst for the chplcheck rules defined
 `$CHPL_HOME/tools/chplcheck/src/rules.py`
 """
 
-import sys
 import os
 import typing
 from dataclasses import dataclass
@@ -29,8 +30,17 @@ class Rule:
         lines.append("")
         lines.append("Is enabled by default? " + ("Yes" if self.default else "No"))
         lines.append("")
-        lines.append(self.description)
-        lines.append("")
+
+        if self.description:
+            lines.append(self.description)
+            lines.append("")
+
+        if self.settings:
+            lines.append("Settings:")
+            for setting in self.settings:
+                lines.append(f"  - ``{setting}``")
+            lines.append("")
+
         if self.example_text:
             lines.append(self.example_text)
             lines.append("")
@@ -104,8 +114,20 @@ def find_rules(file: str):
         ]
         is_default = not any(d == "False" for d in default_settings)
 
-        # TODO: settings
+        # grab the settings for the rule
         settings = []
+        settings_node = [
+            next(k.value for k in d.keywords)
+            for d in func.decorator_list
+            if isinstance(d, ast.Call)
+            and isinstance(d.func, ast.Attribute)
+            and len(d.keywords) > 0
+            and any(k.arg == "settings" for k in d.keywords)
+        ]
+        if settings_node:
+            # settings node should be a list with 1 element, an ast.List object
+            # get each the value of each element from the list
+            settings = [s.value for s in settings_node[0].elts]
 
         return Rule(name, description, patterns, is_default, settings)
 
