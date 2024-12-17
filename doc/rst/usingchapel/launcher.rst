@@ -191,7 +191,7 @@ UDP or InfiniBand conduits. So, for these configurations please see:
 Common Slurm Settings
 *********************
 
-* Optionally, you can  specify a node access mode by setting the environment
+* Optionally, you can specify a node access mode by setting the environment
   variable ``CHPL_LAUNCHER_NODE_ACCESS``. It will default to ``exclusive``
   access, but can be overridden to:
 
@@ -201,44 +201,54 @@ Common Slurm Settings
 
   For example, to grant shared node access, set:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-    export CHPL_LAUNCHER_NODE_ACCESS=shared
+     export CHPL_LAUNCHER_NODE_ACCESS=shared
 
 * Optionally, you can specify a slurm partition by setting the environment
   variable ``CHPL_LAUNCHER_PARTITION``. For example, to use the 'debug'
   partition, set:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-    export CHPL_LAUNCHER_PARTITION=debug
+     export CHPL_LAUNCHER_PARTITION=debug
 
   This can also be done by passing the ``--partition`` flag to the executable.
+  For example, to use the 'debug' partition, use:
+
+   .. code-block:: bash
+
+     ./myprogram --partition=debug
 
 * Optionally, you can specify a slurm nodelist by setting the environment
   variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-    export CHPL_LAUNCHER_NODELIST=nid00001
+     export CHPL_LAUNCHER_NODELIST=nid00001
 
   This can also be done by passing the ``--nodelist`` flag to the executable.
+  For example, to use nodes nid00001 and nid00002, use:
+
+   .. code-block:: bash
+
+     ./myprogram --nodelist=nid00001,nid00002
 
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
   'cal' feature (as defined in the slurm.conf file), set:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-    export CHPL_LAUNCHER_CONSTRAINT=cal
+     export CHPL_LAUNCHER_CONSTRAINT=cal
 
 * Optionally, you can specify a slurm account by setting the environment
   variable ``CHPL_LAUNCHER_ACCOUNT``. For example, to use the account 'acct',
   set:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-    export CHPL_LAUNCHER_ACCOUNT=acct
+     export CHPL_LAUNCHER_ACCOUNT=acct
 
 * If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
   sbatch is used to launch the job to the queue system, rather than
@@ -247,7 +257,12 @@ Common Slurm Settings
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
-  This can also be done by passing the ``--generate-sbatch-script`` flag to the executable.
+  This can also be done by passing the ``--generate-sbatch-script`` flag to the executable. For example, to use sbatch to launch the job, use:
+
+  .. code-block:: bash
+
+    ./myprogram --generate-sbatch-script
+
 
 * Optionally, you can specify the number of GPUs required per node by setting the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE``. For example, to request 2 GPUs per node, set:
 
@@ -255,7 +270,12 @@ Common Slurm Settings
 
       export CHPL_LAUNCHER_GPUS_PER_NODE=2
 
-  This can also be done by passing the ``--gpus-per-node`` flag to the executable.
+  This can also be done by passing the ``--gpus-per-node`` flag to the
+  executable. For example, to request 2 GPUs per node, use:
+
+   .. code-block:: bash
+
+      ./myprogram --gpus-per-node=2
 
 .. _ssh-launchers-with-slurm:
 
