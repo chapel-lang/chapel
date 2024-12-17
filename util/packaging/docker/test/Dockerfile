@@ -15,6 +15,13 @@ RUN mkdir -p /home/linuxbrew
 # RUN sudo apt-get install -y vim
 # ENV EDITOR=vim
 
+# Do the updates before applying our chapel.rb changes
+# Update Homebrew itself
+RUN brew update
+# Upgrade to the latest version of all installed formulae
+RUN brew upgrade
+
+
 # necessary so that updated chapel.rb formula can be committed, which is only way it
 # will be tested
 RUN git config --global user.name "Chapel Tester"
