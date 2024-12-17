@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+Ensure that a plain invocation of `printchplbuilds` works as expected and has a return code of 0.
+"""
+
 import sys
 import os
 import subprocess as sp

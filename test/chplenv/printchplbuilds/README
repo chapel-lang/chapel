@@ -1,0 +1,2 @@
+These tests check that `$CHPL_HOME/util/chplenv/printchplbuilds.py` continues
+to work properly.

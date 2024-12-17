@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+Ensure that `printchplbuilds` reports the current build the same as `printchplenv`.
+This test defines what variables should be in the `printchplbuilds` output
+and then runs `printchplenv` to get the values.
+"""
+
 import sys
 import os
 import subprocess as sp
