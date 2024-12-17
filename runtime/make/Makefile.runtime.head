@@ -20,7 +20,7 @@
 # settings for the build
 #
 DEPEND=1
-ifdef CHPL_DEVELOPER
+ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 WARNINGS=1
 TAGS=1
