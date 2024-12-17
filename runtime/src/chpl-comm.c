@@ -46,6 +46,7 @@ int32_t          chpl_nodeID = -1;
 int32_t          chpl_numNodes = -1;
 static int32_t   numLocalesOnNode = -1;
 static int32_t   localRank = -1;
+static int32_t   numColocalesOnNode = 1;
 
 
 //
@@ -267,5 +268,16 @@ void chpl_set_local_rank(int32_t rank) {
 // Returns -1 if chpl_set_local_rank has not been called.
 int32_t chpl_get_local_rank(void) {
   return localRank;
+}
+
+void chpl_set_num_colocales_on_node(int32_t count) {
+  if (count <= 0) {
+    chpl_internal_error_v("count (%d) must be > 0", count);
+  }
+  numColocalesOnNode = count;
+}
+
+int32_t chpl_get_num_colocales_on_node(void) {
+  return numColocalesOnNode;
 }
 

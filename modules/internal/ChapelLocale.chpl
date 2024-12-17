@@ -226,6 +226,14 @@ module ChapelLocale {
   */
   inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
+  /*
+    Get the number of colocales on the locale's node.
+
+    :returns: the number of colocales on the locale's node
+    :rtype: int
+  */
+  inline proc locale.numColocales: int { return this._value.numColocales; }
+
   // the following are normally taken care of by `forwarding`. However, they
   // don't work if they are called in a promoted expression. See 15148
 
@@ -325,6 +333,8 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int;
+
+    var numColocales: int;
 
     proc id : int do return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
