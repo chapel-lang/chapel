@@ -1147,12 +1147,12 @@ def filter_llvm_config_flags(llvm_val, flags):
             flag == '-std=c++14'):
             continue # filter out these flags
 
+        #
         # include LLVM headers as system headers using -isystem
         # this avoids warnings inside of LLVM headers by treating LLVM headers
         #
-        # With LLVM=system, also add the include as -I. This preserves the
-        # directory search order if the directory is already a system include
-        # see https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html
+        # If the header is already a system header, using -isystem will break
+        # the include search. In that case, just use -I (which technically wont do anythings)
         #
         if flag.startswith('-I'):
             directory = flag[2:]
