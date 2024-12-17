@@ -173,13 +173,21 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static void propagate_environment(char** buf)
+// Append environment variables using chpl_append_to_cmd.
+// charsWritten may be NULL, in which case it is ignored.
+static void propagate_environment(char** buf, int* charsWritten)
 {
+  int ignoredCharsWritten;
+  if (!charsWritten) {
+    charsWritten = &ignoredCharsWritten;
+  }
+
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
-  if (enviro_keys) chpl_append_to_cmd(buf, " -E '%s'", enviro_keys);
+  if (enviro_keys)
+    chpl_append_to_cmd(buf, charsWritten, " -E '%s'", enviro_keys);
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -189,7 +197,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int i;
   int size;
   char* baseCommand = NULL;
-  char* envProp = NULL;
   char* command;
   FILE* slurmFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -298,8 +305,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
             numLocales, numLocales);
 
-    propagate_environment(envProp);
+    char* envProp = NULL;
+    propagate_environment(&envProp, NULL);
     fprintf(slurmFile, "%s", envProp);
+    chpl_mem_free(envProp);
 
     fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
@@ -337,7 +346,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     chpl_append_to_cmd(&iCom, &len, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numNodes);
-    propagate_environment(&iCom);
+    propagate_environment(&iCom, &len);
     chpl_append_to_cmd(&iCom, &len, " %s %s", chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
