@@ -1103,7 +1103,7 @@ def get_system_include_directories(flag, lang):
         lines = stdout.splitlines()
         start_includes_regex = re.compile(r"#include.+search starts here")
         end_includes_regex = re.compile(r"End of search list")
-        ignoring_regex = re.compile(r"ignoring nonexistent")
+        ignoring_regex = re.compile(r"(?:ignoring nonexistent)|(?:as it is a non-system)")
         collecting = False
         for line in lines:
             if start_includes_regex.search(line):
