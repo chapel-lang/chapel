@@ -752,13 +752,25 @@ def get_gcc_prefix_dir(clang_cfg_args):
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
 
+    llvm_version = get_llvm_version()
+    flag_supported = llvm_version not in ('11', '12', '13', '14', '15')
     if gcc_dir:
-        llvm_version = get_llvm_version()
-        if llvm_version in ('11', '12', '13', '14', '15'):
+        if not flag_supported:
             warning("This LLVM / clang version {0} is too old to use "
                     "CHPL_LLVM_GCC_INSTALL_DIR -- "
                     "it will be ignored".format(llvm_version))
-            return ''
+            gcc_dir = ''
+    elif flag_supported:
+        # compute the GCC that LLVM should use.
+        # this logic is based on the same logic in the LLVM spack package
+        _, _, stdout, _ = try_run_command(
+            ["gcc", "-print-file-name=libgcc.a"], combine_output=True)
+        if stdout:
+            gcc_dir_path = stdout.strip()
+            if not os.path.abspath(gcc_dir_path):
+                dirname = os.path.dirname(gcc_dir_path)
+                if os.path.exists(dirname):
+                    gcc_dir = dirname
 
     return gcc_dir
 
