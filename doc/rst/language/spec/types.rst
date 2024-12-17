@@ -635,7 +635,7 @@ concrete or semi-concrete
           when statesman.Churchill do
              writeln("A joke is a very serious thing.");
           when statesman.Plato do
-             { write("I only wish that wisdom were the kind of thing that flowed...");
+             { write("I only wish that wisdom were the kind of thing that flowed ");
                writeln("... from the vessel that was full to the one that was empty."); }
         }
       }
@@ -654,7 +654,7 @@ concrete or semi-concrete
       All paid jobs absorb and degrade the mind.
       Every reform movement has a lunatic fringe.
       A joke is a very serious thing.
-      No one will ever win the battle of the sexes; there's too much fraternizing with the enemy.
+      I only wish that wisdom were the kind of thing that flowed ... from the vessel that was full to the one that was empty.
 
    outputs a quote from the given statesman. Note that enumerated
    constants must be prefixed by the enumerated type name and a dot
