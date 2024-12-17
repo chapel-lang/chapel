@@ -771,10 +771,9 @@ def get_gcc_install_dir():
             ["gcc", "-print-file-name=libgcc.a"], combine_output=True)
         if stdout:
             gcc_dir_path = stdout.strip()
-            if not os.path.abspath(gcc_dir_path):
+            if os.path.abspath(gcc_dir_path):
                 dirname = os.path.dirname(gcc_dir_path)
-                if os.path.exists(dirname):
-                    gcc_dir = dirname
+                gcc_dir = dirname if os.path.exists(dirname) else gcc_dir
 
     return gcc_dir
 
