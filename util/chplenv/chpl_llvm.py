@@ -760,6 +760,10 @@ def get_gcc_install_dir():
                     "CHPL_LLVM_GCC_INSTALL_DIR -- "
                     "it will be ignored".format(llvm_version))
             gcc_dir = ''
+        # allow CHPL_LLVM_GCC_INSTALL_DIR=none to disable inferring it
+        if gcc_dir == 'none':
+            gcc_dir = ''
+
     elif flag_supported:
         # compute the GCC that LLVM should use.
         # this logic is based on the same logic in the LLVM spack package
@@ -1066,8 +1070,7 @@ def filter_llvm_config_flags(llvm_val, flags):
         # when adding LLVM=system as system headers, we should not perturb the
         # include search path, so use -isystem-after/-idirafter
         #
-        # when adding LLVM=bundled, we should include the LLVM headers as system
-        # headers and prefer the bundled headers, so use -isystem
+        # when adding LLVM=bundled, we should include the LLVM headers a
         #
         include_flag = '-idirafter' if llvm_val == 'system' else '-isystem'
         if flag.startswith('-I'):
