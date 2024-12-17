@@ -1217,6 +1217,8 @@ listBenchmark1:
     - Reduce uses of Math by automatically included modules (#19885)
   06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
+  12/12/24:
+    - Remove check on 'log' input with --no-checks (#26368)
 
 lulesh:
   03/15/14:
@@ -1941,6 +1943,8 @@ revcomp: &revcomp-base
     - Deprecate 'iokind' type and 'kind' field (#23007)
   08/30/23:
     - Improve performance of readBinary and writeBinary for dense arrays (#23162)
+  12/12/24:
+    - Remove check on 'log' input with --no-checks (#26368)
 
 revcomp-submitted:
   06/07/22:
