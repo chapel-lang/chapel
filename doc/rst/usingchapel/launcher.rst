@@ -213,12 +213,16 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_PARTITION=debug
 
+  This can also be done by passing the ``--partition`` flag to the executable.
+
 * Optionally, you can specify a slurm nodelist by setting the environment
   variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
 
   .. code-block:: bash
 
     export CHPL_LAUNCHER_NODELIST=nid00001
+
+  This can also be done by passing the ``--nodelist`` flag to the executable.
 
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
@@ -243,6 +247,15 @@ Common Slurm Settings
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
+  This can also be done by passing the ``--generate-sbatch-script`` flag to the executable.
+
+* Optionally, you can specify the number of GPUs required per node by setting the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE``. For example, to request 2 GPUs per node, set:
+
+   .. code-block:: bash
+
+      export CHPL_LAUNCHER_GPUS_PER_NODE=2
+
+  This can also be done by passing the ``--gpus-per-node`` flag to the executable.
 
 .. _ssh-launchers-with-slurm:
 
