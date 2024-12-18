@@ -227,11 +227,20 @@ module ChapelLocale {
   inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
   /*
-    Get the number of colocales on the locale's node.
+    Get the number of co-locales on the locale's node, inclusive.
 
-    :returns: the number of colocales on the locale's node
+    Note that this may not be equal to the number of locales on the node due
+    to oversubscription. The value is one in the typical case in which there
+    is only one locale per node. For example, if a job is launched with ``-nl
+    2`` then ``numColocales`` will be one, and if it is launched with ``-nl
+    1x2`` ``numColocales`` will be two.
+
+    More information about co-locales can be found here: :ref:`readme-colocale`
+
+    :returns: the number of co-locales on the locale's node
     :rtype: int
   */
+  @unstable("'locale.numColocales' is unstable")
   inline proc locale.numColocales: int { return this._value.numColocales; }
 
   // the following are normally taken care of by `forwarding`. However, they
