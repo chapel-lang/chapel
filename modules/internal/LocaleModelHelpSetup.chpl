@@ -222,6 +222,9 @@ module LocaleModelHelpSetup {
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();
 
+    extern proc chpl_get_num_colocales_on_node(): c_int;
+    dst.numColocales = chpl_get_num_colocales_on_node();
+
     var childSpace = {0..#numSublocales};
 
     const origSubloc = chpl_task_getRequestedSubloc();
