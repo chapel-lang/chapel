@@ -1069,7 +1069,8 @@ def filter_llvm_config_flags(llvm_val, flags):
         # when adding LLVM=system as system headers, we should not perturb the
         # include search path, so use -isystem-after/-idirafter
         #
-        # when adding LLVM=bundled, we should include the LLVM headers a
+        # when adding LLVM=bundled, we should include the LLVM headers as system
+        # headers and prefer the bundled headers, so use -isystem
         #
         include_flag = '-idirafter' if llvm_val == 'system' else '-isystem'
         if flag.startswith('-I'):
