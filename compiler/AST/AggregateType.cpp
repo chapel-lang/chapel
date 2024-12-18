@@ -68,6 +68,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   mIsGenericWithDefaults = false;
   mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
+  postinit = NULL;
+  
   typeSignature      = NULL;
 
 

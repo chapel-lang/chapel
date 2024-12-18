@@ -233,6 +233,9 @@ public:
   // A list of the generic fields in this type.
   std::vector<Symbol*>        genericFields;
 
+  // pointer to postinit() method, if defined
+  FnSymbol* postinit;
+
 private:
 
   // Only used for LLVM.

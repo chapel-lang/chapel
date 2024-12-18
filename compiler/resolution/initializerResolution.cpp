@@ -191,7 +191,8 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     }
   }
 
-  if (initFn->throwsError()) {
+  if (initFn->throwsError() ||
+      (type->hasPostInitializer() && type->postinit->throwsError())) {
     fn->throwsErrorInit();
     BlockStmt* tryBody = new BlockStmt(innerInit);
 

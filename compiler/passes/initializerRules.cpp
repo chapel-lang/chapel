@@ -1186,8 +1186,11 @@ static bool findPostinitAndMark(AggregateType* at) {
     int size = at->methods.n;
 
     for (int i = 0; i < size && retval == false; i++) {
-      if (at->methods.v[i] != NULL)
-        retval = at->methods.v[i]->isPostInitializer();
+      FnSymbol* methodi = at->methods.v[i];
+      if (methodi != NULL && methodi->isPostInitializer()) {
+        at->postinit = methodi;
+        retval = true;
+      }
     }
 
   } else {
@@ -1447,6 +1450,8 @@ static void buildPostInit(AggregateType* at) {
   }
 
   at->methods.add(fn);
+
+  at->postinit = fn;
 }
 
 //
@@ -1465,9 +1470,11 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
     if (method == nullptr) continue;
 
     if (method->isPostInitializer()) {
+      /*
       if (method->throwsError() == true) {
         USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
       }
+      */
       if (method->where == NULL) {
         found = true;
       }
