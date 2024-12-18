@@ -1446,6 +1446,17 @@ static void buildPostInit(AggregateType* at) {
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   if (at->isClass()) {
+    // If our parent class's postinit() is throwing, ours needs to be as well
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (pt->hasPostInitializer()) {
+        if (pt->postinit->throwsError()) {
+          fn->throwsErrorInit();
+          break;
+        }
+      }
+    }
+
+    // Insert call to parent class postinit()
     insertSuperPostInit(fn);
   }
 
