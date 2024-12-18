@@ -20,7 +20,7 @@ config const dist = distType.block;
 config const mode = diagMode.performance;
 
 // assume homogeneity
-const totMem = here.physicalMemory(unit = MemUnits.Bytes);
+const totMem = here.physicalMemory(unit = MemUnits.Bytes) / here.numColocales;
 config const memFraction = 4;
 
 config const createArrays = true;
