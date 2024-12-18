@@ -1488,6 +1488,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
       */
       if (method->where == NULL) {
         found = true;
+        at->postinit = method;
       }
       if (method->formals.length > 2) {
         // Only accept method token and 'this'

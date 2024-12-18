@@ -1,0 +1,3 @@
+throwing-superclass3.chpl:19: error: conflicting throws for 'Bar.postinit()'
+throwing-superclass3.chpl:7: error: throwing function 'Foo.postinit()'
+throwing-superclass3.chpl:19: error: overridden by non-throwing function 'Bar.postinit()'
