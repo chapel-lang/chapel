@@ -450,7 +450,8 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (signaturesMatch(pfn, cfn) &&
       evaluateWhereClause(cfn) &&
-      evaluateWhereClause(pfn)) {
+      evaluateWhereClause(pfn) &&
+      !pfn->isPostInitializer()) {  // postinits don't override
 
     resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);

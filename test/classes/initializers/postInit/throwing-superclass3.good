@@ -1,3 +1,5 @@
-throwing-superclass3.chpl:19: error: conflicting throws for 'Bar.postinit()'
-throwing-superclass3.chpl:7: error: throwing function 'Foo.postinit()'
-throwing-superclass3.chpl:19: error: overridden by non-throwing function 'Bar.postinit()'
+In Bar's postinit
+{x = 3}
+uncaught Error: x too large
+  throwing-superclass3.chpl:9: thrown here
+  throwing-superclass3.chpl:19: uncaught here
