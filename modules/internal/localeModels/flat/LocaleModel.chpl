@@ -155,6 +155,7 @@ module LocaleModel {
       nPUsLogAcc = 0;
       nPUsLogAll = 0;
       maxTaskPar = 0;
+      numColocales = 0;
     }
 
     // The setup() function must use chpl_initOnLocales() to iterate (in
