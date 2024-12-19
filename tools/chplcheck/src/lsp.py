@@ -36,14 +36,6 @@ from fixits import Fixit, Edit
 from driver import LintDriver
 
 
-def _get_location(node: chapel.AstNode):
-    """Helper to get the location of a node"""
-    if isinstance(node, chapel.NamedDecl):
-        return chapel.lsp.location_to_range(node.name_location())
-    else:
-        return chapel.lsp.location_to_range(node.location())
-
-
 def get_lint_diagnostics(
     context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]
 ) -> List[Diagnostic]:
