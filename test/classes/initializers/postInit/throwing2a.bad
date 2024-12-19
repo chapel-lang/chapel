@@ -1,2 +1,0 @@
-throwing2a.chpl:4: In initializer:
-throwing2a.chpl:8: error: initializers are not yet allowed to throw errors

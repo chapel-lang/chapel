@@ -1,6 +1,0 @@
-feature request: throwing initializers post-'init this' without helpers
-
-It seems we can throw in initializers if we put the throwing behavior
-into a helper function (see 'throwing2.chpl') but not if we put it
-directly?  (this test).  If that's intentional, it seems like the error
-message could be tightened up since it's a bit overly broad currently.
