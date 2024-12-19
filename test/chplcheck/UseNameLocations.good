@@ -1,0 +1,3 @@
+UseNameLocations.chpl:8: node violates rule CamelCaseFunctions
+UseNameLocations.chpl:12: node violates rule CamelCaseRecords
+UseNameLocations.chpl:16: node violates rule PascalCaseClasses
