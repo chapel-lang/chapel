@@ -779,15 +779,24 @@ module ChapelIO {
   proc write(const args ...?n) {
     try! stdout.write((...args));
   }
+    /* Equivalent to ``try! writer.write``. See :proc:`IO.fileWriter.write` */
+  proc write(writer: fileWriter, const args ...?n) {
+    try! writer.write((...args));
+  }
+
   /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.fileWriter.writeln` */
   proc writeln(const args ...?n) {
     try! stdout.writeln((...args));
   }
+  /* Equivalent to ``try! writer.writeln``. See :proc:`IO.fileWriter.writeln` */
+  proc writeln(writer: fileWriter, const args ...?n) {
+    try! writer.writeln((...args));
+  }
 
   // documented in the arguments version.
   @chpldoc.nodoc
-  proc writeln() {
-    try! stdout.writeln();
+  proc writeln(writer: fileWriter = stdout) {
+    try! writer.writeln();
   }
 
  /* Equivalent to ``try! stdout.writef``. See
@@ -797,12 +806,26 @@ module ChapelIO {
   {
     try! { stdout.writef(fmt, (...args)); }
   }
+ /* Equivalent to ``try! writer.writef``. See
+     :proc:`FormattedIO.fileWriter.writef`. */
+  proc writef(writer: fileWriter, fmt:?t, const args ...?k)
+      where isStringType(t) || isBytesType(t)
+  {
+    try! { writer.writef(fmt, (...args)); }
+  }
   // documented in string version
   @chpldoc.nodoc
   proc writef(fmt:?t)
       where isStringType(t) || isBytesType(t)
   {
     try! { stdout.writef(fmt); }
+  }
+  // documented in string version
+  @chpldoc.nodoc
+  proc writef(writer: fileWriter, fmt:?t)
+      where isStringType(t) || isBytesType(t)
+  {
+    try! { writer.writef(fmt); }
   }
 
   @chpldoc.nodoc
