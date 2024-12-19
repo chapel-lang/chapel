@@ -134,6 +134,7 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   }
 
   copy_type->genericField = genericField;
+  copy_type->postinit = postinit;
 
   return copy_type;
 }
