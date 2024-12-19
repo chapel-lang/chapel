@@ -24,11 +24,11 @@ proc test(func: borrowed Function) {
 
   {
     // convert to a list via a PyObject
-    var obj = func(owned PyObject, low, high);
-    if print then writeln("  PyObject: ", obj.str());
+    var obj = func(owned Value, low, high);
+    if print then writeln("  Value: ", obj.str());
 
     var res = obj.value(List.list(int));
-    if print then writeln("  from PyObject to list: ", res);
+    if print then writeln("  from Value to list: ", res);
 
     // the domains may not be the same between check and `.toArray`
     for (expected, actual) in zip(check, res) {

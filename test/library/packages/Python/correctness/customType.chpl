@@ -15,12 +15,12 @@ class myRecConverter: TypeConverter {
   override proc toPython(interpreter: borrowed Interpreter,
                          type T, const value: T): Python.CPythonInterface.PyObjectPtr throws {
     if T != myRec then halt("Expected myRec");
-    return PyObject.release(pyClsType(value.x, value.y));
+    return Value.release(pyClsType(value.x, value.y));
   }
   override proc fromPython(interpreter: borrowed Interpreter,
                            type T, obj: Python.CPythonInterface.PyObjectPtr): T throws {
     if T != myRec then halt("Expected myRec");
-    var cls = new ClassObject(new PyObject(interpreter, obj));
+    var cls = new ClassObject(interpreter, obj);
     var res = new myRec(cls.getAttr(int, "x"), cls.getAttr(string, "y"));
     return res;
   }
