@@ -624,7 +624,7 @@ module DistributedBag
     {
       this.eltType = eltType;
       this.parentHandle = parentHandle;
-      // KNOWN ISSUE: 'this.complete' produces an error when 'eltType' is a Chapel
+      // KNOWN ISSUE: 'init this' produces an error when 'eltType' is a Chapel
       // array (see Github issue #19859).
     }
 
