@@ -3,3 +3,5 @@ unimplemented feature: throwing postinits don't deinit fields
 I suspect that addressing ../errors/errhandling/deinitFields.chpl
 would likely fix this test as well, but wanted to add a separate test
 to be sure.
+
+#26437

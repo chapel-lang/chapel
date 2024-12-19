@@ -1,4 +1,4 @@
-feature request: throwing initializers post-'init this' without helpers
+unimplemented feature: throwing initializers post-'init this' without helpers
 
 It seems we can throw within initializers if we put the throwing
 behavior into a helper function (see 'throwingViaHelper.chpl') but not
@@ -6,3 +6,5 @@ if we put it directly (this test).  This may be a known limitation in
 the current, but the throwingInit.rst technote doesn't seem to mention
 it and I didn't see a future for it in this directory, so am adding
 this one.
+
+#26438
