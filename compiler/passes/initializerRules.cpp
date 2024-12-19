@@ -1188,8 +1188,10 @@ static bool findPostinitAndMark(AggregateType* at) {
     for (int i = 0; i < size && retval == false; i++) {
       FnSymbol* methodi = at->methods.v[i];
       if (methodi != NULL && methodi->isPostInitializer()) {
+        // capture the post-initializer upon finding it
         at->postinit = methodi;
         retval = true;
+        break;
       }
     }
 
@@ -1481,11 +1483,6 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
     if (method == nullptr) continue;
 
     if (method->isPostInitializer()) {
-      /*
-      if (method->throwsError() == true) {
-        USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
-      }
-      */
       if (method->where == NULL) {
         found = true;
         at->postinit = method;

@@ -191,6 +191,8 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     }
   }
 
+  // If either the initializer throws, or the postinit throws, make
+  // this function representing the 'new' throw as well
   if (initFn->throwsError() ||
       (type->hasPostInitializer() && type->postinit->throwsError())) {
     fn->throwsErrorInit();
