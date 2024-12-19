@@ -23,7 +23,7 @@ proc test(func: borrowed Function) {
   }
 
   {
-    // convert to a list via a PyObject
+    // convert to a list via a Value
     var obj = func(owned Value, low, high);
     if print then writeln("  Value: ", obj.str());
 

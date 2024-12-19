@@ -16,8 +16,8 @@ proc main() {
   var MSELoss = new Class(nn, "MSELoss");
 
   // create the model
-  var model = new ClassObject(myModelClass);
-  var input_tensor = tensor(owned PyObject, [[1.0,]], kwargs=["requires_grad" => true]);
+  var model = myModelClass();
+  var input_tensor = tensor(owned Value, [[1.0,]], kwargs=["requires_grad" => true]);
 
   // init model weights to 0.9
   {
@@ -33,7 +33,7 @@ proc main() {
 
   // compute the loss
   var loss_fn = MSELoss();
-  var target = tensor(owned PyObject, [[2.0,]]);
+  var target = tensor(owned Value, [[2.0,]]);
   var loss = loss_fn(owned ClassObject, pred, target);
   loss.call(NoneType, "backward");
 
