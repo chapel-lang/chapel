@@ -1746,7 +1746,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_BLOCK_UNLOCAL:
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
-    case PRIM_WIDE_GET_LOCALE:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
@@ -1769,6 +1768,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_FORCE_THUNK:
     case PRIM_THUNK_RESULT_TYPE:
       CHPL_UNIMPL("misc primitives");
+      break;
+
+    case PRIM_WIDE_GET_LOCALE:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CompositeType::getLocaleIDType(context));
       break;
 
     case PRIM_GATHER_TESTS:
