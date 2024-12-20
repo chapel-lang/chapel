@@ -5624,21 +5624,24 @@ getIterKindConstantOrUnknown(Context* context, Function::IteratorKind iterKind) 
 static const MostSpecificCandidate&
 findTaggedIterator(ResolutionContext* rc,
                    UniqueString name,
+                   bool isMethod,
                    QualifiedType receiverType,
                    std::vector<QualifiedType> argTypes,
                    Function::IteratorKind tag,
                    const Scope* callScope,
                    const Scope* iteratorScope,
                    const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
 
   auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
+
+  CHPL_ASSERT(!isMethod || !receiverType.isUnknownOrErroneous());
 
   auto followThisType = QualifiedType();
   bool isFollower = tag == Function::FOLLOWER;
   bool isSerial = tag == Function::SERIAL;
   if (isFollower) {
-    auto candidate = findTaggedIterator(rc, name, receiverType, argTypes,
+    auto candidate = findTaggedIterator(rc, name, isMethod, receiverType, argTypes,
                                         Function::LEADER, callScope, iteratorScope, poiScope);
     if (candidate && candidate.fn()->isIterator()) {
       followThisType = yieldType(rc, candidate.fn(), poiScope);
@@ -5653,10 +5656,22 @@ findTaggedIterator(ResolutionContext* rc,
   auto iterKindType = EnumType::getIterKindType(rc->context());
 
   std::vector<CallInfoActual> actuals;
+  int idx = -1;
   for (auto argType : argTypes) {
+    idx++;
+
     // We explicitly insert the tag below.
-    if (argType.type() == iterKindType) continue;
-    actuals.push_back(CallInfoActual(argType, UniqueString()));
+    if (argType.type() == iterKindType) {
+      CHPL_ASSERT(!isMethod || idx > 0);
+      continue;
+    }
+
+    // Pass the 'this' formal by name.
+    auto name = UniqueString();
+    if (idx == 0 && isMethod) {
+      name = USTR("this");
+    }
+    actuals.push_back(CallInfoActual(argType, name));
   }
   if (!isSerial) {
     auto iterKind = getIterKindConstantOrUnknown(rc->context(), tag);
@@ -5673,7 +5688,7 @@ findTaggedIterator(ResolutionContext* rc,
   }
 
   auto ci = CallInfo(name, receiverType,
-                     /* isMethodCall */ false,
+                     /* isMethodCall */ isMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      actuals);
@@ -5733,18 +5748,16 @@ findTaggedIteratorForType(ResolutionContext* rc,
                           const Scope* overrideScope) {
   CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, rc, fnIter, iterKind, overrideScope);
 
+  auto fn = fnIter->iteratorFn();
   auto name = fnIter->iteratorFn()->untyped()->name();
-  auto receiverType =
-    fnIter->iteratorFn()->isMethod() ?
-    fnIter->iteratorFn()->formalType(0) :
-    QualifiedType();
+  auto receiverType = fn->isMethod() ? fn->formalType(0) : QualifiedType();
   std::vector<QualifiedType> argTypes;
-  for (int i = 0; i < fnIter->iteratorFn()->numFormals(); i++) {
-    argTypes.push_back(fnIter->iteratorFn()->formalType(i));
+  for (int i = 0; i < fn->numFormals(); i++) {
+    argTypes.push_back(fn->formalType(i));
   }
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
 
-  auto ret = findTaggedIterator(rc, name, receiverType, argTypes, iterKind,
+  auto ret = findTaggedIterator(rc, name, fn->isMethod(), receiverType, argTypes, iterKind,
                                 inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
