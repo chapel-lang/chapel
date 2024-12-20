@@ -385,6 +385,18 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   return QualifiedType(QualifiedType::TYPE, typePtr);
 }
 
+static QualifiedType primPromotionType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto actualQt = ci.actual(0).type();
+
+  auto promoTy = getPromotionType(context, actualQt).type();
+
+  // We want a type result, even if the prim was passed a value.
+  auto promoQt = QualifiedType(QualifiedType::TYPE, promoTy);
+
+  return promoQt;
+}
+
 static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
                                        const CallInfo& ci) {
   CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
@@ -1668,7 +1680,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_SCALAR_PROMOTION_TYPE:
-      CHPL_UNIMPL("misc primitives");
+      type = primPromotionType(context, ci);
       break;
     case PRIM_STATIC_FIELD_TYPE:
       type = staticFieldType(context, ci);

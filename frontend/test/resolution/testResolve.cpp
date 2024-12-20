@@ -1816,6 +1816,26 @@ static void testCallableAmbiguity() {
   assert(guard.realizeErrors());
 }
 
+// Test use of the 'scalar promotion type' primitive.
+// Implementation of getting promotion types is tested more thoroughly
+// elsewhere, so this is just a very basic test the prims works as expected.
+static void testPromotionPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string prog =
+    R"""(
+      var d : domain(1, real);
+      type t = __primitive("scalar promotion type", d);
+      param x = (t == real);
+    )""";
+
+  auto x = resolveTypeOfXInit(context, prog);
+  ensureParamBool(x, true);
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -1850,6 +1870,8 @@ int main() {
   testFormalFunctionShadowing();
   testFunctionFormalShadowing();
   testCallableAmbiguity();
+
+  testPromotionPrim();
 
   return 0;
 }
