@@ -68,7 +68,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   mIsGenericWithDefaults = false;
   mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
-  postinit = NULL;
+  postinit           = nullptr;
 
   typeSignature      = NULL;
 
@@ -239,8 +239,8 @@ void AggregateType::verify() {
   }
 
   // Should we just change all checks of this flag to a check against
-  // postinit being non-NULL?  Or a nice method query?
-  if ((postinit != NULL) != this->symbol->hasFlag(FLAG_HAS_POSTINIT)) {
+  // postinit being non-nullptr?  Or a nice method query?
+  if ((postinit != nullptr) != this->symbol->hasFlag(FLAG_HAS_POSTINIT)) {
     INT_FATAL(this, "postinit state is inconsistent");
   }
 }

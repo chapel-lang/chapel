@@ -1187,7 +1187,7 @@ static bool findPostinitAndMark(AggregateType* at) {
 
     for (int i = 0; i < size && retval == false; i++) {
       FnSymbol* methodi = at->methods.v[i];
-      if (methodi != NULL && methodi->isPostInitializer()) {
+      if (methodi != nullptr && methodi->isPostInitializer()) {
         // capture the post-initializer upon finding it
         at->postinit = methodi;
         retval = true;
