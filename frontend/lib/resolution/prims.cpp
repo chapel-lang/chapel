@@ -987,6 +987,12 @@ static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
   });
 }
 
+static QualifiedType primNeedsAutoDestroy(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return Type::needsInitDeinitCall(t) && !Type::isPod(context, t);
+  });
+}
+
 static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
@@ -1245,8 +1251,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_HAS_DEFAULT_VALUE:
-    case PRIM_NEEDS_AUTO_DESTROY:
       CHPL_UNIMPL("various primitives");
+      break;
+
+    case PRIM_NEEDS_AUTO_DESTROY:
+      type = primNeedsAutoDestroy(context, ci);
       break;
 
     case PRIM_CALL_RESOLVES:
