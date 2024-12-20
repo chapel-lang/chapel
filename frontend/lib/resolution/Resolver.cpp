@@ -3050,6 +3050,16 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
+static LookupConfig identifierLookupConfig(bool resolvingCalledIdent) {
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+  if (resolvingCalledIdent) {
+    config |= LOOKUP_STOP_NON_FN;
+  } else {
+    config |= LOOKUP_INNERMOST;
+  }
+  return config;
+}
+
 MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
       bool resolvingCalledIdent,
@@ -3066,8 +3076,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                                       IdAndFlags::createForBuiltinVar());
   }
 
-  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-  if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+  LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
   auto fHelper = getFieldDeclarationLookupHelper();
   auto helper = getMethodReceiverScopeHelper();
@@ -3315,9 +3324,8 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
-      if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+      LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
       issueAmbiguityErrorIfNeeded(ident, inScope, config);
       auto& rr = byPostorder.byAst(ident);
@@ -3491,8 +3499,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
 
           if (otherThanParenless) {
-            LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-            if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+            LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
             issueAmbiguityErrorIfNeeded(ident, inScope, config);
           }
         } else {

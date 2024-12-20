@@ -4090,6 +4090,8 @@ lookupCalledExpr(Context* context,
   // For parenless non-method calls, only find the innermost match
   if (ci.isParenless() && !ci.isMethodCall()) {
     config |= LOOKUP_INNERMOST;
+  } else {
+    config |= LOOKUP_STOP_NON_FN;
   }
 
   if (ci.isMethodCall()) {
