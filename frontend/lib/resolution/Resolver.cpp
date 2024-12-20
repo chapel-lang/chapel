@@ -3582,7 +3582,14 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
       if (node->id().symbolPath() == target.symbolPath()) {
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
-          CHPL_REPORT(context, UseOfLaterVariable, node, target);
+          // check if this is a field that is not initialized?
+          if (parsing::idIsField(context, target)) {
+            // skip for now and let prod handle
+            return false;
+            //CHPL_REPORT(context, FieldUsedBeforeInitialized, node, target);
+          } else {
+            CHPL_REPORT(context, UseOfLaterVariable, node, target);
+          }
           return true;
         }
     }
@@ -3670,7 +3677,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   // Use bitwise-OR here to avoid short-circuiting.
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
-    ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
+  ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
 
   return QUERY_END(ret);
 }
