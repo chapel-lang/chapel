@@ -1,0 +1,8 @@
+unimplemented feature: throwing initializers don't deinit fields
+
+This test notes that when an initializer throws, we don't do anything
+to deinit the object's fields, which it seems we must do to clean up.
+Here, I've set up the .good assuming we would not call C's deinit()
+because C was never fully initialized.
+
+#26437
