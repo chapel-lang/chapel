@@ -5,17 +5,22 @@ use lib "$FindBin::Bin";
 
 use nightlysubs;
 
-sub writeFile{
+sub nightly_email_file{
     $num_args = @_;
 
-    if ($num_args != 18) {
-        print "usage: nightly_email.pm \$status \$rawsummary \$sortedsummary \n";
-        print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$mailer \$nochangerecipient \$recipient \n";
+    if ($num_args != 17) {
+        print "usage: nightly_email_file.pm \$status \$rawsummary \$sortedsummary \n";
+        print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
         print "         \$endtime \$crontab \$testdirs \$debug\n";
+
+        print "INFO: Number of arguments is $num_args\n";
+        for my $i (0 .. $#_) {
+            print "INFO: Argument $i: $_[$i]\n";
+        }
         exit 1;
     }
-    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $prevmysystemlog, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $prevmysystemlog, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
     $status = $_[0];
     $rawsummary = $_[1];
@@ -23,18 +28,17 @@ sub writeFile{
     $prevsummary = $_[3];
     $mysystemlog = $_[4];
     $prevmysystemlog = $_[5];
-    $mailer = $_[6];
-    $nochangerecipient = $_[7];
-    $recipient = $_[8];
-    $subjectid = $_[9];
-    $config_name = $_[10];
-    $revision = $_[11];
-    $rawlog = $_[12];
-    $starttime = $_[13];
-    $endtime = $_[14];
-    $crontab = $_[15];
-    $testdirs = $_[16];
-    $debug = $_[17];
+    $nochangerecipient = $_[6];
+    $recipient = $_[7];
+    $subjectid = $_[8];
+    $config_name = $_[9];
+    $revision = $_[10];
+    $rawlog = $_[11];
+    $starttime = $_[12];
+    $endtime = $_[13];
+    $crontab = $_[14];
+    $testdirs = $_[15];
+    $debug = $_[16];
 
     # Nothing sorts the system log for us; do that now, so that 'comm' is
     # given a lexically sorted input as it expects.
