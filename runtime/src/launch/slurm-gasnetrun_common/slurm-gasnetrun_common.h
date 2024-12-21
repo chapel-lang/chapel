@@ -347,7 +347,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                    chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      len += snprintf(iCom+len, sizeof(iCom)-len, " '%s'", argv[i]);
     }
 
     snprintf(baseCommand, sizeof(baseCommand), "salloc %s", iCom);
