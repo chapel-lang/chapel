@@ -8,6 +8,9 @@ module load PrgEnv-gnu
 
 # Load a newer gcc to avoid LLVM build errors
 module swap gcc gcc/12.2.0
+# Our test machine actually calls it 'gcc-native'
+module swap gcc-native gcc-native/12.3
+
 module load cray-pmi
 
 export CHPL_HOST_PLATFORM=hpe-cray-ex
