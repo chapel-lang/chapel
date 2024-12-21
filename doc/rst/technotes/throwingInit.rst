@@ -89,7 +89,7 @@ before the error is thrown back to the caller.
 
      proc init(xVal: int) throws {
        x = xVal;
-       this.complete();
+       init this;
        validate(this);
      }
    }
@@ -115,9 +115,9 @@ Calling Throwing Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When an initializer is declared with the ``throws`` keyword, calls to throwing
-functions may be made in the body of the initializer after ``this.complete()``
+functions may be made in the body of the initializer after ``init this``
 (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for information on
-``this.complete()`` and the example in :ref:`init_declaring_init_as_throws`).
+``init this`` and the example in :ref:`init_declaring_init_as_throws`).
 As a result, thrown errors will be propagated outside of the initializer.  The
 memory that would have been used to store the instance created by the
 initializer will be cleaned up prior to propagating the error.
@@ -125,7 +125,7 @@ initializer will be cleaned up prior to propagating the error.
 .. note::
 
    Calls to throwing functions are not currently allowed prior to
-   ``this.complete()``.
+   ``init this``.
 
 When an initializer is not declared with the ``throws`` keyword, calls to
 throwing functions may be made anywhere in the body of the initializer.  Such
@@ -141,7 +141,7 @@ include:
 - being able to ``throw`` from anywhere in the body of an initializer
 - being able to write ``try`` / ``try!`` with ``catch`` blocks anywhere in the
   body of an initializer
-- being able to call functions that ``throw`` prior to ``this.complete()``
+- being able to call functions that ``throw`` prior to ``init this``
   (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for a description)
   - including ``super.init`` calls when the parent initializer throws, e.g.,
 
@@ -152,7 +152,7 @@ include:
 
          proc init(xVal: int) throws {
            x = xVal;
-           this.complete();
+           init this;
            someThrowingFunc(this);
          }
        }
@@ -163,6 +163,6 @@ include:
          proc init(xVal: int, yVal: bool) throws {
            super.init(xVal); // This call is not valid today
            y = yVal;
-           this.complete();
+           init this;
          }
        }

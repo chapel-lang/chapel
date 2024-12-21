@@ -611,6 +611,12 @@ void chpl_set_local_rank(int32_t rank);
 // not been called.
 int32_t chpl_get_local_rank(void);
 
+// Sets the number of colocales on the local node.
+void chpl_set_num_colocales_on_node(int32_t count);
+
+// Returns the number of colocales on the local node.
+int32_t chpl_get_num_colocales_on_node(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+Ensure that `printchplbuilds` reports the current build the same as `printchplenv`.
+This test defines what variables should be in the `printchplbuilds` output
+and then runs `printchplenv` to get the values.
+"""
+
 import sys
 import os
 import subprocess as sp
@@ -43,7 +49,7 @@ chpl_vars = [
     ("CHPL_TASKS", None),
     ("CHPL_TIMERS", None),
     ("CHPL_UNWIND", None),
-    ("CHPL_MEM", None),
+    ("CHPL_TARGET_MEM", None),
     ("CHPL_ATOMICS", None),
     ("CHPL_HWLOC", None),
     ("CHPL_HWLOC_PCI", None, lambda env: env["CHPL_HWLOC"] == "bundled"),

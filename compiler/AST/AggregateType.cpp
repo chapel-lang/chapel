@@ -68,6 +68,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   mIsGenericWithDefaults = false;
   mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
+  postinit           = nullptr;
+
   typeSignature      = NULL;
 
 
@@ -132,6 +134,7 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   }
 
   copy_type->genericField = genericField;
+  copy_type->postinit = postinit;
 
   return copy_type;
 }
@@ -233,6 +236,12 @@ void AggregateType::verify() {
       if (ns.value && !ns.value->inTree())
         INT_FATAL(this, "Substitution value not in tree");
     }
+  }
+
+  // Should we just change all checks of this flag to a check against
+  // postinit being non-nullptr?  Or a nice method query?
+  if ((postinit != nullptr) != this->symbol->hasFlag(FLAG_HAS_POSTINIT)) {
+    INT_FATAL(this, "postinit state is inconsistent");
   }
 }
 

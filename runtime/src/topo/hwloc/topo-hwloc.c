@@ -575,8 +575,17 @@ static void partitionResources(void) {
   if (numLocalesOnNode > 1) {
     oversubscribed = true;
   }
-  if ((numColocales > 0) && (numLocalesOnNode <= numColocales)){
-    numPartitions = numColocales;
+  if (numColocales > 0) {
+    if (numLocalesOnNode <= numColocales) {
+      // There are fewer colocales than there should be, probably because the
+      // number of locales isn't evenly divisable by the number of nodes.
+      // Partition resources as if there are the full complement of
+      // colocales, but set the number of colocales to the actual number.
+      numPartitions = numColocales;
+      chpl_set_num_colocales_on_node(numLocalesOnNode);
+    } else {
+      chpl_set_num_colocales_on_node(numColocales);
+    }
   }
   logAccSets = sys_calloc(numPartitions, sizeof(hwloc_cpuset_t));
   if ((numColocales > 0) && (numLocalesOnNode > numColocales)) {

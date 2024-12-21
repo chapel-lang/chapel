@@ -574,7 +574,7 @@ class PhysicalBoundary
   
   proc init ( level: unmanaged Level ) 
   {
-    this.complete();
+    init this;
     for grid in level.grids {
 
       var boundary_multidomain = new unmanaged MultiDomain(dimension,strideKind.any);

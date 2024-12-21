@@ -1,0 +1,7 @@
+CHPL_LAUNCHER == amudprun
+CHPL_LAUNCHER == aprun
+CHPL_LAUNCHER == lsf-gasnetrun_ibv
+CHPL_LAUNCHER == mpirun
+CHPL_LAUNCHER == mpirun4ofi
+CHPL_LAUNCHER == pals
+CHPL_LAUNCHER == pbs-aprun
