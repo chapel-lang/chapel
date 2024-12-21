@@ -502,7 +502,17 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     if (hwpar > 0) {
         // Limit the parallelism to the maximum imposed by the comm layer.
         if (0 < maxThreads && maxThreads < hwpar) {
-            hwpar = maxThreads;
+          if (chpl_nodeID == 0) {
+            char msg[1024];
+            snprintf(msg, sizeof(msg),
+                     "The CHPL_COMM setting is limiting the number of threads "
+                     "to %d, rather than the hardware's preference of %d.  "
+                     "If using CHPL_COMM=gasnet, set 'GASNET_MAX_THREADS' to "
+                     "a higher number in your environment to address this.\n",
+                     maxThreads, hwpar);
+            chpl_warning(msg, 0, 0);
+          }
+          hwpar = maxThreads;
         }
 
         //
