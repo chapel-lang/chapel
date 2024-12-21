@@ -350,7 +350,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     chpl_append_to_cmd(&iCom, &len, " %s %s", chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      chpl_append_to_cmd(&iCom, &len, " %s", argv[i]);
+      chpl_append_to_cmd(&iCom, &len, " \"%s\"", argv[i]);
     }
     char* format = "salloc %s";
     int baseCommandLen = strlen(format) + len + 1;
