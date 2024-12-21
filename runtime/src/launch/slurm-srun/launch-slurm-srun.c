@@ -585,7 +585,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      len += snprintf(iCom+len, sizeof(iCom)-len, " '%s'", argv[i]);
     }
 
     // launch the job using srun
