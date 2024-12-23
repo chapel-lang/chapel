@@ -3414,6 +3414,15 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto parenlessInfo = ParenlessOverloadInfo();
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
+  // If we requested IDs including potential overloads, and found
+  // both a variable and a function at the same point, we're not sure how to
+  // resolve the call (via regular call resolution or 'proc this' resolution).
+  // Issue an error.
+  if (ids.encounteredFnNonFnConflict()) {
+    result.setType(typeErr(ident, "ambiguity between function and non-function at the same scope level"));
+    return;
+  }
+
   // If we looked up a called identifier and found ambiguity between variables
   // only, resolve as an implicit 'this' call on the innermost variable.
   // TODO: replace this hacky solution with an adjustment to the scope

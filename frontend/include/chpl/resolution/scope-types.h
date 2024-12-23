@@ -409,6 +409,7 @@ class MatchingIdsWithName {
 
  private:
   llvm::SmallVector<IdAndFlags, 1> idvs_;
+  bool encounteredFnNonFnConflict_ = false;
 
   /** Construct a MatchingIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.  */
@@ -471,6 +472,17 @@ class MatchingIdsWithName {
 
   /** Construct a empty MatchingIdsWithName containing no IDs. */
   MatchingIdsWithName() { }
+
+  /** Note that when populating this list, we found functions and non-functions
+      at the same scope level. */
+  void noteFnNonFnConflict() {
+    encounteredFnNonFnConflict_ = true;
+  }
+
+  /** Returns 'true' if we found functions and non-functions at the same scope level. */
+  bool encounteredFnNonFnConflict() const {
+    return encounteredFnNonFnConflict_;
+  }
 
   /** Append an IdAndFlags. */
   void append(IdAndFlags idv) {

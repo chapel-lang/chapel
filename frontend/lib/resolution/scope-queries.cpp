@@ -632,7 +632,6 @@ struct LookupHelper {
   CheckedScopes& checkedScopes;
   MatchingIdsWithName& result;
   bool& foundExternBlock;
-  bool& fnAndNonFnAtSameLevel;
   int prevNumResults = 0;
   std::vector<VisibilityTraceElt>* traceCurPath = nullptr;
   std::vector<ResultVisibilityTrace>* traceResult = nullptr;
@@ -647,7 +646,6 @@ struct LookupHelper {
                CheckedScopes& checkedScopes,
                MatchingIdsWithName& result,
                bool& foundExternBlock,
-               bool& fnAndNonFnAtSameLevel,
                int prevNumResults,
                std::vector<VisibilityTraceElt>* traceCurPath,
                std::vector<ResultVisibilityTrace>* traceResult,
@@ -658,7 +656,6 @@ struct LookupHelper {
       receiverScopeHelper(receiverScopeHelper),
       checkedScopes(checkedScopes),
       result(result), foundExternBlock(foundExternBlock),
-      fnAndNonFnAtSameLevel(fnAndNonFnAtSameLevel),
       prevNumResults(prevNumResults),
       traceCurPath(traceCurPath), traceResult(traceResult),
       shadowedResults(shadowedResults),
@@ -725,7 +722,7 @@ bool LookupHelper::shouldFinishLookup(const LookupResult& got, bool onlyInnermos
     for (int i = itemsBefore; i < result.numIds(); i++) {
       auto& idv = result.idAndFlags(i);
       if (idv.isFunctionLike()) {
-        fnAndNonFnAtSameLevel = true;
+        result.noteFnNonFnConflict();
         break;
       }
     }
@@ -1732,14 +1729,12 @@ helpLookupInScope(Context* context,
   bool stopNonFn = (config & LOOKUP_STOP_NON_FN) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool foundExternBlock = false;
-  bool fnAndNonFnAtSameLevel = false;
   int prevNumResults = 0;
   CheckedScopes savedCheckedScopes;
 
   auto helper = LookupHelper(context, resolving, receiverScopeHelper,
                              checkedScopes, result,
                              foundExternBlock,
-                             fnAndNonFnAtSameLevel,
                              prevNumResults,
                              traceCurPath, traceResult,
                              shadowed, traceShadowed,
