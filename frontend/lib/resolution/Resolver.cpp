@@ -3423,10 +3423,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     return;
   }
 
-  // If we looked up a called identifier and found ambiguity between variables
-  // only, resolve as an implicit 'this' call on the innermost variable.
-  // TODO: replace this hacky solution with an adjustment to the scope
-  // resolution process
+  // If we looked up a called identifier and got back several variables,
+  // give up, since the lookup process only does that if they're defined
+  // in the same place.
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
     for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
@@ -3436,8 +3435,10 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
         break;
       }
     }
+
     if (onlyVars) {
-      ids.truncate(1);
+      result.setType(typeErr(ident, "ambiguous callable value in called expression"));
+      return;
     }
   }
 
