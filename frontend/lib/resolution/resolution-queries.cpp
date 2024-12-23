@@ -4109,6 +4109,21 @@ lookupCalledExpr(Context* context,
                                       /* receiverScopeHelper */ nullptr,
                                       name, config, visited);
 
+  // At this point, we don't allow "switching gears" to 'proc this'-based
+  // resolution of non-function names. The calling code is expected to
+  // have set up the CallInfo with 'name = "this"' if that's what it wanted.
+  // So, rule out non-functional IDs.
+  //
+  // This relies on the fact that under LOOKUP_STOP_NON_FN, the non-functional
+  // IDs are last. (except in the case of ambiguity, but that should've been
+  // ruled out by calling code as well).
+  if (config & LOOKUP_STOP_NON_FN) {
+    for (int i = 0; i < ret.numIds(); i++) {
+      auto& idv = ret.idAndFlags(i);
+      if (!idv.isFunctionLike() && !idv.isType()) ret.truncate(i);
+    }
+  }
+
   return ret;
 }
 
