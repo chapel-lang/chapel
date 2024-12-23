@@ -197,6 +197,9 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
       (type->hasPostInitializer() && type->postinit->throwsError())) {
     fn->throwsErrorInit();
     BlockStmt* tryBody = new BlockStmt(innerInit);
+    if (type->hasPostInitializer() == true) {
+      tryBody->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
+    }
 
     const char* errorName = astr("e");
     BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
@@ -227,11 +230,11 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
 
   } else {
     body->insertAtTail(innerInit);
+    if (type->hasPostInitializer() == true) {
+      body->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
+    }
   }
 
-  if (type->hasPostInitializer() == true) {
-    body->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
-  }
 
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
