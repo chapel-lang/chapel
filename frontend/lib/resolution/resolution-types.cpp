@@ -416,10 +416,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
-    if (calledExprType && isKindForFunctionalValue(calledExprType->kind())) {
+    if (calledExprType &&
+        (isKindForFunctionalValue(calledExprType->kind()) ||
+         calledExprType->isErroneousType())) {
       // If e.g. x is a value (and not a function, then x(0) translates to x.this(0)
       // Run this case even if the receiver is a module, since we might be
       // trying to invoke 'this' on value x in M.x.
+      //
+      // In the case of ErroneousType, assume that the called thing was
+      // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
+      // Later, this can lead to skipping resolving the call altogether.
 
       name = USTR("this");
       // add the 'this' argument as well
