@@ -235,6 +235,11 @@ class IdAndFlags {
   }
 
   bool isFunctionLike() const {
+    // * functions are obviously function-like (shouldn't stop lookup)
+    // * parenless functions that are methods might not match the receiver,
+    //   so they should not stop the lookup either (treat them as function-like)
+    // * fields are effectively resolved as accessor functions, so they should
+    //   also not stop the lookup.
     return isParenfulFunction() || isMethodOrField();
   }
 
