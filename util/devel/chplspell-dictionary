@@ -866,7 +866,6 @@ pblp
 pbspro
 pgic
 physicalcpu
-plato
 plugin
 pluschar
 pmtwd
@@ -1065,6 +1064,7 @@ socklen
 sockoptdata
 sockoptfunction
 socktype
+socrates
 spawnp
 spectests
 spectralnorm
