@@ -875,8 +875,8 @@ LookupResult LookupHelper::doLookupInImportsAndUses(
         auto idv = idAndFlagsForScopeSymbol(context, is.scope());
         if (idv.matchesFilter(filterFlags, excludeFlagSet)) {
           result.append(idv);
-          found |= LookupResult(/* found */ true, 
-                                /* nonFunctions */ !idv.isParenfulFunction());
+          found |= LookupResult(/* found */ true,
+                                /* nonFunctions */ !idv.isFunctionLike());
           if (trace) {
             ResultVisibilityTrace t;
             t.scope = cur->scope();

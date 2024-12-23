@@ -234,6 +234,10 @@ class IdAndFlags {
     return (flags_ & TYPE) != 0;
   }
 
+  bool isFunctionLike() const {
+    return isParenfulFunction() || isMethodOrField();
+  }
+
   /** Returns true if haveFlags matches filterFlags, and does not match
       the exclude flag set. See the comments on Flags and FlagSet for
       how the matching works.

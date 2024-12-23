@@ -231,7 +231,7 @@ OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
     if (cur->matchesFilter(filterFlags, excludeFlagSet)) {
       dst.idvs_.push_back(*cur);
       anyAppended = true;
-      anyNonFunctions |= !cur->isParenfulFunction() && !cur->isMethodOrField();
+      anyNonFunctions |= !cur->isFunctionLike();
     }
   }
 
