@@ -632,6 +632,8 @@ struct LookupHelper {
   CheckedScopes& checkedScopes;
   MatchingIdsWithName& result;
   bool& foundExternBlock;
+  bool& fnAndNonFnAtSameLevel;
+  int prevNumResults = 0;
   std::vector<VisibilityTraceElt>* traceCurPath = nullptr;
   std::vector<ResultVisibilityTrace>* traceResult = nullptr;
   MatchingIdsWithName* shadowedResults = nullptr;
@@ -645,6 +647,8 @@ struct LookupHelper {
                CheckedScopes& checkedScopes,
                MatchingIdsWithName& result,
                bool& foundExternBlock,
+               bool& fnAndNonFnAtSameLevel,
+               int prevNumResults,
                std::vector<VisibilityTraceElt>* traceCurPath,
                std::vector<ResultVisibilityTrace>* traceResult,
                MatchingIdsWithName* shadowedResults,
@@ -654,11 +658,26 @@ struct LookupHelper {
       receiverScopeHelper(receiverScopeHelper),
       checkedScopes(checkedScopes),
       result(result), foundExternBlock(foundExternBlock),
+      fnAndNonFnAtSameLevel(fnAndNonFnAtSameLevel),
+      prevNumResults(prevNumResults),
       traceCurPath(traceCurPath), traceResult(traceResult),
       shadowedResults(shadowedResults),
       traceShadowedResults(traceShadowedResults),
       allowCached(allowCached) {
   }
+
+  /* There are points at which lookups check if they can be "finished".
+     E.g., if we're performing a lookup with LOOKUP_INNERMOST, we check
+     if we found something after each shadow scope level of uses/imports.
+     This method is called each time we reach such a point, and determines
+     whether we are done with the lookup.
+
+     For the purposes of tracking erroneous overloading cases (e.g., found
+     a function and variable with the same name at the same level), we also
+     track some mutable state (prevNumResults records the number of elements
+     in result at the point of the last call to this method).
+   */
+  bool shouldFinishLookup(const LookupResult& got, bool onlyInnermost, bool stopNonFn);
 
   LookupResult doLookupInImportsAndUses(const Scope* scope,
                                         const ResolvedVisibilityScope* cur,
@@ -694,6 +713,29 @@ struct LookupHelper {
                                UniqueString name,
                                LookupConfig config);
 };
+
+bool LookupHelper::shouldFinishLookup(const LookupResult& got, bool onlyInnermost, bool stopNonFn) {
+  int itemsBefore = prevNumResults;
+  prevNumResults = result.numIds();
+
+  if (got && onlyInnermost) return true;
+
+  if (got.nonFunctions() && stopNonFn) {
+    // check if we also found a function
+    for (int i = itemsBefore; i < result.numIds(); i++) {
+      auto& idv = result.idAndFlags(i);
+      if (idv.isFunctionLike()) {
+        fnAndNonFnAtSameLevel = true;
+        break;
+      }
+    }
+
+    // we did find a variable, so we're done
+    return true;
+  }
+
+  return false;
+}
 
 static const Scope* const& scopeForAutoModuleQuery(Context* context) {
   QUERY_BEGIN(scopeForAutoModuleQuery, context);
@@ -1242,12 +1284,6 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
   return nullptr;
 }
 
-static bool doneLooking(const LookupResult& got, bool onlyInnermost, bool stopNonFn) {
-  if (got && onlyInnermost) return true;
-  if (got.nonFunctions() && stopNonFn) return true;
-  return false;
-}
-
 // appends to result
 //
 // traceCurPath and traceResult support gathering additional information
@@ -1432,7 +1468,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         }
       }
     }
-    if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+    if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
   // now check shadow scope 1 (only relevant for 'private use')
@@ -1460,7 +1496,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     }
 
     got |= gotInSS1;
-    if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+    if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
   std::unordered_set<ID>* ignoreClausesForShadowScopeTwo = nullptr;
@@ -1486,7 +1522,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     }
 
     got |= gotInSS2;
-    if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+    if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
   // If we are at a method scope, consider receiver scopes now
@@ -1497,7 +1533,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     auto rcvScopes =
       receiverScopeHelper->methodLookupForMethodId(context, scope->id());
     got |= doLookupInReceiverScopes(scope, rcvScopes, name, config);
-    if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+    if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
   // consider the outer scopes due to nesting
@@ -1543,7 +1579,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
           traceCurPath->pop_back();
         }
 
-        if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+        if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
 
         // and then search only considering receiver scopes
         // as if the receiver scope were just outside of this scope.
@@ -1551,7 +1587,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
           auto rcvScopes =
             receiverScopeHelper->methodLookupForMethodId(context, cur->id());
           got |= doLookupInReceiverScopes(scope, rcvScopes, name, newConfig);
-          if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+          if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
         }
       }
     }
@@ -1570,7 +1606,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->pop_back();
       }
 
-      if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+      if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
     }
 
     if (!goPastModules && (reachedModule || isModule(scope->tag()))) {
@@ -1594,7 +1630,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->pop_back();
       }
 
-      if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+      if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
     }
 
     // check also in the root scope if this isn't already the root scope
@@ -1620,13 +1656,13 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->pop_back();
       }
 
-      if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+      if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
     }
   }
 
   if (checkToplevel) {
     got |= doLookupInToplevelModules(scope, name);
-    if (doneLooking(got, onlyInnermost, stopNonFn)) return got;
+    if (shouldFinishLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
   // If LOOKUP_EXTERN_BLOCKS is set, and this scope has an extern block,
@@ -1696,11 +1732,15 @@ helpLookupInScope(Context* context,
   bool stopNonFn = (config & LOOKUP_STOP_NON_FN) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool foundExternBlock = false;
+  bool fnAndNonFnAtSameLevel = false;
+  int prevNumResults = 0;
   CheckedScopes savedCheckedScopes;
 
   auto helper = LookupHelper(context, resolving, receiverScopeHelper,
                              checkedScopes, result,
                              foundExternBlock,
+                             fnAndNonFnAtSameLevel,
+                             prevNumResults,
                              traceCurPath, traceResult,
                              shadowed, traceShadowed,
                              allowCached && traceResult==nullptr);
@@ -1721,7 +1761,7 @@ helpLookupInScope(Context* context,
   // When resolving a Dot expression like myRecord.foo, we might not be inside
   // of a method at all, but we should still search the definition point
   // of the relevant record.
-  if (methodLookupHelper != nullptr && !(doneLooking(got, onlyInnermost, stopNonFn))) {
+  if (methodLookupHelper != nullptr && !(helper.shouldFinishLookup(got, onlyInnermost, stopNonFn))) {
     got |= helper.doLookupInReceiverScopes(scope, methodLookupHelper,
                                            name, config);
   }
