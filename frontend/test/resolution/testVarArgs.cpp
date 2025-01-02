@@ -834,6 +834,24 @@ var c = fn(y=5.0, "hello", 1, "test", 3.0);
 
 }
 
+// regression test for a bug in which two fucntions (see body of the test)
+// are incorrectly considered ambiguous. The vararg-based function is less
+// specific than the 'integral'-based function since the latter constraints
+// the type more.
+static void testGenericInstantiationDisambiguation() {
+  Context* context = buildStdContext();
+  auto program =
+    R"""(
+    proc foo(x...) do return 1.0;
+    proc foo(x: integral) do return 1;
+
+    var x = foo(10);
+    )""";
+
+  auto qt = resolveTypeOfX(context, program);
+  CHPL_ASSERT(qt->isIntType());
+}
+
 //
 // TODO: test where-clauses:
 //
@@ -864,6 +882,7 @@ int main(int argc, char** argv) {
   testConcrete();
   testCount();
   testAlignment();
+  testGenericInstantiationDisambiguation();
 
   printf("\nAll tests passed successfully.\n");
 
