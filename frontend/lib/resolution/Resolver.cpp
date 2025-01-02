@@ -5243,7 +5243,6 @@ resolveIterTypeWithTag(Resolver& rv,
   }
 
   // Inspect the resolution result to determine what should be done next.
-  // auto& iterandRE = rv.byPostorder.byAst(iterand);
   auto& iterandType = ic.iterandQt();
   CHPL_ASSERT(!iterandType.isUnknownOrErroneous());
 
