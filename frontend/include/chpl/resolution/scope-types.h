@@ -554,7 +554,8 @@ class MatchingIdsWithName {
   }
 
   bool operator==(const MatchingIdsWithName& other) const {
-    return idvs_ == other.idvs_;
+    return idvs_ == other.idvs_ &&
+           encounteredFnNonFnConflict_ == other.encounteredFnNonFnConflict_;
   }
   bool operator!=(const MatchingIdsWithName& other) const {
     return !(*this == other);
@@ -565,6 +566,7 @@ class MatchingIdsWithName {
     for (const auto& x : idvs_) {
       ret = hash_combine(ret, chpl::hash(x));
     }
+    ret = hash_combine(ret, encounteredFnNonFnConflict_);
     return ret;
   }
 
