@@ -5353,7 +5353,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
 }
 
 static QualifiedType
-resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
+resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, std::vector<IterandComponent>& outIcs) {
   // Failures to find various iteration strategies (serial, follower) go here.
   IteratorFailures failures;
 
@@ -5365,19 +5365,18 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   // Compute iterator components to resolve as part of zippering. This
   // handles unpacking any iterands in the form (...bla) into a flattened
   // repersentation.
-  std::vector<IterandComponent> ics;
   for (auto actual : zip->actuals()) {
-    if (!IterandComponent::unpackIterand(rv, ics, actual, actual)) {
+    if (!IterandComponent::unpackIterand(rv, outIcs, actual, actual)) {
       // Couldn't make sense of the iterand, we can't go on. An error
       // was already emitted, but contruct an ErroneousType to return.
       return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
   }
-  bool singletonZip = ics.size() == 1;
+  bool singletonZip = outIcs.size() == 1;
 
   // Compute the mask for this zip expression
-  if (ics.size() > 0) {
-    auto leaderQt = ics[0].iterandQt();
+  if (outIcs.size() > 0) {
+    auto leaderQt = outIcs[0].iterandQt();
 
     if (leaderQt.isUnknownOrErroneous()) {
       return QualifiedType();
@@ -5408,13 +5407,13 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
 
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    for (size_t i = 1; i < ics.size(); i++) {
-      if (ics[i].iterandQt().isUnknownOrErroneous()) {
+    for (size_t i = 1; i < outIcs.size(); i++) {
+      if (outIcs[i].iterandQt().isUnknownOrErroneous()) {
         return QualifiedType();
       }
     }
 
-    auto result = resolveIterDetailsInPriorityOrder(rv, ics, m, &failures);
+    auto result = resolveIterDetailsInPriorityOrder(rv, outIcs, m, &failures);
     if (result.succeededAt != IterDetails::NONE) {
       ret = result.idxType;
     }
@@ -5495,7 +5494,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   return true;
 }
 
-static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
+static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop, const std::vector<IterandComponent>& ics) {
   if (!loop->isExpressionLevel()) return;
 
   CHPL_ASSERT(loop->numStmts() == 1);
@@ -5511,24 +5510,13 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
     bool isZippered = false;
     if (auto zip = loop->iterand()->toZip()) {
       isZippered = true;
-      bool allChildrenResolved = true;
+
       std::vector<QualifiedType> iterandTypes;
-
-      for (auto child : zip->children()) {
-        auto childType = rv.byPostorder.byAst(child).type();
-        if (childType.isUnknownOrErroneous()) {
-          allChildrenResolved = false;
-          break;
-        }
-        iterandTypes.push_back(childType);
-      }
-
-      if (allChildrenResolved) {
-        iterandType =
-          QualifiedType(QualifiedType::TYPE,
-                        TupleType::getQualifiedTuple(rv.context,
-                                                     std::move(iterandTypes)));
-      }
+      for (auto child : ics) iterandTypes.push_back(child.iterandQt());
+      iterandType =
+        QualifiedType(QualifiedType::TYPE,
+                      TupleType::getQualifiedTuple(rv.context,
+                                                   std::move(iterandTypes)));
     } else {
       iterandType = rv.byPostorder.byAst(loop->iterand()).type();
     }
@@ -5587,8 +5575,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
   // Not an array expression. In this case, depending on the loop type,
   // we need to resolve various iterators.
   QualifiedType idxType;
+  // Resolving zip indices will collect iterand components (which don't
+  // always map one-to-one to indices if we're using tuple unpacking). This
+  // will be used below for noting the loop expression type.
+  std::vector<IterandComponent> ics;
   if (iterand->isZip()) {
-    idxType = resolveZipExpression(*this, loop, iterand->toZip());
+    idxType = resolveZipExpression(*this, loop, iterand->toZip(), ics);
   } else {
     bool loopRequiresParallel = loop->isForall();
     bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
@@ -5624,7 +5616,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
     loop->body()->traverse(*this);
   }
 
-  noteLoopExprType(*this, loop);
+  if (!idxType.isUnknownOrErroneous()) {
+    noteLoopExprType(*this, loop, ics);
+  }
 
   return false;
 }
