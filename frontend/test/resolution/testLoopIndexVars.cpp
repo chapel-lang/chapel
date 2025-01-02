@@ -1325,6 +1325,53 @@ static void testBracketLoopExpressionUnpackedZippered(Context* context) {
   });
 }
 
+static void testForLoopExpressionTypeMethod(Context* context) {
+
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter type i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"for", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionStandaloneTypeMethod(Context* context) {
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionLeaderFollowerTypeMethod(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter type i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1382,6 +1429,10 @@ int main() {
 
   testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(context);
   testBracketLoopExpressionUnpackedZippered(context);
+
+  testForLoopExpressionTypeMethod(context);
+  testForallLoopExpressionStandaloneTypeMethod(context);
+  testForallLoopExpressionLeaderFollowerTypeMethod(context);
 
   return 0;
 }
