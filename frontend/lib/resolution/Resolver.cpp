@@ -5508,7 +5508,7 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop, const std:
 
     QualifiedType iterandType;
     bool isZippered = false;
-    if (auto zip = loop->iterand()->toZip()) {
+    if (loop->iterand()->isZip()) {
       isZippered = true;
 
       std::vector<QualifiedType> iterandTypes;
