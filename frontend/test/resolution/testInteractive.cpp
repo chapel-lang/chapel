@@ -237,6 +237,7 @@ int main(int argc, char** argv) {
   bool enableStdLib = false;
   bool warnUnstable = false;
   const char* timing = nullptr;
+  bool timeAllGenerations = false;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
       enableStdLib = true;
@@ -262,6 +263,8 @@ int main(int argc, char** argv) {
       }
       timing = argv[i+1];
       i++;
+    } else if (0 == strcmp(argv[i], "--time-all-generations")) {
+      timeAllGenerations = true;
     } else if (0 == strcmp(argv[i], "--brief")) {
       brief = true;
     } else if (0 == strcmp(argv[i], "--warn-unstable")) {
@@ -296,6 +299,8 @@ int main(int argc, char** argv) {
     return 0; // need this to return 0 for testing to be happy
   }
 
+  if (timing && timeAllGenerations) ctx->beginQueryTimingTrace(timing);
+
   while (true) {
     ctx->advanceToNextRevision(gc);
 
@@ -304,7 +309,7 @@ int main(int argc, char** argv) {
     setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
-    if (timing) ctx->beginQueryTimingTrace(timing);
+    if (timing && !timeAllGenerations) ctx->beginQueryTimingTrace(timing);
 
     CompilerFlags flags;
     flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
@@ -380,7 +385,7 @@ int main(int argc, char** argv) {
 
     printf("Ran %i queries to compute the above\n\n",
            ctx->numQueriesRunThisRevision());
-    if (timing) ctx->endQueryTimingTrace();
+    if (timing && !timeAllGenerations) ctx->endQueryTimingTrace();
 
     if (gc) {
       ctx->collectGarbage();
@@ -408,5 +413,6 @@ int main(int argc, char** argv) {
     }
   }
 
+  if (timing && timeAllGenerations) ctx->endQueryTimingTrace();
   return 0;
 }
