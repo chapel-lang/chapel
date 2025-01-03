@@ -388,6 +388,39 @@ static void test18() {
 
 }
 
+static void test19() {
+  // promotion on multiple arguments with default arguments
+  runProgram(
+      { "proc foo(x: int = 1, y: int = 2) do return true;",
+        "for i in foo(1, new R()) {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isBoolType());
+      },
+      IterableType("R").definePromotionType("int")
+        .defineSerialIterator("1"));
+
+  runProgram(
+      { "proc foo(x: int = 1, y: int = 2) do return true;",
+        "for i in foo(x=new R()) {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isBoolType());
+      },
+      IterableType("R").definePromotionType("int")
+        .defineSerialIterator("1"));
+
+  runProgram(
+      { "proc foo(x: int = 1, y: int = 2) do return true;",
+        "for i in foo(y=new R()) {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isBoolType());
+      },
+      IterableType("R").definePromotionType("int")
+        .defineSerialIterator("1"));
+}
+
 static void testTertiaryMethod() {
   // tertiary method definitions of chpl__promotionType
   // (defined in the scope of iteration) are not allowed.
@@ -449,6 +482,7 @@ int main() {
     test16();
     test17();
     test18();
+    test19();
   }
 
   testTertiaryMethod();
