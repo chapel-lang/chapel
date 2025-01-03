@@ -567,6 +567,8 @@ void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
 
   CHPL_ASSERT(result->recursionErrors.count(root) > 0);
   for (auto& dep : result->dependencies) {
+    if (!dep.isDirect()) continue;
+
     if (dep.query->recursionErrors.count(root) > 0) {
       if (auto te = dep.query->tryTrace()) {
         trace.emplace_back(*te);
@@ -1020,6 +1022,14 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   bool useSaved = true;
   resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
+    if (dependency.isCheck()) {
+      if (dependency.checkHasChanged()) {
+        useSaved = false;
+        break;
+      }
+      continue;
+    }
+
     const QueryMapResultBase* dependencyQuery = dependency.query;
     if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
       useSaved = false;
@@ -1128,6 +1138,14 @@ bool Context::queryCanUseSavedResult(
     useSaved = true;
     resultEntry->beingTestedForReuse = true;
     for (auto& dependency: resultEntry->dependencies) {
+      if (dependency.isCheck()) {
+        if (dependency.checkHasChanged()) {
+          useSaved = false;
+          break;
+        }
+        continue;
+      }
+
       const QueryMapResultBase* dependencyQuery = dependency.query;
 
       if (dependency.errorCollectionRoot) {
@@ -1187,6 +1205,8 @@ void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result)
   }
   result->emittedErrors = true;
   for (auto& dependency : result->dependencies) {
+    if (!dependency.isDirect()) continue;
+
     if (!dependency.query->emittedErrors && !dependency.errorCollectionRoot) {
       emitHiddenErrorsFor(dependency.query);
     }
@@ -1202,6 +1222,8 @@ static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
     into.storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
+    if (!dependency.isDirect()) continue;
+
     if (!dependency.errorCollectionRoot &&
         dependency.query->errorsPresentInSelfOrDependencies) {
       storeErrorsForHelp(dependency.query, visited, into);
