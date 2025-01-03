@@ -1236,7 +1236,9 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     } else {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
-      parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      auto newDependency = QueryDependency(resultEntry, errorCollectionRoot,
+                                           QueryDependency::DEPENDENCY_DIRECT);
+      parentQuery->dependencies.push_back(std::move(newDependency));
       parentQuery->errorsPresentInSelfOrDependencies |=
         resultEntry->errorsPresentInSelfOrDependencies;
     }
@@ -1340,6 +1342,14 @@ namespace querydetail {
 
 void queryArgsPrintSep(std::ostream& s) {
   s << ", ";
+}
+
+bool QueryDependency::checkHasChanged() const {
+  CHPL_ASSERT(isCheck());
+  // note: the condition on 'query' should match isQueryRunning
+  bool isRunning = query->lastChecked == -1 || query->beingTestedForReuse;
+  return ((isRunning && kind == DEPENDENCY_CHECK_FALSE) ||
+          (!isRunning && kind == DEPENDENCY_CHECK_TRUE));
 }
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
