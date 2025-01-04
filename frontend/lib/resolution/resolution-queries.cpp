@@ -5462,58 +5462,59 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
   return nullptr;
 }
 
-static ID searchFunctionByTemplate(ResolutionContext* rc,
-                                   const InterfaceType* iftForErr,
-                                   const ID& implPointIdForErr,
-                                   const Function* fn,
-                                   const TypedFnSignature* tfs,
-                                   const CallScopeInfo& inScopes) {
-  std::vector<ApplicabilityResult> rejected;
-  std::vector<const TypedFnSignature*> ambiguous;
-
+static optional<CallInfo> setupCallForTemplate(const Function* templateFn,
+                                               const TypedFnSignature* templateSig) {
   std::vector<CallInfoActual> actuals;
-  for (int i = 0; i < tfs->numFormals(); i++) {
-    auto decl = tfs->untyped()->formalDecl(i);
+  for (int i = 0; i < templateSig->numFormals(); i++) {
+    auto decl = templateSig->untyped()->formalDecl(i);
     auto name = UniqueString();
     if (auto formal = decl->toFormal()) {
         name = formal->name();
     } else if (decl->isVarArgFormal()) {
       CHPL_UNIMPL("vararg formals in interface function requirements");
-      return ID();
+      return empty;
     }
-    actuals.emplace_back(tfs->formalType(i), name);
+    actuals.emplace_back(templateSig->formalType(i), name);
   }
 
   CallInfo ci {
-      tfs->untyped()->name(),
+      templateSig->untyped()->name(),
       /* calledType */ QualifiedType(),
-      /* isMethodCall */ fn->isMethod(),
+      /* isMethodCall */ templateFn->isMethod(),
       /* hasQuestionArg */ false,
-      /* isParenless */ fn->isParenless(),
+      /* isParenless */ templateFn->isParenless(),
       std::move(actuals)
   };
 
-  // TODO: how to note this?
-  auto c =
-    resolveGeneratedCall(rc->context(), fn, ci, inScopes);
+  return ci;
+}
+
+static const TypedFnSignature*
+findBestCandidateForTemplate(ResolutionContext* rc,
+                             const CallInfo& ci,
+                             const CallResolutionResult& c,
+                             const InterfaceType* iftForErr,
+                             const ID& implPointIdForErr,
+                             const Function* templateFn,
+                             const TypedFnSignature* templateSig,
+                             const CallScopeInfo& inScopes) {
+  std::vector<ApplicabilityResult> rejected;
+  std::vector<const TypedFnSignature*> ambiguous;
 
   bool failed = c.exprType().isUnknownOrErroneous();
-  if (failed && fn->body()) {
-    // template has a default implementation; return it, we're good.
-    return fn->id();
-  } else if (failed && c.mostSpecific().isAmbiguous()) {
+  if (failed && c.mostSpecific().isAmbiguous()) {
     // TODO: no way at this time to collected candidates rejected due to
     //       ambiguity, so just report an empty list.
     CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointIdForErr,
-                fn, std::move(ambiguous));
-    return ID();
+                templateFn, std::move(ambiguous));
+    return nullptr;
   } else if (failed) {
     // Failed to find a call, not due to ambiguity. Re-run call and gather
     // rejected candidates.
-    resolveGeneratedCall(rc->context(), fn, ci, inScopes, &rejected);
+    resolveGeneratedCall(rc->context(), templateFn, ci, inScopes, &rejected);
     CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointIdForErr,
-                tfs, ci, std::move(rejected));
-    return ID();
+                templateSig, ci, std::move(rejected));
+    return nullptr;
   }
 
   CHPL_ASSERT(!failed);
@@ -5521,21 +5522,30 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
   const TypedFnSignature* foundFn = nullptr;
   if (c.mostSpecific().numBest() > 1) {
     CHPL_UNIMPL("return intent overloading in interface constraint checking");
-    return ID();
+    return nullptr;
   } else {
     // There's only one function; we should still check its intent.
     foundFn = c.mostSpecific().only().fn();
     auto foundIntent = parsing::idToFnReturnIntent(rc->context(), foundFn->id());
 
-    if (foundIntent == fn->returnIntent()) {
+    if (foundIntent == templateFn->returnIntent()) {
       // fine
     } else {
-      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointIdForErr,
-                  tfs, foundFn);
-      return ID();
+      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr,
+                  implPointIdForErr, templateSig, foundFn);
+      return nullptr;
     }
   }
 
+  return foundFn;
+}
+
+static bool validateFormalOrderForTemplate(ResolutionContext* rc,
+                                           const CallInfo& ci,
+                                           const InterfaceType* iftForErr,
+                                           const ID& implPointIdForErr,
+                                           const TypedFnSignature* templateSig,
+                                           const TypedFnSignature* candidateSig) {
   // Validate that the formal names are in the right order. We could do this
   // by resolving a generated call with every actual being named, but this
   // will miss some cases, like when the template is:
@@ -5548,7 +5558,7 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
   //
   // such calls would resolve match with and without named actuals, but the
   // actuals are not in the right order compared to the template.
-  FormalActualMap faMap(foundFn, ci);
+  FormalActualMap faMap(candidateSig, ci);
 
   int lastActualPosition = -1;
   for (auto& formalActual : faMap.byFormals()) {
@@ -5566,11 +5576,42 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
     if (formalActual.actualIdx() <= lastActualPosition) {
       // the actuals in the call (which are formals from the template)
       // are re-ordered compared to the foundFn. This is an error.
-      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointIdForErr,
-                  tfs, foundFn);
-      return ID();
+      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr,
+                  implPointIdForErr, templateSig, candidateSig);
+      return false;
     }
     lastActualPosition = formalActual.actualIdx();
+  }
+
+  return true;
+}
+
+static ID searchFunctionByTemplate(ResolutionContext* rc,
+                                   const InterfaceType* iftForErr,
+                                   const ID& implPointIdForErr,
+                                   const Function* templateFn,
+                                   const TypedFnSignature* templateSig,
+                                   const CallScopeInfo& inScopes) {
+  auto ci = setupCallForTemplate(templateFn, templateSig);
+  if (!ci) return ID();
+
+  // TODO: how to note this?
+  auto c =
+    resolveGeneratedCall(rc->context(), templateFn, *ci, inScopes);
+
+  if (c.exprType().isUnknownOrErroneous() && templateFn->body()) {
+    // template has a default implementation; return it, we're good.
+    return templateFn->id();
+  }
+
+  auto foundFn = findBestCandidateForTemplate(rc, *ci, c, iftForErr,
+                                              implPointIdForErr, templateFn,
+                                              templateSig, inScopes);
+  if (!foundFn) return ID();
+
+  if (!validateFormalOrderForTemplate(rc, *ci, iftForErr, implPointIdForErr,
+                                      templateSig, foundFn)) {
+    return ID();
   }
 
   // ordering is fine, so foundFn is good to go.
