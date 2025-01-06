@@ -33,13 +33,26 @@ static std::string debugDeclName = "";
 
 static void testDebuggingBreakpoint() {}
 
+static CompilerFlags warnUnstableFlags() {
+  static auto flags = []() {
+    CompilerFlags flags;
+    flags.set(CompilerFlags::WARN_UNSTABLE, true);
+    return flags;
+  }();
+  return flags;
+}
+
 static Context*
-turnOnWarnUnstable(Context* ctx) {
-  CompilerFlags flags;
-  flags.set(CompilerFlags::WARN_UNSTABLE, true);
-  setCompilerFlags(ctx, std::move(flags));
-  assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNSTABLE));
-  return ctx;
+buildStdContextWithUnstableWarnings() {
+  auto context = buildStdContext(warnUnstableFlags());
+  assert(isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE));
+  return context;
+}
+
+static Context* turnOnWarnUnstable(Context* context) {
+  setCompilerFlags(context, warnUnstableFlags());
+  assert(isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE));
+  return context;
 }
 
 static const AstNode*
@@ -430,7 +443,7 @@ static void test1(void) {
 
 // Warnings should not be emitted for method receivers.
 static void test2(void) {
-  Context* ctx = turnOnWarnUnstable(buildStdContext());
+  Context* ctx = buildStdContextWithUnstableWarnings();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
@@ -576,7 +589,7 @@ static void test4(ErrorType expectedError) {
         ? "@unstable"
         : "@deprecated";
 
-  Context* ctx = turnOnWarnUnstable(buildStdContext());
+  Context* ctx = buildStdContextWithUnstableWarnings();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);

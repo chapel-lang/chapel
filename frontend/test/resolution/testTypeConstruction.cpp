@@ -1345,7 +1345,6 @@ static void testRecursiveTypeConstructorMutual() {
   printf("testRecursiveTypeConstructorMutual\n");
   Context* context = buildStdContext();
   ErrorGuard guard(context);
-  setupModuleSearchPaths(context, false, false, {}, {});
 
   auto p = parseTypeAndFieldsOfX(context,
       R"""(

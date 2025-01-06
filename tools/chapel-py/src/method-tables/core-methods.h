@@ -49,7 +49,10 @@ CLASS_BEGIN(Context)
 
          auto& paths = std::get<0>(args);
          auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(node, false, false, paths, filenames))
+         parsing::setupModuleSearchPaths(node, false, false, paths, filenames);
+         if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
+           std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
+         })
   METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
          bool(chpl::UniqueString),
 
