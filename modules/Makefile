@@ -22,7 +22,7 @@ endif
 
 # Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
 CHPL_DEVELOPER ?= 0
-ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 TAGS=1
 endif
 

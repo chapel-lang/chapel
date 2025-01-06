@@ -171,7 +171,7 @@ printmultilocalelibdeps:
 
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
-ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 	$(warning Expected runtime library in $(CHPL_RT_LIB_DIR))
 endif
 ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
