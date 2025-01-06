@@ -3584,9 +3584,8 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
           // resolved to an identifier defined later
           // check if this is a field that is not initialized?
           if (parsing::idIsField(context, target)) {
-            // skip for now and let prod handle
-            return false;
-            //CHPL_REPORT(context, FieldUsedBeforeInitialized, node, target);
+            // field used before initialized
+            CHPL_REPORT(context, FieldUsedBeforeInitialized, node, target);
           } else {
             CHPL_REPORT(context, UseOfLaterVariable, node, target);
           }
