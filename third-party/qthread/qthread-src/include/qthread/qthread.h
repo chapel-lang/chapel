@@ -87,7 +87,7 @@ using std::memory_order_relaxed;
 
 #include "macros.h"
 
-#define MACHINE_FENCE atomic_thread_fence(memory_order_seq_cst);
+#define MACHINE_FENCE atomic_thread_fence(memory_order_acq_rel);
 
 #if QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
 #define QTHREAD_SWAPS_IMPLY_ACQ_REL_FENCES
