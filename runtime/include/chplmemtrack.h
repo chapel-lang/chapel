@@ -59,8 +59,8 @@ void chpl_stopVerboseMemHere(void);
 int chpl_memtable_size(void);
 void* chpl_memtable_entry(int idx);
 void* chpl_memtable_next_entry(void* entry);
-uint64_t chpl_memtable_entry_addr(void* entry);
-uint64_t chpl_memtable_entry_size(void* entry);
+uintptr_t chpl_memtable_entry_addr(void* entry);
+size_t chpl_memtable_entry_size(void* entry);
 
 ///// These entry points are the essential memory tracking interface, called
 //    at memory allocation and deallocation points.
