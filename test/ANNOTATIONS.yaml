@@ -2552,7 +2552,7 @@ arkouda: &arkouda-base
   12/25/24:
     - text: Running tests with --isolated
       config: 16-node-xc
-  01/01/25:
+  01/02/25:
     - text: No longer running tests with --isolated
       config:  16-node-xc
 
