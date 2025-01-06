@@ -5524,17 +5524,8 @@ findBestCandidateForTemplate(ResolutionContext* rc,
     CHPL_UNIMPL("return intent overloading in interface constraint checking");
     return nullptr;
   } else {
-    // There's only one function; we should still check its intent.
+    // There's only one function
     foundFn = c.mostSpecific().only().fn();
-    auto foundIntent = parsing::idToFnReturnIntent(rc->context(), foundFn->id());
-
-    if (foundIntent == templateFn->returnIntent()) {
-      // fine
-    } else {
-      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr,
-                  implPointIdForErr, templateSig, foundFn);
-      return nullptr;
-    }
   }
 
   return foundFn;
@@ -5603,9 +5594,12 @@ static bool validateReturnTypeForTemplate(ResolutionContext* rc,
   auto templateQT =
     templateFn->returnType() ?
     returnType(rc, templateSig, c.poiInfo().poiScope()) :
-    QualifiedType(QualifiedType::VAR, VoidType::get(rc->context()));
+    QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
 
   if (templateQT.isUnknownOrErroneous()) return false;
+
+  auto actualKind = c.exprType().kind();
+  auto templateKind = templateQT.kind();
   auto templateT = templateQT.type();
 
   if (templateFn->kind() != candidateSig->untyped()->kind()) {
@@ -5614,11 +5608,15 @@ static bool validateReturnTypeForTemplate(ResolutionContext* rc,
     return false;
   }
 
-  // For iterable things, we need to compare yield types
+
+  // For iterable things, we need to compare yield types (while there,
+  // figure out yield intent)
+  bool checkedYield = false;
   if (templateFn->kind() == Function::ITER) {
     CHPL_ASSERT(candidateSig->untyped()->kind() == Function::ITER);
     CHPL_ASSERT(templateT->isFnIteratorType());
     auto templateYieldT = yieldTypeForIterator(rc, templateT->toFnIteratorType()).type();
+    actualKind = c.yieldedType().kind();
     auto yieldT = c.yieldedType().type();
 
     if (templateYieldT != yieldT) {
@@ -5626,12 +5624,42 @@ static bool validateReturnTypeForTemplate(ResolutionContext* rc,
       rc->context()->error(implPointIdForErr, "yield type mismatch");
       return false;
     }
-  // otherwise, we expect an exact match on the return type
-  } else if (templateT == c.exprType().type()) {
-    // fine (exact match)
 
-  // allow promotion, but only for functions that expect 'void' or 'nothing'
-  } else if (c.exprType().type()->isPromotionIteratorType()) {
+    checkedYield = true;
+  }
+
+  bool validIntent = actualKind == templateKind;
+  if (actualKind != templateKind) {
+    if (templateKind == QualifiedType::CONST_VAR &&
+        (actualKind == QualifiedType::REF ||
+         actualKind == QualifiedType::CONST_REF ||
+         actualKind == QualifiedType::PARAM)) {
+      // we can turn [const] references into values, so allow this intent mismatch.
+      validIntent = true;
+    } else if (templateKind == QualifiedType::CONST_REF &&
+               actualKind == QualifiedType::REF) {
+      // we can turn references into const references, so allow this intent mismatch.
+      validIntent = true;
+    }
+  }
+
+  if (!validIntent) {
+    CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr,
+                implPointIdForErr, templateSig, candidateSig);
+    return false;
+  }
+
+  if (checkedYield) {
+    // we checked the return type above, no more checks needed here.
+  } else if (templateT != c.exprType().type()) {
+    // with the esxception of promotion, we expect an exact return type match
+    if (!c.exprType().type()->isPromotionIteratorType()) {
+      rc->context()->error(implPointIdForErr, "return type mismatch");
+      return false;
+    }
+
+    // we're promoting; we don't expect an exact match, but we only allow
+    // promotion for void- and nothing-returning functions. Check that.
     CHPL_ASSERT(!c.yieldedType().isUnknownOrErroneous());
     auto yieldT = c.yieldedType().type();
     if (!templateT->isVoidType() && !templateT->isNothingType()) {
@@ -5648,12 +5676,8 @@ static bool validateReturnTypeForTemplate(ResolutionContext* rc,
 
     // ok: we expect a void function, we're promoting a void function to
     // satisfy the constraint.
-  } else {
-    rc->context()->error(implPointIdForErr, "return type mismatch");
-    return false;
   }
 
-  // TODO check intents
   return true;
 }
 
