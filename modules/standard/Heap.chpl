@@ -346,6 +346,21 @@ module Heap {
     }
 
     /*
+      Clear the contents of this heap.
+
+      .. warning::
+
+        Clearing the contents of this heap will invalidate all existing
+        references to the elements contained in this heap.
+    */
+    proc ref clear() {
+      on this {
+        _enter(); defer _leave();
+        _data.clear();
+      }
+    }
+
+    /*
       Iterate over the elements of this heap in an arbitrary order.
     */
     iter these() ref {

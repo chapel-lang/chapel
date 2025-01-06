@@ -1,0 +1,2 @@
+Before: isEmpty = false, size = 26
+After: []
