@@ -41,6 +41,8 @@ static void testRectangular(Context* context,
                                   int rank,
                                   std::string idxType,
                                   std::string strides) {
+  printf("Testing: %s\n", domainType.c_str());
+
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
@@ -153,13 +155,13 @@ module M {
   }
 
   assert(guard.realizeErrors() == 0);
-
-  printf("Success: %s\n", domainType.c_str());
 }
 
 static void testDomainLiteral(Context* context,
                                   std::string domainLiteral,
                                   DomainType::Kind domainKind) {
+  printf("Testing: %s\n", domainLiteral.c_str());
+
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
@@ -200,14 +202,14 @@ module M {
   assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == !isRectangular);
 
   assert(guard.realizeErrors() == 0);
-
-  printf("Success: %s\n", domainLiteral.c_str());
 }
 
 static void testAssociative(Context* context,
                                   std::string domainType,
                                   std::string idxType,
                                   bool parSafe) {
+  printf("Testing: %s\n", domainType.c_str());
+
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
@@ -295,13 +297,13 @@ module M {
   }
 
   assert(guard.errors().size() == 0);
-
-  printf("Success: %s\n", domainType.c_str());
 }
 
+// Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
 static void testBadPass(Context* context, std::string argType,
                         std::string actualType) {
-  // Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
+  printf("Testing: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
+
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
@@ -333,8 +335,6 @@ module M {
   auto& e = guard.errors()[0];
   assert(e->type() == chpl::NoMatchingCandidates);
 
-  printf("Success: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
-
   // 'clear' rather than 'realize' to simplify test output
   guard.clearErrors();
 }
@@ -342,6 +342,9 @@ module M {
 static void testIndex(Context* context,
                       std::string domainType,
                       std::string expectedType) {
+  printf("Testing: index(%s) == %s\n", domainType.c_str(),
+         expectedType.c_str());
+
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
@@ -372,9 +375,6 @@ module M {
   assert(findVarType(m, rr, "equal").isParamTrue());
 
   // assert(guard.realizeErrors() == 0);
-
-  printf("Success: index(%s) == %s\n", domainType.c_str(),
-         expectedType.c_str());
 }
 
 static void testBadDomainHelper(std::string domainType, Context* context,
@@ -410,6 +410,9 @@ module M {
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
 static void testBadDomain(Context* contextWithStd, std::string domainType) {
+  printf("Testing: cannot resolve %s\n",
+         domainType.c_str());
+
   // With standard modules
   {
     contextWithStd->advanceToNextRevision(false);
@@ -418,9 +421,6 @@ static void testBadDomain(Context* contextWithStd, std::string domainType) {
 
     testBadDomainHelper(domainType, contextWithStd, guard);
   }
-
-  printf("Success: cannot resolve %s\n",
-         domainType.c_str());
 }
 
 int main() {
