@@ -909,7 +909,6 @@ def _determine_gcc_flag_to_use():
     # note: this is a helper for get_clang_basic_args, its declared here so the
     # memoization can be shared and possible warnings only occur once
     flag_to_use = None
-    # all(overrides.get(flag) is not None for flag in gcc_prefix_flags.keys()):
     if (overrides.get('CHPL_LLVM_GCC_INSTALL_DIR') is not None and
         overrides.get('CHPL_LLVM_GCC_PREFIX') is not None):
         # the user set both, warn
