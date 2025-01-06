@@ -81,7 +81,8 @@ function tryReplacementForPattern {
 # Case: "Copyright 20xy-[previous year]"->"Copyright 20xy-[current year]"
 tryReplacementForPattern "Copyright 20[0-9][0-9]-$PREVIOUS_YEAR" "s/Copyright \(20[0-9][0-9]\)-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
-tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR/g"
+tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR /Copyright $PREVIOUS_YEAR-$CURRENT_YEAR /g"
+
 # Case: "copyright_year = [previous year]"->"copyright_year = [current year]"
 # (this is just for doc/rst/conf.py)
 tryReplacementForPattern "copyright_year = $PREVIOUS_YEAR" "s/copyright_year = $PREVIOUS_YEAR/copyright_year = $CURRENT_YEAR/g"
