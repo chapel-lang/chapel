@@ -172,7 +172,7 @@ class ChplcheckProxy:
 
         def error(msg: str):
             if os.environ.get("CHPL_DEVELOPER", None):
-                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+                print("Error loading chplcheck: ", str(msg), file=sys.stderr)
 
         chpl_home = os.environ.get("CHPL_HOME")
         if chpl_home is None:
