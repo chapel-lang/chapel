@@ -67,6 +67,10 @@ struct RecordSource {
     return *this;
   }
 
+  std::string dummyVarLine() const {
+    return std::string("var ") + typeName + "Dummy: int;";
+  }
+
   std::string declLine(bool includeInterfaces) const;
 
   std::vector<std::string> getMethods(const std::string& indent,
@@ -193,6 +197,10 @@ struct ModuleSource {
   ModuleSource& addRecord(const RecordSource& record, MethodKind methodKind, ImplementationKind implKind) {
     bool includeInterfaces = implKind == I_DECL;
     bool includeMethods = methodKind == M_PRIMARY;
+    // Include a dummy variable in scope that we can use to return by ref.
+    if (methodKind == M_PRIMARY || methodKind == M_SECONDARY) {
+      linesInside.push_back(record.dummyVarLine());
+    }
     for (const auto& line : includeMethods ? record.primaryLines(includeInterfaces) : record.definitionOnly(includeInterfaces)) {
       linesInside.push_back(line);
     }
@@ -215,6 +223,8 @@ struct ModuleSource {
   }
 
   ModuleSource& addRecordMethods(const RecordSource& record) {
+    // Include a dummy variable in scope that we can use to return by ref.
+    linesInside.push_back(record.dummyVarLine());
     for (const auto& line : record.methodsOnly()) {
       linesInside.push_back(line);
     }
@@ -297,10 +307,9 @@ static bool findError(const std::vector<owned<ErrorBase>>& errors, ErrorType typ
 
 static void testSingleInterface(const InterfaceSource& interface,
                                 const RecordSource& record,
-                                chpl::optional<ErrorType> expectedError = chpl::empty,
-                                bool useStdContext = false) {
+                                chpl::optional<ErrorType> expectedError = chpl::empty) {
   Context ctx;
-  Context* context = useStdContext ? buildStdContext() : &ctx;
+  Context* context = &ctx;
   ErrorGuard guard(context);
 
   auto validateAndAdvance = [context, &guard, expectedError](const ModuleSource& src, const Module* mod) {
@@ -758,55 +767,129 @@ static void testPromotion() {
 static void testReturnIntentsValue() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r1, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r1, chpl::empty);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r3, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r3, chpl::empty);
 }
 
 static void testReturnIntentsConstRef() {
   auto i = InterfaceSource("myInterface", "proc Self.foo() const ref : int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r1, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r1, chpl::empty);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent);
 }
 
 static void testReturnIntentsRef() {
   auto i = InterfaceSource("myInterface", "proc Self.foo() ref : int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r1, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+  testSingleInterface(i, r1, chpl::InterfaceInvalidIntent);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+  testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
     .addInterfaceConstraint(i);
-  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent);
+}
+
+static void testReturnIntentsOverriding() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  {
+    std::string program =
+      R"""(
+      module M {
+
+        interface myInterface {
+          pragma "ifc any return intent"
+          proc Self.foo() ref : int;
+        }
+        var myRecDummy: int;
+        record myRec : myInterface {
+          proc foo() ref : int { return myRecDummy; }
+        }
+        param satisfies = __primitive("implements interface", myRec, myInterface) == 0;
+      }
+      )""";
+
+    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    assert(!guard.realizeErrors());
+    assert(satisfies.isParamTrue());
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string program =
+      R"""(
+      module M {
+
+        interface myInterface {
+          pragma "ifc any return intent"
+          proc Self.foo() ref : int;
+        }
+        var myRecDummy: int;
+        record myRec : myInterface {
+          proc foo() const ref : int { return myRecDummy; }
+        }
+        param satisfies = __primitive("implements interface", myRec, myInterface) == 0;
+      }
+      )""";
+
+    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    assert(!guard.realizeErrors());
+    assert(satisfies.isParamTrue());
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string program =
+      R"""(
+      module M {
+
+        interface myInterface {
+          pragma "ifc any return intent"
+          proc Self.foo() ref : int;
+        }
+        var myRecDummy: int;
+        record myRec : myInterface {
+          proc foo(): int { return myRecDummy; }
+        }
+        param satisfies = __primitive("implements interface", myRec, myInterface) == 0;
+      }
+      )""";
+
+    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    assert(!guard.realizeErrors());
+    assert(satisfies.isParamTrue());
+  }
 }
 
 static void expectError(const std::string& program, ErrorType error) {
@@ -921,6 +1004,7 @@ int main() {
   testReturnIntentsValue();
   testReturnIntentsConstRef();
   testReturnIntentsRef();
+  testReturnIntentsOverriding();
 
   // tests for the various error message cases
   testImplementsInvalidInterface();

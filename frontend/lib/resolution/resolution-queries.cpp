@@ -5644,9 +5644,18 @@ static bool validateReturnTypeForTemplate(ResolutionContext* rc,
   }
 
   if (!validIntent) {
-    CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr,
-                implPointIdForErr, templateSig, candidateSig);
-    return false;
+    bool silenceReturnIntentError = false;
+    if (auto ag = templateFn->attributeGroup()) {
+      if (ag->hasPragma(uast::pragmatags::PRAGMA_IFC_ANY_RETURN_INTENT)) {
+        silenceReturnIntentError = true;
+      }
+    }
+
+    if (!silenceReturnIntentError) {
+      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr,
+                  implPointIdForErr, templateSig, candidateSig);
+      return false;
+    }
   }
 
   if (checkedYield) {
