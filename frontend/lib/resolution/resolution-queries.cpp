@@ -5586,6 +5586,78 @@ static bool validateFormalOrderForTemplate(ResolutionContext* rc,
   return true;
 }
 
+static bool validateReturnTypeForTemplate(ResolutionContext* rc,
+                                          const CallInfo& ci,
+                                          const CallResolutionResult& c,
+                                          const InterfaceType* iftForErr,
+                                          const ID& implPointIdForErr,
+                                          const Function* templateFn,
+                                          const TypedFnSignature* templateSig,
+                                          const TypedFnSignature* candidateSig) {
+  CHPL_ASSERT(!c.exprType().isUnknownOrErroneous());
+
+  // for interface functions in particular, no return type type means
+  // "void" (where it normally means "infer from body"). 'returnType'
+  // does not check for this case because it's unusual and because checking
+  // for IDs being inside an interface is relatively slow.
+  auto templateQT =
+    templateFn->returnType() ?
+    returnType(rc, templateSig, c.poiInfo().poiScope()) :
+    QualifiedType(QualifiedType::VAR, VoidType::get(rc->context()));
+
+  if (templateQT.isUnknownOrErroneous()) return false;
+  auto templateT = templateQT.type();
+
+  if (templateFn->kind() != candidateSig->untyped()->kind()) {
+    // TODO: special error message about function kind mismatch
+    rc->context()->error(implPointIdForErr, "function kind mismatch");
+    return false;
+  }
+
+  // For iterable things, we need to compare yield types
+  if (templateFn->kind() == Function::ITER) {
+    CHPL_ASSERT(candidateSig->untyped()->kind() == Function::ITER);
+    CHPL_ASSERT(templateT->isFnIteratorType());
+    auto templateYieldT = yieldTypeForIterator(rc, templateT->toFnIteratorType()).type();
+    auto yieldT = c.yieldedType().type();
+
+    if (templateYieldT != yieldT) {
+      // TODO: error message (expecting exactly matching yield types)
+      rc->context()->error(implPointIdForErr, "yield type mismatch");
+      return false;
+    }
+  // otherwise, we expect an exact match on the return type
+  } else if (templateT == c.exprType().type()) {
+    // fine (exact match)
+
+  // allow promotion, but only for functions that expect 'void' or 'nothing'
+  } else if (c.exprType().type()->isPromotionIteratorType()) {
+    CHPL_ASSERT(!c.yieldedType().isUnknownOrErroneous());
+    auto yieldT = c.yieldedType().type();
+    if (!templateT->isVoidType() && !templateT->isNothingType()) {
+      // TODO: special error message about promotion w.r.t. return type
+      rc->context()->error(implPointIdForErr, "promotion used but not supported for non-void interface functions");
+      return false;
+    }
+
+    if (!yieldT->isVoidType() && !yieldT->isNothingType()) {
+      // TODO: special error message about promotion w.r.t. return type
+      rc->context()->error(implPointIdForErr, "promotion used but scalar function has non-void return type");
+      return false;
+    }
+
+    // ok: we expect a void function, we're promoting a void function to
+    // satisfy the constraint.
+  } else {
+    rc->context()->error(implPointIdForErr, "return type mismatch");
+    return false;
+  }
+
+  // TODO check intents
+  return true;
+}
+
+
 static ID searchFunctionByTemplate(ResolutionContext* rc,
                                    const InterfaceType* iftForErr,
                                    const ID& implPointIdForErr,
@@ -5611,6 +5683,11 @@ static ID searchFunctionByTemplate(ResolutionContext* rc,
 
   if (!validateFormalOrderForTemplate(rc, *ci, iftForErr, implPointIdForErr,
                                       templateSig, foundFn)) {
+    return ID();
+  }
+
+  if (!validateReturnTypeForTemplate(rc, *ci, c, iftForErr, implPointIdForErr,
+                                     templateFn, templateSig, foundFn)) {
     return ID();
   }
 
