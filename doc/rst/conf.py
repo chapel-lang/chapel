@@ -143,7 +143,7 @@ project = u'Chapel Documentation'
 
 author_text = os.environ.get('CHPLDOC_AUTHOR', '')
 
-copyright_year = 2025
+copyright_year = 2024
 copyright = u'{0}, {1}'.format(copyright_year, author_text)
 
 
