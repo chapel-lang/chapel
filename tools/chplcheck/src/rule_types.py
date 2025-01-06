@@ -40,6 +40,14 @@ def _build_ignore_fixit(
     return ignore
 
 
+def _get_location(node: chapel.AstNode):
+    """Helper to get the location of a node"""
+    if isinstance(node, chapel.NamedDecl):
+        return node.name_location()
+    else:
+        return node.location()
+
+
 @dataclass
 class RuleLocation:
     path_: str
@@ -332,7 +340,7 @@ class BasicRule(Rule[BasicRuleResult]):
         # addition to the fixits in the result itself)
         # add the fixits from the hooks to the fixits from the rule
         fixits = self.run_fixit_hooks(context, result) + fixits
-        loc = RuleLocation.from_chapel(result.node.location())
+        loc = RuleLocation.from_chapel(_get_location(result.node))
         return (loc, result.node, self.name, fixits)
 
     def check(
@@ -392,7 +400,7 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
             # addition to the fixits in the result itself)
             # add the fixits from the hooks to the fixits from the rule
             fixits = self.run_fixit_hooks(context, result) + fixits
-            loc = RuleLocation.from_chapel(node.location())
+            loc = RuleLocation.from_chapel(_get_location(node))
             yield (loc, node, self.name, fixits)
 
 
