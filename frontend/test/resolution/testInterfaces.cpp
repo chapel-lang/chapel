@@ -297,9 +297,10 @@ static bool findError(const std::vector<owned<ErrorBase>>& errors, ErrorType typ
 
 static void testSingleInterface(const InterfaceSource& interface,
                                 const RecordSource& record,
-                                chpl::optional<ErrorType> expectedError = chpl::empty) {
+                                chpl::optional<ErrorType> expectedError = chpl::empty,
+                                bool useStdContext = false) {
   Context ctx;
-  Context* context = &ctx;
+  Context* context = useStdContext ? buildStdContext() : &ctx;
   ErrorGuard guard(context);
 
   auto validateAndAdvance = [context, &guard, expectedError](const ModuleSource& src, const Module* mod) {
@@ -754,6 +755,60 @@ static void testPromotion() {
   }
 }
 
+static void testReturnIntentsValue() {
+  auto i = InterfaceSource("myInterface", "proc Self.foo(): int;");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1, chpl::empty, /* useStdContext = */ true);
+
+  auto r2 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+
+  auto r3 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r3, chpl::empty, /* useStdContext = */ true);
+}
+
+static void testReturnIntentsConstRef() {
+  auto i = InterfaceSource("myInterface", "proc Self.foo() const ref : int;");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1, chpl::empty, /* useStdContext = */ true);
+
+  auto r2 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+
+  auto r3 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+}
+
+static void testReturnIntentsRef() {
+  auto i = InterfaceSource("myInterface", "proc Self.foo() ref : int;");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+
+  auto r2 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r2, chpl::empty, /* useStdContext = */ true);
+
+  auto r3 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return dummyLocale.id; }")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r3, chpl::InterfaceInvalidIntent, /* useStdContext = */ true);
+}
+
 static void expectError(const std::string& program, ErrorType error) {
   Context ctx;
   Context* context = &ctx;
@@ -863,6 +918,9 @@ int main() {
   testBasicReturnTypesIter();
   testMismatchedFnKind();
   testPromotion();
+  testReturnIntentsValue();
+  testReturnIntentsConstRef();
+  testReturnIntentsRef();
 
   // tests for the various error message cases
   testImplementsInvalidInterface();
