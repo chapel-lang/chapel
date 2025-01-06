@@ -1089,7 +1089,7 @@ def get_clang_prgenv_args():
     return (comp_args, link_args)
 
 @memoize
-def get_system_include_directories(flag, lang):
+def get_clang_gcc_system_include_directories(flag, lang):
     """
     Runs 'COMPILER -E -Wp,-v -' to determine the system include directories
     """
@@ -1116,13 +1116,23 @@ def get_system_include_directories(flag, lang):
     return directories
 
 @memoize
-def is_path_system_include_directory(path, flag, lang):
+def is_path_clang_gcc_system_include_directory(path, flag, lang):
     """
     Returns True if the given path is a system include directory
     """
-    directories = get_system_include_directories(flag, lang)
+    directories = get_clang_gcc_system_include_directories(flag, lang)
     p = os.path.realpath(os.path.abspath(path))
     return any([os.path.realpath(os.path.abspath(d)) == p for d in directories])
+
+@memoize
+def can_infer_system_include_directories(flag, lang):
+    """
+    Returns True if the system include directories can be inferred
+    """
+    compiler = chpl_compiler.get_compiler_command(flag, lang)
+    inferred = chpl_compiler.get_compiler_from_command(compiler[0])
+    return inferred in ('clang', 'gnu')
+
 
 # Filters out C++ compilation flags from llvm-config.
 # The flags are passed as a list of strings.
@@ -1157,15 +1167,23 @@ def filter_llvm_config_flags(llvm_val, flags):
         if flag.startswith('-I'):
             directory = flag[2:]
             if llvm_val == "system":
-                if not is_path_system_include_directory(directory, 'host', 'c++'):
-                    # its not included by the compiler, so its safe to use -isystem
-                    ret.append('-isystem' + directory)
+                can_infer = can_infer_system_include_directories("host", "c++")
+                is_system_inc = is_path_clang_gcc_system_include_directory(
+                    directory, "host", "c++"
+                )
+                if can_infer and not is_system_inc:
+                    # the directory not included by the compiler,
+                    # so its safe to use -isystem
+                    ret.append("-isystem" + directory)
                 else:
-                    # technically don't need to add this for
-                    # but it's harmless to use -I
+                    # technically don't need to explicitly add the directory to
+                    # the include path if it's a system header. but it is
+                    # harmless to use just '-I'
+                    # if we can't determine the system include directories,
+                    # we have to add it anyways
                     ret.append("-I" + directory)
             else:
-                # bundled LLVM is always safe to use -isystem
+                # for the bundled LLVM it is always safe to use -isystem
                 ret.append("-isystem" + directory)
             continue
 
