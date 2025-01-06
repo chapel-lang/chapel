@@ -104,13 +104,13 @@ namespace {
   };
 }
 
+class IterandComponent;
+
 // Helper to resolve a specified iterator signature and its yield type.
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
-                       const IteratorType* iteratingOver,
-                       const AstNode* astForErr,
-                       const AstNode* iterand,
+                       const IterandComponent& ic,
                        Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal);
 
@@ -4904,30 +4904,122 @@ void Resolver::exit(const New* node) {
   }
 }
 
-struct IterandComponent {
- public:
-  QualifiedType iterandQt;
-  const AstNode* astForErr;
-  const AstNode* iterand;
+class IterandComponent {
+ private:
+  QualifiedType iterandQt_;
+  const AstNode* iterandAstCtx_;
+  const AstNode* astForErr_;
 
-  const IteratorType* iteratingOver;
+  const IteratorType* iteratingOver_;
+  const TypedFnSignature* invokedIterator_;
+  bool isExplicitlyTaggedIteratorCall_;
 
-  IterandComponent(Resolver& rv,
+  IterandComponent(QualifiedType iterandQt,
+                   const AstNode* iterandAstCtx,
                    const AstNode* astForErr,
-                   const AstNode* iterand)
-    : astForErr(astForErr), iterand(iterand) {
-    auto& iterandRe = rv.byPostorder.byAst(iterand);
-    this->iterandQt = iterandRe.type();
-    if (!this->iterandQt.isUnknownOrErroneous()) {
-      this->iteratingOver = this->iterandQt.type()->toIteratorType();
+                   const TypedFnSignature* invokedIterator,
+                   bool isExplicitlyTaggedIteratorCall)
+    : iterandQt_(std::move(iterandQt)), iterandAstCtx_(iterandAstCtx),
+      astForErr_(astForErr),
+      invokedIterator_(invokedIterator),
+      isExplicitlyTaggedIteratorCall_(isExplicitlyTaggedIteratorCall) {
+    if (!this->iterandQt_.isUnknownOrErroneous()) {
+      this->iteratingOver_ = this->iterandQt_.type()->toIteratorType();
     } else {
       // The thing-to-be-iterated is not an iterator, but it might be iterable
       // using its 'these()' method. Don't resolve it now, since we haven't
       // decided on which overloads we need; resolveIterTypeWithTag will do that
       // on finding that toIterate is null.
 
-      this->iteratingOver = nullptr;
+      this->iteratingOver_ = nullptr;
     }
+  }
+
+ public:
+  static bool unpackIterand(Resolver& rv,
+                            std::vector<IterandComponent>& out,
+                            const AstNode* astForErr,
+                            const AstNode* iterand) {
+    const OpCall* opCall = nullptr;
+    bool isUnpack = (opCall = iterand->toOpCall()) && opCall->op() == USTR("...");
+
+    // This is an expression in the form (...someTuple). Each element of the
+    // tuple should b ecome its own iterand component. In this case,
+    // we don't have an exact iterator fn (and thus, we're not a tagged call),
+    // since there are several elements to iterate over.
+    if (isUnpack) {
+      CHPL_ASSERT(opCall->numActuals() == 1 && "expected exactly one actual for '...'");
+
+      auto& qt = rv.byPostorder.byAst(opCall->actual(0)).type();
+
+      if (qt.isUnknownOrErroneous()) return false;
+      auto tt = qt.type()->toTupleType();
+      if (!tt) {
+        rv.context->error(astForErr, "unexpected type in tuple unpacking operator");
+        return false;
+      }
+
+      for (int i = 0; i < tt->numElements(); i++) {
+        out.push_back({tt->elementType(i), iterand, astForErr, nullptr, false});
+      }
+
+    // This is a "normal" expression, so it should create a single iterand.
+    // In this case, the iterand may be the result of direct call to an iterator,
+    // and, as a special case of that, a call to an iterator with a tag.
+    } else {
+      auto& rr = rv.byPostorder.byAst(iterand);
+      auto& qt = rr.type();
+      auto fn = rr.mostSpecific().only() ? rr.mostSpecific().only().fn() : nullptr;
+
+      bool isExplicitlyTaggedIteratorCall = false;
+      if (fn && fn->isParallelIterator(rv.context)) {
+        // Determine if this was an explicitly tagged call.
+        //
+        // We could've ended up resolving a leader automatically from a serial
+        // call (if the serial overload doesn't exist). To check that this was
+        // an explicit tag, we need to not have any ITERATE associated actions.
+        auto count = std::count_if(rr.associatedActions().begin(),
+                                   rr.associatedActions().end(),
+                                   [](const AssociatedAction& aa) {
+                                     return aa.action() == AssociatedAction::ITERATE;
+                                   });
+        isExplicitlyTaggedIteratorCall = count == 0;
+      }
+      out.push_back({qt, iterand, astForErr, fn, isExplicitlyTaggedIteratorCall});
+    }
+
+    return true;
+  }
+
+  static bool
+  unpackNonZipperedIterand(Resolver& rv,
+                           std::vector<IterandComponent>& out,
+                           const AstNode* astForErr,
+                           const AstNode* iterand) {
+    bool result = unpackIterand(rv, out, astForErr, iterand);
+    if (!result) return result;
+
+    CHPL_ASSERT(out.size() >= 1);
+    if (out.size() > 1) {
+      rv.context->error(astForErr, "cannot perform tuple unpacking in non-zippered loop iterand");
+      return false;
+    }
+
+    return true;
+  }
+
+  const QualifiedType& iterandQt() const { return iterandQt_; }
+
+  const AstNode* iterandAstCtx() const { return iterandAstCtx_; }
+
+  const AstNode* astForErr() const { return astForErr_; }
+
+  const IteratorType* iteratingOver() const { return iteratingOver_; }
+
+  const TypedFnSignature* invokedIterator() const { return invokedIterator_; }
+
+  bool isExplicitlyTaggedIteratorCall() const {
+    return isExplicitlyTaggedIteratorCall_;
   }
 };
 
@@ -4970,14 +5062,13 @@ resolveIterDetailsForZipperedArgs(Resolver& rv,
   for (auto& ic : ics) {
     auto& pieces = outIterDetails.piecesForIterKind(iterKind);
     auto idxType = resolveIterTypeWithTag(rv, pieces,
-                                          ic.iteratingOver, ic.astForErr,
-                                          ic.iterand, iterKind,
+                                          ic, iterKind,
                                           leaderYieldType);
     if (idxType.isUnknownOrErroneous()) {
       // Note the first failed resolution
       if (succeededAll && storeFailures) {
         noteTheseResolutionFailure(rv, *storeFailures, iterKind, index,
-                                   ic.iterandQt,
+                                   ic.iterandQt(),
                                    std::move(pieces.resolutionResult));
       }
       succeededAll = false;
@@ -5017,8 +5108,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
     CHPL_ASSERT(ics.size() == 1);
     auto& ic = ics[0];
     ret.idxType = resolveIterTypeWithTag(rv, ret.standalone,
-                                         ic.iteratingOver, ic.astForErr,
-                                         ic.iterand, Function::STANDALONE, {});
+                                         ic, Function::STANDALONE, {});
     if (!ret.idxType.isUnknownOrErroneous()) {
       ret.succeededAt = IterDetails::STANDALONE;
       return ret;
@@ -5028,8 +5118,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
   if (mask & IterDetails::LEADER_FOLLOWER) {
     auto& ic = ics[0];
     ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader,
-                                                 ic.iteratingOver, ic.astForErr,
-                                                 ic.iterand, Function::LEADER,
+                                                 ic, Function::LEADER,
                                                  {});
   }
 
@@ -5093,9 +5182,12 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 
   // Resolve iterators, stopping immediately when we get a valid yield type.
   // We are outside of a zippering contex, so call with only a single IterandComponent.
-  std::vector<IterandComponent> ics = {
-    IterandComponent(rv, astForErr, iterand)
-  };
+  std::vector<IterandComponent> ics;
+  if (!IterandComponent::unpackNonZipperedIterand(rv, ics, astForErr, iterand)) {
+    // Couldn't understand the expression. an error was already issued,
+    // no more work to do.
+    return {};
+  }
   auto ret = resolveIterDetailsInPriorityOrder(rv, ics, mask);
 
   // Only issue a "not iterable" error if the iterand has a type. If it was
@@ -5112,53 +5204,34 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
 }
 
 static TheseResolutionResult resolveTheseMethod(Resolver& rv,
-                                                const AstNode* iterand,
+                                                const AstNode* iterandAstCtx,
                                                 const QualifiedType& iterandType,
                                                 Function::IteratorKind iterKind,
                                                 const QualifiedType& followThisType) {
-  auto& iterandRe = rv.byPostorder.byAst(iterand);
+  auto& iterandRe = rv.byPostorder.byAst(iterandAstCtx);
   auto inScope = rv.scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
-  auto tr = resolveTheseCall(rv.rc, iterand, iterandType, iterKind, followThisType, inScopes);
+  auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
   if (auto cr = tr.callResult()) {
-    rv.handleResolvedCallWithoutError(iterandRe, iterand, *cr,
-        { { AssociatedAction::ITERATE, iterand->id() } });
+    rv.handleResolvedCallWithoutError(iterandRe, iterandAstCtx, *cr,
+        { { AssociatedAction::ITERATE, iterandAstCtx->id() } });
   }
 
   return tr;
 }
 
-static bool isExplicitlyTaggedIteratorCall(Context* context,
-                                           ResolvedExpression& re,
-                                           const TypedFnSignature* fn) {
-  if (!fn || !fn->isParallelIterator(context)) return false;
-
-  // We could've ended up resolving a leader automatically from a serial
-  // call (if the serial overload doesn't exist). To check that this was
-  // an explicit tag, we need to not have any ITERATE associated actions.
-  auto count = std::count_if(re.associatedActions().begin(),
-                             re.associatedActions().end(),
-                             [](const AssociatedAction& aa) {
-                               return aa.action() == AssociatedAction::ITERATE;
-                             });
-
-  return count == 0;
-}
-
 static QualifiedType
 resolveIterTypeWithTag(Resolver& rv,
                        IterDetails::Pieces& outIterPieces,
-                       const IteratorType* iteratingOver,
-                       const AstNode* astForErr,
-                       const AstNode* iterand,
+                       const IterandComponent& ic,
                        Function::IteratorKind iterKind,
                        const QualifiedType& followThisFormal) {
   Context* context = rv.context;
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindActual = getIterKindConstantOrWarn(context, astForErr, iterKind);
+  auto iterKindActual = getIterKindConstantOrWarn(context, ic.astForErr(), iterKind);
   bool needSerial = iterKind == Function::SERIAL;
   bool needStandalone = iterKind == Function::STANDALONE;
   bool needLeader = iterKind == Function::LEADER;
@@ -5170,16 +5243,14 @@ resolveIterTypeWithTag(Resolver& rv,
   }
 
   // Inspect the resolution result to determine what should be done next.
-  auto& iterandRE = rv.byPostorder.byAst(iterand);
-  auto iterandType = iterandRE.type();
+  auto& iterandType = ic.iterandQt();
   CHPL_ASSERT(!iterandType.isUnknownOrErroneous());
 
-  auto& MSC = iterandRE.mostSpecific();
-  auto fn = MSC.only() ? MSC.only().fn() : nullptr;
+  auto fn = ic.invokedIterator();
 
   // For iterator forwarding, we can write serial 'for' loops over tagged iterator calls
   bool treatAsSerial = fn &&
-    (fn->isSerialIterator(context) || isExplicitlyTaggedIteratorCall(context, iterandRE, fn));
+    (fn->isSerialIterator(context) || ic.isExplicitlyTaggedIteratorCall());
   // Call to a serial iterator overload, and we are looking for a serial iterator.
   bool wasMatchingIterResolved = fn &&
     ((needSerial && treatAsSerial) ||
@@ -5193,11 +5264,11 @@ resolveIterTypeWithTag(Resolver& rv,
   // The iterand was a call to a serial iterator, and we need a serial iterator.
   if (wasMatchingIterResolved) {
     CHPL_ASSERT(iterandType.type()->isIteratorType() &&
-                iterandType.type() == iteratingOver &&
+                iterandType.type() == ic.iteratingOver() &&
                 "an iterator was resolved, expecting an iterator type");
     // We no longer have a call resolution result that produced the MSC,
     // so just create a mock one here.
-    outIterPieces = { iteratingOver, TheseResolutionResult::success(iterandType) };
+    outIterPieces = { ic.iteratingOver(), TheseResolutionResult::success(iterandType) };
     return yieldTypeForIterator(rv.rc, iterandType.type()->toIteratorType());
   }
 
@@ -5205,7 +5276,8 @@ resolveIterTypeWithTag(Resolver& rv,
   // or an iterator. The latter have compiler-generated 'these' methods
   // which implement the dispatch logic like rewriting an iterator from `iter foo()`
   // to `iter foo(tag)`. So just resolve the 'these' method.
-  auto tr = resolveTheseMethod(rv, iterand, iterandType, iterKind, followThisFormal);
+  auto iteratingOver = ic.iteratingOver();
+  auto tr = resolveTheseMethod(rv, ic.iterandAstCtx(), iterandType, iterKind, followThisFormal);
   auto qt = tr.exprType();
   if (!qt.isUnknownOrErroneous() && qt.type()->isIteratorType()) {
     // These produced a valid iterator. We already configured the call
@@ -5281,19 +5353,30 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
 }
 
 static QualifiedType
-resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
+resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, std::vector<IterandComponent>& outIcs) {
   // Failures to find various iteration strategies (serial, follower) go here.
   IteratorFailures failures;
 
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
-  bool singletonZip = zip->numActuals() == 1;
   QualifiedType ret;
 
+  // Compute iterator components to resolve as part of zippering. This
+  // handles unpacking any iterands in the form (...bla) into a flattened
+  // repersentation.
+  for (auto actual : zip->actuals()) {
+    if (!IterandComponent::unpackIterand(rv, outIcs, actual, actual)) {
+      // Couldn't make sense of the iterand, we can't go on. An error
+      // was already emitted, but contruct an ErroneousType to return.
+      return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+    }
+  }
+  bool singletonZip = outIcs.size() == 1;
+
   // Compute the mask for this zip expression
-  if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
-    auto leaderQt = rv.byPostorder.byAst(leader).type();
+  if (outIcs.size() > 0) {
+    auto leaderQt = outIcs[0].iterandQt();
 
     if (leaderQt.isUnknownOrErroneous()) {
       return QualifiedType();
@@ -5324,20 +5407,13 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
 
     CHPL_ASSERT(m != IterDetails::NONE);
 
-    // Compute iterator components to resolve as part of zippering.
-    std::vector<IterandComponent> ics = {
-      IterandComponent(rv, leader, leader)
-    };
-    for (int i = 1; i < zip->numActuals(); i++) {
-      auto follower = zip->actual(i);
-      ics.emplace_back(rv, follower, follower);
-
-      if (ics.back().iterandQt.isUnknownOrErroneous()) {
+    for (size_t i = 1; i < outIcs.size(); i++) {
+      if (outIcs[i].iterandQt().isUnknownOrErroneous()) {
         return QualifiedType();
       }
     }
 
-    auto result = resolveIterDetailsInPriorityOrder(rv, ics, m, &failures);
+    auto result = resolveIterDetailsInPriorityOrder(rv, outIcs, m, &failures);
     if (result.succeededAt != IterDetails::NONE) {
       ret = result.idxType;
     }
@@ -5418,7 +5494,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   return true;
 }
 
-static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
+static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop, const std::vector<IterandComponent>& ics) {
   if (!loop->isExpressionLevel()) return;
 
   CHPL_ASSERT(loop->numStmts() == 1);
@@ -5432,26 +5508,15 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop) {
 
     QualifiedType iterandType;
     bool isZippered = false;
-    if (auto zip = loop->iterand()->toZip()) {
+    if (loop->iterand()->isZip()) {
       isZippered = true;
-      bool allChildrenResolved = true;
+
       std::vector<QualifiedType> iterandTypes;
-
-      for (auto child : zip->children()) {
-        auto childType = rv.byPostorder.byAst(child).type();
-        if (childType.isUnknownOrErroneous()) {
-          allChildrenResolved = false;
-          break;
-        }
-        iterandTypes.push_back(childType);
-      }
-
-      if (allChildrenResolved) {
-        iterandType =
-          QualifiedType(QualifiedType::TYPE,
-                        TupleType::getQualifiedTuple(rv.context,
-                                                     std::move(iterandTypes)));
-      }
+      for (auto child : ics) iterandTypes.push_back(child.iterandQt());
+      iterandType =
+        QualifiedType(QualifiedType::TYPE,
+                      TupleType::getQualifiedTuple(rv.context,
+                                                   std::move(iterandTypes)));
     } else {
       iterandType = rv.byPostorder.byAst(loop->iterand()).type();
     }
@@ -5510,8 +5575,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
   // Not an array expression. In this case, depending on the loop type,
   // we need to resolve various iterators.
   QualifiedType idxType;
+  // Resolving zip indices will collect iterand components (which don't
+  // always map one-to-one to indices if we're using tuple unpacking). This
+  // will be used below for noting the loop expression type.
+  std::vector<IterandComponent> ics;
   if (iterand->isZip()) {
-    idxType = resolveZipExpression(*this, loop, iterand->toZip());
+    idxType = resolveZipExpression(*this, loop, iterand->toZip(), ics);
   } else {
     bool loopRequiresParallel = loop->isForall();
     bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
@@ -5547,7 +5616,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
     loop->body()->traverse(*this);
   }
 
-  noteLoopExprType(*this, loop);
+  if (!idxType.isUnknownOrErroneous()) {
+    noteLoopExprType(*this, loop, ics);
+  }
 
   return false;
 }
