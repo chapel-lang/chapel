@@ -20,6 +20,7 @@
 # settings for the build
 #
 DEPEND=1
+CHPL_DEVELOPER ?= 0
 ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 WARNINGS=1
