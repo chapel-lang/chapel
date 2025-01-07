@@ -5471,6 +5471,10 @@ struct InterfaceCheckHelper {
   const ImplementationWitness* witness;
   PlaceholderMap* allPlaceholders;
 
+  // special case behavior fields below.
+  // if not null, we're trying to infer the return type for contexts (storing into this map)
+  ImplementationWitness::AssociatedTypeMap* inferContextReturnType;
+
   optional<CallInfo> setupCallForTemplate(const Function* templateFn,
                                           const TypedFnSignature* templateSig) {
     std::vector<CallInfoActual> actuals;
@@ -5585,6 +5589,24 @@ struct InterfaceCheckHelper {
                                      const TypedFnSignature* templateSig,
                                      const TypedFnSignature* candidateSig) {
     CHPL_ASSERT(!c.exprType().isUnknownOrErroneous());
+
+    if (inferContextReturnType && templateFn->name() == USTR("enterContext")) {
+      // We were asked to infer the return type using this function. Nothing
+      // to validate, but pull the return type from the call and store it in
+      // the map.
+      auto retType = c.exprType();
+      for (auto child : itf->stmts()) {
+        auto vd = child->toVariable();
+        if (!vd) continue;
+
+        if (vd->name() != "contextReturnType") continue;
+
+        inferContextReturnType->emplace(vd->id(), retType.type());
+        return true;
+      }
+
+      CHPL_ASSERT(false && "did not find associated type to be inferred.");
+    }
 
     // for interface functions in particular, no return type type means
     // "void" (where it normally means "infer from body"). 'returnType'
@@ -5742,7 +5764,8 @@ struct InterfaceCheckHelper {
   }
 
   QualifiedType searchForAssociatedType(const QualifiedType& receiverType,
-                                        const Variable* td) {
+                                        const Variable* td,
+                                        bool& outInferType) {
     // Set up a parenless type-proc call to compute associated type
     auto ci = CallInfo(
       td->name(),
@@ -5772,8 +5795,20 @@ struct InterfaceCheckHelper {
     }
 
     if (failed || notType) {
-      CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, ift,
-                  implPointId, td, ci, std::move(rejected));
+      // Special case: for context managers, to ease migration, infer
+      // the context return type. Allow it to be missing here.
+
+      if (parsing::idIsInBundledModule(rc->context(), td->id()) &&
+          ift->id().symbolPath() == "ChapelContext.contextManager" &&
+          td->name() == "contextReturnType") {
+        // No error message; we allow inferring this type.
+        outInferType = true;
+      } else {
+        // No, sorry, we don't infer this type, and we couldn't find it.
+        CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, ift,
+                    implPointId, td, ci, std::move(rejected));
+      }
+
       return QualifiedType();
     }
 
@@ -5814,7 +5849,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   auto associatedReceiverType = QualifiedType(); // cached across iterations
   ImplementationWitness::AssociatedTypeMap associatedTypes;
   InterfaceCheckHelper helper {
-    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr
+    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr, nullptr
   };
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
@@ -5843,8 +5878,19 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       }
     }
 
-    auto foundQt = helper.searchForAssociatedType(associatedReceiverType, td);
+    bool inferType = false;
+    auto foundQt = helper.searchForAssociatedType(associatedReceiverType, td, inferType);
     if (foundQt.isUnknownOrErroneous()) {
+
+      // Right now, this is only hit as a special case, so we know we're inferring
+      // the context return type. In the future, if we support inference more
+      // generally, note what type is being inferred and how it should be
+      // computed.
+      if (inferType) {
+        helper.inferContextReturnType = &associatedTypes;
+        continue;
+      }
+
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
     } else {
