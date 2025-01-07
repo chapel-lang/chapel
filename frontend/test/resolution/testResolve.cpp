@@ -1739,7 +1739,7 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(context, program1);
 }
 
-// a callable foraml (like a tuple) is preferred to functions in outer
+// a callable formal (like a tuple) is preferred to functions in outer
 // scopes.
 static void testFormalFunctionShadowing() {
   std::string program =
@@ -1762,7 +1762,7 @@ static void testFormalFunctionShadowing() {
   CHPL_ASSERT(t.type()->isIntType());
 }
 
-// a callable foraml (like a tuple) interrupts the search for functions as
+// a callable formal (like a tuple) interrupts the search for functions as
 // an optimization for "distance" (any functions beyond the callable formal
 // are further away than any functions we've already found).
 static void testFunctionFormalShadowing() {

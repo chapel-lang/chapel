@@ -285,7 +285,9 @@ class LookupResult {
 
  public:
   LookupResult(bool found, bool nonFunctions)
-    : found_(found), nonFunctions_(nonFunctions) {}
+    : found_(found), nonFunctions_(nonFunctions) {
+    CHPL_ASSERT(!nonFunctions_ || found);
+  }
 
   static LookupResult empty() { return {false, false}; }
 
