@@ -3,7 +3,7 @@ import os
 import sys
 import optparse
 
-import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler
+import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler, chpl_platform
 from utils import error, memoize, warning
 
 
@@ -86,8 +86,9 @@ def get_compile_args(flag):
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args(flag):
-    # cmake handles 'host' mimalloc args
-    if flag == 'host':
+    # cmake handles 'host' mimalloc args for the compiler,
+    # but we still need it for chapel-py on MacOS (because it is dynamic linked)
+    if flag == 'host' and chpl_platform.get() != "darwin":
         return [], []
 
     mimalloc_val = get(flag)
