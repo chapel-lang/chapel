@@ -300,30 +300,23 @@ static QualifiedType primImplementsInterface(Context* context,
 
   if (ifqt.kind() != QualifiedType::TYPE ||
       ifqt.isUnknownOrErroneous() ||
+      type.isUnknownOrErroneous() ||
       !ifqt.type()->isInterfaceType()) return QualifiedType();
 
   auto ift = ifqt.type()->toInterfaceType();
-  auto instantiatedIft = InterfaceType::withTypes(context, ift, { type });
-  if (!instantiatedIft) return QualifiedType();
+  if (!ift) return QualifiedType();
 
   ResolutionContext rc(context);
+  bool foundExisting;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
-  auto witness =
-    findMatchingImplementationPoint(&rc, instantiatedIft, inScopes);
+  auto implPoint = findOrImplementInterface(&rc, ift, type.type(), inScopes,
+                                            astForErr->id(), foundExisting);
 
-  if (witness) {
-    return makeParamInt(context, 0);
+  int returnValue = 2;
+  if (implPoint && foundExisting) {
+    returnValue = 0;
   }
-
-  // try automatically satisfy the interface if it's in the standard modules.
-  if (parsing::idIsInBundledModule(context, ift->id())) {
-    auto runResult = context->runAndTrackErrors([&](Context* context) {
-      return checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
-    });
-    witness = runResult.result();
-  }
-
-  return makeParamInt(context, witness ? 1 : 2);
+  return makeParamInt(context, returnValue);
 }
 
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {

@@ -5947,6 +5947,38 @@ checkInterfaceConstraints(ResolutionContext* rc,
                                         inScopes.poiScope());
 }
 
+const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
+                                                      const types::InterfaceType* ift,
+                                                      const types::Type* forType,
+                                                      const CallScopeInfo& inScopes,
+                                                      const ID& implPointId,
+                                                      bool& outFoundExisting) {
+  outFoundExisting = false;
+
+  auto instantiatedIft =
+    InterfaceType::withTypes(rc->context(), ift,
+                             { QualifiedType(QualifiedType::TYPE, forType) });
+  if (!instantiatedIft) return nullptr;
+
+  auto witness =
+    findMatchingImplementationPoint(rc, instantiatedIft, inScopes);
+
+  if (witness) {
+    outFoundExisting = true;
+    return witness;
+  }
+
+  // try automatically satisfy the interface if it's in the standard modules.
+  if (parsing::idIsInBundledModule(rc->context(), ift->id())) {
+    auto runResult = rc->context()->runAndTrackErrors([&](Context* context) {
+      return checkInterfaceConstraints(rc, instantiatedIft, implPointId, inScopes);
+    });
+    witness = runResult.result();
+  }
+
+  return witness;
+}
+
 static const TypedFnSignature*
 tryResolveAssignHelper(Context* context,
                        const uast::AstNode* astForScopeOrErr,
