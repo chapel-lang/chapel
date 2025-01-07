@@ -373,7 +373,7 @@ if (CHPL_HOST_MEM STREQUAL "mimalloc")
     message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
   endif()
 
-  # static linking results in much faster compile times, but casues crashes on Mac
+  # static linking results in much faster compile times, but causes crashes on Mac
   if (APPLE)
     target_link_libraries(ChplFrontend PRIVATE mimalloc)
     target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
