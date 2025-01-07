@@ -27,6 +27,7 @@ using chpl::UniqueString;
 
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <vector>
 
 const char* astr(const char* s1,
@@ -41,6 +42,7 @@ const char* astr(const char* s1,
 
 const char* astr(const char* s1);
 const char* astr(const std::string& s);
+const char* astr(std::string_view s);
 const char* astr(UniqueString s);
 
 const char* istr(int i);

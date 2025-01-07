@@ -4881,7 +4881,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 // Save the current state of the LLVM IR to an LLVM bitcode file if needed
 static void saveIrToBcFileIfNeeded(const std::string& filename,
                                    bool forceSave = false) {
-  bool shouldSave = forceSave || saveCDir[0];
+  bool shouldSave = forceSave || !saveCDir.empty();
   if (shouldSave) {
     GenInfo* info = gGenInfo;
     std::error_code tmpErr;
@@ -5167,7 +5167,7 @@ void makeBinaryLLVM(void) {
       const char* bin = "dsymutil";
       const char* sfx = ".dSYM";
       const char* tmp = astr(tmpbinname, sfx);
-      const char* out = astr(executableFilename, sfx);
+      const char* out = astr(executableFilename.c_str(), sfx);
 
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
@@ -5183,7 +5183,7 @@ void makeBinaryLLVM(void) {
       if (fLibraryCompile) {
         moveGeneratedLibraryFile(tmpbinname);
       } else {
-        moveResultFromTmp(executableFilename, tmpbinname);
+        moveResultFromTmp(executableFilename.c_str(), tmpbinname);
       }
 
     } else {
@@ -5727,7 +5727,7 @@ static std::string getLibraryOutputPath() {
   const char* exeExt = getLibraryExtension();
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
 
   if (!startsWithLib) {
     libraryPrefix = "lib";
