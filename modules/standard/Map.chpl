@@ -213,7 +213,7 @@ module Map {
       :arg other: The map to initialize from.
       :type other: map
     */
-    proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
       // TODO: There has got to be some way that we can abstract this!
       // Arguably this is something that the compiler should be
