@@ -5470,6 +5470,7 @@ struct InterfaceCheckHelper {
   const CallScopeInfo& inScopes;
   const ImplementationWitness* witness;
   PlaceholderMap* allPlaceholders;
+  bool allGenerated;
 
   // special case behavior fields below.
   // if not null, we're trying to infer the return type for contexts (storing into this map)
@@ -5759,6 +5760,11 @@ struct InterfaceCheckHelper {
       return ID();
     }
 
+    // Found the function. Is it compiler-generated?
+    if (!foundFn->isCompilerGenerated()) {
+      allGenerated = false;
+    }
+
     // ordering is fine, so foundFn is good to go.
     return foundFn->id();
   }
@@ -5794,7 +5800,12 @@ struct InterfaceCheckHelper {
       resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
     }
 
-    if (failed || notType) {
+    if (!failed && !notType) {
+      // Ok, we found a type. Note whether it was generated or user-supplied.
+      if (!c.mostSpecific().only().fn()->isCompilerGenerated()) {
+        allGenerated = false;
+      }
+    } else {
       // Special case: for context managers, to ease migration, infer
       // the context return type. Allow it to be missing here.
 
@@ -5833,7 +5844,11 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   // implementation witness with this information.
   // TODO: not used in production today, so not implemented,
   ImplementationWitness::ConstraintMap associatedConstraints;
-  auto witness1 = ImplementationWitness::get(rc->context(), associatedConstraints, {}, {});
+  bool allGenerated = true;
+  bool anyWitnesses = false;
+  auto witness1 =
+    ImplementationWitness::get(rc->context(), associatedConstraints,
+                               {}, {}, allGenerated);
 
   // Next, process all the associated types, and create a "phase 2"
   // implementation witness.
@@ -5849,11 +5864,13 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   auto associatedReceiverType = QualifiedType(); // cached across iterations
   ImplementationWitness::AssociatedTypeMap associatedTypes;
   InterfaceCheckHelper helper {
-    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr, nullptr
+    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr, allGenerated, nullptr,
   };
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
     if (!td) continue;
+
+    anyWitnesses = true;
 
     // Only associated type are valid declarations in this position
     CHPL_ASSERT(td->storageKind() == QualifiedType::TYPE);
@@ -5897,7 +5914,10 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       associatedTypes.emplace(td->id(), foundQt.type());
     }
   }
-  auto witness2 = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, {});
+  auto witness2 =
+    ImplementationWitness::get(rc->context(), associatedConstraints,
+                               associatedTypes, {},
+                               anyWitnesses && helper.allGenerated);
 
   // Next, process all the functions; if all of these are found, we can construct
   // a final witness with all the required information.
@@ -5910,6 +5930,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   for (auto stmt : itf->stmts()) {
     auto fn = stmt->toFunction();
     if (!fn) continue;
+
+    anyWitnesses = true;
 
     // Note: construct a resolver with the witness above, which pushes
     // an interface frame onto the ResolutionContext. This is required for
@@ -5933,7 +5955,10 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     }
   }
 
-  result = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, functions);
+  result =
+    ImplementationWitness::get(rc->context(), associatedConstraints,
+                               associatedTypes, functions,
+                               anyWitnesses && helper.allGenerated);
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 

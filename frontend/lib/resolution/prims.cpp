@@ -313,8 +313,14 @@ static QualifiedType primImplementsInterface(Context* context,
                                             astForErr->id(), foundExisting);
 
   int returnValue = 2;
-  if (implPoint && foundExisting) {
-    returnValue = 0;
+  if (implPoint) {
+    if (foundExisting) {
+      returnValue = 0;
+    } else if (implPoint->allGenerated()) {
+      returnValue = 1;
+    } else {
+      returnValue = 2;
+    }
   }
   return makeParamInt(context, returnValue);
 }

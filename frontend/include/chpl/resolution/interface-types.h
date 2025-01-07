@@ -106,26 +106,31 @@ class ImplementationWitness {
   ConstraintMap associatedConstraints_;
   AssociatedTypeMap associatedTypes_;
   FunctionMap requiredFns_;
+  bool allGenerated_;
 
   ImplementationWitness(ConstraintMap associatedConstraints,
                         AssociatedTypeMap associatedTypes,
-                        FunctionMap requiredFns)
+                        FunctionMap requiredFns,
+                        bool allGenerated)
     : associatedConstraints_(std::move(associatedConstraints)),
       associatedTypes_(std::move(associatedTypes)),
-      requiredFns_(std::move(requiredFns)) {}
+      requiredFns_(std::move(requiredFns)),
+      allGenerated_(allGenerated) {}
 
   static const owned<ImplementationWitness>&
   getImplementationWitness(Context* context,
                            ConstraintMap associatedConstraints,
                            AssociatedTypeMap associatedTypes,
-                           FunctionMap requiredFns);
+                           FunctionMap requiredFns,
+                           bool allGenerated);
 
  public:
   static ImplementationWitness*
   get(Context* context,
       ConstraintMap associatedConstraints,
       AssociatedTypeMap associatedTypes,
-      FunctionMap requiredFns);
+      FunctionMap requiredFns,
+      bool allGenerated);
 
   static bool update(owned<ImplementationWitness>& lhs,
                      owned<ImplementationWitness>& rhs) {
@@ -159,6 +164,11 @@ class ImplementationWitness {
   /** Get the required functions. */
   const FunctionMap& requiredFns() const {
     return requiredFns_;
+  }
+
+  /** Get whether all of the associated types and functions are generated. */
+  bool allGenerated() const {
+    return allGenerated_;
   }
 };
 
