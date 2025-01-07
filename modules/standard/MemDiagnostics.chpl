@@ -264,15 +264,15 @@ iter allocations(minSize: integral = 0) {
   extern proc chpl_memtable_size(): c_int;
   extern proc chpl_memtable_entry(idx: c_int): c_ptr(void);
   extern proc chpl_memtable_next_entry(entry): c_ptr(void);
-  extern proc chpl_memtable_entry_addr(entry): uint;
-  extern proc chpl_memtable_entry_size(entry): uint;
+  extern proc chpl_memtable_entry_addr(entry): c_uintptr;
+  extern proc chpl_memtable_entry_size(entry): c_size_t;
 
   const hashSize = chpl_memtable_size();
   for i in 0..<hashSize {
     var entry = chpl_memtable_entry(i);
     while entry != nil {
-      var addr = chpl_memtable_entry_addr(entry);
-      var size = chpl_memtable_entry_size(entry);
+      var addr = chpl_memtable_entry_addr(entry): uint;
+      var size = chpl_memtable_entry_size(entry): uint;
 
       if size >= minSize then yield (addr,size);
 
