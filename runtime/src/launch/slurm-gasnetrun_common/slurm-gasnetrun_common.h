@@ -308,7 +308,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     char* envProp = NULL;
     propagate_environment(&envProp, NULL);
     fprintf(slurmFile, "%s", envProp);
-    chpl_mem_free(envProp);
+    chpl_mem_free(envProp, 0, 0);
 
     fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
@@ -357,7 +357,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     snprintf(baseCommand, baseCommandLen, format, iCom);
-    chpl_mem_free(iCom);
+    chpl_mem_free(iCom, 0, 0);
   }
 
   size = strlen(baseCommand) + 1;
@@ -366,7 +366,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
   snprintf(command, size, "%s", baseCommand);
-  chpl_mem_free(baseCommand);
+  chpl_mem_free(baseCommand, 0, 0);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -393,7 +393,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
                                           numLocales, numLocalesPerNode),
             argv[0]);
   chpl_launch_cleanup();
-  chpl_mem_free(slurmFilename);
+  chpl_mem_free(slurmFilename, 0, 0);
   return retcode;
 }
 

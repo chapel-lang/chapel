@@ -261,8 +261,8 @@ static void chpl_launch_cleanup(void) {
     }
   }
 #endif
-  chpl_mem_free(pbsFilename);
-  chpl_mem_free(expectFilename);
+  chpl_mem_free(pbsFilename, 0, 0);
+  chpl_mem_free(expectFilename, 0, 0);
 }
 
 

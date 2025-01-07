@@ -398,7 +398,7 @@ static void chpl_launch_cleanup(void) {
       snprintf(msg, msgLen, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
-      chpl_mem_free(msg);
+      chpl_mem_free(msg, 0, 0);
     }
   }
 }
@@ -423,7 +423,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
                                   argv[0]);
     chpl_launch_cleanup();
   }
-  chpl_mem_free(expectFilename);
+  chpl_mem_free(expectFilename, 0, 0);
   return retcode;
 }
 

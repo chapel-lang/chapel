@@ -508,7 +508,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
       // tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
       // Hence free up inside this condition.
-      chpl_mem_free(tmpStdoutFileNoFmt);
+      chpl_mem_free(tmpStdoutFileNoFmt, 0, 0);
     }
 
     // close the batch file and change permissions
@@ -616,7 +616,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     snprintf(baseCommand, baseCommandLen, format, iCom);
-    chpl_mem_free(iCom);
+    chpl_mem_free(iCom, 0,  0);
   }
 
   // copy baseCommand into command and return it
@@ -624,9 +624,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(command, size, "%s", baseCommand);
   // free dynamically allocated memory
-  chpl_mem_free(baseCommand);
-  chpl_mem_free(stdoutFile);
-  chpl_mem_free(stdoutFileNoFmt);
+  chpl_mem_free(baseCommand, 0, 0);
+  chpl_mem_free(stdoutFile, 0, 0);
+  chpl_mem_free(stdoutFileNoFmt, 0, 0);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -654,7 +654,7 @@ static void chpl_launch_cleanup(void) {
         snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
-        chpl_mem_free(msg);
+        chpl_mem_free(msg, 0, 0);
       }
     }
   }
@@ -684,7 +684,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
 
     chpl_launch_cleanup();
   }
-  chpl_mem_free(slurmFilename);
+  chpl_mem_free(slurmFilename, 0, 0);
   return retcode;
 }
 
