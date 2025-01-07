@@ -5469,6 +5469,7 @@ struct InterfaceCheckHelper {
   const ID& implPointId;
   const CallScopeInfo& inScopes;
   const ImplementationWitness* witness;
+  PlaceholderMap* allPlaceholders;
 
   optional<CallInfo> setupCallForTemplate(const Function* templateFn,
                                           const TypedFnSignature* templateSig) {
@@ -5501,7 +5502,7 @@ struct InterfaceCheckHelper {
   findBestCandidateForTemplate(const CallInfo& ci,
                                const CallResolutionResult& c,
                                const Function* templateFn,
-                               const TypedFnSignature* templateSig) {
+                               const TypedFnSignature* templateSigWithSubs) {
     std::vector<ApplicabilityResult> rejected;
     std::vector<const TypedFnSignature*> ambiguous;
 
@@ -5517,7 +5518,7 @@ struct InterfaceCheckHelper {
       // rejected candidates.
       resolveGeneratedCall(rc->context(), templateFn, ci, inScopes, &rejected);
       CHPL_REPORT(rc->context(), InterfaceMissingFn, ift, implPointId,
-                  templateSig, ci, std::move(rejected));
+                  templateSigWithSubs, ci, std::move(rejected));
       return nullptr;
     }
 
@@ -5536,7 +5537,7 @@ struct InterfaceCheckHelper {
   }
 
   bool validateFormalOrderForTemplate(const CallInfo& ci,
-                                      const TypedFnSignature* templateSig,
+                                      const TypedFnSignature* templateSigWithSubs,
                                       const TypedFnSignature* candidateSig) {
     // Validate that the formal names are in the right order. We could do this
     // by resolving a generated call with every actual being named, but this
@@ -5569,7 +5570,7 @@ struct InterfaceCheckHelper {
         // the actuals in the call (which are formals from the template)
         // are re-ordered compared to the foundFn. This is an error.
         CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, ift,
-                    implPointId, templateSig, candidateSig);
+                    implPointId, templateSigWithSubs, candidateSig);
         return false;
       }
       lastActualPosition = formalActual.actualIdx();
@@ -5589,10 +5590,21 @@ struct InterfaceCheckHelper {
     // "void" (where it normally means "infer from body"). 'returnType'
     // does not check for this case because it's unusual and because checking
     // for IDs being inside an interface is relatively slow.
-    auto templateQT =
-      templateFn->returnType() ?
-      returnType(rc, templateSig, c.poiInfo().poiScope()) :
-      QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
+    QualifiedType templateQT;
+
+    if (auto rt = templateFn->returnType()) {
+      // Create a resolver for the interface, which pushes the current interface
+      // as a frame for the resolver and thus provides 'witness' (which contains
+      // associated types) to function resolution.
+      ResolutionResultByPostorderID byPostorder;
+      auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness, templateFn, byPostorder);
+
+      templateQT =
+        returnType(rc, templateSig, c.poiInfo().poiScope())
+          .substitute(rc->context(), *allPlaceholders);
+    } else {
+      templateQT = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
+    }
 
     if (templateQT.isUnknownOrErroneous()) return false;
 
@@ -5690,7 +5702,10 @@ struct InterfaceCheckHelper {
 
   ID searchFunctionByTemplate(const Function* templateFn,
                               const TypedFnSignature* templateSig) {
-    auto ci = setupCallForTemplate(templateFn, templateSig);
+    CHPL_ASSERT(allPlaceholders);
+    auto templateSigWithSubs = templateSig->substitute(rc->context(), *allPlaceholders);
+
+    auto ci = setupCallForTemplate(templateFn, templateSigWithSubs);
     if (!ci) return ID();
 
     // TODO: how to note this?
@@ -5703,10 +5718,10 @@ struct InterfaceCheckHelper {
     }
 
     auto foundFn = findBestCandidateForTemplate(*ci, c, templateFn,
-                                                templateSig);
+                                                templateSigWithSubs);
     if (!foundFn) return ID();
 
-    if (!validateFormalOrderForTemplate(*ci, templateSig, foundFn)) {
+    if (!validateFormalOrderForTemplate(*ci, templateSigWithSubs, foundFn)) {
       return ID();
     }
 
@@ -5790,7 +5805,9 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   }
   auto associatedReceiverType = QualifiedType(); // cached across iterations
   ImplementationWitness::AssociatedTypeMap associatedTypes;
-  InterfaceCheckHelper helper { rc, itf, ift, implPointIdForErr, inScopes, witness1 };
+  InterfaceCheckHelper helper {
+    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr
+  };
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
     if (!td) continue;
@@ -5830,8 +5847,12 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
 
   // Next, process all the functions; if all of these are found, we can construct
   // a final witness with all the required information.
+  PlaceholderMap allPlaceholders;
+  for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
+  for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
   ImplementationWitness::FunctionMap functions;
   helper.witness = witness2;
+  helper.allPlaceholders = &allPlaceholders;
   for (auto stmt : itf->stmts()) {
     auto fn = stmt->toFunction();
     if (!fn) continue;
@@ -5848,10 +5869,6 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // with the substitutions we've determined, so that we may proceed to
     // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
-    PlaceholderMap allPlaceholders;
-    for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
-    for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
-    tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
     auto foundId = helper.searchFunctionByTemplate(fn, tfs);
 
     if (!foundId) {
