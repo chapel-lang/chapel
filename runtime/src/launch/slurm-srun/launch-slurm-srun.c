@@ -651,7 +651,7 @@ static void chpl_launch_cleanup(void) {
         char* msg = (char*)chpl_mem_allocMany(
             (strlen(slurmFilename) + strlen(strerror(errno)) + 36),
             sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-        snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
+        snprintf(msg, strlen(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
         chpl_mem_free(msg, 0, 0);
