@@ -3428,9 +3428,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   // in the same place.
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
-    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (!parsing::idToAst(context, idIt.curIdAndFlags().id())
-               ->isVarLikeDecl()) {
+    for (int i = 0; i < ids.numIds(); i++) {
+      if (ids.idAndFlags(i).isFunctionLike() ){
         onlyVars = false;
         break;
       }
