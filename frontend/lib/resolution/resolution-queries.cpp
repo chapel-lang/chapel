@@ -5599,6 +5599,14 @@ struct InterfaceCheckHelper {
       ResolutionResultByPostorderID byPostorder;
       auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness, templateFn, byPostorder);
 
+      // Note: want to use the signature without substitutes here, because
+      // if we instantiate the signature with the "real" Self types, we
+      // get receiver scopes from Self when resolving the return type. However,
+      // we want the return type of the function to be determined entirely
+      // from its declaration within the interface, without the need to search
+      // instantiated scopes. So, use the signature with placeholders to
+      // perform return type resolution, _then_ replace the placeholders
+      // with associated types etc. to get the final return type.
       templateQT =
         returnType(rc, templateSig, c.poiInfo().poiScope())
           .substitute(rc->context(), *allPlaceholders);
