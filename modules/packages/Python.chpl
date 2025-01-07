@@ -468,8 +468,6 @@ module Python {
         this.checkException();
       } catch e: ImportError {
         return nil;
-      } catch e {
-        throw e;
       }
       return mod;
     }
