@@ -58,6 +58,12 @@ const InterfaceType* InterfaceType::get(Context* context, ID id, UniqueString na
   return getInterfaceType(context, id, name, subs).get();
 }
 
+const InterfaceType* InterfaceType::getContextManagerType(Context* context) {
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelContext", "contextManager");
+  return InterfaceType::get(context, id, name, SubstitutionsMap());
+}
+
 static const InterfaceType* const&
 interfaceTypeWithTypesQuery(Context* context,
                             const InterfaceType* ift,

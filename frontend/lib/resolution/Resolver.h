@@ -654,6 +654,9 @@ struct Resolver {
   bool enter(const uast::NamedDecl* decl);
   void exit(const uast::NamedDecl* decl);
 
+  bool enter(const uast::Manage* manage);
+  void exit(const uast::Manage* manage);
+
   bool enter(const uast::MultiDecl* decl);
   void exit(const uast::MultiDecl* decl);
 

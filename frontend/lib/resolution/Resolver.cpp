@@ -3853,6 +3853,51 @@ void Resolver::exit(const NamedDecl* decl) {
   exitScope(decl);
 }
 
+bool Resolver::enter(const uast::Manage* manage) {
+  for (auto managerExpr : manage->managers()) {
+    auto as = managerExpr->toAs();
+    if (as) managerExpr = as->symbol();
+    managerExpr->traverse(*this);
+
+    auto& rr = byPostorder.byAst(managerExpr);
+    if (rr.type().isUnknownOrErroneous()) continue;
+
+    // Ok, we've resolved the manager expression fine. First, resolve
+    // the stdlib function `chpl__verifyTypeContext`, which ensures
+    // that the context manager supports the `contextManager` interface.
+    auto ci = CallInfo(UniqueString::get(context, "chpl__verifyTypeContext"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
+    auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    auto c = resolveGeneratedCall(context, manage, ci, inScopes);
+    handleResolvedCallWithoutError(byPostorder.byAst(manage), manage, c);
+    CHPL_ASSERT(c.mostSpecific().only());
+
+    // Now, we actually want the witness for the interface if one exists.
+    // Use the POI scope from the call so that POI is the same as if we were
+    // resolving from inside the body of chpl__verifyTypeContext. This
+    // should improve re-use of interface search.
+    auto inScopesForInterface =
+      CallScopeInfo::forNormalCall(scopeStack.back(), c.poiInfo().poiScope());
+    auto contextManagerInterface = InterfaceType::getContextManagerType(context);
+    bool ignoredFoundExisting;
+    auto witness =
+      findOrImplementInterface(rc, contextManagerInterface, rr.type().type(),
+                               inScopesForInterface, c.mostSpecific().only().fn()->id(),
+                               ignoredFoundExisting);
+
+    if (!witness) {
+      context->error(managerExpr, "TODO");
+    }
+  }
+  return false;
+}
+
+void Resolver::exit(const uast::Manage* manage) {}
+
 static void getVarLikeOrTupleTypeInit(const AstNode* ast,
                                       const AstNode*& typeExpr,
                                       const AstNode*& initExpr) {
