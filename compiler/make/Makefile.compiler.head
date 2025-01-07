@@ -34,6 +34,7 @@ ifeq ($(ASSERTS),1)
   DYNO_ENABLE_ASSERTIONS = 1
 endif
 
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
 OPTIMIZE=1
 else

@@ -22,6 +22,7 @@ endif
 
 # Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
 CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 TAGS=1
 endif

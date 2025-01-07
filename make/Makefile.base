@@ -24,7 +24,7 @@
 #
 # utilities
 #
-isTrue = $(filter yes Yes YES y Y true True TRUE t T 1, $(1))
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 
 MAKEFLAGS = --no-print-directory
 
