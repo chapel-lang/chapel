@@ -12,4 +12,3 @@ export CHPL_TEST_GPU=true
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native users/engin/context release/examples"
 
 unset CHPL_START_TEST_ARGS
-nightly_args="${nightly_args} -no-buildcheck"

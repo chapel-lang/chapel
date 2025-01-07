@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,11 +47,13 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <string>
+#include <string_view>
 #include <map>
 #include <unordered_set>
 #include <utility>
@@ -60,11 +62,11 @@
 #include <sys/stat.h>
 
 
-char executableFilename[FILENAME_MAX + 1] = "";
-char libmodeHeadername[FILENAME_MAX + 1]  = "";
-char fortranModulename[FILENAME_MAX + 1]  = "";
-char pythonModulename[FILENAME_MAX + 1]   = "";
-char saveCDir[FILENAME_MAX + 1]           = "";
+std::string executableFilename;
+std::string libmodeHeadername;
+std::string fortranModulename;
+std::string pythonModulename;
+std::string saveCDir;
 
 const char* additionalFilenamesListFilename = "additionalSourceFiles.tmp";
 
@@ -147,11 +149,11 @@ static void checkDriverTmp() {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   bool valid = false;
-  if (driverTmpDir[0] == '\0') {
+  if (driverTmpDir.empty()) {
     // We are in an initial invocation, all good.
     valid = true;
   }
-  if (gContext->tmpDir() == std::string(driverTmpDir)) {
+  if (gContext->tmpDir() == driverTmpDir) {
     // In subinvocation and context's tmp dir has been set to driver
     // specification, all good.
     valid = true;
@@ -164,13 +166,13 @@ static void checkDriverTmp() {
       "attempted to save info to tmp dir before it is set up for driver use");
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+void saveDriverTmp(const char* tmpFilePath, std::string_view stringToSave,
                    bool appendNewline) {
   saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
 }
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave,
+                           std::vector<std::string_view> stringsToSave,
                            bool noNewlines) {
   checkDriverTmp();
 
@@ -194,50 +196,39 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 
   // Write into tmp file
   fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
-  for (const auto stringToSave : stringsToSave) {
-    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
+  for (auto stringToSave : stringsToSave) {
+    fprintf(file->fptr, "%s%s", stringToSave.data(), (noNewlines ? "" : "\n"));
   }
   closefile(file);
 }
 
 void restoreDriverTmp(const char* tmpFilePath,
-                      std::function<void(const char*)> restoreSavedString) {
+                      std::function<void(std::string_view)> restoreSavedString) {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   // Create file iff it did not already exist, for simpler reading logic in the
   // rest of the function.
   fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
+  const char* path = tmpFileDummy->pathname;
   closefile(tmpFileDummy);
 
-  fileinfo* tmpFile = openTmpFile(tmpFilePath, "r");
-
-  char strBuf[4096];
-  while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
-    // Note: Using strlen here (instead of strnlen) is safe because fgets
-    // guarantees null termination.
-    size_t len = strlen(strBuf);
-    // remove trailing newline, which fgets preserves unless buffer is exceeded
-    assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
-    strBuf[--len] = '\0';
-
-    // invoke restoring function
-    restoreSavedString(strBuf);
+  std::ifstream fileStream(path);
+  std::string line;
+  while (std::getline(fileStream, line)) {
+    restoreSavedString(line);
   }
-
-  closefile(tmpFile);
 }
 
 void restoreDriverTmpMultiline(
     const char* tmpFilePath,
-    std::function<void(const char*)> restoreSavedString) {
+    std::function<void(std::string_view)> restoreSavedString) {
   std::ostringstream os;
 
   // Just call line-by-line restore for simplicity, adding newlines back in.
   restoreDriverTmp(tmpFilePath,
-                   [&os](const char* line) { os << line << "\n"; });
+                   [&os](std::string_view line) { os << line << "\n"; });
 
-  std::string restoredString = os.str();
-  restoreSavedString(restoredString.c_str());
+  restoreSavedString(os.str());
 }
 
 void restoreLibraryAndIncludeInfo() {
@@ -245,14 +236,14 @@ void restoreLibraryAndIncludeInfo() {
              "should only be restoring library and include info in driver "
              "makeBinary phase");
 
-  restoreDriverTmp(libDirsFilename, [](const char* filename) {
-    addLibPath(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(libDirsFilename, [](std::string_view filename) {
+    addLibPath(filename.data(), /* fromCmdLine */ false);
   });
-  restoreDriverTmp(libFilesFilename, [](const char* filename) {
-    addLibFile(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(libFilesFilename, [](std::string_view filename) {
+    addLibFile(filename.data(), /* fromCmdLine */ false);
   });
-  restoreDriverTmp(incDirsFilename, [](const char* filename) {
-    addIncInfo(filename, /* fromCmdLine */ false);
+  restoreDriverTmp(incDirsFilename, [](std::string_view filename) {
+    addIncInfo(filename.data(), /* fromCmdLine */ false);
   });
 }
 
@@ -262,7 +253,7 @@ void restoreAdditionalSourceFiles() {
 
   std::vector<const char*> additionalFilenames;
   restoreDriverTmp(additionalFilenamesListFilename,
-                   [&additionalFilenames](const char* filename) {
+                   [&additionalFilenames](std::string_view filename) {
                      additionalFilenames.push_back(astr(filename));
                    });
   addSourceFiles(additionalFilenames.size(), &additionalFilenames[0]);
@@ -303,8 +294,8 @@ const char* getDirectory(const char* filename) {
   if (filenamebase == NULL) {
     return astr(".");
   } else {
-    char dir[FILENAME_MAX];
     const int len = filenamebase - filename;
+    char dir[len + 1];
     strncpy(dir, filename, len);
     dir[len] = '\0';
     return astr(dir);
@@ -390,7 +381,7 @@ void closeCFile(fileinfo* fi, bool beautifyIt) {
   // beautify without also improving indentation and such which could
   // save some time.
   //
-  if (beautifyIt && (saveCDir[0] || printCppLineno))
+  if (beautifyIt && (!saveCDir.empty() || printCppLineno))
     beautify(fi);
 }
 
@@ -530,7 +521,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {
     saveDriverTmpMultiple(
         additionalFilenamesListFilename,
-        std::vector<const char*>(inputFilenames + firstAddedIdx,
+        std::vector<std::string_view>(inputFilenames + firstAddedIdx,
                                  inputFilenames + cursor));
   }
 
@@ -622,7 +613,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
   fprintf(dbgfile, "\n");
   closefile(dbgfile);
-  myshell(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+  myshell(astr("cat ", CHPL_HOME.c_str(), "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
            astr("appending ", debugger, " commands"),
            false);
@@ -753,12 +744,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
   const char* tmpDirName = gContext->tmpDir().c_str();
-  const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* strippedExeFilename = stripdirectories(executableFilename.c_str());
   const char* exeExt = getLibraryExtension();
   const char* server = "";
   const char* tmpserver = "";
   const char* tmpbin = "";
-  bool startsWithLib = !strncmp(executableFilename, "lib", 3);
+  bool startsWithLib = !strncmp(executableFilename.c_str(), "lib", 3);
   bool dyn = (fLinkStyle == LS_DYNAMIC);
   std::string makeallvars;
   fileinfo makefile;
@@ -766,10 +757,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   openCFile(&makefile, "Makefile");
 
   // Capture different compiler directories.
-  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB);
-  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL);
-  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY);
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME.c_str());
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_LIB = %s\n\n", CHPL_RUNTIME_LIB.c_str());
+  fprintf(makefile.fptr, "CHPL_MAKE_RUNTIME_INCL = %s\n\n", CHPL_RUNTIME_INCL.c_str());
+  fprintf(makefile.fptr, "CHPL_MAKE_THIRD_PARTY = %s\n\n", CHPL_THIRD_PARTY.c_str());
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
   // Store chapel environment variables in a cache.
@@ -792,9 +783,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   if (fLibraryCompile) {
 
     ensureLibDirExists();
-    fprintf(makefile.fptr, "BINNAME = %s/", libDir);
+    fprintf(makefile.fptr, "BINNAME = %s/", libDir.c_str());
     if (!startsWithLib) { fprintf(makefile.fptr, "lib"); }
-    fprintf(makefile.fptr, "%s%s\n\n", executableFilename, exeExt);
+    fprintf(makefile.fptr, "%s%s\n\n", executableFilename.c_str(), exeExt);
 
     //
     // Now that the client and launcher are merged, the server name becomes
@@ -803,12 +794,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     // from the file name.
     //
     if (fMultiLocaleInterop) {
-      server = astr(executableFilename, "_server");
+      server = astr(executableFilename.c_str(), "_server");
       fprintf(makefile.fptr, "SERVERNAME = %s\n\n", server);
     }
 
   } else {
-    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+    fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename.c_str(), exeExt);
   }
 
   //
@@ -875,7 +866,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
           includedirs.c_str(),
           ccflags.c_str(),
           // We only need to compute and store dependencies if --savec is used
-          (saveCDir[0] ? " $(DEPEND_CFLAGS)" : ""));
+          (!saveCDir.empty() ? " $(DEPEND_CFLAGS)" : ""));
 
   // Linker flags for each deliverable.
   const char* lmode = "";
@@ -901,7 +892,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
-  if (developer && saveCDir[0] && !printCppLineno) {
+  if (developer && !saveCDir.empty() && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
             "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
@@ -909,7 +900,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) "
               "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
-            saveCDir);
+            saveCDir.c_str());
   }
 
   fprintf(makefile.fptr, "\n\n");
@@ -990,7 +981,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
 
   // We only need to compute and store dependencies if --savec is used
-  if (saveCDir[0]) {
+  if (!saveCDir.empty()) {
     fprintf(makefile.fptr, "DEPENDS = output/*.d\n\n");
     fprintf(makefile.fptr, "-include $(DEPENDS)\n");
   }
@@ -1069,10 +1060,10 @@ bool readArgsFromFile(std::string path, std::vector<std::string>& args,
 
 // Expands variables like $CHPL_HOME in the string
 void expandInstallationPaths(std::string& s) {
-  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
-                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
-                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
-                         "$CHPL_HOME", CHPL_HOME,
+  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB.c_str(),
+                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL.c_str(),
+                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY.c_str(),
+                         "$CHPL_HOME", CHPL_HOME.c_str(),
                          NULL};
 
   // For each of the patterns in tofix, find/replace all occurrences.

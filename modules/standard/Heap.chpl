@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -343,6 +343,21 @@ module Heap {
       _heapify_down(0);
       _leave();
       return ret;
+    }
+
+    /*
+      Clear the contents of this heap.
+
+      .. warning::
+
+        Clearing the contents of this heap will invalidate all existing
+        references to the elements contained in this heap.
+    */
+    proc ref clear() {
+      on this {
+        _enter(); defer _leave();
+        _data.clear();
+      }
     }
 
     /*

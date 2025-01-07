@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2024-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -172,7 +172,7 @@ class ChplcheckProxy:
 
         def error(msg: str):
             if os.environ.get("CHPL_DEVELOPER", None):
-                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+                print("Error loading chplcheck: ", str(msg), file=sys.stderr)
 
         chpl_home = os.environ.get("CHPL_HOME")
         if chpl_home is None:

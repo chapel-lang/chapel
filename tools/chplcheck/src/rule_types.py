@@ -1,5 +1,5 @@
 #
-# Copyright 2024 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,14 @@ def _build_ignore_fixit(
     ignore = Fixit.build(Edit.build(loc, text))
     ignore.description = "Ignore this warning"
     return ignore
+
+
+def _get_location(node: chapel.AstNode):
+    """Helper to get the location of a node"""
+    if isinstance(node, chapel.NamedDecl):
+        return node.name_location()
+    else:
+        return node.location()
 
 
 @dataclass
@@ -332,7 +340,7 @@ class BasicRule(Rule[BasicRuleResult]):
         # addition to the fixits in the result itself)
         # add the fixits from the hooks to the fixits from the rule
         fixits = self.run_fixit_hooks(context, result) + fixits
-        loc = RuleLocation.from_chapel(result.node.location())
+        loc = RuleLocation.from_chapel(_get_location(result.node))
         return (loc, result.node, self.name, fixits)
 
     def check(
@@ -392,7 +400,7 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
             # addition to the fixits in the result itself)
             # add the fixits from the hooks to the fixits from the rule
             fixits = self.run_fixit_hooks(context, result) + fixits
-            loc = RuleLocation.from_chapel(node.location())
+            loc = RuleLocation.from_chapel(_get_location(node))
             yield (loc, node, self.name, fixits)
 
 

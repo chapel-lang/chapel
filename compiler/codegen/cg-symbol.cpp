@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -155,7 +155,7 @@ void addNameToPrintLlvmIrRequestedNames(const char* name) {
   llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
 
-static void addCNameToPrintLlvmIr(const char* name) {
+static void addCNameToPrintLlvmIr(std::string_view name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
@@ -312,9 +312,9 @@ void preparePrintLlvmIrForCodegen() {
   // This is so that handlePrintAsm can access them later from the makeBinary
   // phase, when we don't have a way to determine name->cname correspondence.
   if (fDriverCompilationPhase) {
-    saveDriverTmpMultiple(cnamesToPrintFilename,
-                          std::vector<const char*>(llvmPrintIrCNames.begin(),
-                                                   llvmPrintIrCNames.end()));
+    saveDriverTmpMultiple(cnamesToPrintFilename, std::vector<std::string_view>(
+                                                     llvmPrintIrCNames.begin(),
+                                                     llvmPrintIrCNames.end()));
   }
 }
 
@@ -661,7 +661,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // Print string contents in a comment if developer mode
       // and savec is set.
       if (developer &&
-          0 != strcmp(saveCDir, "") &&
+          !saveCDir.empty() &&
           immediate &&
           ret.chplType == dtString &&
           immediate->const_kind == CONST_KIND_STRING) {
@@ -2769,7 +2769,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (strcmp(saveCDir, "")) {
+    if (saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');

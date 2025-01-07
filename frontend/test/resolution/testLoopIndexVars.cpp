@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1301,6 +1301,30 @@ static void testSingletonZip(Context* context){
   assert(types.at("a").type()->isIntType());
 }
 
+static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip((...(i1(),)))", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionUnpackedZippered(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip((...(i1(), i1())))", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) {
+    return t.type()->isTupleType() &&
+           t.type()->toTupleType()->starType().type()->isRealType();
+  });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1355,6 +1379,9 @@ int main() {
   testLoopExprZipUnpackingTooFewOuter(context);
   testLoopExprZipUnpackingTooManyOuter(context);
   testSingletonZip(context);
+
+  testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(context);
+  testBracketLoopExpressionUnpackedZippered(context);
 
   return 0;
 }

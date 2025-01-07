@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -513,7 +513,10 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (isSuperInit(callExpr) == true) {
           Expr* next = callExpr->next;
 
-          INT_ASSERT(state.isPhase0() == true);
+          if (state.isPhase0() != true) {
+            USR_FATAL(callExpr,
+                       "duplicate use of 'super.init()' in initializer, this should only be called once");
+          }
           state.completePhase0(callExpr);
 
           if (at->isRecord() == true) {

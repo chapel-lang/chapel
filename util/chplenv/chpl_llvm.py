@@ -749,16 +749,38 @@ def get_gcc_prefix_dir(clang_cfg_args):
     return _get_gcc_prefix_dir_inner()
 
 @memoize
+def is_gcc_install_dir_supported():
+    llvm_version = get_llvm_version()
+    return llvm_version not in ('11', '12', '13', '14', '15')
+
+@memoize
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
 
+    flag_supported = is_gcc_install_dir_supported()
+
     if gcc_dir:
-        llvm_version = get_llvm_version()
-        if llvm_version in ('11', '12', '13', '14', '15'):
+        if not flag_supported:
+            llvm_version = get_llvm_version()
             warning("This LLVM / clang version {0} is too old to use "
                     "CHPL_LLVM_GCC_INSTALL_DIR -- "
                     "it will be ignored".format(llvm_version))
-            return ''
+            gcc_dir = ''
+
+        # allow CHPL_LLVM_GCC_INSTALL_DIR=none to disable inferring it
+        if gcc_dir == 'none':
+            gcc_dir = ''
+
+    elif flag_supported:
+        # compute the GCC that LLVM should use.
+        # this logic is based on the same logic in the LLVM spack package
+        _, _, stdout, _ = try_run_command(
+            ["gcc", "-print-file-name=libgcc.a"], combine_output=True)
+        if stdout:
+            gcc_dir_path = stdout.strip()
+            if os.path.abspath(gcc_dir_path):
+                dirname = os.path.dirname(gcc_dir_path)
+                gcc_dir = dirname if os.path.exists(dirname) else gcc_dir
 
     return gcc_dir
 
@@ -882,6 +904,31 @@ def get_system_llvm_built_sdkroot():
     return None
 
 
+@memoize
+def _determine_gcc_flag_to_use():
+    # note: this is a helper for get_clang_basic_args, its declared here so the
+    # memoization can be shared and possible warnings only occur once
+    flag_to_use = None
+    if (overrides.get('CHPL_LLVM_GCC_INSTALL_DIR') is not None and
+        overrides.get('CHPL_LLVM_GCC_PREFIX') is not None):
+        # the user set both, warn
+        base_msg = "Both CHPL_LLVM_GCC_INSTALL_DIR and CHPL_LLVM_GCC_PREFIX are set."
+        if is_gcc_install_dir_supported():
+            flag_to_use = 'CHPL_LLVM_GCC_INSTALL_DIR'
+            warning("{} CHPL_LLVM_GCC_INSTALL_DIR will be used.".format(base_msg))
+        else:
+            flag_to_use = 'CHPL_LLVM_GCC_PREFIX'
+            warning("{} CHPL_LLVM_GCC_PREFIX will be used.".format(base_msg))
+
+    elif overrides.get('CHPL_LLVM_GCC_INSTALL_DIR') is not None:
+        # the user set CHPL_LLVM_GCC_INSTALL_DIR, use it
+        flag_to_use = 'CHPL_LLVM_GCC_INSTALL_DIR'
+    elif overrides.get('CHPL_LLVM_GCC_PREFIX') is not None:
+        # the user set CHPL_LLVM_GCC_PREFIX, use it
+        flag_to_use = 'CHPL_LLVM_GCC_PREFIX'
+
+    return flag_to_use
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -895,17 +942,34 @@ def get_system_llvm_built_sdkroot():
 def get_clang_basic_args(clang_command):
     clang_args = [ ]
 
-    # read the args that clang will use by default from the config file
-    clang_cfg = get_clang_cfg_file(clang_command)
-    clang_cfg_args = parse_clang_cfg_file(clang_cfg)
+    @memoize
+    def _get_gcc_prefix_dir():
+        # read the args that clang will use by default from the config file
+        clang_cfg = get_clang_cfg_file(clang_command)
+        clang_cfg_args = parse_clang_cfg_file(clang_cfg)
+        return get_gcc_prefix_dir(clang_cfg_args)
 
-    gcc_install_dir = get_gcc_install_dir()
-    if gcc_install_dir:
-        clang_args.append('--gcc-install-dir=' + gcc_install_dir)
+    gcc_prefix_flags = {
+        "CHPL_LLVM_GCC_INSTALL_DIR": ('--gcc-install-dir=', get_gcc_install_dir),
+        "CHPL_LLVM_GCC_PREFIX": ('--gcc-toolchain=', _get_gcc_prefix_dir),
+    }
+    def use_flag(flag_to_use):
+        flag, func = gcc_prefix_flags[flag_to_use]
+        val = func()
+        if val:
+            clang_args.append(flag + val)
+            return True
+        return False
+
+    # if the user set one of the flags, use it
+    flag_to_use = _determine_gcc_flag_to_use()
+    if flag_to_use:
+        use_flag(flag_to_use)
     else:
-        gcc_prefix = get_gcc_prefix_dir(clang_cfg_args)
-        if gcc_prefix:
-            clang_args.append('--gcc-toolchain=' + gcc_prefix)
+        # we should try and infer them, preferring GCC_INSTALL_DIR
+        for try_flag in ['CHPL_LLVM_GCC_INSTALL_DIR', 'CHPL_LLVM_GCC_PREFIX']:
+            if use_flag(try_flag):
+                break
 
     target_platform = chpl_platform.get('target')
     sysroot_args = []
@@ -1024,6 +1088,52 @@ def get_clang_prgenv_args():
 
     return (comp_args, link_args)
 
+@memoize
+def get_clang_gcc_system_include_directories(flag, lang):
+    """
+    Runs 'COMPILER -E -Wp,-v -' to determine the system include directories
+    """
+    directories = []
+    compiler = chpl_compiler.get_compiler_command(flag, lang)
+    _, _, stdout, _ = try_run_command(
+        compiler + ["-E", "-Wp,-v", "-", "-o", "/dev/null"],
+        combine_output=True, cmd_input=""
+    )
+    if stdout:
+        lines = stdout.splitlines()
+        start_includes_regex = re.compile(r"#include.+search starts here")
+        end_includes_regex = re.compile(r"End of search list")
+        ignoring_regex = re.compile(r"(?:ignoring nonexistent)|(?:as it is a non-system)")
+        collecting = False
+        for line in lines:
+            if start_includes_regex.search(line):
+                collecting = True
+            elif end_includes_regex.search(line):
+                collecting = False
+                break
+            elif collecting and not ignoring_regex.search(line):
+                directories.append(line.strip())
+    return directories
+
+@memoize
+def is_path_clang_gcc_system_include_directory(path, flag, lang):
+    """
+    Returns True if the given path is a system include directory
+    """
+    directories = get_clang_gcc_system_include_directories(flag, lang)
+    p = os.path.realpath(os.path.abspath(path))
+    return any([os.path.realpath(os.path.abspath(d)) == p for d in directories])
+
+@memoize
+def can_infer_system_include_directories(flag, lang):
+    """
+    Returns True if the system include directories can be inferred
+    """
+    compiler = chpl_compiler.get_compiler_command(flag, lang)
+    inferred = chpl_compiler.get_compiler_from_command(compiler[0])
+    return inferred in ('clang', 'gnu')
+
+
 # Filters out C++ compilation flags from llvm-config.
 # The flags are passed as a list of strings.
 # Returns a list of strings containing the kept flags.
@@ -1048,18 +1158,33 @@ def filter_llvm_config_flags(llvm_val, flags):
             continue # filter out these flags
 
         #
-        # include LLVM headers as system headers
+        # include LLVM headers as system headers using -isystem
         # this avoids warnings inside of LLVM headers by treating LLVM headers
         #
-        # when adding LLVM=system as system headers, we should not perturb the
-        # include search path, so use -isystem-after/-idirafter
+        # If the header is already a system header, using -isystem will break
+        # the include search. In that case, just use -I (which technically wont do anythings)
         #
-        # when adding LLVM=bundled, we should include the LLVM headers as system
-        # headers and prefer the bundled headers, so use -isystem
-        #
-        include_flag = '-idirafter' if llvm_val == 'system' else '-isystem'
         if flag.startswith('-I'):
-            ret.append(include_flag + flag[2:])
+            directory = flag[2:]
+            if llvm_val == "system":
+                can_infer = can_infer_system_include_directories("host", "c++")
+                is_system_inc = is_path_clang_gcc_system_include_directory(
+                    directory, "host", "c++"
+                )
+                if can_infer and not is_system_inc:
+                    # the directory not included by the compiler,
+                    # so its safe to use -isystem
+                    ret.append("-isystem" + directory)
+                else:
+                    # technically don't need to explicitly add the directory to
+                    # the include path if it's a system header. but it is
+                    # harmless to use just '-I'
+                    # if we can't determine the system include directories,
+                    # we have to add it anyways
+                    ret.append("-I" + directory)
+            else:
+                # for the bundled LLVM it is always safe to use -isystem
+                ret.append("-isystem" + directory)
             continue
 
         if flag.startswith('-W'):
