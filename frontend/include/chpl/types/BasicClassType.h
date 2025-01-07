@@ -77,6 +77,11 @@ class BasicClassType final : public ManageableType {
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
+    if (!parentType_) {
+      CHPL_ASSERT(name() == USTR("RootClass"));
+      return this;
+    }
+
     return get(context, id(), name(),
                Type::substitute(context, parentType_, subs),
                Type::substitute(context, (const BasicClassType*) instantiatedFrom_, subs),
