@@ -5592,7 +5592,7 @@ struct InterfaceCheckHelper {
     // for IDs being inside an interface is relatively slow.
     QualifiedType templateQT;
 
-    if (auto rt = templateFn->returnType()) {
+    if (templateFn->returnType()) {
       // Create a resolver for the interface, which pushes the current interface
       // as a frame for the resolver and thus provides 'witness' (which contains
       // associated types) to function resolution.
