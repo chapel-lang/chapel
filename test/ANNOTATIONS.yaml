@@ -2549,6 +2549,12 @@ arkouda: &arkouda-base
     - Part of argTypeReductionMessage refactor (Bears-R-Us/arkouda#3845)
   10/29/24:
     - Fix performance regression in reductions benchmark (Bears-R-Us/arkouda#3874)
+  12/25/24:
+    - text: Running tests with --isolated
+      config: 16-node-xc
+  01/02/25:
+    - text: No longer running tests with --isolated
+      config:  16-node-xc
 
 arkouda-string:
   <<: *arkouda-base
