@@ -2049,11 +2049,10 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
         std::vector<const uast::VarLikeDecl*> actualDecls;
         // check each rejected candidate for uninitialized actuals
         for (auto& candidate : rejected) {
-          auto reason = candidate.reason();
-          if (reason == resolution::FAIL_CANNOT_PASS &&
-          /* skip printing detailed info_ here because computing the formal-actual
+          if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
+            /* skip printing detailed info_ here because computing the formal-actual
             map will go poorly with an unknown formal. */
-          candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+            candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
             auto fn = candidate.initialForErr();
             resolution::FormalActualMap fa(fn, ci);
             auto badPass = fa.byFormalIdx(candidate.formalIdx());
@@ -2064,8 +2063,8 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                 badPass.actualIdx() < call->numActuals()) {
               actualExpr = call->actual(badPass.actualIdx());
             }
-            // look for a definition point of the actual for error reporting of uninitialized vars
-            // typically in the case of bad split-initialization
+            // look for a definition point of the actual for error reporting of
+            // uninitialized vars typically in the case of bad split-initialization
             if (actualExpr && actualExpr->isIdentifier()) {
               auto& resolvedExpr = byPostorder.byAst(actualExpr->toIdentifier());
               if (auto id = resolvedExpr.toId()) {
