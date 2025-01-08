@@ -79,12 +79,14 @@ def find_rules(file: str):
             if isinstance(i, ast.Attribute)
         ]
 
-        # if there is at least 1 decorator thats a `basic_rule`, an `advanced_rule`,
-        # or a `location_rule`, keep it
-        if not any(
-            d.attr in ["basic_rule", "advanced_rule", "location_rule"]
+        # keep only the decorators that are rules
+        decorators = [
+            d
             for d in decorators
-        ):
+            if d.attr in ["basic_rule", "advanced_rule", "location_rule"]
+        ]
+        # if there are no decorators, this is not a rule
+        if not decorators:
             return None
 
         # get the name of the rule
@@ -92,25 +94,28 @@ def find_rules(file: str):
         # get the docstring of the rule
         description = ast.get_docstring(func) or ""
 
+        # filter out decorators that are not calls
+        decorators_filtered = [
+            d
+            for d in decorators
+            if isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute)
+        ]
+
         # get the patterns, if they exist
         # the patterns are the first argument of the decorator
         # we get the string representation of the pattern
         patterns = [
             ast.unparse(d.args[0])
-            for d in func.decorator_list
-            if isinstance(d, ast.Call)
-            and isinstance(d.func, ast.Attribute)
-            and len(d.args) > 0
+            for d in decorators_filtered
+            if len(d.args) > 0
         ]
 
         # determine if the rule is enabled by default
         # default = any(d.attr == 'default' for d in decorators)
         default_settings = [
             ast.unparse(next(k.value for k in d.keywords))
-            for d in func.decorator_list
-            if isinstance(d, ast.Call)
-            and isinstance(d.func, ast.Attribute)
-            and len(d.keywords) > 0
+            for d in decorators_filtered
+            if len(d.keywords) > 0
             and any(k.arg == "default" for k in d.keywords)
         ]
         is_default = not any(d == "False" for d in default_settings)
