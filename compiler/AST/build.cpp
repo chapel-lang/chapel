@@ -1974,7 +1974,8 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
 */
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
-                             const char* resourceName) {
+                             const char* resourceName,
+                             Symbol*& outStoredResource) {
 
   // Scopeless because we'll flatten this into place later.
   auto ret = new BlockStmt(BLOCK_SCOPELESS);
@@ -1999,6 +2000,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   if (resourceName != nullptr) {
     const bool isResourceStorageKindInferred = (flags == nullptr);
     auto resource = new VarSymbol(resourceName);
+    outStoredResource = resource;
 
     if (isResourceStorageKindInferred) {
       resource->addFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE);
@@ -2011,6 +2013,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
     ret->insertAtTail(new DefExpr(resource, enterContext));
 
   } else {
+    outStoredResource = nullptr;
 
     // Otherwise, just make the call to 'enterContext()'.
     ret->insertAtTail(enterContext);
