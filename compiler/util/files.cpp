@@ -294,10 +294,8 @@ const char* getDirectory(const char* filename) {
   if (filenamebase == NULL) {
     return astr(".");
   } else {
-    const int len = filenamebase - filename;
-    char dir[len + 1];
-    strncpy(dir, filename, len);
-    dir[len] = '\0';
+    const int pos = filenamebase - filename;
+    std::string dir(filename, pos);
     return astr(dir);
   }
 }
