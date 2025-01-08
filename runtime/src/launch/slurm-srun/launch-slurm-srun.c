@@ -364,7 +364,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
         (strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1),
         sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
     // set the sbatch filename
-    snprintf(slurmFilename, sizeof(slurmFilename), "%s%d", baseSBATCHFilename,
+    snprintf(slurmFilename, strlen(slurmFilename), "%s%d", baseSBATCHFilename,
              (int)mypid);
 
     // open the batch file and create the header
