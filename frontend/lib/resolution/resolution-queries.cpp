@@ -3034,19 +3034,25 @@ helpCollectVisibileImplementationPoints(Context* context,
 
 static const std::map<ID, std::vector<const ImplementationPoint*>>&
 visibleImplementationPoints(Context* context,
-                            const Scope* scope) {
-  QUERY_BEGIN(visibleImplementationPoints, context, scope);
+                            const Scope* scope,
+                            const PoiScope* poiScope) {
+  QUERY_BEGIN(visibleImplementationPoints, context, scope, poiScope);
   std::map<ID, std::vector<const ImplementationPoint*>> result;
   std::unordered_set<const Scope*> seen;
-  helpCollectVisibileImplementationPoints(context, scope, seen, result);
+  helpCollectVisibileImplementationPoints(context, scope->moduleScope(), seen, result);
+  for (; poiScope; poiScope = poiScope->inFnPoi()) {
+    auto inScope = poiScope->inScope()->moduleScope();
+    helpCollectVisibileImplementationPoints(context, inScope, seen, result);
+  }
   return QUERY_END(result);
 }
 
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
+                                         const PoiScope* poiScope,
                                          ID id) {
-  auto& allInstantiationPoints = visibleImplementationPoints(context, scope);
+  auto& allInstantiationPoints = visibleImplementationPoints(context, scope, poiScope);
   auto it = allInstantiationPoints.find(id);
   if (it != allInstantiationPoints.end()) {
     return &it->second;
@@ -5420,7 +5426,7 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
                                                             const types::InterfaceType* ift,
                                                             const CallScopeInfo& inScopes) {
   auto implPoints =
-    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope()->moduleScope(), ift->id());
+    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), inScopes.poiScope(), ift->id());
 
   // TODO: this matches production, in which the first matching generic
   // implementation is used if no concrete one is found. It's probably

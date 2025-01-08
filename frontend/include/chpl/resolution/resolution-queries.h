@@ -305,6 +305,7 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
+                                         const PoiScope* poiScope,
                                          ID interfaceId);
 
 /**
