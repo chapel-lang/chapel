@@ -114,7 +114,7 @@ Benchmark examples
 
 Test examples
 ~~~~~~~~~~~~~
-* `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
+* `assertOnFailToGpuizeAttr <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuizeAttr.chpl>`_ -- various examples of loops that are not eligible for GPU execution
 * `mathOps <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/mathOps.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
 * `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
 * `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
