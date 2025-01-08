@@ -99,7 +99,7 @@ class ImplementationWitness {
  public:
   using ConstraintMap = std::unordered_map<ID, const ImplementationWitness*>;
   using AssociatedTypeMap = types::PlaceholderMap;
-  using FunctionMap = std::unordered_map<ID, ID>;
+  using FunctionMap = std::unordered_map<ID, const TypedFnSignature*>;
 
  private:
 

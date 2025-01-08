@@ -99,7 +99,7 @@ void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stri
   for (auto& f : requiredFns_) {
     f.first.stringify(ss, stringKind);
     ss << " => ";
-    f.second.stringify(ss, stringKind);
+    f.second->stringify(ss, stringKind);
     ss << ", ";
   }
   ss << ")";

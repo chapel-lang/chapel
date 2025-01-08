@@ -5731,13 +5731,13 @@ struct InterfaceCheckHelper {
     return true;
   }
 
-  ID searchFunctionByTemplate(const Function* templateFn,
-                              const TypedFnSignature* templateSig) {
+  const TypedFnSignature* searchFunctionByTemplate(const Function* templateFn,
+                                                   const TypedFnSignature* templateSig) {
     CHPL_ASSERT(allPlaceholders);
     auto templateSigWithSubs = templateSig->substitute(rc->context(), *allPlaceholders);
 
     auto ci = setupCallForTemplate(templateFn, templateSigWithSubs);
-    if (!ci) return ID();
+    if (!ci) return  nullptr;
 
     // TODO: how to note this?
     auto c =
@@ -5745,19 +5745,19 @@ struct InterfaceCheckHelper {
 
     if (c.exprType().isUnknownOrErroneous() && templateFn->body()) {
       // template has a default implementation; return it, we're good.
-      return templateFn->id();
+      return templateSigWithSubs;
     }
 
     auto foundFn = findBestCandidateForTemplate(*ci, c, templateFn,
                                                 templateSigWithSubs);
-    if (!foundFn) return ID();
+    if (!foundFn) return nullptr;
 
     if (!validateFormalOrderForTemplate(*ci, templateSigWithSubs, foundFn)) {
-      return ID();
+      return nullptr;
     }
 
     if (!validateReturnTypeForTemplate(*ci, c, templateFn, templateSig, foundFn)) {
-      return ID();
+      return nullptr;
     }
 
     // Found the function. Is it compiler-generated?
@@ -5766,7 +5766,7 @@ struct InterfaceCheckHelper {
     }
 
     // ordering is fine, so foundFn is good to go.
-    return foundFn->id();
+    return foundFn;
   }
 
   QualifiedType searchForAssociatedType(const QualifiedType& receiverType,
@@ -5945,13 +5945,13 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // with the substitutions we've determined, so that we may proceed to
     // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
-    auto foundId = helper.searchFunctionByTemplate(fn, tfs);
+    auto foundFn = helper.searchFunctionByTemplate(fn, tfs);
 
-    if (!foundId) {
+    if (!foundFn) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
     } else {
-      functions.emplace(fn->id(), foundId);
+      functions.emplace(fn->id(), foundFn);
     }
   }
 
