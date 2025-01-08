@@ -2280,6 +2280,8 @@ class AssociatedAction {
     INFER_TYPE,
     COMPARE,      // == , e.g., for select-statements
     RUNTIME_TYPE, // create runtime type
+    ENTER_CONTEXT,
+    EXIT_CONTEXT,
   };
 
  private:

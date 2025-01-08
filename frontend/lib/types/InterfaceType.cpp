@@ -104,6 +104,31 @@ const InterfaceType* InterfaceType::withTypes(Context* context,
   return interfaceTypeWithTypesQuery(context, ift, std::move(types));
 }
 
+static const ID& idForInterfaceAssociatedTypeQuery(Context* context, ID itfId, UniqueString name) {
+  QUERY_BEGIN(idForInterfaceAssociatedTypeQuery, context, itfId, name);
+  auto ast = parsing::idToAst(context, itfId);
+  CHPL_ASSERT(ast);
+  auto itf = ast->toInterface();
+  CHPL_ASSERT(itf);
+
+  ID res;
+  for (auto child : itf->children()) {
+    auto td = child->toVariable();
+    if (!td) continue;
+    CHPL_ASSERT(td->storageKind() == QualifiedType::TYPE);
+    if (td->name() != name) continue;
+
+    res = td->id();
+    break;
+  }
+
+  return QUERY_END(res);
+}
+
+const ID& InterfaceType::idForAssociatedType(Context* context, UniqueString name) const {
+  return idForInterfaceAssociatedTypeQuery(context, id_, name);
+}
+
 bool InterfaceType::isInstantiationOf(Context* context, const InterfaceType* other) const {
   if (id_ != other->id()) return false;
   CHPL_ASSERT(name_ == other->name());

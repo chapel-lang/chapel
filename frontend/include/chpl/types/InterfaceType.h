@@ -107,6 +107,8 @@ class InterfaceType final : public Type {
                                         const InterfaceType* ift,
                                         std::vector<QualifiedType> types);
 
+  const ID& idForAssociatedType(Context* context, UniqueString name) const;
+
   /** Returns true if 'this' is an instantiation of genericType */
   bool isInstantiationOf(Context* context,
                          const InterfaceType* genericType) const;

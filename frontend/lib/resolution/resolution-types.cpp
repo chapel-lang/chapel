@@ -1252,6 +1252,10 @@ const char* AssociatedAction::kindToString(Action a) {
       return "compare";
     case RUNTIME_TYPE:
       return "runtime-type";
+    case ENTER_CONTEXT:
+      return "enter-context";
+    case EXIT_CONTEXT:
+      return "exit-context";
     // no default to get a warning if new Actions are added
   }
 

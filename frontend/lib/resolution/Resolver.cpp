@@ -3890,13 +3890,58 @@ bool Resolver::enter(const uast::Manage* manage) {
                                ignoredFoundExisting);
 
     if (!witness) {
-      context->error(managerExpr, "TODO");
+      context->error(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
     }
+
+
+    // Since we're in a manage statement, we will call 'enter' and 'exit',
+    // so note those as associated actions.
+    const TypedFnSignature* enterSig = nullptr;
+    const TypedFnSignature* exitSig = nullptr;
+    for (auto [id, fn] : witness->requiredFns()) {
+      if (fn->untyped()->name() == USTR("enterContext")) {
+        enterSig = fn;
+      } else if (fn->untyped()->name() == USTR("exitContext")) {
+        exitSig = fn;
+      } else {
+        CHPL_ASSERT(false && "unexpected function in contextManager interface");
+      }
+    }
+    CHPL_ASSERT(enterSig && exitSig);
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
+
+    if (!as) continue;
+
+    auto asVar = as->rename()->toVariable();
+    CHPL_ASSERT(asVar && "unexpected AST in 'manage' statement");
+
+    // We're storing the result of entering the context manager. Determine
+    // the type it yields and use it to resolve that expression.
+    auto contextReturnTypeStr = UniqueString::get(context, "contextReturnType");
+    auto& contextReturnTypeId =
+      contextManagerInterface->idForAssociatedType(context, contextReturnTypeStr);
+    auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
+
+    // Performance: We are taking a very simple path through resolveNamedDecl
+    // here, but it seems good to share the logic.
+    //
+    // Normal declarations don't do 'ref' and 'const ref' checking because
+    // it's not implemented, and we follow suit.
+    resolveNamedDecl(asVar, contextReturnType);
   }
+
+  enterScope(manage);
+  for (auto stmt : manage->stmts()) {
+    stmt->traverse(*this);
+  }
+
   return false;
 }
 
-void Resolver::exit(const uast::Manage* manage) {}
+void Resolver::exit(const uast::Manage* manage) {
+  exitScope(manage);
+}
 
 static void getVarLikeOrTupleTypeInit(const AstNode* ast,
                                       const AstNode*& typeExpr,
