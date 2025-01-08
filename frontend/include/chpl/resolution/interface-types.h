@@ -139,7 +139,8 @@ class ImplementationWitness {
   bool operator==(const ImplementationWitness& other) const {
     return associatedConstraints_ == other.associatedConstraints_ &&
            associatedTypes_ == other.associatedTypes_ &&
-           requiredFns_ == other.requiredFns_;
+           requiredFns_ == other.requiredFns_ &&
+           allGenerated_ == other.allGenerated_;
   }
   bool operator!=(const ImplementationWitness& other) const {
     return !(*this == other);
