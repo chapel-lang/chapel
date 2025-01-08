@@ -731,12 +731,10 @@ module Python {
     proc fromDict(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
 
-      // no init causes segfaults :(
-      var dummy: T;
-
       // rebuild the array with a modifiable domain
-      var dom = dummy.domain;
-      var arr: [dom] dummy.eltType;
+      var dom = chpl__domainFromArrayRuntimeType(T);
+      type eltType = chpl__eltTypeFromArrayRuntimeType(T);
+      var arr: [dom] eltType;
 
       type keyType = arr.idxType;
       type valType = arr.eltType;
