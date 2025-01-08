@@ -961,7 +961,7 @@ module Python {
     */
     proc str(): string throws {
       var pyStr = PyObject_Str(this.obj);
-      interpreter.checkException();
+      this.check();
       var res = interpreter.fromPython(string, pyStr);
       return res;
     }
