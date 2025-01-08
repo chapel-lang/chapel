@@ -14,7 +14,8 @@ fi
 
 $CHPL_HOME/tools/chplcheck/chplcheck $FLAGS $1.chpl >>$2 2>&1
 
-if sed "s#$(pwd)/##" $2 >$2.tmp; then
+dirpath=$(dirname $(realpath $1.chpl))
+if sed "s#$dirpath/##" $2 >$2.tmp; then
   mv $2.tmp $2
 fi
 
