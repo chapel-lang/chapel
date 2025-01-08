@@ -3050,6 +3050,16 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
+static LookupConfig identifierLookupConfig(bool resolvingCalledIdent) {
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+  if (resolvingCalledIdent) {
+    config |= LOOKUP_STOP_NON_FN;
+  } else {
+    config |= LOOKUP_INNERMOST;
+  }
+  return config;
+}
+
 MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
       bool resolvingCalledIdent,
@@ -3066,8 +3076,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                                       IdAndFlags::createForBuiltinVar());
   }
 
-  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-  if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+  LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
   auto fHelper = getFieldDeclarationLookupHelper();
   auto helper = getMethodReceiverScopeHelper();
@@ -3315,9 +3324,8 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
-      if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+      LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
       issueAmbiguityErrorIfNeeded(ident, inScope, config);
       auto& rr = byPostorder.byAst(ident);
@@ -3406,21 +3414,30 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto parenlessInfo = ParenlessOverloadInfo();
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
-  // If we looked up a called identifier and found ambiguity between variables
-  // only, resolve as an implicit 'this' call on the innermost variable.
-  // TODO: replace this hacky solution with an adjustment to the scope
-  // resolution process
+  // If we requested IDs including potential overloads, and found
+  // both a variable and a function at the same point, we're not sure how to
+  // resolve the call (via regular call resolution or 'proc this' resolution).
+  // Issue an error.
+  if (ids.encounteredFnNonFnConflict()) {
+    result.setType(typeErr(ident, "ambiguity between function and non-function at the same scope level"));
+    return;
+  }
+
+  // If we looked up a called identifier and got back several variables,
+  // give up, since the lookup process only does that if they're defined
+  // in the same place.
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
-    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (!parsing::idToAst(context, idIt.curIdAndFlags().id())
-               ->isVarLikeDecl()) {
+    for (int i = 0; i < ids.numIds(); i++) {
+      if (ids.idAndFlags(i).isFunctionLike() ){
         onlyVars = false;
         break;
       }
     }
+
     if (onlyVars) {
-      ids.truncate(1);
+      result.setType(typeErr(ident, "ambiguous callable value in called expression"));
+      return;
     }
   }
 
@@ -3491,8 +3508,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
 
           if (otherThanParenless) {
-            LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-            if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+            LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
             issueAmbiguityErrorIfNeeded(ident, inScope, config);
           }
         } else {

@@ -1739,6 +1739,83 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(context, program1);
 }
 
+// a callable formal (like a tuple) is preferred to functions in outer
+// scopes.
+static void testFormalFunctionShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x) do return 1.0;
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) do return foo(0);
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isIntType());
+}
+
+// a callable formal (like a tuple) interrupts the search for functions as
+// an optimization for "distance" (any functions beyond the callable formal
+// are further away than any functions we've already found).
+static void testFunctionFormalShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) {
+      proc foo(x) do return 1.0;
+      return foo(0);
+    }
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isRealType());
+}
+
+// Today, we don't perform overload selection for callable objects. Instead,
+// expect an error to be issued.
+static void testCallableAmbiguity() {
+  std::string program =
+    R"""(
+    module Lib {
+      record R {
+        proc this() do return 42;
+      }
+    }
+    module M1 { use Lib; var x: R; }
+    module M2 { use Lib; var x: R; }
+    module M3 {
+      use M1;
+      use M2;
+
+      var y = x(0);
+    }
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context, program, { "y" });
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -1769,6 +1846,10 @@ int main() {
   test27();
 
   testInfiniteCycleBug();
+
+  testFormalFunctionShadowing();
+  testFunctionFormalShadowing();
+  testCallableAmbiguity();
 
   return 0;
 }

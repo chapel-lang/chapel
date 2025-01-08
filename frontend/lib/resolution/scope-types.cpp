@@ -199,7 +199,7 @@ void FlagSet::mark(Context* context) const {
   // nothing, because flags don't need to be marked.
 }
 
-bool
+LookupResult
 OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
                                 IdAndFlags::Flags filterFlags,
                                 const IdAndFlags::FlagSet& excludeFlagSet) const
@@ -209,8 +209,10 @@ OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((ownedIds.flagsOr_ & filterFlags) != filterFlags) {
-    return false;
+    return LookupResult::empty();
   }
+
+  bool anyNonFunctions = false;
 
   const IdAndFlags* beginIds = nullptr;
   const IdAndFlags* endIds = nullptr;
@@ -229,10 +231,11 @@ OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
     if (cur->matchesFilter(filterFlags, excludeFlagSet)) {
       dst.idvs_.push_back(*cur);
       anyAppended = true;
+      anyNonFunctions |= !cur->isFunctionLike();
     }
   }
 
-  return anyAppended;
+  return LookupResult(/* found */ anyAppended, /* nonFunctions */ anyNonFunctions);
 
 }
 
@@ -309,16 +312,16 @@ void MatchingIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-bool lookupInDeclMap(const DeclMap& declared,
-                     UniqueString name,
-                     MatchingIdsWithName& result,
-                     IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlags) {
+LookupResult lookupInDeclMap(const DeclMap& declared,
+                             UniqueString name,
+                             MatchingIdsWithName& result,
+                             IdAndFlags::Flags filterFlags,
+                             const IdAndFlags::FlagSet& excludeFlags) {
   auto search = declared.find(name);
   if (search != declared.end()) {
     return search->second.gatherMatches(result, filterFlags, excludeFlags);
   }
-  return false;
+  return LookupResult::empty();
 }
 
 
