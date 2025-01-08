@@ -1898,9 +1898,11 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
                      ci.name().c_str());
     } else {
+      std::vector<const uast::VarLikeDecl*> uninitializedActuals;
+      std::vector<resolution::FormalActual> faPairs;
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
-      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected);
+      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, faPairs, uninitializedActuals);
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");
@@ -2043,7 +2045,39 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       if (!rejected.empty()) {
         // There were candidates but we threw them out. We can issue a nicer
         // error explaining why each candidate was rejected.
-        CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
+        std::vector<resolution::FormalActual> badPasses;
+        std::vector<const uast::VarLikeDecl*> actualDecls;
+        // check each rejected candidate for uninitialized actuals
+        for (auto& candidate : rejected) {
+          auto reason = candidate.reason();
+          if (reason == resolution::FAIL_CANNOT_PASS &&
+          /* skip printing detailed info_ here because computing the formal-actual
+            map will go poorly with an unknown formal. */
+          candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+            auto fn = candidate.initialForErr();
+            resolution::FormalActualMap fa(fn, ci);
+            auto badPass = fa.byFormalIdx(candidate.formalIdx());
+            badPasses.push_back(badPass);
+            const uast::AstNode* actualExpr = nullptr;
+            const uast::VarLikeDecl* actualDecl = nullptr;
+            if (call && 0 <= badPass.actualIdx() &&
+                badPass.actualIdx() < call->numActuals()) {
+              actualExpr = call->actual(badPass.actualIdx());
+            }
+            // look for a definition point of the actual for error reporting of uninitialized vars
+            // typically in the case of bad split-initialization
+            if (actualExpr && actualExpr->isIdentifier()) {
+              auto& resolvedExpr = byPostorder.byAst(actualExpr->toIdentifier());
+              if (auto id = resolvedExpr.toId()) {
+                auto var = parsing::idToAst(context, id);
+                // should put a nullptr if not a VarLikeDecl
+                actualDecl = var->toVarLikeDecl();
+              }
+            }
+            actualDecls.push_back(actualDecl);
+          }
+        }
+        CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, badPasses, actualDecls);
         return;
       }
     }

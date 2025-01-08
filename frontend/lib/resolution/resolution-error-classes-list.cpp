@@ -646,6 +646,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const char* expectedThing,
                                     GetActual&& getActual) {
   unsigned int printCount = 0;
+  unsigned int iterCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
@@ -657,9 +658,8 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         /* skip printing detailed info_ here because computing the formal-actual
            map will go poorly with an unknown formal. */
         candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
-      auto fn = candidate.initialForErr();
-      resolution::FormalActualMap fa(fn, ci);
-      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto fn = candidate.initialForErr();      
+      auto badPass = formalActuals[iterCount];
       auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
 
@@ -672,19 +672,34 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
-
+      bool actualPrinted = false;
       if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
+      } else if (badPass.actualType().isUnknown() && actualExpr && actualExpr->isIdentifier()) {
+        auto offendingActual = actualDecls[iterCount];
+        auto formalKind = badPass.formalType().kind();
+        auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
+        wr.message("The actual ", actualName,
+                   " expects to be split-initialized because it is declared without a type or initialization expression here:");
+        wr.code(offendingActual, { offendingActual });
+        wr.message("The call to ", ci.name() ," occurs before any valid initialization points:");
+        wr.code(actualExpr, { actualExpr });
+        actualPrinted =true;
+        wr.message("The call to '", ci.name(), "' cannot initialize ",
+                   actualName,
+                   " because only 'out' formals can be used to split-initialize. However, ",
+                   actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
+
       } else {
         wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
                    ", but the ", passedThing, " was ", badPass.actualType(), ".");
       }
 
-      if (actualExpr) {
+      if (!actualPrinted && actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
 
@@ -1313,6 +1328,8 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto call = node->toCall();
   auto& ci = std::get<resolution::CallInfo>(info_);
   auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& formalActuals = std::get<std::vector<resolution::FormalActual>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
 
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
