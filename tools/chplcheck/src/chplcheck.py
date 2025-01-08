@@ -30,7 +30,7 @@ import chapel
 import chapel.replace
 from driver import LintDriver
 from lsp import run_lsp
-from rules import register_rules
+from rules import rules
 from fixits import Fixit, Edit
 from rule_types import CheckResult, RuleLocation
 from config import Config
@@ -239,7 +239,7 @@ def main():
     driver = LintDriver(config)
 
     # register rules before enabling/disabling
-    register_rules(driver)
+    rules(driver)
     for p in config.add_rules:
         load_module(driver, os.path.abspath(p))
 

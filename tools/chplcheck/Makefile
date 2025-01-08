@@ -23,6 +23,9 @@
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
+ifndef CHPL_MAKE_PYTHON
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 include $(CHPL_MAKE_HOME)/third-party/chpl-venv/Makefile.include
@@ -37,6 +40,15 @@ chplcheck-venv:
 
 chplcheck: chplcheck-venv
 
+chplcheck-docs:
+	$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/doc/util/chplcheck-docs.py \
+		-r $(CHPL_MAKE_HOME)/tools/chplcheck/src/rules.py \
+		-o $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated \
+		--examples-directory $(CHPL_MAKE_HOME)/tools/chplcheck/examples
+
+clean-chplcheck-docs:
+	rm -rf $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated
+
 clean: clean-pycache
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
@@ -46,7 +58,7 @@ endif
 
 cleanall: clean
 
-clobber: clean
+clobber: clean clean-chplcheck-docs
 
 clean-pycache:
 	find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +

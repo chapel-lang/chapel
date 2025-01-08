@@ -1480,7 +1480,7 @@ class ChapelLanguageServer(LanguageServer):
         config = chplcheck.config.Config.from_args(clsConfig.args)
         self.lint_driver = chplcheck.driver.LintDriver(config)
 
-        chplcheck.rules.register_rules(self.lint_driver)
+        chplcheck.rules.rules(self.lint_driver)
 
         for p in config.add_rules:
             chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))

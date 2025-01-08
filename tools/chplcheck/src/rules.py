@@ -153,7 +153,7 @@ def check_pascal_case(
     )
 
 
-def register_rules(driver: LintDriver):
+def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
         """
@@ -391,7 +391,7 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
         """
-        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
 
         if node.name().startswith("chpl_"):
@@ -1054,7 +1054,6 @@ def register_rules(driver: LintDriver):
     def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
         """
         Warn for lines that exceed a maximum length.
-
         By default, the maximum line length is 80 characters.
         """
 
