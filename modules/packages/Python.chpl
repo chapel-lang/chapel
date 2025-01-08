@@ -265,8 +265,6 @@ module Python {
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
-    var toFree: List.list(PyObjectPtr);
-    @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
 
     @chpldoc.nodoc
@@ -352,10 +350,6 @@ module Python {
     }
     @chpldoc.nodoc
     proc deinit()  {
-
-      for obj in this.toFree {
-        Py_CLEAR(c_ptrTo(obj));
-      }
 
       if pyMemLeaks && this.objgraph != nil {
         // note: try! is used since we can't have a throwing deinit
@@ -585,7 +579,6 @@ module Python {
       where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
       var pyList = PyList_New(arr.size.safeCast(c_size_t));
       this.checkException();
-      this.toFree.pushBack(pyList);
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
         PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(arr[idx]));
@@ -601,7 +594,6 @@ module Python {
     proc toList(l: List.list(?)): PyObjectPtr throws {
       var pyList = PyList_New(l.size.safeCast(c_size_t));
       this.checkException();
-      this.toFree.pushBack(pyList);
       for i in 0..<l.size {
         PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(l(i)));
         this.checkException();
@@ -628,10 +620,10 @@ module Python {
         const idx = res.domain.orderToIndex(i);
         var elm = PySequence_GetItem(obj, i.safeCast(c_size_t));
         this.checkException();
-        this.toFree.pushBack(elm);
         res[idx] = fromPython(res.eltType, elm);
         this.checkException();
       }
+      Py_DECREF(obj);
       return res;
     }
 
@@ -647,9 +639,9 @@ module Python {
         for i in 0..<PySequence_Size(obj) {
           var item = PySequence_GetItem(obj, i);
           this.checkException();
-          this.toFree.pushBack(item);
           res.pushBack(fromPython(T.eltType, item));
         }
+        Py_DECREF(obj);
         return res;
       } else if (PyIter_Check(obj) != 0 || PyGen_Check(obj) != 0) {
         // if it's an iterator, we can iterate over it
@@ -657,12 +649,12 @@ module Python {
         while true {
           var item = PyIter_Next(obj);
           this.checkException();
-          this.toFree.pushBack(item);
           if item == nil {
             break;
           }
           res.pushBack(fromPython(T.eltType, item));
         }
+        Py_DECREF(obj);
         return res;
       } else {
         throw new ChapelException("Expected a Python list or iterable");
@@ -696,7 +688,6 @@ module Python {
       where isArrayType(arr.type) && arr.isAssociative() {
       var pyDict = PyDict_New();
       this.checkException();
-      this.toFree.pushBack(pyDict);
       for key in arr.domain {
         var pyKey = toPython(key);
         var pyValue = toPython(arr[key]);
@@ -734,6 +725,8 @@ module Python {
         dom.add(keyVal);
         arr[keyVal] = this.fromPython(valType, val);
       }
+
+      Py_DECREF(obj);
       return arr;
     }
 
@@ -981,6 +974,11 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
+      defer {
+        for param i in 0..#args.size {
+          Py_DECREF(pyArgs(i));
+        }
+      }
 
       var pyRes;
       if pyArgs.size == 1 then
@@ -988,7 +986,6 @@ module Python {
       else
         pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
       interpreter.checkException();
-      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -1001,7 +998,6 @@ module Python {
     proc this(type retType): retType throws {
       var pyRes = PyObject_CallNoArgs(this.get());
       interpreter.checkException();
-      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -1026,6 +1022,12 @@ module Python {
         pyArgs(i) = interpreter.toPython(args(i));
       }
       var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
+      defer {
+        for param i in 0..#args.size {
+          Py_DECREF(pyArgs(i));
+        }
+        Py_DECREF(pyArg);
+      }
 
       var pyKwargs;
       if t != nothing {
@@ -1033,10 +1035,14 @@ module Python {
       } else {
         pyKwargs = nil;
       }
+      defer {
+        if pyKwargs != nil {
+          Py_DECREF(pyKwargs);
+        }
+      }
 
       var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
       interpreter.checkException();
-      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -1065,10 +1071,14 @@ module Python {
       } else {
         pyKwargs = nil;
       }
+      defer {
+        if pyKwargs != nil {
+          Py_DECREF(pyKwargs);
+        }
+      }
 
       var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
       interpreter.checkException();
-      interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -1146,6 +1156,11 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
+      defer {
+        for param i in 0..#args.size {
+          Py_DECREF(pyArgs(i));
+        }
+      }
 
       var pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
       interpreter.checkException();
@@ -1182,6 +1197,8 @@ module Python {
 
     proc setAttr(attr: string, value) throws {
       var pyValue = interpreter.toPython(value);
+      defer Py_DECREF(pyValue);
+
       PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
       interpreter.checkException();
     }
@@ -1191,8 +1208,15 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
+      defer {
+        for param i in 0..#args.size {
+          Py_DECREF(pyArgs(i));
+        }
+      }
 
       var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
       var pyRes = PyObject_CallMethodObjArgs(
         this.get(), methodName, (...pyArgs), nil);
       interpreter.checkException();
@@ -1202,6 +1226,8 @@ module Python {
     }
     proc call(type retType, method: string): retType throws {
       var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
       var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
       interpreter.checkException();
 
