@@ -38,7 +38,7 @@ proc roundTripClass(clsType: borrowed) {
     var res: t;
 
     if print then writeln("  type: ", t:string, " value: ", value);
-    var obj = new ClassObject(clsType, value);
+    var obj = clsType(value);
     if print then writeln("    obj: ", obj);
 
     res = obj.getAttr(t, "value");

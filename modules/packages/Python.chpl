@@ -19,9 +19,6 @@
  */
 
 
-// TODO: make a base Value class that can be used for all values
-//  the base class is essentially what PyObject is now
-
 // TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
 //  this can be done in a few ways.
 //   1. create a class that wraps the array and implements the python list interface
@@ -417,7 +414,7 @@ module Python {
       like 'x,' or '*args'
     */
     @chpldoc.nodoc
-    proc compileLambda(l: string): owned PyObject throws {
+    proc compileLambda(l: string): PyObjectPtr throws {
       var globals = chpl_PyEval_GetFrameGlobals();
       var globalsNeedDecref = false;
       // create a globals if it doesn't exist
@@ -429,12 +426,11 @@ module Python {
       // we can also do `Py_CompileString` -> `PyFunction_New`?
       var code = PyRun_String(l.c_str(), Py_eval_input, globals, nil);
       this.checkException();
-      var obj = new PyObject(this, code);
 
       if globalsNeedDecref {
         Py_DECREF(globals);
       }
-      return obj;
+      return code;
     }
 
     /*
@@ -510,12 +506,8 @@ module Python {
         return toDict(val);
       } else if isSubtype(t, List.list) {
         return toList(val);
-      } else if isSubtype(t, Function) {
-        return val.fn.get();
-      } else if isSubtype(t, PyObject) {
+      } else if isSubtype(t, Value) {
         return val.get();
-      } else if isSubtype(t, ClassObject) {
-        return val.obj.get();
       } else if t == NoneType {
         return Py_None;
       } else {
@@ -575,11 +567,9 @@ module Python {
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
       } else if isSubtype(t, Function) {
-        return new Function("<unknown>", new PyObject(this, obj));
-      } else if isSubtype(t, PyObject) || isSubtype(t, PyObject?) {
-        return new PyObject(this, obj);
-      } else if isSubtype(t, ClassObject) || isSubtype(t, ClassObject?) {
-        return new ClassObject(new PyObject(this, obj));
+        return new Function("<unknown>", obj);
+      } else if isSubtype(t, Value) || isSubtype(t, Value?) {
+        return new t(this, obj);
       } else if t == NoneType {
         return None;
       } else {
@@ -870,28 +860,98 @@ module Python {
     }
   }
 
+
   /*
-    Represents a Python module.
+    Represents a Python value, it handles reference counting and is owned by default.
   */
-  class Module {
+  class Value {
+    /*
+      The interpreter that this object is associated with.
+    */
+    var interpreter: borrowed Interpreter;
     @chpldoc.nodoc
-    var modName: string;
+    var obj: PyObjectPtr;
     @chpldoc.nodoc
-    var mod: owned PyObject;
+    var isOwned: bool;
 
     /*
-      Import a Python module by name.
+      Takes ownership of an existing Python object, pointed to by ``obj``
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
+      :arg isOwned: Whether this object owns the Python object. This is true by default.
     */
-    proc init(interpreter: borrowed Interpreter, in modName: string) throws {
-      this.modName = modName;
-      this.mod = new PyObject(interpreter, PyImport_ImportModule(modName.c_str()));
+    proc init(in interpreter: borrowed Interpreter, obj: PyObjectPtr, isOwned: bool = true) {
+      this.interpreter = interpreter;
+      this.obj = obj;
+      this.isOwned = isOwned;
       init this;
-      this.mod.check();
     }
     /*
-      Get the interpreter associated with this module.
+      Creates a new Python object from a Chapel value.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg value: The Chapel value to convert to a Python object.
     */
-    proc interpreter do return this.mod.interpreter;
+    proc init(in interpreter: borrowed Interpreter, value: ?) throws {
+      this.interpreter = interpreter;
+      this.isOwned = true;
+      init this;
+      this.obj = this.interpreter.toPython(value);
+    }
+
+    @chpldoc.nodoc
+    proc postinit() throws {
+      this.check();
+    }
+
+    @chpldoc.nodoc
+    proc deinit() {
+      if this.isOwned then
+        Py_DECREF(this.obj);
+    }
+
+    proc check() throws do this.interpreter.checkException();
+
+    /*
+      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
+    */
+    proc get() do return this.obj;
+
+    /*
+      Returns the Chapel value of the object.
+
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
+    */
+    proc value(type value) throws {
+      return interpreter.fromPython(value, this.obj);
+    }
+
+    /*
+      Stop owning val, return the underlying ptr.
+    */
+    proc type release(in val: owned Value): PyObjectPtr {
+      var valUn: unmanaged = owned.release(val);
+      valUn.isOwned = false;
+      var ptr: PyObjectPtr = valUn.obj;
+      delete valUn;
+      return ptr;
+    }
+    /*
+      Create a new Value, taking ownership of the object.
+    */
+    proc type adopting(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, ptr, isOwned=true);
+      return val;
+    }
+    /*
+      Create a new Value, borrowing the object.
+    */
+    proc type borrowing(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, ptr, isOwned=false);
+      return val;
+    }
+
 
     /*
       Returns the string representation of the object.
@@ -899,56 +959,22 @@ module Python {
 
       Equivalent to calling ``str(obj)`` in Python.
     */
-    proc str(): string throws do return this.mod!.str();
-
-  }
-
-  /*
-    Represents a Python function.
-  */
-  class Function {
-    @chpldoc.nodoc
-    var fnName: string;
-    @chpldoc.nodoc
-    var fn_: owned PyObject?;
-
-    @chpldoc.nodoc
-    proc fn: borrowed PyObject do return this.fn_!;
-
-    proc init(mod: borrowed Module, in fnName: string) throws {
-      this.fnName = fnName;
-      this.fn_ = new PyObject(mod.mod.interpreter,
-                      PyObject_GetAttrString(mod.mod.get(), fnName.c_str()));
-      init this;
-      this.fn.check();
+    proc str(): string throws {
+      var pyStr = PyObject_Str(this.obj);
+      this.check();
+      var res = interpreter.fromPython(string, pyStr);
+      return res;
     }
-    proc init(in fnName: string, in fn: owned PyObject) throws {
-      this.fnName = fnName;
-      this.fn_ = fn;
-      init this;
-      this.fn.check();
-    }
-    proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
-      this.fnName = "<anon>";
-      init this;
-      this.fn_ = interpreter.compileLambda(lambdaFn);
-      this.fn.check();
-    }
-    /*
-      Get the interpreter associated with this function.
-    */
-    proc interpreter do return this.fn.interpreter;
 
     /*
-      Returns the string representation of the object.
-      This is the same as casting to a string.
+      Treat this value as a callable and call it with the given arguments.
 
-      Equivalent to calling ``str(obj)`` in Python.
-    */
-    proc str(): string throws do return this.fn.str();
+      This handles conversion from Chapel types to Python types and back, by
+      copying the Chapel types to Python types and back.
 
-    /*
-      Call a python function with Chapel arguments and get a Chapel return value
+      :arg retType: The Chapel type of the return value. If the callable returns
+                    nothing, use :type:`NoneType`.
+      :arg args: The arguments to pass to the callable.
     */
     proc this(type retType, const args...): retType throws {
       var pyArgs: args.size * PyObjectPtr;
@@ -958,23 +984,40 @@ module Python {
 
       var pyRes;
       if pyArgs.size == 1 then
-        pyRes = PyObject_CallOneArg(this.fn.get(), pyArgs(0));
+        pyRes = PyObject_CallOneArg(this.get(), pyArgs(0));
       else
-        pyRes = PyObject_CallFunctionObjArgs(this.fn.get(), (...pyArgs), nil);
+        pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
       interpreter.checkException();
       interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    /*
+      Treat this value as a callable and call it with no arguments.
+
+      See :proc:`~Value.this` for more information.
+    */
     proc this(type retType): retType throws {
-      var pyRes = PyObject_CallNoArgs(this.fn.get());
+      var pyRes = PyObject_CallNoArgs(this.get());
       interpreter.checkException();
       interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    /*
+      Treat this value as a callable and call it with the given arguments and keyword arguments.
+
+      The keyword arguments should be passed as an associative Chapel array.
+      For example:
+
+      .. code-block:: chapel
+
+         var res = myObj(int, arg1, arg2, kwargs=["key1" => 42, "key2" => 17]);
+
+      See :proc:`~Value.this` for more information.
+    */
     pragma "last resort"
     proc this(type retType, const args..., kwargs:?t=none): retType throws
       where kwargs.isAssociative() {
@@ -991,13 +1034,25 @@ module Python {
         pyKwargs = nil;
       }
 
-      var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
+      var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
       interpreter.checkException();
       interpreter.toFree.pushBack(pyRes);
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    /*
+      Treat this value as a callable and call it with the given keyword arguments.
+
+      The keyword arguments should be passed as an associative Chapel array.
+      For example:
+
+      .. code-block:: chapel
+
+         var res = myObj(int, kwargs=["key1" => 42, "key2" => 17]);
+
+      See :proc:`~Value.this` for more information.
+    */
     pragma "last resort"
     proc this(type retType, kwargs:?t=none): retType throws
       where kwargs.isAssociative() {
@@ -1011,7 +1066,7 @@ module Python {
         pyKwargs = nil;
       }
 
-      var pyRes = PyObject_Call(this.fn.get(), pyArg, pyKwargs);
+      var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
       interpreter.checkException();
       interpreter.toFree.pushBack(pyRes);
 
@@ -1019,69 +1074,99 @@ module Python {
       return res;
     }
 
+    /*
+      Access an attribute/field of this Python object. This is equivalent to
+      calling ``obj[attr]`` or ``getattr(obj, attr)`` in Python.
+
+      :arg t: The Chapel type of the value to return.
+      :arg attr: The name of the attribute/field to access.
+    */
     proc getAttr(type t, attr: string): t throws {
-      var pyAttr = PyObject_GetAttrString(this.fn.get(), attr.c_str());
+      var pyAttr = PyObject_GetAttrString(this.get(), attr.c_str());
       interpreter.checkException();
 
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
+  }
 
+  /*
+    Represents a Python module.
+  */
+  class Module: Value {
+    @chpldoc.nodoc
+    var modName: string;
+
+    /*
+      Import a Python module by name.
+    */
+    proc init(interpreter: borrowed Interpreter, in modName: string) {
+      super.init(interpreter, PyImport_ImportModule(modName.c_str()));
+      this.modName = modName;
+    }
+  }
+
+  /*
+    Represents a Python function.
+  */
+  class Function: Value {
+    @chpldoc.nodoc
+    var fnName: string;
+
+    proc init(mod: borrowed Module, in fnName: string) {
+      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), fnName.c_str()));
+      this.fnName = fnName;
+    }
+    proc init(interpreter: borrowed Interpreter, in fnName: string, in obj: PyObjectPtr) {
+      super.init(interpreter, obj);
+      this.fnName = fnName;
+    }
+    proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
+      super.init(interpreter, nil:PyObjectPtr);
+      this.fnName = "<anon>";
+      init this;
+      this.obj = interpreter.compileLambda(lambdaFn);
+    }
   }
 
 
   /*
     Represents a Python class.
   */
-  class Class {
+  class Class: Value {
     var className: string;
-    var cls: owned PyObject;
-    proc init(mod: borrowed Module, in className: string) throws {
+    proc init(mod: borrowed Module, in className: string) {
+      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), className.c_str()));
       this.className = className;
-      this.cls = new PyObject(mod.mod.interpreter, PyObject_GetAttrString(mod.mod.get(), className.c_str()));
-      init this;
-      this.cls.check();
     }
-    /*
-      Get the interpreter associated with this class.
-    */
-    proc interpreter do return this.cls.interpreter;
 
-    /*
-      Returns the string representation of the object.
-      This is the same as casting to a string.
-
-      Equivalent to calling ``str(obj)`` in Python.
-    */
-    proc str(): string throws do return this.cls!.str();
-
-    /*
-      Create a new instance of a python class
-    */
-    proc newInstance(const args...): owned PyObject throws {
+    @chpldoc.nodoc
+    proc newInstance(const args...): PyObjectPtr throws {
       var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
 
-      var pyRes = PyObject_CallFunctionObjArgs(this.cls.get(), (...pyArgs), nil);
+      var pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
       interpreter.checkException();
 
-      return new PyObject(interpreter, pyRes);
+      return pyRes;
     }
     @chpldoc.nodoc
-    proc newInstance(): owned PyObject throws {
-      var pyRes = PyObject_CallNoArgs(this.cls.get());
+    proc newInstance(): PyObjectPtr throws {
+      var pyRes = PyObject_CallNoArgs(this.get());
       interpreter.checkException();
 
-      return new PyObject(interpreter, pyRes);
+      return pyRes;
     }
 
     /*
       Create a new instance of a python class
     */
-    proc this(const args...): owned ClassObject throws do return new ClassObject(this, (...args));
-    proc this(): owned ClassObject throws do return new ClassObject(this);
+    proc this(const args...): owned ClassObject throws do
+      return new ClassObject(interpreter, newInstance((...args)));
+    proc this(): owned ClassObject throws do
+      return new ClassObject(interpreter, newInstance());
 
   }
 
@@ -1089,72 +1174,16 @@ module Python {
   /*
     Represents a Python class object.
   */
-  class ClassObject {
+  class ClassObject: Value {
     @chpldoc.nodoc
-    var cls: borrowed Class?;
-    @chpldoc.nodoc
-    var obj_: owned PyObject?;
-
-    @chpldoc.nodoc
-    proc obj: borrowed PyObject do return this.obj_!;
-
-    proc init(cls: borrowed Class, const args...) throws {
-      this.cls = cls;
-      init this;
-      this.obj_ = cls.newInstance((...args));
-      this.obj.check();
+    proc init(interp: borrowed Interpreter, in obj: PyObjectPtr) {
+      super.init(interp, obj);
     }
-    proc init(cls: borrowed Class) throws {
-      this.cls = cls;
-      init this;
-      this.obj_ = cls.newInstance();
-      this.obj.check();
-    }
-    proc init(in obj: owned PyObject?) throws {
-      this.obj_ = obj;
-      init this;
-      this.obj.check();
-    }
-    /*
-      Get the interpreter associated with this object.
-    */
-    proc interpreter do return this.obj.interpreter;
 
-    /*
-      Returns the string representation of the object.
-      This is the same as casting to a string.
-
-      Equivalent to calling ``str(obj)`` in Python.
-    */
-    proc str(): string throws do return this.obj.str();
-
-
-    proc getAttr(type t, attr: string): t throws {
-      var pyAttr = PyObject_GetAttrString(this.obj.get(), attr.c_str());
-      interpreter.checkException();
-      var res = interpreter.fromPython(t, pyAttr);
-      return res;
-    }
     proc setAttr(attr: string, value) throws {
       var pyValue = interpreter.toPython(value);
-      PyObject_SetAttrString(this.obj.get(), attr.c_str(), pyValue);
+      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
       interpreter.checkException();
-    }
-
-    proc this(type retType, const args...): retType throws {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      var pyRes;
-      if pyArgs.size == 1 then
-        pyRes = PyObject_CallOneArg(this.obj.get(), pyArgs(0));
-      else
-        pyRes = PyObject_CallFunctionObjArgs(this.obj.get(), (...pyArgs), nil);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
     }
 
     proc call(type retType, method: string, const args...): retType throws {
@@ -1165,7 +1194,7 @@ module Python {
 
       var methodName = interpreter.toPython(method);
       var pyRes = PyObject_CallMethodObjArgs(
-        this.obj.get(), methodName, (...pyArgs), nil);
+        this.get(), methodName, (...pyArgs), nil);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1173,7 +1202,7 @@ module Python {
     }
     proc call(type retType, method: string): retType throws {
       var methodName = interpreter.toPython(method);
-      var pyRes = PyObject_CallMethodNoArgs(this.obj.get(), methodName);
+      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1286,127 +1315,20 @@ module Python {
 
 
   /*
-    Represents a Python value, it handles reference counting and is owned by default.
-
-    Most users should not need to use this directly.
-  */
-  class PyObject {
-    /*
-      The interpreter that this object is associated with.
-    */
-    var interpreter: borrowed Interpreter;
-    @chpldoc.nodoc
-    var obj: PyObjectPtr;
-    @chpldoc.nodoc
-    var isOwned: bool;
-
-    /*
-      Takes ownership of an existing Python object, pointed to by ``obj``
-
-      :arg interpreter: The interpreter that this object is associated with.
-      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
-      :arg isOwned: Whether this object owns the Python object. This is true by default.
-    */
-    proc init(in interpreter: borrowed Interpreter, obj: PyObjectPtr, isOwned: bool = true) {
-      this.interpreter = interpreter;
-      this.obj = obj;
-      this.isOwned = isOwned;
-    }
-    /*
-      Creates a new Python object from a Chapel value.
-
-      :arg interpreter: The interpreter that this object is associated with.
-      :arg value: The Chapel value to convert to a Python object.
-    */
-    proc init(in interpreter: borrowed Interpreter, value: ?) {
-      this.interpreter = interpreter;
-      this.obj = toPython(interpreter, value);
-      this.isOwned = true;
-    }
-    @chpldoc.nodoc
-    proc deinit() {
-      if this.isOwned then
-        Py_DECREF(this.obj);
-    }
-    proc check() throws do this.interpreter.checkException();
-    /*
-      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
-    */
-    proc get() do return this.obj;
-
-    /*
-      Returns the Chapel value of the object.
-
-      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
-    */
-    proc value(type value) throws {
-      return interpreter.fromPython(value, this.obj);
-    }
-
-    proc type release(in self: owned PyObject): PyObjectPtr {
-      var selfUn: unmanaged PyObject = owned.release(self);
-      selfUn.isOwned = false;
-      var ptr: PyObjectPtr = selfUn.obj;
-      delete selfUn;
-      return ptr;
-    }
-    proc type release(in self: owned ClassObject): PyObjectPtr {
-      var pyObj: unmanaged ClassObject = owned.release(self);
-      pyObj.obj!.isOwned = false;
-      var ptr: PyObjectPtr = pyObj.obj!.get();
-      delete pyObj;
-      return ptr;
-    }
-
-
-    /*
-      Returns the string representation of the object.
-      This is the same as casting to a string.
-
-      Equivalent to calling ``str(obj)`` in Python.
-    */
-    proc str(): string throws {
-      var pyStr = PyObject_Str(this.obj);
-      interpreter.checkException();
-      var res = interpreter.fromPython(string, pyStr);
-      return res;
-    }
-  }
-
-  /*
     Casts a Chapel value to a Python object.
     This is the equivalent of calling ``obj.str()`` in Chapel code.
   */
   @chpldoc.nodoc
   operator:(v, type t: string): string throws
-    where isSubtype(v.type, PyObject) || isSubtype(v.type, Module) ||
-          isSubtype(v.type, Class) || isSubtype(v.type, Function) ||
-          isSubtype(v.type, ClassObject) || isSubtype(v.type, NoneType) {
+    where isSubtype(v.type, Value) || isSubtype(v.type, NoneType) {
     return v.str();
   }
 
-  // PyObject intentionally does not have a serialize method
-  // its meant to be an implementation detail and not used directly
-  Module implements writeSerializable;
-  Function implements writeSerializable;
-  Class implements writeSerializable;
-  ClassObject implements writeSerializable;
+  Value implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
-  override proc Module.serialize(writer, ref serializer) throws do
-    writer.write(this:string);
-  @chpldoc.nodoc
-  override proc Function.serialize(writer, ref serializer) throws do
-    writer.write(this:string);
-  @chpldoc.nodoc
-  override proc Class.serialize(writer, ref serializer) throws do
-    writer.write(this:string);
-  @chpldoc.nodoc
-  override proc ClassObject.serialize(writer, ref serializer) throws do
-    writer.write(this:string);
-  @chpldoc.nodoc
-  proc NoneType.serialize(writer, ref serializer) throws do
+  override proc Value.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
