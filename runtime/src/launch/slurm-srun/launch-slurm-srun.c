@@ -443,12 +443,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       snprintf(stdoutFileNoFmt, stdoutFileLen, "%s", outputfn);
     }
     else {
-      char* format="%s.%s.out";
+      const char* format="%s.%s.out";
       int stdoutFileLen = strlen(format) + strlen(argv[0]) + strlen("%j");
       stdoutFile = (char*)chpl_mem_allocMany(stdoutFileLen, sizeof(char),
                                              CHPL_RT_MD_FILENAME, -1, 0);
       snprintf(stdoutFile, stdoutFileLen, format, argv[0], "%j");
-      char* tempArg = "$SLURM_JOB_ID";
+      const char* tempArg = "$SLURM_JOB_ID";
       int stdoutFileNoFmtLen =
           strlen(format) + strlen(argv[0]) + strlen(tempArg);
       stdoutFileNoFmt = (char*)chpl_mem_allocMany(
@@ -466,8 +466,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      char* format = "%s/%s.%s.out";
-      char* tempArg = "$SLURM_JOB_ID";
+      const char* format = "%s/%s.%s.out";
+      const char* tempArg = "$SLURM_JOB_ID";
       int tmpStdoutFileNoFmtLen =
           strlen(format) + strlen(tmpDir) + strlen(argv[0]) + strlen(tempArg);
       tmpStdoutFileNoFmt = (char*)chpl_mem_allocMany(
@@ -521,7 +521,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // the baseCommand is what will call the batch file
     // that was just created
-    char* format = "sbatch %s\n";
+    const char* format = "sbatch %s\n";
     int baseCommandLen = strlen(slurmFilename) + strlen(format);
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
@@ -611,7 +611,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // launch the job using srun
-    char* format = "srun %s";
+    const char* format = "srun %s";
     int baseCommandLen = strlen(format) + len + 1;
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
