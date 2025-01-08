@@ -53,6 +53,7 @@ static inline PyObject* chpl_PyErr_GetRaisedException(void) {
 }
 
 static inline void chpl_Py_DECREF(PyObject* o) { Py_DECREF(o); }
+static inline void chpl_Py_CLEAR(PyObject** o) { Py_CLEAR(*o); }
 
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
