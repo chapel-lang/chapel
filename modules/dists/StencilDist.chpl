@@ -153,7 +153,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   locale's chunk of array elements. Note that the user must manually refresh
   these caches after writes by calling the ``updateFluff`` method. The writing
   of array elements and partitioning of indices both behave the same as in a
-  block-distributed array. 
+  block-distributed array.
 
   The ``stencilDist`` initializer is defined as follows:
 
