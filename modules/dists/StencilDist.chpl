@@ -129,29 +129,31 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 /*
   The ``stencilDist`` distribution is an enhanced functionality variant of the
   :mod:`blockDist<BlockDist>` distribution. Both refer to an array partitioned
-  into blocks, but ``stencilDist`` will internally attempt to improve
+  into blocks, but ``stencilDist`` will help the user to improve
   performance for stencil computations by reducing the amount of communication
   necessary for array accesses across locales. A ``stencilDist`` array would
   most commonly be used in computations based on a numerical stencil formula.
   For example, solving banded linear equations by the Gauss-Seidel or Jacobi
   method.
 
-  Like ``blockDist``, each of the blocks in a ``stencilDist`` array are owned
-  by a (potentially) different locale. But when communication needs to occur
-  between a given block and its set of immediately neighboring or adjacent
-  blocks, the more feature-full ``stencilDist`` most likely makes it the better
-  choice. This is because, for any given block, a ``stencilDist`` transparently
-  creates a read-only cache of selected array elements from its adjacent
-  blocks, specifically those array elements from the band of array elements
-  just outside the edge of the locally-owned block. This documentation may
-  refer to this cached band of array elements as either 'ghost cells' or more
-  strictly, as 'fluff'. This approach can  avoid many fine-grained GETs and
-  PUTs when performing a stencil computation near the boundary of the current
-  locale's chunk of array elements. The user must manually refresh these caches
-  after writes by calling the ``updateFluff`` method. Otherwise, reading and
-  writing array elements behaves the same as a block-distributed array. The
-  indices are also partitioned in the same way as the :mod:`blockDist
-  <BlockDist>` distribution.
+  Like ``blockDist``, each block in a ``stencilDist`` array is owned by a
+  (potentially) different locale. But when communication needs to occur between
+  a given block and its set of immediately neighboring or adjacent blocks, the
+  more feature-full ``stencilDist`` most likely makes it the better choice.
+  This is because, for any given block, a ``stencilDist`` transparently creates
+  a read-only cache of selected array elements from its adjacent blocks,
+  specifically those array elements from the band of array elements just
+  outside the edge of the locally-owned block. This band of array elements is
+  sometimes referred to as a 'halo' in other languages and technologies, but in
+  this documentation will be referred to as either 'ghost cells' or more
+  strictly, as 'fluff'.
+
+  This approach can  avoid many instances of reading a remote array element
+  when performing a stencil computation near the boundary of the current
+  locale's chunk of array elements. Note that the user must manually refresh
+  these caches after writes by calling the ``updateFluff`` method. The writing
+  of array elements and partitioning of indices both behave the same as in a
+  block-distributed array. 
 
   The ``stencilDist`` initializer is defined as follows:
 
