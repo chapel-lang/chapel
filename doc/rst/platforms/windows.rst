@@ -32,9 +32,8 @@ This example shows how to install WSL and Ubuntu on Windows 10/11::
 There are two main approaches for using Chapel on WSL:
 
 1) Install via a prebuilt Chapel package. This is the quickest way to get up
-   and running, but it results in a copy of Chapel without GPU support and that
-   only supports shared-memory (single-locale) executions. See the list of available
-   packages released on the `Chapel GitHub page <https://github.com/chapel-lang/chapel/releases>`_.
+   and running. For a Chapel install with GPU support, build Chapel from source.
+   See the list of available packages released on the `Chapel GitHub page <https://github.com/chapel-lang/chapel/releases>`_.
 
 2) Build Chapel from source, as with any other UNIX system. This is slightly
    more involved, but supports Chapel's full feature set. See the list of prerequisites
