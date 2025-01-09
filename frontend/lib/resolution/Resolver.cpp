@@ -991,8 +991,8 @@ handleRejectedCandidates(Context* context,
                          std::vector<ApplicabilityResult>& rejected,
                          const resolution::CallInfo& ci,
                          const uast::Call*& call) {
-  // There were candidates but we threw them out. We can issue a nicer
-  // error explaining why each candidate was rejected.
+  // By performing some processing in the resolver, we can issue a nicer error
+  // explaining why each candidate was rejected.
   std::vector<resolution::FormalActual> badPasses;
   std::vector<const uast::VarLikeDecl*> actualDecls;
   badPasses.resize(rejected.size());
@@ -1001,8 +1001,8 @@ handleRejectedCandidates(Context* context,
   for (size_t i = 0; i < rejected.size(); i++) {
     auto &candidate = rejected[i];
     if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
-        /* skip printing detailed info_ here because computing the formal-actual
-        map will go poorly with an unknown formal. */
+        /* skip computing the formal-actual map because it will go poorly
+           with an unknown formal. */
         candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
@@ -2090,6 +2090,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       }
 
       if (!rejected.empty()) {
+        // There were candidates but we threw them out. Report on those.
         handleRejectedCandidates(context, byPostorder, rejected, ci, call);
         return;
       }
