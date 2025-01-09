@@ -2050,17 +2050,16 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
         badPasses.resize(rejected.size());
         actualDecls.resize(rejected.size());
         // check each rejected candidate for uninitialized actuals
-
         for (size_t i = 0; i < rejected.size(); i++) {
           auto& candidate = rejected[i];
           if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
-            /* skip printing detailed info_ here because computing the formal-actual
-            map will go poorly with an unknown formal. */
-            candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+              /* skip printing detailed info_ here because computing the formal-actual
+              map will go poorly with an unknown formal. */
+              candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
             auto fn = candidate.initialForErr();
             resolution::FormalActualMap fa(fn, ci);
             auto badPass = fa.byFormalIdx(candidate.formalIdx());
-            badPasses[i] =badPass;
+            badPasses[i] = badPass;
             const uast::AstNode* actualExpr = nullptr;
             const uast::VarLikeDecl* actualDecl = nullptr;
             if (call && 0 <= badPass.actualIdx() &&
