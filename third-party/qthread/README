@@ -51,10 +51,8 @@ index 8269aa0949..bf022bc243 100644
  #define qthread_incr(ADDR, INCVAL) __sync_fetch_and_add(ADDR, INCVAL)
 
 ```
-
 * Backport a few performance fixes from the development version of qthreads.
   https://github.com/chapel-lang/chapel/pull/26138
-  https://github.com/chapel-lang/chapel/pull/26328
 
 ```
 diff --git a/include/qt_atomics.h b/include/qt_atomics.h
@@ -88,6 +86,10 @@ index 2ac887ed..2312c954 100644
  #define QTHREAD_FASTLOCK_SETUP()                                               \
    do {                                                                         \
 ```
+
+* Backport a few performance fixes from the development version of qthreads.
+  part of https://github.com/chapel-lang/chapel/pull/26328, the rest was
+  reverted in https://github.com/chapel-lang/chapel/pull/26468
 
 ```
 --- a/src/io.c
