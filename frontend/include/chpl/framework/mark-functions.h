@@ -32,6 +32,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/util/memory.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
 
@@ -82,6 +83,15 @@ template<> struct mark<std::string> {
 
 template<typename T> struct mark<std::vector<T>> {
   void operator()(Context* context, const std::vector<T>& keep) const {
+    for (auto const &elt : keep) {
+      chpl::mark<T> marker;
+      marker(context, elt);
+    }
+  }
+};
+
+template<typename T, size_t i> struct mark<llvm::SmallVector<T, i>> {
+  void operator()(Context* context, const llvm::SmallVector<T, i>& keep) const {
     for (auto const &elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);

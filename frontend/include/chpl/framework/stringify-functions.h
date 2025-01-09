@@ -42,6 +42,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "llvm/ADT/SmallVector.h"
+
 
 namespace chpl {
 class Context;
@@ -91,19 +93,15 @@ template<typename T> struct stringify<const T*> {
 template<typename T>
 static inline void defaultStringifyVec(std::ostream& streamOut,
                                        StringifyKind stringKind,
-                                       const std::vector<T>& stringVec) {
-  if (stringVec.empty()) {
-    streamOut << "[ ]";
-  } else {
-    streamOut << "[" ;
-    std::string separator;
-    stringify<T> vecString;
-    for (const auto &vecVal : stringVec ) {
-      vecString(streamOut << separator, stringKind, vecVal);
-      separator = ", ";
-    }
-    streamOut << "]";
+                                       const T& stringVec) {
+  streamOut << "[" ;
+  std::string separator;
+  stringify<typename T::value_type> vecString;
+  for (const auto &vecVal : stringVec ) {
+    vecString(streamOut << separator, stringKind, vecVal);
+    separator = ", ";
   }
+  streamOut << "]";
 }
 
 // stringify an unordered map by stringifying each key, value pair
@@ -352,6 +350,14 @@ template<typename T> struct stringify<std::vector<T>> {
  void operator()(std::ostream& streamOut,
                  StringifyKind stringKind,
                  const std::vector<T>& stringMe) const {
+   defaultStringifyVec(streamOut, stringKind, stringMe);
+ }
+};
+
+template <typename T, unsigned i> struct stringify<llvm::SmallVector<T, i>> {
+ void operator()(std::ostream& streamOut,
+                 StringifyKind stringKind,
+                 const llvm::SmallVector<T, i>& stringMe) const {
    defaultStringifyVec(streamOut, stringKind, stringMe);
  }
 };
