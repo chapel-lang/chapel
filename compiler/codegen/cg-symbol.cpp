@@ -2588,19 +2588,6 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_CPU:
             break;
         }
-      } else {
-        // This is a function called from a GPU kernel
-        // hipcc marks such functions as hidden visibility
-        // so we do the same here.
-        switch (getGpuCodegenType()) {
-          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-            break; // no visibility change for NVIDIA
-          case GpuCodegenType::GPU_CG_AMD_HIP:
-            func->setVisibility(llvm::Function::HiddenVisibility);
-            break;
-          case GpuCodegenType::GPU_CG_CPU:
-            break;
-        }
       }
     }
 
