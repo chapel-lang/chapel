@@ -2047,8 +2047,12 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
         // error explaining why each candidate was rejected.
         std::vector<resolution::FormalActual> badPasses;
         std::vector<const uast::VarLikeDecl*> actualDecls;
+        badPasses.resize(rejected.size());
+        actualDecls.resize(rejected.size());
         // check each rejected candidate for uninitialized actuals
-        for (auto& candidate : rejected) {
+
+        for (size_t i = 0; i < rejected.size(); i++) {
+          auto& candidate = rejected[i];
           if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
             /* skip printing detailed info_ here because computing the formal-actual
             map will go poorly with an unknown formal. */
@@ -2056,7 +2060,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
             auto fn = candidate.initialForErr();
             resolution::FormalActualMap fa(fn, ci);
             auto badPass = fa.byFormalIdx(candidate.formalIdx());
-            badPasses.push_back(badPass);
+            badPasses[i] =badPass;
             const uast::AstNode* actualExpr = nullptr;
             const uast::VarLikeDecl* actualDecl = nullptr;
             if (call && 0 <= badPass.actualIdx() &&
@@ -2073,9 +2077,10 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                 actualDecl = var->toVarLikeDecl();
               }
             }
-            actualDecls.push_back(actualDecl);
+            actualDecls[i] = actualDecl;
           }
         }
+        CHPL_ASSERT((badPasses.size() == rejected.size()) && (rejected.size() == actualDecls.size()));
         CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, badPasses, actualDecls);
         return;
       }
