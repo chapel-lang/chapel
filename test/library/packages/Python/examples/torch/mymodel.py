@@ -11,7 +11,8 @@ class MyModel(torch.nn.Module):
 def main():
     # create the model
     model = MyModel()
-    input_tensor = torch.tensor([[1.0]], requires_grad=True)
+    input_tensor = torch.tensor([[1.0]], requires_grad=False)
+    print("Input tensor:", input_tensor)
 
     # init model weights to 0.9
     for p in model.parameters():
@@ -23,6 +24,7 @@ def main():
     # compute the loss
     loss_fn = torch.nn.MSELoss()
     target = torch.tensor([[2.0]])
+    print("Target:", target)
     loss = loss_fn(pred, target)
     loss.backward()
 
