@@ -246,7 +246,6 @@ module Python {
 
     var sepPy = PyObject_GetAttrString(os, "pathsep");
     interp.checkException();
-    defer Py_DECREF(sepPy);
 
     var sep = interp.fromPython(string, sepPy);
     return sep;
@@ -458,6 +457,8 @@ module Python {
     /*
       Convert a Chapel value to a python object. This clones the Chapel value.
 
+      This returns a new reference to a Python object.
+
       .. note::
 
          Most users should not need to call this directly, except when writing
@@ -501,6 +502,7 @@ module Python {
       } else if isSubtype(t, List.list) {
         return toList(val);
       } else if isSubtype(t, Value) {
+        Py_INCREF(val.get());
         return val.get();
       } else if t == NoneType {
         return Py_None;
@@ -511,6 +513,10 @@ module Python {
 
     /*
       Convert a Python object to a Chapel value. This clones the Python value.
+
+      This steals a reference to the Python object, so the Chapel object will
+      either own the Python object or it will decrement the reference count
+      when it is done with it.
 
       .. note::
 
@@ -538,12 +544,9 @@ module Python {
         return v: t; // cast to the real type
       } else if isBoolType(t) {
         return if obj == Py_True then true else false;
-      } else if t == c_ptrConst(c_char) {
-        var v = PyUnicode_AsUTF8(obj);
-        this.checkException();
-        return v;
       } else if t == string {
         var v = string.createCopyingBuffer(PyUnicode_AsUTF8(obj));
+        Py_DECREF(obj);
         this.checkException();
         return v;
       } else if isArrayType(t) {
@@ -565,6 +568,9 @@ module Python {
       } else if isSubtype(t, Value) || isSubtype(t, Value?) {
         return new t(this, obj);
       } else if t == NoneType {
+        // returning NoneType can be used to ignore a return value
+        // but if its not actually None, we still need to decrement the reference count
+        if obj != Py_None then Py_DECREF(obj);
         return None;
       } else {
         halt("Unsupported fromPython type: '" + t:string + "'");
@@ -572,7 +578,7 @@ module Python {
     }
 
     /*
-      Converts an array to a python list
+      Converts an array to a python list. Returns new reference
     */
     @chpldoc.nodoc
     proc toList(arr): PyObjectPtr throws
@@ -588,7 +594,7 @@ module Python {
     }
 
     /*
-      Convert a chapel list to a python list
+      Convert a chapel list to a python list. Returns a new reference
     */
     @chpldoc.nodoc
     proc toList(l: List.list(?)): PyObjectPtr throws {
@@ -602,7 +608,7 @@ module Python {
     }
 
     /*
-      Converts a python list to an array
+      Converts a python list to an array. Steals a reference to obj.
     */
     @chpldoc.nodoc
     proc fromList(type T, obj: PyObjectPtr): T throws
@@ -628,7 +634,7 @@ module Python {
     }
 
     /*
-      Convert a python list to a Chapel list
+      Convert a python list to a Chapel list. Steals a reference to obj.
     */
     @chpldoc.nodoc
     proc fromList(type T, obj: PyObjectPtr): T throws where isSubtype(T, List.list) {
@@ -681,7 +687,7 @@ module Python {
 
 
     /*
-      Converts an associative array to a python dictionary
+      Converts an associative array to a python dictionary. Returns a new reference.
     */
     @chpldoc.nodoc
     proc toDict(arr): PyObjectPtr throws
@@ -700,7 +706,7 @@ module Python {
     // TODO: convert chapel map to python dict
 
     /*
-      Converts a python dictionary to an associative array
+      Converts a python dictionary to an associative array. Steals a reference to obj.
     */
     proc fromDict(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
@@ -757,7 +763,6 @@ module Python {
       assert(exc != nil);
       var py_str = PyObject_Str(exc);
       var str = interp.fromPython(string, py_str);
-      Py_DECREF(py_str);
       Py_DECREF(exc);
       if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
         return new ImportError(str);
@@ -854,6 +859,8 @@ module Python {
   }
 
 
+  var counter = 0;
+
   /*
     Represents a Python value, it handles reference counting and is owned by default.
   */
@@ -912,15 +919,6 @@ module Python {
     proc get() do return this.obj;
 
     /*
-      Returns the Chapel value of the object.
-
-      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object.
-    */
-    proc value(type value) throws {
-      return interpreter.fromPython(value, this.obj);
-    }
-
-    /*
       Stop owning val, return the underlying ptr.
     */
     proc type release(in val: owned Value): PyObjectPtr {
@@ -965,46 +963,6 @@ module Python {
       This handles conversion from Chapel types to Python types and back, by
       copying the Chapel types to Python types and back.
 
-      :arg retType: The Chapel type of the return value. If the callable returns
-                    nothing, use :type:`NoneType`.
-      :arg args: The arguments to pass to the callable.
-    */
-    proc this(type retType, const args...): retType throws {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      defer {
-        for param i in 0..#args.size {
-          Py_DECREF(pyArgs(i));
-        }
-      }
-
-      var pyRes;
-      if pyArgs.size == 1 then
-        pyRes = PyObject_CallOneArg(this.get(), pyArgs(0));
-      else
-        pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
-    /*
-      Treat this value as a callable and call it with no arguments.
-
-      See :proc:`~Value.this` for more information.
-    */
-    proc this(type retType): retType throws {
-      var pyRes = PyObject_CallNoArgs(this.get());
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
-    /*
-      Treat this value as a callable and call it with the given arguments and keyword arguments.
-
       The keyword arguments should be passed as an associative Chapel array.
       For example:
 
@@ -1012,73 +970,65 @@ module Python {
 
          var res = myObj(int, arg1, arg2, kwargs=["key1" => 42, "key2" => 17]);
 
-      See :proc:`~Value.this` for more information.
+      :arg retType: The Chapel type of the return value. If the callable returns
+                    nothing, use :type:`NoneType`.
+      :arg args: The arguments to pass to the callable.
+      :arg kwargs: The keyword arguments to pass to the callable.
     */
     pragma "last resort"
-    proc this(type retType, const args..., kwargs:?t=none): retType throws
-      where kwargs.isAssociative() {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
-      defer {
-        for param i in 0..#args.size {
-          Py_DECREF(pyArgs(i));
-        }
-        Py_DECREF(pyArg);
-      }
-
-      var pyKwargs;
-      if t != nothing {
-        pyKwargs = interpreter.toPython(kwargs);
-      } else {
-        pyKwargs = nil;
-      }
-      defer {
-        if pyKwargs != nil {
-          Py_DECREF(pyKwargs);
-        }
-      }
-
-      var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
-      interpreter.checkException();
+    proc this(type retType,
+              const args...,
+              kwargs:?=none): retType throws
+              where kwargs.isAssociative() {
+      var pyArg = this.packTuple((...args));
+      defer Py_DECREF(pyArg);
+      return callInternal(retType, pyArg, kwargs);
+    }
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc this(type retType,
+              kwargs:?=none): retType throws where kwargs.isAssociative() {
+      var pyArgs = Py_BuildValue("()");
+      defer Py_DECREF(pyArgs);
+      return callInternal(retType, pyArgs, kwargs);
+    }
+    @chpldoc.nodoc
+    proc this(type retType, const args...): retType throws {
+      var pyArg = this.packTuple((...args));
+      defer Py_DECREF(pyArg);
+      return callInternal(retType, pyArg, none);
+    }
+    @chpldoc.nodoc
+    proc this(type retType): retType throws {
+      var pyRes = PyObject_CallNoArgs(this.get());
+      this.check();
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
-    /*
-      Treat this value as a callable and call it with the given keyword arguments.
 
-      The keyword arguments should be passed as an associative Chapel array.
-      For example:
-
-      .. code-block:: chapel
-
-         var res = myObj(int, kwargs=["key1" => 42, "key2" => 17]);
-
-      See :proc:`~Value.this` for more information.
-    */
-    pragma "last resort"
-    proc this(type retType, kwargs:?t=none): retType throws
-      where kwargs.isAssociative() {
-
-      var pyArg = Py_BuildValue("()");
-
-      var pyKwargs;
-      if t != nothing {
-        pyKwargs = interpreter.toPython(kwargs);
-      } else {
-        pyKwargs = nil;
+    @chpldoc.nodoc
+    proc packTuple(const args...) throws {
+      var pyArgs: args.size * PyObjectPtr;
+      for param i in 0..#args.size {
+        pyArgs(i) = interpreter.toPython(args(i));
       }
-      defer {
-        if pyKwargs != nil {
-          Py_DECREF(pyKwargs);
-        }
-      }
+      defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
-      var pyRes = PyObject_Call(this.get(), pyArg, pyKwargs);
+      var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
       interpreter.checkException();
+
+      return pyArg;
+    }
+    @chpldoc.nodoc
+    proc callInternal(type retType,
+                      pyArg: PyObjectPtr, kwargs: ?t): retType throws {
+      var pyKwargs;
+      if t != nothing then pyKwargs = interpreter.toPython(kwargs);
+                      else pyKwargs = nil;
+
+      var pyRes = PyObject_Call(this.obj, pyArg, pyKwargs);
+      this.check();
 
       var res = interpreter.fromPython(retType, pyRes);
       return res;
@@ -1111,7 +1061,7 @@ module Python {
       Import a Python module by name.
     */
     proc init(interpreter: borrowed Interpreter, in modName: string) {
-      super.init(interpreter, PyImport_ImportModule(modName.c_str()));
+      super.init(interpreter, PyImport_ImportModule(modName.c_str()), isOwned=true);
       this.modName = modName;
     }
   }
@@ -1124,15 +1074,15 @@ module Python {
     var fnName: string;
 
     proc init(mod: borrowed Module, in fnName: string) {
-      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), fnName.c_str()));
+      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), fnName.c_str()), isOwned=true);
       this.fnName = fnName;
     }
-    proc init(interpreter: borrowed Interpreter, in fnName: string, in obj: PyObjectPtr) {
-      super.init(interpreter, obj);
+    proc init(interpreter: borrowed Interpreter, in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
       this.fnName = fnName;
     }
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
-      super.init(interpreter, nil:PyObjectPtr);
+      super.init(interpreter, nil:PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
@@ -1146,32 +1096,22 @@ module Python {
   class Class: Value {
     var className: string;
     proc init(mod: borrowed Module, in className: string) {
-      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), className.c_str()));
+      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), className.c_str()), isOwned=true);
       this.className = className;
     }
 
     @chpldoc.nodoc
     proc newInstance(const args...): PyObjectPtr throws {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      defer {
-        for param i in 0..#args.size {
-          Py_DECREF(pyArgs(i));
-        }
-      }
-
-      var pyRes = PyObject_CallFunctionObjArgs(this.get(), (...pyArgs), nil);
-      interpreter.checkException();
-
+      var pyArg = packTuple((...args));
+      defer Py_DECREF(pyArg);
+      var pyRes = PyObject_Call(this.get(), pyArg, nil);
+      this.check();
       return pyRes;
     }
     @chpldoc.nodoc
     proc newInstance(): PyObjectPtr throws {
       var pyRes = PyObject_CallNoArgs(this.get());
-      interpreter.checkException();
-
+      this.check();
       return pyRes;
     }
 
@@ -1191,8 +1131,8 @@ module Python {
   */
   class ClassObject: Value {
     @chpldoc.nodoc
-    proc init(interp: borrowed Interpreter, in obj: PyObjectPtr) {
-      super.init(interp, obj);
+    proc init(interp: borrowed Interpreter, in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interp, obj, isOwned=isOwned);
     }
 
     proc setAttr(attr: string, value) throws {
@@ -1208,11 +1148,7 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
-      defer {
-        for param i in 0..#args.size {
-          Py_DECREF(pyArgs(i));
-        }
-      }
+      defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
       var methodName = interpreter.toPython(method);
       defer Py_DECREF(methodName);
@@ -1453,6 +1389,7 @@ module Python {
     extern proc Py_INCREF(obj: PyObjectPtr);
     extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
+    extern proc  PyMem_Free(ptr: c_ptr(void));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
