@@ -919,6 +919,17 @@ module Python {
     proc get() do return this.obj;
 
     /*
+      Returns the Chapel value of the object.
+
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object, however it does not consume the object.
+    */
+    proc value(type value) throws {
+      // fromPython will decrement the reference count, so we need to increment it
+      Py_INCREF(this.obj);
+      return interpreter.fromPython(value, this.obj);
+    }
+
+    /*
       Stop owning val, return the underlying ptr.
     */
     proc type release(in val: owned Value): PyObjectPtr {
