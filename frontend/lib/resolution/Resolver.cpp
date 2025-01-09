@@ -1360,16 +1360,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
-          // if (auto namedDecl = declForErr->toNamedDecl()) {
-          //   auto pair = namesWithErrorsEmitted.insert(namedDecl->name());
-          //   if (pair.second) {
-              CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                          initForErr, declaredType.type(), initExprType.type());
-          //   }
-          // } else {
-          //   CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-          //               initForErr, declaredType.type(), initExprType.type());
-          // }
+          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                      initForErr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         }
       } else {
@@ -1384,16 +1376,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                     initExprType.type(), poiScope);
         }
         if (initEq == nullptr) {
-          // if (auto namedDecl = declForErr->toNamedDecl()) {
-          //   auto pair = namesWithErrorsEmitted.insert(namedDecl->name());
-          //   if (pair.second) {
-          //     CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-          //                 initForErr, declaredType.type(), initExprType.type());
-          //   }
-          // } else {
-            CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                        initForErr, declaredType.type(), initExprType.type());
-          // }
+          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                      initForErr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         } else {
           typePtr = initEq->formalType(0).type();
