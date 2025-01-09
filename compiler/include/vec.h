@@ -88,8 +88,8 @@ class Vec {
   C             *v;
   C             e[S];
 
-  Vec<C,S>();
-  Vec<C,S>(const Vec<C,S> &vv);
+  Vec();
+  Vec(const Vec<C,S> &vv);
   ~Vec() { if (v && v != e) free(v); }
 
   void add(C a);
