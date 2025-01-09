@@ -1343,8 +1343,10 @@ module Python {
       This allocates a new buffer, the caller is responsible for freeing it.
     */
     proc string.c_wstr(): c_ptr(c_wchar) {
-      extern proc mbstowcs(dest: c_ptr(c_wchar), src: c_ptrConst(c_char), n: c_size_t): c_size_t;
-      var len = this.size;
+      extern proc mbstowcs(dest: c_ptr(c_wchar),
+                           src: c_ptrConst(c_char),
+                           n: c_size_t): c_size_t;
+      var len: c_size_t = this.size.safeCast(c_size_t);
       var buf = allocate(c_wchar, len + 1, clear=true);
       mbstowcs(buf, this.c_str(), len);
       return buf;
