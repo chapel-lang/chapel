@@ -3898,11 +3898,12 @@ bool Resolver::enter(const uast::Manage* manage) {
     // so note those as associated actions.
     const TypedFnSignature* enterSig = nullptr;
     const TypedFnSignature* exitSig = nullptr;
-    for (auto [id, fn] : witness->requiredFns()) {
-      if (fn->untyped()->name() == USTR("enterContext")) {
-        enterSig = fn;
-      } else if (fn->untyped()->name() == USTR("exitContext")) {
-        exitSig = fn;
+    for (auto& [id, fns] : witness->requiredFns()) {
+      CHPL_ASSERT(fns.size() > 0);
+      if (fns[0]->untyped()->name() == USTR("enterContext")) {
+        enterSig = fns[0];
+      } else if (fns[0]->untyped()->name() == USTR("exitContext")) {
+        exitSig = fns[0];
       } else {
         CHPL_ASSERT(false && "unexpected function in contextManager interface");
       }

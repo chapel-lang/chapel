@@ -5481,6 +5481,8 @@ struct InterfaceCheckHelper {
   // special case behavior fields below.
   // if not null, we're trying to infer the return type for contexts (storing into this map)
   ImplementationWitness::AssociatedTypeMap* inferContextReturnType;
+  // When encountering 'IFC_ANY_RETURN_INTENT', we will save all overloads we found.
+  llvm::SmallVector<const TypedFnSignature*, 4> returnIntentOverloads;
 
   optional<CallInfo> setupCallForTemplate(const Function* templateFn,
                                           const TypedFnSignature* templateSig) {
@@ -5517,6 +5519,8 @@ struct InterfaceCheckHelper {
     std::vector<ApplicabilityResult> rejected;
     std::vector<const TypedFnSignature*> ambiguous;
 
+    returnIntentOverloads.clear();
+
     bool failed = c.exprType().isUnknownOrErroneous();
     if (failed && c.mostSpecific().isAmbiguous()) {
       // TODO: no way at this time to collected candidates rejected due to
@@ -5537,6 +5541,23 @@ struct InterfaceCheckHelper {
 
     const TypedFnSignature* foundFn = nullptr;
     if (c.mostSpecific().numBest() > 1) {
+
+      // For when encountering return intent overloading, we would normally
+      // pick a "best overload". However, IFC_ANY_RETURN_INTENT is meant
+      // to allow us to defer selecting a specific overload (one use case
+      // is the contextManager, where we pick different overloads depending
+      // on different intents).
+      if (auto ag = templateFn->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_IFC_ANY_RETURN_INTENT)) {
+          for (const auto& candidate : c.mostSpecific()) {
+            if (!candidate) continue;
+
+            returnIntentOverloads.push_back(candidate.fn());
+          }
+          return returnIntentOverloads.front();
+        }
+      }
+
       CHPL_UNIMPL("return intent overloading in interface constraint checking");
       return nullptr;
     } else {
@@ -5956,8 +5977,11 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     if (!foundFn) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
+    } else if (helper.returnIntentOverloads.size() > 0) {
+      functions.emplace(fn->id(), std::move(helper.returnIntentOverloads));
     } else {
-      functions.emplace(fn->id(), foundFn);
+      llvm::SmallVector<const TypedFnSignature*, 1> foundFns { foundFn };
+      functions.emplace(fn->id(), foundFns);
     }
   }
 
