@@ -37,16 +37,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-
 struct AdjustMaybeRefs {
   using RV = MutatingResolvedVisitor<AdjustMaybeRefs>;
-
-  typedef enum {
-    REF = 1,
-    CONST_REF = 2,
-    VALUE = 3,
-    REF_MAYBE_CONST = 4, // used temporarily for recursive cases
-  } Access;
 
   struct ExprStackEntry {
     const AstNode* ast = nullptr;
@@ -149,25 +141,7 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
   }
 }
 
-AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
-  if (q == Qualifier::REF ||
-      q == Qualifier::OUT ||
-      q == Qualifier::INOUT) {
-    return REF;
-  }
-
-  if (q == Qualifier::CONST_REF) {
-    return CONST_REF;
-  }
-
-  if (q == Qualifier::REF_MAYBE_CONST) {
-    return REF_MAYBE_CONST;
-  }
-
-  return VALUE; // including IN at least
-}
-
-AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
+Access AdjustMaybeRefs::currentAccess() {
   Access access = VALUE;
   if (exprStack.size() > 0) {
     access = exprStack.back().access;
@@ -258,35 +232,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    MostSpecificCandidate bestRef = candidates.bestRef();
-    MostSpecificCandidate bestConstRef = candidates.bestConstRef();
-    MostSpecificCandidate bestValue = candidates.bestValue();
-    MostSpecificCandidate best = {};
-    if (access == REF) {
-      if (bestRef) best = bestRef;
-      else if (bestConstRef) best = bestConstRef;
-      else best = bestValue;
-    } else if (access == CONST_REF) {
-      if (bestConstRef) best = bestConstRef;
-      else if (bestValue) best = bestValue;
-      else best = bestRef;
-    } else if (access == REF_MAYBE_CONST) {
-      // raise an error
+    bool ambiguity;
+    auto best = determineBestReturnIntentOverload(candidates, access, ambiguity);
+    if (ambiguity)
       context->error(ast, "Too much recursion to infer return intent overload");
-      if (bestConstRef) best = bestConstRef;
-      else if (bestValue) best = bestValue;
-      else best = bestRef;
-    } else { // access == VALUE
-      if (bestValue) best = bestValue;
-      else if (bestConstRef) best = bestConstRef;
-      else best = bestRef;
-    }
 
-    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(best));
+    CHPL_ASSERT(best);
+    auto fn = best->fn();
+    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(*best));
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(rc, best.fn(), re.poiScope()));
+    re.setType(returnType(rc, fn, re.poiScope()));
   }
 
   // there should be only one candidate at this point

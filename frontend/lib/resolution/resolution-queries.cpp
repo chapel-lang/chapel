@@ -6971,6 +6971,59 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   return QUERY_END(ret);
 }
 
+Access accessForQualifier(Qualifier q) {
+  if (q == Qualifier::REF ||
+      q == Qualifier::OUT ||
+      q == Qualifier::INOUT) {
+    return REF;
+  }
+
+  if (q == Qualifier::CONST_REF) {
+    return CONST_REF;
+  }
+
+  if (q == Qualifier::REF_MAYBE_CONST) {
+    return REF_MAYBE_CONST;
+  }
+
+  return VALUE; // including IN at least
+}
+
+const MostSpecificCandidate*
+determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
+                                  Access access,
+                                  bool& outAmbiguity) {
+  outAmbiguity = false;
+  const MostSpecificCandidate* best = nullptr;
+  if (candidates.numBest() > 1) {
+    auto& bestRef = candidates.bestRef();
+    auto& bestConstRef = candidates.bestConstRef();
+    auto& bestValue = candidates.bestValue();
+    if (access == REF) {
+      if (bestRef) best = &bestRef;
+      else if (bestConstRef) best = &bestConstRef;
+      else best = &bestValue;
+    } else if (access == CONST_REF) {
+      if (bestConstRef) best = &bestConstRef;
+      else if (bestValue) best = &bestValue;
+      else best = &bestRef;
+    } else if (access == REF_MAYBE_CONST) {
+      // raise an error
+      outAmbiguity = true;
+      if (bestConstRef) best = &bestConstRef;
+      else if (bestValue) best = &bestValue;
+      else best = &bestRef;
+    } else { // access == VALUE
+      if (bestValue) best = &bestValue;
+      else if (bestConstRef) best = &bestConstRef;
+      else best = &bestRef;
+    }
+  } else if (candidates.numBest() == 1) {
+    best = &candidates.only();
+  }
+  return best;
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

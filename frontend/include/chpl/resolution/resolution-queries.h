@@ -643,6 +643,13 @@ builderResultForDefaultFunction(Context* context,
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
 
+Access accessForQualifier(uast::Qualifier q);
+
+const MostSpecificCandidate*
+determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
+                                  Access access,
+                                  bool& outAmbiguity);
+
 
 } // end namespace resolution
 } // end namespace chpl

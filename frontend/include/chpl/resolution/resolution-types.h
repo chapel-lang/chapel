@@ -49,6 +49,15 @@ SubstitutionsMap substituteInMap(Context* context,
                                  const SubstitutionsMap& substituteIn,
                                  const types::PlaceholderMap& subs);
 
+/* When adjusting return intent overloads, the context of the overloaded
+   call (is it used as a value, a reference, or a const reference?). */
+typedef enum {
+  REF = 1,
+  CONST_REF = 2,
+  VALUE = 3,
+  REF_MAYBE_CONST = 4, // used temporarily for recursive cases
+} Access;
+
 /**
 
   In some situations, we may decide not to resolve a call. This could
