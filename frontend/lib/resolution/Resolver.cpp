@@ -3896,6 +3896,7 @@ bool Resolver::enter(const uast::Manage* manage) {
 
     if (!witness) {
       context->error(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
+      continue;
     }
 
     Access accessContext = Access::VALUE;
