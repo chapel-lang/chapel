@@ -75,7 +75,6 @@ struct AdjustMaybeRefs {
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
-  static Access accessForQualifier(Qualifier q);
   Access currentAccess();
 
   void constCheckAssociatedActions(const AstNode* ast, RV& rv);

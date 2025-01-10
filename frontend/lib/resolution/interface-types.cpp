@@ -56,13 +56,15 @@ ImplementationWitness::getImplementationWitness(Context* context,
                                                 ConstraintMap associatedConstraints,
                                                 AssociatedTypeMap associatedTypes,
                                                 FunctionMap requiredFns,
+                                                OverloadMap returnIntentOverloads,
                                                 bool allGenerated) {
   QUERY_BEGIN(getImplementationWitness, context, associatedConstraints,
-              associatedTypes, requiredFns, allGenerated);
+              associatedTypes, requiredFns, returnIntentOverloads, allGenerated);
 
   auto result = toOwned(new ImplementationWitness(std::move(associatedConstraints),
                                                   std::move(associatedTypes),
                                                   std::move(requiredFns),
+                                                  std::move(returnIntentOverloads),
                                                   allGenerated));
 
   return QUERY_END(result);
@@ -72,10 +74,12 @@ ImplementationWitness* ImplementationWitness::get(Context* context,
                                                   ConstraintMap associatedConstraints,
                                                   AssociatedTypeMap associatedTypes,
                                                   FunctionMap requiredFns,
+                                                  OverloadMap returnIntentOverloads,
                                                   bool allGenerated) {
   return getImplementationWitness(context, std::move(associatedConstraints),
                                   std::move(associatedTypes),
                                   std::move(requiredFns),
+                                  std::move(returnIntentOverloads),
                                   allGenerated).get();
 }
 
@@ -99,8 +103,7 @@ void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stri
   for (auto& f : requiredFns_) {
     f.first.stringify(ss, stringKind);
     ss << " => ";
-    CHPL_ASSERT(f.second.size() >= 1);
-    f.second[0]->stringify(ss, stringKind);
+    f.second->stringify(ss, stringKind);
     ss << ", ";
   }
   ss << ")";

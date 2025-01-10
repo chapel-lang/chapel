@@ -5482,7 +5482,7 @@ struct InterfaceCheckHelper {
   // if not null, we're trying to infer the return type for contexts (storing into this map)
   ImplementationWitness::AssociatedTypeMap* inferContextReturnType;
   // When encountering 'IFC_ANY_RETURN_INTENT', we will save all overloads we found.
-  llvm::SmallVector<const TypedFnSignature*, 4> returnIntentOverloads;
+  optional<MostSpecificCandidates> returnIntentOverloads;
 
   optional<CallInfo> setupCallForTemplate(const Function* templateFn,
                                           const TypedFnSignature* templateSig) {
@@ -5519,8 +5519,6 @@ struct InterfaceCheckHelper {
     std::vector<ApplicabilityResult> rejected;
     std::vector<const TypedFnSignature*> ambiguous;
 
-    returnIntentOverloads.clear();
-
     bool failed = c.exprType().isUnknownOrErroneous();
     if (failed && c.mostSpecific().isAmbiguous()) {
       // TODO: no way at this time to collected candidates rejected due to
@@ -5549,12 +5547,12 @@ struct InterfaceCheckHelper {
       // on different intents).
       if (auto ag = templateFn->attributeGroup()) {
         if (ag->hasPragma(uast::pragmatags::PRAGMA_IFC_ANY_RETURN_INTENT)) {
+          returnIntentOverloads = c.mostSpecific();
           for (const auto& candidate : c.mostSpecific()) {
             if (!candidate) continue;
-
-            returnIntentOverloads.push_back(candidate.fn());
+            return candidate.fn();
           }
-          return returnIntentOverloads.front();
+          CHPL_ASSERT(false && "numBest() > 1 but no candidate found");
         }
       }
 
@@ -5763,6 +5761,8 @@ struct InterfaceCheckHelper {
     CHPL_ASSERT(allPlaceholders);
     auto templateSigWithSubs = templateSig->substitute(rc->context(), *allPlaceholders);
 
+    returnIntentOverloads.reset();
+
     auto ci = setupCallForTemplate(templateFn, templateSigWithSubs);
     if (!ci) return  nullptr;
 
@@ -5875,7 +5875,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   bool anyWitnesses = false;
   auto witness1 =
     ImplementationWitness::get(rc->context(), associatedConstraints,
-                               {}, {}, allGenerated);
+                               {}, {}, {}, allGenerated);
 
   // Next, process all the associated types, and create a "phase 2"
   // implementation witness.
@@ -5943,7 +5943,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   }
   auto witness2 =
     ImplementationWitness::get(rc->context(), associatedConstraints,
-                               associatedTypes, {},
+                               associatedTypes, {}, {},
                                anyWitnesses && helper.allGenerated);
 
   // Next, process all the functions; if all of these are found, we can construct
@@ -5952,6 +5952,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
   for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
   ImplementationWitness::FunctionMap functions;
+  ImplementationWitness::OverloadMap returnIntentOverloads;
   helper.witness = witness2;
   helper.allPlaceholders = &allPlaceholders;
   for (auto stmt : itf->stmts()) {
@@ -5977,17 +5978,19 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     if (!foundFn) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
-    } else if (helper.returnIntentOverloads.size() > 0) {
-      functions.emplace(fn->id(), std::move(helper.returnIntentOverloads));
     } else {
-      llvm::SmallVector<const TypedFnSignature*, 1> foundFns { foundFn };
-      functions.emplace(fn->id(), foundFns);
+      functions.emplace(fn->id(), foundFn);
+      if (helper.returnIntentOverloads) {
+        returnIntentOverloads.emplace(fn->id(), std::move(*helper.returnIntentOverloads));
+      }
     }
   }
 
   result =
     ImplementationWitness::get(rc->context(), associatedConstraints,
-                               associatedTypes, functions,
+                               std::move(associatedTypes),
+                               std::move(functions),
+                               std::move(returnIntentOverloads),
                                anyWitnesses && helper.allGenerated);
   return CHPL_RESOLUTION_QUERY_END(result);
 }

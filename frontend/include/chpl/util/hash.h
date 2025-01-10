@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "chpl/util/memory.h"
+#include "chpl/util/compare.h"
 #include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
@@ -138,13 +139,6 @@ inline size_t hashSet(const std::set<T>& key) {
   }
   return ret;
 }
-
-template <typename K, typename V>
-struct FirstElementComparator {
-  bool operator()(const std::pair<K, V>& a, const std::pair<K, V>& b) const {
-    return a.first < b.first;
-  }
-};
 
 template <typename K, typename V>
 inline size_t hashUnorderedMap(const std::unordered_map<K, V>& key) {

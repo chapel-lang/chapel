@@ -30,6 +30,7 @@
 #define CHPL_QUERIES_STRINGIFY_FUNCTIONS_H
 
 #include "chpl/util/memory.h"
+#include "chpl/util/compare.h"
 
 #include <algorithm>
 #include <cstring>
@@ -123,7 +124,7 @@ static inline void defaultStringifyMap(std::ostream& streamOut,
     // it's important to sort the keys / iterate in a deterministic order here,
     // so we create a vector of pair<K,V> and sort that instead
     std::vector<std::pair<K,V>> mapVec(stringMap.begin(), stringMap.end());
-    std::sort(mapVec.begin(), mapVec.end());
+    std::sort(mapVec.begin(), mapVec.end(), FirstElementComparator<K,V>());
     for (auto const& x : mapVec)
     {
       streamOut << separator;
