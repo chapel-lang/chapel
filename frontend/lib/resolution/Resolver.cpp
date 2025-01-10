@@ -3855,8 +3855,13 @@ void Resolver::exit(const NamedDecl* decl) {
 
 bool Resolver::enter(const uast::Manage* manage) {
   for (auto managerExpr : manage->managers()) {
-    auto as = managerExpr->toAs();
-    if (as) managerExpr = as->symbol();
+    const As* as = managerExpr->toAs();
+    const Variable* asVar = nullptr;
+    if (as) {
+      managerExpr = as->symbol();
+      asVar = as->rename()->toVariable();
+      CHPL_ASSERT(asVar);
+    }
     managerExpr->traverse(*this);
 
     auto& rr = byPostorder.byAst(managerExpr);
@@ -3893,17 +3898,54 @@ bool Resolver::enter(const uast::Manage* manage) {
       context->error(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
     }
 
+    Access accessContext = Access::VALUE;
+    if (asVar) {
+      // We're storing the result of entering the context manager. Determine
+      // the type it yields and use it to resolve that expression.
+      auto contextReturnTypeStr = UniqueString::get(context, "contextReturnType");
+      auto& contextReturnTypeId =
+        contextManagerInterface->idForAssociatedType(context, contextReturnTypeStr);
+      auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
+
+
+      // Performance: We are taking a very simple path through resolveNamedDecl
+      // here, but it seems good to share the logic.
+      //
+      // Normal declarations don't do 'ref' and 'const ref' checking because
+      // it's not implemented, and we follow suit.
+      resolveNamedDecl(asVar, contextReturnType);
+      accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
+    }
 
     // Since we're in a manage statement, we will call 'enter' and 'exit',
-    // so note those as associated actions.
+    // so note those as associated actions. For 'enterContext', there may
+    // be several overloads, so pick the best one.
     const TypedFnSignature* enterSig = nullptr;
     const TypedFnSignature* exitSig = nullptr;
-    for (auto& [id, fns] : witness->requiredFns()) {
-      CHPL_ASSERT(fns.size() > 0);
-      if (fns[0]->untyped()->name() == USTR("enterContext")) {
-        enterSig = fns[0];
-      } else if (fns[0]->untyped()->name() == USTR("exitContext")) {
-        exitSig = fns[0];
+    for (auto& [id, fn] : witness->requiredFns()) {
+      if (fn->untyped()->name() == USTR("enterContext")) {
+
+        // If several overloads were stored, use return intent overload
+        // resolution now to pick the best one. Importantly, this is done
+        // separately from return intent resolution in maybe-const.cpp
+        // because we need to know the right overload _now_ because these
+        // are generated calls created when satisfying an interface,
+        // and thus not tracked via a MostSpecificCandidates saved in
+        // a ResolvedExpression.
+        auto overloadsIt = witness->returnIntentOverloads().find(id);
+        if (overloadsIt != witness->returnIntentOverloads().end()) {
+          bool ignoreAmbiguity;
+          auto bestCandidate =
+            determineBestReturnIntentOverload(overloadsIt->second,
+                                              accessContext,
+                                              ignoreAmbiguity);
+          CHPL_ASSERT(bestCandidate);
+          enterSig = bestCandidate->fn();
+        } else {
+          enterSig = fn;
+        }
+      } else if (fn->untyped()->name() == USTR("exitContext")) {
+        exitSig = fn;
       } else {
         CHPL_ASSERT(false && "unexpected function in contextManager interface");
       }
@@ -3911,25 +3953,6 @@ bool Resolver::enter(const uast::Manage* manage) {
     CHPL_ASSERT(enterSig && exitSig);
     rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
     rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
-
-    if (!as) continue;
-
-    auto asVar = as->rename()->toVariable();
-    CHPL_ASSERT(asVar && "unexpected AST in 'manage' statement");
-
-    // We're storing the result of entering the context manager. Determine
-    // the type it yields and use it to resolve that expression.
-    auto contextReturnTypeStr = UniqueString::get(context, "contextReturnType");
-    auto& contextReturnTypeId =
-      contextManagerInterface->idForAssociatedType(context, contextReturnTypeStr);
-    auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
-
-    // Performance: We are taking a very simple path through resolveNamedDecl
-    // here, but it seems good to share the logic.
-    //
-    // Normal declarations don't do 'ref' and 'const ref' checking because
-    // it's not implemented, and we follow suit.
-    resolveNamedDecl(asVar, contextReturnType);
   }
 
   enterScope(manage);

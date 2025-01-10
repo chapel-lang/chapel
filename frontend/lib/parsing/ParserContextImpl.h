@@ -1125,7 +1125,7 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                                          AstNode* expr,
                                          YYLTYPE locResourceName,
                                          UniqueString resourceName) {
-  return buildManagerExpr(location, expr, Variable::INDEX,
+  return buildManagerExpr(location, expr, Variable::VAR,
                           locResourceName,
                           resourceName);
 }
