@@ -563,17 +563,29 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
+      for followThis in _htb._evenSlots(tag) {
+        //writeln(followThis);
+        yield followThis;
+      }
+      /*
       var space = 0..#_htb.tableSize;
       for followThis in space.these(tag) {
         yield followThis;
       }
+      */
     }
 
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
+      //writeln(this);
+      foreach val in _htb._evenSlots(followThis, tag) {
+        yield val;
+      }
+      /*
       foreach idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      */
     }
 
     @chpldoc.nodoc
