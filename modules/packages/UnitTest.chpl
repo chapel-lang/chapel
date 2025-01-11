@@ -536,6 +536,27 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
+    /*
+      Assert that x matches the regular expression pattern.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The regular expression pattern.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, pattern: t) throws {
+      use Regex;
+
+      var re = new regex(pattern);
+      if !re.search(x).matched {
+        const errorMsg = "assert failed - '%?' doesn't match\
+                          the regular expression '%?'".format(x, pattern);
+        throw new owned AssertionError(errorMsg);
+
+      }
+    }
+
     pragma "insert line file info"
     pragma "always propagate line file info"
     @chpldoc.nodoc
