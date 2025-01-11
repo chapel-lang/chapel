@@ -60,12 +60,14 @@ using namespace parsing;
 
 using CommentMap = std::unordered_map<ID, const Comment*>;
 
+char fDocsName[256] = "";
 char fDocsAuthor[256] = "";
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
 char fDocsSphinxDir[256] = "";
+char fDocsHasSphinxDir[256] = "";
 bool fDocsHTML = true;
 char fDocsProjectVersion[256] = "0.0.1";
 bool printSystemCommands = false;
@@ -181,9 +183,11 @@ ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"name", ' ', "<name>", "Name of the project.", "S256", fDocsName, "CHPLDOC_PROJECT_NAME", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
  {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"has-sphinx",  ' ', "<directory>", "Use the existing Sphinx project in directory", "S256", fDocsHasSphinxDir, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
@@ -2214,10 +2218,12 @@ module N { }
 // Command line options and some defaults for dyno-chpldoc
 struct Args {
   std::string saveSphinx = "";
+  std::string hasSphinx = "";
   bool textOnly = false;
   std::string outputDir;
   bool processUsedModules = false;
   std::string author;
+  std::string name;
   std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
@@ -2233,6 +2239,7 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
     clean_exit(1);
   }
   ret.author = std::string(fDocsAuthor);
+  ret.name = std::string(fDocsName);
   if (fDocsCommentLabel[0] != '\0') {
     ret.commentStyle = std::string(fDocsCommentLabel);
   }
@@ -2240,6 +2247,7 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
   ret.processUsedModules = fDocsProcessUsedModules;
   ret.textOnly = fDocsTextOnly;
   ret.saveSphinx = std::string(fDocsSphinxDir);
+  ret.hasSphinx = std::string(fDocsHasSphinxDir);
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
   ret.noHTML = !fDocsHTML;
@@ -2281,13 +2289,14 @@ std::string generateSphinxProject(std::string dirpath, bool printSystemCommands)
 static
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
                           std::string projectVersion, std::string author,
-                          bool printSystemCommands) {
+                          std::string name, bool printSystemCommands) {
   std::string sphinxBuild = "python3 " + getChplDepsApp() + " sphinx-build";
   std::string venvProjectVersion = projectVersion;
 
   std::string envVars = "export CHPLDOC_AUTHOR='" + author + "' && " +
                         "export CHPLDOC_PROJECT_VERSION='"
-                        + venvProjectVersion + "'";
+                        + venvProjectVersion + "' &&" +
+                        "export CHPLDOC_PROJECT_NAME='" + name + "'";
 
   // Run:
   //   $envVars &&
@@ -2426,10 +2435,17 @@ int main(int argc, char** argv) {
     docsOutputDir = getCwd() + "/docs";
   }
 
+  bool generateNewProject = true;
+
   // Root of the sphinx project and generated rst files. If
   // --docs-save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  if (!args.saveSphinx.empty()) {
+
+
+  if (!args.hasSphinx.empty()) {
+    docsSphinxDir = args.hasSphinx;
+    generateNewProject = false;
+  } else if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
     docsSphinxDir = gContext->tmpDir();
@@ -2454,9 +2470,12 @@ int main(int argc, char** argv) {
   if (textOnly_) {
     // For text-only mode, the output and working location is the same.
     docsRstDir = docsOutputDir;
-  } else {
+  } else if (generateNewProject) {
     // For rst mode, the working location is somewhere inside the temp dir.
     docsRstDir = generateSphinxProject(docsSphinxDir, args.printSystemCommands);
+  }
+  else {
+    docsRstDir = args.hasSphinx + "/source/modules";
   }
 
   outputDir_ = docsRstDir;
@@ -2551,7 +2570,7 @@ int main(int argc, char** argv) {
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,
-                         args.author, args.printSystemCommands);
+                         args.author, args.name, args.printSystemCommands);
   }
 
   return 0;

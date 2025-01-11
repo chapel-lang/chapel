@@ -14,6 +14,7 @@
 
 import sys
 import os
+from datetime import datetime
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -49,14 +50,16 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'chpldoc'
+project = os.environ.get('CHPLDOC_PROJECT_NAME', 'PROJECT NAME').strip()
 
 author_text = os.environ.get('CHPLDOC_AUTHOR', 'AUTHOR TEXT')
 
+copyright_year = os.environ.get('CHPLDOC_COPYRIGHT_YEAR', datetime.now().year)
+
 if len(author_text):
-    copyright = u'2015, {0}'.format(author_text)
+    copyright = u'{}, {}'.format(copyright_year, author_text)
 else:
-    copyright = u'2015'
+    copyright = u'{}'.format(copyright_year)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

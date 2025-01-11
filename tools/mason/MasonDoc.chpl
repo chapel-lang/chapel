@@ -48,7 +48,11 @@ proc masonDoc(args: [] string) throws {
         // Must use relative paths with chpldoc to prevent baking in abs paths
         here.chdir(projectHome);
 
-        const command = 'chpldoc src/' + projectFile + ' -o doc/ --process-used-modules';
+        var command = 'chpldoc src/' + projectFile + ' -o doc/ --process-used-modules';
+        if projectName.size != 0 {
+          command += ' --name ' + projectName;
+        }
+
         writeln(command);
         runCommand(command);
       }
