@@ -73,7 +73,7 @@ def cleanCleanfiles(d, c, rmCore):
             for g in globfiles:
                 print('Removing '+g)
                 try:
-                    if os.path.isdir(g):
+                    if os.path.isdir(g) and not os.path.islink(g):
                         shutil.rmtree(g)
                     else:
                         os.unlink(g)
