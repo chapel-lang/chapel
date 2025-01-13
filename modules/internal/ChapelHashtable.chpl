@@ -688,17 +688,18 @@ module ChapelHashtable {
       var numChunks = _computeNumChunks(this.tableNumFullSlots);
       //writeln("number of tasks = ", numChunks);
       //writeln("number of full slots = ", this.tableNumFullSlots);
+      var numFullPerTask = this.tableNumFullSlots / numChunks;
+      //writeln("min number of full slots per task = ", numFullPerTask);
+      var rem = this.tableNumFullSlots % numChunks;
+      //writeln("remainder = ", rem);
 
-      var chunkEnds = _determineEvenChunks(numChunks, this.tableNumFullSlots);
-
-      forall i in chunkEnds.domain {
-        if (i == 0) {
-          yield (0..chunkEnds[i], 0, numChunks);
+      forall i in 0..#numChunks {
+        if (i < rem) {
+          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),
+                 i, numChunks);
         } else {
-          yield ((chunkEnds[i-1]+1)..chunkEnds[i], i, numChunks);
-          if (i == chunkEnds.domain.high) {
-            yield ((chunkEnds[i]+1)..(this.tableSize-1), i+1, numChunks);
-          }
+          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),
+                 i, numChunks);
         }
       }
     }
