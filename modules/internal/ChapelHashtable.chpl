@@ -691,7 +691,7 @@ module ChapelHashtable {
 
       var chunkEnds = _determineEvenChunks(numChunks, this.tableNumFullSlots);
 
-      for i in chunkEnds.domain {
+      forall i in chunkEnds.domain {
         if (i == 0) {
           yield (0..chunkEnds[i], 0, numChunks);
         } else {
