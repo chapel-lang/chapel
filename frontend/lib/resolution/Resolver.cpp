@@ -3895,7 +3895,10 @@ bool Resolver::enter(const uast::Manage* manage) {
                                ignoredFoundExisting);
 
     if (!witness) {
-      context->error(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
+      auto errType = typeErr(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
+      if (asVar) {
+        byPostorder.byAst(asVar).setType(errType);
+      }
       continue;
     }
 
