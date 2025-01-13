@@ -1034,6 +1034,12 @@ module CTypes {
     return c_pointer_return(x);
   }
 
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOf' with a domain argument is unstable")
+  inline proc c_addrOf(ref x: ?t): c_ptr(t) where isDomainType(t) {
+    return c_pointer_return(x);
+  }
+
   /*
     Like :proc:`c_addrOf`, but returns a :type:`c_ptrConst` which disallows
     direct modification of the pointee.
@@ -1041,6 +1047,13 @@ module CTypes {
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
       compilerError("c_addrOfConst domain type not supported");
+    return c_pointer_return_const(x);
+  }
+
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOfConst' with a domain argument is unstable")
+  inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t)
+      where isDomainType(t) {
     return c_pointer_return_const(x);
   }
 
