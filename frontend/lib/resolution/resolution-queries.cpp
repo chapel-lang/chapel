@@ -2158,14 +2158,14 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
     for (auto up = parentSignature; up; up = up->parentFn()) {
       if (up->needsInstantiation()) {
         CHPL_UNIMPL("parent function needs instantiation");
-        return ApplicabilityResult::failure(sig->id(), FAIL_CANDIDATE_OTHER);
+        return ApplicabilityResult::failure(sig, FAIL_CANDIDATE_OTHER);
       }
     }
   }
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return ApplicabilityResult::failure(sig->id(), faMap.reason());
+    return ApplicabilityResult::failure(sig, faMap.reason());
   }
 
   // compute the substitutions
@@ -2449,7 +2449,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
     for (auto formal : fn->formals()) {
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
-          return ApplicabilityResult::failure(sig->id(), FAIL_VARARG_MISMATCH);
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_MISMATCH);
         }
       }
     }
@@ -3216,7 +3216,7 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
   if (auto reasonFailed = isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return ApplicabilityResult::failure(tfs->id(), *reasonFailed);
+    return ApplicabilityResult::failure(tfs, *reasonFailed);
   }
 
   const uast::Function* fn = nullptr;
@@ -3265,14 +3265,14 @@ isInitialTypedSignatureApplicable(Context* context,
     const TupleType* tup = varArgType.type()->toTupleType();
     if (tup != nullptr && tup->isVarArgTuple() &&
         tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
-      return ApplicabilityResult::failure(tfs->id(), FAIL_VARARG_MISMATCH);
+      return ApplicabilityResult::failure(tfs, FAIL_VARARG_MISMATCH);
     }
   }
 
   // check that the where clause applies
   auto whereResult = tfs->whereClauseResult();
   if (whereResult == TypedFnSignature::WHERE_FALSE) {
-    return ApplicabilityResult::failure(tfs->id(), FAIL_WHERE_CLAUSE);
+    return ApplicabilityResult::failure(tfs, FAIL_WHERE_CLAUSE);
   }
 
   return ApplicabilityResult::success(tfs);
@@ -3398,7 +3398,7 @@ doIsCandidateApplicableInstantiating(ResolutionContext* rc,
 
   // check that the where clause applies
   if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
-    return ApplicabilityResult::failure(typedSignature->id(), FAIL_WHERE_CLAUSE);
+    return ApplicabilityResult::failure(typedSignature, FAIL_WHERE_CLAUSE);
 
   return instantiated;
 }
@@ -5820,7 +5820,7 @@ struct InterfaceCheckHelper {
       notType = !c.exprType().isType();
       if (notType) {
         rejected.push_back(
-            ApplicabilityResult::failure(c.mostSpecific().only().fn()->id(),
+            ApplicabilityResult::failure(c.mostSpecific().only().fn(),
                                          FAIL_INTERFACE_NOT_TYPE_INTENT));
       }
     } else {

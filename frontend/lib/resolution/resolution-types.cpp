@@ -1073,6 +1073,52 @@ void CandidatesAndForwardingInfo::stringify(
   }
 }
 
+
+// Note (Daniel): the code for 'overloaded' below comes from cppreference:
+//   https://en.cppreference.com/w/cpp/utility/variant/visit2
+//
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+// explicit deduction guide (not needed as of C++20)
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+void ApplicabilityResult::mark(Context* context) const {
+  std::visit(overloaded {
+    [context](const ID& id) { id.mark(context); },
+    [context](const TypedFnSignature* fn) { context->markPointer(fn); },
+    [context](const UntypedFnSignature* ufs) { context->markPointer(ufs); }
+  }, rejected_);
+  context->markPointer(candidate_);
+  (void) candidateReason_; // nothing to mark
+  (void) formalReason_; // nothing to mark
+  (void) formalIdx_; // nothing to mark
+}
+
+const ID& ApplicabilityResult::idForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const ID& { return id; },
+    [](const UntypedFnSignature* ufs) -> const ID& { return ufs->id(); },
+    [](const TypedFnSignature* fn) -> const ID& { return fn->id(); }
+  }, rejected_);
+}
+
+const UntypedFnSignature* ApplicabilityResult::untypedForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const UntypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) { return ufs; },
+    [](const TypedFnSignature* fn) { return fn->untyped(); }
+  }, rejected_);
+}
+
+const TypedFnSignature* ApplicabilityResult::initialForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const TypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) -> const TypedFnSignature* { return nullptr; },
+    [](const TypedFnSignature* fn) { return fn; }
+  }, rejected_);
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {
