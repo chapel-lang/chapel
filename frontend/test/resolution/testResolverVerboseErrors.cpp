@@ -264,7 +264,7 @@ static const char* errorBasic = R"""(
     3 | f(a=42);
       |
   
-  The following candidate didn't match because the provided actuals could not be mapped to its formals:
+  The following candidate didn't match because actual 1 was named 'a', but no formal with that name was found.
       |
     1 | proc f(x: int) {}
       |

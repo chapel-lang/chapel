@@ -1579,6 +1579,10 @@ class FormalActualMap {
     return &byFormalIdx_[formalIdx];
   }
 
+  int failingFormalIdx() const { return failingFormalIdx_; }
+
+  int failingActualIdx() const { return failingActualIdx_; }
+
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
                         const TypedFnSignature* typed, const CallInfo& call);
