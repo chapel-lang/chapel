@@ -695,13 +695,31 @@ module ChapelHashtable {
 
       forall i in 0..#numChunks {
         if (i < rem) {
-          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),
-                 i, numChunks);
+          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),);
         } else {
-          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),
-                 i, numChunks);
+          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),);
         }
       }
+    }
+
+    proc _guessSlots(followThis) {
+      var iterSpace: range;
+      var intendedSpace = followThis;
+      var chunkSize = intendedSpace.size;
+      var numChunksGuess = this.tableNumFullSlots / chunkSize;
+      var intendedChunkGuess = intendedSpace.low / chunkSize;
+
+      // Determine corresponding chunk to use.
+      var chunkEnds = _determineEvenChunks(numChunksGuess,
+                                           this.tableNumFullSlots);
+      if (intendedChunkGuess == 0) {
+        iterSpace = 0..chunkEnds[intendedChunkGuess];
+      } else if (intendedChunkGuess == chunkEnds.size) {
+        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..(this.tableSize - 1);
+      } else {
+        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..chunkEnds[intendedChunkGuess];
+      }
+      return iterSpace;
     }
 
     iter _evenSlots(followThis, param tag) const ref
@@ -712,28 +730,9 @@ module ChapelHashtable {
       var iterSpace: range;
 
       if (isTuple(followThis)) {
-        if (followThis.size == 3) {
-          // Using _evenSlots iterator gives us a specific set up to iterate
-          // over the full chunks in an even manner.
-          var intendedSpace = followThis(0);
-          var intendedChunk = followThis(1);
-          var numChunks = followThis(2);
-
-          // Determine corresponding chunk to use.
-          var chunkEnds = _determineEvenChunks(numChunks,
-                                               this.tableNumFullSlots);
-          if (intendedChunk == 0) {
-            iterSpace = 0..chunkEnds[intendedChunk];
-          } else if (intendedChunk == chunkEnds.size) {
-            iterSpace = (chunkEnds[intendedChunk-1]+1)..(this.tableSize - 1);
-          } else {
-            iterSpace = (chunkEnds[intendedChunk-1]+1)..chunkEnds[intendedChunk];
-          }
-        } else {
-          iterSpace = followThis(0);
-        }
+        iterSpace = _guessSlots(followThis(0));
       } else {
-        iterSpace = followThis;
+        iterSpace = _guessSlots(followThis);
       }
 
       foreach slot in iterSpace {
