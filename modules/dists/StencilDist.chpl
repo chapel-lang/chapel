@@ -139,14 +139,14 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   Like ``blockDist``, each block in a ``stencilDist`` array is owned by a
   (potentially) different locale. But when communication needs to occur between
   a given block and its set of immediately neighboring or adjacent blocks, the
-  more feature-full ``stencilDist`` most likely makes it the better choice.
-  This is because, for any given block, a ``stencilDist`` transparently creates
-  a read-only cache of selected array elements from its adjacent blocks,
+  more feature-rich ``stencilDist`` is typically the better choice. This is
+  because, for any given block, a ``stencilDist`` transparently creates a
+  read-only cache of selected array elements from its adjacent blocks,
   specifically those array elements from the band of array elements just
   outside the edge of the locally-owned block. This band of array elements is
-  sometimes referred to as a 'halo' in other languages and technologies, but in
-  this documentation will be referred to as either 'ghost cells' or more
-  strictly, as 'fluff'.
+  sometimes referred to as a 'halo' or 'overlap region' in other languages
+  and technologies, but in this documentation will be referred to as either
+  'ghost cells' or more strictly, as 'fluff'.
 
   This approach can  avoid many instances of reading a remote array element
   when performing a stencil computation near the boundary of the current
