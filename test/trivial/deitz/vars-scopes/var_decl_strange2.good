@@ -1,2 +1,1 @@
-var_decl_strange2.chpl:1: error: 'y' used before defined
-var_decl_strange2.chpl:2: note: defined here
+var_decl_strange2.chpl:1: error: statement references variable 'y' before it is defined
