@@ -22,7 +22,6 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/BytesLiteral.h"
-#include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/StringLiteral.h"
 #include "chpl/uast/Variable.h"
@@ -69,32 +68,6 @@ static void testBytesLiteral(Parser* parser,
   assert(bytesLit);
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
   assert(bytesLit->value().str() == expectValue);
-}
-static void testCStringLiteral(Parser* parser,
-                               const std::string& testname,
-                               std::string str,
-                               StringLiteral::QuoteStyle expectQuoteStyle,
-                               const std::string& expectValue) {
-  const AstNode* initExpr = nullptr;
-  ErrorGuard guard(parser->context());
-  std::string toparse = "var x = ";
-  toparse += str.c_str();
-  toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
-  assert(guard.numErrors() == 1);
-  auto mod = parseResult.singleModule();
-  assert(mod);
-  assert(mod->numStmts() == 1);
-  auto variable = mod->stmt(0)->toVariable();
-  assert(variable);
-  initExpr = variable->initExpression();
-  auto strLit = initExpr->toCStringLiteral();
-  assert(strLit);
-  assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->value().str() == expectValue);
-  assert(guard.error(0)->message() == "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
-  assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
-  assert(guard.realizeErrors()==1);
 }
 
 static void testTripleLiteral(Parser* parser,
@@ -145,11 +118,6 @@ static void testSingleLiteral(Parser* parser,
                    "b" + oSingleS, StringLikeLiteral::SINGLE, expectValue);
   testBytesLiteral(parser, "double-b-" + tn,
                    "b" + oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
-
-  testCStringLiteral(parser, "single-c-" + tn,
-                     "c" + oSingleS, StringLikeLiteral::SINGLE, expectValue);
-  testCStringLiteral(parser, "double-c-" + tn,
-                     "c" + oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
 }
 
 

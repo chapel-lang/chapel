@@ -117,7 +117,6 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::UintLiteral:
     case asttags::START_StringLikeLiteral:
     case asttags::BytesLiteral:
-    case asttags::CStringLiteral:
     case asttags::StringLiteral:
     case asttags::END_StringLikeLiteral:
     case asttags::END_Literal:
@@ -243,7 +242,6 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::UintLiteral:
     case asttags::START_StringLikeLiteral:
     case asttags::BytesLiteral:
-    case asttags::CStringLiteral:
     case asttags::StringLiteral:
     case asttags::END_StringLikeLiteral:
     case asttags::END_Literal:

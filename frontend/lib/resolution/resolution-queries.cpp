@@ -450,9 +450,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
     case asttags::BytesLiteral:
       typePtr = CompositeType::getBytesType(context);
       break;
-    case asttags::CStringLiteral:
-      typePtr = CStringType::get(context);
-      break;
     case asttags::StringLiteral:
       typePtr = CompositeType::getStringType(context);
       break;
