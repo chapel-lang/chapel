@@ -25,6 +25,8 @@ proc roundTripFunction(func: borrowed) {
   testType(real(32), 3.14);
   testType(real(64), 3.14);
   testType(string, "hello");
+  testType(bool, true);
+  testType(bytes, b"hello");
 
   var arr: [0..<10] int = 0..<10;
   testType(arr.type, arr);
