@@ -593,6 +593,27 @@ module Map {
           yield table.table[slot].key;
       }
     }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) const ref where tag == iterKind.standalone {
+      foreach slot in table.allSlots(tag) {
+        if table.isSlotFull(slot) then
+          yield table.table[slot].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) where tag == iterKind.leader {
+      var space = 0..#table.tableSize;
+      foreach followThis in space.these(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind, followThis) const ref where tag == iterKind.follower {
+      foreach idx in followThis(0) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
 
     /*
       Iterates over the key-value pairs of this map.
@@ -623,11 +644,31 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref
-    {
+    iter values() ref {
       foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) ref where tag == iterKind.standalone {
+      foreach slot in table.allSlots(tag) {
+        if table.isSlotFull(slot) then
+          yield table.table[slot].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) where tag == iterKind.leader {
+      var space = 0..#table.tableSize;
+      foreach followThis in space.these(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind, followThis) ref where tag == iterKind.follower {
+      foreach idx in followThis(0) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
       }
     }
 
