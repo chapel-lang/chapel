@@ -489,7 +489,7 @@ module Python {
         this.checkException();
         return v;
       } else if isBoolType(t) {
-        var v = PyBool_FromLong(val:int);
+        var v = PyBool_FromLong(val.safeCast(c_long));
         this.checkException();
         return v;
       } else if t == c_ptrConst(c_char) {

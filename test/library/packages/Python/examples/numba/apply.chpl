@@ -1,5 +1,5 @@
 use Python;
-use CTypes only c_ptr, c_long;
+use CTypes only c_ptr, c_long, c_intptr;
 use Time;
 
 config const n = 10;
@@ -38,10 +38,10 @@ proc main() {
   // but thats not possible yet
   var lib = new Module(interp, "lib");
   var applyFunc = new Function(lib, "apply");
-  var applyFuncAddr = applyFunc.getAttr(int, "address"): c_ptr(void);
+  var applyFuncAddr = applyFunc.getAttr(c_intptr, "address"): c_ptr(void);
 
   {
-    data = 1..#n;
+    data = 1:c_long..#n:c_long;
     var t = new stopwatch();
     t.start();
     var res = callApply(data, applyFunc);
@@ -53,7 +53,7 @@ proc main() {
   }
 
   {
-    data = 1..#n;
+    data = 1:c_long..#n:c_long;
     var t = new stopwatch();
     t.start();
     var res = callApplyByAddress(data, applyFuncAddr);
