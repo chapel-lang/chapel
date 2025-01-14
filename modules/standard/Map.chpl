@@ -495,6 +495,7 @@ module Map {
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
 
@@ -519,6 +520,7 @@ module Map {
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the key-value pairs of this map.
 
