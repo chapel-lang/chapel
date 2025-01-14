@@ -454,65 +454,6 @@ module Map {
       return result;
     }
 
-    /* Get a borrowed reference to the element at position `k`.
-     */
-    @deprecated(notes="'map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
-    proc getBorrowed(k: keyType) where isClass(valType) {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt(try! "map index %? out of bounds".format(k));
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
-    }
-
-    /* Get a reference to the element at position `k`. This method is not
-       available for maps initialized with `parSafe=true`.
-     */
-    @deprecated(notes="'map.getReference' is deprecated. Please rely on '[]' accessors instead.")
-    proc getReference(k: keyType) ref {
-      if parSafe then
-        compilerError('cannot call `getReference()` on maps initialized ',
-                      'with `parSafe=true`');
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt(try! "map index %? out of bounds".format(k));
-      ref result = table.table[slot].val;
-      return result;
-    }
-
-    /* Get a copy of the element stored at position `k`.
-
-      :arg k: The key to lookup in the map
-
-      :throws KeyNotFoundError: if `k` not in map
-
-      :returns: A copy of the value at position `k`
-     */
-    @deprecated(notes="'map.getValue' is deprecated. Please rely on '[]' accessors instead.")
-    proc getValue(k: keyType) throws {
-      if !isCopyableType(valType) then
-        compilerError('cannot call `getValue()` for non-copyable ' +
-                      'map value type: ' + valType:string);
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k);
-      try! {
-        const result = table.table[slot].val: valType;
-        return result;
-      }
-    }
-
     /*
       Get a copy of the element stored at position `k` or a sentinel
       value if an element at position `k` does not exist.
@@ -527,22 +468,6 @@ module Map {
     proc get(k: keyType, const sentinel: valType) {
       if !isCopyableType(valType) then
         compilerError('cannot call `get()` for non-copyable ' +
-                      'map value type: ' + valType:string);
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        return sentinel;
-      try! {
-        const result = table.table[slot].val: valType;
-        return result;
-      }
-    }
-
-    @deprecated(notes="'map.getValue' is deprecated. Please use 'map.get' instead.")
-    proc getValue(k: keyType, const sentinel: valType) {
-      if !isCopyableType(valType) then
-        compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
 
       _enter(); defer _leave();
@@ -570,6 +495,7 @@ module Map {
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
 
@@ -594,6 +520,7 @@ module Map {
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the key-value pairs of this map.
 
@@ -731,11 +658,6 @@ module Map {
       return true;
     }
 
-    @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
-    proc ref set(k: keyType, in v: valType): bool {
-      return this.replace(k, v);
-    }
-
     /*
       Replaces the value associated with the key `k` with `v`. If the
       key `k` is not in the map, makes no changes and returns `false`.
@@ -770,11 +692,6 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
-    }
-
-    @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
-    proc ref addOrSet(in k: keyType, in v: valType) {
-      addOrReplace(k, v);
     }
 
     /*
@@ -959,7 +876,7 @@ module Map {
   /*
    A `KeyNotFoundError` is thrown at runtime if an attempt is made
    to access a map value at a given key that is not in the current
-   state of the `map`. An example of this is calling `map.getValue()`.
+   state of the `map`. An example of this is calling :proc:`map.get`.
    */
   class KeyNotFoundError : Error {
     @chpldoc.nodoc

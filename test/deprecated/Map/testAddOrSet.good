@@ -1,3 +1,0 @@
-testAddOrSet.chpl:11: warning: 'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.
-testAddOrSet.chpl:12: warning: 'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.
-{2: {a = 1}}

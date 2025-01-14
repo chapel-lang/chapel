@@ -1,3 +1,0 @@
-testGetValueBadValType.chpl:5: In function 'test':
-testGetValueBadValType.chpl:11: warning: 'map.getValue' is deprecated. Please rely on '[]' accessors instead.
-testGetValueBadValType.chpl:11: error: cannot call `getValue()` for non-copyable map value type: owned C
