@@ -1398,7 +1398,7 @@ module Python {
     extern proc Py_INCREF(obj: PyObjectPtr);
     extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
-    extern proc  PyMem_Free(ptr: c_ptr(void));
+    extern proc PyMem_Free(ptr: c_ptr(void));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
