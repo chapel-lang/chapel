@@ -349,13 +349,6 @@ module Bytes {
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
-    @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-    proc init=(b: c_string) {
-      init this;
-      var length = b.size;
-      initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
-    }
-
     inline proc byteIndices do return 0..<size;
 
     inline proc param size param do
@@ -1121,12 +1114,6 @@ module Bytes {
   inline operator :(x: string, type t: bytes) {
     return bytes.createCopyingBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  inline operator :(x: c_string, type t: bytes) {
-    var length = x.size;
-    return bytes.createCopyingBuffer(x: bufferType, length=length, size=length+1);
-  }
 
 
   /*
@@ -1191,16 +1178,6 @@ module Bytes {
   */
   operator bytes.=(ref lhs: bytes, rhs: bytes) : void {
     doAssign(lhs, rhs);
-  }
-
-  /*
-     Copies the c_string `rhs_c` into the bytes `lhs`.
-
-     Halts if `lhs` is a remote bytes.
-  */
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_char));
   }
 
   //
