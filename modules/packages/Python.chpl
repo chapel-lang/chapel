@@ -859,8 +859,6 @@ module Python {
   }
 
 
-  var counter = 0;
-
   /*
     Represents a Python value, it handles reference counting and is owned by default.
   */
