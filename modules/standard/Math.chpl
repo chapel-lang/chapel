@@ -355,9 +355,6 @@ module Math {
   */
   proc asin(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return asinh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'asin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc asin(x: imag): complex where !useNewImaginaryTrig do
-    return asin(x:complex);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
@@ -493,9 +490,6 @@ module Math {
   */
   proc atanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return atan(x:real(64)) : imag(64);
-  @deprecated("The overload of 'atanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc atanh(x: imag): complex where !useNewImaginaryTrig do
-    return atanh(x:complex);
 
   /* Returns the cosine of the argument `x`. */
   pragma "fn synchronization free"
@@ -538,9 +532,6 @@ module Math {
   */
   inline proc cos(x: imag(64)): real(64) where useNewImaginaryTrig do
     return cosh(x:real(64));
-  @deprecated("The overload of 'cos' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc cos(x: imag): complex where !useNewImaginaryTrig do
-    return cos(x:complex);
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "fn synchronization free"
@@ -583,9 +574,6 @@ module Math {
   */
   inline proc cosh(x: imag(64)): real(64) where useNewImaginaryTrig do
     return cos(x:real(64));
-  @deprecated("The overload of 'cosh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc cosh(x: imag): complex where !useNewImaginaryTrig do
-    return cosh(x:complex);
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
@@ -1241,9 +1229,6 @@ module Math {
   */
   proc sin(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return sinh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'sin' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc sin(x: imag): complex where !useNewImaginaryTrig do
-    return sin(x:complex);
 
 
   /* Returns the hyperbolic sine of the argument `x`. */
@@ -1287,9 +1272,6 @@ module Math {
   */
   proc sinh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return sin(x:real(64)) : imag(64);
-  @deprecated("The overload of 'sinh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc sinh(x: imag): complex where !useNewImaginaryTrig do
-    return sinh(x:complex);
 
 
   /* Returns the tangent of the argument `x`. */
@@ -1333,9 +1315,6 @@ module Math {
   */
   proc tan(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return tanh(x:real(64)) : imag(64);
-  @deprecated("The overload of 'tan' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc tan(x: imag): complex where !useNewImaginaryTrig do
-    return tan(x:complex);
 
 
   /* Returns the hyperbolic tangent of the argument `x`. */
@@ -1379,9 +1358,6 @@ module Math {
   */
   proc tanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
     return tan(x:real(64)) : imag(64);
-  @deprecated("The overload of 'tanh' that takes an 'imag' argument and returns a 'complex' is deprecated and will be removed in the future. To opt-in to the new behavior, compile with `-suseNewImaginaryTrig=true`.")
-  inline proc tanh(x: imag): complex where !useNewImaginaryTrig do
-    return tanh(x:complex);
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
