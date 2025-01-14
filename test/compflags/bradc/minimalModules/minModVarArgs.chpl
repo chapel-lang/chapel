@@ -1,10 +1,15 @@
 // Varargs work out of the box in limited cases.
 
-extern proc printf(f, args...);
+use CTypes;
 
-proc hello(args...) {
-  printf("Hello %s #%d with %d varargs and #%d\n",
-         (...args), args.size:int(8), args(1));
+extern proc printf(f, args...);
+extern {
+    const char* worldStr = "World";
+    const char* formatStr = "Hello %s #%d with %d varargs and #%d\n";
 }
 
-hello("World", 32:int(8));
+proc hello(args...) {
+  printf(formatStr, (...args), args.size:int(8), args(1));
+}
+
+hello(worldStr, 32:int(8));
