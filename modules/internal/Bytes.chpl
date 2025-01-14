@@ -415,38 +415,6 @@ module Bytes {
     }
   }
 
-
-  /*
-    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
-    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`bytes`.
-
-    .. warning::
-
-      This can only be called safely on a :type:`bytes` whose home is
-      the current locale.  This property can be enforced by calling
-      :proc:`bytes.localize()` before :proc:`~bytes.c_str()`. If the
-      bytes is remote, the program will halt.
-
-    For example:
-
-    .. code-block:: chapel
-
-        var myBytes = b"Hello!";
-        on differentLocale {
-          printf("%s", myBytes.localize().c_str());
-        }
-
-    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
-              by this :type:`bytes`. The returned `c_ptrConst(c_char)` is only
-              valid when used on the same locale as the bytes.
-   */
-  pragma "last resort"
-  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.bytes.c_str`'")
-  inline proc bytes.c_str(): c_ptrConst(c_char) {
-    use CTypes only c_str;
-    return this.c_str();
-  }
-
   /*
     Gets an ASCII character from the :type:`bytes`
 
