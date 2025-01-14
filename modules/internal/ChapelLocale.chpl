@@ -222,7 +222,7 @@ module ChapelLocale {
     Note that the value is an estimate by the runtime tasking layer.
     Typically it is the number of physical processor cores available
     to the program.  Executing a data-parallel construct with more
-    tasks this that is unlikely to improve performance.
+    tasks than this is unlikely to improve performance.
   */
   inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
 
