@@ -44,16 +44,42 @@ var A: [1..fac.size] (int, FacInt);
 for item in zip(fac.keys(), fac.values()) {
   A[item(0)] = item;
 }
-writeln(sorted(A));
+writeln("A: ", sorted(A));
 
 var B: [1..fac.size] FacInt;
 for (val, i) in zip(fac.values(), 1..) {
   B[i] = val;
 }
-writeln(sorted(B));
+writeln("B: ", sorted(B));
 
 var C: [1..fac.size] (int, FacInt);
 for key in fac.keys() {
   C[key] = (key, fac[key]);
 }
-writeln(sorted(C));
+writeln("C: ", sorted(C));
+
+var D: [1..fac.size] (int, FacInt);
+forall item in zip(fac.keys(), fac.values()) {
+  D[item(0)] = item;
+}
+writeln("D: ", sorted(D));
+
+var E: [1..fac.size] (FacInt, int);
+forall item in zip(fac.values(), fac.keys()) {
+  E[item(1)] = item;
+}
+writeln("E: ", sorted(E));
+
+var F: [1..fac.size] (int, FacInt);
+forall key in fac.keys() {
+  F[key] = (key, fac[key]);
+}
+writeln("F: ", sorted(F));
+
+var G: [1..fac.size] FacInt;
+var Hidx: atomic int = 1;
+forall val in fac.values() {
+  var i = Hidx.fetchAdd(1);
+  G[i] = val;
+}
+writeln("G: ", sorted(G));
