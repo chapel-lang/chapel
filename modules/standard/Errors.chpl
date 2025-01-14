@@ -161,9 +161,6 @@ module Errors {
     }
   }
 
-  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
-  type CodepointSplittingError = CodepointSplitError;
-
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors
