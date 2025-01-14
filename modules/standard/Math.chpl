@@ -224,9 +224,10 @@ module Math {
   param reciprSqrt2 = 0.70710678118654752440;
 
   /*
-    Enables the new return types for some of the trigonometric and hyperbolic functions that operate on ``imag``
+    Used to enable the new return types for some of the trigonometric and
+    hyperbolic functions that operate on ``imag``. Now, does nothing.
 
-    Functions Affected:
+    Functions previously affected:
     - ``proc cos(imag): real``
     - ``proc cosh(imag): real``
     - ``proc sin(imag): imag``
@@ -236,6 +237,7 @@ module Math {
     - ``proc asin(imag): imag``
     - ``proc atanh(imag): imag``
   */
+  @chpldoc.nodoc
   @deprecated(notes="'useNewImaginaryTrig' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.")
   config param useNewImaginaryTrig = true;
 
