@@ -25,5 +25,7 @@ if [ -z "$CHPL_HOME" ]; then
   exit 1
 fi
 
-exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \
+python=$($CHPL_HOME/util/config/find-python.sh)
+
+exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash $python \
      $CHPL_HOME/tools/chpldoc/findUndocumentedSymbols.py "$@"

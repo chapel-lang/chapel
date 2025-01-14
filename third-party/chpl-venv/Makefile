@@ -117,7 +117,7 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		python3 -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
+		$(CHPL_MAKE_PYTHON) -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
 		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi && \
 		cp $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)/chapel/core.pyi
 

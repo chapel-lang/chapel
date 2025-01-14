@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 #
 # Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
