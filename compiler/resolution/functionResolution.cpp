@@ -9176,8 +9176,8 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
     if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
         lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
 
-      if (auto fn = toFnSymbol(call->parentSymbol);
-               fn && fn->getReturnSymbol() == lhsSym) {
+      auto fn = toFnSymbol(call->parentSymbol);
+      if (fn && fn->getReturnSymbol() == lhsSym) {
         USR_FATAL(call, "illegal return of type where value is expected");
 
       } else if (lhsSym->hasFlag(FLAG_CHPL__ITER) == true) {
