@@ -30,7 +30,7 @@ proc callApplyByAddress(arr, func: c_ptr(void)) {
 }
 
 proc main() {
-  var data: [1..#n] int;
+  var data: [1..#n] c_long; // use c_long to match callFunc
 
   var interp = new Interpreter();
 
