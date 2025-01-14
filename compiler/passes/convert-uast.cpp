@@ -1859,14 +1859,11 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::StringLiteral* node) {
     std::string quoted = escapeStringC(node->value().str());
-    // in minimal modules, we don't have '_string', so create a CString literal instead.
-    SymExpr* se = fMinimalModules ? buildCStringLiteral(quoted.c_str())
-                                  : buildStringLiteral(quoted.c_str());
+    SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
     INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
-    if (!fMinimalModules)
-      INT_ASSERT(v->immediate->string_kind == STRING_KIND_STRING);
+    INT_ASSERT(v->immediate->string_kind == STRING_KIND_STRING);
     return se;
   }
 
