@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-platform=$CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM
+platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
 if [[ $platform == "linux32" ]]; then
   echo " # largeIntegers.linux32.good"
 else
