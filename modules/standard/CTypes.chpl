@@ -48,26 +48,12 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  @chpldoc.nodoc
-  @deprecated("'cFileTypeHasPointer' is deprecated and no longer affects the behavior of the 'c_FILE' type. A 'FILE*' should be represented by 'c_ptr(c_FILE)'")
-  config param cFileTypeHasPointer = false;
-
   /*
     Chapel type alias for a C ``FILE``
 
     A ``FILE*`` can be represented with ``c_ptr(c_FILE)``
   */
   extern "_cfiletype" type c_FILE;
-
-  /*
-    A Chapel type alias for ``void*`` in C. Casts from integral types to
-    ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
-    supported and behave similarly to those operations in C.
-
-  */
-  pragma "last resort"
-  @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
-  type c_void_ptr = c_ptr(void);
 
   /*
 
@@ -597,17 +583,6 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:borrowed, type t:c_ptr(void)) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:unmanaged, type t:c_ptr(void)) {
-    return __primitive("cast", t, x);
-  }
-
-  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:_ddata)
       where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
@@ -767,12 +742,6 @@ module CTypes {
   @chpldoc.nodoc
   extern proc c_pointer_diff(a:c_ptr(void), b:c_ptr(void),
                              eltSize:c_ptrdiff):c_ptrdiff;
-
-  // Transition symbol for 1.31 c_ptrTo behavior deprecations,
-  // itself deprecated in 1.33.
-  @chpldoc.nodoc
-  @deprecated("'cPtrToLogicalValue' is deprecated and no longer affects the behavior of 'c_ptrTo'")
-  config param cPtrToLogicalValue = true;
 
   // Begin c_ptrTo overloads
 
