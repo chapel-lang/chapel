@@ -1,7 +1,5 @@
 // Varargs work out of the box in limited cases.
 
-use CTypes;
-
 extern proc printf(f, args...);
 extern {
     const char* worldStr = "World";

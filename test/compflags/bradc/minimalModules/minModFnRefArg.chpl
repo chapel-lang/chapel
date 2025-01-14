@@ -1,5 +1,3 @@
-use CTypes;
-
 extern proc printf(f, x);
 extern {
     const char* formatStr = "%d\n";

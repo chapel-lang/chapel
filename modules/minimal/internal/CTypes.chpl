@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,18 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// ChapelStandard.chpl
-//
-pragma "export init"
-module ChapelStandard {
-  public use ChapelLocale;
-  public use ChapelTaskData;
-  public use ChapelTaskTable;
-  public use MemTracking;
-  public use ChapelUtil;
-  public use IO;
-
-  // Bring this in without exporting so that compiler-generated uses work
-  use CTypes;
+module CTypes {
+  public use CPtr;
+  extern type c_char = int(8);
 }
