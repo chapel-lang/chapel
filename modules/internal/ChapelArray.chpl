@@ -1951,6 +1951,12 @@ module ChapelArray {
     return result;
   }
 
+  // catch-all to avoid promotion
+  @chpldoc.nodoc
+  operator :(x: [], type t:string) {
+    compilerError("array casts to string are not supported");
+  }
+
   pragma "last resort"
   @chpldoc.nodoc
   operator :(in x: [] ?et, type t: et) where t == et {
