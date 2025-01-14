@@ -586,9 +586,9 @@ module Python {
       var pyList = PyList_New(arr.size.safeCast(c_size_t));
       this.checkException();
       this.toFree.pushBack(pyList);
-      for i in 0..<arr.size.safeCast(c_size_t) {
+      for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
-        PyList_SetItem(pyList, i, toPython(arr[idx]));
+        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(arr[idx]));
         this.checkException();
       }
       return pyList;
@@ -602,8 +602,8 @@ module Python {
       var pyList = PyList_New(l.size.safeCast(c_size_t));
       this.checkException();
       this.toFree.pushBack(pyList);
-      for i in 0..<l.size.safeCast(c_size_t) {
-        PyList_SetItem(pyList, i, toPython(l(i)));
+      for i in 0..<l.size {
+        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(l(i)));
         this.checkException();
       }
       return pyList;
@@ -624,9 +624,9 @@ module Python {
       if PySequence_Size(obj) != res.size.safeCast(c_size_t) {
         throw new ChapelException("Size mismatch");
       }
-      for i in 0..<res.size.safeCast(c_size_t) {
+      for i in 0..<res.size {
         const idx = res.domain.orderToIndex(i);
-        var elm = PySequence_GetItem(obj, i);
+        var elm = PySequence_GetItem(obj, i.safeCast(c_size_t));
         this.checkException();
         this.toFree.pushBack(elm);
         res[idx] = fromPython(res.eltType, elm);
