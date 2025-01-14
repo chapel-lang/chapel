@@ -1,2 +1,1 @@
-printvisibleWrongValue.chpl:2: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
 printvisibleWrongValue.chpl:2: error: get visible symbols may only have 0 or 2 arguments
