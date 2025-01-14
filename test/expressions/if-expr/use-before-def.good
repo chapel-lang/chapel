@@ -1,7 +1,13 @@
 use-before-def.chpl:4: In function 'main':
-use-before-def.chpl:5: error: 'a' is used to define itself
-use-before-def.chpl:5: error: 'a' is used to define itself
-use-before-def.chpl:6: error: 'b' is used to define itself
-use-before-def.chpl:6: error: 'b' is used to define itself
-use-before-def.chpl:7: error: statement references a variable before it is defined
-use-before-def.chpl:7: error: statement references a variable before it is defined
+use-before-def.chpl:5: error: statement uses variable 'a' to define itself
+use-before-def.chpl:5: note: the variable 'a' is used to define itself here
+use-before-def.chpl:5: error: statement uses variable 'a' to define itself
+use-before-def.chpl:5: note: the variable 'a' is used to define itself here
+use-before-def.chpl:6: error: statement uses variable 'b' to define itself
+use-before-def.chpl:6: note: the variable 'b' is used to define itself here
+use-before-def.chpl:6: error: statement uses variable 'b' to define itself
+use-before-def.chpl:6: note: the variable 'b' is used to define itself here
+use-before-def.chpl:7: error: statement references variable 'z' before it is defined
+use-before-def.chpl:9: note: the variable 'z' is defined here
+use-before-def.chpl:7: error: statement references variable 'z' before it is defined
+use-before-def.chpl:9: note: the variable 'z' is defined here

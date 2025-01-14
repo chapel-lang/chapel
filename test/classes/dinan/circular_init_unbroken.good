@@ -1,1 +1,2 @@
 circular_init_unbroken.chpl:2: error: statement references variable 'b' before it is defined
+circular_init_unbroken.chpl:3: note: the variable 'b' is defined here

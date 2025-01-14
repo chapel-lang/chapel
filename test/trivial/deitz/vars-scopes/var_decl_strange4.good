@@ -1,1 +1,2 @@
 var_decl_strange4.chpl:4: error: statement references variable 'x' before it is defined
+var_decl_strange4.chpl:5: note: the variable 'x' is defined here
