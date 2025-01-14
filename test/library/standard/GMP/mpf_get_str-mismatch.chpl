@@ -11,7 +11,7 @@ mpf_set_d(x, 0.123456789);
   var a: c_array(c_char, 10);
   var s = c_ptrTo(a[0]);
   var exp = 1: int(32);
-  s = mpf_get_str(s, exp, 10.safeCast(c_int), 9.safeCast(c_size_t), x);
+  s = mpf_get_str(s, exp, 10, 9, x);
   printf("%s\n", s);
   writeln("exp = ", exp);
 }
