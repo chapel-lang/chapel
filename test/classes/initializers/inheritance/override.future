@@ -1,0 +1,7 @@
+bug: postinit() shouldn't accept 'override'
+
+I don't believe that init() routines should accept 'override'
+decorations given that they aren't really dynamically dispatched or
+overridden in the normal way.
+
+#26515
