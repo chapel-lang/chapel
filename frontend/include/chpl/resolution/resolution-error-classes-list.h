@@ -48,7 +48,6 @@ ERROR_CLASS(EnumInitializerNotParam, const uast::EnumElement*, types::QualifiedT
 ERROR_CLASS(EnumInitializerNotInteger, const uast::EnumElement*, types::QualifiedType)
 ERROR_CLASS(EnumValueAbstract, const uast::AstNode*, const types::EnumType*, const uast::EnumElement*)
 ERROR_CLASS(ExternCCompilation, ID, std::vector<std::pair<Location, std::string>>)
-ERROR_CLASS(FieldUsedBeforeInitialized, const uast::AstNode*, ID)
 ERROR_CLASS(IfVarNonClassType, const uast::Conditional*, types::QualifiedType)
 WARNING_CLASS(ImplicitFileModule, const uast::AstNode*, const uast::Module*, const uast::Module*)
 ERROR_CLASS(IncompatibleIfBranches, const uast::Conditional*, types::QualifiedType, types::QualifiedType)

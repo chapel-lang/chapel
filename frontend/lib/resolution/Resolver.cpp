@@ -3566,13 +3566,7 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
       if (node->id().symbolPath() == target.symbolPath()) {
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
-          // check if this is a field that is not initialized?
-          if (parsing::idIsField(context, target)) {
-            // field used before initialized
-            CHPL_REPORT(context, FieldUsedBeforeInitialized, node, target);
-          } else {
-            CHPL_REPORT(context, UseOfLaterVariable, node, target);
-          }
+          CHPL_REPORT(context, UseOfLaterVariable, node, target);
           return true;
         }
     }

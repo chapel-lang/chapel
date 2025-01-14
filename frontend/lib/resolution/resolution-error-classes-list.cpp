@@ -459,18 +459,6 @@ void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
   wr.code(cond, {var});
 }
 
-void ErrorFieldUsedBeforeInitialized::write(ErrorWriterBase& wr) const {
-  auto field = std::get<const uast::AstNode*>(info_);
-  auto laterId = std::get<ID>(info_);
-  wr.heading(kind_, type_, field,
-             "field is used before it is initialized.");
-  wr.message("In the following statement:");
-  wr.code(field);
-  wr.message("there is a reference to a field initialized later:");
-  wr.codeForDef(laterId);
-  wr.message("Fields cannot be used before they are initialized.");
-}
-
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
   auto code = std::get<const uast::AstNode*>(info_);
   auto lastModule = std::get<1>(info_);
