@@ -731,11 +731,6 @@ module Map {
       return true;
     }
 
-    @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
-    proc ref set(k: keyType, in v: valType): bool {
-      return this.replace(k, v);
-    }
-
     /*
       Replaces the value associated with the key `k` with `v`. If the
       key `k` is not in the map, makes no changes and returns `false`.
@@ -770,11 +765,6 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
-    }
-
-    @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
-    proc ref addOrSet(in k: keyType, in v: valType) {
-      addOrReplace(k, v);
     }
 
     /*
