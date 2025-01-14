@@ -236,7 +236,7 @@ module Math {
     - ``proc asin(imag): imag``
     - ``proc atanh(imag): imag``
   */
-  @deprecated(notes="'newSliceRule' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.")
+  @deprecated(notes="'useNewImaginaryTrig' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.")
   config param useNewImaginaryTrig = true;
 
   /* Returns the arc cosine of the argument `x`.

@@ -1,2 +1,2 @@
-warning: 'newSliceRule' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.
+warning: 'useNewImaginaryTrig' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.
 note: 'useNewImaginaryTrig' was set via a compiler flag
