@@ -236,7 +236,8 @@ module Math {
     - ``proc asin(imag): imag``
     - ``proc atanh(imag): imag``
   */
-  config param useNewImaginaryTrig = false;
+  @deprecated(notes="'newSliceRule' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.")
+  config param useNewImaginaryTrig = true;
 
   /* Returns the arc cosine of the argument `x`.
 
@@ -347,13 +348,13 @@ module Math {
     Returns the arc sine of the argument `x`.
     Uses the formula `asin(i*x) == i*asinh(x)`.
   */
-  proc asin(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc asin(x: imag(32)): imag(32) do
     return asinh(x:real(32)) : imag(32);
   /*
     Returns the arc sine of the argument `x`.
     Uses the formula `asin(i*x) == i*asinh(x)`.
   */
-  proc asin(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc asin(x: imag(64)): imag(64) do
     return asinh(x:real(64)) : imag(64);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
@@ -482,13 +483,13 @@ module Math {
     Returns the inverse hyperbolic tangent of the argument `x`.
     Uses the formula `atanh(i*x) == i*atan(x)`.
   */
-  proc atanh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc atanh(x: imag(32)): imag(32) do
     return atan(x:real(32)) : imag(32);
   /*
     Returns the inverse hyperbolic tangent of the argument `x`.
     Uses the formula `atanh(i*x) == i*atan(x)`.
   */
-  proc atanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc atanh(x: imag(64)): imag(64) do
     return atan(x:real(64)) : imag(64);
 
   /* Returns the cosine of the argument `x`. */
@@ -524,13 +525,13 @@ module Math {
     Returns the cosine of the argument `x`.
     Uses the formula `cos(i*x) == cosh(x)`.
   */
-  inline proc cos(x: imag(32)): real(32) where useNewImaginaryTrig do
+  inline proc cos(x: imag(32)): real(32) do
     return cosh(x:real(32));
   /*
     Returns the cosine of the argument `x`.
     Uses the formula `cos(i*x) == cosh(x)`.
   */
-  inline proc cos(x: imag(64)): real(64) where useNewImaginaryTrig do
+  inline proc cos(x: imag(64)): real(64) do
     return cosh(x:real(64));
 
   /* Returns the hyperbolic cosine of the argument `x`. */
@@ -566,13 +567,13 @@ module Math {
     Returns the hyperbolic cosine of the argument `x`.
     Uses the formula `cosh(i*x) == cos(x)`.
   */
-  inline proc cosh(x: imag(32)): real(32) where useNewImaginaryTrig do
+  inline proc cosh(x: imag(32)): real(32) do
     return cos(x:real(32));
   /*
     Returns the hyperbolic cosine of the argument `x`.
     Uses the formula `cosh(i*x) == cos(x)`.
   */
-  inline proc cosh(x: imag(64)): real(64) where useNewImaginaryTrig do
+  inline proc cosh(x: imag(64)): real(64) do
     return cos(x:real(64));
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
@@ -1221,13 +1222,13 @@ module Math {
     Returns the sine of the argument `x`.
     Uses the formula `sin(i*x) == i*sinh(x)`.
   */
-  proc sin(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc sin(x: imag(32)): imag(32) do
     return sinh(x:real(32)) : imag(32);
   /*
     Returns the sine of the argument `x`.
     Uses the formula `sin(i*x) == i*sinh(x)`.
   */
-  proc sin(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc sin(x: imag(64)): imag(64) do
     return sinh(x:real(64)) : imag(64);
 
 
@@ -1264,13 +1265,13 @@ module Math {
     Returns the hyperbolic sine of the argument `x`.
     Uses the formula `sinh(i*x) == i*sin(x)`.
   */
-  proc sinh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc sinh(x: imag(32)): imag(32) do
     return sin(x:real(32)) : imag(32);
   /*
     Returns the hyperbolic sine of the argument `x`.
     Uses the formula `sinh(i*x) == i*sin(x)`.
   */
-  proc sinh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc sinh(x: imag(64)): imag(64) do
     return sin(x:real(64)) : imag(64);
 
 
@@ -1307,13 +1308,13 @@ module Math {
     Returns the tangent of the argument `x`.
     Uses the formula `tan(i*x) == i*tanh(x)`.
   */
-  proc tan(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc tan(x: imag(32)): imag(32) do
     return tanh(x:real(32)) : imag(32);
   /*
     Returns the tangent of the argument `x`.
     Uses the formula `tan(i*x) == i*tanh(x)`.
   */
-  proc tan(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc tan(x: imag(64)): imag(64) do
     return tanh(x:real(64)) : imag(64);
 
 
@@ -1350,13 +1351,13 @@ module Math {
     Returns the hyperbolic tangent of the argument `x`.
     Uses the formula `tanh(i*x) == i*tan(x)`.
   */
-  proc tanh(x: imag(32)): imag(32) where useNewImaginaryTrig do
+  proc tanh(x: imag(32)): imag(32) do
     return tan(x:real(32)) : imag(32);
   /*
     Returns the hyperbolic tangent of the argument `x`.
     Uses the formula `tanh(i*x) == i*tan(x)`.
   */
-  proc tanh(x: imag(64)): imag(64) where useNewImaginaryTrig do
+  proc tanh(x: imag(64)): imag(64) do
     return tan(x:real(64)) : imag(64);
 
   /* Returns the greatest common divisor of the integer arguments `x` and
