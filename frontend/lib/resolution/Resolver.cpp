@@ -1012,7 +1012,7 @@ handleRejectedCandidates(Context* context,
       const uast::AstNode *actualExpr = nullptr;
       const uast::VarLikeDecl *actualDecl = nullptr;
       if (call && 0 <= badPass.actualIdx() &&
-          badPass.actualIdx() < actualAsts.size()) {
+          (size_t)badPass.actualIdx() < actualAsts.size()) {
         actualExpr = actualAsts[badPass.actualIdx()];
       }
       // look for a definition point of the actual for error reporting of
