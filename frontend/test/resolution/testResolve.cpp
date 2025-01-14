@@ -1823,17 +1823,33 @@ static void testPromotionPrim() {
   Context* context = buildStdContext();
   ErrorGuard guard(context);
 
-  std::string prog =
-    R"""(
-      var d : domain(1, real);
-      type t = __primitive("scalar promotion type", d);
-      param x = (t == real);
-    )""";
+  {
+    std::string prog =
+      R"""(
+        var d : domain(1, real);
+        type t = __primitive("scalar promotion type", d);
+        param x = (t == real);
+      )""";
 
-  auto x = resolveTypeOfXInit(context, prog);
-  ensureParamBool(x, true);
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
 
-  assert(guard.realizeErrors() == 0);
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+        type t = __primitive("scalar promotion type", int);
+        param x = (t == int);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
 }
 
 // Test the '_wide_get_locale' primitive.
