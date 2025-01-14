@@ -1028,29 +1028,4 @@ proc isProperSubtype(type sub, type sup) param {
   return __primitive("is_proper_subtype", sup, sub);
 }
 
-/* :returns: isProperSubtype(a,b) */
-pragma "docs only"
-@deprecated(notes="< operator is deprecated when comparing types; use isProperSubtype() instead")
-operator <(type a, type b) param {
-  return isProperSubtype(a,b);
-}
-/* :returns: isSubtype(a,b) */
-pragma "docs only"
-@deprecated(notes="<= operator is deprecated when comparing types; use isSubtype() instead")
-operator <=(type a, type b) param {
-  return isSubtype(a,b);
-}
-/* :returns: isProperSubtype(b,a) */
-pragma "docs only"
-@deprecated(notes="> operator is deprecated when comparing types; use isProperSubtype() instead")
-operator >(type a, type b) param {
-  return isProperSubtype(b,a);
-}
-/* :returns: isSubtype(b,a) */
-pragma "docs only"
-@deprecated(notes=">= operator is deprecated when comparing types; use isSubtype() instead")
-operator >=(type a, type b) param {
-  return isSubtype(b,a);
-}
-
 } // module Types
