@@ -17,7 +17,9 @@ proc testMul(x, y) {
   writeln("   *=: ", res);
 }
 
-testMul(10:bigint, max(uint));
-testMul(10:bigint, max(int));
-testMul(10:bigint, min(uint));
-testMul(10:bigint, min(int));
+import ChplConfig;
+param intSize = if ChplConfig.CHPL_TARGET_PLATFORM == 32 then 32 else 64;
+testMul(10:bigint, max(uint(intSize)));
+testMul(10:bigint, max(int(intSize)));
+testMul(10:bigint, min(uint(intSize)));
+testMul(10:bigint, min(int(intSize)));
