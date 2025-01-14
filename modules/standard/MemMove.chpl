@@ -43,20 +43,6 @@ module MemMove {
   }
 
   /*
-    Check to see if a given type needs to be deinitialized.
-
-    :arg t: A type to check for deinitialization
-    :type t: `type`
-
-    :return: ``true`` if ``t`` needs to be deinitialized
-    :rtype: param bool
-  */
-  @deprecated(notes="'needsDeinit' is deprecated; please use 'needsDestroy' instead")
-  proc needsDeinit(type t) param {
-    return __primitive("needs auto destroy", t);
-  }
-
-  /*
     Check to see if a given type would normally be destroyed automatically
     by the compiler when its lifetime ends. For example, passing an ``owned``
     class would see this function return ``true``, whereas passing an
@@ -74,24 +60,6 @@ module MemMove {
   */
   proc needsDestroy(type t) param : bool {
     return __primitive("needs auto destroy", t);
-  }
-
-  /*
-    Explicitly deinitialize a variable. The variable referred to by ``arg``
-    should be considered uninitialized after a call to this function.
-
-    .. warning::
-
-      At present the compiler does not account for deinitialization performed
-      upon a call to :proc:`explicitDeinit()`. It should only be called
-      when deinitialization would not occur otherwise.
-
-    :arg arg: A variable to deinitialize
-  */
-  @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
-  proc explicitDeinit(ref arg: ?t) {
-    if needsDeinit(t) then
-      chpl__autoDestroy(arg);
   }
 
   /*
@@ -113,35 +81,6 @@ module MemMove {
   proc destroy(ref obj: ?t) {
     if needsDestroy(t) then
       chpl__autoDestroy(obj);
-  }
-
-  /*
-    Move-initialize ``lhs`` with the value in ``rhs``. The contents of ``lhs``
-    are not deinitialized before the move, and ``rhs`` is not deinitialized
-    after the move.
-
-    .. warning::
-
-      If ``lhs`` references an already initialized variable, it will be
-      overwritten by the contents of ``rhs`` without being deinitialized
-      first. Call :proc:`explicitDeinit()` to deinitialize ``lhs`` if
-      necessary.
-
-    :arg lhs: A variable to move-initialize, whose type matches ``rhs``
-
-    :arg rhs: A value to move-initialize from
-  */
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead")
-  proc moveInitialize(ref lhs,
-                      pragma "no auto destroy"
-                      pragma "error on copy" in rhs) {
-    if __primitive("static typeof", lhs) != __primitive("static typeof", rhs) {
-      compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
-    } else if __primitive("static typeof", lhs) != nothing {
-      _move(lhs, rhs);
-    }
   }
 
   /*
@@ -186,34 +125,6 @@ module MemMove {
   }
 
   /*
-    Move the contents of the variable or constant referred to by ``arg`` into
-    a new value.
-
-    .. warning::
-
-      The variable or constant referred to by ``arg`` should be considered
-      uninitialized after a call to this function.
-
-    :arg arg: A variable or constant to move
-
-    :return: The contents of ``arg`` moved into a new value
-  */
-  @chpldoc.nodoc
-  @deprecated(notes="'moveToValue' is deprecated; please use 'moveFrom' instead")
-  proc moveToValue(const ref arg: ?t) {
-    if t == nothing {
-      return none;
-    } else {
-      pragma "no init"
-      pragma "no copy"
-      pragma "no auto destroy"
-      var result: t;
-      _move(result, arg);
-      return result;
-    }
-  }
-
-  /*
     Move the contents of the variable or constant referred to by ``src`` into
     a new returned value.
 
@@ -239,23 +150,6 @@ module MemMove {
       _move(result, src);
       return result;
     }
-  }
-
-  /*
-    Swap the contents of the variables referred to by ``lhs`` and ``rhs``.
-    This function does not call the ``<=>`` operator. Unlike the ``<=>``
-    operator, :proc:`moveSwap()` does not perform assignment or
-    initialization.
-
-    :arg lhs: A variable to swap
-
-    :arg rhs: A variable to swap
-  */
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead")
-  proc moveSwap(ref lhs: ?t, ref rhs: t) {
-    moveSwap(x=lhs, y=rhs);
   }
 
   /*
@@ -455,135 +349,6 @@ module MemMove {
     _checkArgs(dst, dst.domain, src, src.domain);
 
     moveArrayElements(dst, dst.domain, src, src.domain);
-  }
-
-  /*
-    Move-initialize a group of array elements from a group of elements in the
-    same array. This function is equivalent to a sequence of individual calls
-    to :proc:`moveInitialize()`.
-
-    .. warning::
-
-      This function will halt if the value of ``numElements`` is negative,
-      or if any of the elements in ``dstStartIndex..#numElements`` or
-      ``srcStartIndex..#numElements`` are out of bounds.
-
-      This function will halt if the ranges ``dstStartIndex..#numElements``
-      and ``srcStartIndex..#numElements`` intersect.
-
-      No checks will occur when the `--fast` or `--no-checks` flags are used.
-
-    :arg a: The array with source and destination elements
-
-    :arg dstStartIndex: Destination index of elements to move-initialize
-    :type dstStartIndex: `a.idxType`
-
-    :arg srcStartIndex: Source index of elements to move-initialize from
-    :type srcStartIndex: `a.idxType`
-
-    :arg numElements: The number of elements to move-initialize
-    :type numElements: int
-  */
-  @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
-  proc moveInitializeArrayElements(ref a: [?d], dstStartIndex: a.idxType,
-                                   srcStartIndex: a.idxType,
-                                   numElements: int) {
-    _errorNot1DRectangularArray(a);
-
-    if boundsChecking {
-      _haltBadElementRange(a, dstStartIndex, numElements);
-      _haltBadIndex(a, dstStartIndex, 'dstStartIndex');
-      _haltBadIndex(a, srcStartIndex, 'srcStartIndex');
-      _haltRangeOverlap(dstStartIndex, srcStartIndex, numElements);
-    }
-
-    if dstStartIndex == srcStartIndex then
-      return;
-
-    const d = a.domain;
-
-    const dstLo = d.indexOrder(dstStartIndex);
-    const srcLo = d.indexOrder(srcStartIndex);
-
-    forall i in 0..<numElements with (ref a) {
-      const dstIdx = d.orderToIndex(dstLo + i);
-      const srcIdx = d.orderToIndex(srcLo + i);
-      ref dst = a[dstIdx];
-      const ref src = a[srcIdx];
-      _move(dst, src);
-    }
-  }
-
-  /*
-    Move-initialize a group of array elements from a group of elements in
-    another array. This function is equivalent to a sequence of individual
-    calls to :proc:`moveInitialize()`.
-
-    .. warning::
-
-      This function will halt if the value of ``numElements`` is negative,
-      or if any of the elements in ``dstStartIndex..#numElements`` or
-      ``srcStartIndex..#numElements`` are out of bounds.
-
-      This function will halt if ``dstA`` and ``srcA`` are the same array
-      and the ranges ``dstStartIndex..#numElements`` and
-      ``srcStartIndex..#numElements`` intersect.
-
-      No checks will occur when the `--fast` or `--no-checks` flags are used.
-
-    :arg dstA: The array with destination elements
-
-    :arg dstStartIndex: Destination index of elements to move-initialize
-    :type dstStartIndex: `dstA.idxType`
-
-    :arg srcA: The array with source elements
-    :type srcA: An array with the same element type as `dstA.eltType`
-
-    :arg srcStartIndex: Source index of elements to move-initialize from
-    :type srcStartIndex: `srcA.idxType`
-
-    :arg numElements: The number of elements to move-initialize
-    :type numElements: int
-  */
-  @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
-  proc moveInitializeArrayElements(ref dstA: [] ?t,
-                                   dstStartIndex: dstA.idxType,
-                                   srcA: [] t,
-                                   srcStartIndex: srcA.idxType,
-                                   numElements: int) {
-    _errorNot1DRectangularArray(dstA);
-    _errorNot1DRectangularArray(srcA);
-
-    if boundsChecking {
-      _haltBadElementRange(dstA, dstStartIndex, numElements);
-      _haltBadElementRange(srcA, srcStartIndex, numElements);
-      _haltBadIndex(dstA, dstStartIndex, 'dstStartIndex');
-      _haltBadIndex(srcA, srcStartIndex, 'srcStartIndex');
-    }
-
-    const isSameArray = dstA._instance == srcA._instance;
-
-    if boundsChecking && isSameArray {
-      _haltRangeOverlap(dstStartIndex, srcStartIndex, numElements);
-    }
-
-    if isSameArray && dstStartIndex == srcStartIndex then
-      return;
-
-    const dstD = dstA.domain;
-    const srcD = srcA.domain;
-
-    var dstLo = dstD.indexOrder(dstStartIndex);
-    var srcLo = dstD.indexOrder(srcStartIndex);
-
-    // TODO: Optimize communication for this loop?
-    forall i in 0..<numElements with (ref dstA) {
-      const dstIdx = dstD.orderToIndex(dstLo + i);
-      const srcIdx = srcD.orderToIndex(srcLo + i);
-      ref dst = dstA[dstIdx];
-      const ref src = srcA[srcIdx];
-      _move(dst, src);
-    }
   }
 
 // MemMove;
