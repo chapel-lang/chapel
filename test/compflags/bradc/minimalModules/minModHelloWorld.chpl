@@ -1,2 +1,2 @@
 extern proc printf(f);
-printf(c"Hello, Minimal World!\n");
+printf("Hello, Minimal World!\n");
