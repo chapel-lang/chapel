@@ -151,7 +151,7 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use OS;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_TARGET_PLATFORM;
 
   /*
    Local copy of IO.EFORMAT as it is being phased out and is private in IO
@@ -795,7 +795,8 @@ module BigInteger {
       }
     }
 
-    if y.type == uint {
+    param intSize = if CHPL_TARGET_PLATFORM == 32 then 32 else 64;
+    if y.type == uint(intSize) {
       helper(result, x, y);
     }
     else {
