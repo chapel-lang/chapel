@@ -273,7 +273,7 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   // Conversions
   use Random;
   import ChplConfig;
-  param intSize = if ChplConfig.CHPL_TARGET_PLATFORM == 32 then 32 else 64;
+  param intSize = if ChplConfig.CHPL_TARGET_PLATFORM == "linux32" then 32 else 64;
   var randStream = new randomStream(int(intSize));
   var randVal = randStream.next();
   assert(randVal:bigint == randVal);

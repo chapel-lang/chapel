@@ -795,7 +795,7 @@ module BigInteger {
       }
     }
 
-    param intSize = if CHPL_TARGET_PLATFORM == 32 then 32 else 64;
+    param intSize = if CHPL_TARGET_PLATFORM == "linux32" then 32 else 64;
     if y.type == uint(intSize) {
       helper(result, x, y);
     }
