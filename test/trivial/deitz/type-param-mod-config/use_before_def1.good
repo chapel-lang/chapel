@@ -1,1 +1,2 @@
 use_before_def1.chpl:1: error: statement references variable 'x' before it is defined
+use_before_def1.chpl:2: note: the variable 'x' is defined here

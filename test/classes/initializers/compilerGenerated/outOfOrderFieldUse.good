@@ -1,1 +1,2 @@
 outOfOrderFieldUse.chpl:5: error: statement references variable 'y' before it is defined
+outOfOrderFieldUse.chpl:6: note: the variable 'y' is defined here

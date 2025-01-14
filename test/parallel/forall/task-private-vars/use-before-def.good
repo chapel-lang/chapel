@@ -1,1 +1,2 @@
 use-before-def.chpl:4: error: statement references variable 'tpv2' before it is defined
+use-before-def.chpl:5: note: the variable 'tpv2' is defined here

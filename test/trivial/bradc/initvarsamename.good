@@ -1,1 +1,2 @@
-initvarsamename.chpl:4: error: 'x' is used to define itself
+initvarsamename.chpl:4: error: statement uses variable 'x' to define itself
+initvarsamename.chpl:4: note: the variable 'x' is used to define itself here
