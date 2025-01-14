@@ -279,8 +279,7 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(randVal:bigint == randVal);
 
   var uRandStream = new randomStream(uint(intSize));
-  // cast to uint to avoid https://github.com/chapel-lang/chapel/issues/26533
-  var uRandVal = uRandStream.next():uint;
+  var uRandVal = uRandStream.next();
   assert(uRandVal:bigint == uRandVal);
 
   assert(a.cmp(b) == -1);
