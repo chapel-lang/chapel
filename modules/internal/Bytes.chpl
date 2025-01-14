@@ -53,15 +53,6 @@ module Bytes {
     return ret;
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createBorrowingBuffer(x: chpl_c_string,
-                                               length=x.size) : bytes {
-    return bytes.createBorrowingBuffer(x:bufferType,
-                                       length=length,
-                                       size=length+1);
-  }
-
   /*
     Creates a new :type:`bytes` which borrows the memory allocated for a
     `c_ptr`. If the buffer is freed before the :type:`bytes` returned
@@ -171,15 +162,6 @@ module Bytes {
                                       size=length+1);
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createAdoptingBuffer(x: chpl_c_string,
-                                              length=x.size) : bytes {
-    return bytes.createAdoptingBuffer(x: bufferType,
-                                      length=length,
-                                      size=length+1);
-  }
-
     /*
     Creates a new :type:`bytes` which takes ownership of the memory
     allocated for a :class:`~CTypes.c_ptrConst`. The buffer will be freed when the
@@ -244,15 +226,6 @@ module Bytes {
                                              length=strLen(x)) : bytes {
     return bytes.createCopyingBuffer(x: bufferType, length=length,
                                      size=length+1);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createCopyingBuffer(x: chpl_c_string,
-                                             length=x.size) : bytes {
-    return bytes.createCopyingBuffer(x: bufferType,
-                                        length=length,
-                                        size=length+1);
   }
 
   /*
