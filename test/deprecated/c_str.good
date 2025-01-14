@@ -1,2 +1,2 @@
-c_str.chpl:4: warning: 'string.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access 'c_str'
-c_str.chpl:5: warning: 'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access 'c_str'
+c_str.chpl:4: error: unresolved call 'string.c_str()'
+c_str.chpl:4: note: because no functions named c_str found in scope

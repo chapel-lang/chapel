@@ -50,7 +50,7 @@ proc modifyConstArgElement(const tup: (?t,)) where isSyncType(t) {
 
 proc modifyConstArgElement(const tup: (?t,))
 where isStringType(t) || isBytesType(t) {
-  tup[0] = "foo";
+  tup[0] = if isStringType(t) then "foo" else b"foo";
 }
 
 proc modifyConstArgElement(const tup: (r,)) {

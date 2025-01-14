@@ -1,12 +1,8 @@
-basic.chpl:25: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'
-basic.chpl:30: warning: the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead
-basic.chpl:31: warning: the type 'c_string' is deprecated; please use the variant of 'string.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead
-basic.chpl:32: warning: the type 'c_string' is deprecated; please use the variant of 'string.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead
 Initialize from string
 A Chapel string
 A local Chapel string
 
-Initialize from c_string
+Initialize from c_ptrConst(c_char)
 ABC
 ABC
 ABC
