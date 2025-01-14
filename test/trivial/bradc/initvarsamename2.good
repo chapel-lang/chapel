@@ -1,3 +1,2 @@
 initvarsamename2.chpl:1: In function 'foo':
-initvarsamename2.chpl:2: error: 'x' used before defined
-initvarsamename2.chpl:2: note: defined here
+initvarsamename2.chpl:2: error: 'x' is used to define itself

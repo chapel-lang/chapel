@@ -1,2 +1,1 @@
-circular_init_broken2.chpl:2: error: 'b' used before defined
-circular_init_broken2.chpl:3: note: defined here
+circular_init_broken2.chpl:2: error: statement references variable 'b' before it is defined

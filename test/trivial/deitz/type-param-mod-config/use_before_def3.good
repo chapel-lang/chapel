@@ -1,3 +1,2 @@
 use_before_def3.chpl:1: In function 'foo':
-use_before_def3.chpl:3: error: 'x' used before defined
-use_before_def3.chpl:5: note: defined here
+use_before_def3.chpl:3: error: statement references variable 'x' before it is defined
