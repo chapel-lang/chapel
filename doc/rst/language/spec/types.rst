@@ -977,10 +977,6 @@ The normal comparison operators are also available to compare types:
 
  * ``==`` checks if two types are equivalent
  * ``!=`` checks if two types are different
- * ``<`` and ``>`` check if one type is a proper subtype of another (see
-   :proc:`< <Types.<>`)
- * ``<=`` and ``>=`` check if one type is a subtype of another (see
-   :proc:`<= <Types.<=>`)
 
 It is possible to cast a type to a ``param`` string. This allows a type
 to be printed out.
