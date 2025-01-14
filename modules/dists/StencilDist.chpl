@@ -127,24 +127,33 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-  The ``stencilDist`` distribution is a variant of the :mod:`blockDist
-  <BlockDist>` distribution that attempts to improve performance for
-  stencil computations by reducing the amount of communication
-  necessary during array accesses. From the user's perspective, it
-  behaves very similarly to ``blockDist`` in terms of reads, writes,
-  and iteration.
+  The ``stencilDist`` distribution is an enhanced functionality variant of the
+  :mod:`blockDist<BlockDist>` distribution. Both refer to an array partitioned
+  into blocks, but ``stencilDist`` will help the user to improve
+  performance for stencil computations by reducing the amount of communication
+  necessary for array accesses across locales. A ``stencilDist`` array would
+  most commonly be used in computations based on a numerical stencil formula.
+  For example, solving banded linear equations by the Gauss-Seidel or Jacobi
+  method.
 
-  This distribution reduces communication by creating read-only caches for
-  elements adjacent to the block of elements owned by each locale. This
-  documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
-  This approach can avoid many fine-grained GETs and PUTs when performing a
-  stencil computation near the boundary of the current locale's chunk of array
-  elements. The user must manually refresh these caches after writes by calling
-  the ``updateFluff`` method. Otherwise, reading and writing array elements
-  behaves the same as a block-distributed array.
+  Like ``blockDist``, each block in a ``stencilDist`` array is owned by a
+  (potentially) different locale. But when communication needs to occur between
+  a given block and its set of immediately neighboring or adjacent blocks, the
+  more feature-rich ``stencilDist`` is typically the better choice. This is
+  because, for any given block, a ``stencilDist`` transparently creates a
+  read-only cache of selected array elements from its adjacent blocks,
+  specifically those array elements from the band of array elements just
+  outside the edge of the locally-owned block. This band of array elements is
+  sometimes referred to as a 'halo' or 'overlap region' in other languages
+  and technologies, but in this documentation will be referred to as either
+  'ghost cells' or more strictly, as 'fluff'.
 
-  The indices are partitioned in the same way as the :mod:`blockDist
-  <BlockDist>` distribution.
+  This approach can  avoid many instances of reading a remote array element
+  when performing a stencil computation near the boundary of the current
+  locale's chunk of array elements. Note that the user must manually refresh
+  these caches after writes by calling the ``updateFluff`` method. The writing
+  of array elements and partitioning of indices both behave the same as in a
+  block-distributed array.
 
   The ``stencilDist`` initializer is defined as follows:
 
@@ -304,7 +313,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     A.updateFluff();
 
-    // ghost caches are now up-to-date
+    // ghost cell caches are now up-to-date
 
   After updating, any read from the array should be up-to-date. The
   ``updateFluff`` method does not currently accept any arguments.
@@ -314,7 +323,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The ``stencilDist`` distribution uses ghost cells as cached
   read-only values from other locales. When reading from a
   stencil-distributed array, the distribution will attempt to read
-  from the local ghost cache first. If the index is not within the
+  from the local ghost cell cache first. If the index is not within the
   cached index set of the current locale, then we default to a remote
   read from the locale on which the element is located.
 
