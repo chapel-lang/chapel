@@ -2,7 +2,8 @@
 
 import os
 
-if os.getenv("REPO_CACHE_PATH") == None:
+repo_cache_path = os.getenv("REPO_CACHE_PATH", None)
+if repo_cache_path == None or os.path.exists(repo_cache_path) == False:
    print(True)
 else:
    print(False)
