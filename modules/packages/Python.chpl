@@ -583,10 +583,10 @@ module Python {
     @chpldoc.nodoc
     proc toList(arr): PyObjectPtr throws
       where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
-      var pyList = PyList_New(arr.size);
+      var pyList = PyList_New(arr.size.safeCast(c_size_t));
       this.checkException();
       this.toFree.pushBack(pyList);
-      for i in 0..<arr.size {
+      for i in 0..<arr.size.safeCast(c_size_t) {
         const idx = arr.domain.orderToIndex(i);
         PyList_SetItem(pyList, i, toPython(arr[idx]));
         this.checkException();
@@ -599,10 +599,10 @@ module Python {
     */
     @chpldoc.nodoc
     proc toList(l: List.list(?)): PyObjectPtr throws {
-      var pyList = PyList_New(l.size);
+      var pyList = PyList_New(l.size.safeCast(c_size_t));
       this.checkException();
       this.toFree.pushBack(pyList);
-      for i in 0..<l.size {
+      for i in 0..<l.size.safeCast(c_size_t) {
         PyList_SetItem(pyList, i, toPython(l(i)));
         this.checkException();
       }
@@ -621,10 +621,10 @@ module Python {
 
       // if its a sequence with a known size, we can just iterate over it
       var res: T;
-      if PySequence_Size(obj) != res.size {
+      if PySequence_Size(obj) != res.size.safeCast(c_size_t) {
         throw new ChapelException("Size mismatch");
       }
-      for i in 0..<res.size {
+      for i in 0..<res.size.safeCast(c_size_t) {
         const idx = res.domain.orderToIndex(i);
         var elm = PySequence_GetItem(obj, i);
         this.checkException();
@@ -1025,7 +1025,7 @@ module Python {
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPython(args(i));
       }
-      var pyArg = PyTuple_Pack(args.size, (...pyArgs));
+      var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
 
       var pyKwargs;
       if t != nothing {
@@ -1495,9 +1495,9 @@ module Python {
       Sequences
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
-    extern proc PySequence_Size(obj: PyObjectPtr): c_long;
-    extern proc PySequence_GetItem(obj: PyObjectPtr, idx: c_long): PyObjectPtr;
-    extern proc PySequence_SetItem(obj: PyObjectPtr, idx: c_long, value: PyObjectPtr);
+    extern proc PySequence_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PySequence_GetItem(obj: PyObjectPtr, idx: c_size_t): PyObjectPtr;
+    extern proc PySequence_SetItem(obj: PyObjectPtr, idx: c_size_t, value: PyObjectPtr);
 
 
     /*
@@ -1511,11 +1511,11 @@ module Python {
       Lists
     */
     extern proc PyList_Check(obj: PyObjectPtr): c_int;
-    extern proc PyList_New(size: c_long): PyObjectPtr;
-    extern proc PyList_SetItem(list: PyObjectPtr, idx: c_long, item: PyObjectPtr);
-    extern proc PyList_GetItem(list: PyObjectPtr, idx: c_long): PyObjectPtr;
-    extern proc PyList_Size(list: PyObjectPtr): c_long;
-    extern proc PyList_Insert(list: PyObjectPtr, idx: c_long, item: PyObjectPtr);
+    extern proc PyList_New(size: c_size_t): PyObjectPtr;
+    extern proc PyList_SetItem(list: PyObjectPtr, idx: c_size_t, item: PyObjectPtr);
+    extern proc PyList_GetItem(list: PyObjectPtr, idx: c_size_t): PyObjectPtr;
+    extern proc PyList_Size(list: PyObjectPtr): c_size_t;
+    extern proc PyList_Insert(list: PyObjectPtr, idx: c_size_t, item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
 
     /*
@@ -1523,7 +1523,7 @@ module Python {
     */
     extern proc PySet_New(): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
-    extern proc PySet_Size(set: PyObjectPtr): c_long;
+    extern proc PySet_Size(set: PyObjectPtr): c_size_t;
 
 
     /*
@@ -1536,7 +1536,7 @@ module Python {
     extern proc PyDict_GetItem(dict: PyObjectPtr, key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
-    extern proc PyDict_Size(dict: PyObjectPtr): c_long;
+    extern proc PyDict_Size(dict: PyObjectPtr): c_size_t;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
@@ -1548,7 +1548,7 @@ module Python {
     /*
       Tuples
     */
-    extern proc PyTuple_Pack(size: c_long, args...): PyObjectPtr;
+    extern proc PyTuple_Pack(size: c_size_t, args...): PyObjectPtr;
 
     /*
       Functions
