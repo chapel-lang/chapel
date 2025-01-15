@@ -517,7 +517,7 @@ module Python {
       this.checkException();
       var MAGIC_NUMBER = this.fromPython(bytes, MAGIC_NUMBER_py);
       if magic != MAGIC_NUMBER {
-        throw new ChapelException("Invalid magic number in pyc file");
+        throw new ChapelException("Invalid magic number in '.pyc' file");
       }
 
       // the second 4 bytes are a bitfield that determine the rest of the
