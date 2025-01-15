@@ -40,8 +40,8 @@ namespace types {
 
    Because placeholder types are unique (created from a particular position
    in the AST), they cannot be passed to any concrete function argument. This
-   means that when searcing for witnesses for 'foo', functions with concrete 'x'
-   will always be rejected (as desired). Moreover, as part of checking applicabiity,
+   means that when searching for witnesses for 'foo', functions with concrete 'x'
+   will always be rejected (as desired). Moreover, as part of checking applicability,
    placeholder types will be substituted for type queries in the candidate
    (non-interface) function, and thus enforce a matching pattern of genericity.
 
@@ -55,7 +55,11 @@ namespace types {
      proc R.foo(x, y: x.type) {}
 
    Because the type of 'y' will be 'PlaceholderType(t1)', which is not
-   equal to 'PlaceholderType(t2)'.
+   equal to 'PlaceholderType(t2)'. This is desired because the interface
+   constraint asks for a function that can be called with any two
+   (possibly different) types. A function that supports generic types
+   but constrains the two formals to have equal types does not fulfill that
+   ask.
 
    Placeholder types can be eliminated from types using the 'substitute' method,
    which will replace them with the corresponding "real" type.

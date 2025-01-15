@@ -34,7 +34,7 @@ namespace resolution {
   of the following are transformed into implementation points:
 
     record R : I {}
-    implements R(I);
+    implements I(R);
     R implements I;
 
   The types of the "actuals" (R in the above examples) are stored as substitutions

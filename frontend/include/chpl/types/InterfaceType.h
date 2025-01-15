@@ -40,7 +40,7 @@ namespace types {
   The following cases both create instances of InterfaceType:
 
     record R : I {} // the 'I' has type InterfaceType(name='I', ...)
-    implements R(I); // the 'R(I)' has type InterfaceType(name='I', subs = {... => R })
+    implements I(R); // the 'I(R)' has type InterfaceType(name='I', subs = {... => R })
 
 */
 class InterfaceType final : public Type {
