@@ -158,4 +158,6 @@ gasnet: gasnet-config gasnet-build gasnet-install
 
 FORCE:
 
+.PHONY: FORCE
+
 .NOTPARALLEL:
