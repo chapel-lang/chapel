@@ -326,26 +326,6 @@ static QualifiedType primImplementsInterface(Context* context,
   return makeParamInt(context, witness ? 1 : 2);
 }
 
-static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
-  if (ci.numActuals() == 3) {
-    auto type = DomainType::getRectangularType(context,
-                                          QualifiedType(),
-                                          ci.actual(0).type(),
-                                          ci.actual(1).type(),
-                                          ci.actual(2).type());
-    return QualifiedType(QualifiedType::TYPE, type);
-  } else if (ci.numActuals() == 2) {
-    auto type = DomainType::getAssociativeType(context,
-                                               QualifiedType(),
-                                               ci.actual(0).type(),
-                                               ci.actual(1).type());
-    return QualifiedType(QualifiedType::TYPE, type);
-  } else {
-    CHPL_ASSERT(false && "unhandled domain type?");
-  }
-  return QualifiedType();
-}
-
 static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -1630,10 +1610,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_GPU_REDUCE_WRAPPER:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
-      break;
-
-    case PRIM_STATIC_DOMAIN_TYPE:
-      type = computeDomainType(context, ci);
       break;
 
     case PRIM_GET_COMPILER_VAR: {
