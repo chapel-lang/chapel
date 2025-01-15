@@ -775,8 +775,7 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    // TODO: represent iterators
-    return false;
+    return actualT->isIteratorType();
   }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
