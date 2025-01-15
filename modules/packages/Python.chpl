@@ -1512,8 +1512,6 @@ module Python {
       PyConfig
     */
     extern record PyConfig {
-      // TODO: this fails LLVM ir verification, because the fields are out of order
-      // but the chapel spec says the order doesn't matter?
       var isolated: c_int;
       var user_site_directory: c_int;
       var site_import: c_int;
