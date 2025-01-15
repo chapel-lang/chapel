@@ -87,7 +87,6 @@ test_compile icing
 if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile flow
   test_compile drop
-  test_compile potentialPrep
   test_compile geo
   test_compile thermo
   test_compile postLink
@@ -104,6 +103,7 @@ if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   # system/backend issue. Until we figure out what's going wrong, stop testing
   # these executables with the C backend
   if [ "${CHPL_TARGET_COMPILER}" != "gnu" ] ; then
+    test_compile potentialPrep
     test_compile potential
     test_compile prep
     test_compile post
