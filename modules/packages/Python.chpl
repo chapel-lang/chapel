@@ -678,9 +678,9 @@ module Python {
         }
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
-      } else if isSubtype(t, Function) || isSubtype(t, Function?) {
+      } else if isSubtype(t, Function?) {
         return new t(this, "<unknown>", obj);
-      } else if isSubtype(t, Value) || isSubtype(t, Value?) {
+      } else if isSubtype(t, Value?) {
         return new t(this, obj);
       } else if t == NoneType {
         // returning NoneType can be used to ignore a return value
