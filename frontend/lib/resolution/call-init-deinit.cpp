@@ -788,8 +788,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
   // check for use of deinited variables in type or init exprs
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
+  if (auto type = ast->typeExpression()) {
+    processMentions(type, rv);
   }
   if (auto init = ast->initExpression()) {
     processMentions(init, rv);
