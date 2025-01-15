@@ -2924,7 +2924,7 @@ resolveImplementsStmtQuery(Context* context, ID id) {
   }
 
   if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
-      interfaceQt.type()->toInterfaceType() == nullptr) {
+      !interfaceQt.type()->isInterfaceType()) {
     CHPL_REPORT(context, InvalidImplementsInterface, impl, interfaceQt);
   } else {
     auto genericIft = interfaceQt.type()->toInterfaceType();
@@ -2944,7 +2944,7 @@ resolveImplementsStmtQuery(Context* context, ID id) {
 
     bool addPoint = true;
     if (auto typeIdent = impl->typeIdent()) {
-      addPoint &= addActual(typeIdent);
+      addPoint = addActual(typeIdent);
     }
     if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
       for (auto actual : interfaceCall->actuals()) {
@@ -5646,6 +5646,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   // same symbol (the interface), so insert them into 'byPostorderForAssociatedTypes'
   // as a shortcut for 'resolveNamedDecl' given ift->subs().
   ResolutionResultByPostorderID byPostorderForAssociatedTypes;
+  byPostorderForAssociatedTypes.setupForSymbol(itf);
   for (auto& sub : ift->substitutions()) {
     byPostorderForAssociatedTypes.byId(sub.first).setType(sub.second);
   }
