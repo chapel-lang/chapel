@@ -205,7 +205,9 @@ bool Type::isNilablePtrType() const {
 }
 
 bool Type::isUserRecordType() const {
-  if (!isRecordType())
+  // iterator types in Dyno are "iterator records" in production and so are
+  // records.
+  if (!isRecordType() && !isIteratorType())
     return false;
 
   // TODO: add exceptions in here
