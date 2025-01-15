@@ -21,6 +21,7 @@
 #define CHPL_TYPES_DOMAIN_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -100,6 +101,14 @@ class DomainType final : public CompositeType {
   static const DomainType* getAssociativeType(Context* context,
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getDomainType(context, id(), name(),
+                         Type::substitute(context, (const DomainType*) instantiatedFrom_, subs),
+                         resolution::substituteInMap(context, subs_, subs),
+                         kind_).get();
+  }
 
   /** Get the default distribution type */
   static const QualifiedType& getDefaultDistType(Context* context);

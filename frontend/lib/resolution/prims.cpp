@@ -106,6 +106,11 @@ static QualifiedType makeParamBool(Context* context, bool b) {
            BoolParam::get(context, b) };
 }
 
+static QualifiedType makeParamInt(Context* context, int64_t i) {
+  return { QualifiedType::PARAM, IntType::get(context, 0),
+           IntParam::get(context, i) };
+}
+
 static QualifiedType makeParamString(Context* context, UniqueString s) {
   return { QualifiedType::PARAM, RecordType::getStringType(context),
            StringParam::get(context, s) };
@@ -281,6 +286,44 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
   return QualifiedType(QualifiedType::PARAM,
                        BoolType::get(context),
                        BoolParam::get(context, callAndFnResolved));
+}
+
+static QualifiedType primImplementsInterface(Context* context,
+                                             const PrimCall* astForErr,
+                                             const CallInfo& ci,
+                                             const Scope* inScope,
+                                             const PoiScope* inPoiScope) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto& type = ci.actual(0).type();
+  auto& ifqt = ci.actual(1).type();
+
+  if (ifqt.kind() != QualifiedType::TYPE ||
+      ifqt.isUnknownOrErroneous() ||
+      !ifqt.type()->isInterfaceType()) return QualifiedType();
+
+  auto ift = ifqt.type()->toInterfaceType();
+  auto instantiatedIft = InterfaceType::withTypes(context, ift, { type });
+  if (!instantiatedIft) return QualifiedType();
+
+  ResolutionContext rc(context);
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+  auto witness =
+    findMatchingImplementationPoint(&rc, instantiatedIft, inScopes);
+
+  if (witness) {
+    return makeParamInt(context, 0);
+  }
+
+  // try automatically satisfy the interface if it's in the standard modules.
+  if (parsing::idIsInBundledModule(context, ift->id())) {
+    auto runResult = context->runAndTrackErrors([&](Context* context) {
+      return checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
+    });
+    witness = runResult.result();
+  }
+
+  return makeParamInt(context, witness ? 1 : 2);
 }
 
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
@@ -1262,8 +1305,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_RESOLVES:
-    case PRIM_IMPLEMENTS_INTERFACE:
       CHPL_UNIMPL("various primitives");
+      break;
+
+    case PRIM_IMPLEMENTS_INTERFACE:
+      type = primImplementsInterface(context, call, ci, inScope, inPoiScope);
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:

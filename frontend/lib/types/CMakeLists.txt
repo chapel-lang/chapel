@@ -37,11 +37,13 @@ target_sources(ChplFrontend-obj
                FnIteratorType.cpp
                HeapBufferType.cpp
                ImagType.cpp
+               InterfaceType.cpp
                IntType.cpp
                LoopExprIteratorType.cpp
                NilType.cpp
                NothingType.cpp
                Param.cpp
+               PlaceholderType.cpp
                PrimitiveType.cpp
                PtrType.cpp
                PromotionIteratorType.cpp

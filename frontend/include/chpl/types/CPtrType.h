@@ -62,6 +62,11 @@ class CPtrType final : public PtrType {
     return isConst() ? getConstId(context) : getId(context);
   }
 
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, Type::substitute(context, eltType_, subs));
+  }
+
   const CPtrType* withoutConst(Context* context) const;
 
   bool isConst() const { return isConst_; }

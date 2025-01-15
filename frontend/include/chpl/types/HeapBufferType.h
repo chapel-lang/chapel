@@ -52,6 +52,11 @@ class HeapBufferType final : public PtrType {
     return getId(context);
   }
 
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, Type::substitute(context, eltType_, subs));
+  }
+
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
 };

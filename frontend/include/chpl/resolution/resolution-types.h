@@ -45,6 +45,10 @@ namespace resolution {
 
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const types::PlaceholderMap& subs);
+
 /**
 
   In some situations, we may decide not to resolve a call. This could
@@ -945,6 +949,9 @@ class TypedFnSignature {
                               std::vector<types::QualifiedType> formalTypes,
                               const TypedFnSignature* inferredFrom);
 
+  const TypedFnSignature* substitute(Context* context,
+                                     const types::PlaceholderMap& subs) const;
+
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
@@ -1246,6 +1253,8 @@ enum CandidateFailureReason {
   FAIL_WHERE_CLAUSE,
   /* A parenful call to a parenless function or vice versa. */
   FAIL_PARENLESS_MISMATCH,
+  /* An interface tried to resolve an associated type function but it didn't return a type */
+  FAIL_INTERFACE_NOT_TYPE_INTENT,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };

@@ -42,52 +42,64 @@ using namespace resolution;
 bool
 CompositeType::areSubsInstantiationOf(Context* context,
                                       const CompositeType* partial) const {
-  // Check to see if the substitutions of `this` are all instantiations
-  // of the field types of `partial`
-  //
   // Note: Assumes 'this' and 'partial' share a root instantiation.
-
-  const SubstitutionsMap& mySubs = substitutions();
-  const SubstitutionsMap& pSubs = partial->substitutions();
-
-  // check, for each substitution in mySubs, that it matches
-  // or is an instantiation of pSubs.
-
-  for (const auto& mySubPair : mySubs) {
-    ID mySubId = mySubPair.first;
-    QualifiedType mySubType = mySubPair.second;
-
-    // look for a substitution in pSubs with the same ID
-    auto pSearch = pSubs.find(mySubId);
-    if (pSearch != pSubs.end()) {
-      QualifiedType pSubType = pSearch->second;
-      // check the types
-      auto r = canPass(context, mySubType, pSubType);
-      if (r.passes() && !r.promotes() && !r.converts()) {
-        // instantiation and same-type passing are allowed here
-      } else {
-        // it was not an instantiation
-        return false;
-      }
-    } else {
-      // If the ID isn't found, then that means the generic component doesn't
-      // exist in the other type, which means this cannot be an instantiation
-      // of the other type.
-      //
-      // Currently this check assumes that 'this' and 'partial' share a root
-      // instantiation, so how could we reach this condition? One path here
-      // involves passing a tuple to a tuple formal with a fewer number of
-      // elements. For example, passing "(1, 2, 3)" to "(int, ?)".
-      return false;
-    }
-  }
-
-  return true;
+  return canInstantiateSubstitutions(context,
+                                     substitutions(),
+                                     partial->substitutions(),
+                                     /* allowMissing */ !partial->isTupleType());
 }
 
 CompositeType::~CompositeType() {
 }
 
+using SubstitutionPair = CompositeType::SubstitutionPair;
+
+static void stringifySortedSubstitutions(std::ostream& ss,
+                                         chpl::StringifyKind stringKind,
+                                         const std::vector<SubstitutionPair>& sorted,
+                                         bool& emittedField) {
+  for (const auto& sub : sorted) {
+    if (emittedField) ss << ", ";
+
+    if (stringKind != StringifyKind::CHPL_SYNTAX) {
+      sub.first.stringify(ss, stringKind);
+      ss << ":";
+      sub.second.stringify(ss, stringKind);
+    } else {
+      if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
+        sub.second.type()->stringify(ss, stringKind);
+      } else if (sub.second.isParam()) {
+        sub.second.param()->stringify(ss, stringKind);
+      } else {
+        // Some odd configuration; fall back to printing the qualified type.
+        CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
+        sub.second.stringify(ss, stringKind);
+      }
+    }
+
+    emittedField = true;
+  }
+}
+
+static
+std::vector<SubstitutionPair>
+sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
+  // since it's an unordered map, iteration will occur in a
+  // nondeterministic order.
+  // it's important to sort the keys / iterate in a deterministic order here,
+  // so we create a vector of pair<K,V> and sort that instead
+  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
+  std::sort(v.begin(), v.end(), FirstElementComparator<ID, QualifiedType>());
+  return v;
+}
+
+void CompositeType::stringifySubstitutions(std::ostream& ss,
+                                           chpl::StringifyKind stringKind,
+                                           const SubstitutionsMap& subs) {
+  bool emittedField = false;
+  auto sorted = sortedSubstitutionsMap(subs);
+  stringifySortedSubstitutions(ss, stringKind, sorted, emittedField);
+}
 void CompositeType::stringify(std::ostream& ss,
                               chpl::StringifyKind stringKind) const {
   // compute the parent class type for BasicClassType
@@ -133,27 +145,7 @@ void CompositeType::stringify(std::ostream& ss,
       emittedField = true;
     }
 
-    for (const auto& sub : sorted) {
-      if (emittedField) ss << ", ";
-
-      if (stringKind != StringifyKind::CHPL_SYNTAX) {
-        sub.first.stringify(ss, stringKind);
-        ss << ":";
-        sub.second.stringify(ss, stringKind);
-      } else {
-        if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
-          sub.second.type()->stringify(ss, stringKind);
-        } else if (sub.second.isParam()) {
-          sub.second.param()->stringify(ss, stringKind);
-        } else {
-          // Some odd configuration; fall back to printing the qualified type.
-          CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
-          sub.second.stringify(ss, stringKind);
-        }
-      }
-
-      emittedField = true;
-    }
+    stringifySortedSubstitutions(ss, stringKind, sorted, emittedField);
     ss << ")";
   }
 }
@@ -263,35 +255,12 @@ const ClassType* CompositeType::getErrorType(Context* context) {
   return ClassType::get(context, bct, /* manager */ nullptr, dec);
 }
 
-
-using SubstitutionPair = CompositeType::SubstitutionPair;
-
-struct SubstitutionsMapCmp {
-  bool operator()(const SubstitutionPair& x, const SubstitutionPair& y) {
-    return x.first < y.first;
-  }
-};
-
-static
-std::vector<SubstitutionPair>
-sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
-  // since it's an unordered map, iteration will occur in a
-  // nondeterministic order.
-  // it's important to sort the keys / iterate in a deterministic order here,
-  // so we create a vector of pair<K,V> and sort that instead
-  std::vector<SubstitutionPair> v(subs.begin(), subs.end());
-  SubstitutionsMapCmp cmp;
-  std::sort(v.begin(), v.end(), cmp);
-  return v;
-}
-
 std::vector<SubstitutionPair> CompositeType::sortedSubstitutions(void) const {
   return sortedSubstitutionsMap(subs_);
 }
 
 size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
-  auto sorted = sortedSubstitutionsMap(subs);
-  return hashVector(sorted);
+  return hashUnorderedMap(subs);
 }
 
 void stringifySubstitutionsMap(std::ostream& streamOut,

@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/interface-types.h"
 #include "chpl/resolution/scope-types.h"
 
 namespace chpl {
@@ -33,6 +34,13 @@ namespace resolution {
   Resolve a module-level statement or variable declaration.
  */
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
+
+/**
+  Specialized version of resolveModuleStmt when the statement is an
+  'implements'. This does the work of constructing an 'ImplementationPoint'.
+ */
+const ImplementationPoint* resolveImplementsStmt(Context* rc,
+                                                 ID id);
 
 /**
   Resolve the contents of a Module
@@ -123,10 +131,23 @@ const TypedFnSignature*
 typedSignatureInitialForId(ResolutionContext* rc, ID id);
 
 /**
+  Compute an initial TypedFnSignature, but using placeholder types for
+  type queries and "any type" markers. This TypedFnSignature can serve
+  as a template for satisfying interface.
+ */
+const TypedFnSignature*
+typedSignatureTemplateForId(ResolutionContext* rc, ID id);
+
+/**
   Returns a Type that represents the initial type provided by a TypeDecl
   (e.g. Class, Record, etc). This type does not store the fields.
   */
 const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
+
+/**
+  Returns a Type that represents the initial type provided by an Interface
+  declaration. */
+const types::Type* initialTypeForInterface(Context* context, ID declId);
 
 /**
   Resolve a single field decl (which could be e.g. a MultiDecl)
@@ -275,6 +296,16 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
+
+
+/**
+  Given a scope corresponding to a module, find all visible
+  implementation points for a particular interface.
+ */
+const std::vector<const ImplementationPoint*>*
+visibileImplementationPointsForInterface(Context* context,
+                                         const Scope* scope,
+                                         ID interfaceId);
 
 /**
   Helper to resolve a concrete function using the above queries.
@@ -459,6 +490,30 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const uast::AstNode* astForScopeOrErr,
                                          const types::Type* t,
                                          const PoiScope* poiScope = nullptr);
+
+/**
+  Given an instantiated interface constraint, such as 'hashable(int)',
+  search an implementation point that matches and verify its validity.
+  If no matching implementation point is found, returns nullptr.
+
+  An implementation point can be invalid if it accepts the expected actuals
+  from the interface, but the types do not provide the required functions,
+  associated types, etc.
+  */
+const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                            const types::InterfaceType* ift,
+                                                            const CallScopeInfo& inScopes);
+
+/**
+  Given the location of an implementation point, check that the constraints
+  of the interface are satisfied at that position. This is used as part of
+  'findMatchingImplementationPoint', but can be used standalone if a desired
+  implementation point is already known.
+ */
+const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
+                                                       const types::InterfaceType* ift,
+                                                       const ID& implPointId,
+                                                       const CallScopeInfo& inScopes);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.

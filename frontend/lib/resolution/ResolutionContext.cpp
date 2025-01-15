@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/ResolutionContext.h"
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/PlaceholderType.h"
 #include "Resolver.h"
 
 namespace chpl {
@@ -59,7 +60,10 @@ canUseGlobalCache(Context* context, const MatchingIdsWithName& ids) {
 }
 
 const ID& ResolutionContext::Frame::id() const {
-  if (auto ast = rv_->symbol) return ast->id();
+  if (rv_) {
+    if (auto ast = rv_->symbol) return ast->id();
+  }
+  if (ift_) return ift_->id();
   return EMPTY_AST_ID;
 }
 
@@ -70,9 +74,40 @@ const TypedFnSignature* ResolutionContext::Frame::signature() const {
   return nullptr;
 }
 
-const ResolutionResultByPostorderID*
-ResolutionContext::Frame::resolutionById() const {
-  return rv_ ? &rv_->byPostorder : nullptr;
+static types::QualifiedType placeholderForId(ResolutionContext* rc, const ID& id) {
+  return types::QualifiedType(types::QualifiedType::TYPE,
+                              types::PlaceholderType::get(rc->context(), id));
+}
+
+const types::QualifiedType
+ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id) const {
+  if (rv_) {
+    return rv_->byPostorder.byId(id).type();
+  }
+
+  // For interfaces, just return placeholders for the associated types
+  // and the interface parameters.
+  //
+  // In the future, to make generics interoperate with interface-based
+  // generics, we will need to do more here. This is pending design discussion,
+  // though.
+  if (ift_) {
+    auto subIt = ift_->substitutions().find(id);
+    if (subIt != ift_->substitutions().end())
+      return placeholderForId(rc, subIt->first);
+
+    if (witness_) {
+      // search associated types
+      auto atIt = witness_->associatedTypes().find(id);
+      if (atIt != witness_->associatedTypes().end())
+        return placeholderForId(rc, atIt->first);
+
+      // TODO: search additional constraints, required functions?
+    }
+  } else {
+    CHPL_ASSERT(witness_ == nullptr);
+  }
+  return types::QualifiedType();
 }
 
 const ResolutionContext::Frame* ResolutionContext::
@@ -93,13 +128,23 @@ pushFrame(const ResolvedFunction* rf) {
   return ret;
 }
 
+const ResolutionContext::Frame* ResolutionContext::
+pushFrame(const types::InterfaceType* ift, const ImplementationWitness* witness) {
+  int64_t index = (int64_t) frames_.size();
+  frames_.push_back({ift, witness, index});
+  auto ret = lastFrame();
+  if (ret->isUnstable()) numUnstableFrames_++;
+  return ret;
+}
+
 bool ResolutionContext::Frame::isUnstable() const {
-  return rv_ != nullptr;
+  return rv_ != nullptr || ift_ != nullptr || witness_ != nullptr;
 }
 
 void ResolutionContext::popFrame(Resolver* rv) {
   CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
-  CHPL_ASSERT(frames_.back().rv() == rv);
+  CHPL_ASSERT(frames_.back().rv() == rv ||
+              frames_.back().ift());
 
   if (frames_.empty()) return;
   if (frames_.back().isUnstable()) numUnstableFrames_--;

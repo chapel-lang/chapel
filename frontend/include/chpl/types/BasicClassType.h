@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/ManageableType.h"
 #include "chpl/framework/global-strings.h"
 
@@ -73,6 +74,14 @@ class BasicClassType final : public ManageableType {
       const BasicClassType* parentType,
       const BasicClassType* instantiatedFrom,
       CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, id(), name(),
+               Type::substitute(context, parentType_, subs),
+               Type::substitute(context, (const BasicClassType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
   static const BasicClassType* getRootClassType(Context* context);
 

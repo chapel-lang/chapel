@@ -170,6 +170,19 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   lhs.setType(useType);
 }
 
+static void checkImplementationPoint(ResolutionContext* rc, const ImplementationPoint* implPoint) {
+  if (getTypeGenericity(rc->context(), implPoint->interface()) == types::Type::CONCRETE) {
+    auto inScope = scopeForId(rc->context(), implPoint->id());
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, nullptr);
+    std::ignore = checkInterfaceConstraints(rc, implPoint->interface(), implPoint->id(), inScopes);
+    // checkInterfaceConstraints emits an error already, nothing to do.
+  }
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInModule(Context* context,
+                                    const Module* mod);
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
@@ -229,6 +242,14 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       }
       checkThrows(rc, result, mod);
       callInitDeinit(r);
+
+      // check interface implementations in this module
+      auto implPoints = collectImplementationPointsInModule(context, mod);
+      for (const auto& pair : implPoints) {
+        for (const auto implPoint : pair.second) {
+          checkImplementationPoint(rc, implPoint);
+        }
+      }
     }
   }
 
@@ -575,7 +596,8 @@ static bool errorIfParentFramesNotPresent(ResolutionContext* rc,
 
 static const TypedFnSignature*
 typedSignatureInitialImpl(ResolutionContext* rc,
-                          const UntypedFnSignature* untypedSig) {
+                          const UntypedFnSignature* untypedSig,
+                          bool usePlaceholders) {
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
@@ -621,12 +643,15 @@ typedSignatureInitialImpl(ResolutionContext* rc,
 
   ResolutionResultByPostorderID r;
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
+  visitor.usePlaceholders = usePlaceholders;
 
   // visit the formals, but not the return type or body
   for (auto formal : fn->formals()) formal->traverse(visitor);
 
   if (!visitor.outerVariables.isEmpty()) {
-    CHPL_ASSERT(parentSignature);
+    // outer variables can come from a parent function or from
+    // an interface containing the function.
+    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -654,7 +679,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   }
 
   if (!visitor.outerVariables.isEmpty()) {
-    CHPL_ASSERT(parentSignature);
+    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -684,7 +709,7 @@ const TypedFnSignature* const&
 typedSignatureInitial(ResolutionContext* rc,
                       const UntypedFnSignature* untypedSig) {
   CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureInitial, rc, untypedSig);
-  auto ret = typedSignatureInitialImpl(rc, untypedSig);
+  auto ret = typedSignatureInitialImpl(rc, untypedSig, /* usePlaceholders */ false);
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
@@ -701,6 +726,21 @@ typedSignatureInitialForIdQuery(ResolutionContext* rc, ID id) {
 const TypedFnSignature*
 typedSignatureInitialForId(ResolutionContext* rc, ID id) {
   return typedSignatureInitialForIdQuery(rc, std::move(id));
+}
+
+static const TypedFnSignature* const&
+typedSignatureTemplateForIdQuery(ResolutionContext* rc, ID id) {
+  CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureTemplateForIdQuery, rc, id);
+  Context* context = rc->context();
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
+  const TypedFnSignature* ret = uSig ? typedSignatureInitialImpl(rc, uSig, /* usePlaceholders */ true)
+                                     : nullptr;
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+const TypedFnSignature*
+typedSignatureTemplateForId(ResolutionContext* rc, ID id) {
+  return typedSignatureTemplateForIdQuery(rc, id);
 }
 
 // initedInParent is true if the decl variable is inited due to a parent
@@ -783,6 +823,21 @@ initialTypeForTypeDeclQuery(Context* context, ID declId) {
 
 const Type* initialTypeForTypeDecl(Context* context, ID declId) {
   return initialTypeForTypeDeclQuery(context, declId);
+}
+
+static const Type* const&
+initialTypeForInterfaceQuery(Context* context, ID declId) {
+  QUERY_BEGIN(initialTypeForInterfaceQuery, context, declId);
+  const Type* result = nullptr;
+  auto ast = parsing::idToAst(context, declId);
+  if (auto itf = ast->toInterface()) {
+    result = InterfaceType::get(context, itf->id(), itf->name(), /* subs */ {});
+  }
+  return QUERY_END(result);
+}
+
+const Type* initialTypeForInterface(Context* context, ID declId) {
+  return initialTypeForInterfaceQuery(context, declId);
 }
 
 const ResolvedFields& resolveFieldDecl(Context* context,
@@ -1244,6 +1299,32 @@ static Type::Genericity getFieldsGenericity(Context* context,
   return g;
 }
 
+static Type::Genericity getInterfaceActualsGenericity(Context* context,
+                                                      const InterfaceType* ift,
+                                                      std::set<const Type*>& ignore) {
+  // add the current type to the ignore set, and stop now
+  // if it is already in the ignore set.
+  auto it = ignore.insert(ift);
+  if (it.second == false) {
+    // set already contained ct, so stop & consider it concrete
+    return Type::CONCRETE;
+  }
+
+  if (ift->substitutions().empty()) return Type::GENERIC;
+
+  auto itf = parsing::idToAst(context, ift->id())->toInterface();
+  CHPL_ASSERT(itf);
+  for (auto formal : itf->formals()) {
+    // if the substitutions aren't empty, expect substitutions for all types
+    auto& qt = ift->substitutions().at(formal->id());
+    if (getTypeGenericityIgnoring(context, qt.type(), ignore) != Type::CONCRETE) {
+      return Type::GENERIC;
+    }
+  }
+
+  return Type::CONCRETE;
+}
+
 Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
                                            std::set<const Type*>& ignore) {
   if (t == nullptr)
@@ -1271,7 +1352,11 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
-  CHPL_ASSERT(t->isCompositeType() || t->isClassType());
+  CHPL_ASSERT(t->isCompositeType() || t->isClassType() || t->isInterfaceType());
+
+  if (auto ift = t->toInterfaceType()) {
+    return getInterfaceActualsGenericity(context, ift, ignore);
+  }
 
   // the tuple type that isn't an instantiation is a generic type
   if (auto tt = t->toTupleType()) {
@@ -1548,7 +1633,15 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
   const TypedFnSignature* result = nullptr;
 
-  ID id = t->getCompositeType()->id();
+  ID id;
+  if (auto ct = t->getCompositeType()) {
+    id = ct->id();
+  } else if (auto ift = t->toInterfaceType()) {
+    id = ift->id();
+  } else {
+    CHPL_ASSERT(false && "invalid argument to typeConstructorInitialQuery");
+  }
+
   UniqueString name;
   std::vector<UntypedFnSignature::FormalDetail> formals;
 
@@ -2810,6 +2903,156 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const PoiScope* poiScope) {
   bool skipIfRunning = false;
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
+}
+
+static const ImplementationPoint* const&
+resolveImplementsStmtQuery(Context* context, ID id) {
+  QUERY_BEGIN(resolveImplementsStmtQuery, context, id);
+  const ImplementationPoint* result = nullptr;
+
+  auto byPostorder = resolveModuleStmt(context, id);
+  auto ast = parsing::idToAst(context, id);
+  CHPL_ASSERT(ast->isImplements());
+  auto impl = ast->toImplements();
+
+  auto interfaceExpr = impl->interfaceExpr();
+  QualifiedType interfaceQt;
+  if (auto interfaceIdent = interfaceExpr->toIdentifier()) {
+    interfaceQt = byPostorder.byAst(interfaceIdent).type();
+  } else if (auto interfaceCall = interfaceExpr->toFnCall()) {
+    interfaceQt = byPostorder.byAst(interfaceCall->calledExpression()).type();
+  }
+
+  if (!interfaceQt.isType() || interfaceQt.isUnknown() ||
+      !interfaceQt.type()->isInterfaceType()) {
+    CHPL_REPORT(context, InvalidImplementsInterface, impl, interfaceQt);
+  } else {
+    auto genericIft = interfaceQt.type()->toInterfaceType();
+    std::vector<QualifiedType> actuals;
+
+    auto addActual = [&byPostorder, &actuals, context, impl](const AstNode* actual) {
+      auto& actualType = byPostorder.byAst(actual).type();
+      if (actualType.isUnknownOrErroneous()) {
+        return false;
+      } else if (!actualType.isType()) {
+        CHPL_REPORT(context, InvalidImplementsActual, impl, actual, actualType);
+        return false;
+      }
+      actuals.push_back(actualType);
+      return true;
+    };
+
+    bool addPoint = true;
+    if (auto typeIdent = impl->typeIdent()) {
+      addPoint = addActual(typeIdent);
+    }
+    if (auto interfaceCall = impl->interfaceExpr()->toFnCall()) {
+      for (auto actual : interfaceCall->actuals()) {
+        if (!addPoint) break; // already found a broken actual
+        addPoint &= addActual(actual);
+      }
+    }
+
+    if (addPoint) {
+      auto ift = InterfaceType::withTypes(context, genericIft, actuals);
+      if (!ift) {
+        CHPL_REPORT(context, InvalidImplementsArity, impl, genericIft, actuals);
+      } else {
+        result = ImplementationPoint::get(context, ift, id);
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const ImplementationPoint* resolveImplementsStmt(Context* context,
+                                                 ID id) {
+  return resolveImplementsStmtQuery(context, id);
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInModule(Context* context,
+                                    const uast::Module* module) {
+  QUERY_BEGIN(collectImplementationPointsInModule, context, module);
+  std::map<ID, std::vector<const ImplementationPoint*>> byInterfaceId;
+
+  for (auto stmt : module->stmts()) {
+    if (auto ad = stmt->toAggregateDecl()) {
+      auto& implPoints = getImplementedInterfaces(context, ad);
+      for (auto implPoint : implPoints) {
+        byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
+      }
+    } else if (auto implements = stmt->toImplements()) {
+      auto implPoint = resolveImplementsStmt(context, implements->id());
+      if (implPoint) {
+        byInterfaceId[implPoint->interface()->id()].push_back(implPoint);
+      }
+    }
+  }
+
+  return QUERY_END(byInterfaceId);
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+collectImplementationPointsInScope(Context* context,
+                                   const Scope* scope) {
+  QUERY_BEGIN(collectImplementationPointsInScope, context, scope);
+  CHPL_ASSERT(scope->moduleScope() == scope);
+
+  auto module = parsing::idToAst(context, scope->id())->toModule();
+  auto& result = collectImplementationPointsInModule(context, module);
+
+  return QUERY_END(result);
+}
+
+static void
+helpCollectVisibileImplementationPoints(Context* context,
+                                        const Scope* scope,
+                                        std::unordered_set<const Scope*>& seen,
+                                        std::map<ID, std::vector<const ImplementationPoint*>>& into) {
+  auto insertResult = seen.insert(scope);
+  if (!insertResult.second) return;
+
+  auto& inScope = collectImplementationPointsInScope(context, scope);
+  for (auto& pointsForScope : inScope) {
+    auto& copyInto = into[pointsForScope.first];
+    for (auto implPoint : pointsForScope.second) {
+      copyInto.push_back(implPoint);
+    }
+  }
+
+  if (auto visStmts = resolveVisibilityStmts(context, scope)) {
+    for (auto visClause : visStmts->visibilityClauses()) {
+      auto nextScope = visClause.scope();
+      if (nextScope && asttags::isModule(nextScope->tag())) {
+        helpCollectVisibileImplementationPoints(context, nextScope, seen, into);
+      }
+    }
+  }
+}
+
+static const std::map<ID, std::vector<const ImplementationPoint*>>&
+visibleImplementationPoints(Context* context,
+                            const Scope* scope) {
+  QUERY_BEGIN(visibleImplementationPoints, context, scope);
+  std::map<ID, std::vector<const ImplementationPoint*>> result;
+  std::unordered_set<const Scope*> seen;
+  helpCollectVisibileImplementationPoints(context, scope, seen, result);
+  return QUERY_END(result);
+}
+
+const std::vector<const ImplementationPoint*>*
+visibileImplementationPointsForInterface(Context* context,
+                                         const Scope* scope,
+                                         ID id) {
+  auto& allInstantiationPoints = visibleImplementationPoints(context, scope);
+  auto it = allInstantiationPoints.find(id);
+  if (it != allInstantiationPoints.end()) {
+    return &it->second;
+  }
+
+  return nullptr;
 }
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
@@ -5154,6 +5397,344 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
                                 CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
+}
+
+static bool
+matchImplementationPoint(ResolutionContext* rc,
+                         const InterfaceType* ift,
+                         const ImplementationPoint* implPoint,
+                         bool& outIsGeneric) {
+  if (ift->id() != implPoint->interface()->id()) return false;
+
+  // Use 'const var' so that canPass doesn't say that a type instantiates
+  // itself.
+  auto actualT = QualifiedType(QualifiedType::CONST_VAR, ift);
+  auto formalT = QualifiedType(QualifiedType::CONST_VAR, implPoint->interface());
+  auto got = canPass(rc->context(), actualT, formalT);
+
+  outIsGeneric = got.instantiates();
+  return got.passes();
+}
+
+const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                            const types::InterfaceType* ift,
+                                                            const CallScopeInfo& inScopes) {
+  auto implPoints =
+    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope()->moduleScope(), ift->id());
+
+  // TODO: this matches production, in which the first matching generic
+  // implementation is used if no concrete one is found. It's probably
+  // better to use the same disambiguation rules as functions, though.
+  // I don't see a particularly nice way to do that, though.
+  const ImplementationPoint* generic = nullptr;
+  if (implPoints) {
+    for (auto implPoint : *implPoints) {
+      bool isGeneric = false;
+      if (matchImplementationPoint(rc, ift, implPoint, isGeneric)) {
+        if (isGeneric && generic == nullptr) {
+          generic = implPoint;
+        } else if (!isGeneric) {
+          // For a concrete instantiation point, the current search scope
+          // is irrelevant; use the point's scope for the search.
+
+          auto implScope = scopeForId(rc->context(), implPoint->id());
+          auto checkScope = CallScopeInfo::forNormalCall(implScope, nullptr);
+          if (auto witness = checkInterfaceConstraints(rc, ift, implPoint->id(), checkScope)) {
+            return witness;
+          }
+        }
+      }
+    }
+  }
+
+  if (generic) {
+    // For a generic instantiation point, construct a new PoI scope from
+    // the current search scope, and use the point's scope for the search.
+
+    auto implScope = scopeForId(rc->context(), generic->id());
+    auto poiScope = pointOfInstantiationScope(rc->context(), inScopes.callScope(), inScopes.poiScope());
+    auto checkScope = CallScopeInfo::forNormalCall(implScope, poiScope);
+    if (auto witness = checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
+      return witness;
+    }
+  }
+
+  return nullptr;
+}
+
+static ID searchFunctionByTemplate(ResolutionContext* rc,
+                                   const InterfaceType* iftForErr,
+                                   const ID& implPointIdForErr,
+                                   const Function* fn,
+                                   const TypedFnSignature* tfs,
+                                   const CallScopeInfo& inScopes) {
+  std::vector<ApplicabilityResult> rejected;
+  std::vector<const TypedFnSignature*> ambiguous;
+
+  std::vector<CallInfoActual> actuals;
+  for (int i = 0; i < tfs->numFormals(); i++) {
+    auto decl = tfs->untyped()->formalDecl(i);
+    auto name = UniqueString();
+    if (auto formal = decl->toFormal()) {
+        name = formal->name();
+    } else if (decl->isVarArgFormal()) {
+      CHPL_UNIMPL("vararg formals in interface function requirements");
+      return ID();
+    }
+    actuals.emplace_back(tfs->formalType(i), name);
+  }
+
+  CallInfo ci {
+      tfs->untyped()->name(),
+      /* calledType */ QualifiedType(),
+      /* isMethodCall */ fn->isMethod(),
+      /* hasQuestionArg */ false,
+      /* isParenless */ fn->isParenless(),
+      std::move(actuals)
+  };
+
+  // TODO: how to note this?
+  auto c =
+    resolveGeneratedCall(rc->context(), fn, ci, inScopes);
+
+  bool failed = c.exprType().isUnknownOrErroneous();
+  if (failed && fn->body()) {
+    // template has a default implementation; return it, we're good.
+    return fn->id();
+  } else if (failed && c.mostSpecific().isAmbiguous()) {
+    // TODO: no way at this time to collected candidates rejected due to
+    //       ambiguity, so just report an empty list.
+    CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointIdForErr,
+                fn, std::move(ambiguous));
+    return ID();
+  } else if (failed) {
+    // Failed to find a call, not due to ambiguity. Re-run call and gather
+    // rejected candidates.
+    resolveGeneratedCall(rc->context(), fn, ci, inScopes, &rejected);
+    CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointIdForErr,
+                tfs, ci, std::move(rejected));
+    return ID();
+  }
+
+  CHPL_ASSERT(!failed);
+
+  const TypedFnSignature* foundFn = nullptr;
+  if (c.mostSpecific().numBest() > 1) {
+    CHPL_UNIMPL("return intent overloading in interface constraint checking");
+    return ID();
+  } else {
+    // There's only one function; we should still check its intent.
+    foundFn = c.mostSpecific().only().fn();
+    auto foundIntent = parsing::idToFnReturnIntent(rc->context(), foundFn->id());
+
+    if (foundIntent == fn->returnIntent()) {
+      // fine
+    } else {
+      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointIdForErr,
+                  tfs, foundFn);
+      return ID();
+    }
+  }
+
+  // Validate that the formal names are in the right order. We could do this
+  // by resolving a generated call with every actual being named, but this
+  // will miss some cases, like when the template is:
+  //
+  //      proc f(x: int, y: int)
+  //
+  //  and the actual function is:
+  //
+  //      proc f(y: int, x: int):
+  //
+  // such calls would resolve match with and without named actuals, but the
+  // actuals are not in the right order compared to the template.
+  FormalActualMap faMap(foundFn, ci);
+
+  int lastActualPosition = -1;
+  for (auto& formalActual : faMap.byFormals()) {
+    if (formalActual.actualIdx() == -1) {
+      // Allow defaulted formals to be skipped vs. a template, so that a template
+      //
+      //    proc foo();
+      //
+      // Can match:
+      //
+      //    proc foo(x: int = 10) {}
+      continue;
+    }
+
+    if (formalActual.actualIdx() <= lastActualPosition) {
+      // the actuals in the call (which are formals from the template)
+      // are re-ordered compared to the foundFn. This is an error.
+      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointIdForErr,
+                  tfs, foundFn);
+      return ID();
+    }
+    lastActualPosition = formalActual.actualIdx();
+  }
+
+  // ordering is fine, so foundFn is good to go.
+  return foundFn->id();
+}
+
+static QualifiedType searchForAssociatedType(ResolutionContext* rc,
+                                             const InterfaceType* iftForErr,
+                                             const ID& implPointIdForErr,
+                                             const QualifiedType& receiverType,
+                                             const Variable* td,
+                                             const CallScopeInfo& inScopes) {
+  // Set up a parenless type-proc call to compute associated type
+  auto ci = CallInfo(
+    td->name(),
+    /* calledType */ QualifiedType(),
+    /* isMethodCall */ true,
+    /* hasQuestionArg */ false,
+    /* isParenless */ true,
+    /* actuals */ { { receiverType, USTR("this") } }
+  );
+
+  // TODO: how to note this?
+  auto c =
+    resolveGeneratedCall(rc->context(), td, ci, inScopes);
+
+  std::vector<ApplicabilityResult> rejected;
+  bool failed = c.exprType().isUnknownOrErroneous();
+  bool notType = false;
+  if (!failed) {
+    notType = !c.exprType().isType();
+    if (notType) {
+      rejected.push_back(
+          ApplicabilityResult::failure(c.mostSpecific().only().fn()->id(),
+                                       FAIL_INTERFACE_NOT_TYPE_INTENT));
+    }
+  } else {
+    resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
+  }
+
+  if (failed || notType) {
+    CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, iftForErr,
+                implPointIdForErr, td, ci, std::move(rejected));
+    return QualifiedType();
+  }
+
+  return c.exprType();
+}
+
+static const ImplementationWitness* const&
+checkInterfaceConstraintsQuery(ResolutionContext* rc,
+                               const InterfaceType* ift,
+                               const ID& implPointIdForErr,
+                               const Scope* inScope,
+                               const PoiScope* inPoiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPointIdForErr, inScope, inPoiScope);
+
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+
+  const ImplementationWitness* result = nullptr;
+  auto itf = parsing::idToAst(rc->context(), ift->id())->toInterface();
+
+  // First, process any associated constraints, and create a "phase 1"
+  // implementation witness with this information.
+  // TODO: not used in production today, so not implemented,
+  ImplementationWitness::ConstraintMap associatedConstraints;
+  auto witness1 = ImplementationWitness::get(rc->context(), associatedConstraints, {}, {});
+
+  // Next, process all the associated types, and create a "phase 2"
+  // implementation witness.
+
+  // Here, interface formals aren't 'outer variables' since they live in the
+  // same symbol (the interface), so insert them into 'byPostorderForAssociatedTypes'
+  // as a shortcut for 'resolveNamedDecl' given ift->subs().
+  ResolutionResultByPostorderID byPostorderForAssociatedTypes;
+  byPostorderForAssociatedTypes.setupForSymbol(itf);
+  for (auto& sub : ift->substitutions()) {
+    byPostorderForAssociatedTypes.byId(sub.first).setType(sub.second);
+  }
+  auto associatedReceiverType = QualifiedType(); // cached across iterations
+  ImplementationWitness::AssociatedTypeMap associatedTypes;
+  for (auto stmt : itf->stmts()) {
+    auto td = stmt->toVariable();
+    if (!td) continue;
+
+    // Only associated type are valid declarations in this position
+    CHPL_ASSERT(td->storageKind() == QualifiedType::TYPE);
+
+    ResolutionResultByPostorderID byPostorder;
+    auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness1, stmt, byPostorder);
+    td->traverse(resolver);
+    if (associatedReceiverType.kind() != QualifiedType::TYPE) {
+      // for associated types of multi-type interfaces, resolve the call
+      // on a tuple.
+      if (itf->numFormals() > 1) {
+        std::vector<const Type*> formalTypes;
+        for (auto formal : itf->formals()) {
+          formalTypes.push_back(ift->substitutions().at(formal->id()).type());
+        }
+
+        associatedReceiverType =
+          QualifiedType(QualifiedType::TYPE,
+                        TupleType::getValueTuple(rc->context(), formalTypes));
+      } else {
+        associatedReceiverType = ift->substitutions().at(itf->formal(0)->id());
+      }
+    }
+
+    auto foundQt = searchForAssociatedType(rc, ift, implPointIdForErr,
+                                           associatedReceiverType, td, inScopes);
+    if (foundQt.isUnknownOrErroneous()) {
+      result = nullptr;
+      return CHPL_RESOLUTION_QUERY_END(result);
+    } else {
+      associatedTypes.emplace(td->id(), foundQt.type());
+    }
+  }
+  auto witness2 = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, {});
+
+  // Next, process all the functions; if all of these are found, we can construct
+  // a final witness with all the required information.
+  ImplementationWitness::FunctionMap functions;
+  for (auto stmt : itf->stmts()) {
+    auto fn = stmt->toFunction();
+    if (!fn) continue;
+
+    // Note: construct a resolver with the witness above, which pushes
+    // an interface frame onto the ResolutionContext. This is required for
+    // resolving typed signatures in the interface.
+    ResolutionResultByPostorderID byPostorder;
+    auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness2, stmt, byPostorder);
+
+
+    // Construct an initial typed signature, which will have opaque placeholder
+    // types for 'Self', associated types, etc. Then, replace the placeholders
+    // with the substitutions we've determined, so that we may proceed to
+    // type checking.
+    auto tfs = typedSignatureTemplateForId(rc, fn->id());
+    PlaceholderMap allPlaceholders;
+    for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
+    for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
+    tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
+    auto foundId = searchFunctionByTemplate(rc, ift, implPointIdForErr, fn, tfs, inScopes);
+
+    if (!foundId) {
+      result = nullptr;
+      return CHPL_RESOLUTION_QUERY_END(result);
+    } else {
+      functions.emplace(fn->id(), foundId);
+    }
+  }
+
+  result = ImplementationWitness::get(rc->context(), associatedConstraints, associatedTypes, functions);
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+const ImplementationWitness*
+checkInterfaceConstraints(ResolutionContext* rc,
+                          const InterfaceType* ift,
+                          const ID& implPointId,
+                          const CallScopeInfo& inScopes) {
+  return checkInterfaceConstraintsQuery(rc, ift, implPointId,
+                                        inScopes.callScope(),
+                                        inScopes.poiScope());
 }
 
 static const TypedFnSignature*

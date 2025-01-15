@@ -36,6 +36,7 @@
 #include "Resolver.h"
 
 #include <cstdio>
+#include <iterator>
 #include <set>
 #include <string>
 #include <tuple>
@@ -54,6 +55,127 @@ using namespace types;
 static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
+
+/* pair (interface ID, implementation point ID) */
+using ImplementedInterface =
+  std::pair<const InterfaceType*, ID>;
+
+/* (parent class, implemented interfaces) tuple resulting from processing
+   the inheritance expressions of a class/record. */
+using InheritanceExprResolutionResult =
+  std::pair<const types::BasicClassType*, std::vector<ImplementedInterface>>;
+
+static const InheritanceExprResolutionResult&
+processInheritanceExpressionsForAggregateQuery(Context* context,
+                                               const AggregateDecl* ad,
+                                               SubstitutionsMap substitutions,
+                                               const PoiScope* poiScope) {
+  QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
+  const BasicClassType* parentClassType = nullptr;
+  const AstNode* parentClassNode = nullptr;
+  std::vector<ImplementedInterface> implementationPoints;
+  auto c = ad->toClass();
+
+  for (auto inheritExpr : ad->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClass(context, ad, inheritExpr,
+                                     substitutions,
+                                     poiScope, r);
+    inheritExpr->traverse(visitor);
+
+    auto& rr = r.byAst(inheritExpr);
+    QualifiedType qt = rr.type();
+    const BasicClassType* newParentClassType = nullptr;
+    if (auto t = qt.type()) {
+      if (auto bct = t->toBasicClassType()) {
+        newParentClassType = bct;
+      } else if (auto ct = t->toClassType()) {
+        // safe because it's checked for null later.
+        newParentClassType = ct->basicClassType();
+      }
+    }
+
+    bool foundParentClass = qt.isType() && newParentClassType != nullptr;
+    if (!c && foundParentClass) {
+      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, newParentClassType);
+    } else if (foundParentClass) {
+      // It's a valid parent class; is it the only one? (error otherwise).
+      if (parentClassType) {
+        CHPL_ASSERT(parentClassNode);
+        reportInvalidMultipleInheritance(context, c, parentClassNode, inheritExpr);
+      } else {
+        parentClassType = newParentClassType;
+        parentClassNode = inheritExpr;
+      }
+
+      // OK
+    } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
+      auto ift = qt.type()->toInterfaceType();
+      if (!ift->substitutions().empty()) {
+        context->error(inheritExpr, "cannot specify instantiated interface type in inheritance expression");
+      } else {
+        implementationPoints.emplace_back(ift, inheritExpr->id());
+      }
+    } else {
+      context->error(inheritExpr, "invalid parent class expression");
+      parentClassType = BasicClassType::getRootClassType(context);
+      parentClassNode = inheritExpr;
+    }
+  }
+
+  InheritanceExprResolutionResult result {
+    parentClassType, std::move(implementationPoints)
+  };
+  return QUERY_END(result);
+}
+
+static const std::vector<const ImplementationPoint*>&
+getImplementedInterfacesQuery(Context* context,
+                              const AggregateDecl* ad) {
+  QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
+  std::vector<const ImplementationPoint*> result;
+  std::map<const InterfaceType*, ID> seen;
+  auto inheritanceResult =
+    processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
+  auto& implementationPoints = inheritanceResult.second;
+
+  auto initialType = QualifiedType(QualifiedType::TYPE,
+                                   initialTypeForTypeDecl(context, ad->id()));
+
+  for (auto& implementedInterface : implementationPoints) {
+    auto insertionResult = seen.insert({ implementedInterface.first, implementedInterface.second });
+
+    if (!insertionResult.second) {
+      // We already saw an 'implements' for this interface
+      CHPL_REPORT(context, InterfaceMultipleImplements, ad,
+                  implementedInterface.first, insertionResult.first->second,
+                  implementedInterface.second);
+    } else {
+      auto ift = InterfaceType::withTypes(context, implementedInterface.first,
+                                          { initialType });
+      if (!ift) {
+        // we gave it a single type, but got null back, which means it's
+        // not a unary interface.
+        CHPL_REPORT(context, InterfaceNaryInInherits, ad,
+                    implementedInterface.first, implementedInterface.second);
+      } else {
+        auto implPoint =
+          ImplementationPoint::get(context, ift, implementedInterface.second);
+        result.push_back(implPoint);
+      }
+    }
+  };
+
+  return QUERY_END(result);
+}
+
+const std::vector<const ImplementationPoint*>&
+getImplementedInterfaces(Context* context,
+                         const AggregateDecl* ad) {
+  return getImplementedInterfacesQuery(context, ad);
+}
 
 // Get a Type for an AggregateDecl
 // poiScope, instantiatedFrom are nullptr if not instantiating
@@ -81,44 +203,10 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
-    const BasicClassType* parentClassType = nullptr;
-    const AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClass(context, c, inheritExpr,
-                                       substitutions,
-                                       poiScope, r);
-      inheritExpr->traverse(visitor);
-
-      auto& rr = r.byAst(inheritExpr);
-      QualifiedType qt = rr.type();
-      if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType()) {
-          parentClassType = bct;
-        } else if (auto ct = t->toClassType()) {
-          // safe because it's checked for null later.
-          parentClassType = ct->basicClassType();
-        }
-      }
-
-      if (qt.isType() && parentClassType != nullptr) {
-        // It's a valid parent class; is it the only one? (error otherwise).
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-        }
-        lastParentClass = inheritExpr;
-
-        // OK
-      } else if (!rr.toId().isEmpty() &&
-                 parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
-        // OK, It's an interface.
-      } else {
-        context->error(inheritExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getRootClassType(context);
-      }
-    }
+    const BasicClassType* parentClassType =
+      processInheritanceExpressionsForAggregateQuery(context, ad,
+                                                     substitutions,
+                                                     poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
     // inherit from object.
@@ -717,9 +805,13 @@ returnTypeForTypeCtorQuery(Context* context,
 
   // handle type construction
   const AggregateDecl* ad = nullptr;
-  if (!untyped->id().isEmpty())
-    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin()))
+  const Interface* itf = nullptr;
+  if (!untyped->id().isEmpty()) {
+    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin())) {
       ad = ast->toAggregateDecl();
+      itf = ast->toInterface();
+    }
+  }
 
   if (ad) {
     // compute instantiatedFrom
@@ -789,6 +881,19 @@ returnTypeForTypeCtorQuery(Context* context,
 
     result = theType;
 
+  } else if (itf) {
+    SubstitutionsMap subs;
+
+    CHPL_ASSERT(sig->numFormals() == itf->numFormals());
+
+    int nFormals = sig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      auto& formalType = sig->formalType(i);
+      auto& formalId = itf->formal(i)->id();
+      subs.emplace(formalId, formalType);
+    }
+
+    result = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
   } else {
     // built-in type construction should be handled
     // by resolveFnCallSpecialType and not reach this point.

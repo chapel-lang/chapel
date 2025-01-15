@@ -244,6 +244,31 @@ Resolver::createForModuleStmt(ResolutionContext* rc, const Module* mod,
 }
 
 Resolver
+Resolver::createForInterfaceStmt(ResolutionContext* rc,
+                                 const uast::Interface* interface,
+                                 const types::InterfaceType* ift,
+                                 const ImplementationWitness* witness,
+                                 const uast::AstNode* stmt,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  const AstNode* symbol = interface;
+  const Block* fnBody = nullptr;
+  if (auto fn = stmt->toFunction()) {
+    symbol = fn;
+    fnBody = fn->body();
+  }
+
+  auto ret = Resolver(rc->context(), symbol, byPostorder, nullptr);
+  ret.curStmt = stmt;
+  ret.byPostorder.setupForSymbol(symbol);
+  ret.rc = rc;
+  ret.signatureOnly = true;
+  ret.fnBody = fnBody;
+  rc->pushFrame(ift, witness);
+  ret.didPushFrame = true;
+  return ret;
+}
+
+Resolver
 Resolver::createForScopeResolvingModuleStmt(
                               Context* context, const Module* mod,
                               const AstNode* modStmt,
@@ -612,7 +637,7 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
 
   auto tag = parsing::idToTag(context, targetParentSymbolId);
 
-  if (tag == asttags::Function) return true;
+  if (tag == asttags::Function || tag == asttags::Interface) return true;
 
   if (tag == asttags::Module) {
     // Module-scope variables are not considered outer-variables. However,
@@ -1527,6 +1552,14 @@ static QualifiedType computeTypeDefaults(Resolver& resolver,
   return type;
 }
 
+static const Type* getAnyType(Resolver& resolver, const ID& anchor) {
+  // If we use placeholders, we don't create 'AnyTypes' anywhere,
+  // and instead invent new placeholder types.
+  return resolver.usePlaceholders
+         ? PlaceholderType::get(resolver.context, anchor)->to<Type>()
+         : AnyType::get(resolver.context)->to<Type>();
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -1690,7 +1723,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // primary method. This does not, however, mean that its type should be
         // AnyType; it is not adjusted here.
 
-        typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        typeExprT = QualifiedType(QualifiedType::TYPE, getAnyType(*this, decl->id()));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
         // (we do so if it's not a field or a formal)
@@ -2228,8 +2261,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
       // Note: we seem to rely on tuple components being 'var', and relying on
       // the tuple's kind instead. Without this, the current instantiation
       // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
-      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
-      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      std::vector<QualifiedType> eltTypes;
+      for (auto decl : td->decls()) {
+        eltTypes.push_back(QualifiedType(QualifiedType::VAR,
+                                         getAnyType(*this, decl->id())));
+      }
       auto tup = TupleType::getQualifiedTuple(context, eltTypes);
       useT = QualifiedType(declKind, tup);
     } else {
@@ -2650,6 +2686,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isModule(tag)) {
     return QualifiedType(QualifiedType::MODULE, nullptr);
+  } else if (asttags::isInterface(tag)) {
+    const Type* t = initialTypeForInterface(context, id);
+    return QualifiedType(QualifiedType::TYPE, t);
   }
 
   if (asttags::isFunction(tag)) {
@@ -3385,9 +3424,10 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
 
   // Otherwise, it's a variable, so walk up parent frames and look up
   // the variable's type using the resolution results.
-  } else if (ID parentFn = parsing::idToParentFunctionId(context, target)) {
+  } else if (parsing::idToParentFunctionId(context, target) ||
+             parsing::idToParentInterfaceId(context, target)) {
     if (auto f = rc->findFrameWithId(target)) {
-      type = f->resolutionById()->byId(target).type();
+      type = f->typeForContainedId(rc, target);
       outerVariables.add(mention, target, type);
     }
   }
@@ -3405,7 +3445,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
-    result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    result.setType(QualifiedType(QualifiedType::TYPE, getAnyType(*this, ident->id())));
     return;
   }
 
@@ -3654,6 +3694,17 @@ void Resolver::exit(const uast::Init* init) {
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
+  if (usePlaceholders) {
+    // If we're resolving an interface, create a placeholder for the type
+    // query. This way, we get a concrete type for `foo(?x)`, which is
+    // desireable when validating user-provided functions against the
+    // interface signature.
+    ResolvedExpression& result = byPostorder.byAst(tq);
+    result.setType(QualifiedType(QualifiedType::TYPE,
+                                 PlaceholderType::get(context, tq->id())));
+    return false;
+  }
+
   if (skipTypeQueries) {
     return false;
   }
@@ -5471,7 +5522,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   if (loop->numStmts() == 1) {
     bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
   } else {
-    bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
+    bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
   // The body wasn't a type, so this isn't an array type expression

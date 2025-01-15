@@ -29,6 +29,7 @@ target_sources(ChplFrontend-obj
                disambiguation.cpp
                extern-blocks.cpp
                intents.cpp
+               interface-types.cpp
                maybe-const.cpp
                prims.cpp
                ResolutionContext.cpp

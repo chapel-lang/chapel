@@ -89,6 +89,7 @@ struct Resolver {
   const PoiScope* poiScope = nullptr;
   const uast::Decl* ignoreSubstitutionFor = nullptr;
   bool skipTypeQueries = false;
+  bool usePlaceholders = false;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
@@ -176,6 +177,15 @@ struct Resolver {
   createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
+
+  static Resolver
+  createForInterfaceStmt(ResolutionContext* rc,
+                         const uast::Interface* interface,
+                         const types::InterfaceType* ift,
+                         const ImplementationWitness* witness,
+                         const uast::AstNode* stmt,
+                         ResolutionResultByPostorderID& byPostorder);
+
 
   // set up Resolver to scope resolve a Module
   static Resolver

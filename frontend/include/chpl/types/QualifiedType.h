@@ -90,6 +90,13 @@ class QualifiedType final {
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. See also Type::substitute. */
+  const QualifiedType substitute(Context* context,
+                                 const PlaceholderMap& subs) const {
+    return QualifiedType(kind_, Type::substitute(context, type_, subs), param_);
+  }
+
   /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
   /**

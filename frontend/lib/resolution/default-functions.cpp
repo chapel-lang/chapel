@@ -1348,16 +1348,39 @@ getCompilerGeneratedBinaryOp(Context* context,
   return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
 }
 
-const BuilderResult&
-buildTypeConstructor(Context* context, ID typeID) {
-  QUERY_BEGIN(buildTypeConstructor, context, typeID);
-
-  auto bld = Builder::createForGeneratedCode(context, typeID);
-  auto builder = bld.get();
-  auto dummyLoc = parsing::locateId(context, typeID);
-
+static owned<Function> typeConstructorFnForInterface(Context* context,
+                                                     const Interface* itf,
+                                                     Builder* builder,
+                                                     Location fnLoc) {
   AstList formals;
-  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+  for (auto formal : itf->formals()) {
+    formals.push_back(formal->copy());
+  }
+
+  auto genFn = Function::build(builder, fnLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               itf->name(),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
+
+
+  return genFn;
+}
+
+static owned<Function> typeConstructorFnForComposite(Context* context,
+                                                     const CompositeType* ct,
+                                                     Builder* builder,
+                                                     Location fnLoc) {
+  AstList formals;
 
   if (auto bct = ct->toBasicClassType()) {
     auto parent = bct->parentClassType();
@@ -1392,7 +1415,7 @@ buildTypeConstructor(Context* context, ID typeID) {
       auto typeExpr = fieldDecl->typeExpression();
       auto initExpr = fieldDecl->initExpression();
       auto kind = fieldDecl->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
-      owned<AstNode> formal = Formal::build(builder, dummyLoc,
+      owned<AstNode> formal = Formal::build(builder, fnLoc,
                                             /*attributeGroup=*/nullptr,
                                             fieldDecl->name(),
                                             (Formal::Intent)kind,
@@ -1402,7 +1425,7 @@ buildTypeConstructor(Context* context, ID typeID) {
     }
   }
 
-  auto genFn = Function::build(builder, dummyLoc, {},
+  auto genFn = Function::build(builder, fnLoc, {},
                                Decl::Visibility::PUBLIC,
                                Decl::Linkage::DEFAULT_LINKAGE,
                                /*linkageName=*/{},
@@ -1416,6 +1439,26 @@ buildTypeConstructor(Context* context, ID typeID) {
                                std::move(formals),
                                // returnType, where, lifetime, body
                                {}, {}, {}, {});
+  return genFn;
+}
+
+const BuilderResult&
+buildTypeConstructor(Context* context, ID typeID) {
+  QUERY_BEGIN(buildTypeConstructor, context, typeID);
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto tag = parsing::idToTag(context, typeID);
+  owned<Function> genFn;
+  if (asttags::isInterface(tag)) {
+    auto itf = parsing::idToAst(context, typeID)->toInterface();
+    genFn = typeConstructorFnForInterface(context, itf, builder, dummyLoc);
+  } else {
+    auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+    genFn = typeConstructorFnForComposite(context, ct, builder, dummyLoc);
+  }
 
   builder->noteChildrenLocations(genFn.get(), dummyLoc);
   builder->addToplevelExpression(std::move(genFn));

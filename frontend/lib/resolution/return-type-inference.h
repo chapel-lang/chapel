@@ -21,6 +21,7 @@
 #define RETURN_TYPE_INFERENCE_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/interface-types.h"
 
 namespace chpl {
 namespace uast {
@@ -29,6 +30,12 @@ namespace uast {
 namespace resolution {
 struct Resolver;
 
+// this helper function returns the list of interfaces that
+// are implemented by the given decl. It's defined here because this list
+// is computed as part of 'helpGetTypeForDecl'.
+const std::vector<const ImplementationPoint*>&
+getImplementedInterfaces(Context* context,
+                         const uast::AggregateDecl* ad);
 
 // this helper function computes a CompositeType based upon
 // a decl and some substitutions

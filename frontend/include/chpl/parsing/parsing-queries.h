@@ -522,6 +522,11 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is an interface
+ */
+bool idIsInterface(Context* context, ID id);
+
+/**
  Returns true if the ID is marked 'extern'.
  */
 bool idIsExtern(Context* context, ID id);
@@ -556,6 +561,11 @@ const ID& idToParentId(Context* context, ID id);
  Returns the parent function ID given an ID.
  */
 ID idToParentFunctionId(Context* context, ID id);
+
+/**
+ Returns the parent interface ID given an ID.
+ */
+ID idToParentInterfaceId(Context* context, ID id);
 
 /**
  Returns the parent AST node given an AST node
