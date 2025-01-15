@@ -389,12 +389,13 @@ static QualifiedType primPromotionType(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
   auto actualQt = ci.actual(0).type();
 
-  auto promoTy = getPromotionType(context, actualQt).type();
+  auto promoQt = getPromotionType(context, actualQt);
+  if (promoQt.isUnknown()) promoQt = actualQt;
 
   // We want a type result, even if the prim was passed a value.
-  auto promoQt = QualifiedType(QualifiedType::TYPE, promoTy);
+  auto res = QualifiedType(QualifiedType::TYPE, promoQt.type());
 
-  return promoQt;
+  return res;
 }
 
 static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
