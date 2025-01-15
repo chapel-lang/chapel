@@ -1161,6 +1161,13 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
 
     result = QualifiedType(input.kind(), outputType.type());
     return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isIteratorType() &&
+             untyped->name() == "_shape_") {
+    auto it = sig->formalType(0).type()->toIteratorType();
+    auto shape = shapeForIterator(context, it);
+    CHPL_ASSERT(shape);
+    result = QualifiedType(QualifiedType::VAR, shape);
+    return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
     // method accessor - compute the type of the field
     QualifiedType ft = computeTypeOfField(context,

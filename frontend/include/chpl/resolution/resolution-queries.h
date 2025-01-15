@@ -611,6 +611,9 @@ const types::QualifiedType&
 yieldTypeForIterator(ResolutionContext* rc,
                      const types::IteratorType* iter);
 
+const types::Type* shapeForIterator(Context* context,
+                                    const types::IteratorType* iter);
+
 /**
   Resolve a call to the special 'these' iterator method. For certain types,
   this circumvents the normal call resolution process, since iterating over

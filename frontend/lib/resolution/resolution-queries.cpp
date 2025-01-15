@@ -6686,6 +6686,99 @@ yieldTypeForIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
+static const CallResolutionResult&
+resolveIteratorShapeComputation(Context* context,
+                                const IteratorType* iter,
+                                QualifiedType qt) {
+
+  QUERY_BEGIN(resolveIteratorShapeComputation, context, iter, qt);
+  std::vector<CallInfoActual> actuals;
+  actuals.emplace_back(qt, UniqueString());
+
+  auto ci = CallInfo(UniqueString::get(context, "chpl_computeIteratorShape"),
+                     QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(actuals));
+  auto inScopes = callScopeInfoForIterator(context, iter, /* overrideScopes */ nullptr);
+
+  auto c = resolveGeneratedCall(context, /* astForScopeOrErr */ nullptr, ci, inScopes);
+  return QUERY_END(c);
+}
+
+static const Type* const&
+shapeForIteratorQuery(Context* context,
+                      const types::IteratorType* iter) {
+  QUERY_BEGIN(shapeForIteratorQuery, context, iter);
+  // shape is determined by the leader / standalone. In some cases,
+  // the iterator doesn't have the notion of a leader, so we will early-return.
+  // Otherwise, we will fall through and work on leader below.
+  QualifiedType leaderType;
+
+  if (auto loopIter = iter->toLoopExprIteratorType()) {
+    // The first iterand in the zip, if any, is a leader. Otherwise, there's
+    // only one iterand, and that's the leader.
+
+    CHPL_ASSERT(!loopIter->iterand().isUnknownOrErroneous());
+    if (loopIter->isZippered()) {
+      auto iteratedTuple = loopIter->iterand().type()->toTupleType();
+      CHPL_ASSERT(iteratedTuple);
+
+      leaderType = iteratedTuple->elementType(0);
+    } else {
+      leaderType = loopIter->iterand();
+    }
+  } else if (iter->isFnIteratorType()) {
+    // `iter` subroutines can have arbitrary behavior, and thus don't
+    // have a shape.
+
+    const Type* result = nullptr;
+    return QUERY_END(result);
+  } else if (auto promoIterator = iter->toPromotionIteratorType()) {
+    auto scalarFn = promoIterator->scalarFn();
+    auto untypedScalarFn = scalarFn->untyped();
+    auto& formalMap = promoIterator->promotedFormals();
+    for (int i = 0; i < scalarFn->numFormals(); i++) {
+      auto promotedEntry = formalMap.find(untypedScalarFn->formalDecl(i)->id());
+      if (promotedEntry != formalMap.end()) {
+        leaderType = promotedEntry->second;
+        break;
+      }
+    }
+    CHPL_ASSERT(false && "no promotedformals, even though we're a promotion iterator");
+  }
+
+  CHPL_ASSERT(!leaderType.isUnknownOrErroneous());
+  const Type* result = nullptr;
+  if (auto leaderIter = leaderType.type()->toIteratorType()) {
+    return QUERY_END(shapeForIteratorQuery(context, leaderIter));
+  } else {
+    // Resolve this using  call, and make that call a query because typed
+    // conversion might eventually require access to it for the purposes
+    // of runtime types. Some additional wrangling will be needed to avoid
+    // re-extracing leaderType (could we have a set-only query that computes
+    // the CallResolutionResult from iter, that we set right here?) but I
+    // leave that to you, O brave future implementer.
+
+    auto cr = resolveIteratorShapeComputation(context, iter, leaderType);
+    if (!cr.exprType().isUnknownOrErroneous()) {
+      result = cr.exprType().type();
+    } else {
+      // At the time of writing, it should not be possible for us to
+      // not find a call, because we have a catch-all overload. However,
+      // just in case, handle the case gracefully, simply returning "no shape".
+      result = nullptr;
+    }
+  }
+  return QUERY_END(result);
+}
+
+const Type* shapeForIterator(Context* context,
+                             const types::IteratorType* iter) {
+  return shapeForIteratorQuery(context, iter);
+}
+
 static TheseResolutionResult
 callResolutionResultToTheseResolutionResult(CallResolutionResult cr, QualifiedType iterandType) {
   if (cr.exprType().isUnknownOrErroneous() ||

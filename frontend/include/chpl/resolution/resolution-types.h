@@ -2013,6 +2013,11 @@ class CallResolutionResult {
     poiInfo_.mark(context);
   }
 
+  static bool update(CallResolutionResult& keep,
+                     CallResolutionResult& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   size_t hash() const {
     return chpl::hash(mostSpecific_, exprType_, yieldedType_, poiInfo_,
                       speciallyHandled_, rejectedPossibleIteratorCandidates_);
