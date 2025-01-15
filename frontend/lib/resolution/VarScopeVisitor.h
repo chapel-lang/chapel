@@ -213,6 +213,9 @@ class VarScopeVisitor {
   bool enter(const NamedDecl* ast, RV& rv);
   void exit(const NamedDecl* ast, RV& rv);
 
+  bool enter(const TupleDecl* ast, RV& rv);
+  void exit(const TupleDecl* ast, RV& rv);
+
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);
 
