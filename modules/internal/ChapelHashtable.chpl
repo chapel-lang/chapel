@@ -709,6 +709,11 @@ module ChapelHashtable {
       var numChunksGuess = this.tableNumFullSlots / chunkSize;
       var intendedChunkGuess = intendedSpace.low / chunkSize;
 
+      if (intendedChunkGuess >= numChunksGuess) {
+        __primitive("chpl_error",
+                    "zippered iterations have non-equal lengths".c_str());
+      }
+
       // Determine corresponding chunk to use.
       var chunkEnds = _determineEvenChunks(numChunksGuess,
                                            this.tableNumFullSlots);
