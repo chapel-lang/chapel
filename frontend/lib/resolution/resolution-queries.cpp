@@ -3580,8 +3580,10 @@ static const Type* getManagedClassType(Context* context,
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     if (t != nullptr && !t->isUnknownType()) {
       context->error(astForErr, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else {
+      return UnknownType::get(context);
     }
-    return ErroneousType::get(context);
   }
 
   const ManageableType* mt = nullptr;
