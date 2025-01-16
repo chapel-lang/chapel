@@ -334,8 +334,28 @@ static void testCForLoop() {
   assert(cond.type().type() == BoolType::get(context));
 }
 
-static void testParamFor() {
-  printf("testParamFor\n");
+// Note: values hardcoded to match 'helpTestParam' helper
+struct ParamLoopTester {
+  ParamCollector pc;
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, int64_t> resolvedVals;
+
+  void noteExpectedIteration(int i) {
+    resolvedIdents["i"] += 2;
+    resolvedIdents["n"] += 1;
+    resolvedIdents["x"] += 1;
+    resolvedVals.emplace("i", i);
+    resolvedVals.emplace("n", i+i);
+  }
+
+  void assertMatch() {
+    assert(resolvedIdents == pc.resolvedIdents);
+    assert(resolvedVals == pc.resolvedVals);
+  }
+};
+
+static ParamLoopTester helpTestParam(const char* rangeExpr) {
+  printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
@@ -343,13 +363,13 @@ static void testParamFor() {
   // Test iteration over an iterator call
   //
 
-  auto iterText = R""""(
+  auto iterText = R"""(
                   var x = 0;
-                  for param i in 1..10 {
+                  for param i in )""" + std::string(rangeExpr) + R"""( {
                     param n = __primitive("+", i, i);
                     __primitive("+=", x, n);
                   }
-                  )"""";
+                  )""";
 
   const Module* m = parseModule(context, iterText);
 
@@ -360,20 +380,82 @@ static void testParamFor() {
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
   assert(re.type().type() == IntType::get(context, 0));
-
-  std::map<std::string, int> resolvedIdents;
-  std::multimap<std::string, int64_t> resolvedVals;
-  for (int i = 1; i <= 10; i++) {
-    resolvedIdents["i"] += 2;
-    resolvedIdents["n"] += 1;
-    resolvedIdents["x"] += 1;
-    resolvedVals.emplace("i", i);
-    resolvedVals.emplace("n", i+i);
-  }
-  assert(resolvedIdents == pc.resolvedIdents);
-  assert(resolvedVals == pc.resolvedVals);
+  return ParamLoopTester{std::move(pc), {}, {}};
 }
 
+static void testParamFor() {
+  {
+    auto test = helpTestParam("1..10");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10 by 2");
+    for (int i = 1; i <= 10; i += 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10 by -2");
+    for (int i = 10; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..<10");
+    for (int i = 1; i < 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..<10 by -2");
+    for (int i = 9; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("0..#10");
+    for (int i = 0; i < 10; i ++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("0..#10 by -2");
+    for (int i = 9; i >= 0; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("..10#10");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("..10#10 by -2");
+    for (int i = 10; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+}
 
 //
 // Test nested param loops
