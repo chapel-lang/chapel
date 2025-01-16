@@ -1014,7 +1014,7 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg pickleData: The pickle data to load.
     */
-    proc init(in interpreter: borrowed Interpreter, pickleData: bytes) {
+    proc init(in interpreter: borrowed Interpreter, pickleData: bytes) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
       init this;
@@ -1577,7 +1577,7 @@ module Python {
     extern proc Py_InitializeFromConfig(config_: c_ptr(PyConfig)): PyStatus;
     extern proc PyStatus_Exception(in status: PyStatus): bool;
     extern proc Py_Finalize();
-    extern proc Py_INCREF(obj: PyObjectPtr);
+    extern "chpl_Py_INCREF" proc Py_INCREF(obj: PyObjectPtr);
     extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
     extern proc PyMem_Free(ptr: c_ptr(void));
