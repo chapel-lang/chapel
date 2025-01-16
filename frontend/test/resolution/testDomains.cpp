@@ -110,7 +110,7 @@ module M {
 
   auto rankVarTy = findVarType(m, rr, "r");
   assert(rankVarTy == dType->rank());
-  assert(rankVarTy.param()->toIntParam()->value() == rank);
+  ensureParamInt(rankVarTy, rank);
 
   auto idxTypeVarTy = findVarType(m, rr, "i");
   assert(idxTypeVarTy == dType->idxType());
@@ -120,11 +120,11 @@ module M {
   assert(stridesVarTy == dType->strides());
   assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
 
-  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
+  ensureParamBool(findVarType(m, rr, "rk"), true);
 
-  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
+  ensureParamBool(findVarType(m, rr, "ak"), false);
 
-  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
+  assert(findVarType(m, rr, "p").type()->isIntType());
 
   assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
@@ -198,8 +198,8 @@ module M {
 
   assert(dType->kind() == domainKind);
   bool isRectangular = domainKind == DomainType::Kind::Rectangular;
-  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == isRectangular);
-  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == !isRectangular);
+  ensureParamBool(findVarType(m, rr, "rk"), isRectangular);
+  ensureParamBool(findVarType(m, rr, "ak"), !isRectangular);
 
   assert(guard.realizeErrors() == 0);
 }
@@ -260,13 +260,13 @@ module M {
   auto fullIndexType = findVarType(m, rr, "i");
   assert(findVarType(m, rr, "ig") == fullIndexType);
 
-  assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == parSafe);
+  ensureParamBool(findVarType(m, rr, "s"), parSafe);
 
-  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == false);
+  ensureParamBool(findVarType(m, rr, "rk"), false);
 
-  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == true);
+  ensureParamBool(findVarType(m, rr, "ak"), true);
 
-  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
+  assert(findVarType(m, rr, "p").type()->isIntType());
 
   assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
@@ -372,7 +372,7 @@ module M {
   assert(!findVarType(m, rr, "t").isUnknownOrErroneous());
   assert(!findVarType(m, rr, "i").isUnknownOrErroneous());
 
-  assert(findVarType(m, rr, "equal").isParamTrue());
+  ensureParamBool(findVarType(m, rr, "equal"), true);
 
   // assert(guard.realizeErrors() == 0);
 }
