@@ -214,20 +214,6 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       parentClassType = BasicClassType::getRootClassType(context);
     }
 
-    const BasicClassType* insnFromBct = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto bct = instantiatedFrom->toBasicClassType()) {
-        insnFromBct = bct;
-      } else if (auto ct = instantiatedFrom->toClassType()) {
-        // safe because it's checked for null later.
-        insnFromBct = ct->basicClassType();
-      }
-
-      if (!insnFromBct) {
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-      }
-    }
-
     if (!parentClassType->isObjectType() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
@@ -242,6 +228,28 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       auto gotBct = got->toBasicClassType();
       CHPL_ASSERT(gotBct);
       parentClassType = gotBct;
+    }
+
+    // Elsewhere, we use 'instantiatedFrom' to signal a generic instantiation,
+    // even if the filtered substitutions are empty. Keep that invariant
+    // here, and set instantiatedFrom for this class because its parent
+    // was instantiated.
+    if (parentClassType->instantiatedFrom() && !instantiatedFrom) {
+      instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
+    }
+
+    const BasicClassType* insnFromBct = nullptr;
+    if (instantiatedFrom != nullptr) {
+      if (auto bct = instantiatedFrom->toBasicClassType()) {
+        insnFromBct = bct;
+      } else if (auto ct = instantiatedFrom->toClassType()) {
+        // safe because it's checked for null later.
+        insnFromBct = ct->basicClassType();
+      }
+
+      if (!insnFromBct) {
+        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
     }
 
     ret = BasicClassType::get(context, c->id(), c->name(),
