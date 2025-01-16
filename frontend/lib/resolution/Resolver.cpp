@@ -1056,9 +1056,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedWidth);
             } else {
-              auto p = IntParam::get(context, pt->bitwidth());
-              auto it = IntType::get(context, 0);
-              auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+              auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
               resolvedWidth.setType(qt);
             }
           }
@@ -1218,10 +1216,8 @@ void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
 
     // args...?n
     if (auto countQuery = varargs->count()) {
-      auto intType = IntType::get(context, 0);
-      auto val = IntParam::get(context, tuple->numElements());
       ResolvedExpression& result = byPostorder.byAst(countQuery);
-      result.setType(QualifiedType(QualifiedType::PARAM, intType, val));
+      result.setType(QualifiedType::makeParamInt(context, tuple->numElements()));
     }
 
     if (auto typeExpr = formal->typeExpression()) {
@@ -2453,8 +2449,7 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
         resultBool = false;
       }
 
-      result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                             BoolParam::get(context, resultBool));
+      result = QualifiedType::makeParamBool(context, resultBool);
     }
 
     byPostorder.byAst(primCall).setType(result);
@@ -2748,9 +2743,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         if (field && field->name() == USTR("size")) {
           // Tuples don't store a 'size' in their substitutions map, so
           // manually take care of things here.
-          auto intType = IntType::get(context, 0);
-          auto val = IntParam::get(context, tup->numElements());
-          return QualifiedType(QualifiedType::PARAM, intType, val);
+          return QualifiedType::makeParamInt(context, tup->numElements());
         }
       }
 
@@ -4174,10 +4167,8 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add definedConst actual if appropriate
     if (decl->usedCurlyBraces()) {
-      actuals.emplace_back(
-          QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                        BoolParam::get(context, true)),
-          UniqueString());
+      actuals.emplace_back(QualifiedType::makeParamBool(context, true)),
+          UniqueString();
     }
 
     auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
@@ -4235,9 +4226,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
       // preserve param-ness
       // this case is only hit when the result is false (for &&)
       // or when the result is true (for ||), so return !isAnd.
-      return QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, !isAnd));
+      return QualifiedType::makeParamBool(context, !isAnd);
     } else {
       // otherwise just return a Bool value
       return QualifiedType(QualifiedType::CONST_VAR,
