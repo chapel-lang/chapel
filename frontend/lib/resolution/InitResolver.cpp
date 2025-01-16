@@ -365,6 +365,38 @@ static const DomainType* domainTypeFromSubsHelper(
   return genericDomain;
 }
 
+static const ArrayType* arrayTypeFromSubsHelper(
+    Context* context, const CompositeType::SubstitutionsMap& subs) {
+  auto genericArray = ArrayType::getGenericArrayType(context);
+
+  // Expect one substitution for _instance
+  if (subs.size() != 1) return genericArray;
+
+  const QualifiedType instanceQt = subs.begin()->second;
+  auto [instanceBct, baseArr] = extractBasicSubclassFromInstance(instanceQt);
+  if (!instanceBct || !baseArr) return genericArray;
+
+  if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
+    // Note: the ArrayType predates our '_instance-aware' code (developed
+    // by Anna and currently at work in Domains). For now, just use the
+    // "old" style containing a domain type and element type to instantiate the array.
+
+    auto baseArrRect = baseArr->parentClassType();
+    CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
+
+    auto [rank, idxType, strides] = extractRectangularInfo(context, baseArrRect);
+    auto [eltType] = extractFields(context, baseArr, std::make_index_sequence<1>(), "eltType");
+
+    auto domain = DomainType::getRectangularType(context, instanceQt, rank,
+                                                 idxType, strides);
+    return ArrayType::getArrayType(context, QualifiedType(QualifiedType::TYPE, domain),
+                                   eltType);
+  }
+
+  // If we reach here, we weren't able to resolve the domain type
+  return genericArray;
+}
+
 static const Type* ctFromSubs(Context* context,
                               const Type* receiverType,
                               const BasicClassType* superType,
@@ -400,6 +432,8 @@ static const Type* ctFromSubs(Context* context,
     ret = ClassType::get(context, basic, manager, dec);
   } else if (receiverType->isDomainType()) {
     ret = domainTypeFromSubsHelper(context, subs);
+  } else if (receiverType->isArrayType()) {
+    ret = arrayTypeFromSubsHelper(context, subs);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
@@ -488,7 +522,8 @@ QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
   if (initialRecvType_->isClassType()) {
     return QualifiedType::CONST_IN;
   } else if (initialRecvType_->isRecordType() ||
-             initialRecvType_->isDomainType()) {
+             initialRecvType_->isDomainType() ||
+             initialRecvType_->isArrayType()) {
     return QualifiedType::REF;
   } else {
     CHPL_ASSERT(false && "Not handled");

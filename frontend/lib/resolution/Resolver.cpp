@@ -5049,6 +5049,7 @@ static void resolveNewForRecordLike(Resolver& rv, const New* node,
                                 const CompositeType* recordLikeType) {
   CHPL_ASSERT(recordLikeType->isRecordType() ||
               recordLikeType->isDomainType() ||
+              recordLikeType->isArrayType() ||
               recordLikeType->isUnionType());
 
   ResolvedExpression& re = rv.byPostorder.byAst(node);
@@ -5093,7 +5094,7 @@ void Resolver::exit(const New* node) {
   } else if (auto classType = type->toClassType()) {
     resolveNewForClass(*this, node, classType);
   } else if (type->isRecordType() || type->isDomainType() ||
-             type->isUnionType()) {
+             type->isUnionType() || type->isArrayType()) {
     resolveNewForRecordLike(*this, node, type->toCompositeType());
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
