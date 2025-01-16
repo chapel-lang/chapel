@@ -101,26 +101,6 @@ static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
   return paramStringBytesHelper(type, into, true);
 }
 
-static QualifiedType makeParamBool(Context* context, bool b) {
-  return { QualifiedType::PARAM, BoolType::get(context),
-           BoolParam::get(context, b) };
-}
-
-static QualifiedType makeParamInt(Context* context, int64_t i) {
-  return { QualifiedType::PARAM, IntType::get(context, 0),
-           IntParam::get(context, i) };
-}
-
-static QualifiedType makeParamString(Context* context, UniqueString s) {
-  return { QualifiedType::PARAM, RecordType::getStringType(context),
-           StringParam::get(context, s) };
-}
-
-static QualifiedType makeParamString(Context* context, std::string s) {
-  auto ustr = UniqueString::get(context, s);
-  return makeParamString(context, ustr);
-}
-
 static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
@@ -140,7 +120,7 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       // will only return true if the field's type is concrete.
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
-      type = makeParamBool(context, isBound);
+      type = QualifiedType::makeParamBool(context, isBound);
       break;
     }
   }
@@ -312,7 +292,7 @@ static QualifiedType primImplementsInterface(Context* context,
     findMatchingImplementationPoint(&rc, instantiatedIft, inScopes);
 
   if (witness) {
-    return makeParamInt(context, 0);
+    return QualifiedType::makeParamInt(context, 0);
   }
 
   // try automatically satisfy the interface if it's in the standard modules.
@@ -323,7 +303,7 @@ static QualifiedType primImplementsInterface(Context* context,
     witness = runResult.result();
   }
 
-  return makeParamInt(context, witness ? 1 : 2);
+  return QualifiedType::makeParamInt(context, witness ? 1 : 2);
 }
 
 static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
@@ -896,7 +876,7 @@ static QualifiedType primIsGenericType(Context* context, const CallInfo& ci) {
     // Both cases are considered 'generic' for this primitive.
     eval = (g == Type::GENERIC || g == Type::GENERIC_WITH_DEFAULTS);
   }
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 
@@ -913,7 +893,7 @@ static QualifiedType primIsClassType(Context* context, const CallInfo& ci) {
     const bool isDdata = t->hasPragma(context, PRAGMA_DATA_CLASS);
     eval = isClassLike && !isExtern && !isDdata;
   }
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 template <typename F>
@@ -922,7 +902,7 @@ actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
   if (ci.numActuals() < 1) return QualifiedType();
   bool eval = false;
   if (auto t = ci.actual(0).type().type()) eval = f(t);
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 static QualifiedType
@@ -949,7 +929,7 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
 
 static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
   CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
-  return makeParamBool(context, false);
+  return QualifiedType::makeParamBool(context, false);
 }
 
 static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
@@ -971,7 +951,7 @@ primIsExternUnionType(Context* context, const CallInfo& ci) {
   auto qt1 = primIsExternType(context, ci);
   auto qt2 = primIsUnionType(context, ci);
   const bool eval = qt1.isParamTrue() && qt2.isParamTrue();
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 static QualifiedType
@@ -1018,7 +998,7 @@ primIsCoercible(Context* context, const CallInfo& ci) {
   bool eval = canPass.passes() &&
               (canPass.instantiates() || canPass.converts()) &&
               !canPass.promotes();
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 static std::string typeToString(Context* context, const Type* t);
@@ -1098,7 +1078,7 @@ primTypeToString(Context* context, const CallInfo& ci) {
   if (auto t = ci.actual(0).type().type()) {
     eval = typeToString(context, t);
   }
-  return makeParamString(context, eval);
+  return QualifiedType::makeParamString(context, eval);
 }
 
 static QualifiedType
@@ -1112,7 +1092,7 @@ primSimpleTypeName(Context* context, const CallInfo& ci) {
     }
     eval = typeToString(context, root);
   }
-  return makeParamString(context, eval);
+  return QualifiedType::makeParamString(context, eval);
 }
 
 CallResolutionResult resolvePrimCall(ResolutionContext* rc,

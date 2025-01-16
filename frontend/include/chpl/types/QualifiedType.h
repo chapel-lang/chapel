@@ -71,6 +71,12 @@ class QualifiedType final {
 
   static const char* kindToString(Kind k);
 
+  // Convenience functions to construct param types
+  static QualifiedType makeParamBool(Context* context, bool b);
+  static QualifiedType makeParamInt(Context* context, int64_t i);
+  static QualifiedType makeParamString(Context* context, UniqueString s);
+  static QualifiedType makeParamString(Context* context, std::string s);
+
  private:
   Kind kind_ = UNKNOWN;
   const Type* type_ = nullptr;
