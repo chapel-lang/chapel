@@ -1,0 +1,5 @@
+noMatchingCandidates.chpl:6: error: unable to resolve call to 'fn': no matching candidates
+noMatchingCandidates.chpl:2: note: the following candidate didn't match because an actual couldn't be passed to a formal
+noMatchingCandidates.chpl:6: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
+noMatchingCandidates.chpl:14: error: unable to resolve call to 'fn': no matching candidates
+noMatchingCandidates.chpl:10: note: the following candidate didn't match because an actual couldn't be passed to a formal
