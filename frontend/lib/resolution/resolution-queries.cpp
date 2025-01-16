@@ -2824,6 +2824,9 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
 
+  // Signature should be concrete by now, except in the case of an initializer
+  // or type constructor in which case we may still have generic formals.
+  // For example, range(?) will reach this point.
   if (!sig->isInitializer() && !sig->untyped()->isTypeConstructor() &&
       sig->needsInstantiation()) {
     CHPL_ASSERT(false &&
