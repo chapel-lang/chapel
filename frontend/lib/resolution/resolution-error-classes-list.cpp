@@ -1915,13 +1915,14 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 void ErrorSelfDefinition::write(ErrorWriterBase& wr) const {
   const uast::NamedDecl* decl = std::get<0>(info_);
   const uast::Identifier* ident = std::get<1>(info_);
+  auto name = ident->name();
   wr.heading(kind_, type_, decl,
-             "'", ident->name(), "' is used to define itself.");
+            "statement references variable '", name, "' before it is defined.");
   wr.message("In the following statement:");
   wr.code(decl);
-  wr.message("the symbol '", ident->name(), "' is used to define itself here:");
+  wr.message("the variable '", name, "' is used to define itself here:");
   wr.codeForDef(ident);
-  wr.message("Symbols cannot be used to define themselves.");
+  wr.message("Variables cannot be used to define themselves.");
 }
 
 void ErrorSplitInitMismatchedConditionalTypes::write(
@@ -2288,8 +2289,9 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info_);
   auto laterId = std::get<ID>(info_);
+  auto name = std::get<UniqueString>(info_);
   wr.heading(kind_, type_, stmt,
-             "statement references a variable before it is defined.");
+             "statement references variable '", name, "' before it is defined.");
   wr.message("In the following statement:");
   wr.code(stmt);
   wr.message("there is a reference to a variable defined later:");
