@@ -374,7 +374,7 @@ module M {
 
   ensureParamBool(findVarType(m, rr, "equal"), true);
 
-  // assert(guard.realizeErrors() == 0);
+  assert(guard.realizeErrors() == 0);
 }
 
 static void testBadDomainHelper(std::string domainType, Context* context,
