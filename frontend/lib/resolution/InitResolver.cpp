@@ -280,6 +280,57 @@ bool InitResolver::isFinalReceiverStateValid(void) {
   return ret;
 }
 
+static std::pair<const BasicClassType*, const BasicClassType*>
+extractBasicSubclassFromInstance(const QualifiedType& instanceQT) {
+  if (instanceQT.isUnknownOrErroneous()) return {nullptr, nullptr};
+
+  const BasicClassType* bct = nullptr;
+  if (auto ct = instanceQT.type()->toClassType()) {
+    bct = ct->basicClassType();
+  } else {
+    bct = instanceQT.type()->toBasicClassType();
+  }
+
+  if (!bct) return {nullptr, nullptr};
+
+  auto parentBct = bct->parentClassType();
+  if (!parentBct) return {nullptr, nullptr};
+
+  return {bct, parentBct};
+}
+
+template <size_t ... Is>
+struct ImplCreateNTuple {
+  template <size_t>
+  using wrap = QualifiedType;
+
+  using type = std::tuple<wrap<Is>...>;
+};
+
+// for the given N names, return N QualifiedTypes
+template <typename ...FieldNames, size_t ... Is>
+static auto extractFields(Context* context, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
+  auto& rf = fieldsForTypeDecl(context, bct,
+                               DefaultsPolicy::IGNORE_DEFAULTS);
+  CHPL_ASSERT(rf.numFields() >= sizeof...(names));
+
+  typename ImplCreateNTuple<Is...>::type ret;
+  for (int i = 0; i < rf.numFields(); i++) {
+    ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 0) : 0), ...);
+  }
+  return ret;
+}
+
+static std::tuple<QualifiedType, QualifiedType, QualifiedType>
+extractRectangularInfo(Context* context, const BasicClassType* bct) {
+  return extractFields(context, bct, std::make_index_sequence<3>(), "rank", "idxType", "strides");
+}
+
+static std::tuple<QualifiedType, QualifiedType>
+extractAssociativeInfo(Context* context, const BasicClassType* bct) {
+  return extractFields(context, bct, std::make_index_sequence<2>(), "idxType", "parSafe");
+}
+
 // Extract domain type information from _instance substitution
 static const DomainType* domainTypeFromSubsHelper(
     Context* context, const CompositeType::SubstitutionsMap& subs) {
@@ -289,59 +340,25 @@ static const DomainType* domainTypeFromSubsHelper(
   if (subs.size() != 1) return genericDomain;
 
   const QualifiedType instanceQt = subs.begin()->second;
+  auto [instanceBct, baseDom] = extractBasicSubclassFromInstance(instanceQt);
+  if (!instanceBct || !baseDom) return genericDomain;
 
-  if (auto instance = instanceQt.type()) {
-    if (auto instanceCt = instance->toClassType()) {
-      if (auto instanceBct = instanceCt->basicClassType()) {
-        // Get BaseRectangularDom parent subs for rectangular domain info
-        if (auto baseDom = instanceBct->parentClassType()) {
-          if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
-            auto& rf = fieldsForTypeDecl(context, baseDom,
-                                         DefaultsPolicy::IGNORE_DEFAULTS);
-            CHPL_ASSERT(rf.numFields() == 3);
-            QualifiedType rank;
-            QualifiedType idxType;
-            QualifiedType strides;
-            for (int i = 0; i < rf.numFields(); i++) {
-              if (rf.fieldName(i) == "rank") {
-                rank = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "idxType") {
-                idxType = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "strides") {
-                strides = rf.fieldType(i);
-              }
-            }
-
-            return DomainType::getRectangularType(context, instanceQt, rank,
-                                                  idxType, strides);
-          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
-            // Currently the relevant associative domain fields are defined
-            // on all the children of BaseAssociativeDom, so get information
-            // from there.
-            auto& rf = fieldsForTypeDecl(context, instanceBct,
-                                         DefaultsPolicy::IGNORE_DEFAULTS);
-            CHPL_ASSERT(rf.numFields() >= 2);
-            QualifiedType idxType;
-            QualifiedType parSafe;
-            for (int i = 0; i < rf.numFields(); i++) {
-              if (rf.fieldName(i) == "idxType") {
-                idxType = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "parSafe") {
-                parSafe = rf.fieldType(i);
-              }
-            }
-
-            return DomainType::getAssociativeType(context, instanceQt, idxType,
-                                                  parSafe);
-          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
-            // TODO: support sparse domains
-          } else {
-            // not a recognized domain type
-            return genericDomain;
-          }
-        }
-      }
-    }
+  if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
+    auto [rank, idxType, strides] = extractRectangularInfo(context, baseDom);
+    return DomainType::getRectangularType(context, instanceQt, rank,
+                                          idxType, strides);
+  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
+    // Currently the relevant associative domain fields are defined
+    // on all the children of BaseAssociativeDom, so get information
+    // from there.
+    auto [idxType, parSafe] = extractAssociativeInfo(context, instanceBct);
+    return DomainType::getAssociativeType(context, instanceQt, idxType,
+                                          parSafe);
+  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
+    // TODO: support sparse domains
+  } else {
+    // not a recognized domain type
+    return genericDomain;
   }
 
   // If we reach here, we weren't able to resolve the domain type
