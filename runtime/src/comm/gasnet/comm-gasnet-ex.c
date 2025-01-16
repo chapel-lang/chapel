@@ -722,7 +722,7 @@ int32_t chpl_comm_getMaxThreads(void) {
     }
     maxGasnetThreads = INT32_MAX;
   }
-  return maxGasnetThreads;
+  return maxGasnetThreads - 1; // reserve one thread for the primordial thread
 }
 
 //
