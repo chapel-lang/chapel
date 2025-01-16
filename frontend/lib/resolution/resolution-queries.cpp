@@ -1804,9 +1804,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
 
   // The constant 'one' for adding
-  auto one = QualifiedType(QualifiedType::PARAM,
-                           IntType::get(context, 0),
-                           IntParam::get(context, 1));
+  auto one = QualifiedType::makeParamInt(context, 1);
 
   // A type to track what kind of signedness a value needs.
   enum RequiredSignedness {
@@ -1944,9 +1942,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
                                    UintType::get(context, 0),
                                    UintParam::get(context, (uint64_t) *signedValue));
       } else {
-        resultType = QualifiedType(QualifiedType::PARAM,
-                                   IntType::get(context, 0),
-                                   IntParam::get(context, *signedValue));
+        resultType = QualifiedType::makeParamInt(context, *signedValue);
       }
     }
 
@@ -3966,10 +3962,7 @@ static bool resolveFnCallSpecial(Context* context,
         if (srcQtEnumType && dstTy->isStringType()) {
           std::ostringstream oss;
           srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-          auto ustr = UniqueString::get(context, oss.str());
-          exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                      RecordType::getStringType(context),
-                                      StringParam::get(context, ustr));
+          exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
         }
 
@@ -3994,10 +3987,7 @@ static bool resolveFnCallSpecial(Context* context,
       // handle casting a type name to a string
       std::ostringstream oss;
       srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      auto ustr = UniqueString::get(context, oss.str());
-      exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                  RecordType::getStringType(context),
-                                  StringParam::get(context, ustr));
+      exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
       // cast (borrowed class) : unmanaged
@@ -4043,8 +4033,7 @@ static bool resolveFnCallSpecial(Context* context,
       if (bothType || bothParam) {
         bool result = lhs == rhs;
         result = ci.name() == USTR("==") ? result : !result;
-        exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                    BoolParam::get(context, result));
+        exprTypeOut = QualifiedType::makeParamBool(context, result);
         return true;
       }
     } else if (ci.numActuals() == 1 && ci.hasQuestionArg()) {
@@ -4063,9 +4052,7 @@ static bool resolveFnCallSpecial(Context* context,
       }
       result = ci.name() == USTR("==") ? result : !result;
       if (haveResult) {
-        exprTypeOut =
-            QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                          BoolParam::get(context, result));
+        exprTypeOut = QualifiedType::makeParamBool(context, result);
         return true;
       }
     }
@@ -4095,8 +4082,7 @@ static bool resolveFnCallSpecial(Context* context,
     }
     auto got = canPassScalar(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
-    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                BoolParam::get(context, result));
+    exprTypeOut = QualifiedType::makeParamBool(context, result);
     return true;
   }
 
@@ -6101,9 +6087,7 @@ QualifiedType paramTypeFromValue(Context* context, T value);
 
 template <>
 QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, value));
+  return QualifiedType::makeParamBool(context, value);
 }
 
 const std::unordered_map<UniqueString, QualifiedType>&

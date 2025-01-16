@@ -1098,9 +1098,7 @@ void TConverter::createMainFunctions() {
 
     // TODO: add converter or QualifiedType methods to more
     // easily construct a QualifiedType for common values like param false.
-    auto falseQt = types::QualifiedType(types::QualifiedType::PARAM,
-                                        types::BoolType::get(context),
-                                        types::BoolParam::get(context, false));
+    auto falseQt = types::QualifiedType::makeParamBool(context, false);
     auto ci = resolution::CallInfo(UniqueString::get(context, "_endCountAlloc"),
                                    /* calledType */ types::QualifiedType(),
                                    /* isMethodCall */ false,

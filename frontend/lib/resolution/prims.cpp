@@ -134,9 +134,7 @@ static QualifiedType primNumFields(Context* context, const CallInfo& ci) {
   auto firstActual = ci.actual(0).type();
   if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
     int64_t numFields = fields->numFields();
-    type = QualifiedType(QualifiedType::PARAM,
-                         IntType::get(context, 64),
-                         IntParam::get(context, numFields));
+    type = QualifiedType::makeParamInt(context, numFields);
   }
   return type;
 }
@@ -154,9 +152,7 @@ static QualifiedType primFieldNumToName(Context* context, const CallInfo& ci) {
     if (fieldNum > fields->numFields() || fieldNum < 1) return type;
 
     auto fieldName = fields->fieldName(fieldNum - 1);
-    type = QualifiedType(QualifiedType::PARAM,
-                         RecordType::getStringType(context),
-                         StringParam::get(context, fieldName));
+    type = QualifiedType::makeParamString(context, fieldName);
   }
   return type;
 }
@@ -184,9 +180,7 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
     }
 
     if (!foundField) return type;
-    type = QualifiedType(QualifiedType::PARAM,
-                         IntType::get(context, 64),
-                         IntParam::get(context, field));
+    type = QualifiedType::makeParamInt(context, field);
   }
   return type;
 }
@@ -263,9 +257,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
     }
   }
 
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, callAndFnResolved));
+  return QualifiedType::makeParamBool(context, callAndFnResolved);
 }
 
 static QualifiedType primImplementsInterface(Context* context,
@@ -516,9 +508,7 @@ static QualifiedType primGatherTests(Context* context, const CallInfo& ci) {
   QUERY_STORE_INPUT_RESULT(gatheredTestsQuery, context, finder.fns);
   auto numFoundFns = (int) gatheredTestsQuery(context).size();
 
-  return QualifiedType(QualifiedType::PARAM,
-                       IntType::get(context, 0),
-                       IntParam::get(context, numFoundFns));
+  return QualifiedType::makeParamInt(context, numFoundFns);
 }
 
 static QualifiedType primIsTuple(Context* context,
@@ -528,9 +518,7 @@ static QualifiedType primIsTuple(Context* context,
   if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
 
   bool isTupleType = actualType.type() && actualType.type()->isTupleType();
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, isTupleType));
+  return QualifiedType::makeParamBool(context, isTupleType);
 }
 
 static QualifiedType primCast(Context* context,
@@ -715,8 +703,7 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     }
   }
 
-  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                       BoolParam::get(context, result));
+  return QualifiedType::makeParamBool(context, result);
 }
 
 static QualifiedType primToNilableClass(Context* context,
@@ -844,8 +831,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   const bool isCopyableOrAssignable =
       info.isFromConst() || (info.isFromRef() && isFromRefOk);
 
-  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                       BoolParam::get(context, isCopyableOrAssignable));
+  return QualifiedType::makeParamBool(context, isCopyableOrAssignable);
 }
 
 // TODO: What should be done for 'MAYBE_GENERIC', if anything?
@@ -1280,9 +1266,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
           if (auto tt = t->toTupleType())
             result = tt->isStarTuple();
 
-        type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, result));
+        type = QualifiedType::makeParamBool(context, result);
       }
       break;
 
@@ -1379,9 +1363,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         if (toParamStringActual(actualType, sParam)||
             toParamBytesActual(actualType, sParam)) {
           const size_t s = sParam.length();
-          type = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 0),
-                               IntParam::get(context, s));
+          type = QualifiedType::makeParamInt(context, s);
           break;
         } else if (actualType.type()->isStringType() ||
                    actualType.type()->isBytesType() ||
@@ -1406,7 +1388,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
           auto lstr = lhs.param()->toStringParam()->value();
           auto rstr = rhs.param()->toStringParam()->value();
           auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
-          type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+          type = QualifiedType::makeParamString(context, concat);
         }
       }
       break;
@@ -1423,9 +1405,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_EQUAL:
       if (ci.actual(0).type().isType() && ci.actual(1).type().isType()) {
         bool isEqual = ci.actual(0).type().type() == ci.actual(1).type().type();
-        type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, isEqual));
+        type = QualifiedType::makeParamBool(context, isEqual);
         break;
       }
     case PRIM_IS_WIDE_PTR:
@@ -1598,9 +1578,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         auto it = chplenv->find(varName);
         auto ret = (it != chplenv->end()) ? it->second : "";
 
-        auto st = CompositeType::getStringType(context);
-        auto sp = StringParam::get(context, UniqueString::get(context, ret));
-        type = QualifiedType(QualifiedType::PARAM, st, sp);
+        type = QualifiedType::makeParamString(context, ret);
       }
       break;
     /* primitives that return real parts from a complex */
@@ -1777,18 +1755,15 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_VERSION_MAJOR:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getMajorVersion()));
+      type = QualifiedType::makeParamInt(context, getMajorVersion());
       break;
 
     case PRIM_VERSION_MINOR:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getMinorVersion()));
+      type = QualifiedType::makeParamInt(context, getMinorVersion());
       break;
 
     case PRIM_VERSION_UPDATE:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getUpdateVersion()));
+      type = QualifiedType::makeParamInt(context, getUpdateVersion());
       break;
 
     case PRIM_VERSION_SHA: {
@@ -1797,8 +1772,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         versionHash = UniqueString::get(context, getCommitHash());
       }
 
-      type = QualifiedType(QualifiedType::PARAM, RecordType::getStringType(context),
-                           StringParam::get(context, versionHash));
+      type = QualifiedType::makeParamString(context, versionHash);
       break;
     }
 
