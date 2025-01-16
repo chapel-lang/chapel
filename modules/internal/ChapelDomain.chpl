@@ -2202,18 +2202,17 @@ module ChapelDomain {
      */
     proc ref add(in idx) {
       // ensure that the rest of add() deals only with irregular domains
-      if isRectangular() then
+      if isRectangular() {
         compilerError("Cannot add indices to a rectangular domain");
 
       // 'idx' is an index
-      if isCoercible(idx.type, fullIdxType) ||
+      } else if isCoercible(idx.type, fullIdxType) ||
           // sparse 1-d domains also allow adding 1-tuples
-          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) then
+          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) {
         return _value.dsiAdd(idx);
 
       // allow promotion
-      type promoType = __primitive("scalar promotion type", idx);
-      if isCoercible(promoType, fullIdxType) {
+      } else if isCoercible(__primitive("scalar promotion type", idx), fullIdxType) {
         if isSparse() || (isAssociative() && ! this.parSafe) then
           compilerWarning("this promoted addition of indices to ",
             if isSparse() then "a sparse" else "an associative",
@@ -2223,11 +2222,12 @@ module ChapelDomain {
               " or declaring the domain type with 'parSafe=true'");
         // we could force serial execution in non-parSafe cases, see #24565
         return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
-      }
 
       // for now, disallow calling add() in any other way
-      compilerError("cannot add a ", idx.type:string, " to ",
-                    domainDescription(this), " with idxType ", idxType:string);
+      } else {
+        compilerError("cannot add a ", idx.type:string, " to ",
+                      domainDescription(this), " with idxType ", idxType:string);
+      }
     }
 
     @chpldoc.nodoc
