@@ -443,6 +443,16 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
                                                ClassTypeDecorator actual,
                                                ClassTypeDecorator formal) {
   if (actual == formal) {
+    if (actual.isNilable() == formal.isNilable()) {
+      if (formal.isUnknownManagement()) {
+        // Account for the case when passing an unmanaged class type to
+        // an any-managed type formal, which is technically an instantiation.
+        return CanPassResult(/* no fail reason, passes */ {},
+                             /*instantiates*/ true,
+                             /*promotes*/ false,
+                             /*conversion*/ NONE);
+      }
+    }
     return passAsIs();
   }
 
