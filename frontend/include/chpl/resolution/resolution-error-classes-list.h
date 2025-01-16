@@ -107,5 +107,5 @@ ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind, 
 WARNING_CLASS(UseImportTransitiveRename, chpl::UniqueString, chpl::UniqueString, chpl::UniqueString, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind, std::string, std::string, std::vector<const uast::AstNode*>)
 ERROR_CLASS(UseImportUnknownSym, std::string, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, const resolution::VisibilityStmtKind, bool)
-ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
+ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID, chpl::UniqueString)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)

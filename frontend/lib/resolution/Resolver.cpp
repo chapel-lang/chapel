@@ -3100,7 +3100,7 @@ checkForErrorSelfDefinition(Context* context, const AstNode* node,
       auto identNode = node->toIdentifier();
       if (nd->name() == identNode->name()) {
         // This is a self-reference, so it's an error.
-        CHPL_REPORT(context, SelfDefinition, nd, identNode);
+        CHPL_REPORT(context, SelfDefinition, nd, identNode);        
         return true;
       }
     }
@@ -3119,7 +3119,9 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
       if (node->id().symbolPath() == target.symbolPath()) {
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
-          CHPL_REPORT(context, UseOfLaterVariable, node, target);
+          auto decl = parsing::idToAst(context, target)->toNamedDecl();
+          CHPL_ASSERT(decl && "identifier target was not a NamedDecl");
+          CHPL_REPORT(context, UseOfLaterVariable, node, target, decl->name());
           return true;
         }
     }
