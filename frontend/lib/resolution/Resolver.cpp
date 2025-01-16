@@ -4447,6 +4447,8 @@ static const Type* getGenericType(Context* context, const Type* recv) {
                          cur->manager(), cur->decorator());
   } else if (recv->isDomainType()) {
     gen = DomainType::getGenericDomainType(context);
+  } else if (recv->isArrayType()) {
+    gen = ArrayType::getGenericArrayType(context);
   }
   return gen;
 }

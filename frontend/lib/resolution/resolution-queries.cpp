@@ -1063,7 +1063,7 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
     if (ct->isBasicClassType() || ct->isRecordType() || ct->isDomainType() ||
-        ct->isUnionType()) {
+        ct->isArrayType() || ct->isUnionType()) {
       ID ctId = ct->id();
       if (!ctId.isEmpty()) {
         return parsing::aggregateUsesForwarding(context, ctId);
