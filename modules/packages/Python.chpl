@@ -1014,7 +1014,7 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg pickleData: The pickle data to load.
     */
-    proc init(in interpreter: borrowed Interpreter, pickleData: bytes) {
+    proc init(in interpreter: borrowed Interpreter, pickleData: bytes) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
       init this;
