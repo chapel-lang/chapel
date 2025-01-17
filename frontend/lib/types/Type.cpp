@@ -228,6 +228,24 @@ bool Type::hasPragma(Context* context, uast::pragmatags::PragmaTag p) const {
   return false;
 }
 
+bool Type::isRecordLike() const {
+  if (auto ct = this->toClassType()) {
+    auto decorator = ct->decorator();
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (!(decorator.isBorrowed() || decorator.isUnmanaged() ||
+          decorator.isUnknownManagement())) {
+      return true;
+    }
+  } else if (this->isRecordType() || this->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
+}
+
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;
@@ -304,6 +322,27 @@ bool Type::isPod(Context* context, const Type* t) {
   if (g != Type::CONCRETE) return false;
   if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
   return true;
+}
+
+bool Type::needsInitDeinitCall(const Type* t) {
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
+    // can't do anything with these
+    return false;
+  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
+             t->isNilType() || t->isNothingType() || t->isVoidType()) {
+    // OK, we can always default initialize primitive numeric types,
+    // and as well we assume that for the non-generic builtin types
+    // e.g. TaskIdType.
+    // No need to resolve anything additional now.
+    return false;
+  } else if (t->isEnumType()) {
+    // OK, can default-initialize enums to first element
+    return false;
+  } else if (t->isFunctionType()) {
+    return false;
+  }
+
+  return t->isRecordLike();
 }
 
 } // end namespace types

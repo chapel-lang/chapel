@@ -272,6 +272,8 @@ class Type {
    */
   bool isUserRecordType() const;
 
+  bool isRecordLike() const;
+
   /** Returns true if the this type has the pragma 'p' attached to it. */
   bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
@@ -344,6 +346,8 @@ class Type {
       All other cases are considered to be POD.
   */
   static bool isPod(Context* context, const Type* t);
+
+  static bool needsInitDeinitCall(const Type* t);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;

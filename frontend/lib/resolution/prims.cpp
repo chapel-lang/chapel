@@ -385,6 +385,19 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   return QualifiedType(QualifiedType::TYPE, typePtr);
 }
 
+static QualifiedType primPromotionType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto actualQt = ci.actual(0).type();
+
+  auto promoQt = getPromotionType(context, actualQt);
+  if (promoQt.isUnknown()) promoQt = actualQt;
+
+  // We want a type result, even if the prim was passed a value.
+  auto res = QualifiedType(QualifiedType::TYPE, promoQt.type());
+
+  return res;
+}
+
 static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
                                        const CallInfo& ci) {
   CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
@@ -975,6 +988,12 @@ static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
   });
 }
 
+static QualifiedType primNeedsAutoDestroy(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return Type::needsInitDeinitCall(t) && !Type::isPod(context, t);
+  });
+}
+
 static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
@@ -1233,8 +1252,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_HAS_DEFAULT_VALUE:
-    case PRIM_NEEDS_AUTO_DESTROY:
       CHPL_UNIMPL("various primitives");
+      break;
+
+    case PRIM_NEEDS_AUTO_DESTROY:
+      type = primNeedsAutoDestroy(context, ci);
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -1668,7 +1690,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_SCALAR_PROMOTION_TYPE:
-      CHPL_UNIMPL("misc primitives");
+      type = primPromotionType(context, ci);
       break;
     case PRIM_STATIC_FIELD_TYPE:
       type = staticFieldType(context, ci);
@@ -1725,7 +1747,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_BLOCK_UNLOCAL:
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
-    case PRIM_WIDE_GET_LOCALE:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
@@ -1748,6 +1769,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_FORCE_THUNK:
     case PRIM_THUNK_RESULT_TYPE:
       CHPL_UNIMPL("misc primitives");
+      break;
+
+    case PRIM_WIDE_GET_LOCALE:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CompositeType::getLocaleIDType(context));
       break;
 
     case PRIM_GATHER_TESTS:

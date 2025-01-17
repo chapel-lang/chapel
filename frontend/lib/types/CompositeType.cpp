@@ -180,8 +180,8 @@ const RecordType* CompositeType::getLocaleType(Context* context) {
 }
 
 const RecordType* CompositeType::getLocaleIDType(Context* context) {
-  auto id = ID();
-  auto name = UniqueString::get(context, "chpl_localeID_t");
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(
+      context, "LocaleModelHelpRuntime", "chpl_localeID_t");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
