@@ -20,8 +20,7 @@
 #ifndef CHAPEL_PY_CORE_TYPES_H
 #define CHAPEL_PY_CORE_TYPES_H
 
-#define PY_SSIZE_T_CLEAN
-#include "Python.h"
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
 #include "error-tracker.h"

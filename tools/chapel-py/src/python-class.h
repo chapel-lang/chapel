@@ -19,7 +19,8 @@
 
 #ifndef CHAPEL_PY_PYTHON_CLASS_H
 #define CHAPEL_PY_PYTHON_CLASS_H
-#include "Python.h"
+
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include <optional>
 
