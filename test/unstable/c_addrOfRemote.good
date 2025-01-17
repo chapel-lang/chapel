@@ -1,0 +1,2 @@
+c_addrOfRemote.chpl:6: warning: calling c_addrOf on an array from another locale is unstable (array is on locale 0, call was made on locale 1)
+c_addrOfRemote.chpl:7: warning: calling c_addrOfConst on an array from another locale is unstable (array is on locale 0, call was made on locale 1)
