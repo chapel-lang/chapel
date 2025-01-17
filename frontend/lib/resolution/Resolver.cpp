@@ -3625,6 +3625,14 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
         computeDefaults = false;
       }
 
+      // If we're referring to variable-ish thing, don't instantiate
+      // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
+      // Peformance: finding the parent tag is pretty expensive. Can we fold
+      // the knowledge into IdAndFlags?
+      if (asttags::isVarLikeDecl(parsing::idToTag(context, id))) {
+        computeDefaults = false;
+      }
+
       // Other special exceptions like 'r' in:
       //
       //  proc r.init() { ... }
