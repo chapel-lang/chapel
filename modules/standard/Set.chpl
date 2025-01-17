@@ -563,7 +563,7 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
-      for followThis in _htb._evenSlots(tag) {
+      for followThis in _htb._evenSlots(_htb.tableNumFullSlots, tag) {
         //writeln(followThis);
         yield followThis;
       }
@@ -578,8 +578,7 @@ module Set {
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
-      //writeln(this);
-      foreach val in _htb._evenSlots(followThis, tag) {
+      foreach val in _htb._evenSlots(_htb.tableNumFullSlots, followThis, tag) {
         yield val;
       }
       /*

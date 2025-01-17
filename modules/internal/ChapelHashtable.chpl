@@ -684,13 +684,13 @@ module ChapelHashtable {
       return chunkEnds;
     }
 
-    iter _evenSlots(param tag) where tag == iterKind.leader {
-      var numChunks = _computeNumChunks(this.tableNumFullSlots);
+    iter _evenSlots(size: int, param tag) where tag == iterKind.leader {
+      var numChunks = _computeNumChunks(size);
       //writeln("number of tasks = ", numChunks);
       //writeln("number of full slots = ", this.tableNumFullSlots);
-      var numFullPerTask = this.tableNumFullSlots / numChunks;
+      var numFullPerTask = size / numChunks;
       //writeln("min number of full slots per task = ", numFullPerTask);
-      var rem = this.tableNumFullSlots % numChunks;
+      var rem = size % numChunks;
       //writeln("remainder = ", rem);
 
       forall i in 0..#numChunks {
@@ -727,10 +727,15 @@ module ChapelHashtable {
       return iterSpace;
     }
 
-    iter _evenSlots(followThis, param tag) const ref
+    iter _evenSlots(size: int, followThis, param tag) const ref
       where tag == iterKind.follower {
       //writeln("in follower: ", followThis);
       use Types;
+
+      if (size != this.tableNumFullSlots) {
+        __primitive("chpl_error",
+                    "zippered iterations have non-equal lengths".c_str());
+      }
 
       var iterSpace: range;
 
