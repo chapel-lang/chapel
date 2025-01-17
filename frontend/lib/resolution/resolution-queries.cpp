@@ -4114,6 +4114,27 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  // In Dyno, we don't have a _ref wrapper type, so we can't distinguish
+  // between 'ref' and non-'ref' type formals. Moreover, this function is
+  // filled in by the compiler in production.
+  if (!ci.isMethodCall() && (ci.name() == USTR("_build_tuple") ||
+                             ci.name() == USTR("_build_tuple_noref"))) {
+    bool removeRefs = ci.name() == USTR("_build_tuple_noref");
+    std::vector<QualifiedType> components;
+    for (int i = 0; i < ci.numActuals(); i++) {
+      auto actual = ci.actual(i).type();
+      if (removeRefs) {
+        CHPL_ASSERT(actual.param() == nullptr);
+        actual = QualifiedType(KindProperties::removeRef(actual.kind()), actual.type());
+      }
+      components.push_back(std::move(actual));
+    }
+
+    auto resultTuple = TupleType::getQualifiedTuple(context, components);
+    exprTypeOut = QualifiedType(QualifiedType::TYPE, resultTuple);
+    return true;
+  }
+
   return false;
 }
 
