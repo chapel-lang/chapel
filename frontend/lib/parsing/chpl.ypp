@@ -401,7 +401,6 @@
 %token <uniqueStr> IMAGLITERAL
 %token <expr> STRINGLITERAL
 %token <expr> BYTESLITERAL
-%token <expr> CSTRINGLITERAL
 %token <sizedStr> EXTERNCODE
 
 //
@@ -3635,7 +3634,6 @@ literal_expr:
 | INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
 | REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
-| CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {

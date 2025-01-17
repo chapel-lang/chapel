@@ -44,7 +44,6 @@ target_sources(ChplFrontend-obj
                Comment.cpp
                Conditional.cpp
                Continue.cpp
-               CStringLiteral.cpp
                Decl.cpp
                Defer.cpp
                Delete.cpp

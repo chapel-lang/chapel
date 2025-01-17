@@ -1,3 +1,0 @@
-write_c_string.chpl:: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-$CHPL_HOME/modules/standard/IO.chpl:: In method 'serializeValue':
-$CHPL_HOME/modules/standard/IO.chpl:: error: Cannot write a c_string, use one of the 'string.create*ingBuffer' methods to create a string first.

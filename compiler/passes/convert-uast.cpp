@@ -1857,17 +1857,6 @@ struct Converter final : UastConverter {
     return se;
   }
 
-  Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->value().str());
-    SymExpr* se = buildCStringLiteral(quoted.c_str());
-    VarSymbol* v = toVarSymbol(se->symbol());
-    INT_ASSERT(v && v->immediate);
-    INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
-    INT_ASSERT(v->immediate->string_kind == STRING_KIND_C_STRING);
-    return se;
-
-  }
-
   Expr* visit(const uast::StringLiteral* node) {
     std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildStringLiteral(quoted.c_str());

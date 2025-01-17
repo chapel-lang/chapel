@@ -1,11 +1,3 @@
-proc f():c_string {
-  return "Hello";
-}
-
-var x = f();
-writeln(string.createCopyingBuffer(x));
-assert(x.type == c_string);
-
 use CTypes;
 proc f_ptr():c_ptrConst(c_char) {
   return "Hello";

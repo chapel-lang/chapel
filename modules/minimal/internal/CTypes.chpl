@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,25 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-module CPtr {
-  // barebones version of c_ptr for use as a formal type
-  pragma "data class"
-  pragma "no object"
-  pragma "no default functions"
-  pragma "no wide class"
-  pragma "c_ptr class"
-  class c_ptr {
-    type eltType;
-  }
-
-  pragma "data class"
-  pragma "no object"
-  pragma "no default functions"
-  pragma "no wide class"
-  pragma "c_ptr class"
-  pragma "c_ptrConst class"
-  class c_ptrConst {
-    type eltType;
-  }
+module CTypes {
+  public use CPtr;
+  extern type c_char = int(8);
 }
