@@ -1,5 +1,3 @@
-#!/bin/csh -f
-set testname = $1
-set outfile = $2
+#!/bin/bash
 
 cat ../../../../LICENSE > $1.good
