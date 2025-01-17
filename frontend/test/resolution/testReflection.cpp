@@ -76,7 +76,7 @@ static void test2() {
   ensureParamInt(variables.at("r1"), 1);
   ensureParamInt(variables.at("r2"), 2);
   ensureParamInt(variables.at("r3"), 3);
-  ensureErroneousType(variables.at("r4"));
+  ensureParamInt(variables.at("r4"), -1);
   ensureErroneousType(variables.at("r5"));
   ensureErroneousType(variables.at("r6"));
   ensureErroneousType(variables.at("r7"));

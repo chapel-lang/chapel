@@ -184,15 +184,16 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
 
-    if (fieldName == "_shape_") {
+    if (fieldName == "_shape_" &&
+        shapeForIterator(context, firstActual.type()->toIteratorType())) {
       foundField = true;
       // Fields in these primitives are 1-indexed.
       field = 1;
     }
   }
 
-  if (foundField) type = QualifiedType::makeParamInt(context, field);
-  return type;
+  if (!foundField) field = -1;
+  return QualifiedType::makeParamInt(context, field);
 }
 
 static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
