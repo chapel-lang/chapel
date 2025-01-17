@@ -601,7 +601,8 @@ module Python {
         this.checkException();
         return v;
       } else if t == bytes {
-        var v = PyBytes_FromStringAndSize(val.c_str(), val.size);
+        var v =
+          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(c_size_t));
         this.checkException();
         return v;
       } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
@@ -1643,9 +1644,9 @@ module Python {
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
     extern proc PyBytes_AsString(obj: PyObjectPtr): c_ptrConst(c_char);
-    extern proc PyBytes_Size(obj: PyObjectPtr): c_long;
+    extern proc PyBytes_Size(obj: PyObjectPtr): c_size_t;
     extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
-                                          size: c_long): PyObjectPtr;
+                                          size: c_size_t): PyObjectPtr;
 
     proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
