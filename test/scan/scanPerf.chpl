@@ -5,7 +5,8 @@ config const memFraction = 0;
 const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 const defaultN = if memFraction == 0
                    then 30
-                   else numLocales * ((totMem / numBytes(int)) / memFraction);
+                   else numLocales * ((totMem / numBytes(int)) / memFraction /
+                   here.numColocales);
 
 config const n = defaultN,
              printTiming = false,
