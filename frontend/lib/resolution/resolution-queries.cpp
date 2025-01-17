@@ -5467,163 +5467,324 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
   return nullptr;
 }
 
-static ID searchFunctionByTemplate(ResolutionContext* rc,
-                                   const InterfaceType* iftForErr,
-                                   const ID& implPointIdForErr,
-                                   const Function* fn,
-                                   const TypedFnSignature* tfs,
-                                   const CallScopeInfo& inScopes) {
-  std::vector<ApplicabilityResult> rejected;
-  std::vector<const TypedFnSignature*> ambiguous;
+struct InterfaceCheckHelper {
+  ResolutionContext* rc;
+  const Interface* itf;
+  const InterfaceType* ift;
+  const ID& implPointId;
+  const CallScopeInfo& inScopes;
+  const ImplementationWitness* witness;
+  PlaceholderMap* allPlaceholders;
 
-  std::vector<CallInfoActual> actuals;
-  for (int i = 0; i < tfs->numFormals(); i++) {
-    auto decl = tfs->untyped()->formalDecl(i);
-    auto name = UniqueString();
-    if (auto formal = decl->toFormal()) {
+  optional<CallInfo> setupCallForTemplate(const Function* templateFn,
+                                          const TypedFnSignature* templateSig) {
+    std::vector<CallInfoActual> actuals;
+    for (int i = 0; i < templateSig->numFormals(); i++) {
+      auto decl = templateSig->untyped()->formalDecl(i);
+      auto name = UniqueString();
+      if (auto formal = decl->toFormal()) {
         name = formal->name();
-    } else if (decl->isVarArgFormal()) {
-      CHPL_UNIMPL("vararg formals in interface function requirements");
-      return ID();
+      } else if (decl->isVarArgFormal()) {
+        CHPL_UNIMPL("vararg formals in interface function requirements");
+        return empty;
+      }
+      actuals.emplace_back(templateSig->formalType(i), name);
     }
-    actuals.emplace_back(tfs->formalType(i), name);
+
+    CallInfo ci {
+      templateSig->untyped()->name(),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ templateFn->isMethod(),
+        /* hasQuestionArg */ false,
+        /* isParenless */ templateFn->isParenless(),
+        std::move(actuals)
+    };
+
+    return ci;
   }
 
-  CallInfo ci {
-      tfs->untyped()->name(),
-      /* calledType */ QualifiedType(),
-      /* isMethodCall */ fn->isMethod(),
-      /* hasQuestionArg */ false,
-      /* isParenless */ fn->isParenless(),
-      std::move(actuals)
-  };
+  const TypedFnSignature*
+  findBestCandidateForTemplate(const CallInfo& ci,
+                               const CallResolutionResult& c,
+                               const Function* templateFn,
+                               const TypedFnSignature* templateSigWithSubs) {
+    std::vector<ApplicabilityResult> rejected;
+    std::vector<const TypedFnSignature*> ambiguous;
 
-  // TODO: how to note this?
-  auto c =
-    resolveGeneratedCall(rc->context(), fn, ci, inScopes);
+    bool failed = c.exprType().isUnknownOrErroneous();
+    if (failed && c.mostSpecific().isAmbiguous()) {
+      // TODO: no way at this time to collected candidates rejected due to
+      //       ambiguity, so just report an empty list.
+      CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, ift, implPointId,
+                  templateFn, std::move(ambiguous));
+      return nullptr;
+    } else if (failed) {
+      // Failed to find a call, not due to ambiguity. Re-run call and gather
+      // rejected candidates.
+      resolveGeneratedCall(rc->context(), templateFn, ci, inScopes, &rejected);
+      CHPL_REPORT(rc->context(), InterfaceMissingFn, ift, implPointId,
+                  templateSigWithSubs, ci, std::move(rejected));
+      return nullptr;
+    }
 
-  bool failed = c.exprType().isUnknownOrErroneous();
-  if (failed && fn->body()) {
-    // template has a default implementation; return it, we're good.
-    return fn->id();
-  } else if (failed && c.mostSpecific().isAmbiguous()) {
-    // TODO: no way at this time to collected candidates rejected due to
-    //       ambiguity, so just report an empty list.
-    CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, iftForErr, implPointIdForErr,
-                fn, std::move(ambiguous));
-    return ID();
-  } else if (failed) {
-    // Failed to find a call, not due to ambiguity. Re-run call and gather
-    // rejected candidates.
-    resolveGeneratedCall(rc->context(), fn, ci, inScopes, &rejected);
-    CHPL_REPORT(rc->context(), InterfaceMissingFn, iftForErr, implPointIdForErr,
-                tfs, ci, std::move(rejected));
-    return ID();
-  }
+    CHPL_ASSERT(!failed);
 
-  CHPL_ASSERT(!failed);
-
-  const TypedFnSignature* foundFn = nullptr;
-  if (c.mostSpecific().numBest() > 1) {
-    CHPL_UNIMPL("return intent overloading in interface constraint checking");
-    return ID();
-  } else {
-    // There's only one function; we should still check its intent.
-    foundFn = c.mostSpecific().only().fn();
-    auto foundIntent = parsing::idToFnReturnIntent(rc->context(), foundFn->id());
-
-    if (foundIntent == fn->returnIntent()) {
-      // fine
+    const TypedFnSignature* foundFn = nullptr;
+    if (c.mostSpecific().numBest() > 1) {
+      CHPL_UNIMPL("return intent overloading in interface constraint checking");
+      return nullptr;
     } else {
-      CHPL_REPORT(rc->context(), InterfaceInvalidIntent, iftForErr, implPointIdForErr,
-                  tfs, foundFn);
+      // There's only one function
+      foundFn = c.mostSpecific().only().fn();
+    }
+
+    return foundFn;
+  }
+
+  bool validateFormalOrderForTemplate(const CallInfo& ci,
+                                      const TypedFnSignature* templateSigWithSubs,
+                                      const TypedFnSignature* candidateSig) {
+    // Validate that the formal names are in the right order. We could do this
+    // by resolving a generated call with every actual being named, but this
+    // will miss some cases, like when the template is:
+    //
+    //      proc f(x: int, y: int)
+    //
+    //  and the actual function is:
+    //
+    //      proc f(y: int, x: int):
+    //
+    // such calls would resolve match with and without named actuals, but the
+    // actuals are not in the right order compared to the template.
+    FormalActualMap faMap(candidateSig, ci);
+
+    int lastActualPosition = -1;
+    for (auto& formalActual : faMap.byFormals()) {
+      if (formalActual.actualIdx() == -1) {
+        // Allow defaulted formals to be skipped vs. a template, so that a template
+        //
+        //    proc foo();
+        //
+        // Can match:
+        //
+        //    proc foo(x: int = 10) {}
+        continue;
+      }
+
+      if (formalActual.actualIdx() <= lastActualPosition) {
+        // the actuals in the call (which are formals from the template)
+        // are re-ordered compared to the foundFn. This is an error.
+        CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, ift,
+                    implPointId, templateSigWithSubs, candidateSig);
+        return false;
+      }
+      lastActualPosition = formalActual.actualIdx();
+    }
+
+    return true;
+  }
+
+  bool validateReturnTypeForTemplate(const CallInfo& ci,
+                                     const CallResolutionResult& c,
+                                     const Function* templateFn,
+                                     const TypedFnSignature* templateSig,
+                                     const TypedFnSignature* candidateSig) {
+    CHPL_ASSERT(!c.exprType().isUnknownOrErroneous());
+
+    // for interface functions in particular, no return type type means
+    // "void" (where it normally means "infer from body"). 'returnType'
+    // does not check for this case because it's unusual and because checking
+    // for IDs being inside an interface is relatively slow.
+    QualifiedType templateQT;
+
+    if (templateFn->returnType()) {
+      // Create a resolver for the interface, which pushes the current interface
+      // as a frame for the resolver and thus provides 'witness' (which contains
+      // associated types) to function resolution.
+      ResolutionResultByPostorderID byPostorder;
+      auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness, templateFn, byPostorder);
+
+      // Note: want to use the signature without substitutes here, because
+      // if we instantiate the signature with the "real" Self types, we
+      // get receiver scopes from Self when resolving the return type. However,
+      // we want the return type of the function to be determined entirely
+      // from its declaration within the interface, without the need to search
+      // instantiated scopes. So, use the signature with placeholders to
+      // perform return type resolution, _then_ replace the placeholders
+      // with associated types etc. to get the final return type.
+      templateQT =
+        returnType(rc, templateSig, c.poiInfo().poiScope())
+          .substitute(rc->context(), *allPlaceholders);
+    } else {
+      templateQT = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
+    }
+
+    if (templateQT.isUnknownOrErroneous()) return false;
+
+    auto actualKind = c.exprType().kind();
+    auto templateKind = templateQT.kind();
+    auto templateT = templateQT.type();
+
+    if (templateFn->kind() != candidateSig->untyped()->kind()) {
+      // TODO: special error message about function kind mismatch
+      rc->context()->error(implPointId, "function kind mismatch");
+      return false;
+    }
+
+
+    // For iterable things, we need to compare yield types (while there,
+    // figure out yield intent)
+    bool checkedYield = false;
+    if (templateFn->kind() == Function::ITER) {
+      CHPL_ASSERT(candidateSig->untyped()->kind() == Function::ITER);
+      CHPL_ASSERT(templateT->isFnIteratorType());
+      auto templateYieldT = yieldTypeForIterator(rc, templateT->toFnIteratorType()).type();
+      actualKind = c.yieldedType().kind();
+      auto yieldT = c.yieldedType().type();
+
+      if (templateYieldT != yieldT) {
+        // TODO: error message (expecting exactly matching yield types)
+        rc->context()->error(implPointId, "yield type mismatch");
+        return false;
+      }
+
+      checkedYield = true;
+    }
+
+    bool validIntent = actualKind == templateKind;
+    if (actualKind != templateKind) {
+      if (templateKind == QualifiedType::CONST_VAR &&
+          (actualKind == QualifiedType::REF ||
+           actualKind == QualifiedType::CONST_REF ||
+           actualKind == QualifiedType::PARAM)) {
+        // we can turn [const] references into values, so allow this intent mismatch.
+        validIntent = true;
+      } else if (templateKind == QualifiedType::CONST_REF &&
+                 actualKind == QualifiedType::REF) {
+        // we can turn references into const references, so allow this intent mismatch.
+        validIntent = true;
+      }
+    }
+
+    if (!validIntent) {
+      bool silenceReturnIntentError = false;
+      if (auto ag = templateFn->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_IFC_ANY_RETURN_INTENT)) {
+          silenceReturnIntentError = true;
+        }
+      }
+
+      if (!silenceReturnIntentError) {
+        CHPL_REPORT(rc->context(), InterfaceInvalidIntent, ift,
+                    implPointId, templateSig, candidateSig);
+        return false;
+      }
+    }
+
+    if (checkedYield) {
+      // we checked the return type above, no more checks needed here.
+    } else if (templateT != c.exprType().type()) {
+      // with the exception of promotion, we expect an exact return type match
+      if (!c.exprType().type()->isPromotionIteratorType()) {
+        rc->context()->error(implPointId, "return type mismatch");
+        return false;
+      }
+
+      // we're promoting; we don't expect an exact match, but we only allow
+      // promotion for void- and nothing-returning functions. Check that.
+      CHPL_ASSERT(!c.yieldedType().isUnknownOrErroneous());
+      auto yieldT = c.yieldedType().type();
+      if (!templateT->isVoidType() && !templateT->isNothingType()) {
+        // TODO: special error message about promotion w.r.t. return type
+        rc->context()->error(implPointId, "promotion used but not supported for non-void interface functions");
+        return false;
+      }
+
+      if (!yieldT->isVoidType() && !yieldT->isNothingType()) {
+        // TODO: special error message about promotion w.r.t. return type
+        rc->context()->error(implPointId, "promotion used but scalar function has non-void return type");
+        return false;
+      }
+
+      // ok: we expect a void function, we're promoting a void function to
+      // satisfy the constraint.
+    }
+
+    return true;
+  }
+
+  ID searchFunctionByTemplate(const Function* templateFn,
+                              const TypedFnSignature* templateSig) {
+    CHPL_ASSERT(allPlaceholders);
+    auto templateSigWithSubs = templateSig->substitute(rc->context(), *allPlaceholders);
+
+    auto ci = setupCallForTemplate(templateFn, templateSigWithSubs);
+    if (!ci) return ID();
+
+    // TODO: how to note this?
+    auto c =
+      resolveGeneratedCall(rc->context(), templateFn, *ci, inScopes);
+
+    if (c.exprType().isUnknownOrErroneous() && templateFn->body()) {
+      // template has a default implementation; return it, we're good.
+      return templateFn->id();
+    }
+
+    auto foundFn = findBestCandidateForTemplate(*ci, c, templateFn,
+                                                templateSigWithSubs);
+    if (!foundFn) return ID();
+
+    if (!validateFormalOrderForTemplate(*ci, templateSigWithSubs, foundFn)) {
       return ID();
     }
-  }
 
-  // Validate that the formal names are in the right order. We could do this
-  // by resolving a generated call with every actual being named, but this
-  // will miss some cases, like when the template is:
-  //
-  //      proc f(x: int, y: int)
-  //
-  //  and the actual function is:
-  //
-  //      proc f(y: int, x: int):
-  //
-  // such calls would resolve match with and without named actuals, but the
-  // actuals are not in the right order compared to the template.
-  FormalActualMap faMap(foundFn, ci);
-
-  int lastActualPosition = -1;
-  for (auto& formalActual : faMap.byFormals()) {
-    if (formalActual.actualIdx() == -1) {
-      // Allow defaulted formals to be skipped vs. a template, so that a template
-      //
-      //    proc foo();
-      //
-      // Can match:
-      //
-      //    proc foo(x: int = 10) {}
-      continue;
-    }
-
-    if (formalActual.actualIdx() <= lastActualPosition) {
-      // the actuals in the call (which are formals from the template)
-      // are re-ordered compared to the foundFn. This is an error.
-      CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, iftForErr, implPointIdForErr,
-                  tfs, foundFn);
+    if (!validateReturnTypeForTemplate(*ci, c, templateFn, templateSig, foundFn)) {
       return ID();
     }
-    lastActualPosition = formalActual.actualIdx();
+
+    // ordering is fine, so foundFn is good to go.
+    return foundFn->id();
   }
 
-  // ordering is fine, so foundFn is good to go.
-  return foundFn->id();
-}
+  QualifiedType searchForAssociatedType(const QualifiedType& receiverType,
+                                        const Variable* td) {
+    // Set up a parenless type-proc call to compute associated type
+    auto ci = CallInfo(
+      td->name(),
+      /* calledType */ QualifiedType(),
+      /* isMethodCall */ true,
+      /* hasQuestionArg */ false,
+      /* isParenless */ true,
+      /* actuals */ { { receiverType, USTR("this") } }
+    );
 
-static QualifiedType searchForAssociatedType(ResolutionContext* rc,
-                                             const InterfaceType* iftForErr,
-                                             const ID& implPointIdForErr,
-                                             const QualifiedType& receiverType,
-                                             const Variable* td,
-                                             const CallScopeInfo& inScopes) {
-  // Set up a parenless type-proc call to compute associated type
-  auto ci = CallInfo(
-    td->name(),
-    /* calledType */ QualifiedType(),
-    /* isMethodCall */ true,
-    /* hasQuestionArg */ false,
-    /* isParenless */ true,
-    /* actuals */ { { receiverType, USTR("this") } }
-  );
+    // TODO: how to note this?
+    auto c =
+      resolveGeneratedCall(rc->context(), td, ci, inScopes);
 
-  // TODO: how to note this?
-  auto c =
-    resolveGeneratedCall(rc->context(), td, ci, inScopes);
-
-  std::vector<ApplicabilityResult> rejected;
-  bool failed = c.exprType().isUnknownOrErroneous();
-  bool notType = false;
-  if (!failed) {
-    notType = !c.exprType().isType();
-    if (notType) {
-      rejected.push_back(
-          ApplicabilityResult::failure(c.mostSpecific().only().fn()->id(),
-                                       FAIL_INTERFACE_NOT_TYPE_INTENT));
+    std::vector<ApplicabilityResult> rejected;
+    bool failed = c.exprType().isUnknownOrErroneous();
+    bool notType = false;
+    if (!failed) {
+      notType = !c.exprType().isType();
+      if (notType) {
+        rejected.push_back(
+            ApplicabilityResult::failure(c.mostSpecific().only().fn()->id(),
+                                         FAIL_INTERFACE_NOT_TYPE_INTENT));
+      }
+    } else {
+      resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
     }
-  } else {
-    resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
-  }
 
-  if (failed || notType) {
-    CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, iftForErr,
-                implPointIdForErr, td, ci, std::move(rejected));
-    return QualifiedType();
-  }
+    if (failed || notType) {
+      CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, ift,
+                  implPointId, td, ci, std::move(rejected));
+      return QualifiedType();
+    }
 
-  return c.exprType();
-}
+    return c.exprType();
+  }
+};
 
 static const ImplementationWitness* const&
 checkInterfaceConstraintsQuery(ResolutionContext* rc,
@@ -5657,6 +5818,9 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   }
   auto associatedReceiverType = QualifiedType(); // cached across iterations
   ImplementationWitness::AssociatedTypeMap associatedTypes;
+  InterfaceCheckHelper helper {
+    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr
+  };
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
     if (!td) continue;
@@ -5684,8 +5848,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
       }
     }
 
-    auto foundQt = searchForAssociatedType(rc, ift, implPointIdForErr,
-                                           associatedReceiverType, td, inScopes);
+    auto foundQt = helper.searchForAssociatedType(associatedReceiverType, td);
     if (foundQt.isUnknownOrErroneous()) {
       result = nullptr;
       return CHPL_RESOLUTION_QUERY_END(result);
@@ -5697,7 +5860,12 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
 
   // Next, process all the functions; if all of these are found, we can construct
   // a final witness with all the required information.
+  PlaceholderMap allPlaceholders;
+  for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
+  for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
   ImplementationWitness::FunctionMap functions;
+  helper.witness = witness2;
+  helper.allPlaceholders = &allPlaceholders;
   for (auto stmt : itf->stmts()) {
     auto fn = stmt->toFunction();
     if (!fn) continue;
@@ -5714,11 +5882,7 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // with the substitutions we've determined, so that we may proceed to
     // type checking.
     auto tfs = typedSignatureTemplateForId(rc, fn->id());
-    PlaceholderMap allPlaceholders;
-    for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
-    for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
-    tfs = tfs->substitute(rc->context(), std::move(allPlaceholders));
-    auto foundId = searchFunctionByTemplate(rc, ift, implPointIdForErr, fn, tfs, inScopes);
+    auto foundId = helper.searchFunctionByTemplate(fn, tfs);
 
     if (!foundId) {
       result = nullptr;
