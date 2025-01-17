@@ -5679,7 +5679,7 @@ struct InterfaceCheckHelper {
     if (checkedYield) {
       // we checked the return type above, no more checks needed here.
     } else if (templateT != c.exprType().type()) {
-      // with the esxception of promotion, we expect an exact return type match
+      // with the exception of promotion, we expect an exact return type match
       if (!c.exprType().type()->isPromotionIteratorType()) {
         rc->context()->error(implPointId, "return type mismatch");
         return false;
