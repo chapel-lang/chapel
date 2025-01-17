@@ -312,7 +312,7 @@ template <typename ...FieldNames, size_t ... Is>
 static auto extractFields(Context* context, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
   auto& rf = fieldsForTypeDecl(context, bct,
                                DefaultsPolicy::IGNORE_DEFAULTS);
-  CHPL_ASSERT(rf.numFields() >= sizeof...(names));
+  CHPL_ASSERT(rf.numFields() >= 0 && (size_t) rf.numFields() >= sizeof...(names));
 
   typename ImplCreateNTuple<Is...>::type ret;
   for (int i = 0; i < rf.numFields(); i++) {
