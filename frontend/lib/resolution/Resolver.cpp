@@ -1394,7 +1394,25 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
-      if (declaredType.type()->isExternType()) {
+      if (initExprType.type()->isUnknownType()) {
+        // var x: declType = <unknown or erroneous>
+        //
+        // if declType is concrete use it, else use unknown.
+        //
+        // TODO: (Daniel) the code as I found it will not hit this case as
+        //       as often as it should, defaulting to the type expression
+        //       via the checks above instead. We need to be more precise
+        //       about "initialization expression is present but has unknown
+        //       type" vs "no initialization expression is present".
+        //       See also the HACK in Resolver::enter(IndexableLoop)
+
+        if (getTypeGenericity(context, declaredType.type()) == Type::CONCRETE) {
+          typePtr = declaredType.type();
+        } else {
+          typePtr = UnknownType::get(context);
+        }
+
+      } else if (declaredType.type()->isExternType()) {
         auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
         // We allow for default-init-then-assign for extern types
         std::vector<CallInfoActual> actuals;
@@ -5971,6 +5989,15 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   if (!idxType.isUnknownOrErroneous()) {
     noteLoopExprType(*this, loop, ics);
+  } else {
+    // HACK: need this because declaration handling checks for typePtr()
+    //       and causes weirdness with `var r: _iteratorRecord = [...]`.
+    //       we should update the type-for-decl computation to handle
+    //       missing vs unknown types, but that's somewhat involved.
+    //       See the TODO in getTypeForDecl.
+    byPostorder.byAst(loop).setType(
+        QualifiedType(QualifiedType::UNKNOWN,
+                      UnknownType::get(context)));
   }
 
   return false;
