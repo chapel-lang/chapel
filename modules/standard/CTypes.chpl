@@ -970,9 +970,7 @@ module CTypes {
       // once we're confident it's not causing problems.
       if chpl_warnUnstable then
         compilerWarning(
-            "calling c_addrOf on an array from another locale is " +
-            "unstable (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
+            "calling c_addrOf on an array from another locale is unstable");
 
     return c_pointer_return(arr);
   }
@@ -987,9 +985,7 @@ module CTypes {
       // See note on corresponding c_addrOf overload
       if chpl_warnUnstable then
         compilerWarning(
-            "calling c_addrOfConst on an array from another locale is " +
-            "unstable (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
+            "calling c_addrOfConst on an array from another locale is unstable");
 
     return c_pointer_return_const(arr);
   }
