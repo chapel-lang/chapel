@@ -103,21 +103,30 @@ struct PythonClass {
     return 0;
   }
 
-  static PyTypeObject* configurePythonType(unsigned int flags = Py_TPFLAGS_DEFAULT) {
-    PyType_Slot slots[] = {
-      {Py_tp_dealloc, (void*) Self::dealloc},
-      {Py_tp_doc, (void*) PyDoc_STR(Self::DocStr)},
-      {Py_tp_methods, (void*) PerTypeMethods<Self>::methods},
-      {Py_tp_init, (void*) Self::init},
-      {Py_tp_new, (void*) PyType_GenericNew},
-      {0, nullptr}
-    };
+  static PyTypeObject* configurePythonType(unsigned int flags = Py_TPFLAGS_DEFAULT,
+                                           PyType_Slot* extraSlots = nullptr,
+                                           size_t numExtraSlot = 0) {
+
+    auto numBaseSlots = 5;
+    auto numSlots = numBaseSlots + numExtraSlot;
+
+    auto slots = std::unique_ptr<PyType_Slot[]>(new PyType_Slot[numSlots+1]);
+    slots[numSlots] = {0, nullptr};
+    slots[0] = {Py_tp_dealloc, (void*) Self::dealloc};
+    slots[1] = {Py_tp_doc, (void*) PyDoc_STR(Self::DocStr)};
+    slots[2] = {Py_tp_methods, (void*) PerTypeMethods<Self>::methods};
+    slots[3] = {Py_tp_init, (void*) Self::init};
+    slots[4] = {Py_tp_new, (void*) PyType_GenericNew};
+    for (size_t i = 0; i < numExtraSlot; i++) {
+      slots[numBaseSlots + i] = extraSlots[i];
+    }
+
     PyType_Spec spec = {
       /*name*/ Self::QualifiedName,
       /*basicsize*/ sizeof(Self),
       /*itemsize*/ 0,
       /*flags*/ flags,
-      /*slots*/ slots
+      /*slots*/ slots.get()
     };
     PyTypeObject* configuring = (PyTypeObject*)PyType_FromSpec(&spec);
     return configuring;
@@ -140,7 +149,6 @@ struct PythonClass {
       PyErr_SetString(PyExc_RuntimeError, "Attempt to create a Python object from nullptr.");
       return nullptr;
     }
-
     auto selfObjectPy = PyObject_CallObject((PyObject *) Self::PythonType, nullptr);
     auto& val = ((Self*) selfObjectPy)->value_;
 
@@ -168,7 +176,8 @@ PyTypeObject* PythonClass<Self,T>::PythonType = Self::configurePythonType();
 // Forward-declaring doesn't cut it because we need ContextObject::PythonType.
 
 struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
-  static constexpr const char* QualifiedName = "chapel.Context";
+  static constexpr const char* QualifiedName = "Context";
+  // TODI: restore chapel.
   static constexpr const char* Name = "Context";
   static constexpr const char* DocStr = "The Chapel context object that tracks various frontend state";
 

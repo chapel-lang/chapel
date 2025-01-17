@@ -43,7 +43,6 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
-static PyNumberMethods location_as_number;
 using LineColumnPair = std::tuple<int, int>;
 
 struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
@@ -52,7 +51,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static constexpr const char* DocStr = "An object that represents the location of an AST node in a source file.";
 
   static PyObject* add(LocationObject* self, PyObject* other) {
-    if (other->ob_type != &LocationObject::PythonType) {
+    if (other->ob_type != LocationObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
     }
     auto otherCast = (LocationObject*) other;
@@ -70,7 +69,7 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   }
 
   static PyObject* subtract(LocationObject* self, PyObject* other) {
-    if (other->ob_type != &LocationObject::PythonType) {
+    if (other->ob_type != LocationObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
     }
     auto otherCast = (LocationObject*) other;
@@ -114,13 +113,16 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
       self->value_.lastColumn());
   }
 
-  static PyTypeObject configurePythonType() {
+  static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    PyTypeObject configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType();
-    configuring.tp_str = (reprfunc) str;
-    configuring.tp_as_number = &location_as_number;
-    configuring.tp_as_number->nb_subtract = (binaryfunc) subtract;
-    configuring.tp_as_number->nb_add = (binaryfunc) add;
+
+    size_t numExtraSlots = 3;
+    PyType_Slot extraSlots[] = {
+      {Py_tp_str, (void*) str},
+      {Py_nb_add, (void*) add},
+      {Py_nb_subtract, (void*) subtract},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots, numExtraSlots);
     return configuring;
   }
 };
@@ -134,16 +136,19 @@ struct ScopeObject : public PythonClassWithContext<ScopeObject, const chpl::reso
 using VisibleSymbol = std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>;
 
 struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*> {
-  static constexpr const char* QualifiedName = "chapel.AstNode";
+  static constexpr const char* QualifiedName = "AstNode";
+  // TODO: restore chapel.
   static constexpr const char* Name = "AstNode";
   static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
   static PyObject* iter(AstNodeObject *self);
 
-  static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType();
-    configuring.tp_iter = (getiterfunc) AstNodeObject::iter;
-    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+  static PyTypeObject* configurePythonType() {
+    size_t numExtraSlots = 1;
+    PyType_Slot extraSlots[] = {
+      {Py_tp_iter, (void*) AstNodeObject::iter},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
     return configuring;
   }
 };
@@ -151,31 +156,37 @@ struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::
 using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
 struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*> {
-  static constexpr const char* QualifiedName = "chapel.ChapelType";
+  static constexpr const char* QualifiedName = "ChapelType";
+  // TODO: restore chapel.
   static constexpr const char* Name = "ChapelType";
   static constexpr const char* DocStr = "The base type of Chapel types";
 
   static PyObject* str(ChapelTypeObject* self);
 
-  static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType();
-    configuring.tp_str = (reprfunc) ChapelTypeObject::str;
-    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+  static PyTypeObject* configurePythonType() {
+    size_t numExtraSlots = 1;
+    PyType_Slot extraSlots[] = {
+      {Py_tp_str, (void*) ChapelTypeObject::str},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
     return configuring;
   }
 };
 
 struct ParamObject : public PythonClassWithContext<ParamObject, const chpl::types::Param*> {
-  static constexpr const char* QualifiedName = "chapel.Param";
+  static constexpr const char* QualifiedName = "Param";
+    // TODO: restore chapel.
   static constexpr const char* Name = "Param";
   static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
 
   static PyObject* str(ParamObject* self);
 
-  static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = PythonClassWithContext<ParamObject, const chpl::types::Param*>::configurePythonType();
-    configuring.tp_str = (reprfunc) ParamObject::str;
-    configuring.tp_flags = Py_TPFLAGS_BASETYPE;
+  static PyTypeObject* configurePythonType() {
+    size_t numExtraSlots = 1;
+    PyType_Slot extraSlots[] = {
+      {Py_tp_str, (void*) ParamObject::str},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<ParamObject, const chpl::types::Param*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
     return configuring;
   }
 };
@@ -217,7 +228,7 @@ struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject
 
   // Define a rich comparison function, too
   static PyObject* richcompare(TypedSignatureObject* self, PyObject* other, int op) {
-    if (other->ob_type != &TypedSignatureObject::PythonType) {
+    if (other->ob_type != TypedSignatureObject::PythonType) {
       Py_RETURN_NOTIMPLEMENTED;
     }
     auto otherCast = (TypedSignatureObject*) other;
@@ -227,11 +238,14 @@ struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject
     Py_RETURN_RICHCOMPARE(selfVal, otherVal, op);
   }
 
-  static PyTypeObject configurePythonType() {
+  static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    PyTypeObject configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType();
-    configuring.tp_hash = (hashfunc) hash;
-    configuring.tp_richcompare = (richcmpfunc) richcompare;
+    size_t numExtraSlots = 2;
+    PyType_Slot extraSlots[] = {
+      {Py_tp_hash, (void*) hash},
+      {Py_tp_richcompare, (void*) richcompare},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots, numExtraSlots);
     return configuring;
   }
 };
