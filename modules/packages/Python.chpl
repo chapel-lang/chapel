@@ -340,7 +340,8 @@ module Python {
         // import objgraph
         this.objgraph = this.importModule("objgraph");
         if this.objgraph == nil {
-          writeln("objgraph not found, memory leak detection disabled. Install objgraph with 'pip install objgraph'");
+          writeln("objgraph not found, memory leak detection disabled. " +
+                  "Install objgraph with 'pip install objgraph'");
         } else {
           // objgraph.growth()
           var growth = PyObject_GetAttrString(this.objgraph, "growth");
@@ -1585,8 +1586,12 @@ module Python {
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
-    extern const chpl_PY_VERSION_HEX: uint(64);
-    extern const chpl_PY_VERSION: c_ptrConst(c_char);
+    extern "chpl_PY_VERSION_HEX" const PY_VERSION_HEX: uint(64);
+    extern "chpl_PY_VERSION" const PY_VERSION: c_ptrConst(c_char);
+    extern "chpl_PY_MAJOR_VERSION" const PY_MAJOR_VERSION: c_ulong;
+    extern "chpl_PY_MINOR_VERSION" const PY_MINOR_VERSION: c_ulong;
+    extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
+
 
 
     /*
