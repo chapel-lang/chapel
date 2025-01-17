@@ -389,7 +389,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
 
     auto domain = DomainType::getRectangularType(context, instanceQt, rank,
                                                  idxType, strides);
-    return ArrayType::getArrayType(context, QualifiedType(QualifiedType::TYPE, domain),
+    return ArrayType::getArrayType(context,
+                                   instanceQt,
+                                   QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
   }
 

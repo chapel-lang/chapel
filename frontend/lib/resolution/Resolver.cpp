@@ -5795,7 +5795,10 @@ static bool handleArrayTypeExpr(Resolver& rv,
   }
 
   auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
-  auto arrayType = ArrayType::getArrayType(rv.context, domainType, eltType);
+  auto arrayType =
+    ArrayType::getArrayType(rv.context,
+                            /* TODO, see comment in getArrayType */ QualifiedType(),
+                            domainType, eltType);
 
   auto& re = rv.byPostorder.byAst(loop);
   re.setType(QualifiedType(QualifiedType::TYPE, arrayType));

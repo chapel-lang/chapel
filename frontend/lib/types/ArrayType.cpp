@@ -22,6 +22,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 
 namespace chpl {
@@ -71,11 +72,35 @@ ArrayType::getGenericArrayType(Context* context) {
 
 const ArrayType*
 ArrayType::getArrayType(Context* context,
+                        const QualifiedType& instance,
                         const QualifiedType& domainType,
                         const QualifiedType& eltType) {
+  auto genericArray = getGenericArrayType(context);
+
   SubstitutionsMap subs;
   subs.emplace(ArrayType::domainId, domainType);
   subs.emplace(ArrayType::eltTypeId, eltType);
+
+  // Add substitution for _instance field
+  auto& rf = fieldsForTypeDecl(context, genericArray,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+
+  // TODO: resolver currently doesn't bother to set up the array instance type.
+  //       as a result, this is sometimes unknown, which leads to problems
+  //       when doing canInstantiate (which uses canPass). So, don't include
+  //       the unknown sub to avoid those issues. Remove this when
+  //       resolver handles _instance.
+  if (!instance.isUnknown()) {
+    subs.emplace(instanceFieldId, instance);
+  }
   auto id = getArrayID(context);
   auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
