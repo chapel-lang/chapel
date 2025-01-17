@@ -4825,7 +4825,7 @@ void Resolver::exit(const Dot* dot) {
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->isCompositeType() &&
+        receiver.type().type()->getCompositeType() &&
         dot->field() != "init") {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
