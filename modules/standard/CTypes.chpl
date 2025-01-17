@@ -973,6 +973,14 @@ module CTypes {
 
     return c_pointer_return(arr);
   }
+  // Added as unstable for 2.4, can be merged into stable version once we're
+  // confident in it.
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOf' on an array from another locale is unstable")
+  inline proc c_addrOf(ref arr: [])
+      where boundsChecking && arr._value.locale != here {
+    return c_pointer_return(arr);
+  }
 
   /*
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
@@ -987,6 +995,13 @@ module CTypes {
           ", call was made on locale " + here.id:string + ")");
 
     return c_pointer_return_const(arr);
+  }
+  // See note on corresponding c_addrOf overload
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOfConst' on an array from another locale is unstable")
+  inline proc c_addrOfConst(const arr: [])
+      where boundsChecking && arr._value.locale != here {
+    return c_pointer_return(arr);
   }
 
   /*
