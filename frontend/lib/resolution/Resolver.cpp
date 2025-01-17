@@ -6336,6 +6336,15 @@ bool Resolver::enter(const Import* node) {
 
 void Resolver::exit(const Import* node) {}
 
+bool Resolver::enter(const uast::VisibilityClause* node) {
+  // Specially handled for use/import; the limitations are names (and
+  // not identifiers) for the purposes of forwarding.
+  node->symbol()->traverse(*this);
+  return false;
+}
+
+void Resolver::exit(const uast::VisibilityClause* node) {}
+
 bool Resolver::enter(const uast::Zip* zip) {
   return true;
 }
