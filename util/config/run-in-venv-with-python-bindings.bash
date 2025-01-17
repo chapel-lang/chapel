@@ -10,7 +10,7 @@ PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)
 # Perform checks and set up environment variables for virtual env.
 source $CWD/run-in-venv-common.bash
 
-chpl_frontend_py_deps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps-version)
+chpl_frontend_py_deps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps)
 export PYTHONPATH="$chpl_frontend_py_deps":$PYTHONPATH
 
 if [ ! -d "$chpl_frontend_py_deps/chapel" ]; then
