@@ -269,6 +269,17 @@ compositeTypeIsPod(Context* context, const Type* t) {
   auto ct = t->getCompositeType();
   if (!ct) return false;
 
+  if (auto tt = t->toTupleType()) {
+    // A tuple is plain old data if all of its components are plain old data.
+    for (int i = 0; i < tt->numElements(); i++) {
+      auto& eltType = tt->elementType(i);
+      if (!eltType.type()) return false;
+      if (!Type::isPod(context, eltType.type())) return false;
+    }
+
+    return true;
+  }
+
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
 
