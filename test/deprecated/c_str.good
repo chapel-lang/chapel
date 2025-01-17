@@ -1,2 +1,0 @@
-c_str.chpl:4: error: unresolved call 'string.c_str()'
-c_str.chpl:4: note: because no functions named c_str found in scope
