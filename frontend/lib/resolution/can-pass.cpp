@@ -1367,6 +1367,12 @@ types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind 
   return props.toKind();
 }
 
+types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind kind) {
+  auto props = KindProperties::fromKind(kind);
+  props.setRef(false);
+  return props.toKind();
+}
+
 // Try finding a common ancestor type between class types
 static optional<QualifiedType> findByAncestor(
     Context* context, const std::vector<QualifiedType>& types,
