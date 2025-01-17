@@ -6769,7 +6769,7 @@ shapeForIteratorQuery(Context* context,
         break;
       }
     }
-    CHPL_ASSERT(false && "no promotedformals, even though we're a promotion iterator");
+    CHPL_ASSERT(!leaderType.isUnknownOrErroneous());
   }
 
   CHPL_ASSERT(!leaderType.isUnknownOrErroneous());
