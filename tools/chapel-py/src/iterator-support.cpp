@@ -100,8 +100,8 @@ bool setupAstCallIterType() {
     /*flags*/ Py_TPFLAGS_DEFAULT,
     /*slots*/ slots
   };
-  AstIterType = (PyTypeObject*)PyType_FromSpec(&spec);
-  if (!AstIterType || PyType_Ready(AstIterType) < 0) return false;
+  AstCallIterType = (PyTypeObject*)PyType_FromSpec(&spec);
+  if (!AstCallIterType || PyType_Ready(AstCallIterType) < 0) return false;
   // TODO: set module name
   return true;
 }
@@ -149,7 +149,7 @@ PyObject* AstCallIterObject_next(AstCallIterObject *self) {
 
 PyObject* wrapIterAdapter(ContextObject* context, IterAdapterBase* iterAdapter) {
   auto argList = Py_BuildValue("(O)", (PyObject*) context);
-  auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
+  auto astIterObjectPy = PyObject_CallObject((PyObject *) AstIterType, argList);
   auto astIterObject = (AstIterObject*) astIterObjectPy;
 
   astIterObject->iterAdapter = iterAdapter;

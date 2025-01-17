@@ -133,7 +133,7 @@ struct InvokeHelper<void(Args...)> {
     if (!node) return nullptr; \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
-    auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
+    auto astCallIterObjectPy = PyObject_CallObject((PyObject *) AstCallIterType, argList); \
     Py_XDECREF(argList); \
     \
     auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy; \
