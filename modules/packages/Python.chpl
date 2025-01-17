@@ -63,6 +63,12 @@
           -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR \
           -lpython$PYTHON_LDVERSION ...Chapel source files...
 
+  .. warning::
+
+    Chapel programs compiled in this was are compiled for a specific Python
+    version. Attempting to run the compiled program with a different Python
+    version may have unexpected results.
+
   Parallel Execution
   ------------------
 
@@ -141,20 +147,26 @@
 
   .. note::
 
-     Newer Python versions offer a free-threading mode that allows multiple threads concurrently, without the need for the GIL. In this mode, users can either remove the GIL acquisition code or not. Without the GIL, the GIL acquisition code will have no effect.
+     Newer Python versions offer a free-threading mode that allows multiple
+     threads concurrently, without the need for the GIL. In this mode, users can
+     either remove the GIL acquisition code or not. Without the GIL, the GIL
+     acquisition code will have no effect.
 
   .. note::
 
      In the future, it may be possible to achieve better parallelism with Python
      by using sub-interpreters. However, sub-interpreters are not yet supported
-     in Chapel.
+     in Chapel and attempting to have more than one :type:`Interpreter` instance
+     will likely result in segmentation faults.
 
   Using Python Modules With Distributed Code
   -------------------------------------------
 
-  Python has no built-in support for distributed memory, so each locale must create its own interpreter (and subsequent Python objects).
+  Python has no built-in support for distributed memory, so each locale must
+  create its own interpreter (and subsequent Python objects).
 
-  The following example demonstrates how to create a Python interpreter and run a Python function on each locale:
+  The following example demonstrates how to create a Python interpreter and run
+  a Python function on each locale:
 
   ..
      START_TEST
