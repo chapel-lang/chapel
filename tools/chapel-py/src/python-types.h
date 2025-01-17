@@ -135,7 +135,9 @@ PyObject* wrapOptional(ContextObject* context, const std::optional<T>& opt) {
   if (opt) {
     return PythonReturnTypeInfo<T>::wrap(context, *opt);
   } else {
-    Py_RETURN_NONE;
+    // In python3.12, Py_None is immortal and this is not needed
+    Py_INCREF(Py_None);
+    return Py_None;
   }
 }
 
@@ -211,7 +213,9 @@ PyObject* wrapNilable(ContextObject* context, const Nilable<T>& opt) {
   if (opt.value) {
     return PythonReturnTypeInfo<T>::wrap(context, opt.value);
   } else {
-    Py_RETURN_NONE;
+    // In python3.12, Py_None is immortal and this is not needed
+    Py_INCREF(Py_None);
+    return Py_None;
   }
 }
 

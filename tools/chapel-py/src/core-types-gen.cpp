@@ -97,7 +97,9 @@ struct InvokeHelper<void(Args...)> {
   template <typename F>
   static PyObject* invoke(ContextObject* contextObject, F&& fn) {
     fn();
-    Py_RETURN_NONE;
+    // In python3.12, Py_None is immortal and this is not needed
+    Py_INCREF(Py_None);
+    return Py_None;
   }
 };
 
