@@ -1282,6 +1282,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "copy-init";
     case DEFAULT_INIT:
       return "default-init";
+    case CUSTOM_COPY_INIT:
+      return "custom-copy-init";
     case INIT_OTHER:
       return "init-from-other";
     case DEINIT:

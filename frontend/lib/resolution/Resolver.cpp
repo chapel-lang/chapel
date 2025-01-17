@@ -27,6 +27,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
@@ -1315,6 +1316,35 @@ Resolver::computeCustomInferType(const AstNode* decl,
   return ret.type();
 }
 
+const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
+                                          const QualifiedType::Kind declKind,
+                                          const types::QualifiedType& initExprT) {
+
+  std::vector<CallInfoActual> actuals;
+  actuals.emplace_back(initExprT, UniqueString());
+  auto definedConst =
+    QualifiedType::makeParamBool(context, isConstQualifier(declKind));
+  actuals.emplace_back(std::move(definedConst), UniqueString());
+  auto ci = CallInfo (/* name */ UniqueString::get(context, "chpl__initCopy"),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+
+  const Scope* scope = scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(context, decl, ci, inScopes);
+  handleResolvedCallWithoutError(byPostorder.byAst(decl), decl,
+                                 c, {{ AssociatedAction::CUSTOM_COPY_INIT, decl->id() }});
+
+  if (!c.exprType().isUnknownOrErroneous()) {
+    return c.exprType().type();
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -1345,8 +1375,11 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
+    // Iterators are 'materialized' into arrays
+    if (initExprType.type()->isIteratorType()) {
+      typePtr = computeChplCopyInit(declForErr, declKind, initExprType);
     // Check if this type requires custom type inference
-    if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+    } if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
       typePtr = computeCustomInferType(declForErr, rec);
     } else {
       // init but no declared type, so use init type
