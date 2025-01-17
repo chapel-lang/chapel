@@ -44,7 +44,12 @@ using namespace uast;
  */
 #define DEFINE_INIT_FOR(NAME, TAG)\
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return parentTypeFor(TAG)->tp_init((PyObject*) self, args, kwargs); \
+    auto func = ((int(*)(PyObject*, PyObject*, PyObject*)) PyType_GetSlot(parentTypeFor(TAG), Py_tp_init)); \
+    if (!func) { \
+      PyErr_SetString(PyExc_TypeError, "Cannot initialize Chapel AST node"); \
+      return -1; \
+    } \
+    return func((PyObject*) self, args, kwargs); \
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
@@ -153,27 +158,36 @@ ACTUAL_ITERATOR(FnCall);
    macro defines what a type object for an AST node (abstract or not) should
    look like. */
 
-#define DEFINE_PY_TYPE_FOR(NAME)\
-  PyTypeObject NAME##Type = { \
-    PyVarObject_HEAD_INIT(NULL, 0) \
-  }; \
+#define DEFINE_PY_TYPE_FOR(NAME) PyTypeObject* NAME##Type = NULL;
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
 #include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
-  TYPE.tp_name = "chapel."#NAME; \
-  TYPE.tp_basicsize = sizeof(NAME##Object); \
-  TYPE.tp_itemsize = 0; \
-  TYPE.tp_flags = FLAGS; \
-  TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
-  TYPE.tp_methods = (PyMethodDef*) PerTypeMethods<NAME##Object>::methods; \
-  TYPE.tp_base = parentTypeFor(TAG); \
-  TYPE.tp_init = (initproc) NAME##Object_init; \
-  TYPE.tp_new = PyType_GenericNew; \
+  do { \
+    PyType_Slot slots[] = { \
+      {Py_tp_doc, (void*) PyDoc_STR("A Chapel " #NAME " AST node")}, \
+      {Py_tp_methods, (void*) PerTypeMethods<NAME##Object>::methods}, \
+      {Py_tp_init, (void*) NAME##Object_init}, \
+      {Py_tp_new, (void*) PyType_GenericNew}, \
+      {0, nullptr} \
+    }; \
+    PyType_Spec spec = { \
+      /*name*/ #NAME, \
+      /*basicsize*/ sizeof(NAME##Object), \
+      /*itemsize*/ 0, \
+      /*flags*/ FLAGS, \
+      /*slots*/ slots \
+    }; \
+    auto parentType = parentTypeFor(TAG); \
+    TYPE = (PyTypeObject*)PyType_FromSpecWithBases(&spec, (PyObject*)parentType); \
+    if (!TYPE || PyType_Ready(TYPE) < 0) return false; \
+    /*TODO: need to set PyDict_SetItemString(configuring->tp_dict, "__module__", "chapel"); */ \
+  } while(0);
 
-void setupGeneratedTypes() {
+bool setupGeneratedTypes() {
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
 #include "generated-types-list.h"
+return true;
 }

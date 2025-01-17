@@ -43,23 +43,19 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core(void) {
   PyObject* chapelModule = nullptr;
 
-  setupAstIterType();
-  setupAstCallIterType();
-  setupGeneratedTypes();
+  if(!setupAstIterType()) return nullptr;
+  if(!setupAstCallIterType()) return nullptr;
 
-#define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) READY_TYPE(NAME)
-#include "generated-types-list.h"
-#undef GENERATED_TYPE
-  READY_TYPE(AstIter)
-  READY_TYPE(AstCallIter)
+  // these must be called before setupGeneratedTypes, since they are base classes
+  if (AstNodeObject::ready() < 0) return nullptr;
+  if (ChapelTypeObject::ready() < 0) return nullptr;
+  if (ParamObject::ready() < 0) return nullptr;
+
+  if (!setupGeneratedTypes()) return nullptr;
 
   if (ContextObject::ready() < 0) return nullptr;
   if (LocationObject::ready() < 0) return nullptr;
   if (ScopeObject::ready() < 0) return nullptr;
-  if (AstNodeObject::ready() < 0) return nullptr;
-  if (ChapelTypeObject::ready() < 0) return nullptr;
-  if (ParamObject::ready() < 0) return nullptr;
   if (ErrorObject::ready() < 0) return nullptr;
   if (ErrorManagerObject::ready() < 0) return nullptr;
   if (ResolvedExpressionObject::ready() < 0) return nullptr;
@@ -69,7 +65,7 @@ PyMODINIT_FUNC PyInit_core(void) {
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
 
-#define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
+#define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) NAME##Type) < 0) return nullptr;
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ADD_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE

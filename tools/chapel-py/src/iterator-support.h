@@ -66,9 +66,9 @@ struct AstIterObject {
   IterAdapterBase* iterAdapter;
   PyObject* contextObject;
 };
-extern PyTypeObject AstIterType;
+extern PyTypeObject* AstIterType;
 
-void setupAstIterType();
+bool setupAstIterType();
 
 int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs);
 void AstIterObject_dealloc(AstIterObject* self);
@@ -84,9 +84,9 @@ struct AstCallIterObject {
   const chpl::uast::AstNode* (*childGetter)(const void*, int);
   PyObject* contextObject;
 };
-extern PyTypeObject AstCallIterType;
+extern PyTypeObject* AstCallIterType;
 
-void setupAstCallIterType();
+bool setupAstCallIterType();
 
 int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kwargs);
 void AstCallIterObject_dealloc(AstCallIterObject* self);

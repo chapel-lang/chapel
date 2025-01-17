@@ -19,22 +19,31 @@
 
 #include "iterator-support.h"
 #include "core-types-gen.h"
+#include "python-type-helper.h"
 
-PyTypeObject AstIterType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
+PyTypeObject* AstIterType = NULL;
 
-void setupAstIterType() {
-  AstIterType.tp_name = "chapel.AstIter";
-  AstIterType.tp_basicsize = sizeof(AstIterObject);
-  AstIterType.tp_itemsize = 0;
-  AstIterType.tp_dealloc = (destructor) AstIterObject_dealloc;
-  AstIterType.tp_flags = Py_TPFLAGS_DEFAULT;
-  AstIterType.tp_doc = PyDoc_STR("An iterator over Chapel AST nodes");
-  AstIterType.tp_iter = (getiterfunc) AstIterObject_iter;
-  AstIterType.tp_iternext = (iternextfunc) AstIterObject_next;
-  AstIterType.tp_init = (initproc) AstIterObject_init;
-  AstIterType.tp_new = PyType_GenericNew;
+bool setupAstIterType() {
+  PyType_Slot slots[] = {
+      {Py_tp_dealloc, (void*) AstIterObject_dealloc},
+      {Py_tp_doc, (void*) PyDoc_STR("An iterator over Chapel AST nodes")},
+      {Py_tp_iter, (void*) AstIterObject_iter},
+      {Py_tp_iternext, (void*) AstIterObject_next},
+      {Py_tp_init, (void*) AstIterObject_init},
+      {Py_tp_new, (void*) PyType_GenericNew},
+      {0, nullptr}
+    };
+    PyType_Spec spec = {
+      /*name*/ "AstIter",
+      /*basicsize*/ sizeof(AstIterObject),
+      /*itemsize*/ 0,
+      /*flags*/ Py_TPFLAGS_DEFAULT,
+      /*slots*/ slots
+    };
+    AstIterType = (PyTypeObject*)PyType_FromSpec(&spec);
+    if (!AstIterType || PyType_Ready(AstIterType) < 0) return false;
+    // TODO: set module name
+    return true;
 }
 
 int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs) {
@@ -54,7 +63,7 @@ int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs) {
 void AstIterObject_dealloc(AstIterObject* self) {
   delete self->iterAdapter;
   Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
+  call_tp_free(AstIterType, (PyObject*) self);
 }
 
 PyObject* AstIterObject_iter(AstIterObject *self) {
@@ -72,21 +81,29 @@ PyObject* AstIterObject_next(AstIterObject *self) {
   return nullptr;
 }
 
-PyTypeObject AstCallIterType = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-};
+PyTypeObject* AstCallIterType = NULL;
 
-void setupAstCallIterType() {
-  AstCallIterType.tp_name = "chapel.AstCallIter";
-  AstCallIterType.tp_basicsize = sizeof(AstCallIterObject);
-  AstCallIterType.tp_itemsize = 0;
-  AstCallIterType.tp_dealloc = (destructor) AstCallIterObject_dealloc;
-  AstCallIterType.tp_flags = Py_TPFLAGS_DEFAULT;
-  AstCallIterType.tp_doc = PyDoc_STR("An iterator over Chapel function call actuals");
-  AstCallIterType.tp_iter = (getiterfunc) AstCallIterObject_iter;
-  AstCallIterType.tp_iternext = (iternextfunc) AstCallIterObject_next;
-  AstCallIterType.tp_init = (initproc) AstCallIterObject_init;
-  AstCallIterType.tp_new = PyType_GenericNew;
+bool setupAstCallIterType() {
+  PyType_Slot slots[] = {
+    {Py_tp_dealloc, (void*) AstCallIterObject_dealloc},
+    {Py_tp_doc, (void*) PyDoc_STR("An iterator over Chapel function call actuals")},
+    {Py_tp_iter, (void*) AstCallIterObject_iter},
+    {Py_tp_iternext, (void*) AstCallIterObject_next},
+    {Py_tp_init, (void*) AstCallIterObject_init},
+    {Py_tp_new, (void*) PyType_GenericNew},
+    {0, nullptr}
+  };
+  PyType_Spec spec = {
+    /*name*/ "AstCallIter",
+    /*basicsize*/ sizeof(AstCallIterObject),
+    /*itemsize*/ 0,
+    /*flags*/ Py_TPFLAGS_DEFAULT,
+    /*slots*/ slots
+  };
+  AstIterType = (PyTypeObject*)PyType_FromSpec(&spec);
+  if (!AstIterType || PyType_Ready(AstIterType) < 0) return false;
+  // TODO: set module name
+  return true;
 }
 
 int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kwargs) {
@@ -103,7 +120,7 @@ int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kw
 
 void AstCallIterObject_dealloc(AstCallIterObject* self) {
   Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
+  call_tp_free(AstCallIterType, (PyObject*) self);
 }
 
 PyObject* AstCallIterObject_iter(AstCallIterObject *self) {
