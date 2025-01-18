@@ -647,11 +647,9 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     GetActual&& getActual,
                                     const std::vector<const uast::VarLikeDecl*>* actualDecls) {
   unsigned int printCount = 0;
-  unsigned int iterCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
-    printCount++;
 
     auto reason = candidate.reason();
     wr.message("");
@@ -675,7 +673,9 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
       bool actualPrinted = false;
-      const uast::VarLikeDecl* offendingActual =  actualDecls!=nullptr ? actualDecls->at(iterCount) : nullptr;\
+      const uast::VarLikeDecl* offendingActual =  actualDecls ?
+                                                  actualDecls->at(printCount) :
+                                                  nullptr;
       if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
@@ -789,6 +789,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       wr.code(candidate.idForErr());
     }
+    printCount++;
   }
 
   if (printCount < rejected.size()) {
@@ -1331,7 +1332,6 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto call = node->toCall();
   auto& ci = std::get<resolution::CallInfo>(info_);
   auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-  // auto& formalActuals = std::get<std::vector<resolution::FormalActual>>(info_);
   auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
 
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
