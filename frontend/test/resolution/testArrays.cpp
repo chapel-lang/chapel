@@ -33,14 +33,6 @@
 // - this[] access
 // - Slices
 
-static QualifiedType findVarType(const Module* m,
-                                 const ResolutionResultByPostorderID& rr,
-                                 std::string name) {
-  const Variable* var = findOnlyNamed(m, name)->toVariable();
-  assert(var != nullptr);
-  return rr.byAst(var).type();
-}
-
 static void testArray(std::string domainType,
                       std::string eltType) {
   Context::Configuration config;

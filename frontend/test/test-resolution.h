@@ -100,4 +100,20 @@ Context::Configuration getConfigWithHome();
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r);
 
+QualifiedType findVarType(const Module* m,
+                          const ResolutionResultByPostorderID& rr,
+                          std::string name);
+
+/**
+  Test resolution of a domain literal.
+ */
+void testDomainLiteral(Context* context, std::string domainLiteral,
+                       DomainType::Kind domainKind);
+
+void testDomainIndex(Context* context, std::string domainType,
+                     std::string expectedType);
+
+void testDomainBadPass(Context* context, std::string argType,
+                       std::string actualType);
+
 #endif
