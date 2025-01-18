@@ -999,10 +999,9 @@ handleRejectedCandidates(Context* context,
   // check each rejected candidate for uninitialized actuals
   for (size_t i = 0; i < rejected.size(); i++) {
     auto &candidate = rejected[i];
-    if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
-        /* skip computing the formal-actual map because it will go poorly
+    if (/* skip computing the formal-actual map because it will go poorly
            with an unknown formal. */
-        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+        candidate.failedDueToWrongActual()) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto& badPass = fa.byFormalIdx(candidate.formalIdx());

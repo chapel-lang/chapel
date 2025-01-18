@@ -645,18 +645,15 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const char* expectedThingArticle,
                                     const char* expectedThing,
                                     GetActual&& getActual,
-                                    const std::vector<const uast::VarLikeDecl*>* actualDecls) {
+                                    const std::vector<const uast::VarLikeDecl*>& actualDecls) {
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
-
-    auto reason = candidate.reason();
     wr.message("");
-    if (reason == resolution::FAIL_CANNOT_PASS &&
-        /* skip printing detailed info_ here because computing the formal-actual
-           map will go poorly with an unknown formal. */
-        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+    if (/* skip printing detailed info_ here because computing the formal-actual
+        map will go poorly with an unknown formal. */
+        candidate.failedDueToWrongActual()) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
@@ -673,9 +670,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
       bool actualPrinted = false;
-      const uast::VarLikeDecl* offendingActual =  actualDecls ?
-                                                  actualDecls->at(printCount) :
-                                                  nullptr;
+      const uast::VarLikeDecl* offendingActual = actualDecls.at(printCount);
       if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
@@ -766,6 +761,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       wr.code(candidate.idForErr());
     } else {
+      auto reason = candidate.reason();
       std::string reasonStr = "";
       if (reason == resolution::FAIL_VARARG_MISMATCH) {
         reasonStr = "the number of varargs was incorrect:";
@@ -845,7 +841,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   auto var = std::get<const uast::Variable*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'.");
   wr.codeForDef(var->id());
   wr.message("Required by the interface '", interface->name(), "':");
@@ -855,7 +851,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   wr.message("Associated types are resolved as 'type' calls on types constrained by the interface.");
   printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](int) -> const uast::AstNode* {
     return nullptr;
-  }, nullptr);
+  }, actualDecls);
 }
 
 void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
@@ -864,7 +860,7 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   auto fn = std::get<const resolution::TypedFnSignature*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'.");
   wr.codeForDef(fn->id());
   wr.message("Required by the interface '", interface->name(), "':");
@@ -876,7 +872,7 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
       return fn->untyped()->formalDecl(idx);
     }
     return nullptr;
-  }, nullptr);
+  }, actualDecls);
 }
 
 void ErrorInterfaceMultipleImplements::write(ErrorWriterBase& wr) const {
@@ -1342,7 +1338,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       return call->actual(idx);
     }
     return nullptr;
-  }, &actualDecls);
+  }, actualDecls);
 }
 
 void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {
