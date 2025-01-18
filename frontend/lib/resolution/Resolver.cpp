@@ -1056,9 +1056,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedWidth);
             } else {
-              auto p = IntParam::get(context, pt->bitwidth());
-              auto it = IntType::get(context, 0);
-              auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+              auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
               resolvedWidth.setType(qt);
             }
           }
@@ -1218,10 +1216,8 @@ void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
 
     // args...?n
     if (auto countQuery = varargs->count()) {
-      auto intType = IntType::get(context, 0);
-      auto val = IntParam::get(context, tuple->numElements());
       ResolvedExpression& result = byPostorder.byAst(countQuery);
-      result.setType(QualifiedType(QualifiedType::PARAM, intType, val));
+      result.setType(QualifiedType::makeParamInt(context, tuple->numElements()));
     }
 
     if (auto typeExpr = formal->typeExpression()) {
@@ -2453,8 +2449,7 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
         resultBool = false;
       }
 
-      result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                             BoolParam::get(context, resultBool));
+      result = QualifiedType::makeParamBool(context, resultBool);
     }
 
     byPostorder.byAst(primCall).setType(result);
@@ -2748,9 +2743,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         if (field && field->name() == USTR("size")) {
           // Tuples don't store a 'size' in their substitutions map, so
           // manually take care of things here.
-          auto intType = IntType::get(context, 0);
-          auto val = IntParam::get(context, tup->numElements());
-          return QualifiedType(QualifiedType::PARAM, intType, val);
+          return QualifiedType::makeParamInt(context, tup->numElements());
         }
       }
 
@@ -4292,10 +4285,8 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add definedConst actual if appropriate
     if (decl->usedCurlyBraces()) {
-      actuals.emplace_back(
-          QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                        BoolParam::get(context, true)),
-          UniqueString());
+      actuals.emplace_back(QualifiedType::makeParamBool(context, true)),
+          UniqueString();
     }
 
     auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
@@ -4353,9 +4344,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
       // preserve param-ness
       // this case is only hit when the result is false (for &&)
       // or when the result is true (for ||), so return !isAnd.
-      return QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, !isAnd));
+      return QualifiedType::makeParamBool(context, !isAnd);
     } else {
       // otherwise just return a Bool value
       return QualifiedType(QualifiedType::CONST_VAR,
@@ -5475,6 +5464,133 @@ resolveIterTypeWithTag(Resolver& rv,
   return yieldType;
 }
 
+struct ParamRangeInfo {
+  int64_t current;
+  int64_t end;
+  const Type* yieldType = nullptr;
+
+  // Optionally specified properties
+  int64_t step = 1;
+
+  static optional<ParamRangeInfo> fromBound(Context* context, ResolutionResultByPostorderID& rr, const AstNode* node) {
+    ParamRangeInfo scratch;
+    int numElts = -1;
+
+    // Compositions of ranges can get very complicated:
+    //
+    //   (0..#10 by 2) is a 5-element range, 0, 2, 4, 6, 8
+    //   (0.. by 2 #10) is a 10-element range, 2, 4, ...,
+    //
+    // For now, only allow #10 in the last position, to mimic something like 0<10,
+    // and only allow one 'by', since multi-by combinations require smarts.
+    // This is an improvement over production anyway, where # is not supported
+    // in params at all.
+    bool seenPound = false;
+    bool seenBy = false;
+    while (auto op = node->toOpCall()) {
+      if (seenPound) {
+        context->error(op, "unexpected composition of operators in 'param' loop");
+        return {};
+      }
+
+      if (op->op() == USTR("by")) {
+        if (seenBy) {
+          context->error(op, "multiple 'by' operators unsupported in 'param' loop");
+          return {};
+        }
+        seenBy = true;
+
+        node = op->actual(0);
+        auto& byRe = rr.byAst(op->actual(1));
+        auto byParam = byRe.type().param();
+        if (!byParam || !byParam->isIntParam()) {
+          context->error(op, "expected an integer 'param' for 'by'");
+          return {};
+        }
+
+        scratch.step *= byParam->toIntParam()->value();
+        if (scratch.step == 0) {
+          context->error(op, "step size for 'by' must be non-zero");
+          return {};
+        }
+      } else if (op->op() == USTR("#")) {
+        seenPound = true;
+
+        node = op->actual(0);
+        auto& byRe = rr.byAst(op->actual(1));
+        auto byParam = byRe.type().param();
+        if (!byParam || !byParam->isIntParam()) {
+          context->error(op, "expected an integer 'param' for '#'");
+          return {};
+        }
+
+        numElts = byParam->toIntParam()->value();
+        if (numElts < 0) {
+          context->error(op, "number of elements for '#' must be non-negative");
+          return {};
+        }
+      }
+    }
+
+    auto rng = node->toRange();
+    if (!rng) {
+      context->error(node, "'param' loops can only iterate over range literals");
+      return {};
+    }
+
+    // TODO: Simplify once we no longer use nullptr for param()
+    auto findBoundParam = [&scratch, &rr](const AstNode* bound) -> const IntParam* {
+      if (!bound) return nullptr;
+      ResolvedExpression& boundRE = rr.byAst(bound);
+      if (!scratch.yieldType) scratch.yieldType = boundRE.type().type();
+      auto param = boundRE.type().param();
+      return param ? param->toIntParam() : nullptr;
+    };
+    auto low = findBoundParam(rng->lowerBound());
+    auto hi = findBoundParam(rng->upperBound());
+
+    // TODO: various overflow issue here; if hiVal is INT_MIN, subtracting would
+    //       overflow, etc.
+
+    bool validBounds = false;
+    if (low && hi) {
+      validBounds = true;
+      scratch.current = low->value();
+      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
+    } else if (low && numElts >= 0) {
+      validBounds = true;
+      scratch.current = low->value();
+      scratch.end = scratch.current + numElts - 1;
+    } else if (hi && numElts >=0) {
+      validBounds = true;
+      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
+      scratch.current = scratch.end - numElts + 1;
+    }
+    if (!validBounds) {
+      context->error(rng, "param loops may only iterate over bounded integer range literals");
+      return {};
+    }
+
+    if (scratch.step < 0) {
+      std::swap(scratch.current, scratch.end);
+    }
+
+    return scratch;
+  }
+
+  bool done() const {
+    if (step > 0) return (current > end);
+    return (current < end);
+  }
+
+  int64_t advance() {
+    CHPL_ASSERT(!done());
+    int64_t save = current;
+    current += step;
+    return save;
+  }
+};
+
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   const AstNode* iterand = forLoop->iterand();
   Context* context = rv.context;
@@ -5486,53 +5602,32 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     return true;
   }
 
-  if (iterand->isRange() == false) {
-    context->error(forLoop, "param loops may only iterate over range literals");
-  } else {
-    // TODO: ranges with strides, '#', and '<'
-    const Range* rng = iterand->toRange();
-    ResolvedExpression& lowRE = rv.byPostorder.byAst(rng->lowerBound());
-    ResolvedExpression& hiRE = rv.byPostorder.byAst(rng->upperBound());
-    // TODO: Simplify once we no longer use nullptr for param()
-    auto lowParam = lowRE.type().param();
-    auto hiParam = hiRE.type().param();
-    auto low = lowParam ? lowParam->toIntParam() : nullptr;
-    auto hi = hiParam ? hiParam->toIntParam() : nullptr;
+  auto iterandInfo = ParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
+  if (!iterandInfo) return false;
 
-    int hiVal = hi->value();
-    if (rng->opKind() == Range::OPEN_HIGH) {
-      // TODO: overflow issue here; if hiVal is INT_MIN, subtracting would
-      // overflow.
-      hiVal--;
-    }
+  std::vector<ResolutionResultByPostorderID> loopResults;
+  while (!iterandInfo->done()) {
+    ResolutionResultByPostorderID bodyResults;
+    auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 
-    if (low == nullptr || hi == nullptr) {
-      context->error(forLoop, "param loops may only iterate over range literals with integer bounds");
-      return false;
-    }
+    cur.enterScope(forLoop);
 
-    std::vector<ResolutionResultByPostorderID> loopResults;
-    for (int64_t i = low->value(); i <= hiVal; i++) {
-      ResolutionResultByPostorderID bodyResults;
-      auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
+    ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
+    auto qt = QualifiedType(QualifiedType::PARAM,
+                            iterandInfo->yieldType,
+                            IntParam::get(context, iterandInfo->advance()));
+    idx.setType(qt);
+    forLoop->body()->traverse(cur);
 
-      cur.enterScope(forLoop);
+    cur.exitScope(forLoop);
 
-      ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
-      QualifiedType qt = QualifiedType(QualifiedType::PARAM, lowRE.type().type(), IntParam::get(context, i));
-      idx.setType(qt);
-      forLoop->body()->traverse(cur);
-
-      cur.exitScope(forLoop);
-
-      loopResults.push_back(std::move(cur.byPostorder));
-    }
-
-    auto paramLoop = new ResolvedParamLoop(forLoop);
-    paramLoop->setLoopBodies(loopResults);
-    auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
-    resolvedLoopExpr.setParamLoop(paramLoop);
+    loopResults.push_back(std::move(cur.byPostorder));
   }
+
+  auto paramLoop = new ResolvedParamLoop(forLoop);
+  paramLoop->setLoopBodies(loopResults);
+  auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
+  resolvedLoopExpr.setParamLoop(paramLoop);
 
   return false;
 }

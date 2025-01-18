@@ -714,7 +714,15 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 
 
 int32_t chpl_comm_getMaxThreads(void) {
-  return GASNETI_MAX_THREADS-1;
+  uint64_t maxGasnetThreads = gex_System_QueryMaxThreads();
+  if (maxGasnetThreads > INT32_MAX) {
+    if (chpl_nodeID == 0) {
+      chpl_warning("GASNet's maximum number of threads exceeds Chapel's "
+                   "'int32_t' value, so capping it at INT32_MAX.", 0, 0);
+    }
+    maxGasnetThreads = INT32_MAX;
+  }
+  return maxGasnetThreads - 1; // reserve one thread for the primordial thread
 }
 
 //

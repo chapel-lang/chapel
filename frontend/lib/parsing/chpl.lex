@@ -317,8 +317,6 @@ zip              return processToken(yyscanner, TZIP);
 "'"              return processStringLiteral(yyscanner, "'", STRINGLITERAL);
 "b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
 "b'"             return processStringLiteral(yyscanner, "'", BYTESLITERAL);
-"c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
-"c'"             return processStringLiteral(yyscanner, "'", CSTRINGLITERAL);
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
 

@@ -1,4 +1,0 @@
-LambdaFunc.chpl:1: warning: 'lambda' syntax is deprecated, please construct anonymous procedures using the 'proc' keyword instead
-LambdaFunc.chpl:2: warning: The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead
-LambdaFunc.chpl:3: warning: The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead
-LambdaFunc.chpl:4: warning: The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead

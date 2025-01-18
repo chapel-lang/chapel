@@ -35,8 +35,6 @@
 
 // TODO: implement operators as dunder methods
 
-// TODO: add the ability to compile a chapel string into a python module/function/class/whatever
-
 // TODO: make python use chapel stdout/stderr
 
 /* Library for interfacing with Python from Chapel code.
@@ -239,6 +237,13 @@ module Python {
   const None = new NoneType();
 
 
+  @chpldoc.nodoc
+  enum codeKind {
+    source,
+    bytecode,
+    pickle
+  }
+
   private proc getOsPathSepHelper(interp: borrowed Interpreter): string throws {
     var os = PyImport_ImportModule("os");
     interp.checkException();
@@ -405,6 +410,8 @@ module Python {
 
       Note: this only works with lambdas that accept a tuple of arguments,
       like 'x,' or '*args'
+
+      Creates a new reference
     */
     @chpldoc.nodoc
     proc compileLambda(l: string): PyObjectPtr throws {
@@ -424,6 +431,104 @@ module Python {
         Py_DECREF(globals);
       }
       return code;
+    }
+
+    /*
+      Compile a chunk of python code as a module and return the module object.
+
+      This is equivalent to running the code in a file, and then importing the
+      module.
+
+      Creates a new reference
+    */
+    @chpldoc.nodoc
+    proc compileModule(s: string, modname: string = "chplmod"): PyObjectPtr throws
+    {
+      var code = Py_CompileString(s.c_str(), "<string>", Py_file_input);
+      this.checkException();
+      defer Py_DECREF(code);
+
+      var mod = PyImport_ExecCodeModule(modname.c_str(), code);
+      this.checkException();
+      return mod;
+    }
+
+    /*
+      Interpret a chunk of Python bytecode as a Python module and return the
+      module object.
+
+      This is equivalent to running the code in a file, and then importing the
+      module. However, this takes the bytecode directly (i.e. *.pyc files),
+      rather than the source.
+
+      Creates a new reference
+    */
+    @chpldoc.nodoc
+    proc compileModule(b: bytes,
+                       modname: string = "chplmod"): PyObjectPtr throws {
+      var code =
+        PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(c_size_t));
+      this.checkException();
+      defer Py_DECREF(code);
+
+      var mod = PyImport_ExecCodeModule(modname.c_str(), code);
+      this.checkException();
+      return mod;
+    }
+
+    /*
+      Load a pickle file as a Python object
+
+      Creates a new reference
+    */
+    @chpldoc.nodoc
+    proc loadPickle(b: bytes): PyObjectPtr throws {
+      var pickle = importModule("pickle");
+      this.checkException();
+      defer Py_DECREF(pickle);
+      var loads = PyObject_GetAttrString(pickle, "loads");
+      this.checkException();
+      defer Py_DECREF(loads);
+      var pyBytes = toPython(b);
+      defer Py_DECREF(pyBytes);
+      var obj = PyObject_CallOneArg(loads, pyBytes);
+      this.checkException();
+      return obj;
+    }
+
+    /*
+      Load a .pyc file conforming to the Python 3.7+ pyc format as defined in
+      <https://peps.python.org/pep-0552/>.
+    */
+    @chpldoc.nodoc
+    proc loadPycFile(filename: string): bytes throws {
+      use IO;
+      var r = openReader(filename);
+      // pyc files have 16 bytes of metadata at the start
+      var header = r.readBytes(16);
+      // the first 4 bytes are the magic number
+      // we validate it against 'importlib.util.MAGIC_NUMBER'
+      var magic = header[0..#4];
+      var importlib_util = importModule("importlib.util");
+      this.checkException();
+      defer Py_DECREF(importlib_util);
+      var MAGIC_NUMBER_py =
+        PyObject_GetAttrString(importlib_util, "MAGIC_NUMBER");
+      this.checkException();
+      var MAGIC_NUMBER = this.fromPython(bytes, MAGIC_NUMBER_py);
+      if magic != MAGIC_NUMBER {
+        throw new ChapelException("Invalid magic number in '.pyc' file");
+      }
+
+      // the second 4 bytes are a bitfield that determine the rest of the
+      // header format. if the bitfield is 0, the rest of the header is a
+      // 4 byte timestamp and 4 byte file size. if the lowest bit is set, then
+      // the rest of the header is a hash of the file.
+      // for the purposes of this function, we ignore all of this
+
+      // the rest of the file is the bytecode
+      var modBytes = r.readAll(bytes);
+      return modBytes;
     }
 
     /*
@@ -495,6 +600,11 @@ module Python {
         var v = Py_BuildValue("s", val.c_str());
         this.checkException();
         return v;
+      } else if t == bytes {
+        var v =
+          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(c_size_t));
+        this.checkException();
+        return v;
       } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
         return toList(val);
       } else if isArrayType(t) && val.isAssociative() {
@@ -549,6 +659,12 @@ module Python {
         Py_DECREF(obj);
         this.checkException();
         return v;
+      } else if t == bytes {
+        var v =
+          bytes.createCopyingBuffer(PyBytes_AsString(obj), PyBytes_Size(obj));
+        this.checkException();
+        Py_DECREF(obj);
+        return v;
       } else if isArrayType(t) {
         // we need to create a dummy array to determine the type
         pragma "no init"
@@ -563,9 +679,9 @@ module Python {
         }
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
-      } else if isSubtype(t, Function) {
-        return new Function("<unknown>", obj);
-      } else if isSubtype(t, Value) || isSubtype(t, Value?) {
+      } else if isSubtype(t, Function?) {
+        return new t(this, "<unknown>", obj);
+      } else if isSubtype(t, Value?) {
         return new t(this, obj);
       } else if t == NoneType {
         // returning NoneType can be used to ignore a return value
@@ -582,7 +698,8 @@ module Python {
     */
     @chpldoc.nodoc
     proc toList(arr): PyObjectPtr throws
-      where isArrayType(arr.type) && arr.rank == 1 && arr.isDefaultRectangular() {
+      where isArrayType(arr.type) &&
+            arr.rank == 1 && arr.isDefaultRectangular() {
       var pyList = PyList_New(arr.size.safeCast(c_size_t));
       this.checkException();
       for i in 0..<arr.size {
@@ -639,7 +756,7 @@ module Python {
     @chpldoc.nodoc
     proc fromList(type T, obj: PyObjectPtr): T throws where isSubtype(T, List.list) {
 
-      if (PySequence_Check(obj) != 0) {
+      if PySequence_Check(obj) != 0 {
         // if it's a sequence with a known size, we can just iterate over it
         var res = new T();
         for i in 0..<PySequence_Size(obj) {
@@ -649,7 +766,7 @@ module Python {
         }
         Py_DECREF(obj);
         return res;
-      } else if (PyIter_Check(obj) != 0 || PyGen_Check(obj) != 0) {
+      } else if PyIter_Check(obj) != 0 || PyGen_Check(obj) != 0 {
         // if it's an iterator, we can iterate over it
         var res = new T();
         while true {
@@ -687,7 +804,8 @@ module Python {
 
 
     /*
-      Converts an associative array to a python dictionary. Returns a new reference.
+      Converts an associative array to a python dictionary.
+      Returns a new reference.
     */
     @chpldoc.nodoc
     proc toDict(arr): PyObjectPtr throws
@@ -706,7 +824,8 @@ module Python {
     // TODO: convert chapel map to python dict
 
     /*
-      Converts a python dictionary to an associative array. Steals a reference to obj.
+      Converts a python dictionary to an associative array.
+      Steals a reference to obj.
     */
     proc fromDict(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
@@ -741,7 +860,8 @@ module Python {
   }
 
   /*
-    Represents a Python exception, either forwarded from Python (i.e. :proc:`Interpreter.checkException`) or thrown directly in Chapel code.
+    Represents a Python exception, either forwarded from Python
+    (i.e. :proc:`Interpreter.checkException`) or thrown directly in Chapel code.
   */
   class Exception: Error {
     /*
@@ -759,7 +879,8 @@ module Python {
       super.init(message);
     }
     @chpldoc.nodoc
-    proc type build(interp: borrowed Interpreter, exc: PyObjectPtr): owned PythonException throws {
+    proc type build(interp: borrowed Interpreter,
+                    exc: PyObjectPtr): owned PythonException throws {
       assert(exc != nil);
       var py_str = PyObject_Str(exc);
       var str = interp.fromPython(string, py_str);
@@ -780,7 +901,8 @@ module Python {
     }
   }
   /*
-    Represents an exception caused by code in the Chapel module, not forwarded from Python.
+    Represents an exception caused by code in the Chapel module,
+    not forwarded from Python.
   */
   class ChapelException: Exception {
     proc init(in message: string) {
@@ -800,7 +922,7 @@ module Python {
 
 
   //
-  // TODO: using an interface is the ideal here, but there are too many limitations
+  // TODO: using an interface is the ideal, but there are too many limitations
   //
   // interface typeConverter {
   //   proc Self.handlesType(type T): bool;
@@ -818,7 +940,8 @@ module Python {
     To create a custom type converter, subclass this class and implement the
     :proc:`~TypeConverter.handlesType`, :proc:`~TypeConverter.toPython`, and
     :proc:`~TypeConverter.fromPython` methods. Then register an instance of this
-    class with the interpreter by calling :proc:`~Interpreter.registerConverter`.
+    class with the interpreter by calling
+    :proc:`~Interpreter.registerConverter`.
   */
   class TypeConverter {
     /*
@@ -884,6 +1007,19 @@ module Python {
       this.obj = obj;
       this.isOwned = isOwned;
       init this;
+    }
+
+    /*
+      Creates a new Python object from a pickle.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg pickleData: The pickle data to load.
+    */
+    proc init(in interpreter: borrowed Interpreter, pickleData: bytes) throws {
+      this.interpreter = interpreter;
+      this.isOwned = true;
+      init this;
+      this.obj = this.interpreter.loadPickle(pickleData);
     }
     /*
       Creates a new Python object from a Chapel value.
@@ -1070,8 +1206,31 @@ module Python {
       Import a Python module by name.
     */
     proc init(interpreter: borrowed Interpreter, in modName: string) {
-      super.init(interpreter, PyImport_ImportModule(modName.c_str()), isOwned=true);
+      super.init(interpreter,
+                 PyImport_ImportModule(modName.c_str()), isOwned=true);
       this.modName = modName;
+    }
+
+    /*
+      Import a Python module from a string using an arbitrary name.
+    */
+    proc init(interpreter: borrowed Interpreter,
+              in modName: string, in moduleContents: string) throws {
+      super.init(interpreter, nil: PyObjectPtr);
+      this.modName = modName;
+      init this;
+      this.obj = interpreter.compileModule(moduleContents, modName);
+    }
+
+    /*
+      Import a Python module from a string using an arbitrary name.
+    */
+    proc init(interpreter: borrowed Interpreter,
+              in modName: string, in moduleBytecode: bytes) throws {
+      super.init(interpreter, nil: PyObjectPtr);
+      this.modName = modName;
+      init this;
+      this.obj = interpreter.compileModule(moduleBytecode, modName);
     }
   }
 
@@ -1082,11 +1241,14 @@ module Python {
     @chpldoc.nodoc
     var fnName: string;
 
-    proc init(mod: borrowed Module, in fnName: string) {
-      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), fnName.c_str()), isOwned=true);
+    proc init(mod: borrowed Value, in fnName: string) {
+      super.init(mod.interpreter,
+                 PyObject_GetAttrString(mod.get(), fnName.c_str()),
+                 isOwned=true);
       this.fnName = fnName;
     }
-    proc init(interpreter: borrowed Interpreter, in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
+    proc init(interpreter: borrowed Interpreter,
+              in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
       this.fnName = fnName;
     }
@@ -1096,6 +1258,10 @@ module Python {
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
     }
+    proc init(in interpreter: borrowed Interpreter,
+              obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
   }
 
 
@@ -1103,10 +1269,19 @@ module Python {
     Represents a Python class.
   */
   class Class: Value {
+    @chpldoc.nodoc
     var className: string;
-    proc init(mod: borrowed Module, in className: string) {
-      super.init(mod.interpreter, PyObject_GetAttrString(mod.get(), className.c_str()), isOwned=true);
+    proc init(mod: borrowed Value, in className: string) {
+      super.init(mod.interpreter,
+                 PyObject_GetAttrString(mod.get(), className.c_str()),
+                 isOwned=true);
       this.className = className;
+    }
+
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
     }
 
     @chpldoc.nodoc
@@ -1140,7 +1315,8 @@ module Python {
   */
   class ClassObject: Value {
     @chpldoc.nodoc
-    proc init(interp: borrowed Interpreter, in obj: PyObjectPtr, isOwned: bool = true) {
+    proc init(interp: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interp, obj, isOwned=isOwned);
     }
 
@@ -1234,8 +1410,8 @@ module Python {
   }
 
   /*
-    Represents the current thread state. This saves and restores the current thread
-    state.
+    Represents the current thread state. This saves and restores the current
+    thread state.
 
     .. warning::
 
@@ -1263,7 +1439,8 @@ module Python {
     proc ref deinit() do this.restore();
 
     /*
-      Saves the current thread state. If the state is already saved, this is a no-op.
+      Saves the current thread state. If the state is already saved, this
+      is a no-op.
     */
     proc ref save() {
       if !saved {
@@ -1327,6 +1504,7 @@ module Python {
   @chpldoc.nodoc
   module CPythonInterface {
     require "Python.h";
+    require "marshal.h";
     require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
@@ -1349,8 +1527,6 @@ module Python {
       PyConfig
     */
     extern record PyConfig {
-      // TODO: this fails LLVM ir verification, because the fields are out of order
-      // but the chapel spec says the order doesn't matter?
       var isolated: c_int;
       var user_site_directory: c_int;
       var site_import: c_int;
@@ -1367,12 +1543,19 @@ module Python {
     extern proc PyConfig_InitIsolatedConfig(config_: c_ptr(PyConfig));
     extern proc PyConfig_InitPythonConfig(config_: c_ptr(PyConfig));
 
-    extern proc PyConfig_SetString(config_: c_ptr(PyConfig), config_str: c_ptr(c_ptr(c_wchar)), str: c_ptr(c_wchar)): PyStatus;
-    extern proc PyConfig_SetBytesString(config_: c_ptr(PyConfig), config_str: c_ptr(c_ptr(c_wchar)), str: c_ptrConst(c_char)): PyStatus;
+    extern proc PyConfig_SetString(config_: c_ptr(PyConfig),
+                                   config_str: c_ptr(c_ptr(c_wchar)),
+                                   str: c_ptr(c_wchar)): PyStatus;
+    extern proc PyConfig_SetBytesString(config_: c_ptr(PyConfig),
+                                        config_str: c_ptr(c_ptr(c_wchar)),
+                                        str: c_ptrConst(c_char)): PyStatus;
 
     extern type PyWideStringList;
-    extern proc PyWideStringList_Append(list: c_ptr(PyWideStringList), str: c_ptr(c_wchar)): PyStatus;
-    extern proc PyWideStringList_Insert(list: c_ptr(PyWideStringList), idx: c_int, str: c_ptr(c_wchar)): PyStatus;
+    extern proc PyWideStringList_Append(list: c_ptr(PyWideStringList),
+                                        str: c_ptr(c_wchar)): PyStatus;
+    extern proc PyWideStringList_Insert(list: c_ptr(PyWideStringList),
+                                        idx: c_int,
+                                        str: c_ptr(c_wchar)): PyStatus;
 
     /*
       PyPreConfig
@@ -1395,7 +1578,7 @@ module Python {
     extern proc Py_InitializeFromConfig(config_: c_ptr(PyConfig)): PyStatus;
     extern proc PyStatus_Exception(in status: PyStatus): bool;
     extern proc Py_Finalize();
-    extern proc Py_INCREF(obj: PyObjectPtr);
+    extern "chpl_Py_INCREF" proc Py_INCREF(obj: PyObjectPtr);
     extern "chpl_Py_DECREF" proc Py_DECREF(obj: PyObjectPtr);
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
     extern proc PyMem_Free(ptr: c_ptr(void));
@@ -1414,13 +1597,23 @@ module Python {
 
 
     extern var Py_eval_input: c_int;
+    extern var Py_file_input: c_int;
     extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int,
-                             globals: PyObjectPtr, locals: PyObjectPtr): PyObjectPtr;
+                             globals: PyObjectPtr,
+                             locals: PyObjectPtr): PyObjectPtr;
+    extern proc Py_CompileString(code: c_ptrConst(c_char),
+                                 filename: c_ptrConst(c_char),
+                                 start: c_int): PyObjectPtr;
+    extern proc PyImport_ExecCodeModule(name: c_ptrConst(c_char),
+                                        code: PyObjectPtr): PyObjectPtr;
+    extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
+                                               size: c_size_t): PyObjectPtr;
+
 
     /*
       Threading
     */
-    extern proc PyEval_SaveThread():PyThreadStatePtr;
+    extern proc PyEval_SaveThread(): PyThreadStatePtr;
     extern proc PyEval_RestoreThread(state: PyThreadStatePtr);
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
@@ -1431,7 +1624,8 @@ module Python {
     */
     extern proc PyErr_Occurred(): PyObjectPtr;
     extern proc chpl_PyErr_GetRaisedException(): PyObjectPtr;
-    extern proc PyErr_GivenExceptionMatches(given: PyObjectPtr, exc: PyObjectPtr): c_int;
+    extern proc PyErr_GivenExceptionMatches(given: PyObjectPtr,
+                                            exc: PyObjectPtr): c_int;
     extern const PyExc_ImportError: PyObjectPtr;
 
     /*
@@ -1449,6 +1643,10 @@ module Python {
     extern proc PyBool_FromLong(v: c_long): PyObjectPtr;
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
+    extern proc PyBytes_AsString(obj: PyObjectPtr): c_ptrConst(c_char);
+    extern proc PyBytes_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
+                                          size: c_size_t): PyObjectPtr;
 
     proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
@@ -1468,8 +1666,11 @@ module Python {
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
     extern proc PySequence_Size(obj: PyObjectPtr): c_size_t;
-    extern proc PySequence_GetItem(obj: PyObjectPtr, idx: c_size_t): PyObjectPtr;
-    extern proc PySequence_SetItem(obj: PyObjectPtr, idx: c_size_t, value: PyObjectPtr);
+    extern proc PySequence_GetItem(obj: PyObjectPtr,
+                                   idx: c_size_t): PyObjectPtr;
+    extern proc PySequence_SetItem(obj: PyObjectPtr,
+                                   idx: c_size_t,
+                                   value: PyObjectPtr);
 
 
     /*
@@ -1484,10 +1685,14 @@ module Python {
     */
     extern proc PyList_Check(obj: PyObjectPtr): c_int;
     extern proc PyList_New(size: c_size_t): PyObjectPtr;
-    extern proc PyList_SetItem(list: PyObjectPtr, idx: c_size_t, item: PyObjectPtr);
+    extern proc PyList_SetItem(list: PyObjectPtr,
+                               idx: c_size_t,
+                               item: PyObjectPtr);
     extern proc PyList_GetItem(list: PyObjectPtr, idx: c_size_t): PyObjectPtr;
     extern proc PyList_Size(list: PyObjectPtr): c_size_t;
-    extern proc PyList_Insert(list: PyObjectPtr, idx: c_size_t, item: PyObjectPtr);
+    extern proc PyList_Insert(list: PyObjectPtr,
+                              idx: c_size_t,
+                              item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
 
     /*
@@ -1502,10 +1707,14 @@ module Python {
       Dictionaries
     */
     extern proc PyDict_New(): PyObjectPtr;
-    extern proc PyDict_SetItem(dict: PyObjectPtr, key: PyObjectPtr, value: PyObjectPtr);
-    extern proc PyDict_SetItemString(dict: PyObjectPtr, key: c_ptrConst(c_char),
+    extern proc PyDict_SetItem(dict: PyObjectPtr,
+                               key: PyObjectPtr,
+                               value: PyObjectPtr);
+    extern proc PyDict_SetItemString(dict: PyObjectPtr,
+                                     key: c_ptrConst(c_char),
                                      value: PyObjectPtr);
-    extern proc PyDict_GetItem(dict: PyObjectPtr, key: PyObjectPtr): PyObjectPtr;
+    extern proc PyDict_GetItem(dict: PyObjectPtr,
+                               key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyDict_Size(dict: PyObjectPtr): c_size_t;
@@ -1525,16 +1734,22 @@ module Python {
     /*
       Functions
     */
-    extern proc PyObject_Call(obj: PyObjectPtr, args: PyObjectPtr, kwargs: PyObjectPtr): PyObjectPtr;
-    extern proc PyObject_CallObject(obj: PyObjectPtr, args: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_Call(obj: PyObjectPtr,
+                              args: PyObjectPtr,
+                              kwargs: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallObject(obj: PyObjectPtr,
+                                    args: PyObjectPtr): PyObjectPtr;
     extern proc PyObject_CallNoArgs(obj: PyObjectPtr): PyObjectPtr;
-    extern proc PyObject_CallOneArg(obj: PyObjectPtr, arg: PyObjectPtr): PyObjectPtr;
-    extern proc PyObject_CallFunctionObjArgs(obj: PyObjectPtr, args...): PyObjectPtr;
+    extern proc PyObject_CallOneArg(obj: PyObjectPtr,
+                                    arg: PyObjectPtr): PyObjectPtr;
+    extern proc PyObject_CallFunctionObjArgs(obj: PyObjectPtr,
+                                             args...): PyObjectPtr;
 
     extern proc PyObject_CallMethodNoArgs(obj: PyObjectPtr,
                                           method: PyObjectPtr): PyObjectPtr;
     extern proc PyObject_CallMethodObjArgs(obj: PyObjectPtr,
-                                           method: PyObjectPtr, args...): PyObjectPtr;
+                                           method: PyObjectPtr,
+                                           args...): PyObjectPtr;
 
   }
 }

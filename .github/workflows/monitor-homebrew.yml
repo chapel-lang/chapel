@@ -1,0 +1,78 @@
+name: Monitor Homebrew Formula
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  schedule:
+    - cron: '0 */4 * * *' # Runs every 4 hours
+
+
+env:
+  file_changed: ${{ false }}
+  branch_exists: ${{ false }}
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v4
+
+    - name: Fetch released version of Chapel formula
+      run: |
+        curl -o hb_master_chapel.rb https://raw.githubusercontent.com/homebrew/homebrew-core/master/Formula/c/chapel.rb
+        FILE_HASH=$(sha256sum hb_master_chapel.rb | awk '{ print $1 }')
+        HASH_SUBSTRING=${FILE_HASH:0:7}
+        echo "FILE_HASH=$FILE_HASH" >> $GITHUB_ENV
+        echo "HASH_SUBSTRING=$HASH_SUBSTRING" >> $GITHUB_ENV
+
+    - name: Compare the released version with the chapel-release.rb
+      id: compare
+      run: |
+        if ! cmp -s hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb; then
+          echo "file_changed=true" >> $GITHUB_ENV
+        else
+          echo "file_changed=false" >> $GITHUB_ENV
+        fi
+
+    - name: Check if branch already exists
+      id: check-branch
+      if: ${{ env.file_changed == 'true' }}
+      run: |
+        BRANCH_NAME=update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        if git ls-remote --heads origin $BRANCH_NAME | grep -q $BRANCH_NAME; then
+          echo "Branch $BRANCH_NAME already exists."
+          echo "branch_exists=true" >> $GITHUB_ENV
+        else
+          echo "Branch $BRANCH_NAME does not exist."
+          echo "branch_exists=false" >> $GITHUB_ENV
+        fi
+
+    - name: Exit if branch exists
+      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'true') }}
+      run: |
+        echo "Branch already exists. Exiting."
+        exit 0
+
+    - name: Create a new branch if file has changed
+      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'false') }}
+      run: |
+        git config --global user.email "github-action-bot@email.com"
+        git config --global user.name "github action"
+        git checkout -b update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        mv hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb
+        git add util/packaging/homebrew/chapel-release.rb
+        git commit -m "Update chapel-main.rb with changes from chapel.rb" --signoff
+        git push --set-upstream origin update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        echo "Homebrew has updated the formula!"
+
+    - name: create pull request
+      if: ${{ (env.file_changed == 'true') && (env.branch_exists == 'false') }}
+      run: >
+        gh pr create
+        -B main
+        -H update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
+        --title 'Update our copy of the released Homebrew formula'
+        --body 'Homebrew released formula file hash is ${{ env.FILE_HASH }}. Created by Github action'
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

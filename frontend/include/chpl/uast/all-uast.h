@@ -30,7 +30,6 @@
 #include "chpl/uast/Break.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/BytesLiteral.h"
-#include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Catch.h"
 #include "chpl/uast/Class.h"

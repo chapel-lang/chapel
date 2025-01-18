@@ -450,9 +450,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
     case asttags::BytesLiteral:
       typePtr = CompositeType::getBytesType(context);
       break;
-    case asttags::CStringLiteral:
-      typePtr = CStringType::get(context);
-      break;
     case asttags::StringLiteral:
       typePtr = CompositeType::getStringType(context);
       break;
@@ -1804,9 +1801,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
 
   // The constant 'one' for adding
-  auto one = QualifiedType(QualifiedType::PARAM,
-                           IntType::get(context, 0),
-                           IntParam::get(context, 1));
+  auto one = QualifiedType::makeParamInt(context, 1);
 
   // A type to track what kind of signedness a value needs.
   enum RequiredSignedness {
@@ -1944,9 +1939,7 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
                                    UintType::get(context, 0),
                                    UintParam::get(context, (uint64_t) *signedValue));
       } else {
-        resultType = QualifiedType(QualifiedType::PARAM,
-                                   IntType::get(context, 0),
-                                   IntParam::get(context, *signedValue));
+        resultType = QualifiedType::makeParamInt(context, *signedValue);
       }
     }
 
@@ -2828,9 +2821,14 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
 
-  if (!sig->isInitializer() && sig->needsInstantiation()) {
-    CHPL_ASSERT(false && "Should only be called on concrete or fully "
-                         "instantiated functions");
+  // Signature should be concrete by now, except in the case of an initializer
+  // or type constructor in which case we may still have generic formals.
+  // For example, range(?) will reach this point.
+  if (!sig->isInitializer() && !sig->untyped()->isTypeConstructor() &&
+      sig->needsInstantiation()) {
+    CHPL_ASSERT(false &&
+                "Should only be called on concrete or fully "
+                "instantiated functions");
     return nullptr;
   }
 
@@ -3970,10 +3968,7 @@ static bool resolveFnCallSpecial(Context* context,
         if (srcQtEnumType && dstTy->isStringType()) {
           std::ostringstream oss;
           srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-          auto ustr = UniqueString::get(context, oss.str());
-          exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                      RecordType::getStringType(context),
-                                      StringParam::get(context, ustr));
+          exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
         }
 
@@ -3998,10 +3993,7 @@ static bool resolveFnCallSpecial(Context* context,
       // handle casting a type name to a string
       std::ostringstream oss;
       srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-      auto ustr = UniqueString::get(context, oss.str());
-      exprTypeOut = QualifiedType(QualifiedType::PARAM,
-                                  RecordType::getStringType(context),
-                                  StringParam::get(context, ustr));
+      exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
       // cast (borrowed class) : unmanaged
@@ -4036,13 +4028,9 @@ static bool resolveFnCallSpecial(Context* context,
   }
 
   if ((ci.name() == USTR("==") || ci.name() == USTR("!="))) {
-    if (ci.numActuals() == 2 || ci.hasQuestionArg()) {
+    if (ci.numActuals() == 2) {
       auto lhs = ci.actual(0).type();
-
-      // support comparisons with '?'
-      auto rhs = ci.hasQuestionArg() ?
-                   QualifiedType(QualifiedType::TYPE, AnyType::get(context)) :
-                   ci.actual(1).type();
+      auto rhs = ci.actual(1).type();
 
       bool bothType = lhs.kind() == QualifiedType::TYPE &&
                       rhs.kind() == QualifiedType::TYPE;
@@ -4051,8 +4039,26 @@ static bool resolveFnCallSpecial(Context* context,
       if (bothType || bothParam) {
         bool result = lhs == rhs;
         result = ci.name() == USTR("==") ? result : !result;
-        exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                    BoolParam::get(context, result));
+        exprTypeOut = QualifiedType::makeParamBool(context, result);
+        return true;
+      }
+    } else if (ci.numActuals() == 1 && ci.hasQuestionArg()) {
+      // support type and param comparisons with '?'
+      // TODO: will likely need adjustment once we are able to compare a
+      // partially-instantiated type's fields with '?'
+      auto arg = ci.actual(0).type();
+      bool result = false;
+      bool haveResult = true;
+      if (arg.isType()) {
+        result = arg.type()->isAnyType();
+      } else if (arg.isParam()) {
+        result = arg.param() == nullptr;
+      } else {
+        haveResult = false;
+      }
+      result = ci.name() == USTR("==") ? result : !result;
+      if (haveResult) {
+        exprTypeOut = QualifiedType::makeParamBool(context, result);
         return true;
       }
     }
@@ -4082,8 +4088,7 @@ static bool resolveFnCallSpecial(Context* context,
     }
     auto got = canPassScalar(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
-    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                                BoolParam::get(context, result));
+    exprTypeOut = QualifiedType::makeParamBool(context, result);
     return true;
   }
 
@@ -5727,7 +5732,7 @@ struct InterfaceCheckHelper {
     if (checkedYield) {
       // we checked the return type above, no more checks needed here.
     } else if (templateT != c.exprType().type()) {
-      // with the esxception of promotion, we expect an exact return type match
+      // with the exception of promotion, we expect an exact return type match
       if (!c.exprType().type()->isPromotionIteratorType()) {
         rc->context()->error(implPointId, "return type mismatch");
         return false;
@@ -6382,9 +6387,7 @@ QualifiedType paramTypeFromValue(Context* context, T value);
 
 template <>
 QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, value));
+  return QualifiedType::makeParamBool(context, value);
 }
 
 const std::unordered_map<UniqueString, QualifiedType>&

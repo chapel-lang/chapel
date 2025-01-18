@@ -120,7 +120,6 @@
 
     AST_BEGIN_SUBCLASSES(StringLikeLiteral)
       AST_LEAF(BytesLiteral)
-      AST_LEAF(CStringLiteral)
       AST_LEAF(StringLiteral)
     AST_END_SUBCLASSES(StringLikeLiteral)
 

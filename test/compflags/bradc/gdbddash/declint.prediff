@@ -1,8 +1,8 @@
-#!/bin/csh -f
-set testname = $1
-set outfile = $2
+#!/bin/bash
 
-set tmpfile = $outfile.raw.tmp
+outfile=$2
+
+tmpfile=$outfile.raw.tmp
 
 #
 # some gdbs print out extra stuff.  This filters it out

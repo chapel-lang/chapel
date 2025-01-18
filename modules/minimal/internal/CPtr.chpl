@@ -28,4 +28,14 @@ module CPtr {
   class c_ptr {
     type eltType;
   }
+
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  pragma "c_ptrConst class"
+  class c_ptrConst {
+    type eltType;
+  }
 }

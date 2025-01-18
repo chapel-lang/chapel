@@ -1205,8 +1205,7 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       auto ast = parsing::idToAst(context, enumType->id())->toEnum();
       CHPL_ASSERT(ast);
       int numElts = ast->numElements();
-      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                             IntParam::get(context, numElts));
+      result = QualifiedType::makeParamInt(context, numElts);
       return true;
     }
     CHPL_ASSERT(false && "unhandled compiler-generated enum method");
@@ -1299,8 +1298,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
              untyped->name() == "size") {
     auto tup = sig->formalType(0).type()->toTupleType();
-    result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, tup->numElements()));
+    result = QualifiedType::makeParamInt(context, tup->numElements());
     return true;
 
     // if method call and the receiver points to a composite type definition,

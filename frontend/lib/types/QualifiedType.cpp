@@ -20,6 +20,7 @@
 #include "chpl/types/QualifiedType.h"
 
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/all-types.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/TupleType.h"
@@ -50,6 +51,25 @@ bool QualifiedType::isParamKnownTuple() const {
     }
   }
   return false;
+}
+
+QualifiedType QualifiedType::makeParamBool(Context* context, bool b) {
+  return {QualifiedType::PARAM, BoolType::get(context),
+          BoolParam::get(context, b)};
+}
+
+QualifiedType QualifiedType::makeParamInt(Context* context, int64_t i) {
+  return {QualifiedType::PARAM, IntType::get(context, 0),
+          IntParam::get(context, i)};
+}
+
+QualifiedType QualifiedType::makeParamString(Context* context, UniqueString s) {
+  return {QualifiedType::PARAM, RecordType::getStringType(context),
+          StringParam::get(context, s)};
+}
+
+QualifiedType QualifiedType::makeParamString(Context* context, std::string s) {
+  return makeParamString(context, UniqueString::get(context, s));
 }
 
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {

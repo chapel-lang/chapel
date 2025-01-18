@@ -1,5 +1,2 @@
-minModFnRefArg.chpl:5: In function 'foo':
-minModFnRefArg.chpl:6: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-minModFnRefArg.chpl:14: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
 1
 2

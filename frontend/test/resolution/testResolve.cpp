@@ -1816,6 +1816,64 @@ static void testCallableAmbiguity() {
   assert(guard.realizeErrors());
 }
 
+// Test use of the 'scalar promotion type' primitive.
+// Implementation of getting promotion types is tested more thoroughly
+// elsewhere, so this is just a very basic test the prims works as expected.
+static void testPromotionPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  {
+    std::string prog =
+      R"""(
+        var d : domain(1, real);
+        type t = __primitive("scalar promotion type", d);
+        param x = (t == real);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+        type t = __primitive("scalar promotion type", int);
+        param x = (t == int);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
+// Test the '_wide_get_locale' primitive.
+static void testGetLocalePrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      var x : real;
+      var locId = __primitive("_wide_get_locale", x);
+      var sublocId = chpl_sublocFromLocaleID(locId);
+    )""", { "locId", "sublocId" });
+
+  auto locId = variables.at("locId");
+  assert(locId.type());
+  assert(locId.type() == CompositeType::getLocaleIDType(context));
+  auto sublocId = variables.at("sublocId");
+  assert(sublocId.type());
+  assert(sublocId.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -1850,6 +1908,9 @@ int main() {
   testFormalFunctionShadowing();
   testFunctionFormalShadowing();
   testCallableAmbiguity();
+
+  testPromotionPrim();
+  testGetLocalePrim();
 
   return 0;
 }

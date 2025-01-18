@@ -104,8 +104,7 @@ rebuild Chapel from source in a different configuration:
 
   - Or, use ``export CHPL_LLVM=bundled`` to have Chapel build and use the
     bundled version of LLVM. Note that building the bundled version of
-    LLVM can take a long time and requires CMake version 3.13.4 or
-    higher.
+    LLVM can take a long time.
 
   - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM

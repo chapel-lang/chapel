@@ -1,3 +1,7 @@
-var xyz = 1: int(8);
 extern proc printf(f, x);
-printf(c"%d\n", xyz);
+extern {
+  const char* formatStr = "%d\n";
+}
+
+var xyz = 1: int(8);
+printf(formatStr, xyz);

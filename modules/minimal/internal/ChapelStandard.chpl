@@ -28,4 +28,7 @@ module ChapelStandard {
   public use MemTracking;
   public use ChapelUtil;
   public use IO;
+
+  // Bring this in without exporting so that compiler-generated uses work
+  use CTypes;
 }

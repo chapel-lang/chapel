@@ -330,6 +330,34 @@ static void test6() {
   assert(guard.numErrors() == 0);
 }
 
+static void test7() {
+  printf("test7\n");
+
+  std::string program = R"""(
+    class Parent {
+    }
+
+    class Child : Parent {
+    }
+
+    proc test(type T: Parent) {
+      var ret = new unmanaged T();
+      return ret;
+    }
+
+    var x = test(Child);
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto x = resolveQualifiedTypeOfX(context, program);
+  auto t = x.type()->toClassType();
+  assert(t);
+  assert(t->decorator().isUnmanaged());
+  assert(t->decorator().isNonNilable());
+  assert(t->basicClassType()->name() == "Parent");
+}
+
 
 
 int main() {
@@ -339,6 +367,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }

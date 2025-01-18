@@ -73,7 +73,7 @@ class GridVariable {
 //-------------------------------------------------------
 
 proc GridVariable.setToFunction(
-  f: func(dimension*real, real)
+  f: proc(_: dimension*real): real
 ){
 
   //==== Evaluate and store f(x) ====

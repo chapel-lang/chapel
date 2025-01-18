@@ -152,7 +152,6 @@ struct Visitor {
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
-  void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -199,7 +198,6 @@ struct Visitor {
   void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
-  void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const Foreach* node);
   void visit(const ForwardingDecl* node);
@@ -2091,18 +2089,9 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
-void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-  warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
-}
-
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
 }
-
-void Visitor::visit(const CStringLiteral* node) {
-  checkCStringLiteral(node);
-}
-
 
 } // end anonymous namespace
 
