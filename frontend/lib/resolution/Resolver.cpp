@@ -3857,6 +3857,8 @@ bool Resolver::enter(const uast::Manage* manage) {
     }
     managerExpr->traverse(*this);
 
+    if (scopeResolveOnly) continue;
+
     auto& rr = byPostorder.byAst(managerExpr);
     if (rr.type().isUnknownOrErroneous()) continue;
 
