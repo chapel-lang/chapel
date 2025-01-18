@@ -4,3 +4,4 @@ CHPL_COMM != none
 COMPOPTS <= --no-local
 CHPL_LOCALE_MODEL != flat
 EXECOPTS <= memLeaks
+CHPL_LLVM == none

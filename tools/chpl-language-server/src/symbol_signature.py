@@ -183,8 +183,6 @@ def _node_to_string(node: chapel.AstNode, sep="") -> List[Component]:
         return [_wrap_str(node.text())]
     elif isinstance(node, chapel.StringLiteral):
         return [_wrap_str('"' + node.value() + '"')]
-    elif isinstance(node, chapel.CStringLiteral):
-        return [_wrap_str('c"' + node.value() + '"')]
     elif isinstance(node, chapel.FnCall):
         return _fncall_to_string(node)
     elif isinstance(node, chapel.OpCall):
