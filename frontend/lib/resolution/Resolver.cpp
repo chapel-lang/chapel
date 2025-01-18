@@ -994,9 +994,7 @@ handleRejectedCandidates(Context* context,
                          const std::vector<const uast::AstNode*>& actualAsts) {
   // By performing some processing in the resolver, we can issue a nicer error
   // explaining why each candidate was rejected.
-  std::vector<resolution::FormalActual> badPasses;
   std::vector<const uast::VarLikeDecl*> actualDecls;
-  badPasses.resize(rejected.size());
   actualDecls.resize(rejected.size());
   // check each rejected candidate for uninitialized actuals
   for (size_t i = 0; i < rejected.size(); i++) {
@@ -1008,7 +1006,6 @@ handleRejectedCandidates(Context* context,
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto& badPass = fa.byFormalIdx(candidate.formalIdx());
-      badPasses[i] = badPass;
       const uast::AstNode *actualExpr = nullptr;
       const uast::VarLikeDecl *actualDecl = nullptr;
       if (call && 0 <= badPass.actualIdx() &&
@@ -1028,8 +1025,8 @@ handleRejectedCandidates(Context* context,
       actualDecls[i] = actualDecl;
     }
   }
-  CHPL_ASSERT(badPasses.size() == rejected.size() && rejected.size() == actualDecls.size());
-  CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, badPasses, actualDecls);
+  CHPL_ASSERT(rejected.size() == actualDecls.size());
+  CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, actualDecls);
 }
 
 static void varArgTypeQueryError(Context* context,
@@ -1947,10 +1944,9 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                      ci.name().c_str());
     } else {
       std::vector<const uast::VarLikeDecl*> uninitializedActuals;
-      std::vector<resolution::FormalActual> faPairs;
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
-      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, faPairs, uninitializedActuals);
+      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, uninitializedActuals);
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");
