@@ -660,8 +660,8 @@ module Python {
         this.checkException();
         return v;
       } else if t == bytes {
-        var v =
-          bytes.createCopyingBuffer(PyBytes_AsString(obj), PyBytes_Size(obj));
+        var v = bytes.createCopyingBuffer(PyBytes_AsString(obj),
+                                          PyBytes_Size(obj).safeCast(int));
         this.checkException();
         Py_DECREF(obj);
         return v;
