@@ -3905,11 +3905,21 @@ bool Resolver::enter(const uast::Manage* manage) {
       auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
 
 
-      // Performance: We are taking a very simple path through resolveNamedDecl
-      // here, but it seems good to share the logic.
+      // This is effectively a variable declaration with an initialization
+      // expression being 'enterContext()'. The same semantics
+      // are expected. As a result, we call resolveNamedDecl to handle this.
       //
-      // Normal declarations don't do 'ref' and 'const ref' checking because
-      // it's not implemented, and we follow suit.
+      // Performance: We are taking a very simple path through resolveNamedDecl
+      // here (most conditions it checks for are 'false': finding substitutions,
+      // detecting 'this' formals, handling 'extern' variables). However,
+      // it seems good to share the general logic.
+      //
+      // It's possible for the enterContext() method to e.g., provide a value
+      // when the declaration is a ref. We don't check for that here specifically,
+      // since the behavior ought to be the same as trying to assign a value to
+      // a ref variable. However, 'resolveNamedDecl' does not handle that case
+      // at the time of writing, and therefore we effectively don't handle it
+      // here either.
       resolveNamedDecl(asVar, contextReturnType);
       accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
     }
@@ -3931,11 +3941,12 @@ bool Resolver::enter(const uast::Manage* manage) {
         // a ResolvedExpression.
         auto overloadsIt = witness->returnIntentOverloads().find(id);
         if (overloadsIt != witness->returnIntentOverloads().end()) {
-          bool ignoreAmbiguity;
+          bool ambiguity;
           auto bestCandidate =
             determineBestReturnIntentOverload(overloadsIt->second,
                                               accessContext,
-                                              ignoreAmbiguity);
+                                              ambiguity);
+          CHPL_ASSERT(!ambiguity);
           CHPL_ASSERT(bestCandidate);
           enterSig = bestCandidate->fn();
         } else {

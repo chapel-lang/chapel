@@ -69,8 +69,31 @@ static void testResourceByVar() {
   assert(x.type()->isIntType());
 }
 
+static void testResourceByVarExplicit() {
+  // test saving the resource into a variable, specifying the 'var' intent explicitly
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  std::string program =
+    R"""(
+    record R : contextManager {
+      proc type contextReturnType type do return int;
+
+      proc enterContext() {
+        return 42;
+      }
+      proc exitContext(in error: owned Error?) {}
+    }
+    manage new R() as var res {
+      var x = res;
+    }
+    )""";
+
+  auto x = resolveTypesOfVariables(ctx, program, {"x"}).at("x");
+  assert(x.type()->isIntType());
+}
+
 static void testResourceByRef() {
-  // test saving the resource into a variable.
+  // test saving the resource into a variable by reference
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
@@ -96,7 +119,7 @@ static void testResourceByRef() {
 }
 
 static void testResourceByConstRef() {
-  // test saving the resource into a variable.
+  // test saving the resource into a variable, by const reference
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
@@ -122,7 +145,7 @@ static void testResourceByConstRef() {
 }
 
 static void testInferReturn() {
-  // test saving the resource into a variable.
+  // test inferring 'contextReturnType'
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
@@ -141,7 +164,8 @@ static void testInferReturn() {
 }
 
 static void testReturnIntentOverload() {
-  // test saving the resource into a variable.
+  // test the same context manager being able to call different functions
+  // depending on the return intent and expected kind of the variable.
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
@@ -173,49 +197,59 @@ static void testReturnIntentOverload() {
   assert(modules.size() == 1);
   auto& rr = resolveModule(ctx, modules[0]->id());
 
-  bool found;
+  bool foundEnter, foundExit;
 
   auto byVal = findVariable(modules[0], "byVal");
   auto byValParent = parsing::parentAst(ctx, byVal)->toAs()->symbol();
   assert(byValParent);
   assert(rr.hasAst(byValParent));
-  found = false;
+  foundEnter = foundExit = false;
   for (auto aa : rr.byAst(byValParent).associatedActions()) {
     if (aa.action() == AssociatedAction::ENTER_CONTEXT) {
-      found = true;
+      foundEnter = true;
       assert(aa.fn()->id().symbolPath() == "M.R.enterContext");
+    } else if (aa.action() == AssociatedAction::EXIT_CONTEXT) {
+      foundExit = true;
+      assert(aa.fn()->id().symbolPath() == "M.R.exitContext");
     }
   }
-  assert(found);
+  assert(foundEnter && foundExit);
 
   auto byRef = findVariable(modules[0], "byRef");
   auto byRefParent = parsing::parentAst(ctx, byRef)->toAs()->symbol();
   assert(byRefParent);
   assert(rr.hasAst(byRefParent));
-  found = false;
+  foundEnter = foundExit = false;
   for (auto aa : rr.byAst(byRefParent).associatedActions()) {
     if (aa.action() == AssociatedAction::ENTER_CONTEXT) {
-      found = true;
+      foundEnter = true;
       assert(aa.fn()->id().symbolPath() == "M.R.enterContext#1");
+    } else if (aa.action() == AssociatedAction::EXIT_CONTEXT) {
+      foundExit = true;
+      assert(aa.fn()->id().symbolPath() == "M.R.exitContext");
     }
   }
-  assert(found);
+  assert(foundEnter && foundExit);
 
   auto byConstRef = findVariable(modules[0], "byConstRef");
   auto byConstRefParent = parsing::parentAst(ctx, byConstRef)->toAs()->symbol();
   assert(byConstRefParent);
   assert(rr.hasAst(byConstRefParent));
-  found = false;
+  foundEnter = foundExit = false;
   for (auto aa : rr.byAst(byConstRefParent).associatedActions()) {
     if (aa.action() == AssociatedAction::ENTER_CONTEXT) {
-      found = true;
+      foundEnter = true;
       assert(aa.fn()->id().symbolPath() == "M.R.enterContext#2");
+    } else if (aa.action() == AssociatedAction::EXIT_CONTEXT) {
+      foundExit = true;
+      assert(aa.fn()->id().symbolPath() == "M.R.exitContext");
     }
   }
-  assert(found);
+  assert(foundEnter && foundExit);
 }
 
 static void testNoExplicitImplements() {
+  // We complain about not having an explicit ': contextManager', but still resolve.
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
@@ -234,11 +268,14 @@ static void testNoExplicitImplements() {
 }
 
 static void testWithoutInterfaceMatch() {
+  // Unlike in production, we like the 'owned Error' formal to be called 'error',
+  // and not anything else. This is a consequence of leaning on interfaces
+  // for context managers.
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
   std::string program =
     R"""(
-    record R {
+    record R : contextManager {
       proc enterContext() {
         return 42;
       }
@@ -249,12 +286,22 @@ static void testWithoutInterfaceMatch() {
 
   auto x = resolveTypesOfVariables(ctx, program, {"res"}).at("res");
   assert(x.isUnknownOrErroneous());
-  assert(guard.realizeErrors());
+
+  bool foundError = false;
+  for (auto& error : guard.errors()) {
+    if (error->type() == ErrorType::InterfaceMissingFn) {
+      foundError = true;
+      break;
+    }
+  }
+  assert(foundError);
+  assert(guard.realizeErrors() == 2); // one extra error for "no 'contextManager' on R"
 }
 
 int main() {
   testBasic();
   testResourceByVar();
+  testResourceByVarExplicit();
   testResourceByRef();
   testResourceByConstRef();
   testInferReturn();
