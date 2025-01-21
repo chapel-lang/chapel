@@ -67,7 +67,7 @@ fi
 # This is a place where all releases will be unpacked and built with
 # optimizations on, debugging off.
 #
-export chpl_release_home=/data/cf/chapel/chapel-releases
+export chpl_release_home=/hpcdc/project/chapel/chapel-releases
 
 if [[ -z $CHPL_TEST_PERF_DIR ]]; then
     export CHPL_TEST_PERF_DIR=$CHPL_HOME/test/perfdat-releases
