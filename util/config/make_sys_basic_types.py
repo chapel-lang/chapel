@@ -76,14 +76,14 @@ def main():
 
     # Get the module content first, since it can lead to errors/early exits if
     # something goes wrong.
-    module_content = get_sys_c_types(args.doc)
+    module_content = get_sys_c_types(args.doc,args.minimal)
     with open(args.output_file, 'w') as fp:
         fp.write(module_content)
         fp.write('\n')
     logging.debug('Wrote module to: {0}'.format(args.output_file))
 
 
-def get_sys_c_types(docs=False):
+def get_sys_c_types(docs=False,minimal=False):
     """Returns a string with the ChapelSysCTypes.chpl module content."""
 
     # Find the $CHPL_HOME/util/config/ dir.
@@ -200,22 +200,23 @@ def get_sys_c_types(docs=False):
         if chpl_type == 'c_ptr':
             handled_c_ptr = True
 
-    # Finally, print out set of asserts for module. They assert that the
-    # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.
-    #
-    #   assert(sizeof(c_int) == sizeof(int(32)));
-    #
-    sys_c_types.append("""
-{
-  extern proc sizeof(type t): c_size_t;
-""")
-    for i, max_value in enumerate(max_values):
-        _, chpl_type, _ = _types[i]
-        if chpl_type.startswith('c_'):
-            chpl_value = _max_value_to_chpl_type.get(str(max_value))
-            sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
-                               ';'.format(**locals()))
-    sys_c_types.append('}')
+    if not minimal:
+        # Finally, print out set of asserts for module. They assert that the
+        # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.
+        #
+        #   assert(sizeof(c_int) == sizeof(int(32)));
+        #
+        sys_c_types.append("""
+    {
+      extern proc sizeof(type t): c_size_t;
+    """)
+        for i, max_value in enumerate(max_values):
+            _, chpl_type, _ = _types[i]
+            if chpl_type.startswith('c_'):
+                chpl_value = _max_value_to_chpl_type.get(str(max_value))
+                sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
+                                   ';'.format(**locals()))
+        sys_c_types.append('}')
 
     return '\n'.join(sys_c_types)
 
@@ -252,6 +253,10 @@ def _parse_args():
     parser.add_option(
         '--doc', action='store_true',
         help='Build ChapelSysCTypes module for chpldoc.'
+    )
+    parser.add_option(
+        '--minimal', action='store_true',
+        help='Build ChapelSysCTypes module for minimal modules.'
     )
 
     opts, args = parser.parse_args()
