@@ -1240,7 +1240,7 @@ module Python {
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleContents: string) throws {
-      super.init(interpreter, nil: PyObjectPtr);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
       this.obj = interpreter.compileModule(moduleContents, modName);
@@ -1251,7 +1251,7 @@ module Python {
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleBytecode: bytes) throws {
-      super.init(interpreter, nil: PyObjectPtr);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
       this.obj = interpreter.compileModule(moduleBytecode, modName);
@@ -1277,7 +1277,7 @@ module Python {
       this.fnName = fnName;
     }
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
-      super.init(interpreter, nil:PyObjectPtr, isOwned=true);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
