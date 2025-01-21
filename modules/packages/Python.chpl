@@ -281,6 +281,9 @@ module Python {
        Do not create more than one instance of this class.
   */
   class Interpreter {
+
+    // TODO: add ability to override the global checkExceptions
+    // currently blocked by https://github.com/chapel-lang/chapel/issues/26579
     /*
       Whether to check for exceptions after each Python API call. This is
       important for correctness, but may have a performance impact.
@@ -288,15 +291,15 @@ module Python {
       See :config:`Python.checkExceptions` and
       :method:`Interpreter.checkException` for more information.
     */
-    param checkExceptions: bool = Python.checkExceptions;
+    // param checkExceptions: bool = Python.checkExceptions;
+
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
 
     @chpldoc.nodoc
-    proc init(param checkExceptions = Python.checkExceptions) throws {
-      this.checkExceptions = checkExceptions;
+    proc init() throws {
       init this;
 
       // preinit
@@ -566,7 +569,7 @@ module Python {
          most users should not need to call this method directly.
     */
     inline proc checkException() throws {
-      if this.checkExceptions {
+      if Python.checkExceptions {
         var exc = chpl_PyErr_GetRaisedException();
         if exc then throw PythonException.build(this, exc);
       }
