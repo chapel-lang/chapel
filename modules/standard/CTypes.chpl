@@ -966,10 +966,11 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
     if (boundsChecking && arr._value.locale != here) then
-      halt(
-          "c_addrOf() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+      // Changed from error to unstable warning in 2.4. Warning can be removed
+      // once we're confident it's not causing problems.
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOf on an array from another locale is unstable");
 
     return c_pointer_return(arr);
   }
@@ -981,10 +982,10 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
     if (boundsChecking && arr._value.locale != here) then
-      halt(
-          "c_addrOfConst() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+      // See note on corresponding c_addrOf overload
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOfConst on an array from another locale is unstable");
 
     return c_pointer_return_const(arr);
   }
