@@ -233,9 +233,6 @@ module Python {
     Check for exceptions after each Python API call. This is important for
     correctness, but may have a performance impact.
 
-    This flag provides the default behavior for the :class:`Interpreter` class,
-    but individual instances can override this behavior.
-
     .. warning::
 
        While turning this flag off may improve performance, it may also lead to
