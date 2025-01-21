@@ -1379,7 +1379,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     if (initExprType.type()->isIteratorType()) {
       typePtr = computeChplCopyInit(declForErr, declKind, initExprType);
     // Check if this type requires custom type inference
-    } if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+    } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
       typePtr = computeCustomInferType(declForErr, rec);
     } else {
       // init but no declared type, so use init type
