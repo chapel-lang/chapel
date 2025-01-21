@@ -18,5 +18,5 @@
  */
 module CTypes {
   public use CPtr;
-  extern type c_char = int(8);
+  public use ChapelSysCTypes;
 }
