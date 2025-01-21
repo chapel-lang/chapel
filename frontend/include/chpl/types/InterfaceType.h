@@ -97,6 +97,8 @@ class InterfaceType final : public Type {
                                   UniqueString name,
                                   SubstitutionsMap subs);
 
+  static const InterfaceType* getContextManagerType(Context* context);
+
   /* Get an interface type, assigning the types in the list to the interface's
      formals in order. If the number of types does not match the interface's
      number of formals, returns nullptr.
@@ -104,6 +106,8 @@ class InterfaceType final : public Type {
   static const InterfaceType* withTypes(Context* context,
                                         const InterfaceType* ift,
                                         std::vector<QualifiedType> types);
+
+  const ID& idForAssociatedType(Context* context, UniqueString name) const;
 
   /** Returns true if 'this' is an instantiation of genericType */
   bool isInstantiationOf(Context* context,

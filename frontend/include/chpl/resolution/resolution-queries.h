@@ -305,6 +305,7 @@ const ResolvedFunction* resolveFunction(ResolutionContext* rc,
 const std::vector<const ImplementationPoint*>*
 visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
+                                         const PoiScope* poiScope,
                                          ID interfaceId);
 
 /**
@@ -516,6 +517,21 @@ const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
                                                        const CallScopeInfo& inScopes);
 
 /**
+  In a given scope, first try to search for interface implementation points,
+  then, if none are found, attempt to construct a "ghost" implementation point
+  at this location.
+
+  The 'implPointId' here can be any ID that serves as the "anchor" for where
+  the ghost implementation notionally exists.
+ */
+const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
+                                                      const types::InterfaceType* ift,
+                                                      const types::Type* forType,
+                                                      const CallScopeInfo& inScopes,
+                                                      const ID& implPointId,
+                                                      bool& foundExisting);
+
+/**
   Given a type 't', compute whether or not 't' is default initializable.
   If 't' is a generic type, it is considered non-default-initializable.
   Considers the fields and substitutions of composite types.
@@ -626,6 +642,13 @@ builderResultForDefaultFunction(Context* context,
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
+
+Access accessForQualifier(uast::Qualifier q);
+
+const MostSpecificCandidate*
+determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
+                                  Access access,
+                                  bool& outAmbiguity);
 
 
 } // end namespace resolution

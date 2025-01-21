@@ -32,6 +32,8 @@
 #include <vector>
 
 #include "chpl/util/memory.h"
+#include "chpl/util/compare.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
 
@@ -120,6 +122,15 @@ inline size_t hashVector(const std::vector<T>& key) {
   return ret;
 }
 
+template <typename T, unsigned i>
+inline size_t hashSmallVector(const llvm::SmallVector<T, i>& key) {
+  size_t ret = 0;
+  for (const auto& elt : key) {
+    ret = hash_combine(ret, hash(elt));
+  }
+  return ret;
+}
+
 template<typename T>
 inline size_t hashSet(const std::set<T>& key) {
   size_t ret = 0;
@@ -128,13 +139,6 @@ inline size_t hashSet(const std::set<T>& key) {
   }
   return ret;
 }
-
-template <typename K, typename V>
-struct FirstElementComparator {
-  bool operator()(const std::pair<K, V>& a, const std::pair<K, V>& b) const {
-    return a.first < b.first;
-  }
-};
 
 template <typename K, typename V>
 inline size_t hashUnorderedMap(const std::unordered_map<K, V>& key) {
@@ -182,6 +186,13 @@ template<typename T> struct hasher<std::vector<T>> {
     return chpl::hashVector(key);
   }
 };
+
+template<typename T, unsigned i> struct hasher<llvm::SmallVector<T, i>> {
+  size_t operator()(const llvm::SmallVector<T, i>& key) const {
+    return chpl::hashSmallVector(key);
+  }
+};
+
 template<typename T> struct hasher<std::set<T>> {
   size_t operator()(const std::set<T>& key) const {
     return chpl::hashSet(key);

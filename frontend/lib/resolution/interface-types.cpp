@@ -55,13 +55,17 @@ const owned<ImplementationWitness>&
 ImplementationWitness::getImplementationWitness(Context* context,
                                                 ConstraintMap associatedConstraints,
                                                 AssociatedTypeMap associatedTypes,
-                                                FunctionMap requiredFns) {
+                                                FunctionMap requiredFns,
+                                                OverloadMap returnIntentOverloads,
+                                                bool allGenerated) {
   QUERY_BEGIN(getImplementationWitness, context, associatedConstraints,
-              associatedTypes, requiredFns);
+              associatedTypes, requiredFns, returnIntentOverloads, allGenerated);
 
   auto result = toOwned(new ImplementationWitness(std::move(associatedConstraints),
                                                   std::move(associatedTypes),
-                                                  std::move(requiredFns)));
+                                                  std::move(requiredFns),
+                                                  std::move(returnIntentOverloads),
+                                                  allGenerated));
 
   return QUERY_END(result);
 }
@@ -69,10 +73,14 @@ ImplementationWitness::getImplementationWitness(Context* context,
 ImplementationWitness* ImplementationWitness::get(Context* context,
                                                   ConstraintMap associatedConstraints,
                                                   AssociatedTypeMap associatedTypes,
-                                                  FunctionMap requiredFns) {
+                                                  FunctionMap requiredFns,
+                                                  OverloadMap returnIntentOverloads,
+                                                  bool allGenerated) {
   return getImplementationWitness(context, std::move(associatedConstraints),
                                   std::move(associatedTypes),
-                                  std::move(requiredFns)).get();
+                                  std::move(requiredFns),
+                                  std::move(returnIntentOverloads),
+                                  allGenerated).get();
 }
 
 void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -95,7 +103,7 @@ void ImplementationWitness::stringify(std::ostream& ss, chpl::StringifyKind stri
   for (auto& f : requiredFns_) {
     f.first.stringify(ss, stringKind);
     ss << " => ";
-    f.second.stringify(ss, stringKind);
+    f.second->stringify(ss, stringKind);
     ss << ", ";
   }
   ss << ")";

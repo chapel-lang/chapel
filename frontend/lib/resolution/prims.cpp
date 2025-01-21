@@ -272,30 +272,29 @@ static QualifiedType primImplementsInterface(Context* context,
 
   if (ifqt.kind() != QualifiedType::TYPE ||
       ifqt.isUnknownOrErroneous() ||
+      type.isUnknownOrErroneous() ||
       !ifqt.type()->isInterfaceType()) return QualifiedType();
 
   auto ift = ifqt.type()->toInterfaceType();
-  auto instantiatedIft = InterfaceType::withTypes(context, ift, { type });
-  if (!instantiatedIft) return QualifiedType();
+  if (!ift) return QualifiedType();
 
   ResolutionContext rc(context);
+  bool foundExisting;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
-  auto witness =
-    findMatchingImplementationPoint(&rc, instantiatedIft, inScopes);
+  auto implPoint = findOrImplementInterface(&rc, ift, type.type(), inScopes,
+                                            astForErr->id(), foundExisting);
 
-  if (witness) {
-    return QualifiedType::makeParamInt(context, 0);
+  int returnValue = 2;
+  if (implPoint) {
+    if (foundExisting) {
+      returnValue = 0;
+    } else if (implPoint->allGenerated()) {
+      returnValue = 1;
+    } else {
+      returnValue = 2;
+    }
   }
-
-  // try automatically satisfy the interface if it's in the standard modules.
-  if (parsing::idIsInBundledModule(context, ift->id())) {
-    auto runResult = context->runAndTrackErrors([&](Context* context) {
-      return checkInterfaceConstraints(&rc, instantiatedIft, astForErr->id(), inScopes);
-    });
-    witness = runResult.result();
-  }
-
-  return QualifiedType::makeParamInt(context, witness ? 1 : 2);
+  return QualifiedType::makeParamInt(context, returnValue);
 }
 
 static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {

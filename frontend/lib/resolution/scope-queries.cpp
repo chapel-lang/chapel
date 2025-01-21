@@ -303,6 +303,13 @@ struct GatherDecls {
   }
   void exit(const Require* m) { }
 
+  // 'as' expressions occurring outside of Use/Import (skipped above)
+  // are part of 'manage' statements and can contain decls.
+  bool enter(const As* as) {
+    return true;
+  }
+  void exit(const As* as) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;

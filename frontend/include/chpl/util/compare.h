@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef MAYBE_CONST_H
-#define MAYBE_CONST_H
+#ifndef CHPL_UTIL_COMPARE_H
+#define CHPL_UTIL_COMPARE_H
+
+#include <utility>
 
 namespace chpl {
-namespace resolution {
 
-struct Resolver;
+template <typename K, typename V>
+struct FirstElementComparator {
+  bool operator()(const std::pair<K, V>& a, const std::pair<K, V>& b) const {
+    return a.first < b.first;
+  }
+};
 
-/* Adjusts the Resolver's results to account for return intent
-   overloading & ref-maybe-const-ref formals. */
-void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver);
-
-
-} // end namespace resolution
 } // end namespace chpl
 
 #endif

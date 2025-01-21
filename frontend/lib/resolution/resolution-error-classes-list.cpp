@@ -722,11 +722,32 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the ", expectedThing, " and ", passedThing, " types to match exactly.");
       }
+    } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+      bool printedSpecial = false;
+      if (auto fn = candidate.initialForErr()) {
+        resolution::FormalActualMap fa(fn, ci);
+
+        if (fa.failingActualIdx() != -1 && fa.failingFormalIdx() == -1) {
+          auto& actual = ci.actual(fa.failingActualIdx());
+          if (!actual.byName().isEmpty()) {
+            wr.note(candidate.idForErr(), "the following candidate didn't match"
+                    " because ", passedThing, " ", fa.failingActualIdx() + 1,
+                    " was named '", actual.byName(), "', but no ", expectedThing,
+                    " with that name was found.");
+            printedSpecial = true;
+          }
+        }
+      }
+
+      if (!printedSpecial) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because the provided ", passedThing, "s could not be mapped to its ",
+                expectedThing, "s:");
+      }
+      wr.code(candidate.idForErr());
     } else {
       std::string reasonStr = "";
-      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
-        reasonStr = std::string("the provided ") + passedThing + "s could not be mapped to its " + expectedThing + "s:";
-      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+      if (reason == resolution::FAIL_VARARG_MISMATCH) {
         reasonStr = "the number of varargs was incorrect:";
       } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
         reasonStr = "the 'where' clause evaluated to 'false':";

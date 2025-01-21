@@ -3846,6 +3846,150 @@ void Resolver::exit(const NamedDecl* decl) {
   exitScope(decl);
 }
 
+bool Resolver::enter(const uast::Manage* manage) {
+  for (auto managerExpr : manage->managers()) {
+    const As* as = managerExpr->toAs();
+    const Variable* asVar = nullptr;
+    if (as) {
+      managerExpr = as->symbol();
+      asVar = as->rename()->toVariable();
+      CHPL_ASSERT(asVar);
+    }
+    managerExpr->traverse(*this);
+
+    if (scopeResolveOnly) continue;
+
+    auto& rr = byPostorder.byAst(managerExpr);
+    if (rr.type().isUnknownOrErroneous()) continue;
+
+    // Ok, we've resolved the manager expression fine. First, resolve
+    // the stdlib function `chpl__verifyTypeContext`, which ensures
+    // that the context manager supports the `contextManager` interface.
+    auto ci = CallInfo(UniqueString::get(context, "chpl__verifyTypeContext"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
+    auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    auto c = resolveGeneratedCall(context, manage, ci, inScopes);
+    handleResolvedCallWithoutError(byPostorder.byAst(manage), manage, c);
+    CHPL_ASSERT(c.mostSpecific().only());
+
+    // Now, we actually want the witness for the interface if one exists.
+    // Use the POI scope from the call so that POI is the same as if we were
+    // resolving from inside the body of chpl__verifyTypeContext. This
+    // should improve re-use of interface search.
+    auto inScopesForInterface =
+      CallScopeInfo::forNormalCall(scopeStack.back(), c.poiInfo().poiScope());
+    auto contextManagerInterface = InterfaceType::getContextManagerType(context);
+    bool ignoredFoundExisting;
+    auto witness =
+      findOrImplementInterface(rc, contextManagerInterface, rr.type().type(),
+                               inScopesForInterface, c.mostSpecific().only().fn()->id(),
+                               ignoredFoundExisting);
+
+    if (!witness) {
+      auto errType = typeErr(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
+      if (asVar) {
+        byPostorder.byAst(asVar).setType(errType);
+      }
+      continue;
+    }
+
+    Access accessContext = Access::VALUE;
+    if (asVar) {
+      // We're storing the result of entering the context manager. Determine
+      // the type it yields and use it to resolve that expression.
+      auto contextReturnTypeStr = UniqueString::get(context, "contextReturnType");
+      auto& contextReturnTypeId =
+        contextManagerInterface->idForAssociatedType(context, contextReturnTypeStr);
+      auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
+
+
+      // This is effectively a variable declaration with an initialization
+      // expression being 'enterContext()'. The same semantics
+      // are expected. As a result, we call resolveNamedDecl to handle this.
+      //
+      // Performance: We are taking a very simple path through resolveNamedDecl
+      // here (most conditions it checks for are 'false': finding substitutions,
+      // detecting 'this' formals, handling 'extern' variables). However,
+      // it seems good to share the general logic.
+      //
+      // It's possible for the enterContext() method to e.g., provide a value
+      // when the declaration is a ref. We don't check for that here specifically,
+      // since the behavior ought to be the same as trying to assign a value to
+      // a ref variable. However, 'resolveNamedDecl' does not handle that case
+      // at the time of writing, and therefore we effectively don't handle it
+      // here either.
+      resolveNamedDecl(asVar, contextReturnType);
+
+      auto kind = byPostorder.byAst(asVar).type().kind();
+      if (kind == QualifiedType::INDEX) {
+        // Intent is explicitly left unknown. When inferring (see
+        // preFold.cpp, FLAG_MANAGER_RESOURCE_INFER_STORAGE), the old logic
+        // was to determine the const-ness from use. This used to match
+        // formals (where the intent was ref-if-modified). This behavior
+        // has been deprecated in favor of explicitly requesting a reference.
+        // To match, here, request a 'const ref' by default. The user will
+        // have to write 'ref' to get that overload.
+        accessContext = Access::CONST_REF;
+      } else {
+        accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
+      }
+    }
+
+    // Since we're in a manage statement, we will call 'enter' and 'exit',
+    // so note those as associated actions. For 'enterContext', there may
+    // be several overloads, so pick the best one.
+    const TypedFnSignature* enterSig = nullptr;
+    const TypedFnSignature* exitSig = nullptr;
+    for (auto& [id, fn] : witness->requiredFns()) {
+      if (fn->untyped()->name() == USTR("enterContext")) {
+
+        // If several overloads were stored, use return intent overload
+        // resolution now to pick the best one. Importantly, this is done
+        // separately from return intent resolution in maybe-const.cpp
+        // because we need to know the right overload _now_ because these
+        // are generated calls created when satisfying an interface,
+        // and thus not tracked via a MostSpecificCandidates saved in
+        // a ResolvedExpression.
+        auto overloadsIt = witness->returnIntentOverloads().find(id);
+        if (overloadsIt != witness->returnIntentOverloads().end()) {
+          bool ambiguity;
+          auto bestCandidate =
+            determineBestReturnIntentOverload(overloadsIt->second,
+                                              accessContext,
+                                              ambiguity);
+          CHPL_ASSERT(!ambiguity);
+          CHPL_ASSERT(bestCandidate);
+          enterSig = bestCandidate->fn();
+        } else {
+          enterSig = fn;
+        }
+      } else if (fn->untyped()->name() == USTR("exitContext")) {
+        exitSig = fn;
+      } else {
+        CHPL_ASSERT(false && "unexpected function in contextManager interface");
+      }
+    }
+    CHPL_ASSERT(enterSig && exitSig);
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
+  }
+
+  enterScope(manage);
+  for (auto stmt : manage->stmts()) {
+    stmt->traverse(*this);
+  }
+
+  return false;
+}
+
+void Resolver::exit(const uast::Manage* manage) {
+  exitScope(manage);
+}
+
 static void getVarLikeOrTupleTypeInit(const AstNode* ast,
                                       const AstNode*& typeExpr,
                                       const AstNode*& initExpr) {
