@@ -116,44 +116,39 @@ proc makeUnit(ref A : [?Adom], val:real = 1.0) {
 
 
 // Band Array -- experimental
-proc bandArray(A: [?Dom] ?eltType, ku, kl, order=Order.Row) where A.rank == 2 {
-
+// TODO: finish this for banded pr
+proc bandArray(A: [?Dom] ?eltType, ku, kl, param order: Order = Order.Row)
+  where A.rank == 2 {
   const m = Dom.dim(0).size,
-        n = Dom.dim(1).size;
+        n = Dom.dim(1).size,
+        lda = kl+ku+1;
 
-  const bandDim = if order==Order.Row then m else n;
-
-  var AB: [{0..#(kl+ku+1), 0..#n}] eltType;
-
-  if order == Order.Row {
-    // RowMajor
-    for i in 0..#n{
-      const k = kl - i;
-      const jlo = max(0, i-kl),
-            jhi = min(n, i+ku+1)-1;
-      for j in jlo..jhi {
-        var tmp = A[j, i];
-        //AB[k+j, i] = A[j, i];
-        AB[k+j, i] = tmp;
+  // adapted from: https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2024-1/cblas-gbmv.html
+  // would be nice to allow `return select order { ... }`
+  select order {
+    when Order.Row {
+      var AB: [1..m, 1..lda] eltType;
+      for i in 1..m {
+        var k = kl + 1 - i;
+        for j in max(1, i-kl)..min(n, i+ku) do AB(i, k+j) = A(i, j);
       }
+      return AB;
     }
-  } else {
-    // ColMajor
-    for j in 0..#n{
-      const k = ku - j;
-      const ilo = max(0, j-ku),
-            ihi = min(m, j+kl+1)-1;
-      for i in ilo..ihi {
-        AB[k+i, j] = A[i, j];
+    when Order.Col {
+      var AB: [1..n, 1..lda] eltType;
+      for j in 1..n {
+        var k = ku + 1 - j;
+        for i in max(1, j-ku)..min(m, j+kl) do AB(j, k+i) = A(i, j);
       }
+      return AB;
     }
-  }
-
-  return AB;
+    otherwise do compilerError("no such order ", order);
+  };
 }
 
 
 // Triangular band array - experimental
+// TODO: finish this for banded pr
 proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row)
   where A.rank == 2 {
 
@@ -191,6 +186,7 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row
 
 
 // Dense array from band array -- experimental
+// TODO: finish this for banded pr
 proc bandArrayDense(a: [?Dom] ?eltType, l, u, m, n) where a.rank == 2 {
 
   const k = min(m, n),
