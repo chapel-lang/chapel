@@ -221,6 +221,21 @@ module Python {
   private use OS.POSIX only getenv;
 
   config const pyMemLeaks = false;
+  /*
+    Check for exceptions after each Python API call. This is important for
+    correctness, but may have a performance impact.
+
+    This flag provides the default behavior for the :class:`Interpreter` class,
+    but individual instances can override this behavior.
+
+    .. warning::
+
+       While turning this flag off may improve performance, it may also lead to
+       segmentation faults and other undefined behavior. This flag should only
+       be turned off if you are certain that no exceptions will be thrown by
+       the Python code, or if a hard crash is acceptable.
+  */
+  config param checkExceptions = true;
 
   // TODO: this must be first to avoid use-before-def, but that makes it first in the docs
   // is there a way to avoid this?
@@ -266,13 +281,22 @@ module Python {
        Do not create more than one instance of this class.
   */
   class Interpreter {
+    /*
+      Whether to check for exceptions after each Python API call. This is
+      important for correctness, but may have a performance impact.
+
+      See :config:`Python.checkExceptions` and
+      :method:`Interpreter.checkException` for more information.
+    */
+    param checkExceptions: bool = Python.checkExceptions;
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
 
     @chpldoc.nodoc
-    proc init() throws {
+    proc init(param checkExceptions = Python.checkExceptions) throws {
+      this.checkExceptions = checkExceptions;
       init this;
 
       // preinit
@@ -542,9 +566,9 @@ module Python {
          most users should not need to call this method directly.
     */
     inline proc checkException() throws {
-      var exc = chpl_PyErr_GetRaisedException();
-      if exc {
-        throw PythonException.build(this, exc);
+      if this.checkExceptions {
+        var exc = chpl_PyErr_GetRaisedException();
+        if exc then throw PythonException.build(this, exc);
       }
     }
 
@@ -1045,7 +1069,7 @@ module Python {
         Py_DECREF(this.obj);
     }
 
-    proc check() throws do this.interpreter.checkException();
+    inline proc check() throws do this.interpreter.checkException();
 
     /*
       Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
