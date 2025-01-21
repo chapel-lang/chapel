@@ -300,6 +300,15 @@ void ensureParamString(const QualifiedType& type, const std::string& expectedVal
   assert(type.param()->toStringParam()->value() == expectedValue);
 }
 
+void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isEnumType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isEnumParam());
+  assert(type.param()->toEnumParam()->value().str == expectedName);
+}
+
 void ensureErroneousType(const QualifiedType& type) {
   assert(type.type() != nullptr);
   assert(type.type()->isErroneousType());
