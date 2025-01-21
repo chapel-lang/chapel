@@ -28,14 +28,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static QualifiedType findVarType(const Module* m,
-                                 const ResolutionResultByPostorderID& rr,
-                                 std::string name) {
-  const Variable* var = findOnlyNamed(m, name)->toVariable();
-  assert(var != nullptr);
-  return rr.byAst(var).type();
-}
-
 static void testRecordInt() {
   Context ctx;
   Context* context = &ctx;
