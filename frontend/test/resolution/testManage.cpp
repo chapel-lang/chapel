@@ -207,7 +207,7 @@ static void testReturnIntentOverload() {
   for (auto aa : rr.byAst(byValParent).associatedActions()) {
     if (aa.action() == AssociatedAction::ENTER_CONTEXT) {
       foundEnter = true;
-      assert(aa.fn()->id().symbolPath() == "M.R.enterContext");
+      assert(aa.fn()->id().symbolPath() == "M.R.enterContext#2");
     } else if (aa.action() == AssociatedAction::EXIT_CONTEXT) {
       foundExit = true;
       assert(aa.fn()->id().symbolPath() == "M.R.exitContext");

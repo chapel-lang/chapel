@@ -3923,7 +3923,20 @@ bool Resolver::enter(const uast::Manage* manage) {
       // at the time of writing, and therefore we effectively don't handle it
       // here either.
       resolveNamedDecl(asVar, contextReturnType);
-      accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
+
+      auto kind = byPostorder.byAst(asVar).type().kind();
+      if (kind == QualifiedType::INDEX) {
+        // Intent is explicitly left unknown. When inferring (see
+        // preFold.cpp, FLAG_MANAGER_RESOURCE_INFER_STORAGE), the old logic
+        // was to determine the const-ness from use. This used to match
+        // formals (where the intent was ref-if-modified). This behavior
+        // has been deprecated in favor of explicitly requesting a reference.
+        // To match, here, request a 'const ref' by default. The user will
+        // have to write 'ref' to get that overload.
+        accessContext = Access::CONST_REF;
+      } else {
+        accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
+      }
     }
 
     // Since we're in a manage statement, we will call 'enter' and 'exit',
