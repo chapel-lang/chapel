@@ -186,6 +186,63 @@ static void testForOverDomain(Context* context) {
                        2, "positive", "ChapelArray.chpl__initCopy#4");
 }
 
+static void testPromotionRange(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(1..10)",
+                       1, "one", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionStridedRange(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(1..10 by 2)",
+                       1, "positive", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionReverseRange(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(10..1 by -1)",
+                       1, "negOne", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionReverseStridedRange(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(10..1 by -2)",
+                       1, "negative", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionOverPromotion(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(foo(1..10))",
+                       1, "one", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionOverStridedPromotion(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo(foo(1..10 by 2))",
+                       1, "positive", "ChapelArray.chpl__initCopy#5");
+}
+
+static void testPromotionOverDomain(Context* context) {
+  testArrayMaterialize(context,
+                       "proc foo(x) do return x : real;",
+                       "foo({1..10})",
+                       1, "one", "ChapelArray.chpl__initCopy#4");
+  testArrayMaterialize(context,
+                       "proc foo((x, y)) do return (x : real, y : real);",
+                       "foo({1..10, 1..10})",
+                       2, "one", "ChapelArray.chpl__initCopy#4");
+  testArrayMaterialize(context,
+                       "proc foo((x, y)) do return (x : real, y : real);",
+                       "foo({1..10 by 2, 1..10})",
+                       2, "positive", "ChapelArray.chpl__initCopy#4");
+}
+
 int main() {
   auto context = buildStdContext();
   testIterFn(context);
@@ -203,4 +260,11 @@ int main() {
   testForOverFor(context);
   testForOverStridedFor(context);
   testForOverDomain(context);
+  testPromotionRange(context);
+  testPromotionStridedRange(context);
+  testPromotionReverseRange(context);
+  testPromotionReverseStridedRange(context);
+  testPromotionOverPromotion(context);
+  testPromotionOverStridedPromotion(context);
+  testPromotionOverDomain(context);
 }
