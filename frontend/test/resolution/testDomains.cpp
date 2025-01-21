@@ -442,6 +442,9 @@ int main() {
   testAssociative(context, "domain(int, false)", "int", false);
   testAssociative(context, "domain(string)", "string", true);
 
+  testDomainLiteral(context, "{1, 2, 3}", DomainType::Kind::Associative);
+  testDomainLiteral(context, "{\"apple\", \"banana\"}", DomainType::Kind::Associative);
+
   testBadPass(context, "domain(1)", "domain(2)");
   testBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
   testBadPass(context, "domain(1, int(8))", "domain(1, int(16))");
