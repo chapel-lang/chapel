@@ -169,7 +169,7 @@ module ChapelTuple {
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
       if i < 0 || i > size-1 then
-        halt("tuple access out of bounds: ", i);
+        halt("tuple access out of bounds: ", i, " (accessing ", this.type:string, ")");
     return __primitive("get svec member", this, i);
   }
 
@@ -181,7 +181,7 @@ module ChapelTuple {
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
       if i < 0 || i > size-1 then
-        halt("tuple access out of bounds: ", i);
+        halt("tuple access out of bounds: ", i, " (accessing ", this.type:string, ")");
     return __primitive("get svec member", this, i);
   }
 
