@@ -1423,6 +1423,11 @@ class ApplicabilityResult {
   inline PassingFailureReason formalReason() const { return formalReason_; }
 
   inline int formalIdx() const { return formalIdx_; }
+
+  inline bool failedDueToWrongActual() const {
+    return candidateReason_ == resolution::FAIL_CANNOT_PASS &&
+           formalReason_ != resolution::FAIL_UNKNOWN_FORMAL_TYPE;
+  }
 };
 
 /** FormalActual holds information on a function formal and its binding (if any) */

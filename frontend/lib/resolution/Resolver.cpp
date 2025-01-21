@@ -983,6 +983,50 @@ static bool isCallToPtr(const AstNode* formalTypeExpr) {
   return false;
 }
 
+// helper to gather bad actuals and report NoMatchingCandidates error
+static void
+handleRejectedCandidates(Context* context,
+                         ResolutionResultByPostorderID& byPostorder,
+                         std::vector<ApplicabilityResult>& rejected,
+                         const resolution::CallInfo& ci,
+                         const uast::Call*& call,
+                         const std::vector<const uast::AstNode*>& actualAsts) {
+  // By performing some processing in the resolver, we can issue a nicer error
+  // explaining why each candidate was rejected.
+  std::vector<const uast::VarLikeDecl*> actualDecls;
+  actualDecls.resize(rejected.size());
+  // check each rejected candidate for uninitialized actuals
+  for (size_t i = 0; i < rejected.size(); i++) {
+    auto &candidate = rejected[i];
+    if (/* skip computing the formal-actual map because it will go poorly
+           with an unknown formal. */
+        candidate.failedDueToWrongActual()) {
+      auto fn = candidate.initialForErr();
+      resolution::FormalActualMap fa(fn, ci);
+      auto& badPass = fa.byFormalIdx(candidate.formalIdx());
+      const uast::AstNode *actualExpr = nullptr;
+      const uast::VarLikeDecl *actualDecl = nullptr;
+      if (call && 0 <= badPass.actualIdx() &&
+          (size_t)badPass.actualIdx() < actualAsts.size()) {
+        actualExpr = actualAsts[badPass.actualIdx()];
+      }
+      // look for a definition point of the actual for error reporting of
+      // uninitialized vars typically in the case of bad split-initialization
+      if (actualExpr && actualExpr->isIdentifier()) {
+        auto &resolvedExpr = byPostorder.byAst(actualExpr->toIdentifier());
+        if (auto id = resolvedExpr.toId()) {
+          auto var = parsing::idToAst(context, id);
+          // should put a nullptr if not a VarLikeDecl
+          actualDecl = var->toVarLikeDecl();
+        }
+      }
+      actualDecls[i] = actualDecl;
+    }
+  }
+  CHPL_ASSERT(rejected.size() == actualDecls.size());
+  CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, actualDecls);
+}
+
 static void varArgTypeQueryError(Context* context,
                                  const AstNode* node,
                                  ResolvedExpression& result) {
@@ -1847,9 +1891,10 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
                      ci.name().c_str());
     } else {
+      std::vector<const uast::VarLikeDecl*> uninitializedActuals;
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
-      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected);
+      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, uninitializedActuals);
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");
@@ -1971,6 +2016,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  const CallScopeInfo& inScopes,
                                                  const QualifiedType& receiverType,
                                                  const CallResolutionResult& c,
+                                                 std::vector<const uast::AstNode*>& actualAsts,
                                                  optional<ActionAndId> actionAndId) {
   bool wasCallGenerated = (bool) actionAndId;
   CHPL_ASSERT(!wasCallGenerated || receiverType.isUnknown());
@@ -1990,9 +2036,8 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       }
 
       if (!rejected.empty()) {
-        // There were candidates but we threw them out. We can issue a nicer
-        // error explaining why each candidate was rejected.
-        CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
+        // There were candidates but we threw them out. Report on those.
+        handleRejectedCandidates(context, byPostorder, rejected, ci, call, actualAsts);
         return;
       }
     }
@@ -2341,13 +2386,14 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   bool isMethodCall = true;
   const AstNode* questionArg = nullptr;
   std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> actualAsts;
 
   // Prepare receiver.
   auto receiverInfo = CallInfoActual(calledType, USTR("this"));
   actuals.push_back(std::move(receiverInfo));
 
   // Remaining actuals.
-  prepareCallInfoActuals(call, actuals, questionArg);
+  prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
   CHPL_ASSERT(!questionArg);
 
   // The 'new' will produce an 'init' call as a side effect.
@@ -2361,8 +2407,9 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScopes);
-  handleResolvedCallPrintCandidates(re, call, ci, inScopes, QualifiedType(), crr,
-                                    { { AssociatedAction::NEW_INIT, call->id() } });
+  optional<ActionAndId> action = { { AssociatedAction::NEW_INIT, call->id() } };
+  handleResolvedCallPrintCandidates(re, call, ci, inScopes, QualifiedType(),
+                                    crr, actualAsts, action);
 
 
   // there should be one or zero applicable candidates
@@ -2516,7 +2563,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
           DomainType::getDefaultDistType(context), UniqueString());
       actuals.push_back(std::move(defaultDistArg));
       // Remaining given args from domain() call as written
-      prepareCallInfoActuals(call, actuals, questionArg);
+      prepareCallInfoActuals(call, actuals, questionArg, /*actualAsts*/ nullptr);
       CHPL_ASSERT(!questionArg);
 
       auto ci =
@@ -4275,11 +4322,12 @@ bool Resolver::enter(const Call* call) {
 
 void Resolver::prepareCallInfoActuals(const Call* call,
                                       std::vector<CallInfoActual>& actuals,
-                                      const AstNode*& questionArg) {
+                                      const AstNode*& questionArg,
+                                      std::vector<const uast::AstNode*>* actualAsts) {
   CallInfo::prepareActuals(context, call, byPostorder,
                            /* raiseErrors */ true,
                            actuals, questionArg,
-                           /* actualAsts */ nullptr);
+                           actualAsts);
 }
 
 static const Type* getGenericType(Context* context, const Type* recv) {
@@ -4545,7 +4593,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
                                                   rejected);
 
     // save the most specific candidates in the resolution result for the id
-    handleResolvedCallPrintCandidates(r, call, ci, inScopes, receiverType, c);
+    handleResolvedCallPrintCandidates(r, call, ci, inScopes, receiverType, c, actualAsts);
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
