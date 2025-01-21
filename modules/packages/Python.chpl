@@ -251,14 +251,6 @@ module Python {
   /* Represents the python value 'None' */
   const None = new NoneType();
 
-
-  @chpldoc.nodoc
-  enum codeKind {
-    source,
-    bytecode,
-    pickle
-  }
-
   private proc getOsPathSepHelper(interp: borrowed Interpreter): string throws {
     var os = PyImport_ImportModule("os");
     interp.checkException();
