@@ -220,7 +220,15 @@ module Python {
   private use CWChar;
   private use OS.POSIX only getenv;
 
+  /*
+    Use 'objgraph' to detect memory leaks in the Python code. Care should be
+    taken when interpreting the output of this flag, not all memory leaks are
+    under Chapel's control. For example, printing a Python list leaks memory
+    according to 'objgraph'. Furthermore, some memory is still held when until
+    the interpreter is closed, like the module import cache.
+  */
   config const pyMemLeaks = false;
+
   /*
     Check for exceptions after each Python API call. This is important for
     correctness, but may have a performance impact.
