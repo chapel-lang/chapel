@@ -206,6 +206,8 @@ def get_sys_c_types(docs=False,minimal=False):
         #
         #   assert(sizeof(c_int) == sizeof(int(32)));
         #
+        # Do not do this when generating minimal modules because '==' is
+        # not defined.
         sys_c_types.append("""
     {
       extern proc sizeof(type t): c_size_t;
