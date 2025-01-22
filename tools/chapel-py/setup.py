@@ -105,7 +105,7 @@ setup(
             depends=glob.glob("src/**/*.h", recursive=True),
             extra_compile_args=CXXFLAGS,
             extra_link_args=LDFLAGS,
-            py_limited_api=use_stable_api
+            py_limited_api=use_stable_api,
         )
     ],
 )
