@@ -55,6 +55,7 @@ module Set {
   private use Reflection;
   private use ChapelHashtable;
   private use HaltWrappers;
+  private use CTypes;
 
   @chpldoc.nodoc
   private param _sanityChecks = true;
@@ -585,6 +586,53 @@ module Set {
       foreach idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
       */
+    }
+
+    iter const contents(size: int = _htb.tableNumFullSlots) const ref {
+      if (size != _htb.tableNumFullSlots) {
+        __primitive("chpl_error",
+                    "didn't specify the full contents of the set".c_str());
+      }
+
+      foreach idx in 0..#_htb.tableSize {
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
+    }
+
+    @chpldoc.nodoc
+    iter const contents(size: int = _htb.tableNumFullSlots, param tag) const ref
+      where tag == iterKind.standalone {
+      if (size != _htb.tableNumFullSlots) {
+        __primitive("chpl_error",
+                    "didn't specify the full contents of the set".c_str());
+      }
+
+      var space = 0..#_htb.tableSize;
+      foreach idx in space.these(tag) do
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+    }
+
+    @chpldoc.nodoc
+    iter const contents(size: int = _htb.tableNumFullSlots, param tag)
+      where tag == iterKind.leader {
+      if (size != _htb.tableNumFullSlots) {
+        __primitive("chpl_error",
+                    "didn't specify the full contents of the set".c_str());
+      }
+
+      for followThis in _htb._evenSlots(size, tag) {
+        //writeln(followThis);
+        yield followThis;
+      }
+    }
+
+    @chpldoc.nodoc
+    iter const contents(size: int = _htb.tableNumFullSlots, param tag,
+                        followThis) const ref
+    where tag == iterKind.follower {
+      foreach val in _htb._evenSlots(size, followThis, tag) {
+        yield val;
+      }
     }
 
     @chpldoc.nodoc

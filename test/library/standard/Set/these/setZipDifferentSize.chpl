@@ -7,7 +7,7 @@ proc test() {
   var s2 = s1;
   s2.add(9);
 
-  forall (x, y) in zip(s1, s2) do
+  forall (x, y) in zip(s1.contents(s1.size), s2.contents(s1.size)) do
     var tmp = x + y;
 
   return;
