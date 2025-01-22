@@ -31,4 +31,15 @@ static void call_tp_free(PyTypeObject* type, PyObject* self) {
   }
 }
 
+static const char* getTypeName(PyTypeObject* obj) {
+  PyObject* name_attr = PyObject_GetAttrString((PyObject*) obj, "__name__");
+  if (!name_attr) {
+    PyErr_SetString(PyExc_RuntimeError, "Could not get type name");
+    return nullptr;
+  }
+  const char* name = PyUnicode_AsUTF8AndSize(name_attr, NULL);
+  Py_XDECREF(name_attr);
+  return name;
+}
+
 #endif

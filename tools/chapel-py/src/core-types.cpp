@@ -106,7 +106,7 @@ std::string generatePyiFile() {
     printedAnything = false; \
     generated.insert(NODE##Object::Name); \
     if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
-      ss << "(" /*TODO:<< parentType->tp_name*/ << ")"; \
+      ss << "(" << getTypeName(parentType) << ")"; \
     } \
     ss << ":" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
@@ -133,8 +133,7 @@ std::string generatePyiFile() {
     if(generated.find(NODE##Object::Name) == generated.end()) { \
       ss << "class " << NODE##Object::Name; \
       if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
-        /*auto tp_name = PyType_GetSlot(parentTypeFor(TAG), Py_tp_name);*/ \
-        ss << "(" /*TODO<< tp_name*/ << ")"; \
+        ss << "(" << getTypeName(parentType) << ")"; \
       } \
       ss << ":" << std::endl; \
       ss << "    pass" << std::endl; \
