@@ -11,7 +11,7 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /data/cf/chapel/setup_gcc74.bash     # host-specific setup for target compiler
+source /hpcdc/project/chapel/setup_gcc74.bash     # host-specific setup for target compiler
 
 # Set environment variables to nudge cmake towards GCC 7.4
 export CHPL_CMAKE_USE_CC_CXX=1

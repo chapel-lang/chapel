@@ -26,7 +26,7 @@ esac
 if test "$CHPL_LLVM" = bundled; then
 
     # 2021-10-26: Developer-installed cmake version required by LLVM 12
-    cmake_setup=/data/cf/chapel/setup_cmake_nightly.bash
+    cmake_setup=/hpcdc/project/chapel/setup_cmake_nightly.bash
     if [ -f "${cmake_setup}" ] ; then
         source ${cmake_setup}
     else
