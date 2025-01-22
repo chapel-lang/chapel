@@ -16,12 +16,6 @@ export PYTHONPATH="$chpl_frontend_py_deps":$PYTHONPATH
 if [ ! -d "$chpl_frontend_py_deps/chapel" ]; then
   python_version=$("$python" -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
   echo "chapel python bindings are not built for python ${python_version}" 1>&2
-  # if there is a versioned directory, the user may have built chapel with a different python version
-  ls -d "$chpl_frontend_py_deps-py*/chapel" >/dev/null 2>&1
-  exit_code=$?
-  if [[ $exit_code -ne 0 ]]; then
-    echo "make sure your current python version matches the one used to build chapel" 1>&2
-  fi
   exit 1
 fi
 

@@ -159,13 +159,7 @@ def get_chpldeps(chapel_py=False):
     if not chapel_py:
         chpl_venv = os.path.join(base, "chpldeps")
     else:
-        # for 3.10+, we can use chpl-frontend-py-deps
-        # for other versions, we have to use chpl-frontend-py-deps-pyX.Y
-        name = "chpl-frontend-py-deps"
-        minor_version = sys.version_info.minor
-        if minor_version < 10:
-            name += "-py" + str(minor_version)
-        chpl_venv = os.path.join(base, name)
+        chpl_venv = os.path.join(base, "chpl-frontend-py-deps")
     return chpl_venv
 
 @memoize
