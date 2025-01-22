@@ -183,7 +183,8 @@ ACTUAL_ITERATOR(FnCall);
       /*slots*/ slots \
     }; \
     auto parentType = parentTypeFor(TAG); \
-    TYPE = (PyTypeObject*)PyType_FromSpecWithBases(&spec, (PyObject*)parentType); \
+    auto bases = PyTuple_Pack(1, parentType); \
+    TYPE = (PyTypeObject*)PyType_FromSpecWithBases(&spec, bases); \
     if (!TYPE || PyType_Ready(TYPE) < 0) return false; \
   } while(0);
 
