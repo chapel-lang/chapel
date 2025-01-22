@@ -62,7 +62,7 @@ int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs) {
 void AstIterObject_dealloc(AstIterObject* self) {
   delete self->iterAdapter;
   Py_XDECREF(self->contextObject);
-  call_tp_free(AstIterType, (PyObject*) self);
+  callPyTypeSlot_tp_free(AstIterType, (PyObject*) self);
 }
 
 PyObject* AstIterObject_iter(AstIterObject *self) {
@@ -118,7 +118,7 @@ int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kw
 
 void AstCallIterObject_dealloc(AstCallIterObject* self) {
   Py_XDECREF(self->contextObject);
-  call_tp_free(AstCallIterType, (PyObject*) self);
+  callPyTypeSlot_tp_free(AstCallIterType, (PyObject*) self);
 }
 
 PyObject* AstCallIterObject_iter(AstCallIterObject *self) {

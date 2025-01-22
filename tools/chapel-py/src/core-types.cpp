@@ -156,7 +156,7 @@ PyObject* AstNodeObject::iter(AstNodeObject *self) {
 
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_XDECREF(self->contextObject);
-  call_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
+  callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
 }
 
 PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {

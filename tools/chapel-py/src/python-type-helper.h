@@ -22,13 +22,31 @@
 
 #include "PythonWrapper.h"
 
-static void call_tp_free(PyTypeObject* type, PyObject* self) {
-  auto tp_free = (void (*)(PyObject*))(PyType_GetSlot(type, Py_tp_free));
+static void callPyTypeSlot_tp_free(PyTypeObject* type, PyObject* self) {
+  auto tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
   if (!tp_free) {
     PyErr_SetString(PyExc_RuntimeError, "Could not free object");
-  } else {
-    tp_free(self);
+    return;
   }
+  tp_free(self);
+}
+static int callPyTypeSlot_tp_init(PyTypeObject* type, PyObject* self, PyObject* args, PyObject* kwargs) {
+  auto func = (initproc)PyType_GetSlot(type, Py_tp_init);
+  if (!func) {
+    PyErr_SetString(PyExc_TypeError, "Cannot initialize object");
+    return -1;
+  }
+  return func((PyObject*) self, args, kwargs);
+}
+
+
+static const char* getCStringFromPyObjString(PyObject* obj) {
+  const char* str;
+  if (!PyArg_Parse(obj, "s", &str)) {
+    PyErr_SetString(PyExc_RuntimeError, "Could not get string from object");
+    return nullptr;
+  }
+  return str;
 }
 
 static const char* getTypeName(PyTypeObject* obj) {
@@ -37,9 +55,16 @@ static const char* getTypeName(PyTypeObject* obj) {
     PyErr_SetString(PyExc_RuntimeError, "Could not get type name");
     return nullptr;
   }
-  const char* name = PyUnicode_AsUTF8AndSize(name_attr, NULL);
+  const char* name = getCStringFromPyObjString(name_attr);
   Py_XDECREF(name_attr);
   return name;
 }
+
+// In python3.12, Py_None is immortal and this is not needed
+#define chpl_PY_RETURN_NONE \
+  do { \
+    Py_INCREF(Py_None); \
+    return Py_None; \
+  } while(0)
 
 #endif

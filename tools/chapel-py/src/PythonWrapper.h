@@ -20,10 +20,14 @@
 #ifndef CHAPEL_PY_PYTHON_WRAPPER_H
 #define CHAPEL_PY_PYTHON_WRAPPER_H
 
-#ifdef CHAPEL_PY_USE_STABLE_API
-// use a stable API version of python 3.10
-#define Py_LIMITED_API 0x030A0000
-#endif
+//
+// Python.h should only be included in this header file, other files should
+// include this one.
+// This header guarantees a specific stable version of Python.h is used.
+//
+
+// use a stable API version of python 3.8
+#define Py_LIMITED_API 0x03080000
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 

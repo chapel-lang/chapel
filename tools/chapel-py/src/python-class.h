@@ -95,7 +95,7 @@ struct PythonClass {
 
   static void dealloc(Self* self) {
     ((PythonClass*) self)->value_.~T();
-    call_tp_free(Self::PythonType, (PyObject*) self);
+    callPyTypeSlot_tp_free(Self::PythonType, (PyObject*) self);
   }
 
   static int init(Self* self, PyObject* args, PyObject* kwargs) {

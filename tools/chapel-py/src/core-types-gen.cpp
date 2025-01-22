@@ -27,6 +27,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/util/version-info.h"
+#include "python-type-helper.h"
 
 using namespace chpl;
 using namespace uast;
@@ -42,15 +43,10 @@ using namespace uast;
    We particularly want this to make sure we call the AstNode constructor,
    which sets the context object etc.
  */
-#define DEFINE_INIT_FOR(NAME, TAG)\
+#define DEFINE_INIT_FOR(NAME, TAG) \
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    auto func = ((int(*)(PyObject*, PyObject*, PyObject*)) PyType_GetSlot(parentTypeFor(TAG), Py_tp_init)); \
-    if (!func) { \
-      PyErr_SetString(PyExc_TypeError, "Cannot initialize Chapel AST node"); \
-      return -1; \
-    } \
-    return func((PyObject*) self, args, kwargs); \
-  } \
+    return callPyTypeSlot_tp_init(NAME##Type, (PyObject*) self, args, kwargs); \
+  }
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
@@ -189,7 +185,7 @@ ACTUAL_ITERATOR(FnCall);
   } while(0);
 
 bool setupGeneratedTypes() {
-#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
-#include "generated-types-list.h"
-return true;
+  #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+  #include "generated-types-list.h"
+  return true;
 }
