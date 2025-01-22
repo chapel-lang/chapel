@@ -564,30 +564,36 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
-      for followThis in _htb._evenSlots(_htb.tableNumFullSlots, tag) {
-        //writeln(followThis);
-        yield followThis;
-      }
-      /*
       var space = 0..#_htb.tableSize;
       for followThis in space.these(tag) {
         yield followThis;
       }
-      */
     }
 
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
-      foreach val in _htb._evenSlots(_htb.tableNumFullSlots, followThis, tag) {
-        yield val;
-      }
-      /*
       foreach idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
-      */
     }
 
+    /*
+      Iterate over the elements of this set. Yields constant references
+      that cannot be modified.
+
+      .. warning::
+
+        Modifying this set while iterating over it may invalidate the
+        references returned by an iterator and is considered undefined
+        behavior.
+
+      :yields: A constant reference to an element in this set.
+
+      :arg size: the number of elements in the leader, when participating in
+                 zippered parallel iteration.  Defaults to the number of
+                 elements in the set.  For standalone and serial iteration, this
+                 must match the number of elements in the set.
+    */
     iter const contents(size: int = _htb.tableNumFullSlots) const ref {
       if (size != _htb.tableNumFullSlots) {
         __primitive("chpl_error",
@@ -621,7 +627,6 @@ module Set {
       }
 
       for followThis in _htb._evenSlots(size, tag) {
-        //writeln(followThis);
         yield followThis;
       }
     }

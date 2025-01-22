@@ -144,7 +144,7 @@ module ChapelHashtable {
     const minSizePerTask = dataParMinGranularity;
 
     // We are simply slicing up the table here.  Trying to do something
-    //  more intelligent (like evenly dividing up the full slots, led
+    //  more intelligent (like evenly dividing up the full slots), led
     //  to poor speed ups.
 
     if debugAssocDataPar {
@@ -647,9 +647,7 @@ module ChapelHashtable {
 
     proc _determineEvenChunks(numChunks: int, numFull: int): [] int {
       var numFullPerTask = numFull / numChunks;
-      //writeln("min number of full slots per task = ", numFullPerTask);
       var rem = numFull % numChunks;
-      //writeln("remainder = ", rem);
 
       var chunkEnds: [0..#(numChunks-1)] int;
       var chunkIdx = 0;
@@ -664,34 +662,28 @@ module ChapelHashtable {
           (chunkIdx >= chunkEnds.size) {
           break;
         }
+
+        // Allows us to evenly distribute when the chunks don't divide the
+        // total number of elements evenly.
         if chunkIdx < rem {
           if (curNumFull == (numFullPerTask * (chunkIdx+1)) + (chunkIdx+1)) {
-            //writeln("index ", i, " is getting saved in chunkEnds[", chunkIdx,
-            //        "]");
             chunkEnds[chunkIdx] = i;
             chunkIdx += 1;
           }
         } else {
           if (curNumFull == (numFullPerTask * (chunkIdx+1)) + rem) {
-            //writeln("index ", i, " is getting saved in chunkEnds[", chunkIdx,
-            //        "]");
             chunkEnds[chunkIdx] = i;
             chunkIdx += 1;
           }
         }
       }
-      //writeln("chunkEnds = ", chunkEnds);
       return chunkEnds;
     }
 
     iter _evenSlots(size: int, param tag) where tag == iterKind.leader {
       var numChunks = _computeNumChunks(size);
-      //writeln("number of tasks = ", numChunks);
-      //writeln("number of full slots = ", this.tableNumFullSlots);
       var numFullPerTask = size / numChunks;
-      //writeln("min number of full slots per task = ", numFullPerTask);
       var rem = size % numChunks;
-      //writeln("remainder = ", rem);
 
       forall i in 0..#numChunks {
         if (i < rem) {
@@ -729,7 +721,6 @@ module ChapelHashtable {
 
     iter _evenSlots(size: int, followThis, param tag) const ref
       where tag == iterKind.follower {
-      //writeln("in follower: ", followThis);
       use Types;
 
       if (size != this.tableNumFullSlots) {
