@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.abspath('./'))
 old_sys_path = sys.path.copy()
 sys.path.insert(0, os.path.abspath('../../util/chplenv'))
 import chpl_home_utils
-chapel_py_dir = chpl_home_utils.get_chpldeps(True)
+chapel_py_dir = chpl_home_utils.get_chpldeps(chapel_py=True)
 del chpl_home_utils
 sys.path = old_sys_path
 
