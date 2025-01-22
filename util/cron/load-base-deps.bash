@@ -20,8 +20,8 @@ else
   # For systems not using a Spack install
 
   # load llvm
-  if [ -f /hpcdc/project/chapel/setup_system_llvm.bash ] ; then
-    source /hpcdc/project/chapel/setup_system_llvm.bash
+  if [ -f /hpcdc/project/chapel/setup_llvm.bash ] ; then
+    source /hpcdc/project/chapel/setup_llvm.bash
   elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
     source /cy/users/chapelu/setup_system_llvm.bash
   fi
