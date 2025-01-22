@@ -31,8 +31,6 @@
 // for example, a List, Set, Dict, Tuple, etc.
 // these should provide native like operation, so `for i in pyList` should work
 
-// TODO: using the Py*_Check, we may be able to avoid needing to specify the type of the return value
-
 // TODO: implement operators as dunder methods
 
 // TODO: make python use chapel stdout/stderr
@@ -64,6 +62,12 @@
      chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
           -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR \
           -lpython$PYTHON_LDVERSION ...Chapel source files...
+
+  .. warning::
+
+    Chapel programs compiled in this was are compiled for a specific Python
+    version. Attempting to run the compiled program with a different Python
+    version may have unexpected results.
 
   Parallel Execution
   ------------------
@@ -143,20 +147,26 @@
 
   .. note::
 
-     Newer Python versions offer a free-threading mode that allows multiple threads concurrently, without the need for the GIL. In this mode, users can either remove the GIL acquisition code or not. Without the GIL, the GIL acquisition code will have no effect.
+     Newer Python versions offer a free-threading mode that allows multiple
+     threads concurrently, without the need for the GIL. In this mode, users can
+     either remove the GIL acquisition code or not. Without the GIL, the GIL
+     acquisition code will have no effect.
 
   .. note::
 
      In the future, it may be possible to achieve better parallelism with Python
      by using sub-interpreters. However, sub-interpreters are not yet supported
-     in Chapel.
+     in Chapel and attempting to have more than one :type:`Interpreter` instance
+     will likely result in segmentation faults.
 
   Using Python Modules With Distributed Code
   -------------------------------------------
 
-  Python has no built-in support for distributed memory, so each locale must create its own interpreter (and subsequent Python objects).
+  Python has no built-in support for distributed memory, so each locale must
+  create its own interpreter (and subsequent Python objects).
 
-  The following example demonstrates how to create a Python interpreter and run a Python function on each locale:
+  The following example demonstrates how to create a Python interpreter and run
+  a Python function on each locale:
 
   ..
      START_TEST
@@ -340,7 +350,8 @@ module Python {
         // import objgraph
         this.objgraph = this.importModule("objgraph");
         if this.objgraph == nil {
-          writeln("objgraph not found, memory leak detection disabled. Install objgraph with 'pip install objgraph'");
+          writeln("objgraph not found, memory leak detection disabled. " +
+                  "Install objgraph with 'pip install objgraph'");
         } else {
           // objgraph.growth()
           var growth = PyObject_GetAttrString(this.objgraph, "growth");
@@ -1585,8 +1596,12 @@ module Python {
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
-    extern const chpl_PY_VERSION_HEX: uint(64);
-    extern const chpl_PY_VERSION: c_ptrConst(c_char);
+    extern "chpl_PY_VERSION_HEX" const PY_VERSION_HEX: uint(64);
+    extern "chpl_PY_VERSION" const PY_VERSION: c_ptrConst(c_char);
+    extern "chpl_PY_MAJOR_VERSION" const PY_MAJOR_VERSION: c_ulong;
+    extern "chpl_PY_MINOR_VERSION" const PY_MINOR_VERSION: c_ulong;
+    extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
+
 
 
     /*

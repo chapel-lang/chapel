@@ -1,11 +1,10 @@
 
 use Python;
 
-var modStr =
-"\
-def foo(x):\
-    print('hello from Python:', x)\
-";
+var modStr = """
+def foo(x):
+  print('hello from Python:', x)
+""";
 
 var interp = new Interpreter();
 

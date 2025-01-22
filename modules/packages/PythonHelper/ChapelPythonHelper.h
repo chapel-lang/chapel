@@ -21,10 +21,14 @@
 #ifndef CHPL_PYTHON_HELPER_H_
 #define CHPL_PYTHON_HELPER_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
 const char* chpl_PY_VERSION = PY_VERSION;
+const unsigned long chpl_PY_MAJOR_VERSION = PY_MAJOR_VERSION;
+const unsigned long chpl_PY_MINOR_VERSION = PY_MINOR_VERSION;
+const unsigned long chpl_PY_MICRO_VERSION = PY_MICRO_VERSION;
 
 static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 #if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
