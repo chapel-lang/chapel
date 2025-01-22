@@ -116,13 +116,12 @@ struct LocationObject : public PythonClass<LocationObject, chpl::Location> {
   static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
 
-    size_t numExtraSlots = 3;
-    PyType_Slot extraSlots[] = {
-      {Py_tp_str, (void*) str},
+    std::array<PyType_Slot, 3> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) str},
       {Py_nb_add, (void*) add},
       {Py_nb_subtract, (void*) subtract},
     };
-    PyTypeObject* configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots, numExtraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<LocationObject, chpl::Location>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
     return configuring;
   }
 };
@@ -143,11 +142,10 @@ struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::
   static PyObject* iter(AstNodeObject *self);
 
   static PyTypeObject* configurePythonType() {
-    size_t numExtraSlots = 1;
-    PyType_Slot extraSlots[] = {
-      {Py_tp_iter, (void*) AstNodeObject::iter},
+    std::array<PyType_Slot, 1> extraSlots = {
+      PyType_Slot{Py_tp_iter, (void*) AstNodeObject::iter},
     };
-    PyTypeObject* configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
     return configuring;
   }
 };
@@ -162,11 +160,10 @@ struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const
   static PyObject* str(ChapelTypeObject* self);
 
   static PyTypeObject* configurePythonType() {
-    size_t numExtraSlots = 1;
-    PyType_Slot extraSlots[] = {
-      {Py_tp_str, (void*) ChapelTypeObject::str},
+    std::array<PyType_Slot, 1> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) ChapelTypeObject::str},
     };
-    PyTypeObject* configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
     return configuring;
   }
 };
@@ -179,11 +176,10 @@ struct ParamObject : public PythonClassWithContext<ParamObject, const chpl::type
   static PyObject* str(ParamObject* self);
 
   static PyTypeObject* configurePythonType() {
-    size_t numExtraSlots = 1;
-    PyType_Slot extraSlots[] = {
-      {Py_tp_str, (void*) ParamObject::str},
+    std::array<PyType_Slot, 1> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) ParamObject::str},
     };
-    PyTypeObject* configuring = PythonClassWithContext<ParamObject, const chpl::types::Param*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots, numExtraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<ParamObject, const chpl::types::Param*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
     return configuring;
   }
 };
@@ -237,12 +233,11 @@ struct TypedSignatureObject : public PythonClassWithContext<TypedSignatureObject
 
   static PyTypeObject* configurePythonType() {
     // Configure the necessary methods to make inserting into sets working:
-    size_t numExtraSlots = 2;
-    PyType_Slot extraSlots[] = {
-      {Py_tp_hash, (void*) hash},
+    std::array<PyType_Slot, 2> extraSlots = {
+      PyType_Slot{Py_tp_hash, (void*) hash},
       {Py_tp_richcompare, (void*) richcompare},
     };
-    PyTypeObject* configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots, numExtraSlots);
+    PyTypeObject* configuring = PythonClassWithContext<TypedSignatureObject, TypedSignatureAndPoiScope>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
     return configuring;
   }
 };

@@ -23,6 +23,7 @@
 #include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include <optional>
+#include <array>
 #include "python-type-helper.h"
 
 template <typename ObjectType>
@@ -103,12 +104,12 @@ struct PythonClass {
     return 0;
   }
 
+  template <size_t SIZE = 0>
   static PyTypeObject* configurePythonType(unsigned int flags = Py_TPFLAGS_DEFAULT,
-                                           PyType_Slot* extraSlots = nullptr,
-                                           size_t numExtraSlot = 0) {
+                                           std::array<PyType_Slot, SIZE> extraSlots = {}) {
 
     auto numBaseSlots = 5;
-    auto numSlots = numBaseSlots + numExtraSlot;
+    auto numSlots = numBaseSlots + SIZE;
 
     auto slots = std::unique_ptr<PyType_Slot[]>(new PyType_Slot[numSlots+1]);
     slots[numSlots] = {0, nullptr};
@@ -117,7 +118,7 @@ struct PythonClass {
     slots[2] = {Py_tp_methods, (void*) PerTypeMethods<Self>::methods};
     slots[3] = {Py_tp_init, (void*) Self::init};
     slots[4] = {Py_tp_new, (void*) PyType_GenericNew};
-    for (size_t i = 0; i < numExtraSlot; i++) {
+    for (size_t i = 0; i < SIZE; i++) {
       slots[numBaseSlots + i] = extraSlots[i];
     }
 
