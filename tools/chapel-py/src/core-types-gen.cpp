@@ -176,7 +176,7 @@ ACTUAL_ITERATOR(FnCall);
       {0, nullptr} \
     }; \
     PyType_Spec spec = { \
-      /*name*/ #NAME, \
+      /*name*/ "chapel."#NAME, \
       /*basicsize*/ sizeof(NAME##Object), \
       /*itemsize*/ 0, \
       /*flags*/ FLAGS, \
@@ -185,7 +185,6 @@ ACTUAL_ITERATOR(FnCall);
     auto parentType = parentTypeFor(TAG); \
     TYPE = (PyTypeObject*)PyType_FromSpecWithBases(&spec, (PyObject*)parentType); \
     if (!TYPE || PyType_Ready(TYPE) < 0) return false; \
-    /*TODO: need to set PyDict_SetItemString(configuring->tp_dict, "__module__", "chapel"); */ \
   } while(0);
 
 bool setupGeneratedTypes() {

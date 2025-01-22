@@ -34,7 +34,7 @@ bool setupAstIterType() {
       {0, nullptr}
     };
     PyType_Spec spec = {
-      /*name*/ "AstIter",
+      /*name*/ "chapel.AstIter",
       /*basicsize*/ sizeof(AstIterObject),
       /*itemsize*/ 0,
       /*flags*/ Py_TPFLAGS_DEFAULT,
@@ -42,7 +42,6 @@ bool setupAstIterType() {
     };
     AstIterType = (PyTypeObject*)PyType_FromSpec(&spec);
     if (!AstIterType || PyType_Ready(AstIterType) < 0) return false;
-    // TODO: set module name
     return true;
 }
 
@@ -94,7 +93,7 @@ bool setupAstCallIterType() {
     {0, nullptr}
   };
   PyType_Spec spec = {
-    /*name*/ "AstCallIter",
+    /*name*/ "chapel.AstCallIter",
     /*basicsize*/ sizeof(AstCallIterObject),
     /*itemsize*/ 0,
     /*flags*/ Py_TPFLAGS_DEFAULT,
@@ -102,7 +101,6 @@ bool setupAstCallIterType() {
   };
   AstCallIterType = (PyTypeObject*)PyType_FromSpec(&spec);
   if (!AstCallIterType || PyType_Ready(AstCallIterType) < 0) return false;
-  // TODO: set module name
   return true;
 }
 

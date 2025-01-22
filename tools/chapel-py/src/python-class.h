@@ -176,8 +176,7 @@ PyTypeObject* PythonClass<Self,T>::PythonType = Self::configurePythonType();
 // Forward-declaring doesn't cut it because we need ContextObject::PythonType.
 
 struct ContextObject : public PythonClass<ContextObject, chpl::Context> {
-  static constexpr const char* QualifiedName = "Context";
-  // TODI: restore chapel.
+  static constexpr const char* QualifiedName = "chapel.Context";
   static constexpr const char* Name = "Context";
   static constexpr const char* DocStr = "The Chapel context object that tracks various frontend state";
 

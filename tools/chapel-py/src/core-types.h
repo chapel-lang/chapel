@@ -136,8 +136,7 @@ struct ScopeObject : public PythonClassWithContext<ScopeObject, const chpl::reso
 using VisibleSymbol = std::tuple<chpl::UniqueString, std::vector<const chpl::uast::AstNode*>>;
 
 struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*> {
-  static constexpr const char* QualifiedName = "AstNode";
-  // TODO: restore chapel.
+  static constexpr const char* QualifiedName = "chapel.AstNode";
   static constexpr const char* Name = "AstNode";
   static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
@@ -156,8 +155,7 @@ struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::
 using QualifiedTypeTuple = std::tuple<const char*, Nilable<const chpl::types::Type*>, Nilable<const chpl::types::Param*>>;
 
 struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const chpl::types::Type*> {
-  static constexpr const char* QualifiedName = "ChapelType";
-  // TODO: restore chapel.
+  static constexpr const char* QualifiedName = "chapel.ChapelType";
   static constexpr const char* Name = "ChapelType";
   static constexpr const char* DocStr = "The base type of Chapel types";
 
@@ -174,8 +172,7 @@ struct ChapelTypeObject  : public PythonClassWithContext<ChapelTypeObject, const
 };
 
 struct ParamObject : public PythonClassWithContext<ParamObject, const chpl::types::Param*> {
-  static constexpr const char* QualifiedName = "Param";
-    // TODO: restore chapel.
+  static constexpr const char* QualifiedName = "chapel.Param";
   static constexpr const char* Name = "Param";
   static constexpr const char* DocStr = "The base type of Chapel parameters (compile-time known values)";
 
