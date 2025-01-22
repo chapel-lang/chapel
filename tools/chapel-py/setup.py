@@ -85,14 +85,6 @@ if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
 os.environ["CC"] = host_cc
 os.environ["CXX"] = host_cxx
 
-# We use a stable API for Python 3.10+
-# The limiting factor here is PyUnicode_AsUTF8AndSize, which was introduced in 3.10
-# If we are trying to build for an older version, we need to use the non-stable API
-use_stable_api = False
-if sys.version_info[:2] >= (3, 10):
-    use_stable_api = True
-    CXXFLAGS += ["-DCHAPEL_PY_USE_STABLE_API"]
-
 setup(
     name="chapel",
     version="0.1",
@@ -105,7 +97,7 @@ setup(
             depends=glob.glob("src/**/*.h", recursive=True),
             extra_compile_args=CXXFLAGS,
             extra_link_args=LDFLAGS,
-            py_limited_api=use_stable_api,
+            py_limited_api=True,
         )
     ],
 )
