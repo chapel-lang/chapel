@@ -22,7 +22,7 @@
 
 #include "PythonWrapper.h"
 
-static void callPyTypeSlot_tp_free(PyTypeObject* type, PyObject* self) {
+static inline void callPyTypeSlot_tp_free(PyTypeObject* type, PyObject* self) {
   auto tp_free = (freefunc)PyType_GetSlot(type, Py_tp_free);
   if (!tp_free) {
     PyErr_SetString(PyExc_RuntimeError, "Could not free object");
@@ -30,7 +30,7 @@ static void callPyTypeSlot_tp_free(PyTypeObject* type, PyObject* self) {
   }
   tp_free(self);
 }
-static int callPyTypeSlot_tp_init(PyTypeObject* type, PyObject* self, PyObject* args, PyObject* kwargs) {
+static inline int callPyTypeSlot_tp_init(PyTypeObject* type, PyObject* self, PyObject* args, PyObject* kwargs) {
   auto func = (initproc)PyType_GetSlot(type, Py_tp_init);
   if (!func) {
     PyErr_SetString(PyExc_TypeError, "Cannot initialize object");
@@ -40,7 +40,7 @@ static int callPyTypeSlot_tp_init(PyTypeObject* type, PyObject* self, PyObject* 
 }
 
 
-static const char* getCStringFromPyObjString(PyObject* obj) {
+static inline const char* getCStringFromPyObjString(PyObject* obj) {
   const char* str;
   if (!PyArg_Parse(obj, "s", &str)) {
     PyErr_SetString(PyExc_RuntimeError, "Could not get string from object");
