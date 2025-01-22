@@ -594,7 +594,7 @@ module Set {
                  elements in the set.  For standalone and serial iteration, this
                  must match the number of elements in the set.
     */
-    iter const contents(size: int = _htb.tableNumFullSlots) const ref {
+    iter const contents(size: int = this.size) const ref {
       if (size != _htb.tableNumFullSlots) {
         __primitive("chpl_error",
                     "didn't specify the full contents of the set".c_str());
@@ -606,7 +606,7 @@ module Set {
     }
 
     @chpldoc.nodoc
-    iter const contents(size: int = _htb.tableNumFullSlots, param tag) const ref
+    iter const contents(size: int = this.size, param tag) const ref
       where tag == iterKind.standalone {
       if (size != _htb.tableNumFullSlots) {
         __primitive("chpl_error",
@@ -619,7 +619,7 @@ module Set {
     }
 
     @chpldoc.nodoc
-    iter const contents(size: int = _htb.tableNumFullSlots, param tag)
+    iter const contents(size: int = this.size, param tag)
       where tag == iterKind.leader {
       if (size != _htb.tableNumFullSlots) {
         __primitive("chpl_error",
@@ -632,7 +632,7 @@ module Set {
     }
 
     @chpldoc.nodoc
-    iter const contents(size: int = _htb.tableNumFullSlots, param tag,
+    iter const contents(size: int = this.size, param tag,
                         followThis) const ref
     where tag == iterKind.follower {
       foreach val in _htb._evenSlots(size, followThis, tag) {
