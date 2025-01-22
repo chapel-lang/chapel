@@ -56,7 +56,7 @@ with the project via the following steps:
   <https://chapel-lang.org/learning.html>`_.
 
 * Familiarize yourself with the `language specification
-  <https://chapel-lang.org/docs/language/spec/index.html>`_.  This can
+  <https://chapel-lang.org/docs/language/spec/>`_.  This can
   be a fairly dry/tedious task, so most people will tend to find other
   tasks to interleave it with, like programming.  Nevertheless, we
   want to emphasize how important it is for developers to be familiar
