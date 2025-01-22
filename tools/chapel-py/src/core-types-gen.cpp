@@ -45,7 +45,7 @@ using namespace uast;
  */
 #define DEFINE_INIT_FOR(NAME, TAG) \
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return callPyTypeSlot_tp_init(NAME##Type, (PyObject*) self, args, kwargs); \
+    return callPyTypeSlot_tp_init(parentTypeFor(TAG), (PyObject*) self, args, kwargs); \
   }
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
@@ -93,9 +93,7 @@ struct InvokeHelper<void(Args...)> {
   template <typename F>
   static PyObject* invoke(ContextObject* contextObject, F&& fn) {
     fn();
-    // In python3.12, Py_None is immortal and this is not needed
-    Py_INCREF(Py_None);
-    return Py_None;
+    chpl_PY_RETURN_NONE;
   }
 };
 
