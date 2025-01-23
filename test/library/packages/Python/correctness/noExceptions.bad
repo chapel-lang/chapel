@@ -1,0 +1,4 @@
+noExceptions.chpl:18: error: unresolved call 'Interpreter.init(0)'
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: note: this candidate did not match: Interpreter.init()
+noExceptions.chpl:18: note: because call includes 1 argument
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: note: but function can only accept 0 arguments

@@ -230,7 +230,27 @@ module Python {
   private use CWChar;
   private use OS.POSIX only getenv;
 
+  /*
+    Use 'objgraph' to detect memory leaks in the Python code. Care should be
+    taken when interpreting the output of this flag, not all memory leaks are
+    under Chapel's control. For example, printing a Python list leaks memory
+    according to 'objgraph'. Furthermore, some memory is still held when until
+    the interpreter is closed, like the module import cache.
+  */
   config const pyMemLeaks = false;
+
+  /*
+    Check for exceptions after each Python API call. This is important for
+    correctness, but may have a performance impact.
+
+    .. warning::
+
+       While turning this flag off may improve performance, it may also lead to
+       segmentation faults and other undefined behavior. This flag should only
+       be turned off if you are certain that no exceptions will be thrown by
+       the Python code, or if a hard crash is acceptable.
+  */
+  config param checkExceptions = true;
 
   // TODO: this must be first to avoid use-before-def, but that makes it first in the docs
   // is there a way to avoid this?
@@ -245,14 +265,6 @@ module Python {
   }
   /* Represents the python value 'None' */
   const None = new NoneType();
-
-
-  @chpldoc.nodoc
-  enum codeKind {
-    source,
-    bytecode,
-    pickle
-  }
 
   private proc getOsPathSepHelper(interp: borrowed Interpreter): string throws {
     var os = PyImport_ImportModule("os");
@@ -276,6 +288,18 @@ module Python {
        Do not create more than one instance of this class.
   */
   class Interpreter {
+
+    // TODO: add ability to override the global checkExceptions
+    // currently blocked by https://github.com/chapel-lang/chapel/issues/26579
+    /*
+      Whether to check for exceptions after each Python API call. This is
+      important for correctness, but may have a performance impact.
+
+      See :config:`Python.checkExceptions` and
+      :method:`Interpreter.checkException` for more information.
+    */
+    // param checkExceptions: bool = Python.checkExceptions;
+
     @chpldoc.nodoc
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
@@ -553,9 +577,9 @@ module Python {
          most users should not need to call this method directly.
     */
     inline proc checkException() throws {
-      var exc = chpl_PyErr_GetRaisedException();
-      if exc {
-        throw PythonException.build(this, exc);
+      if Python.checkExceptions {
+        var exc = chpl_PyErr_GetRaisedException();
+        if exc then throw PythonException.build(this, exc);
       }
     }
 
@@ -1056,7 +1080,7 @@ module Python {
         Py_DECREF(this.obj);
     }
 
-    proc check() throws do this.interpreter.checkException();
+    inline proc check() throws do this.interpreter.checkException();
 
     /*
       Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
@@ -1227,7 +1251,7 @@ module Python {
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleContents: string) throws {
-      super.init(interpreter, nil: PyObjectPtr);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
       this.obj = interpreter.compileModule(moduleContents, modName);
@@ -1238,7 +1262,7 @@ module Python {
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleBytecode: bytes) throws {
-      super.init(interpreter, nil: PyObjectPtr);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
       this.obj = interpreter.compileModule(moduleBytecode, modName);
@@ -1264,7 +1288,7 @@ module Python {
       this.fnName = fnName;
     }
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
-      super.init(interpreter, nil:PyObjectPtr, isOwned=true);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
