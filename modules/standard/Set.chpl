@@ -594,6 +594,7 @@ module Set {
                  elements in the set.  For standalone and serial iteration, this
                  must match the number of elements in the set.
     */
+    @unstable("The contents iterator is unstable because it is new")
     iter const contents(size: int = this.size) const ref {
       if (size != _htb.tableNumFullSlots) {
         __primitive("chpl_error",
