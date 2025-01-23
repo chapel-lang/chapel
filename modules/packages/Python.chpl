@@ -217,6 +217,7 @@ module Python {
   private import Map;
 
   private use CPythonInterface except PyObject;
+  private import this.ArrayTypes;
   private use CWChar;
   private use OS.POSIX only getenv;
 
@@ -268,7 +269,7 @@ module Python {
     return sep;
   }
 
-  private proc throwNewChapelException(message: string) throws {
+  private proc throwChapelException(message: string) throws {
     throw new ChapelException(message);
   }
 
@@ -364,9 +365,8 @@ module Python {
       // object that looks like a python file but forwards calls like write to
       // Chapel's write
 
-      // init Array shim types
-      if createArrayShimType() == 0 {
-        throwNewChapelException("Failed to create array shim type");
+      if !ArrayTypes.createArrayTypes() {
+        throwChapelException("Failed to create array types");
       }
 
       if pyMemLeaks {
@@ -1543,9 +1543,7 @@ module Python {
     */
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
       where isSupportedArrayType(arr) {
-      super.init(interpreter,
-                 createArrayShim(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t)),
-                 isOwned=true);
+      super.init(interpreter, ArrayTypes.createArray(arr), isOwned=true);
       this.eltType = arr.eltType;
     }
     @chpldoc.nodoc
@@ -1710,6 +1708,7 @@ module Python {
   Module implements writeSerializable;
   Class implements writeSerializable;
   PyList implements writeSerializable;
+  Array implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
@@ -1730,6 +1729,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Array.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -2014,9 +2017,45 @@ module Python {
                                            method: PyObjectPtr,
                                            args...): PyObjectPtr;
 
-    extern proc createArrayShimType(): int;
-    extern proc createArrayShim(data: c_ptr(int(64)),
-                                size: Py_ssize_t): PyObjectPtr;
+  }
 
+
+  @chpldoc.nodoc
+  module ArrayTypes {
+    private use super.CPythonInterface;
+    private use CTypes;
+    require "PythonHelper/ArrayTypes.h";
+    require "PythonHelper/ArrayTypes.c";
+
+    extern proc createArrayTypes(): bool;
+
+    proc typeToArraySuffix(type T) param {
+      select T {
+        when int(64) do return "I64";
+        when uint(64) do return "U64";
+        when int(32) do return "I32";
+        when uint(32) do return "U32";
+        when int(16) do return "I16";
+        when uint(16) do return "U16";
+        when int(8) do return "I8";
+        when uint(8) do return "U8";
+        when real(64) do return "R64";
+        when real(32) do return "R32";
+        when bool do return "Bool";
+        otherwise do return "";
+      }
+    }
+
+    proc createArray(ref arr: []): PyObjectPtr {
+      type T = arr.eltType;
+      param suffix = typeToArraySuffix(T);
+      if suffix == "" then compilerError("Unsupported array type: " + T:string);
+
+      param externalName = "createArray" + suffix;
+      extern externalName
+      proc createPyArray(arr: c_ptr(T), size: Py_ssize_t): PyObjectPtr;
+
+      return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+    }
   }
 }
