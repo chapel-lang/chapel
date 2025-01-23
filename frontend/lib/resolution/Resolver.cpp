@@ -2505,6 +2505,59 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
 
     byPostorder.byAst(primCall).setType(result);
     return true;
+  } else if (primCall->prim() == PRIM_ERROR ||
+             primCall->prim() == PRIM_WARNING) {
+    // No matter what, this primitive is void-returning.
+    byPostorder.byAst(primCall).setType({ QualifiedType::VAR, VoidType::get(context) });
+
+    auto kind = primCall->prim() == PRIM_ERROR ? CompilerDiagnostic::ERROR
+                                               : CompilerDiagnostic::WARNING;
+
+    const TupleType* messageComponents = nullptr;
+    const IntParam* depthParam = nullptr;
+    if (typedSignature) {
+      for (int i = 0; i < typedSignature->numFormals(); i++) {
+        auto& qt = typedSignature->formalType(i);
+        if (qt.isUnknownOrErroneous()) continue;
+
+        if (typedSignature->untyped()->formalName(i) == "msg") {
+          messageComponents = qt.type()->toTupleType();
+        } else if (typedSignature->untyped()->formalName(i) == "errorDepth") {
+          depthParam = qt.param() ? qt.param()->toIntParam() : nullptr;
+        }
+      }
+    }
+
+    if (!messageComponents) {
+      context->error(primCall, "invalid use of compiler diagnostic primitive");
+      return true;
+    }
+
+    std::string message;
+    for (int i = 0; i < messageComponents->numElements(); i++) {
+      auto qt = messageComponents->elementType(i);
+      if (!qt.param()) continue;
+      message += qt.param()->toStringParam()->value().c_str();
+    }
+
+    int64_t depth = 1;
+    if (depthParam) {
+      depth = depthParam->value();
+    }
+
+    // TODO: emit an error to Context so that it's logged regardless of
+    // whether it's emitted.
+
+    if (depth == 0) {
+      // TODO: write error-like message, but do not actually emit an error
+      fprintf(stderr, "%s: %s\n", kind == CompilerDiagnostic::ERROR ? "error" : "warning", message.c_str());
+    } else {
+      // We are not the target recipient of the error; functions further up
+      // the call stack ought to issue this error.
+      userDiagnostics.emplace_back(UniqueString::get(context, message.c_str()), kind, depth);
+    }
+
+    return true;
   }
 
   return false;

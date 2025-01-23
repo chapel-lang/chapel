@@ -142,6 +142,10 @@ struct Resolver {
   // the return type of the function (inferred or not)
   types::QualifiedType returnType;
 
+  // diagnostics emitted by compilerError / compilerWarning that are
+  // to be issued further up the call stack.
+  std::vector<CompilerDiagnostic> userDiagnostics;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();

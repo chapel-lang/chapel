@@ -2639,7 +2639,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(rr),
                                   std::move(resolvedPoiInfo),
                                   std::move(visitor.returnType),
-                                  /* diagnostics */ {},
+                                  std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr)));
   return ret;
