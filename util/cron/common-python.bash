@@ -11,13 +11,13 @@ function set_and_check_python_version() {
   # override `python`
   export PATH=/hpcdc/project/chapel/no-python:$PATH
 
-  local setup_script="/hpcdc/project/chapel/setup_python.bash $major_ver.$minor_ver"
+  local setup_script="/hpcdc/project/chapel/setup_python.bash"
 
   if [[ -f "${setup_script}" ]] ; then
-    source ${setup_script}
+    source ${setup_script} $major_ver.$minor_ver
   else
-    echo "[Warning: cannot find the python configuration script: ${setup_script}]"
-    return 1
+    echo "[Error: cannot find the python configuration script: ${setup_script}]"
+    exit 2
   fi
 
   check_python_version $ver_str
