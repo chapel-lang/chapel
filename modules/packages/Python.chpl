@@ -291,7 +291,7 @@ module Python {
       important for correctness, but may have a performance impact.
 
       See :config:`Python.checkExceptions` and
-      :method:`Interpreter.checkException` for more information.
+      :proc:`Interpreter.checkException` for more information.
     */
     // param checkExceptions: bool = Python.checkExceptions;
 
@@ -1505,14 +1505,14 @@ module Python {
 
     .. note::
 
-       While Chapel arrays can be indexed arbitrarily by specifing a domain
+       While Chapel arrays can be indexed arbitrarily by specifying a domain
        (e.g. ``var myArr: [2..by 4 #2]``), the equivalent Python array will
        also by indexed starting at 0 with a stride of 1. Methods like
-       :method:`~Array.getItem` do no translation of the domain and should be
+       :proc:`~Array.getItem` do no translation of the domain and should be
        called with the Python interpretation of the index.
 
 
-    To pass a Chapel array to a Python function, you would normallly
+    To pass a Chapel array to a Python function, you would normally
     just use the Chapel array directly, resulting in the data being copied in.
     To avoid this copy, first create an :type:`Array` object, then pass that to
     the Python function.
