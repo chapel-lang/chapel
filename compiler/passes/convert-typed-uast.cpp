@@ -939,8 +939,6 @@ struct TConverter final : UastConverter {
   void exit(const Import* ast, RV& rv) { }
   bool enter(const Require* ast, RV& rv) { return false; }
   void exit(const Require* ast, RV& rv) { }
-  bool enter(const ExternBlock* ast, RV& rv) { return false; }
-  void exit(const ExternBlock* ast, RV& rv) { }
   bool enter(const Implements* ast, RV& rv) { return false; }
   void exit(const Implements* ast, RV& rv) { }
   bool enter(const VisibilityClause* ast, RV& rv) { return false; }
@@ -988,11 +986,33 @@ struct TConverter final : UastConverter {
   bool enter(const Conditional* node, RV& rv);
   void exit(const Conditional* node, RV& rv);
 
+  bool enter(const ExternBlock* node, RV& rv);
+  void exit(const ExternBlock* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
 
 TConverter::~TConverter() { }
+
+// TODO: Do we need this recursion or can we snip the entire sub-tree if the
+// root is a non-runtime type? That would speed things up, but need to see.
+static const types::Type*
+typeIfAllSubExprsAreStaticTypes(TConverter* tc, const AstNode* node,
+                          TConverter::RV& rv) {
+  if (auto re = rv.byAstOrNull(node)) {
+    auto& qt = re->type();
+    if (qt.isType() && qt.hasTypePtr() && !qt.isUnknownOrErroneous()) {
+      auto ret = qt.type();
+      if (tc->typeExistsAtRuntime(ret)) return nullptr;
+      for (auto ast : node->children()) {
+        if (!typeIfAllSubExprsAreStaticTypes(tc, ast, rv)) return nullptr;
+      }
+      return ret;
+    }
+  }
+  return nullptr;
+}
 
 Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
                               types::QualifiedType* outQt) {
@@ -1005,18 +1025,22 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
     auto& qt = re->type();
 
     if (qt.isParam()) {
-      // We can fold 'param' expressions away immediately.
+      // We can fold all 'param' expressions away immediately.
       auto sym = convertParam(qt);
       INT_ASSERT(sym);
       ret = new SymExpr(sym);
+
+    } else if (auto t = typeIfAllSubExprsAreStaticTypes(this, node, rv)) {
+      // The entire sub-tree is a non-runtime type, so we can convert it.
+      auto convType = convertType(t);
+      INT_ASSERT(convType);
+      ret = new SymExpr(convType->symbol);
     }
   }
 
   if (!ret) {
-    // Otherwise, the AST was not evaluated, so traverse it.
+    // Otherwise, traverse the AST. Results will be stored in the last list.
     node->traverse(rv);
-
-    // remove the last thing from the current AList and return that
     INT_ASSERT(!cur.lastList()->empty());
     ret = cur.lastList()->last()->remove();
   }
@@ -1024,8 +1048,8 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
   // We should always have some AST at this point.
   INT_ASSERT(ret);
 
-  // Set the expression's type if it was requested.
   if (outQt) {
+    // Set the expression's type if it was requested.
     if (auto re = rv.byAstOrNull(node)) *outQt = re->type();
   }
 
@@ -2366,8 +2390,49 @@ struct ConvertTypeHelper {
     }
   }
 
+  // Given an input tuple type, adjust its qualifiers so that e.g., 'in'
+  // becomes 'var', etc. This is required to ensure the correct caching
+  // behavior. For example, a varargs formal will be '(const in, const in)',
+  // but a variable will be '(var, var)'. After normalizing, both should
+  // be '(var, var)', as constness will be dropped.
+  const types::TupleType* normalizeTupleType(const types::TupleType* t) {
+    std::vector<types::QualifiedType> v;
+    bool anyChanged = false;
+
+    // TODO: This flag is set for every 'getQualifiedTupleType' call at the
+    //       moment, which is causing spurious normalization of types here.
+    //       When we get 'isVarArgTuple()' ironed out we can invert this
+    //       condition and assume 'isVarArgTuple() == false' as the default.
+    if (!t->isVarArgTuple()) anyChanged = true;
+
+    for (int i = 0; i < t->numElements(); i++) {
+      auto qt1 = t->elementType(i);
+
+      // Use 'KindProperties' to normalize the 'QualifiedType::Kind'.
+      auto kp = resolution::KindProperties::fromKind(qt1.kind());
+      // But drop the constness.
+      kp.setConst(false);
+
+      v.push_back({ kp.toKind(), qt1.type(), qt1.param() });
+      anyChanged = anyChanged || v.back() != qt1;
+    }
+
+    const types::TupleType* ret = t;
+    if (anyChanged) {
+      ret = types::TupleType::getQualifiedTuple(context(), std::move(v));
+    }
+
+    return ret;
+  }
+
   Type* visit(const types::TupleType* t) {
     SET_LINENO(tc_->modChapelTuple);
+
+    // If the normalized tuple type is different, convert that instead.
+    auto normalizedType = normalizeTupleType(t);
+    if (t != normalizedType) {
+      return tc_->convertType(normalizedType);
+    }
 
     auto ret = new AggregateType(AGGREGATE_RECORD);
 
@@ -2379,13 +2444,14 @@ struct ConvertTypeHelper {
     ret->substitutions.put(sizeVar, new_IntSymbol(t->numElements()));
 
     std::vector<TypeSymbol*> args;
-    bool isStarTuple = t->isStarTuple();
     std::string name, cname;
 
     // Push fields.
     for (int i = 0; i < t->numElements(); i++) {
       auto qt = t->elementType(i);
-      auto sym = tc_->convertType(qt.type())->symbol;
+
+      auto conv = tc_->convertType(qt.type(), qt.isRef());
+      auto sym = qt.isRef() ? conv->refType->symbol : conv->symbol;
       args.push_back(sym);
 
       const char* fname = astr("x", istr(i));
@@ -2400,11 +2466,14 @@ struct ConvertTypeHelper {
       // ret->substitutions.put(typeCtorArgs[i+1], var->type->symbol);
     }
 
-    makeTupleName(args, isStarTuple, name, cname);
+    makeTupleName(args, t->isStarTuple(), name, cname);
 
     ret->instantiatedFrom = dtTuple;
     ret->resolveStatus = RESOLVED;
 
+    // TODO: We could drop this stuff setting up dispatch parents since we
+    //       don't actually use it to resolve, and the tuple's not a class
+    //       so it doesn't need any v-table entries.
     forv_Vec(AggregateType, t, dtTuple->dispatchParents) {
       AggregateType* at = toAggregateType(t);
       INT_ASSERT(at);
@@ -2424,7 +2493,7 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
     newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
-    if (isStarTuple) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
+    if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
     // Insert all tuple instantiations in the tuple module.
     tc_->modChapelTuple->block->insertAtHead(new DefExpr(newTypeSymbol));
@@ -2625,6 +2694,11 @@ struct ConvertDefaultValueHelper {
     return new SymExpr(var);
   }
 
+  Expr* visit(const types::RealType* t) {
+    auto var = new_RealSymbol("0.0", getRealSize(t));
+    return new SymExpr(var);
+  }
+
   Expr* visit(const types::CPtrType* t) {
     return new SymExpr(gNil);
   }
@@ -2673,6 +2747,32 @@ struct ConvertDefaultValueHelper {
     ac.convertAndInsertActuals(initCall, fromMappingIdx);
 
     // Insert the initializer call as a statement.
+    tc_->insertStmt(initCall);
+
+    // The returned expression is a reference to the temporary.
+    auto ret = new SymExpr(temp);
+
+    return ret;
+  }
+
+  Expr* visit(const types::TupleType* t) {
+    types::QualifiedType qt = { types::QualifiedType::VAR, t };
+    auto temp = tc_->makeNewTemp(qt);
+    tc_->insertStmt(new DefExpr(temp));
+
+    auto initFn = tc_->findOrConvertTupleInit(t);
+    auto initCall = new CallExpr(initFn);
+
+    initCall->insertAtTail(temp);
+
+    for (int i = 0; i < t->numElements(); i++) {
+      // Construct the default value for each component, recursively.
+      auto qtField = t->elementType(i);
+      auto e1 = tc_->defaultValueForType(qtField.type(), node_, rv_);
+      auto e2 = tc_->storeInTempIfNeeded(e1, qtField);
+      initCall->insertAtTail(e2);
+    }
+
     tc_->insertStmt(initCall);
 
     // The returned expression is a reference to the temporary.
@@ -3326,6 +3426,32 @@ locateFieldSymbolAndType(TConverter* tc,
   // Nothing we can do if we don't have a workable receiver type.
   if (!cls && !ct) return error;
 
+  //
+  // TODO: Do tuple and record setup here and then streamline the followup.
+  //
+  if (auto tt = t->toTupleType()) {
+    if (fieldName != nullptr) {
+      INT_ASSERT(false && "Fetching tuple index by name!");
+    }
+
+    bool inBounds = (0 <= fieldIndex && fieldIndex < tt->numElements());
+    if (!inBounds) return error;
+
+    auto fieldType = tt->elementType(fieldIndex);
+
+    if (auto at = toAggregateType(tc->convertType(ct))) {
+      // Adjust for the presence of the generated 'size' field.
+      const int idx = (fieldIndex + 2);
+      return { base, at, at->getField(idx), fieldType };
+    }
+
+    return error;
+  }
+
+  //
+  // Else, it's a regular composite.
+  //
+
   auto rc = createDummyRC(tc->context);
   auto dpo = resolution::DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
@@ -3491,19 +3617,11 @@ Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
     auto tt = qt1.type() ? qt1.type()->toTupleType() : nullptr;
 
     if (tt && qt2.param() && qt2.type() && qt2.type()->isIntType()) {
+      // Generate a field access (which handles any tuple-specific details).
       auto idx = qt2.param()->toIntParam()->value();
-
-      // Give up if the component index is out of bounds.
-      bool inBounds = (0 <= idx && idx < tt->numElements());
-      if (!inBounds) return placeholder();
-
       types::QualifiedType qtField;
-
-      // Skip the 'size' field.
-      const int slot = (idx + 1);
-      auto fetch = codegenGetField(actualAsts[0], slot, rv, &qtField);
+      auto fetch = codegenGetField(actualAsts[0], idx, rv, &qtField);
       auto ret = storeInTempIfNeeded(fetch, qtField);
-
       return ret;
     }
   }
@@ -4933,6 +5051,16 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 void TConverter::exit(const Conditional* node, RV& rv) {
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
+
+bool TConverter::enter(const ExternBlock* node, RV& rv) {
+  // TODO: Remove dependency on this + 'build.cpp'.
+  auto stmt = convertAstUntyped(node);
+  INT_ASSERT(isBlockStmt(stmt));
+  insertStmt(stmt);
+  return false;
+}
+
+void TConverter::exit(const ExternBlock* node, RV& rv) {}
 
 
 bool TConverter::enter(const AstNode* node, RV& rv) {

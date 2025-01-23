@@ -169,8 +169,9 @@ TupleType::getQualifiedTuple(Context* context,
   }
 
   const TupleType* instantiatedFrom = getGenericTupleType(context);
+  const bool isVarArgTuple = true;
   return getTupleType(context, instantiatedFrom,
-                      std::move(subs), true).get();
+                      std::move(subs), isVarArgTuple).get();
 }
 
 const TupleType*
@@ -187,7 +188,8 @@ TupleType::getStarTuple(Context* context,
     const TupleType* instantiatedFrom = getGenericTupleType(context);
     SubstitutionsMap subs;
     subs.emplace(idForTupElt(-1), varArgEltType);
-    return getTupleType(context, instantiatedFrom, subs, true).get();
+    const bool isVarArgTuple = true;
+    return getTupleType(context, instantiatedFrom, subs, isVarArgTuple).get();
   }
 }
 

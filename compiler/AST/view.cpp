@@ -658,6 +658,7 @@ void print_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
+// TODO: Take a reference and decay it to avoid copying when debugging.
 template <typename T>
 void nprint_dyno_type(const T* t) {
   if (t == nullptr) {
