@@ -1441,7 +1441,6 @@ module Python {
 
 
   // TODO: create adapters for other common Python types like Set, Dict, Tuple
-  // TODO: provide iteration directly on these types with a serial iterator
   /*
     Represents a Python list. This provides a Chapel interface to Python lists,
     where the Python interpreter owns the list.
