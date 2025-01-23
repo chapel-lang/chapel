@@ -376,17 +376,19 @@ module ChapelRange {
     }
     type newRule = (low+high).type;
     type oldRule = computeParamRangeIndexType_Old(low, high);
-    if newRule == oldRule then
+    if newRule == oldRule {
       return newRule;
-    compilerWarning("the idxType of this range literal ",
-                    low:string, "..", high:string,
-                    " with the low bound of the type ", low.type:string,
-                    " and the high bound of the type ", high.type:string,
-                    " is currently ", oldRule:string,
-          ". In a future release it will be switched to ", newRule:string,
-          ". To switch to this new typing and turn off this warning,",
-          " compile with -snewRangeLiteralType.");
-    return oldRule;
+    } else {
+      compilerWarning("the idxType of this range literal ",
+                      low:string, "..", high:string,
+                      " with the low bound of the type ", low.type:string,
+                      " and the high bound of the type ", high.type:string,
+                      " is currently ", oldRule:string,
+            ". In a future release it will be switched to ", newRule:string,
+            ". To switch to this new typing and turn off this warning,",
+            " compile with -snewRangeLiteralType.");
+      return oldRule;
+    }
   }
   proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
