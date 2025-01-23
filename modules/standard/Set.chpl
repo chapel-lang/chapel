@@ -55,7 +55,6 @@ module Set {
   private use Reflection;
   private use ChapelHashtable;
   private use HaltWrappers;
-  private use CTypes;
 
   @chpldoc.nodoc
   private param _sanityChecks = true;
@@ -597,8 +596,8 @@ module Set {
     @unstable("The contents iterator is unstable because it is new")
     iter const contents(size: int = this.size) const ref {
       if (size != _htb.tableNumFullSlots) {
-        __primitive("chpl_error",
-                    "didn't specify the full contents of the set".c_str());
+        iterHalt("serial 'contents' iterator needs to be provided the set's " +
+                 "size as its argument");
       }
 
       foreach idx in 0..#_htb.tableSize {
@@ -610,8 +609,8 @@ module Set {
     iter const contents(size: int = this.size, param tag) const ref
       where tag == iterKind.standalone {
       if (size != _htb.tableNumFullSlots) {
-        __primitive("chpl_error",
-                    "didn't specify the full contents of the set".c_str());
+        iterHalt("standalone 'contents' iterator needs to be provided the " +
+                 "set's size as its argument");
       }
 
       var space = 0..#_htb.tableSize;
@@ -623,8 +622,9 @@ module Set {
     iter const contents(size: int = this.size, param tag)
       where tag == iterKind.leader {
       if (size != _htb.tableNumFullSlots) {
-        __primitive("chpl_error",
-                    "didn't specify the full contents of the set".c_str());
+        iterHalt("leader 'contents' iterator needs to be provided the " +
+                 "set's size as its argument (follower should be provided the" +
+                 " size of the leader)");
       }
 
       for followThis in _htb._evenSlots(size, tag) {
