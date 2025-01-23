@@ -2,6 +2,8 @@
 // others are)
 var rangeToUse = 0..9;
 
+var triggeredFollower: atomic bool = false;
+
 proc main() {
   writeln("testing call of serial");
   for i in foo() {
@@ -21,6 +23,8 @@ proc main() {
     loc = val*2;
   }
   writeln(arr2);
+
+  triggeredFollower.clear();
 
   writeln("testing call of just follower");
   var arr3: [rangeToUse] int;
@@ -74,7 +78,9 @@ iter foo(param tag) where tag == iterKind.leader {
 
 // Also stolen from the parallel iterators primer
 iter foo(param tag, followThis) where tag == iterKind.follower {
-  writeln("in the follower iterator");
+  if (triggeredFollower.testAndSet() == false) {
+    writeln("in the follower iterator at least once");
+  }
   const (followInds,) = followThis;
   const lowBasedIters = followInds.translate(rangeToUse.low);
 
