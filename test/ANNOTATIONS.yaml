@@ -1666,6 +1666,9 @@ miniMD.ml-time:
     - Manually hoist loop-invariant array access in miniMD (#7432)
   09/26/17:
     - Prevent certain data races upon 'in' forall intents (#7467)
+  01/06/25:
+    - text: Suspect - Raise number of threads used by GASNet by default + add warning if exceeded (#26448)
+      config: 16-node-apollo-hdr
 
 ml-memleaksfull:
   04/04/20:
@@ -1703,8 +1706,6 @@ nbody:
     - Change param-based nbody to foreach-based (#24745)
   10/06/24:
     - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
-  01/06/25:
-    - Suspect - Raise number of threads used by GASNet by default + add warning if exceeded (#26448)
  
 no-op:
   02/24/17:
