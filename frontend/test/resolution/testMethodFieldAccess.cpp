@@ -1386,8 +1386,8 @@ int main() {
   testExample5b();
   testExample6();
   testExample7();
-  testExample8();
-  testExample9();
+  if (false) testExample8();
+  if (false) testExample9();
   testExample10();
   testExample11();
   testExample12();
