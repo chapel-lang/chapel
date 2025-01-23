@@ -76,9 +76,6 @@ module ChapelArrayViewElision {
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
                                               b: chpl__protoSlice) param: bool {
-    // for now, only same array types on both sides are supported
-    if a.ptrToArr.deref().type != b.ptrToArr.deref().type then return false;
-
     // either both sides are rank-changes, or neither is
     if a.isRankChange != b.isRankChange then return false;
 
