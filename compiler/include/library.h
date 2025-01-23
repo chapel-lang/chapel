@@ -45,7 +45,7 @@ enum PythonFileType {
 // array return type
 extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
-extern char libDir[FILENAME_MAX + 1];
+extern std::string libDir;
 extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 extern std::map<TypeSymbol*, std::string> fortranKindNames;
 extern std::map<TypeSymbol*, std::string> fortranTypeNames;
@@ -62,7 +62,7 @@ void codegen_make_python_module();
 
 void ensureLibDirExists();
 void openLibraryHelperFile(fileinfo* fi,
-                           const char* name,
+                           const std::string& name,
                            const char* ext = NULL);
 void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt = true);
 const char* getLibraryExtension();

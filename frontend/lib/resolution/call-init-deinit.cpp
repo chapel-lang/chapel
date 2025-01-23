@@ -368,46 +368,6 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 }
 
-static bool isRecordLike(const Type* t) {
-  if (auto ct = t->toClassType()) {
-    auto decorator = ct->decorator();
-    // no action needed for 'borrowed' or 'unmanaged'
-    // (these should just default initialized to 'nil',
-    //  so nothing else needs to be resolved)
-    if (! (decorator.isBorrowed() || decorator.isUnmanaged() ||
-          decorator.isUnknownManagement())) {
-      return true;
-    }
-  } else if (t->isRecordType() || t->isUnionType()) {
-    return true;
-  }
-  // TODO: tuples?
-
-  return false;
-}
-
-static bool typeNeedsInitDeinitCall(const Type* t) {
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
-    // can't do anything with these
-    return false;
-  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
-             t->isNilType() || t->isNothingType() || t->isVoidType()) {
-    // OK, we can always default initialize primitive numeric types,
-    // and as well we assume that for the non-generic builtin types
-    // e.g. TaskIdType.
-    // No need to resolve anything additional now.
-    return false;
-  } else if (t->isEnumType()) {
-    // OK, can default-initialize enums to first element
-    return false;
-  } else if (t->isFunctionType()) {
-    return false;
-  }
-
-  return isRecordLike(t);
-}
-
-
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   // Type variables do not need default init.
   if (ast->storageKind() == Qualifier::TYPE) return;
@@ -446,7 +406,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  if (!typeNeedsInitDeinitCall(vt)) {
+  if (!Type::needsInitDeinitCall(vt)) {
     // nothing to do here
   } else if (vt->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
@@ -563,7 +523,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& rhsType,
                                      bool forMoveInit,
                                      RV& rv) {
-  if (!typeNeedsInitDeinitCall(lhsType.type())) {
+  if (!Type::needsInitDeinitCall(lhsType.type())) {
     // TODO: we could resolve it anyway
     return;
   }
@@ -672,7 +632,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
   if (lhsType.type() == rhsType.type() &&
-      !typeNeedsInitDeinitCall(lhsType.type())) {
+      !Type::needsInitDeinitCall(lhsType.type())) {
     // TODO: we should resolve it anyway
     return;
   }
@@ -722,7 +682,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
-      if (lhsType.type() != nullptr && isRecordLike(lhsType.type())) {
+      if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
         resolveCopyInit(ast, rhsAst,
                         lhsType, rhsType,
                         /* forMoveInit */ false,
@@ -741,7 +701,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    RV& rv) {
 
   // nothing to do for 'int' etc
-  if (!typeNeedsInitDeinitCall(type.type())) {
+  if (!Type::needsInitDeinitCall(type.type())) {
     return;
   } else if (type.type()->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
@@ -788,8 +748,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
   // check for use of deinited variables in type or init exprs
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
+  if (auto type = ast->typeExpression()) {
+    processMentions(type, rv);
   }
   if (auto init = ast->initExpression()) {
     processMentions(init, rv);
@@ -968,7 +928,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   // is the copy for 'in' elided?
   if (elidedCopyFromIds.count(actual->id()) > 0 &&
       isValue(actualType.kind()) &&
-      typeNeedsInitDeinitCall(actualType.type())) {
+      Type::needsInitDeinitCall(actualType.type())) {
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 

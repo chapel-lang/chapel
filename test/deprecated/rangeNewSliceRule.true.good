@@ -1,4 +1,0 @@
-warning: 'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'
-note: 'newSliceRule' was set via a compiler flag
-rangeNewSliceRule.chpl:2: warning: 'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'
-rangeNewSliceRule.chpl:2: error: true

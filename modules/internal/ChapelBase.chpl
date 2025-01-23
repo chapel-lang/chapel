@@ -23,15 +23,6 @@
 
 module ChapelBase {
 
-  // We deprecate in the module code so that we don't have to modify dyno
-  // to teach it about the 'c_string' type. We perform the deprecation in
-  // ChapelBase so that you don't have to 'import CTypes' to see the type
-  // 'c_string' (which could break a lot of programs). This is OK because
-  // after the deprecation period we can just remove 'c_string' entirely.
-  pragma "last resort"
-  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
-  type c_string = chpl_c_string;
-
   // c_fn_ptr stuff
 
   // although it can just be a compiler-inserted primitive,
@@ -91,9 +82,6 @@ module ChapelBase {
   pragma "global type symbol"
   pragma "no object"
   class _object { }
-
-  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
-  class object { }
 
   enum iterKind {leader, follower, standalone};
 
@@ -2632,15 +2620,6 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func() type { return __primitive("create fn type", void); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;
   proc isIterator(ir: _iteratorRecord) param do return true;

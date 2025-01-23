@@ -619,7 +619,7 @@ concrete or semi-concrete
 
    .. code-block:: chapel
 
-      enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
+      enum statesman { Aristotle, Roosevelt, Churchill, Socrates }
 
    defines an abstract enumerated type with four constants. The function
 
@@ -634,9 +634,9 @@ concrete or semi-concrete
              writeln("Every reform movement has a lunatic fringe.");
           when statesman.Churchill do
              writeln("A joke is a very serious thing.");
-          when statesman.Kissinger do
-             { write("No one will ever win the battle of the sexes; ");
-               writeln("there's too much fraternizing with the enemy."); }
+          when statesman.Socrates do
+             { write("I only wish that wisdom were the kind of thing that flowed ");
+               writeln("... from the vessel that was full to the one that was empty."); }
         }
       }
 
@@ -654,7 +654,7 @@ concrete or semi-concrete
       All paid jobs absorb and degrade the mind.
       Every reform movement has a lunatic fringe.
       A joke is a very serious thing.
-      No one will ever win the battle of the sexes; there's too much fraternizing with the enemy.
+      I only wish that wisdom were the kind of thing that flowed ... from the vessel that was full to the one that was empty.
 
    outputs a quote from the given statesman. Note that enumerated
    constants must be prefixed by the enumerated type name and a dot
@@ -977,10 +977,6 @@ The normal comparison operators are also available to compare types:
 
  * ``==`` checks if two types are equivalent
  * ``!=`` checks if two types are different
- * ``<`` and ``>`` check if one type is a proper subtype of another (see
-   :proc:`< <Types.<>`)
- * ``<=`` and ``>=`` check if one type is a subtype of another (see
-   :proc:`<= <Types.<=>`)
 
 It is possible to cast a type to a ``param`` string. This allows a type
 to be printed out.

@@ -11,7 +11,7 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /data/cf/chapel/setup_gcc91.bash     # host-specific setup for target compiler
+source /hpcdc/project/chapel/setup_gcc.bash 9.1
 
 # Set environment variables to nudge cmake towards GCC 9.1
 export CHPL_CMAKE_USE_CC_CXX=1

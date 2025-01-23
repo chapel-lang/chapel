@@ -25,13 +25,16 @@
 #include "chpl/framework/mark-functions.h"
 #include "chpl/types/TypeTag.h"
 #include "chpl/uast/Pragma.h"
+#include "chpl/util/hash.h"
 
 #include <deque>
 
 namespace chpl {
+
 namespace uast {
   class Decl;
 }
+
 namespace types {
 
 
@@ -54,6 +57,7 @@ namespace types {
 #undef TYPE_DECL
 
 class Type;
+using PlaceholderMap = std::unordered_map<ID, const Type*>;
 
 namespace detail {
 
@@ -159,6 +163,31 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. */
+  virtual const Type* substitute(Context* context,
+                                 const PlaceholderMap& subs) const {
+    return this;
+  }
+
+  /** For a given subclass of 'Type', replaces placeholders (as in
+      PlaceholderType in the type) according to their values in the 'subs' map,
+      handling the case in which the type is null.
+
+      Since replacing placeholders ought not to change which subclass
+      the type is, asserts and casts the result back to the same subclass. */
+  template <typename TargetType>
+  static const TargetType* substitute(Context* context,
+                                      const TargetType* type,
+                                      const PlaceholderMap& subs) {
+    if (!type) return type;
+    auto substituted = type->substitute(context, subs);
+    CHPL_ASSERT(substituted);
+    auto cast = substituted->template to<TargetType>();
+    CHPL_ASSERT(cast);
+    return cast;
+  }
+
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /** Check if this type is particular subclass. The call someType->is<IntType>()
@@ -243,6 +272,8 @@ class Type {
    */
   bool isUserRecordType() const;
 
+  bool isRecordLike() const;
+
   /** Returns true if the this type has the pragma 'p' attached to it. */
   bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
@@ -316,12 +347,19 @@ class Type {
   */
   static bool isPod(Context* context, const Type* t);
 
+  static bool needsInitDeinitCall(const Type* t);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
 
 namespace detail {
+
+template <>
+inline bool typeIs<Type>(const Type* type) {
+  return true;
+}
 
 /// \cond DO_NOT_DOCUMENT
 #define TYPE_IS(NAME) \
@@ -342,6 +380,16 @@ namespace detail {
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef TYPE_IS
+
+template <>
+inline const Type* typeToConst<Type>(const Type* type) {
+  return type;
+}
+
+template <>
+inline Type* typeTo<Type>(Type* type) {
+  return type;
+}
 
 /// \cond DO_NOT_DOCUMENT
 #define TYPE_TO(NAME) \
@@ -394,5 +442,13 @@ template<> struct mark<types::Type::Genericity> {
 
 // TODO: is there a reasonable way to define std::less on Type*?
 // Comparing pointers would lead to some nondeterministic ordering.
+
+namespace std {
+  template<> struct hash<chpl::types::PlaceholderMap> {
+    inline size_t operator()(const chpl::types::PlaceholderMap& k) const{
+      return chpl::hashUnorderedMap(k);
+    }
+  };
+}
 
 #endif

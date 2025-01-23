@@ -35,16 +35,6 @@ module ChapelRange {
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
-  /* This flag, when set to `true`, used to switch to using the new slicing rule
-     and to turn off the deprecation warning for using the old rule.
-     Now the new rule is always enabled regardless of this flag's value.
-     When slicing with a range with a negative stride, the old rule
-     preserves the direction of the original range or domain/array dimension
-     whereas the new rule reverses such direction. */
-  @chpldoc.nodoc
-  @deprecated("'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'")
-  config param newSliceRule = true;
-
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
      for determining the idxType of a range literal with param integral bounds
      and to turn off the deprecation warning for using the old rule.

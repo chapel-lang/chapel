@@ -32,8 +32,6 @@ module load cray-pmi
 module load cray-mpich
 module load cray-hdf5-parallel
 
-module load gcc-native/10.3
-
 module list
 
 # note that this part is similar to common-hpe-apollo.bash, but

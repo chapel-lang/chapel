@@ -114,7 +114,7 @@ Benchmark examples
 
 Test examples
 ~~~~~~~~~~~~~
-* `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
+* `assertOnFailToGpuizeAttr <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuizeAttr.chpl>`_ -- various examples of loops that are not eligible for GPU execution
 * `mathOps <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/mathOps.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
 * `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
 * `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
@@ -150,7 +150,7 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting NVIDIA GPUs:
 
-  * CUDA toolkit version 11.x or 12.x must be installed.
+  * CUDA toolkit version 11.7+ or 12.x must be installed.
 
   * We test with system LLVM 19. Older versions may work.
 
@@ -599,6 +599,43 @@ See the `asyncTaskComm
 benchmark for a full example of a pattern that benefits from oversubscribing
 GPUs.
 
+GPU-based Halting
+~~~~~~~~~~~~~~~~~
+
+Standard Chapel has a number of features that can cause a program to exit,
+or "halt". The 2.3 release of Chapel introduced the ability to execute halting
+functions on the GPU, allowing Chapel-generated GPU kernels to halt the
+execution of the whole program. This makes it possible to both invoke halts
+directly via Chapel's :proc:`~Errors.halt`, and to invoke functions that
+themselves halt. In prior releases, doing so made code ineligible for GPU
+execution.
+
+The following program demonstrates this feature, printing "halt reached in
+GPU kernel".
+
+.. code-block:: chapel
+
+  on here.gpus[0] {
+    @assertOnGpu
+    foreach i in 1..10 {
+      halt();
+    }
+  }
+
+There are some caveats to the current implementation:
+
+* String manipulation for printing halt messages requires a number of features
+  ill-suited for the GPU. As a result, at this time, functions that use
+  the string-enabled overloads of ``halt()`` will still not work on the GPU.
+  This will be improved in future releases.
+* Presently, halting is implemented by setting a flag from the kernel that
+  is later accessed by the host program. As a consequence, kernel execution
+  proceeds past the ``halt()`` call; however, once the kernel
+  is executed, the program exits.
+* There is a race condition between several Chapel tasks using the same
+  device to launch kernels, which can interfere with the behavior of ``halt()``.
+  This will be fixed in future releases.
+
 Known Limitations
 -----------------
 
@@ -663,7 +700,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.3, 11.6, 11.8*, 12.0, 12.2, 12.4*
+  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4*
 
 * AMD
 

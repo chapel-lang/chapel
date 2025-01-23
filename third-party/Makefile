@@ -3,7 +3,7 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-ifdef CHPL_DEVELOPER
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 export DEBUG
 WARNINGS=1

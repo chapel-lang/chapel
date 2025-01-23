@@ -640,10 +640,6 @@ struct ChplSyntaxVisitor {
     }
   }
 
-  void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << escapeStringC(node->value().str()) << '"';
-  }
-
   void visit(const Defer* node) {
     ss_ << "defer ";
     printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";");

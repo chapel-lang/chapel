@@ -70,6 +70,11 @@ const Variable* findVariable(const AstNode* ast, const char* name);
 const Variable* findVariable(const ModuleVec& vec, const char* name);
 
 std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context,
+                        const Module* mod,
+                        const std::vector<std::string>& variables);
+
+std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
 
 std::unordered_map<std::string, QualifiedType>
@@ -94,5 +99,21 @@ Context::Configuration getConfigWithHome();
  */
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r);
+
+QualifiedType findVarType(const Module* m,
+                          const ResolutionResultByPostorderID& rr,
+                          std::string name);
+
+/**
+  Test resolution of a domain literal.
+ */
+void testDomainLiteral(Context* context, std::string domainLiteral,
+                       DomainType::Kind domainKind);
+
+void testDomainIndex(Context* context, std::string domainType,
+                     std::string expectedType);
+
+void testDomainBadPass(Context* context, std::string argType,
+                       std::string actualType);
 
 #endif

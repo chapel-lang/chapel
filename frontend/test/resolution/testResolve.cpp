@@ -1739,6 +1739,141 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(context, program1);
 }
 
+// a callable formal (like a tuple) is preferred to functions in outer
+// scopes.
+static void testFormalFunctionShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x) do return 1.0;
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) do return foo(0);
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isIntType());
+}
+
+// a callable formal (like a tuple) interrupts the search for functions as
+// an optimization for "distance" (any functions beyond the callable formal
+// are further away than any functions we've already found).
+static void testFunctionFormalShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) {
+      proc foo(x) do return 1.0;
+      return foo(0);
+    }
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isRealType());
+}
+
+// Today, we don't perform overload selection for callable objects. Instead,
+// expect an error to be issued.
+static void testCallableAmbiguity() {
+  std::string program =
+    R"""(
+    module Lib {
+      record R {
+        proc this() do return 42;
+      }
+    }
+    module M1 { use Lib; var x: R; }
+    module M2 { use Lib; var x: R; }
+    module M3 {
+      use M1;
+      use M2;
+
+      var y = x(0);
+    }
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context, program, { "y" });
+  assert(guard.realizeErrors());
+}
+
+// Test use of the 'scalar promotion type' primitive.
+// Implementation of getting promotion types is tested more thoroughly
+// elsewhere, so this is just a very basic test the prims works as expected.
+static void testPromotionPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  {
+    std::string prog =
+      R"""(
+        var d : domain(1, real);
+        type t = __primitive("scalar promotion type", d);
+        param x = (t == real);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+        type t = __primitive("scalar promotion type", int);
+        param x = (t == int);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
+// Test the '_wide_get_locale' primitive.
+static void testGetLocalePrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      var x : real;
+      var locId = __primitive("_wide_get_locale", x);
+      var sublocId = chpl_sublocFromLocaleID(locId);
+    )""", { "locId", "sublocId" });
+
+  auto locId = variables.at("locId");
+  assert(locId.type());
+  assert(locId.type() == CompositeType::getLocaleIDType(context));
+  auto sublocId = variables.at("sublocId");
+  assert(sublocId.type());
+  assert(sublocId.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   test1();
   test2();
@@ -1769,6 +1904,13 @@ int main() {
   test27();
 
   testInfiniteCycleBug();
+
+  testFormalFunctionShadowing();
+  testFunctionFormalShadowing();
+  testCallableAmbiguity();
+
+  testPromotionPrim();
+  testGetLocalePrim();
 
   return 0;
 }

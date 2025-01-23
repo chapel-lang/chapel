@@ -75,7 +75,12 @@ class LintDriver:
         for rule in itertools.chain(
             self.BasicRules, self.AdvancedRules, self.LocationRules
         ):
-            to_return[rule.name] = rule.check_func.__doc__
+            doc = rule.check_func.__doc__ or ""
+
+            # if there is an escaped underscore, remove the escape
+            doc = doc.replace("\\_", "_")
+
+            to_return[rule.name] = doc
 
         to_return = list(to_return.items())
         to_return.sort()

@@ -244,6 +244,31 @@ Resolver::createForModuleStmt(ResolutionContext* rc, const Module* mod,
 }
 
 Resolver
+Resolver::createForInterfaceStmt(ResolutionContext* rc,
+                                 const uast::Interface* interface,
+                                 const types::InterfaceType* ift,
+                                 const ImplementationWitness* witness,
+                                 const uast::AstNode* stmt,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  const AstNode* symbol = interface;
+  const Block* fnBody = nullptr;
+  if (auto fn = stmt->toFunction()) {
+    symbol = fn;
+    fnBody = fn->body();
+  }
+
+  auto ret = Resolver(rc->context(), symbol, byPostorder, nullptr);
+  ret.curStmt = stmt;
+  ret.byPostorder.setupForSymbol(symbol);
+  ret.rc = rc;
+  ret.signatureOnly = true;
+  ret.fnBody = fnBody;
+  rc->pushFrame(ift, witness);
+  ret.didPushFrame = true;
+  return ret;
+}
+
+Resolver
 Resolver::createForScopeResolvingModuleStmt(
                               Context* context, const Module* mod,
                               const AstNode* modStmt,
@@ -612,7 +637,7 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
 
   auto tag = parsing::idToTag(context, targetParentSymbolId);
 
-  if (tag == asttags::Function) return true;
+  if (tag == asttags::Function || tag == asttags::Interface) return true;
 
   if (tag == asttags::Module) {
     // Module-scope variables are not considered outer-variables. However,
@@ -1031,9 +1056,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedWidth);
             } else {
-              auto p = IntParam::get(context, pt->bitwidth());
-              auto it = IntType::get(context, 0);
-              auto qt = QualifiedType(QualifiedType::PARAM, it, p);
+              auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
               resolvedWidth.setType(qt);
             }
           }
@@ -1193,10 +1216,8 @@ void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
 
     // args...?n
     if (auto countQuery = varargs->count()) {
-      auto intType = IntType::get(context, 0);
-      auto val = IntParam::get(context, tuple->numElements());
       ResolvedExpression& result = byPostorder.byAst(countQuery);
-      result.setType(QualifiedType(QualifiedType::PARAM, intType, val));
+      result.setType(QualifiedType::makeParamInt(context, tuple->numElements()));
     }
 
     if (auto typeExpr = formal->typeExpression()) {
@@ -1527,6 +1548,14 @@ static QualifiedType computeTypeDefaults(Resolver& resolver,
   return type;
 }
 
+static const Type* getAnyType(Resolver& resolver, const ID& anchor) {
+  // If we use placeholders, we don't create 'AnyTypes' anywhere,
+  // and instead invent new placeholder types.
+  return resolver.usePlaceholders
+         ? PlaceholderType::get(resolver.context, anchor)->to<Type>()
+         : AnyType::get(resolver.context)->to<Type>();
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -1690,7 +1719,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // primary method. This does not, however, mean that its type should be
         // AnyType; it is not adjusted here.
 
-        typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        typeExprT = QualifiedType(QualifiedType::TYPE, getAnyType(*this, decl->id()));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
         // (we do so if it's not a field or a formal)
@@ -2228,8 +2257,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
       // Note: we seem to rely on tuple components being 'var', and relying on
       // the tuple's kind instead. Without this, the current instantiation
       // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
-      auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
-      std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+      std::vector<QualifiedType> eltTypes;
+      for (auto decl : td->decls()) {
+        eltTypes.push_back(QualifiedType(QualifiedType::VAR,
+                                         getAnyType(*this, decl->id())));
+      }
       auto tup = TupleType::getQualifiedTuple(context, eltTypes);
       useT = QualifiedType(declKind, tup);
     } else {
@@ -2417,8 +2449,7 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
         resultBool = false;
       }
 
-      result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                             BoolParam::get(context, resultBool));
+      result = QualifiedType::makeParamBool(context, resultBool);
     }
 
     byPostorder.byAst(primCall).setType(result);
@@ -2650,6 +2681,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isModule(tag)) {
     return QualifiedType(QualifiedType::MODULE, nullptr);
+  } else if (asttags::isInterface(tag)) {
+    const Type* t = initialTypeForInterface(context, id);
+    return QualifiedType(QualifiedType::TYPE, t);
   }
 
   if (asttags::isFunction(tag)) {
@@ -2709,9 +2743,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         if (field && field->name() == USTR("size")) {
           // Tuples don't store a 'size' in their substitutions map, so
           // manually take care of things here.
-          auto intType = IntType::get(context, 0);
-          auto val = IntParam::get(context, tup->numElements());
-          return QualifiedType(QualifiedType::PARAM, intType, val);
+          return QualifiedType::makeParamInt(context, tup->numElements());
         }
       }
 
@@ -3050,6 +3082,16 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
   }
 }
 
+static LookupConfig identifierLookupConfig(bool resolvingCalledIdent) {
+  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+  if (resolvingCalledIdent) {
+    config |= LOOKUP_STOP_NON_FN;
+  } else {
+    config |= LOOKUP_INNERMOST;
+  }
+  return config;
+}
+
 MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
       bool resolvingCalledIdent,
@@ -3066,8 +3108,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                                       IdAndFlags::createForBuiltinVar());
   }
 
-  LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-  if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+  LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
   auto fHelper = getFieldDeclarationLookupHelper();
   auto helper = getMethodReceiverScopeHelper();
@@ -3315,9 +3356,8 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
 
-      LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
       bool resolvingCalledIdent = nearestCalledExpression() == ident;
-      if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+      LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
 
       issueAmbiguityErrorIfNeeded(ident, inScope, config);
       auto& rr = byPostorder.byAst(ident);
@@ -3377,9 +3417,10 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
 
   // Otherwise, it's a variable, so walk up parent frames and look up
   // the variable's type using the resolution results.
-  } else if (ID parentFn = parsing::idToParentFunctionId(context, target)) {
+  } else if (parsing::idToParentFunctionId(context, target) ||
+             parsing::idToParentInterfaceId(context, target)) {
     if (auto f = rc->findFrameWithId(target)) {
-      type = f->resolutionById()->byId(target).type();
+      type = f->typeForContainedId(rc, target);
       outerVariables.add(mention, target, type);
     }
   }
@@ -3397,7 +3438,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
-    result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    result.setType(QualifiedType(QualifiedType::TYPE, getAnyType(*this, ident->id())));
     return;
   }
 
@@ -3406,21 +3447,30 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
   auto parenlessInfo = ParenlessOverloadInfo();
   auto ids = lookupIdentifier(ident, resolvingCalledIdent, parenlessInfo);
 
-  // If we looked up a called identifier and found ambiguity between variables
-  // only, resolve as an implicit 'this' call on the innermost variable.
-  // TODO: replace this hacky solution with an adjustment to the scope
-  // resolution process
+  // If we requested IDs including potential overloads, and found
+  // both a variable and a function at the same point, we're not sure how to
+  // resolve the call (via regular call resolution or 'proc this' resolution).
+  // Issue an error.
+  if (ids.encounteredFnNonFnConflict()) {
+    result.setType(typeErr(ident, "ambiguity between function and non-function at the same scope level"));
+    return;
+  }
+
+  // If we looked up a called identifier and got back several variables,
+  // give up, since the lookup process only does that if they're defined
+  // in the same place.
   if (resolvingCalledIdent && ids.numIds() > 1) {
     bool onlyVars = true;
-    for (auto idIt = ids.begin(); idIt != ids.end(); ++idIt) {
-      if (!parsing::idToAst(context, idIt.curIdAndFlags().id())
-               ->isVarLikeDecl()) {
+    for (int i = 0; i < ids.numIds(); i++) {
+      if (ids.idAndFlags(i).isFunctionLike() ){
         onlyVars = false;
         break;
       }
     }
+
     if (onlyVars) {
-      ids.truncate(1);
+      result.setType(typeErr(ident, "ambiguous callable value in called expression"));
+      return;
     }
   }
 
@@ -3491,8 +3541,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
 
           if (otherThanParenless) {
-            LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
-            if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+            LookupConfig config = identifierLookupConfig(resolvingCalledIdent);
             issueAmbiguityErrorIfNeeded(ident, inScope, config);
           }
         } else {
@@ -3638,6 +3687,17 @@ void Resolver::exit(const uast::Init* init) {
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
+  if (usePlaceholders) {
+    // If we're resolving an interface, create a placeholder for the type
+    // query. This way, we get a concrete type for `foo(?x)`, which is
+    // desireable when validating user-provided functions against the
+    // interface signature.
+    ResolvedExpression& result = byPostorder.byAst(tq);
+    result.setType(QualifiedType(QualifiedType::TYPE,
+                                 PlaceholderType::get(context, tq->id())));
+    return false;
+  }
+
   if (skipTypeQueries) {
     return false;
   }
@@ -3784,6 +3844,150 @@ void Resolver::exit(const NamedDecl* decl) {
   }
 
   exitScope(decl);
+}
+
+bool Resolver::enter(const uast::Manage* manage) {
+  for (auto managerExpr : manage->managers()) {
+    const As* as = managerExpr->toAs();
+    const Variable* asVar = nullptr;
+    if (as) {
+      managerExpr = as->symbol();
+      asVar = as->rename()->toVariable();
+      CHPL_ASSERT(asVar);
+    }
+    managerExpr->traverse(*this);
+
+    if (scopeResolveOnly) continue;
+
+    auto& rr = byPostorder.byAst(managerExpr);
+    if (rr.type().isUnknownOrErroneous()) continue;
+
+    // Ok, we've resolved the manager expression fine. First, resolve
+    // the stdlib function `chpl__verifyTypeContext`, which ensures
+    // that the context manager supports the `contextManager` interface.
+    auto ci = CallInfo(UniqueString::get(context, "chpl__verifyTypeContext"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
+    auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    auto c = resolveGeneratedCall(context, manage, ci, inScopes);
+    handleResolvedCallWithoutError(byPostorder.byAst(manage), manage, c);
+    CHPL_ASSERT(c.mostSpecific().only());
+
+    // Now, we actually want the witness for the interface if one exists.
+    // Use the POI scope from the call so that POI is the same as if we were
+    // resolving from inside the body of chpl__verifyTypeContext. This
+    // should improve re-use of interface search.
+    auto inScopesForInterface =
+      CallScopeInfo::forNormalCall(scopeStack.back(), c.poiInfo().poiScope());
+    auto contextManagerInterface = InterfaceType::getContextManagerType(context);
+    bool ignoredFoundExisting;
+    auto witness =
+      findOrImplementInterface(rc, contextManagerInterface, rr.type().type(),
+                               inScopesForInterface, c.mostSpecific().only().fn()->id(),
+                               ignoredFoundExisting);
+
+    if (!witness) {
+      auto errType = typeErr(managerExpr, "'manage' statements are only for types implementing 'contextManager'");
+      if (asVar) {
+        byPostorder.byAst(asVar).setType(errType);
+      }
+      continue;
+    }
+
+    Access accessContext = Access::VALUE;
+    if (asVar) {
+      // We're storing the result of entering the context manager. Determine
+      // the type it yields and use it to resolve that expression.
+      auto contextReturnTypeStr = UniqueString::get(context, "contextReturnType");
+      auto& contextReturnTypeId =
+        contextManagerInterface->idForAssociatedType(context, contextReturnTypeStr);
+      auto& contextReturnType = witness->associatedTypes().at(contextReturnTypeId);
+
+
+      // This is effectively a variable declaration with an initialization
+      // expression being 'enterContext()'. The same semantics
+      // are expected. As a result, we call resolveNamedDecl to handle this.
+      //
+      // Performance: We are taking a very simple path through resolveNamedDecl
+      // here (most conditions it checks for are 'false': finding substitutions,
+      // detecting 'this' formals, handling 'extern' variables). However,
+      // it seems good to share the general logic.
+      //
+      // It's possible for the enterContext() method to e.g., provide a value
+      // when the declaration is a ref. We don't check for that here specifically,
+      // since the behavior ought to be the same as trying to assign a value to
+      // a ref variable. However, 'resolveNamedDecl' does not handle that case
+      // at the time of writing, and therefore we effectively don't handle it
+      // here either.
+      resolveNamedDecl(asVar, contextReturnType);
+
+      auto kind = byPostorder.byAst(asVar).type().kind();
+      if (kind == QualifiedType::INDEX) {
+        // Intent is explicitly left unknown. When inferring (see
+        // preFold.cpp, FLAG_MANAGER_RESOURCE_INFER_STORAGE), the old logic
+        // was to determine the const-ness from use. This used to match
+        // formals (where the intent was ref-if-modified). This behavior
+        // has been deprecated in favor of explicitly requesting a reference.
+        // To match, here, request a 'const ref' by default. The user will
+        // have to write 'ref' to get that overload.
+        accessContext = Access::CONST_REF;
+      } else {
+        accessContext = accessForQualifier(byPostorder.byAst(asVar).type().kind());
+      }
+    }
+
+    // Since we're in a manage statement, we will call 'enter' and 'exit',
+    // so note those as associated actions. For 'enterContext', there may
+    // be several overloads, so pick the best one.
+    const TypedFnSignature* enterSig = nullptr;
+    const TypedFnSignature* exitSig = nullptr;
+    for (auto& [id, fn] : witness->requiredFns()) {
+      if (fn->untyped()->name() == USTR("enterContext")) {
+
+        // If several overloads were stored, use return intent overload
+        // resolution now to pick the best one. Importantly, this is done
+        // separately from return intent resolution in maybe-const.cpp
+        // because we need to know the right overload _now_ because these
+        // are generated calls created when satisfying an interface,
+        // and thus not tracked via a MostSpecificCandidates saved in
+        // a ResolvedExpression.
+        auto overloadsIt = witness->returnIntentOverloads().find(id);
+        if (overloadsIt != witness->returnIntentOverloads().end()) {
+          bool ambiguity;
+          auto bestCandidate =
+            determineBestReturnIntentOverload(overloadsIt->second,
+                                              accessContext,
+                                              ambiguity);
+          CHPL_ASSERT(!ambiguity);
+          CHPL_ASSERT(bestCandidate);
+          enterSig = bestCandidate->fn();
+        } else {
+          enterSig = fn;
+        }
+      } else if (fn->untyped()->name() == USTR("exitContext")) {
+        exitSig = fn;
+      } else {
+        CHPL_ASSERT(false && "unexpected function in contextManager interface");
+      }
+    }
+    CHPL_ASSERT(enterSig && exitSig);
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
+  }
+
+  enterScope(manage);
+  for (auto stmt : manage->stmts()) {
+    stmt->traverse(*this);
+  }
+
+  return false;
+}
+
+void Resolver::exit(const uast::Manage* manage) {
+  exitScope(manage);
 }
 
 static void getVarLikeOrTupleTypeInit(const AstNode* ast,
@@ -4107,10 +4311,8 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add definedConst actual if appropriate
     if (decl->usedCurlyBraces()) {
-      actuals.emplace_back(
-          QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                        BoolParam::get(context, true)),
-          UniqueString());
+      actuals.emplace_back(QualifiedType::makeParamBool(context, true)),
+          UniqueString();
     }
 
     auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
@@ -4168,9 +4370,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
       // preserve param-ness
       // this case is only hit when the result is false (for &&)
       // or when the result is true (for ||), so return !isAnd.
-      return QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, !isAnd));
+      return QualifiedType::makeParamBool(context, !isAnd);
     } else {
       // otherwise just return a Bool value
       return QualifiedType(QualifiedType::CONST_VAR,
@@ -5290,6 +5490,133 @@ resolveIterTypeWithTag(Resolver& rv,
   return yieldType;
 }
 
+struct ParamRangeInfo {
+  int64_t current;
+  int64_t end;
+  const Type* yieldType = nullptr;
+
+  // Optionally specified properties
+  int64_t step = 1;
+
+  static optional<ParamRangeInfo> fromBound(Context* context, ResolutionResultByPostorderID& rr, const AstNode* node) {
+    ParamRangeInfo scratch;
+    int numElts = -1;
+
+    // Compositions of ranges can get very complicated:
+    //
+    //   (0..#10 by 2) is a 5-element range, 0, 2, 4, 6, 8
+    //   (0.. by 2 #10) is a 10-element range, 2, 4, ...,
+    //
+    // For now, only allow #10 in the last position, to mimic something like 0<10,
+    // and only allow one 'by', since multi-by combinations require smarts.
+    // This is an improvement over production anyway, where # is not supported
+    // in params at all.
+    bool seenPound = false;
+    bool seenBy = false;
+    while (auto op = node->toOpCall()) {
+      if (seenPound) {
+        context->error(op, "unexpected composition of operators in 'param' loop");
+        return {};
+      }
+
+      if (op->op() == USTR("by")) {
+        if (seenBy) {
+          context->error(op, "multiple 'by' operators unsupported in 'param' loop");
+          return {};
+        }
+        seenBy = true;
+
+        node = op->actual(0);
+        auto& byRe = rr.byAst(op->actual(1));
+        auto byParam = byRe.type().param();
+        if (!byParam || !byParam->isIntParam()) {
+          context->error(op, "expected an integer 'param' for 'by'");
+          return {};
+        }
+
+        scratch.step *= byParam->toIntParam()->value();
+        if (scratch.step == 0) {
+          context->error(op, "step size for 'by' must be non-zero");
+          return {};
+        }
+      } else if (op->op() == USTR("#")) {
+        seenPound = true;
+
+        node = op->actual(0);
+        auto& byRe = rr.byAst(op->actual(1));
+        auto byParam = byRe.type().param();
+        if (!byParam || !byParam->isIntParam()) {
+          context->error(op, "expected an integer 'param' for '#'");
+          return {};
+        }
+
+        numElts = byParam->toIntParam()->value();
+        if (numElts < 0) {
+          context->error(op, "number of elements for '#' must be non-negative");
+          return {};
+        }
+      }
+    }
+
+    auto rng = node->toRange();
+    if (!rng) {
+      context->error(node, "'param' loops can only iterate over range literals");
+      return {};
+    }
+
+    // TODO: Simplify once we no longer use nullptr for param()
+    auto findBoundParam = [&scratch, &rr](const AstNode* bound) -> const IntParam* {
+      if (!bound) return nullptr;
+      ResolvedExpression& boundRE = rr.byAst(bound);
+      if (!scratch.yieldType) scratch.yieldType = boundRE.type().type();
+      auto param = boundRE.type().param();
+      return param ? param->toIntParam() : nullptr;
+    };
+    auto low = findBoundParam(rng->lowerBound());
+    auto hi = findBoundParam(rng->upperBound());
+
+    // TODO: various overflow issue here; if hiVal is INT_MIN, subtracting would
+    //       overflow, etc.
+
+    bool validBounds = false;
+    if (low && hi) {
+      validBounds = true;
+      scratch.current = low->value();
+      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
+    } else if (low && numElts >= 0) {
+      validBounds = true;
+      scratch.current = low->value();
+      scratch.end = scratch.current + numElts - 1;
+    } else if (hi && numElts >=0) {
+      validBounds = true;
+      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
+      scratch.current = scratch.end - numElts + 1;
+    }
+    if (!validBounds) {
+      context->error(rng, "param loops may only iterate over bounded integer range literals");
+      return {};
+    }
+
+    if (scratch.step < 0) {
+      std::swap(scratch.current, scratch.end);
+    }
+
+    return scratch;
+  }
+
+  bool done() const {
+    if (step > 0) return (current > end);
+    return (current < end);
+  }
+
+  int64_t advance() {
+    CHPL_ASSERT(!done());
+    int64_t save = current;
+    current += step;
+    return save;
+  }
+};
+
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   const AstNode* iterand = forLoop->iterand();
   Context* context = rv.context;
@@ -5301,53 +5628,32 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     return true;
   }
 
-  if (iterand->isRange() == false) {
-    context->error(forLoop, "param loops may only iterate over range literals");
-  } else {
-    // TODO: ranges with strides, '#', and '<'
-    const Range* rng = iterand->toRange();
-    ResolvedExpression& lowRE = rv.byPostorder.byAst(rng->lowerBound());
-    ResolvedExpression& hiRE = rv.byPostorder.byAst(rng->upperBound());
-    // TODO: Simplify once we no longer use nullptr for param()
-    auto lowParam = lowRE.type().param();
-    auto hiParam = hiRE.type().param();
-    auto low = lowParam ? lowParam->toIntParam() : nullptr;
-    auto hi = hiParam ? hiParam->toIntParam() : nullptr;
+  auto iterandInfo = ParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
+  if (!iterandInfo) return false;
 
-    int hiVal = hi->value();
-    if (rng->opKind() == Range::OPEN_HIGH) {
-      // TODO: overflow issue here; if hiVal is INT_MIN, subtracting would
-      // overflow.
-      hiVal--;
-    }
+  std::vector<ResolutionResultByPostorderID> loopResults;
+  while (!iterandInfo->done()) {
+    ResolutionResultByPostorderID bodyResults;
+    auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 
-    if (low == nullptr || hi == nullptr) {
-      context->error(forLoop, "param loops may only iterate over range literals with integer bounds");
-      return false;
-    }
+    cur.enterScope(forLoop);
 
-    std::vector<ResolutionResultByPostorderID> loopResults;
-    for (int64_t i = low->value(); i <= hiVal; i++) {
-      ResolutionResultByPostorderID bodyResults;
-      auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
+    ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
+    auto qt = QualifiedType(QualifiedType::PARAM,
+                            iterandInfo->yieldType,
+                            IntParam::get(context, iterandInfo->advance()));
+    idx.setType(qt);
+    forLoop->body()->traverse(cur);
 
-      cur.enterScope(forLoop);
+    cur.exitScope(forLoop);
 
-      ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
-      QualifiedType qt = QualifiedType(QualifiedType::PARAM, lowRE.type().type(), IntParam::get(context, i));
-      idx.setType(qt);
-      forLoop->body()->traverse(cur);
-
-      cur.exitScope(forLoop);
-
-      loopResults.push_back(std::move(cur.byPostorder));
-    }
-
-    auto paramLoop = new ResolvedParamLoop(forLoop);
-    paramLoop->setLoopBodies(loopResults);
-    auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
-    resolvedLoopExpr.setParamLoop(paramLoop);
+    loopResults.push_back(std::move(cur.byPostorder));
   }
+
+  auto paramLoop = new ResolvedParamLoop(forLoop);
+  paramLoop->setLoopBodies(loopResults);
+  auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
+  resolvedLoopExpr.setParamLoop(paramLoop);
 
   return false;
 }
@@ -5455,7 +5761,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   if (loop->numStmts() == 1) {
     bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
   } else {
-    bodyType = QualifiedType(QualifiedType::TYPE, AnyType::get(rv.context));
+    bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
   // The body wasn't a type, so this isn't an array type expression

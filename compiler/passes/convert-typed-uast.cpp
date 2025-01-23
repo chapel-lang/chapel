@@ -1098,9 +1098,7 @@ void TConverter::createMainFunctions() {
 
     // TODO: add converter or QualifiedType methods to more
     // easily construct a QualifiedType for common values like param false.
-    auto falseQt = types::QualifiedType(types::QualifiedType::PARAM,
-                                        types::BoolType::get(context),
-                                        types::BoolParam::get(context, false));
+    auto falseQt = types::QualifiedType::makeParamBool(context, false);
     auto ci = resolution::CallInfo(UniqueString::get(context, "_endCountAlloc"),
                                    /* calledType */ types::QualifiedType(),
                                    /* isMethodCall */ false,
@@ -1484,6 +1482,18 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::UintType:       return helpConvertUintType(t->toUintType());
     case typetags::CPtrType:       return helpConvertPtrType(t->toPtrType());
     case typetags::HeapBufferType: return helpConvertPtrType(t->toPtrType());
+
+    // Interfaces require something clever (creating a constrained generic
+    // function), and we don't have that yet.
+    case typetags::InterfaceType:
+      CHPL_UNIMPL("convert interface type");
+      return dtUnknown; // TODO
+
+    // placeholders only occur in interface resolution and should not be
+    // reachable
+    case typetags::PlaceholderType:
+      INT_FATAL("should not be reachable");
+      return dtUnknown;
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:

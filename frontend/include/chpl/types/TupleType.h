@@ -21,6 +21,7 @@
 #define CHPL_TYPES_TUPLE_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -99,6 +100,14 @@ class TupleType final : public CompositeType {
   getStarTuple(Context* context,
                QualifiedType paramSize,
                QualifiedType starEltType);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getTupleType(context,
+                        Type::substitute(context, (const TupleType*) instantiatedFrom_, subs),
+                        resolution::substituteInMap(context, subs_, subs),
+                        isVarArgTuple_).get();
+  }
 
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);

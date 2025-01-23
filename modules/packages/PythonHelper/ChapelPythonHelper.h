@@ -21,10 +21,14 @@
 #ifndef CHPL_PYTHON_HELPER_H_
 #define CHPL_PYTHON_HELPER_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
 const char* chpl_PY_VERSION = PY_VERSION;
+const unsigned long chpl_PY_MAJOR_VERSION = PY_MAJOR_VERSION;
+const unsigned long chpl_PY_MINOR_VERSION = PY_MINOR_VERSION;
+const unsigned long chpl_PY_MICRO_VERSION = PY_MICRO_VERSION;
 
 static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 #if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
@@ -52,7 +56,9 @@ static inline PyObject* chpl_PyErr_GetRaisedException(void) {
 #endif
 }
 
+static inline void chpl_Py_INCREF(PyObject* o) { Py_INCREF(o); }
 static inline void chpl_Py_DECREF(PyObject* o) { Py_DECREF(o); }
+static inline void chpl_Py_CLEAR(PyObject** o) { Py_CLEAR(*o); }
 
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }

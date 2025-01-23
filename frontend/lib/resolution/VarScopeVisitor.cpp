@@ -386,6 +386,20 @@ void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
   inAstStack.pop_back();
 }
 
+bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
+  enterAst(ast);
+  enterScope(ast, rv);
+
+  // TODO: handle tuple decls
+  return false;
+}
+void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  exitScope(ast, rv);
+  exitAst(ast);
+
+  return;
+}
+
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
 
   if (ast->id().isSymbolDefiningScope()) {

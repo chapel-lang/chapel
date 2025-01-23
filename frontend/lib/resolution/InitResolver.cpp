@@ -295,9 +295,9 @@ static const DomainType* domainTypeFromSubsHelper(
       if (auto instanceBct = instanceCt->basicClassType()) {
         // Get BaseRectangularDom parent subs for rectangular domain info
         if (auto baseDom = instanceBct->parentClassType()) {
-          auto& rf = fieldsForTypeDecl(context, baseDom,
-                                       DefaultsPolicy::IGNORE_DEFAULTS);
           if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
+            auto& rf = fieldsForTypeDecl(context, baseDom,
+                                         DefaultsPolicy::IGNORE_DEFAULTS);
             CHPL_ASSERT(rf.numFields() == 3);
             QualifiedType rank;
             QualifiedType idxType;
@@ -315,7 +315,24 @@ static const DomainType* domainTypeFromSubsHelper(
             return DomainType::getRectangularType(context, instanceQt, rank,
                                                   idxType, strides);
           } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
-            // TODO: support associative domains
+            // Currently the relevant associative domain fields are defined
+            // on all the children of BaseAssociativeDom, so get information
+            // from there.
+            auto& rf = fieldsForTypeDecl(context, instanceBct,
+                                         DefaultsPolicy::IGNORE_DEFAULTS);
+            CHPL_ASSERT(rf.numFields() >= 2);
+            QualifiedType idxType;
+            QualifiedType parSafe;
+            for (int i = 0; i < rf.numFields(); i++) {
+              if (rf.fieldName(i) == "idxType") {
+                idxType = rf.fieldType(i);
+              } else if (rf.fieldName(i) == "parSafe") {
+                parSafe = rf.fieldType(i);
+              }
+            }
+
+            return DomainType::getAssociativeType(context, instanceQt, idxType,
+                                                  parSafe);
           } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
             // TODO: support sparse domains
           } else {

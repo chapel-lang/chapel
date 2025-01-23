@@ -401,7 +401,6 @@
 %token <uniqueStr> IMAGLITERAL
 %token <expr> STRINGLITERAL
 %token <expr> BYTESLITERAL
-%token <expr> CSTRINGLITERAL
 %token <sizedStr> EXTERNCODE
 
 //
@@ -1892,6 +1891,7 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 | TCONST ident_def TASSIGN expr
@@ -1907,6 +1907,7 @@ ifvar:
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 ;
@@ -2053,7 +2054,7 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2062,11 +2063,13 @@ catch_expr_inner:
                          /*isConfig*/ false,
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
-                         /*initExpression*/ nullptr).release();
+                         /*initExpression*/ nullptr);
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
+    $$ = varDecl.release();
   }
 | ident_def TCOLON expr
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2075,7 +2078,9 @@ catch_expr_inner:
                          /*isConfig*/ false,
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
-                         /*initExpression*/ nullptr).release();
+                         /*initExpression*/ nullptr);
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
+    $$ = varDecl.release();
   }
 ;
 
@@ -3629,7 +3634,6 @@ literal_expr:
 | INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
 | REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
-| CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {

@@ -573,24 +573,25 @@ struct Converter final : UastConverter {
       // TODO: This is deleted by the callee, odd convention...
       std::set<Flag>* flags = nullptr;
       Expr* managerExpr = nullptr;
+      const uast::Variable* storedResourceVar = nullptr;
       const char* resourceName = nullptr;
 
       if (auto as = manager->toAs()) {
         managerExpr = convertAST(as->symbol());
 
-        auto var = as->rename()->toVariable();
-        INT_ASSERT(var);
-        INT_ASSERT(!var->initExpression() && !var->typeExpression());
+        storedResourceVar = as->rename()->toVariable();
+        INT_ASSERT(storedResourceVar);
+        INT_ASSERT(!storedResourceVar->initExpression() && !storedResourceVar->typeExpression());
 
-        resourceName = astr(var->name());
+        resourceName = astr(storedResourceVar->name());
 
         // TODO: I'm not sure what the best way to get flags is here.
-        if (var->kind() != uast::Variable::INDEX) {
+        if (storedResourceVar->kind() != uast::Variable::INDEX) {
           flags = new std::set<Flag>;
 
           // TODO: Duplication here and with 'attachSymbolStorage',
           // consider cleaning up after parser is replaced.
-          switch (var->kind()) {
+          switch (storedResourceVar->kind()) {
             case uast::Variable::CONST:
               flags->insert(FLAG_CONST);
               break;
@@ -616,7 +617,14 @@ struct Converter final : UastConverter {
 
       INT_ASSERT(managerExpr);
 
-      auto conv = buildManagerBlock(managerExpr, flags, resourceName);
+      Symbol* storedResource;
+      auto conv = buildManagerBlock(managerExpr, flags, resourceName, storedResource);
+      if (storedResourceVar) {
+        // If we had an 'as <whatever>', the production builder better have
+        // created a Symbol* for it.
+        CHPL_ASSERT(storedResource);
+        noteConvertedSym(storedResourceVar, storedResource);
+      }
       INT_ASSERT(conv);
 
       managers->insertAtTail(conv);
@@ -1855,17 +1863,6 @@ struct Converter final : UastConverter {
     INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
     INT_ASSERT(v->immediate->string_kind == STRING_KIND_BYTES);
     return se;
-  }
-
-  Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->value().str());
-    SymExpr* se = buildCStringLiteral(quoted.c_str());
-    VarSymbol* v = toVarSymbol(se->symbol());
-    INT_ASSERT(v && v->immediate);
-    INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
-    INT_ASSERT(v->immediate->string_kind == STRING_KIND_C_STRING);
-    return se;
-
   }
 
   Expr* visit(const uast::StringLiteral* node) {

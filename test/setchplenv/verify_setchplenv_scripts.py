@@ -171,6 +171,8 @@ class SetChplEnvTests(unittest.TestCase):
         """Verify bash versions of setchplenv.* work as expected."""
         self.check_scripts('bash', 'source', ':')
 
+    @_skip_if(shutil.which('csh') is None,
+              'csh is not installed on system.')
     def test_setchplenv__csh(self):
         """Verify csh versions of setchplenv.* work as expected."""
         self.check_scripts('csh', 'source', ':', post_source_cmd='rehash', shell_cmd='tcsh')

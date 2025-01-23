@@ -4,8 +4,8 @@
 
 # For most systems, load all dependencies via spack
 if [[ "${HOSTNAME:0:6}" == "chapcs" || "${HOSTNAME:0:6}" == "chapvm" ]]; then
-  if [ -f /data/cf/chapel/chpl-deps/chapcs11/load_chpl_deps.bash ] ; then
-    source /data/cf/chapel/chpl-deps/chapcs11/load_chpl_deps.bash
+  if [ -f /hpcdc/project/chapel/chpl-deps/chapcs11/load_chpl_deps.bash ] ; then
+    source /hpcdc/project/chapel/chpl-deps/chapcs11/load_chpl_deps.bash
   fi
 elif [[ "$(hostname -s)" == "osprey" || "$(hostname -s)" == "atlas" ||
         "$(hostname -s)" == "pinoak-login1" ]]; then
@@ -20,8 +20,8 @@ else
   # For systems not using a Spack install
 
   # load llvm
-  if [ -f /hpcdc/project/chapel/setup_system_llvm.bash ] ; then
-    source /hpcdc/project/chapel/setup_system_llvm.bash
+  if [ -f /hpcdc/project/chapel/setup_llvm.bash ] ; then
+    source /hpcdc/project/chapel/setup_llvm.bash
   elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
     source /cy/users/chapelu/setup_system_llvm.bash
   fi

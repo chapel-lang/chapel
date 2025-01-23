@@ -46,6 +46,16 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const PlaceholderMap& subs) {
+  SubstitutionsMap into;
+  for (auto [id, qt] : substituteIn) {
+    into.emplace(id, qt.substitute(context, subs));
+  }
+  return into;
+}
+
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -416,10 +426,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
-    if (calledExprType && isKindForFunctionalValue(calledExprType->kind())) {
+    if (calledExprType &&
+        (isKindForFunctionalValue(calledExprType->kind()) ||
+         calledExprType->isErroneousType())) {
       // If e.g. x is a value (and not a function, then x(0) translates to x.this(0)
       // Run this case even if the receiver is a module, since we might be
       // trying to invoke 'this' on value x in M.x.
+      //
+      // In the case of ErroneousType, assume that the called thing was
+      // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
+      // Later, this can lead to skipping resolving the call altogether.
 
       name = USTR("this");
       // add the 'this' argument as well
@@ -958,6 +974,27 @@ TypedFnSignature::getInferred(
                              inferredFrom->outerVariables()).get();
 }
 
+const TypedFnSignature*
+TypedFnSignature::substitute(Context* context,
+                             const PlaceholderMap& subs) const {
+  std::vector<QualifiedType> newFormalTypes;
+  for (const auto& formalType : formalTypes_) {
+    newFormalTypes.push_back(formalType.substitute(context, subs));
+  }
+
+  // TODO: do we need to substitute in outer variables' stored types?
+
+  return getTypedFnSignature(context, untyped(),
+                             std::move(newFormalTypes),
+                             whereClauseResult(),
+                             needsInstantiation(),
+                             isRefinementOnly_,
+                             instantiatedFrom(),
+                             parentFn(),
+                             formalsInstantiatedBitmap(),
+                             outerVariables()).get();
+}
+
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
 
@@ -1034,6 +1071,52 @@ void CandidatesAndForwardingInfo::stringify(
   for (const auto& info : forwardingInfo) {
     info.stringify(ss, stringKind);
   }
+}
+
+
+// Note (Daniel): the code for 'overloaded' below comes from cppreference:
+//   https://en.cppreference.com/w/cpp/utility/variant/visit2
+//
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+// explicit deduction guide (not needed as of C++20)
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+void ApplicabilityResult::mark(Context* context) const {
+  std::visit(overloaded {
+    [context](const ID& id) { id.mark(context); },
+    [context](const TypedFnSignature* fn) { context->markPointer(fn); },
+    [context](const UntypedFnSignature* ufs) { context->markPointer(ufs); }
+  }, rejected_);
+  context->markPointer(candidate_);
+  (void) candidateReason_; // nothing to mark
+  (void) formalReason_; // nothing to mark
+  (void) formalIdx_; // nothing to mark
+}
+
+const ID& ApplicabilityResult::idForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const ID& { return id; },
+    [](const UntypedFnSignature* ufs) -> const ID& { return ufs->id(); },
+    [](const TypedFnSignature* fn) -> const ID& { return fn->id(); }
+  }, rejected_);
+}
+
+const UntypedFnSignature* ApplicabilityResult::untypedForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const UntypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) { return ufs; },
+    [](const TypedFnSignature* fn) { return fn->untyped(); }
+  }, rejected_);
+}
+
+const TypedFnSignature* ApplicabilityResult::initialForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const TypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) -> const TypedFnSignature* { return nullptr; },
+    [](const TypedFnSignature* fn) { return fn; }
+  }, rejected_);
 }
 
 void CallInfoActual::stringify(std::ostream& ss,
@@ -1215,6 +1298,10 @@ const char* AssociatedAction::kindToString(Action a) {
       return "compare";
     case RUNTIME_TYPE:
       return "runtime-type";
+    case ENTER_CONTEXT:
+      return "enter-context";
+    case EXIT_CONTEXT:
+      return "exit-context";
     // no default to get a warning if new Actions are added
   }
 

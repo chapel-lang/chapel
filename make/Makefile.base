@@ -24,7 +24,7 @@
 #
 # utilities
 #
-isTrue = $(filter yes Yes YES y Y true True TRUE t T 1, $(1))
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 
 MAKEFLAGS = --no-print-directory
 
@@ -105,6 +105,9 @@ $(eval $(CHPL_MAKE_SETTINGS))
 ifndef CHPL_MAKE_HOST_PLATFORM
   $(error error running util/printchplenv -- please see error above)
 endif
+
+# set CHPL_DEVELOPER if its not set
+CHPL_DEVELOPER ?= 0
 
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))

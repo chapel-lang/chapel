@@ -23,7 +23,6 @@
 namespace chpl {
 namespace resolution {
 
-
 struct Resolver;
 
 /* Adjusts the Resolver's results to account for return intent

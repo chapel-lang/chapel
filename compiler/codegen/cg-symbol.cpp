@@ -155,7 +155,7 @@ void addNameToPrintLlvmIrRequestedNames(const char* name) {
   llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
 
-static void addCNameToPrintLlvmIr(const char* name) {
+static void addCNameToPrintLlvmIr(std::string_view name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
@@ -312,9 +312,9 @@ void preparePrintLlvmIrForCodegen() {
   // This is so that handlePrintAsm can access them later from the makeBinary
   // phase, when we don't have a way to determine name->cname correspondence.
   if (fDriverCompilationPhase) {
-    saveDriverTmpMultiple(cnamesToPrintFilename,
-                          std::vector<const char*>(llvmPrintIrCNames.begin(),
-                                                   llvmPrintIrCNames.end()));
+    saveDriverTmpMultiple(cnamesToPrintFilename, std::vector<std::string_view>(
+                                                     llvmPrintIrCNames.begin(),
+                                                     llvmPrintIrCNames.end()));
   }
 }
 
@@ -661,7 +661,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // Print string contents in a comment if developer mode
       // and savec is set.
       if (developer &&
-          0 != strcmp(saveCDir, "") &&
+          !saveCDir.empty() &&
           immediate &&
           ret.chplType == dtString &&
           immediate->const_kind == CONST_KIND_STRING) {
@@ -2588,19 +2588,6 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_CPU:
             break;
         }
-      } else {
-        // This is a function called from a GPU kernel
-        // hipcc marks such functions as hidden visibility
-        // so we do the same here.
-        switch (getGpuCodegenType()) {
-          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-            break; // no visibility change for NVIDIA
-          case GpuCodegenType::GPU_CG_AMD_HIP:
-            func->setVisibility(llvm::Function::HiddenVisibility);
-            break;
-          case GpuCodegenType::GPU_CG_CPU:
-            break;
-        }
       }
     }
 
@@ -2769,7 +2756,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (strcmp(saveCDir, "")) {
+    if (saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');

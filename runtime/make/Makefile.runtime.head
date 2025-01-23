@@ -20,7 +20,9 @@
 # settings for the build
 #
 DEPEND=1
-ifdef CHPL_DEVELOPER
+CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 WARNINGS=1
 TAGS=1

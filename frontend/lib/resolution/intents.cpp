@@ -98,6 +98,9 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
       return QualifiedType::CONST_IN;
   }
 
+  if (t->isPlaceholderType())
+    return QualifiedType::DEFAULT_INTENT;
+
   // Otherwise, it should be a generic type that we will
   // instantiate before computing the final intent.
   CHPL_ASSERT(t->genericity() != Type::CONCRETE);

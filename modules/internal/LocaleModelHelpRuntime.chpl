@@ -124,8 +124,6 @@ module LocaleModelHelpRuntime {
   extern proc chpl_task_addTask(fn: int,
                                 args: chpl_task_bundle_p, args_size: c_size_t,
                                 subloc_id: int);
-  @deprecated("'chpl_task_yield' is deprecated, please use 'currentTask.yieldExecution' instead")
-  extern proc chpl_task_yield();
 
   //
   // Add a task for a begin statement.

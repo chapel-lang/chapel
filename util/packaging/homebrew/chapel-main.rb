@@ -30,7 +30,6 @@ class Chapel < Formula
     # It should be noted that this will expand to: 'for cmd in python3.13 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
-    inreplace "third-party/chpl-venv/Makefile", "python3 -c ", "#{python} -c "
 
     # a lot of scripts have a python3 or python shebang, which does not point to python3.12 anymore
     Pathname.glob("**/*.py") do |pyfile|

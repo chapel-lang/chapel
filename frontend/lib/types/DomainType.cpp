@@ -118,17 +118,35 @@ DomainType::getRectangularType(Context* context,
 
 const DomainType*
 DomainType::getAssociativeType(Context* context,
+                               const QualifiedType& instance,
                                const QualifiedType& idxType,
                                const QualifiedType& parSafe) {
+  auto genericDomain = getGenericDomainType(context);
+
   SubstitutionsMap subs;
-  // TODO: assert validity of sub types
   subs.emplace(ID(UniqueString(), 0, 0), idxType);
+  CHPL_ASSERT(idxType.isType());
   subs.emplace(ID(UniqueString(), 1, 0), parSafe);
+  CHPL_ASSERT(parSafe.isParam() && parSafe.param() &&
+              parSafe.param()->isBoolParam());
+
+  // Add substitution for _instance field
+  auto& rf = fieldsForTypeDecl(context, genericDomain,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+  subs.emplace(instanceFieldId, instance);
+
   auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
-  auto instantiatedFrom = getGenericDomainType(context);
-  return getDomainType(context, id, name, instantiatedFrom, subs,
-                       DomainType::Kind::Associative).get();
+  return getDomainType(context, id, name, /* instantiatedFrom */ genericDomain,
+                       subs, DomainType::Kind::Associative).get();
 }
 
 const QualifiedType& DomainType::getDefaultDistType(Context* context) {

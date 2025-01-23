@@ -212,7 +212,8 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
 BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
-                             const char* resourceName);
+                             const char* resourceName,
+                             Symbol*& outStoredResource);
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
                            ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);

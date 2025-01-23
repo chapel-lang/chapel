@@ -1,5 +1,5 @@
-#!/bin/csh -f
+#!/bin/bash
 
-unsetenv CHPL_UNOPTIMIZED
+export -n CHPL_UNOPTIMIZED
 
 ../../../../util/test/sub_test $1

@@ -75,13 +75,13 @@ std::map<std::string, const char*> envMap;
 // envMap used as input to getChplEnv
 static std::map<std::string, const char*> envMapChplEnvInput;
 
-char CHPL_HOME[FILENAME_MAX+1] = "";
+std::string CHPL_HOME;
 
 // These are more specific than CHPL_HOME, to work in
 // settings where Chapel is installed.
-char CHPL_RUNTIME_LIB[FILENAME_MAX+1] = "";
-char CHPL_RUNTIME_INCL[FILENAME_MAX+1] = "";
-char CHPL_THIRD_PARTY[FILENAME_MAX+1] = "";
+std::string CHPL_RUNTIME_LIB;
+std::string CHPL_RUNTIME_INCL;
+std::string CHPL_THIRD_PARTY;
 
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_ARCH = NULL;
@@ -135,8 +135,8 @@ const char* CHPL_ROCM_AMDGCN_PATH = NULL;
 const char* CHPL_GPU = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
-static char libraryFilename[FILENAME_MAX] = "";
-static char incFilename[FILENAME_MAX] = "";
+static std::string libraryFilename;
+static std::string incFilename;
 static bool fBaseline = false;
 
 // Flags that were in commonFlags.h/cpp for awhile
@@ -152,7 +152,7 @@ bool fDriverMakeBinaryPhase = false;
 bool fDriverDoMonolithic = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
-char driverTmpDir[FILENAME_MAX] = "";
+std::string driverTmpDir;
 bool fExitLeaks = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
@@ -390,7 +390,7 @@ bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
 bool fDynoNoBreakError = false;
-static char fDynoTimingPath[FILENAME_MAX] = "";
+static std::string fDynoTimingPath;
 
 bool fResolveConcreteFns = false;
 bool fIdBasedMunging = false;
@@ -431,28 +431,21 @@ std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 std::string gMainModuleName;
 
 static void setChplHomeDerivedVars() {
-  int rc;
-  rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "lib");
-  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-  rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "runtime/include");
-  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
-  rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s",
-                CHPL_HOME, "third-party");
-  if ( rc >= FILENAME_MAX ) USR_FATAL("CHPL_HOME pathname too long");
+  CHPL_RUNTIME_LIB = CHPL_HOME + "/lib";
+  CHPL_RUNTIME_INCL = CHPL_HOME + "/runtime/include";
+  CHPL_THIRD_PARTY = CHPL_HOME + "/third-party";
 }
 
 static void saveChplHomeDerivedInEnv() {
   int rc;
-  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB);
-  rc = setenv("CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB, 1);
+  envMap["CHPL_RUNTIME_LIB"] = strdup(CHPL_RUNTIME_LIB.c_str());
+  rc = setenv("CHPL_RUNTIME_LIB", envMap["CHPL_RUNTIME_LIB"], 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_LIB");
-  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL);
-  rc = setenv("CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL, 1);
+  envMap["CHPL_RUNTIME_INCL"] = strdup(CHPL_RUNTIME_INCL.c_str());
+  rc = setenv("CHPL_RUNTIME_INCL", envMap["CHPL_RUNTIME_INCL"], 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_RUNTIME_INCL");
-  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY);
-  rc = setenv("CHPL_THIRD_PARTY", CHPL_THIRD_PARTY, 1);
+  envMap["CHPL_THIRD_PARTY"] = strdup(CHPL_THIRD_PARTY.c_str());
+  rc = setenv("CHPL_THIRD_PARTY", envMap["CHPL_THIRD_PARTY"], 1);
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
@@ -463,21 +456,21 @@ static bool restoreChplHomeDerivedFromEnv() {
 
   envVar = getenv("CHPL_RUNTIME_LIB");
   if (envVar) {
-    strncpy(CHPL_RUNTIME_LIB, envVar, FILENAME_MAX);
+    CHPL_RUNTIME_LIB = envVar;
   } else {
     haveAll = false;
   }
 
   envVar = getenv("CHPL_RUNTIME_INCL");
   if (envVar) {
-    strncpy(CHPL_RUNTIME_INCL, envVar, FILENAME_MAX);
+    CHPL_RUNTIME_INCL = envVar;
   } else {
     haveAll = false;
   }
 
   envVar = getenv("CHPL_THIRD_PARTY");
   if (envVar) {
-    strncpy(CHPL_THIRD_PARTY, envVar, FILENAME_MAX);
+    CHPL_THIRD_PARTY = envVar;
   } else {
     haveAll = false;
   }
@@ -510,11 +503,7 @@ static void setupChplHome(const char* argv0) {
     USR_FATAL("$CHPL_HOME must be set to run chpl");
   }
 
-  if (foundChplHome.size() > FILENAME_MAX) {
-    USR_FATAL("$CHPL_HOME=%s path too long", foundChplHome.c_str());
-  }
-  strncpy(CHPL_HOME, foundChplHome.c_str(), FILENAME_MAX);
-
+  CHPL_HOME = foundChplHome;
 
   // Get derived-from-home vars
   if (restoreChplHomeDerivedFromEnv()) {
@@ -522,27 +511,14 @@ static void setupChplHome(const char* argv0) {
   } else if( installed ) {
     // detected we are installed in a prefix, calculate values from that
 
-    int rc;
     // E.g. /usr/lib/chapel/1.16/runtime/lib
-    rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "lib/chapel",
-                  majMinorVers,
-                  "runtime/lib");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-    rc = snprintf(CHPL_RUNTIME_INCL, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "lib/chapel",
-                  majMinorVers,
-                  "runtime/include");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-    rc = snprintf(CHPL_THIRD_PARTY, FILENAME_MAX, "%s/%s/%s/%s",
-                  get_configured_prefix(), // e.g. /usr
-                  "lib/chapel",
-                  majMinorVers,
-                  "third-party");
-    if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
-
+    std::string configuredPrefix = get_configured_prefix();
+    CHPL_RUNTIME_LIB =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/runtime/lib";
+    CHPL_RUNTIME_INCL =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/runtime/include";
+    CHPL_THIRD_PARTY =
+        configuredPrefix + "/lib/chapel/" + majMinorVers + "/third-party";
   } else {
     // set to default values based on home path
     setChplHomeDerivedVars();
@@ -600,18 +576,8 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
 }
 
 static void setHome(const ArgumentDescription* desc, const char* arg) {
-  // Wipe previous CHPL_HOME when comp flag is given
-  CHPL_HOME[0] = '\0';
-
-  // Copy arg into CHPL_HOME
-  size_t arglen = strlen(arg) + 1; // room for \0
-  if (arglen <= sizeof(CHPL_HOME)) {
-    memcpy(CHPL_HOME, arg, arglen);
-    // Update envMap
-    envMap["CHPL_HOME"] = CHPL_HOME;
-  } else {
-    USR_FATAL("CHPL_HOME argument too long");
-  }
+  CHPL_HOME = arg;
+  envMap["CHPL_HOME"] = CHPL_HOME.c_str();
 
   setChplHomeDerivedVars();
   saveChplHomeDerivedInEnv();
@@ -752,15 +718,15 @@ static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg)
 }
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
- addLibFile(libraryFilename, /* fromCmdLine */ true);
+ addLibFile(libraryFilename.c_str(), /* fromCmdLine */ true);
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibPath(libraryFilename, /* fromCmdLine */ true);
+  addLibPath(libraryFilename.c_str(), /* fromCmdLine */ true);
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
-  addIncInfo(incFilename, /* fromCmdLine */ true);
+  addIncInfo(incFilename.c_str(), /* fromCmdLine */ true);
 }
 
 static int invokeChplWithArgs(int argc, char* argv[],
@@ -927,7 +893,7 @@ static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) 
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
-              saveCDir);
+              saveCDir.c_str());
   }
 }
 
@@ -937,7 +903,7 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
   if (libDir[0] == '-') {
     USR_FATAL("--library-dir takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
-              libDir);
+              libDir.c_str());
   }
   setLibmode(desc, unused);
 }
@@ -1311,19 +1277,19 @@ static ArgumentDescription arg_desc[] = {
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"munge-user-idents", ' ', NULL, "[Don't] Munge user identifiers to avoid naming conflicts with external code", "N", &fMungeUserIdents, "CHPL_MUNGE_USER_IDENTS"},
- {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
+ {"savec", ' ', "<directory>", "Save generated C code in directory", "P", &saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
- {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
+ {"hdr-search-path", 'I', "<directory>", "C header search path", "P", &incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
- {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
- {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
+ {"lib-linkage", 'l', "<library>", "C library linkage", "P", &libraryFilename, "CHPL_LIB_NAME", handleLibrary},
+ {"lib-search-path", 'L', "<directory>", "C library search path", "P", &libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
- {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
+ {"output", 'o', "<filename>", "Name output executable", "P", &executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
@@ -1391,9 +1357,9 @@ static ArgumentDescription arg_desc[] = {
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},
  {"html-wrap-lines", ' ', NULL, "[Don't] allow wrapping lines in HTML dumps", "N", &fdump_html_wrap_lines, "CHPL_HTML_WRAP_LINES", NULL},
  {"html-print-block-ids", ' ', NULL, "[Don't] print block IDs in HTML dumps", "N", &fdump_html_print_block_IDs, "CHPL_HTML_PRINT_BLOCK_IDS", NULL},
- {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
+ {"html-chpl-home", ' ', NULL, "Path to use instead of CHPL_HOME in HTML dumps", "P", &fdump_html_chpl_home, "CHPL_HTML_CHPL_HOME", NULL},
  {"log", ' ', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
- {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
+ {"log-dir", ' ', "<path>", "Specify log directory", "P", &log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module. Can be specified multiple times", "S", NULL, "CHPL_LOG_MODULE", setLogModule},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
@@ -1471,19 +1437,19 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
  {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
- {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
- {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
+ {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", &libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
+ {"library-header", ' ', "<filename>", "Name generated header file", "P", &libmodeHeadername, NULL, setLibmode},
  {"library-makefile", ' ', NULL, "Generate a makefile to help use the generated library", "F", &fLibraryMakefile, NULL, setLibmode},
  {"library-cmakelists", ' ', NULL, "Generate a CMakeLists file to help use the generated library", "F", &fLibraryCMakeLists, NULL, setLibmode},
  {"library-fortran", ' ', NULL, "Generate a module compatible with Fortran", "F", &fLibraryFortran, NULL, setLibmode},
- {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", fortranModulename, NULL, setFortranAndLibmode},
+ {"library-fortran-name", ' ', "<modulename>", "Name generated Fortran module", "P", &fortranModulename, NULL, setFortranAndLibmode},
  {"library-python", ' ', NULL, "Generate a module compatible with Python", "F", &fLibraryPython, NULL, setLibmode},
- {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
+ {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", &pythonModulename, NULL, setPythonAndLibmode},
  {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
+ {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", &deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
  // These flags enable us to diagnose problems with our internal modules in
@@ -1614,12 +1580,12 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
   if( fPrintChplHome ) {
-    printf("%s\n", CHPL_HOME);
+    printf("%s\n", CHPL_HOME.c_str());
     printedSomething = true;
   }
   if ( fPrintBootstrapCommands ) {
-    printf("export CHPL_HOME='%s'\n", CHPL_HOME);
-    printf("export CHPL_THIRD_PARTY='%s'\n", CHPL_THIRD_PARTY);
+    printf("export CHPL_HOME='%s'\n", CHPL_HOME.c_str());
+    printf("export CHPL_THIRD_PARTY='%s'\n", CHPL_THIRD_PARTY.c_str());
     printedSomething = true;
   }
   if ( fPrintChplLoc ) {
@@ -1633,25 +1599,19 @@ static void printStuff(const char* argv0) {
   }
 
   if( fPrintChplSettings ) {
-    char buf[FILENAME_MAX+1] = "";
-    printf("CHPL_HOME: %s\n", CHPL_HOME);
-    printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB);
-    printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
-    printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
+    std::string buf;
+    printf("CHPL_HOME: %s\n", CHPL_HOME.c_str());
+    printf("CHPL_RUNTIME_LIB: %s\n", CHPL_RUNTIME_LIB.c_str());
+    printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL.c_str());
+    printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY.c_str());
     printf("\n");
     const char* internalFlag = "";
     if (developer)
       internalFlag = "--internal";
-    int wanted_to_write = snprintf(buf, sizeof(buf),
-                                   "%s/util/printchplenv --all %s",
-                                   CHPL_HOME, internalFlag);
-    if (wanted_to_write < 0) {
-      USR_FATAL("character encoding error in CHPL_HOME path name");
-    } else if ((size_t)wanted_to_write >= sizeof(buf)) {
-      USR_FATAL("CHPL_HOME path name is too long");
-    }
+
+    buf = CHPL_HOME + "/util/printchplenv --all " + internalFlag;
     fflush(stdout); // make sure output is flushed before running subprocess
-    int status = mysystem(buf, "running printchplenv", false);
+    int status = mysystem(buf.c_str(), "running printchplenv", false);
     if (compilerSetChplLLVM) {
       printf("---\n");
       printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
@@ -1726,7 +1686,7 @@ static void populateEnvMap() {
       // This is a driver sub-invocation, so restore and use saved output.
       restoreDriverTmpMultiline(
           printchplenvOutputFilename,
-          [&printchplenvOutput](const char* restoredOutput) {
+          [&printchplenvOutput](std::string_view restoredOutput) {
             printchplenvOutput = restoredOutput;
           });
     }
@@ -1740,8 +1700,8 @@ static void populateEnvMap() {
   }
 
   // Get printchplenv output and collect into a map
-  auto chplEnvResult =
-      chpl::getChplEnv(envMap, CHPL_HOME, printchplenvOutputPtr);
+  auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME.c_str(),
+                                        printchplenvOutputPtr);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
       USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
@@ -1754,7 +1714,7 @@ static void populateEnvMap() {
   // If in initial driver invocation, save printchplenv command output to disk
   // for use in sub-invocations.
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
-    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput.c_str(),
+    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput,
                   /* appendNewline */ false);
   }
 
@@ -1862,7 +1822,7 @@ static void setupChplGlobals(const char* argv0) {
     setupChplHome(argv0);
 
     // Keep envMap updated
-    envMap["CHPL_HOME"] = CHPL_HOME;
+    envMap["CHPL_HOME"] = CHPL_HOME.c_str();
   }
   setupChplLLVM();
 
@@ -2010,7 +1970,7 @@ static void checkCompilerDriverFlags() {
           "Requested monolithic compilation, but an internal compiler-driver "
           "flag was set");
     }
-    if (driverTmpDir[0]) {
+    if (!driverTmpDir.empty()) {
       USR_FATAL("Can't set driver temp dir for monolithic compilation");
     }
   }
@@ -2298,16 +2258,16 @@ static void bootstrapTmpDir() {
     // We are in a sub-invocation and can assume that a tmp dir has been
     // established for us by the driver already, and will be deleted for us
     // later if necessary.
-    INT_ASSERT(driverTmpDir[0] &&
+    INT_ASSERT(!driverTmpDir.empty() &&
                "driver sub-invocation was not supplied a tmp dir path");
-    config.tmpDir = driverTmpDir;
+    config.tmpDir = driverTmpDir.c_str();
     config.keepTmpDir = true;
   } else {
     // This is an initial invocation of the driver, or monolithic.
-    if (saveCDir[0]) {
+    if (!saveCDir.empty()) {
       // Bootstrap with specified savecdir.
-      ensureDirExists(saveCDir, "ensuring --savec directory exists");
-      config.tmpDir = saveCDir;
+      ensureDirExists(saveCDir.c_str(), "ensuring --savec directory exists");
+      config.tmpDir = saveCDir.c_str();
       config.keepTmpDir = true;
     } else {
       // No specified savecdir, so we don't do anything for bootstrapping.
@@ -2577,7 +2537,7 @@ int main(int argc, char* argv[]) {
         tracker.ReportPassGroupTotals(&groupTimes);
 
         // Save times to file
-        std::vector<const char*> groupTimesStrs;
+        std::vector<std::string_view> groupTimesStrs;
         for (const unsigned long groupTime : groupTimes) {
           groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
         }
@@ -2587,10 +2547,10 @@ int main(int argc, char* argv[]) {
         // and report out everything.
 
         // Restore times from file
-        restoreDriverTmp(groupTimesFilename,
-                         [&groupTimes](const char* timeStr) {
-                           groupTimes.emplace_back(std::stoul(timeStr));
-                         });
+        restoreDriverTmp(
+            groupTimesFilename, [&groupTimes](std::string_view timeStr) {
+              groupTimes.emplace_back(std::stoul(std::string(timeStr)));
+            });
 
         // Unless stopping early, expect frontend, middle-end, and (incomplete)
         // backend results from compilation phase, plus the other half of

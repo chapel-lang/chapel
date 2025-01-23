@@ -139,8 +139,6 @@ PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
-PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
-
 PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
 PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
 PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")

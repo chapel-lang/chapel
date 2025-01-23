@@ -1,3 +1,1 @@
-cast_to_bool_ignore_whitespace.chpl:5: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-true
 true

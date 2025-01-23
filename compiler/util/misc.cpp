@@ -38,6 +38,7 @@
 
 #include <csignal>
 #include <fcntl.h>
+#include <string_view>
 #include <sys/stat.h>
 
 static const char* help_url = "https://chapel-lang.org/bugs.html";
@@ -160,11 +161,10 @@ bool requireOutlinedOn() {
 }
 
 const char* cleanFilename(const char* name) {
-  static int  chplHomeLen = strlen(CHPL_HOME);
-  const char* retval      = NULL;
+  const char* retval = NULL;
 
-  if (strncmp(name, CHPL_HOME, chplHomeLen) == 0) {
-    retval = astr("$CHPL_HOME", name + chplHomeLen);
+  if (std::string_view(name).compare(0, CHPL_HOME.length(), CHPL_HOME) == 0) {
+    retval = astr("$CHPL_HOME", name + CHPL_HOME.length());
   } else {
     retval = name;
   }

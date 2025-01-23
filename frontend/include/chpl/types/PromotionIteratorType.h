@@ -69,6 +69,12 @@ class PromotionIteratorType final : public IteratorType {
                                           const resolution::TypedFnSignature* scalarFn,
                                           resolution::SubstitutionsMap promotedFormals);
 
+  virtual const Type* substitute(Context* context,
+                                 const PlaceholderMap& subs) const override {
+    return get(context, poiScope_, scalarFn_->substitute(context, subs),
+               resolution::substituteInMap(context, promotedFormals_, subs));
+  }
+
   const resolution::TypedFnSignature* scalarFn() const {
     return scalarFn_;
   }

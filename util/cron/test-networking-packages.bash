@@ -6,7 +6,7 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-quickstart.bash
 
-export HADOOP_HOME=/data/cf/chapel/hadoop/$HOSTNAME
+export HADOOP_HOME=/hpcdc/project/chapel/hadoop/$HOSTNAME
 export JAVA_HOME=/usr/lib64/jvm/jre
 export CLASSPATH=$(${HADOOP_HOME}/bin/hadoop classpath --glob)
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native:$JAVA_HOME/lib:$JAVA_HOME/lib/amd64/server

@@ -114,7 +114,7 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
   snprintf(numBuf, 4, "%02d", passNum);
 
   mName      = astr(module->name, "_", numBuf, passName, ".ast");
-  mPath      = astr(log_dir, mName);
+  mPath      = astr(log_dir.c_str(), mName);
   mFP        = fopen(mPath, "w");
   mIndent    = 0;
   mNeedSpace = false;

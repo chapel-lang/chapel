@@ -212,6 +212,21 @@ const Variable* findVariable(const ModuleVec& vec, const char* name) {
 
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context,
+                        const Module* mod,
+                        const std::vector<std::string>& variables) {
+  std::unordered_map<std::string, QualifiedType> toReturn;
+  auto& rr = resolveModule(context, mod->id());
+  for (auto& variable : variables) {
+    if (auto varAst = findVariable(mod, variable.c_str())) {
+      toReturn[variable] = rr.byAst(varAst).type();
+    }
+  }
+  assert(variables.size() == toReturn.size());
+  return toReturn;
+}
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context,
                         std::string program,
                         const std::vector<std::string>& variables) {
   auto path = UniqueString::get(context, "input.chpl");
@@ -337,4 +352,140 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
   const PoiScope* poiScope = r.poiScope();
 
   return resolveFunction(rc, sig, poiScope);
+}
+
+QualifiedType findVarType(const Module* m,
+                          const ResolutionResultByPostorderID& rr,
+                          std::string name) {
+  const Variable* var = findOnlyNamed(m, name)->toVariable();
+  assert(var != nullptr);
+  return rr.byAst(var).type();
+}
+
+void testDomainLiteral(Context* context, std::string domainLiteral,
+                       DomainType::Kind domainKind) {
+  printf("Testing: %s\n", domainLiteral.c_str());
+
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program =
+      R"""(
+module M {
+  var d = )""" +
+      domainLiteral + R"""(;
+
+  type i = d.idxType;
+  param rk = d.isRectangular();
+  param ak = d.isAssociative();
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const Variable* d = m->stmt(0)->toVariable();
+  assert(d);
+  assert(d->name() == "d");
+
+  QualifiedType dQt = rr.byAst(d).type();
+  assert(dQt.type());
+  auto dType = dQt.type()->toDomainType();
+  assert(dType);
+
+  assert(findVarType(m, rr, "i") == dType->idxType());
+
+  assert(dType->kind() == domainKind);
+  bool isRectangular = domainKind == DomainType::Kind::Rectangular;
+  ensureParamBool(findVarType(m, rr, "rk"), isRectangular);
+  ensureParamBool(findVarType(m, rr, "ak"), !isRectangular);
+
+  assert(guard.realizeErrors() == 0);
+}
+
+void testDomainIndex(Context* context, std::string domainType,
+                     std::string expectedType) {
+  printf("Testing: index(%s) == %s\n", domainType.c_str(),
+         expectedType.c_str());
+
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program =
+      R"""(
+module M {
+  var d : )""" +
+      domainType + R"""(;
+  type t = )""" +
+      expectedType + R"""(;
+  type i = index(d);
+
+  param equal = i == t;
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(!findVarType(m, rr, "d").isUnknownOrErroneous());
+  assert(!findVarType(m, rr, "t").isUnknownOrErroneous());
+  assert(!findVarType(m, rr, "i").isUnknownOrErroneous());
+
+  ensureParamBool(findVarType(m, rr, "equal"), true);
+
+  assert(guard.realizeErrors() == 0);
+}
+
+void testDomainBadPass(Context* context, std::string argType,
+                       std::string actualType) {
+  printf("Testing: cannot pass %s to %s\n", actualType.c_str(),
+         argType.c_str());
+
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program =
+      R"""(
+module M {
+  proc foo(arg: )""" +
+      argType + R"""() {
+    return 42;
+  }
+
+  var d : )""" +
+      actualType + R"""(;
+  var c_ret = foo(d);
+}
+)""";
+  // TODO: generic checks
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[0];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto c_ret = findOnlyNamed(m, "c_ret")->toVariable();
+  assert(rr.byAst(c_ret).type().isErroneousType());
+  assert(guard.errors().size() == 1);
+  auto& e = guard.errors()[0];
+  assert(e->type() == chpl::NoMatchingCandidates);
+
+  // 'clear' rather than 'realize' to simplify test output
+  guard.clearErrors();
 }

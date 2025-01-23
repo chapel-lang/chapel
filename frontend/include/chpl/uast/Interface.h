@@ -168,7 +168,7 @@ class Interface final : public NamedDecl {
     Return the i'th interface formal.
   */
   const AstNode* formal(int i) const {
-    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numInterfaceFormals_);
     auto ret = child(i + interfaceFormalsChildNum_);
     CHPL_ASSERT(ret);
     return ret;

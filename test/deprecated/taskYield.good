@@ -1,1 +1,0 @@
-taskYield.chpl:1: warning: 'chpl_task_yield' is deprecated, please use 'currentTask.yieldExecution' instead

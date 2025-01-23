@@ -1,0 +1,26 @@
+extractMatches.chpl:41: warning: this overload of extractMatch is unstable pending a design discussion
+extractMatches.chpl:51: warning: this overload of extractMatch is unstable pending a design discussion
+extractMatches.chpl:63: warning: this overload of extractMatch is unstable pending a design discussion
+X1X2   X3 X4
+get string
+get 1 string
+get 2 string
+get 3 string
+get 4 string
+get int
+get 1 int(64)
+get 2 int(64)
+get 3 int(64)
+get 4 int(64)
+get string returned
+get 1 string
+get 2 string
+get 3 string
+get 4 string
+get int returned
+get 1 int(64)
+get 2 int(64)
+get 3 int(64)
+get 4 int(64)
+get wrong type
+correctly caught bad format error

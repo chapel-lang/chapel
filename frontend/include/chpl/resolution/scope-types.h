@@ -234,6 +234,15 @@ class IdAndFlags {
     return (flags_ & TYPE) != 0;
   }
 
+  bool isFunctionLike() const {
+    // * functions are obviously function-like (shouldn't stop lookup)
+    // * parenless functions that are methods might not match the receiver,
+    //   so they should not stop the lookup either (treat them as function-like)
+    // * fields are effectively resolved as accessor functions, so they should
+    //   also not stop the lookup.
+    return isParenfulFunction() || isMethodOrField();
+  }
+
   /** Returns true if haveFlags matches filterFlags, and does not match
       the exclude flag set. See the comments on Flags and FlagSet for
       how the matching works.
@@ -260,6 +269,39 @@ class IdAndFlags {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+/**
+  The result of looking up a name in a scope.
+ */
+class LookupResult {
+ private:
+  /* whether anything was found */
+  bool found_ = false;
+  /* whether one of the discovered symbols was not a function */
+  bool nonFunctions_ = false;
+
+  friend class OwnedIdsWithName;
+
+ public:
+  LookupResult(bool found, bool nonFunctions)
+    : found_(found), nonFunctions_(nonFunctions) {
+    CHPL_ASSERT(!nonFunctions_ || found);
+  }
+
+  static LookupResult empty() { return {false, false}; }
+
+  operator bool() const { return found_; }
+
+  LookupResult& operator|=(const LookupResult& other) {
+    found_ |= other.found_;
+    nonFunctions_ |= other.nonFunctions_;
+    return *this;
+  }
+
+  bool found() const { return found_; }
+
+  bool nonFunctions() const { return nonFunctions_; }
 };
 
 /**
@@ -308,10 +350,10 @@ class OwnedIdsWithName {
 
   /** Append any entries that match filterFlags and aren't excluded
       by excludeFlagSet to a MatchingIdsWithName.
-      Returns 'true' if any matches were appended. */
-  bool gatherMatches(MatchingIdsWithName& dst,
-                     IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlagSet) const;
+      Returns whether any matches were appended. */
+  LookupResult gatherMatches(MatchingIdsWithName& dst,
+                             IdAndFlags::Flags filterFlags,
+                             const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   int numIds() const {
     if (moreIdvs_.get() == nullptr) {
@@ -369,6 +411,7 @@ class MatchingIdsWithName {
 
  private:
   llvm::SmallVector<IdAndFlags, 1> idvs_;
+  bool encounteredFnNonFnConflict_ = false;
 
   /** Construct a MatchingIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.  */
@@ -431,6 +474,17 @@ class MatchingIdsWithName {
 
   /** Construct a empty MatchingIdsWithName containing no IDs. */
   MatchingIdsWithName() { }
+
+  /** Note that when populating this list, we found functions and non-functions
+      at the same scope level. */
+  void noteFnNonFnConflict() {
+    encounteredFnNonFnConflict_ = true;
+  }
+
+  /** Returns 'true' if we found functions and non-functions at the same scope level. */
+  bool encounteredFnNonFnConflict() const {
+    return encounteredFnNonFnConflict_;
+  }
 
   /** Append an IdAndFlags. */
   void append(IdAndFlags idv) {
@@ -502,7 +556,8 @@ class MatchingIdsWithName {
   }
 
   bool operator==(const MatchingIdsWithName& other) const {
-    return idvs_ == other.idvs_;
+    return idvs_ == other.idvs_ &&
+           encounteredFnNonFnConflict_ == other.encounteredFnNonFnConflict_;
   }
   bool operator!=(const MatchingIdsWithName& other) const {
     return !(*this == other);
@@ -513,6 +568,7 @@ class MatchingIdsWithName {
     for (const auto& x : idvs_) {
       ret = hash_combine(ret, chpl::hash(x));
     }
+    ret = hash_combine(ret, encounteredFnNonFnConflict_);
     return ret;
   }
 
@@ -536,15 +592,16 @@ class MatchingIdsWithName {
  */
 using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 
+
 /**
   Gather matches to 'name' that match 'filterFlags' and aren't
   excluded by 'excludeFlags'. Store any gathered into 'result'
  */
-bool lookupInDeclMap(const DeclMap& declared,
-                     UniqueString name,
-                     MatchingIdsWithName& result,
-                     IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlags);
+LookupResult lookupInDeclMap(const DeclMap& declared,
+                             UniqueString name,
+                             MatchingIdsWithName& result,
+                             IdAndFlags::Flags filterFlags,
+                             const IdAndFlags::FlagSet& excludeFlags);
 
 /**
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
@@ -667,10 +724,10 @@ class Scope {
   /** If the scope contains IDs with the provided name,
       append the relevant BorrowedIdsToName the the vector.
       Returns true if something was appended. */
-  bool lookupInScope(UniqueString name,
-                     MatchingIdsWithName& result,
-                     IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlagSet) const {
+  LookupResult lookupInScope(UniqueString name,
+                             MatchingIdsWithName& result,
+                             IdAndFlags::Flags filterFlags,
+                             const IdAndFlags::FlagSet& excludeFlagSet) const {
     return lookupInDeclMap(declared_, name, result,
                            filterFlags, excludeFlagSet);
   }
@@ -1068,6 +1125,17 @@ enum {
     Include methods in the search results (they are excluded by default).
    */
   LOOKUP_METHODS = 2048,
+
+  /**
+    If proceeding through scopes (ie., not LOOKUP_INNERMOST), stop when
+    encountering a non-function. This encodes the behavior of the resolver
+    when encountering ambiguity between called functions and callable
+    non-function variables (e.g., tuple with 'proc this(x: int)').
+
+    This partially encodes the shadowing rules for function overload resolution:
+    "nearer" functions are always preferred to "further" ones.
+   */
+  LOOKUP_STOP_NON_FN = 4096,
 };
 /// \endcond
 
@@ -1314,10 +1382,10 @@ class ModulePublicSymbols {
 
   const DeclMap& syms() const { return syms_; }
 
-  bool lookupInModule(UniqueString name,
-                      MatchingIdsWithName& result,
-                      IdAndFlags::Flags filterFlags,
-                      const IdAndFlags::FlagSet& excludeFlags) const {
+  LookupResult lookupInModule(UniqueString name,
+                              MatchingIdsWithName& result,
+                              IdAndFlags::Flags filterFlags,
+                              const IdAndFlags::FlagSet& excludeFlags) const {
     return lookupInDeclMap(syms_, name, result, filterFlags, excludeFlags);
   }
 

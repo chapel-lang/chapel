@@ -9175,9 +9175,9 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
   } else {
     if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
         lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
-      FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-      if (fn->getReturnSymbol() == lhsSym) {
+      auto fn = toFnSymbol(call->parentSymbol);
+      if (fn && fn->getReturnSymbol() == lhsSym) {
         USR_FATAL(call, "illegal return of type where value is expected");
 
       } else if (lhsSym->hasFlag(FLAG_CHPL__ITER) == true) {
@@ -13093,9 +13093,8 @@ static void printUnusedFunctions() {
    checking.
 */
 #ifdef PRINT_UNUSED_FNS_TO_FILE
-  char fname[FILENAME_MAX+1];
-  snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename, "unused");
-  FILE* outFile = fopen(fname, "w");
+  std::string fname = executableFilename + ".unused";
+  FILE* outFile = fopen(fname.c_str(), "w");
 #else
   FILE* outFile = stdout;
 #endif

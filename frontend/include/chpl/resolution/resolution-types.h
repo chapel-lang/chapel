@@ -39,11 +39,25 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 namespace chpl {
 namespace resolution {
 
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const types::PlaceholderMap& subs);
+
+/* When adjusting return intent overloads, the context of the overloaded
+   call (is it used as a value, a reference, or a const reference?). */
+typedef enum {
+  REF = 1,
+  CONST_REF = 2,
+  VALUE = 3,
+  REF_MAYBE_CONST = 4, // used temporarily for recursive cases
+} Access;
 
 /**
 
@@ -945,6 +959,9 @@ class TypedFnSignature {
                               std::vector<types::QualifiedType> formalTypes,
                               const TypedFnSignature* inferredFrom);
 
+  const TypedFnSignature* substitute(Context* context,
+                                     const types::PlaceholderMap& subs) const;
+
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
@@ -1246,6 +1263,8 @@ enum CandidateFailureReason {
   FAIL_WHERE_CLAUSE,
   /* A parenful call to a parenless function or vice versa. */
   FAIL_PARENLESS_MISMATCH,
+  /* An interface tried to resolve an associated type function but it didn't return a type */
+  FAIL_INTERFACE_NOT_TYPE_INTENT,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };
@@ -1298,17 +1317,15 @@ enum PassingFailureReason {
  */
 class ApplicabilityResult {
  private:
-  /**
-    Set unless the result was a success; empty otherwise. The ID to use to
-    refer to the function candidate that didn't match during call resolution.
+   using ErrorVariant = std::variant<ID, const UntypedFnSignature*, const TypedFnSignature*>;
+  /*
+    If the result was a success, this will be an empty ID. Otherwise, this
+    will contain some information about the candidate that was rejected.
+    IDs are included in untyped signatures and those are included in typed
+    signatures, so the last case of this variant has the most information;
+    we will try to include as much as possible depending on context.
    */
-  ID idForErr_;
-  /**
-    When available, the typed function signature of the candidate that
-    didn't match during call resolution. Set to nullptr if the candidate
-    was accepted / the ApplicationResult was a success.
-   */
-  const TypedFnSignature* initialForErr_;
+  ErrorVariant rejected_;
   /**
     If the ApplicabilityResult is a success, the function candidate that
     was accepted by call resolution.
@@ -1332,13 +1349,12 @@ class ApplicabilityResult {
    */
   int formalIdx_;
 
-  ApplicabilityResult(ID idForErr,
-                      const TypedFnSignature* initialForErr,
+  ApplicabilityResult(ErrorVariant rejected,
                       const TypedFnSignature* candidate,
                       CandidateFailureReason candidateReason,
                       PassingFailureReason formalReason,
                       int formalIdx) :
-    idForErr_(std::move(idForErr)), initialForErr_(initialForErr), candidate_(candidate),
+    rejected_(std::move(rejected)), candidate_(candidate),
     candidateReason_(candidateReason), formalReason_(formalReason),
     formalIdx_(formalIdx) {
     CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 &&
@@ -1348,26 +1364,33 @@ class ApplicabilityResult {
 
  public:
   ApplicabilityResult()
-    : ApplicabilityResult(ID(), nullptr, nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1) {}
+    : ApplicabilityResult(ID(), nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1) {}
 
   static ApplicabilityResult success(const TypedFnSignature* candidate) {
-    return ApplicabilityResult(ID(), nullptr, candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(ID(), candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
   }
 
   static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
                                      PassingFailureReason reason,
                                      int formalIdx) {
-    return ApplicabilityResult(initialForErr->id(), initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+    return ApplicabilityResult(initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+  }
+
+  static ApplicabilityResult failure(const TypedFnSignature* rejected, CandidateFailureReason reason) {
+    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failure(const UntypedFnSignature* rejected, CandidateFailureReason reason) {
+    return ApplicabilityResult(rejected, nullptr, reason, FAIL_FORMAL_OTHER, -1);
   }
 
   static ApplicabilityResult failure(ID idForErr, CandidateFailureReason reason) {
-    return ApplicabilityResult(std::move(idForErr), nullptr, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(std::move(idForErr), nullptr, reason, FAIL_FORMAL_OTHER, -1);
   }
 
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
     bool update = false;
-    update |= defaultUpdateBasic(keep.idForErr_, addin.idForErr_);
-    update |= defaultUpdateBasic(keep.initialForErr_, addin.initialForErr_);
+    update |= defaultUpdateBasic(keep.rejected_, addin.rejected_);
     update |= defaultUpdateBasic(keep.candidate_, addin.candidate_);
     update |= defaultUpdateBasic(keep.candidateReason_, addin.candidateReason_);
     update |= defaultUpdateBasic(keep.formalReason_, addin.formalReason_);
@@ -1376,8 +1399,7 @@ class ApplicabilityResult {
   }
 
   bool operator ==(const ApplicabilityResult& other) const {
-    return idForErr_ == other.idForErr_ &&
-           initialForErr_ == other.initialForErr_ &&
+    return rejected_ == other.rejected_ &&
            candidate_ == other.candidate_ &&
            candidateReason_ == other.candidateReason_ &&
            formalReason_ == other.formalReason_ &&
@@ -1388,32 +1410,27 @@ class ApplicabilityResult {
     return !(*this==other);
   }
 
-  void mark(Context* context) const {
-    idForErr_.mark(context);
-    context->markPointer(initialForErr_);
-    context->markPointer(candidate_);
-    (void) candidateReason_; // nothing to mark
-    (void) formalReason_; // nothing to mark
-    (void) formalIdx_; // nothing to mark
-  }
+  void mark(Context* context) const;
 
   size_t hash() const {
-    return chpl::hash(idForErr_, initialForErr_, candidate_, candidateReason_, formalReason_, formalIdx_);
+    return chpl::hash(rejected_, candidate_, candidateReason_, formalReason_, formalIdx_);
   }
 
-  inline const ID& idForErr() const { return idForErr_; }
+  const ID& idForErr() const;
 
-  inline const TypedFnSignature* initialForErr() const { return initialForErr_; }
+  const UntypedFnSignature* untypedForErr() const;
 
-  inline const TypedFnSignature* candidate() const { return candidate_; }
+  const TypedFnSignature* initialForErr() const;
 
-  inline bool success() const { return candidate_ != nullptr; }
+  const TypedFnSignature* candidate() const { return candidate_; }
 
-  inline CandidateFailureReason reason() const { return candidateReason_; }
+  bool success() const { return candidate_ != nullptr; }
 
-  inline PassingFailureReason formalReason() const { return formalReason_; }
+  CandidateFailureReason reason() const { return candidateReason_; }
 
-  inline int formalIdx() const { return formalIdx_; }
+  PassingFailureReason formalReason() const { return formalReason_; }
+
+  int formalIdx() const { return formalIdx_; }
 };
 
 /** FormalActual holds information on a function formal and its binding (if any) */
@@ -1562,6 +1579,10 @@ class FormalActualMap {
       return nullptr;
     return &byFormalIdx_[formalIdx];
   }
+
+  int failingFormalIdx() const { return failingFormalIdx_; }
+
+  int failingActualIdx() const { return failingActualIdx_; }
 
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
@@ -2271,6 +2292,8 @@ class AssociatedAction {
     INFER_TYPE,
     COMPARE,      // == , e.g., for select-statements
     RUNTIME_TYPE, // create runtime type
+    ENTER_CONTEXT,
+    EXIT_CONTEXT,
   };
 
  private:

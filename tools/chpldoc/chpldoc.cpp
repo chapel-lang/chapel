@@ -1019,11 +1019,6 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
-    return false;
-  }
-
   bool enter(const Domain* dom) {
     if (dom->usedCurlyBraces()) {
       interpose(dom->exprs(), ", ", "{", "}");

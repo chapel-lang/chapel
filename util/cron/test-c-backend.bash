@@ -3,8 +3,6 @@
 # Full test suite with CHPL_LLVM=none and CHPL_TARGET_COMPILER=gnu
 # on linux64. Now uses paratest.server.
 
-# Needs /data/cf/chapel/setup_python27.bash (common-llvm)
-
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-c-backend.bash

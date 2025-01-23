@@ -94,7 +94,7 @@ root_files_wo_copy=$(find . -maxdepth 1 -name Make\* -o -name CMakeLists.txt | x
 #   tools/chplvis: cxx fl h H
 #   tools/mason:   (excluding files named test*): chpl
 
-tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils \) -prune \) -o \( -type f \( \
+tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils -o -name examples \) -prune \) -o \( -type f \( \
     -name Make\* -o \
     -name CMakeLists.txt -o \
     -name \*.c -o \
