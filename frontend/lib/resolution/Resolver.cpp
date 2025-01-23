@@ -1887,10 +1887,43 @@ void Resolver::computeFormalIntent(const uast::NamedDecl *decl,
   qtKind = resolveIntent(formalQt, isThis, isInit);
 }
 
+// Peformance: this re-computes the vector each time it is called.
+// We could make it a query, or try writing an iterator that handles this.
+// In the meantime, though, I'll keep it as is.
+static std::vector<CompilerDiagnostic>
+gatherUserDiagnostics(ResolutionContext* rc,
+                      const CallResolutionResult& c) {
+  std::vector<CompilerDiagnostic> into;
+  for (auto& msc : c.mostSpecific()) {
+    if (!msc) continue;
+
+    // TODO: do we need this?
+    if (msc.fn()->isCompilerGenerated()) continue;
+
+    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope());
+
+    into.insert(into.end(), resolvedFn->diagnostics().begin(),
+                resolvedFn->diagnostics().end());
+  }
+  return into;
+}
+
 void
 Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                             const CallInfo& ci,
                                             const CallResolutionResult& c) {
+  bool foundUserDiagnostics = false;
+  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
+    if (diagnostic.depth() - 1 == 0) {
+      fprintf(stderr, "%s: %s\n", diagnostic.kind() == CompilerDiagnostic::ERROR ? "error" : "warning", diagnostic.message().c_str());
+      foundUserDiagnostics = true;
+    }
+  }
+
+  if (foundUserDiagnostics) {
+    return;
+  }
+
   if (c.mostSpecific().isEmpty()) {
     // if the call resolution result is empty, we need to issue an error
     if (c.mostSpecific().isAmbiguous()) {
@@ -1974,6 +2007,21 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
                                               const uast::AstNode* astForErr,
                                               const CallResolutionResult& c,
                                               optional<ActionAndId> actionAndId) {
+  bool needsErrors = false;
+
+  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
+    // The diagnostic's depth means it's aimed for further up the call stack.
+    // Note it in our own diagnostic list.
+    if (diagnostic.depth() - 1 > 0) {
+      userDiagnostics.emplace_back(diagnostic.message(),
+                                   diagnostic.kind(),
+                                   diagnostic.depth() - 1);
+    } else if (diagnostic.depth() - 1 == 0) {
+      // we're asked not to emit errors, and only return if errors are
+      // needed.
+      needsErrors = true;
+    }
+  }
 
   if (!c.exprType().hasTypePtr()) {
     if (!actionAndId) {
@@ -1985,7 +2033,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
 
     // If the call was specially handled, assume special-case logic has already
     // issued its own error, so we shouldn't emit a general error.
-    return !c.speciallyHandled();
+    return !c.speciallyHandled() || needsErrors;
   } else {
     if (actionAndId) {
       // save candidates as associated functions
@@ -2003,7 +2051,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
-  return false;
+  return needsErrors;
 }
 
 void Resolver::handleResolvedCall(ResolvedExpression& r,
@@ -3985,7 +4033,7 @@ bool Resolver::enter(const uast::Manage* manage) {
                        /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
     auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
     auto c = resolveGeneratedCall(context, manage, ci, inScopes);
-    handleResolvedCallWithoutError(byPostorder.byAst(manage), manage, c);
+    handleResolvedCall(byPostorder.byAst(manage), manage, ci, c);
     CHPL_ASSERT(c.mostSpecific().only());
 
     // Now, we actually want the witness for the interface if one exists.
