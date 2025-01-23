@@ -1917,10 +1917,10 @@ void ErrorSelfDefinition::write(ErrorWriterBase& wr) const {
   const uast::Identifier* ident = std::get<1>(info_);
   auto name = ident->name();
   wr.heading(kind_, type_, decl,
-            "statement references variable '", name, "' before it is defined.");
-  wr.message("In the following statement:");
+            "statement uses variable '", name, "' to define itself.");
+  wr.message("The following statement uses the variable '", name, "' to define itself:");
   wr.code(decl);
-  wr.message("the variable '", name, "' is used to define itself here:");
+  wr.note(ident, "the variable '", name, "' is used to define itself here:");
   wr.codeForDef(ident);
   wr.message("Variables cannot be used to define themselves.");
 }
@@ -2292,9 +2292,9 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto name = std::get<UniqueString>(info_);
   wr.heading(kind_, type_, stmt,
              "statement references variable '", name, "' before it is defined.");
-  wr.message("In the following statement:");
+  wr.message("The following statement references the variable '", name, "', which is defined later:");
   wr.code(stmt);
-  wr.message("there is a reference to a variable defined later:");
+  wr.note(laterId, "the variable '", name, "' is defined here:");
   wr.codeForDef(laterId);
   wr.message("Variables cannot be referenced before they are defined.");
 }
