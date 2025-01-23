@@ -5,7 +5,7 @@
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
-source /data/cf/chapel/setup_system_llvm.bash 19
+source /hpcdc/project/chapel/setup_llvm.bash 19
 export CHPL_LLVM_GCC_PREFIX='none' # spack llvm is configured with proper gcc
 
 # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG

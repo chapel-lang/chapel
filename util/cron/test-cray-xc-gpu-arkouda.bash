@@ -7,7 +7,7 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
 # Setup for GPU:
-source /hpcdc/project/chapel/setup_system_llvm.bash $LLVM_VERSION
+source /hpcdc/project/chapel/setup_llvm.bash $LLVM_VERSION
 module load cudatoolkit
 export CHPL_TARGET_COMPILER=llvm
 export CHPL_LLVM=system

@@ -11,7 +11,7 @@ function set_and_check_python_version() {
   # override `python`
   export PATH=/hpcdc/project/chapel/no-python:$PATH
 
-  local setup_script="/hpcdc/project/chapel/setup_python$major_ver$minor_ver.bash"
+  local setup_script="/hpcdc/project/chapel/setup_python.bash $major_ver.$minor_ver"
 
   if [[ -f "${setup_script}" ]] ; then
     source ${setup_script}
