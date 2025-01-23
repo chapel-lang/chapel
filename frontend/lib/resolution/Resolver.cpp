@@ -1900,7 +1900,8 @@ gatherUserDiagnostics(ResolutionContext* rc,
     // TODO: do we need this?
     if (msc.fn()->isCompilerGenerated()) continue;
 
-    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope());
+    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
+    if (!resolvedFn) continue;
 
     into.insert(into.end(), resolvedFn->diagnostics().begin(),
                 resolvedFn->diagnostics().end());

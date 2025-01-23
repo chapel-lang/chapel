@@ -295,7 +295,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
  */
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope);
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning = false);
 
 
 /**

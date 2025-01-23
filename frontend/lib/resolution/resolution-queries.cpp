@@ -2899,8 +2899,8 @@ inferRefMaybeConstFormals(ResolutionContext* rc,
 
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
-  bool skipIfRunning = false;
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning) {
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
