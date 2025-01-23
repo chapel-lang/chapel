@@ -22,31 +22,31 @@ proc main() {
 
   // init model weights to 0.9
   {
-    var params = model.call(list(owned ClassObject?), "parameters");
+    var params = model.call(list(owned Value?), "parameters");
     for p in params {
-      var data_ = p!.getAttr(owned ClassObject, "data");
+      var data_ = p!.getAttr(owned Value, "data");
       data_.call(NoneType, "fill_", 0.9);
     }
   }
 
   // run model
-  var pred = model(owned ClassObject, input_tensor);
+  var pred = model(owned Value, input_tensor);
 
   // compute the loss
   var loss_fn = MSELoss();
   var target = tensor(owned Value, [[2.0,]]);
   writeln("Target: ", target);
-  var loss = loss_fn(owned ClassObject, pred, target);
+  var loss = loss_fn(owned Value, pred, target);
   loss.call(NoneType, "backward");
 
   // update the model's parameters
   var learning_rate = 0.01;
-  var params = model.call(list(owned ClassObject?), "parameters");
+  var params = model.call(list(owned Value?), "parameters");
   for p in params {
-    var data = p!.getAttr(owned ClassObject, "data");
-    var grad = p!.getAttr(owned ClassObject, "grad");
-    var temp = grad.call(owned ClassObject, "__mul__", learning_rate);
-    var temp2 = data.call(owned ClassObject, "__sub__", temp);
+    var data = p!.getAttr(owned Value, "data");
+    var grad = p!.getAttr(owned Value, "grad");
+    var temp = grad.call(owned Value, "__mul__", learning_rate);
+    var temp2 = data.call(owned Value, "__sub__", temp);
     p!.setAttr("data", temp2);
   }
 
@@ -54,7 +54,7 @@ proc main() {
   writeln("Loss: ", loss.call(real, "item"));
   writeln("Weights:");
   {
-    var params = model.call(list(owned ClassObject?), "parameters");
+    var params = model.call(list(owned Value?), "parameters");
     for p in params {
       writeln("  ", p!.call(real, "item"));
     }

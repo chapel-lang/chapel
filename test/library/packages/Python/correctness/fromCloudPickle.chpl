@@ -11,7 +11,7 @@ var my_function =
                interp.loadPickle(openReader("my_function.pkl").readAll(bytes)));
 
 // run my_function
-var res = my_function(owned ClassObject);
+var res = my_function(owned Value);
 res.call(NoneType, "print");
 
 // create an instance of MyClass
