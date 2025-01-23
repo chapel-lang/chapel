@@ -273,7 +273,7 @@ struct TConverter final : UastConverter {
     AList* tempInsertionPoint_ = nullptr;
 
     // Extra setup done only if there are default arguments.
-    void prepareFormalConversionState();
+    void prepareCalledFnConversionState();
 
     // Convert a single actual considering 'fa'.
     void convertActual(const FormalActual& fa);
@@ -298,7 +298,10 @@ struct TConverter final : UastConverter {
   /// Fields ///
   /// ------ ///
 
-  #if CHPL_TYPED_CONVERTER_DEBUG_TRACE != 0
+  bool genDefaultFieldAccessorWrapperFns = false;
+  bool genDefaultArgumentValueWrapperFns = false;
+
+  #if defined(TC_DEBUG_TRACE) && TC_DEBUG_TRACE != 0
     static constexpr bool trace = true;
   #else
     static constexpr bool trace = false;
@@ -344,7 +347,7 @@ struct TConverter final : UastConverter {
   //
 
   // Stores functions, modules, module-scope vars, and does not need to
-  // be cleaned up when 'CurrentSymbolState' is changed.
+  // be cleaned up when 'ConvertedSymbolState' is changed.
   std::unordered_map<ID, Symbol*> globalSyms;
 
   // this one handles functions in a way that allows for instantiation
@@ -630,9 +633,14 @@ struct TConverter final : UastConverter {
   }
 
   // Helper that constructs AST to produce the default value for a type.
+  //
   // NOTE: If the type cannot construct a default value then this helper
   //       will produce a potentially bogus expression.
-  Expr* defaultValueForType(const types::Type* t);
+  //
+  // The argument 'pin' is an AST node used to ground any generated calls
+  // needed to resolve and construct the default value. If it is 'nullptr',
+  // then the currently converted symbol will be used instead.
+  Expr* defaultValueForType(const types::Type* t, const AstNode* pin);
 
   // Create a new temporary. The type used for it must be supplied.
   Symbol* makeNewTemp(const types::QualifiedType& qt);
@@ -640,6 +648,10 @@ struct TConverter final : UastConverter {
   // Store 'e' in a temporary if it does not already refer to one.
   // The type for the temporary must be provided and cannot easily
   // be retrieved from the converted expression.
+  //
+  // TODO: Can we provide a custom function to retrieve 'e->qualType()'
+  // without performing legacy resolution? Then we can remove the 'qt'
+  // requirement, which would mean types no longer need to map 1-to-1.
   SymExpr* storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt);
 
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
@@ -667,41 +679,50 @@ struct TConverter final : UastConverter {
   // form of call) into a call to a middle-end only '_new' wrapper.
   Expr* convertNewCallOrNull(const Call* node, RV& rv);
 
+  // Try to convert a tuple value e.g., '(x, y)'.
+  Expr* convertTupleCallOrNull(const Call* node, RV& rv);
+
   // Try to convert a regular named call that maps to a 'TypedFnSignature'.
   // This branch is taken if the 'ResolvedExpression' for 'node' maps
-  // cleanly to a single 'TypedFnSignature'.
-  Expr* convertRegularNamedCallOrNull(const Call* node, RV& rv);
+  // cleanly to a single 'TypedFnSignature'. This branch may still be taken
+  // if the call does not map to a signature but is an intrinsic (a call to
+  // a function that the compiler has opted to implement directly), or if
+  // the call appears to be a call to a named function but is actually
+  // handled directly as a language feature (e.g., field initialization).
+  Expr* convertNamedCallOrNull(const Call* node, RV& rv);
 
-  // Try to convert a parenless call.
-  Expr* convertParenlessCallOrNull(const Identifier* node, RV& rv);
-
-  // Convert a "special" call that the compiler has handled directly
-  // without mapping to a 'TypedFnSignature' in an obvious way. This
-  // branch will also handle patterns which do not necessarily map to
-  // calls in the lowered AST (e.g., field accesses).
-  Expr* convertSpecialNamedCallOrNull(const Call* node, RV& rv);
-
-  // Try to convert the pattern 'tuple[0]'.
-  Expr* convertSpecialTupleParamIndexingOrNull(
-                                const Call* node,
-                                const ResolvedExpression* re,
-                                const std::vector<const AstNode*>& actualAsts,
-                                const resolution::CallInfo& ci,
-                                RV& rv);
+  // Try to convert a parenless call. This branch accepts both 'Identifier'
+  // as well as 'Dot' AST and can also handle implicit method receivers.
+  Expr* convertParenlessCallOrNull(const AstNode* node, RV& rv);
 
   // Try to convert field init points e.g., 'this.x = x' in an initializer.
-  Expr* convertSpecialFieldInitOrNull(
+  Expr* convertFieldInitOrNull(const Call* node,
+                               const ResolvedExpression* re,
+                               const std::vector<const AstNode*>& actualAsts,
+                               const resolution::CallInfo& ci,
+                               RV& rv);
+
+  // Try to convert the pattern 'tuple[0]'.
+  Expr* convertIntrinsicTupleIndexingOrNull(
                                 const Call* node,
                                 const ResolvedExpression* re,
                                 const std::vector<const AstNode*>& actualAsts,
                                 const resolution::CallInfo& ci,
                                 RV& rv);
 
-  // The frontend may decide to handle several casts directly as 'builtin',
+  // The frontend may decide to handle casts for several types intrinsically,
   // such as casts for primitive types or strings. If the cast expression
   // produces a 'QualifiedType' but does not have a 'TypedFnSignature' set,
-  // then it was probably handled directly by the compiler.
-  Expr* convertSpecialIntrinsicCastOrNull(
+  // then it is probably an intrinsic.
+  Expr* convertIntrinsicCastOrNull(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv);
+
+  // Logical short-circuiting for the bool '||' and '&&' operators.
+  Expr* convertIntrinsicLogicalOrNull(
                                 const Call* node,
                                 const ResolvedExpression* re,
                                 const std::vector<const AstNode*>& actualAsts,
@@ -716,9 +737,9 @@ struct TConverter final : UastConverter {
                              const ResolvedFunction** outRf=nullptr);
 
   // Convert using a simple pattern that does not handle pass-by-name.
-  template <typename Iter>
+  template <typename Iterable>
   void convertAndInsertPrimCallActuals(CallExpr* call,
-                                       const Iter& actuals,
+                                       const Iterable& actuals,
                                        RV& rv);
 
   // For a given AST, convert and insert actuals into the lowered call 'c'.
@@ -729,7 +750,12 @@ struct TConverter final : UastConverter {
   //
   // The vector 'actualAsts' should contain the ASTs that are apparent in
   // the call. Implicit receivers are handled by considering the signature
-  // and may rely on the currently converted symbol (e.g., `cur.fnSymbol`).
+  // 'tfs' and may rely on the currently converted symbol being set (e.g.,
+  // `cur.fnSymbol`).
+  //
+  // Actual conversion handles generation of default-argument-values, but
+  // this is only possible if a 'TypedFnSignature' for the called function
+  // is supplied.
   void convertAndInsertActuals(CallExpr* c,
                                const AstNode* node,
                                const std::vector<const AstNode*>& actualAsts,
@@ -744,6 +770,20 @@ struct TConverter final : UastConverter {
                              const Call* node,
                              const resolution::ResolvedExpression* re,
                              RV& rv);
+
+  // These functions help the converter generate field accesses. Note that
+  // these are "plain-old" field accesses and not calls to parenless field
+  // accessor functions.
+  Expr* codegenGetField(const AstNode* recvAst, const char* fieldName, RV& rv,
+                        types::QualifiedType* outFieldQt);
+  Expr* codegenGetField(const AstNode* recvAst, int fieldIndex, RV& rv,
+                        types::QualifiedType* outFieldQt);
+  Expr* codegenGetField(Expr* recv, const types::QualifiedType& qtRecv,
+                        const char* fieldName, RV& rv,
+                        types::QualifiedType* outFieldQt);
+  Expr* codegenGetField(Expr* recv, const types::QualifiedType& qtRecv,
+                        int fieldIndex, RV& rv,
+                        types::QualifiedType* outFieldQt);
 
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
@@ -830,6 +870,9 @@ struct TConverter final : UastConverter {
   bool enter(const Literal* node, RV& rv);
   void exit(const Literal* node, RV& rv);
 
+  bool enter(const Dot* node, RV& rv);
+  void exit(const Dot* node, RV& rv);
+
   bool enter(const Identifier* node, RV& rv);
   void exit(const Identifier* node, RV& rv);
 
@@ -852,18 +895,37 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
                               types::QualifiedType* outQt) {
   astlocMarker markAstLoc(node->id());
 
-  // traverse to add it to cur.aList
-  node->traverse(rv);
+  Expr* ret = nullptr;
 
-  CHPL_ASSERT(!cur.aList->empty());
+  // Look for cases where we can evaluate immediately without traversing.
+  if (auto re = rv.byAstOrNull(node)) {
+    auto& qt = re->type();
+
+    if (qt.isParam()) {
+      // We can fold 'param' expressions away immediately.
+      auto sym = convertParam(qt);
+      INT_ASSERT(sym);
+      ret = new SymExpr(sym);
+    }
+  }
+
+  if (!ret) {
+    // Otherwise, the AST was not evaluated, so traverse it.
+    node->traverse(rv);
+
+    // remove the last thing from the current AList and return that
+    CHPL_ASSERT(!cur.aList->empty());
+    ret = cur.aList->last()->remove();
+  }
+
+  // We should always have some AST at this point.
+  INT_ASSERT(ret);
 
   // Set the expression's type if it was requested.
   if (outQt) {
     if (auto re = rv.byAstOrNull(node)) *outQt = re->type();
   }
 
-  // remove the last thing from the current AList and return that
-  auto ret = cur.aList->last()->remove();
   return ret;
 }
 
@@ -1693,6 +1755,7 @@ TConverter::findOrCreateHiddenVarArg(const VarArgFormal* node, RV& rv) {
   if (node->intent() == Formal::TYPE) ret->addFlag(FLAG_TYPE_VARIABLE);
   if (auto ag = node->attributeGroup()) {
     if (!ag->hasPragma(PRAGMA_NO_AUTO_DESTROY)) {
+      // TODO: Can remove, we handle inserting deinit calls?
       ret->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
   }
@@ -1947,7 +2010,7 @@ struct ConvertTypeHelper {
     msg += chpl::types::typetags::tagToString(t->tag());
     msg += "'";
     TC_UNIMPL(msg.c_str());
-    return nullptr;
+    return dtUnknown;
   }
 
   // builtin types with their own classes
@@ -2039,8 +2102,7 @@ struct ConvertTypeHelper {
 
   Type* visit(const types::BasicClassType* bct) {
     auto rc = createDummyRC(context());
-    const ResolvedFields& rf =
-      fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
+    auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(bct));
     INT_ASSERT(at);
@@ -2062,15 +2124,14 @@ struct ConvertTypeHelper {
     }
 
     // convert the fields
-    tc_->helpConvertFields(bct, rf, at);
+    tc_->helpConvertFields(bct, rfds, at);
 
     return at;
   }
 
   Type* visit(const types::RecordType* t) {
     auto rc = createDummyRC(context());
-    const ResolvedFields& rf =
-      fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
+    auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
     INT_ASSERT(at);
@@ -2083,7 +2144,7 @@ struct ConvertTypeHelper {
     INT_ASSERT(def);
 
     // convert the fields
-    tc_->helpConvertFields(t, rf, at);
+    tc_->helpConvertFields(t, rfds, at);
 
     return at;
   }
@@ -2371,7 +2432,8 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
 }
 
 struct ConvertDefaultValueHelper {
-  TConverter* tc_;
+  TConverter* tc_ = nullptr;
+  const AstNode* node_ = nullptr;
 
   Expr* visit(const types::Type* t) {
     std::string msg;
@@ -2401,10 +2463,33 @@ struct ConvertDefaultValueHelper {
     // default-initialized should have been caught earlier in compilation.
     return new SymExpr(gNil);
   }
+
+  Expr* visit(const types::RecordType* t) {
+    // Construct a 'CallInfo' representing 't.init()'...
+    types::QualifiedType qt = { types::QualifiedType::VAR, t };
+    auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"));
+    auto ci2 = resolution::CallInfo::createWithReceiver(ci1, qt);
+
+    // Search for 'init()' using the generated call.
+    auto fn = tc_->convertFunctionForGeneratedCall(ci2, node_);
+    Expr* ret = nullptr;
+
+    if (fn) {
+      // Found it, so invoke it on a temp.
+      auto temp = tc_->makeNewTemp(qt);
+      tc_->cur.aList->insertAtTail(new DefExpr(temp));
+      ret = new CallExpr(fn, temp);
+    } else {
+      ret = tc_->placeholder();
+    }
+
+    return ret;
+  }
 };
 
-Expr* TConverter::defaultValueForType(const types::Type* t) {
-  ConvertDefaultValueHelper visitor = { this };
+Expr*
+TConverter::defaultValueForType(const types::Type* t, const AstNode* node) {
+  ConvertDefaultValueHelper visitor = { this, node };
   auto ret = t->dispatch<Expr*>(visitor);
   return ret;
 }
@@ -2422,6 +2507,9 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
   if (SymExpr* se = toSymExpr(e)) {
     return se;
   }
+
+  // Prevent default-constructed 'QualifiedType' from slipping in.
+  INT_ASSERT(qt.hasTypePtr());
 
   // otherwise, store the value in a temp
   auto t = makeNewTemp(qt);
@@ -2660,7 +2748,7 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
         if (const resolution::ResolvedExpression* re = rv.byAstOrNull(node)) {
           types::QualifiedType qt = re->type();
           if (!qt.isUnknown()) {
-            initExpr = defaultValueForType(qt.type());
+            initExpr = defaultValueForType(qt.type(), node);
           }
         }
         INT_ASSERT(initExpr);
@@ -2920,6 +3008,40 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
   return ret;
 }
 
+Expr* TConverter::convertTupleCallOrNull(const Call* node, RV& rv) {
+  auto tuple = node ? node->toTuple() : nullptr;
+  if (!tuple) return nullptr;
+
+  auto re = rv.byAstOrNull(node);
+  INT_ASSERT(re);
+
+  auto& qtTuple = re->type();
+  auto tt = qtTuple.type() ? qtTuple.type()->toTupleType() : nullptr;
+  if (!tt) return placeholder();
+
+  auto fn = findOrConvertTupleInit(tt);
+  if (!fn) return placeholder();
+
+  types::QualifiedType qt = { types::QualifiedType::VAR, tt };
+  auto temp = makeNewTemp(qt);
+  cur.aList->insertAtTail(new DefExpr(temp));
+
+  auto call = new CallExpr(fn);
+  call->insertAtTail(temp);
+
+  for (auto ast : node->actuals()) {
+    // TODO: Handle copy-init calls? Or should these be referential?
+    types::QualifiedType qtAst;
+    auto e1 = convertExpr(ast, rv, &qtAst);
+    auto e2 = storeInTempIfNeeded(e1, qtAst);
+    call->insertAtTail(e2);
+  }
+
+  auto ret = storeInTempIfNeeded(call, qt);
+
+  return ret;
+}
+
 template <typename Iter>
 void TConverter::convertAndInsertPrimCallActuals(CallExpr* call,
                                                  const Iter& actuals,
@@ -2951,9 +3073,132 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   return ret;
 }
 
+static std::tuple<Expr*, const types::CompositeType*, int>
+locateTypeAndFieldIndex(TConverter* tc,
+                        Expr* receiver,
+                        const types::QualifiedType& qtReceiver,
+                        const char* name,
+                        int index) {
+  auto t = qtReceiver.type();
+  auto ct = t ? t->getCompositeType() : nullptr;
+  int slot = index;
+
+  // TODO: Fetching superclass field (non-flat access).
+  if (ct && name != nullptr) {
+    TC_UNIMPL("Generating field access by name...");
+    return { receiver, nullptr, -1 };
+  }
+
+  // The slot can be OOB, but that's OK, the caller will catch.
+  return { receiver, ct, slot };
+}
+
+static Expr* codegenGetFieldImpl(TConverter* tc,
+                                 primtags::PrimitiveTag prim,
+                                 Expr* recv,
+                                 const types::QualifiedType& qtRecv,
+                                 const char* fieldName,
+                                 int fieldIndex,
+                                 TConverter::RV& rv,
+                                 types::QualifiedType* outQt) {
+  INT_ASSERT(fieldName || fieldIndex >= 0);
+
+  // TODO: Handle fetching fields from implicit receivers.
+  if (recv == nullptr) {
+    TC_UNIMPL("Fetching field from implicit receiver!");
+    return tc->placeholder();
+  }
+
+  // The receiver does not have a useable type, so bail out.
+  if (!qtRecv.hasTypePtr() || qtRecv.isUnknownOrErroneous() ||
+      !qtRecv.type()->getCompositeType()) {
+    return tc->placeholder();
+  }
+
+  // Locate the field index and the (sub-class) it came from (the field
+  // could be from a nested class). The 'base' is the converted expression
+  // used to access the receiver.
+  auto [base, ct, slot] = locateTypeAndFieldIndex(tc, recv, qtRecv,
+                                                  fieldName,
+                                                  fieldIndex);
+  if (!ct || slot < 0) return tc->placeholder();
+
+  auto rc = createDummyRC(tc->context);
+  auto dpo = resolution::DefaultsPolicy::IGNORE_DEFAULTS;
+  auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
+  if (slot >= rfds.numFields()) return tc->placeholder();
+
+  auto qtField = rfds.fieldType(slot);
+  if (!qtField.hasTypePtr() || qtField.isUnknownOrErroneous()) {
+    return tc->placeholder();
+  }
+
+  if (prim == PRIM_UNKNOWN) {
+    // Determine the primitive based on the type.
+    prim = qtField.type()->isClassType() ? PRIM_GET_MEMBER_VALUE
+                                         : PRIM_GET_MEMBER;
+  } else {
+    // Use the primitive that was requested.
+    INT_ASSERT(prim == PRIM_GET_MEMBER || prim == PRIM_GET_MEMBER_VALUE);
+  }
+
+  // TODO: Should I just be using the 'ClassType' here? Check.
+  auto at = toAggregateType(tc->convertType(ct->getCompositeType()));
+  auto fieldSym = at ? at->getField(slot) : nullptr;
+  if (!at || !fieldSym) return tc->placeholder();
+
+  auto get = new CallExpr(prim, base, new SymExpr(fieldSym));
+
+  // The type of the field was requested.
+  if (outQt) {
+    if (prim == PRIM_GET_MEMBER) {
+      if (qtField.type() && qtField.type()->isClassType()) {
+        TC_UNIMPL("Adjusting class field in PRIM_GET_MEMBER");
+        return tc->placeholder();
+      }
+    }
+    *outQt = qtField;
+  }
+
+  return get;
+}
+
+Expr*
+TConverter::codegenGetField(const AstNode* recvAst,
+                            const char* fieldName, RV& rv,
+                            types::QualifiedType* outQt) {
+  // TODO: If 'dyno' maps to the field ID then we can just compute the index
+  // (and the supertype) without having to have the converter recompute it.
+  // E.g., check the 'rv.byAstOrNull(receiver)' and the 'toId()' should be
+  // set to point at the field. Using that we can compute which parent type
+  // it is in (and the index) right here.
+  //
+  // TODO: That is assuming that we don't just call the compiler-generated
+  // field accessor function to begin with...
+  types::QualifiedType qtRecv;
+  auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+  auto p = PRIM_UNKNOWN;
+  const int fieldIndex = -1;
+  auto ret = codegenGetFieldImpl(this, p, recv, qtRecv, fieldName,
+                                 fieldIndex, rv, outQt);
+  return ret;
+}
+
+Expr* TConverter::codegenGetField(const AstNode* recvAst,
+                                  int fieldIndex, RV& rv,
+                                  types::QualifiedType* outQt) {
+  types::QualifiedType qtRecv;
+  auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+  auto p = PRIM_UNKNOWN;
+  const char* fieldName = nullptr;
+  auto ret = codegenGetFieldImpl(this, p, recv, qtRecv, fieldName,
+                                 fieldIndex, rv, outQt);
+  return ret;
+}
+
 // TODO: The frontend should tell us this is happening so that we don't have
 // to pattern-match against this. E.g., generate a method for param indexing.
-Expr* TConverter::convertSpecialTupleParamIndexingOrNull(
+Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
                                 const Call* node,
                                 const ResolvedExpression* re,
                                 const std::vector<const AstNode*>& actualAsts,
@@ -2966,17 +3211,18 @@ Expr* TConverter::convertSpecialTupleParamIndexingOrNull(
     auto tt = qt1.type() ? qt1.type()->toTupleType() : nullptr;
 
     if (tt && qt2.param() && qt2.type() && qt2.type()->isIntType()) {
-      auto val = qt2.param()->toIntParam()->value();
-      INT_ASSERT(0 <= val && val < tt->numElements());
+      auto idx = qt2.param()->toIntParam()->value();
 
-      // TODO: Replace this sequence with a 'getField' helper.
-      Expr* tuple = convertExpr(actualAsts[0], rv);
-      auto at = toAggregateType(tuple->typeInfo());
-      INT_ASSERT(at);
-      auto name = astr("x", istr(val));
-      auto field = at->getField(name);
-      auto get = new CallExpr(PRIM_GET_MEMBER, tuple, new SymExpr(field));
-      Expr* ret = storeInTempIfNeeded(get, {});
+      // Give up if the component index is out of bounds.
+      bool inBounds = (0 <= idx && idx < tt->numElements());
+      if (!inBounds) return placeholder();
+
+      types::QualifiedType qtField;
+
+      // Skip the 'size' field.
+      const int slot = (idx + 1);
+      auto fetch = codegenGetField(actualAsts[0], slot, rv, &qtField);
+      auto ret = storeInTempIfNeeded(fetch, qtField);
 
       return ret;
     }
@@ -2985,7 +3231,7 @@ Expr* TConverter::convertSpecialTupleParamIndexingOrNull(
   return nullptr;
 }
 
-Expr* TConverter::convertSpecialFieldInitOrNull(
+Expr* TConverter::convertFieldInitOrNull(
                                 const Call* node,
                                 const ResolvedExpression* re,
                                 const std::vector<const AstNode*>& actualAsts,
@@ -3014,7 +3260,7 @@ Expr* TConverter::convertSpecialFieldInitOrNull(
   // Emit a 'init=' call if an action was found, or a PRIM_MOVE otherwise.
   if (action) {
 
-    // TODO: Encapsulate this whole process of "resolve a call using a TFS"
+    // TODO: Encapsulate this whole process of "convert a call using a TFS"
     // into a separate helper method.
     auto init = action->fn();
     INT_ASSERT(init && init->isInitEquals());
@@ -3047,7 +3293,7 @@ Expr* TConverter::convertSpecialFieldInitOrNull(
   return ret;
 }
 
-Expr* TConverter::convertSpecialIntrinsicCastOrNull(
+Expr* TConverter::convertIntrinsicCastOrNull(
                                 const Call* node,
                                 const ResolvedExpression* re,
                                 const std::vector<const AstNode*>& actualAsts,
@@ -3055,9 +3301,6 @@ Expr* TConverter::convertSpecialIntrinsicCastOrNull(
                                 RV& rv) {
   // The call is not a cast.
   if (ci.name() != USTR(":")) return nullptr;
-
-  // If the call maps directly to a function then it is a "normal" call.
-  if (re->mostSpecific().only()) return nullptr;
 
   auto& qt = re->type();
   INT_ASSERT(qt.type());
@@ -3084,8 +3327,7 @@ Expr* TConverter::convertSpecialIntrinsicCastOrNull(
   if (qt2.kind() != types::QualifiedType::TYPE) return placeholder();
 
   if (qt1.type() == qt2.type()) {
-    // TODO: Elide the cast, see '_removed_cast' in old compiler.
-    TC_UNIMPL("Eliding cast to same type");
+    TC_UNIMPL("Eliding cast to same type!");
     return placeholder();
   }
 
@@ -3107,43 +3349,133 @@ Expr* TConverter::convertSpecialIntrinsicCastOrNull(
   }
 
   // There was no call, so we missed a case! Return a placeholder.
-  TC_UNIMPL("Unhandled intrinsic cast");
+  TC_UNIMPL("Unhandled intrinsic cast!");
   return placeholder();
 }
 
-Expr* TConverter::convertSpecialNamedCallOrNull(const Call* node, RV& rv) {
-  auto re = rv.byAstOrNull(node);
+Expr* TConverter::convertIntrinsicLogicalOrNull(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv) {
+  // The call is not a logical operator.
+  if (ci.name() != USTR("&&") && ci.name() != USTR("||")) return nullptr;
 
-  // Special calls need the info from the 'ResolvedExpression'.
-  if (!re) return nullptr;
+  // If the call maps directly to a function then it is a "normal" call.
+  if (re->mostSpecific().only()) return nullptr;
 
-  // In mose cases the call should be specified in 're->mostSpecific()'.
-  auto& candidate = re->mostSpecific().only();
+  // If the type is not the bool type then it is not an intrinsic.
+  // TODO: And both types must be 'bool' or implicitly convertible.
+  if (re->type().type() != types::BoolType::get(context)) return nullptr;
 
-  // If we have a signature, then it's a regular call, not a special one.
-  if (candidate.fn()) return nullptr;
+  INT_ASSERT(node->numActuals() == 2);
+  auto arg1 = node->actual(0);
+  auto arg2 = node->actual(1);
+  auto reArg1 = rv.byAstOrNull(arg1);
 
-  // Reconstruct a 'CallInfo' to help with pattern-matching.
-  std::vector<const AstNode*> actualAsts;
-  const bool raiseErrors = false;
-  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
-                                         raiseErrors,
-                                         &actualAsts);
-  Expr* ret = nullptr;
+  bool isLhsParamFalse = reArg1 && reArg1->type().isParamFalse();
+  bool isLhsParamTrue = reArg1 && reArg1->type().isParamTrue();
 
-  ret = convertSpecialTupleParamIndexingOrNull(node, re, actualAsts, ci, rv);
-  if (ret) return ret;
+  // TODO: Can we just have the parent converter routine param-fold this?
+  bool canFoldAwayTree = (ci.name() == USTR("&&") && isLhsParamFalse) ||
+                         (ci.name() == USTR("||") && isLhsParamTrue);
+  bool canFoldAwayCond = (ci.name() == USTR("&&") && isLhsParamTrue) ||
+                         (ci.name() == USTR("||") && isLhsParamFalse);
 
-  ret = convertSpecialFieldInitOrNull(node, re, actualAsts, ci, rv);
-  if (ret) return ret;
+  if (canFoldAwayTree) {
+    return isLhsParamTrue ? new SymExpr(gTrue) : new SymExpr(gFalse);
+  }
 
-  ret = convertSpecialIntrinsicCastOrNull(node, re, actualAsts, ci, rv);
-  if (ret) return ret;
+  if (canFoldAwayCond) {
+    return convertExpr(arg2, rv);
+  }
+
+  //
+  // Otherwise we need to implement the lowered short-circuiting behavior.
+  //
+  //  var f = a() && b() && c();
+  //  ...
+  //            &&
+  //          /    \
+  //        &&      \
+  //      /    \     \
+  //    a()    b()   c()
+  //
+  //  (...Produced by recursion to left sub-tree...)
+  //
+  //  var tmp1
+  //  move tmp1, a()
+  //
+  //  if tmp1 {
+  //    var tmp2
+  //    move tmp2, b()
+  //    move tmp1, tmp2
+  //  }
+  //
+  //  (...Produced by evaluating root '&&'...)
+  //
+  //  if tmp1 {
+  //    var tmp3
+  //    move tmp3, c()
+  //    move tmp1, tmp3
+  //  }
+  //
+  // For '||' the structure is the same, but the condition is negated.
+  //
+  // The temporaries in the branch may be elided automatically since
+  // the expression 'b()' is wrapped in a 'storeInTempIfNeeded(...)'
+  // call.
+  //
+
+  // First, evaluate the left sub-tree.
+  types::QualifiedType qtArg1;
+  auto exprArg1 = convertExpr(arg1, rv, &qtArg1);
+
+  // Make a temp...
+  auto temp = makeNewTemp(reArg1->type());
+  cur.aList->insertAtTail(new DefExpr(temp));
+
+  // Move the left sub-tree into the temp.
+  auto moveArg1 = new CallExpr(PRIM_MOVE, temp, exprArg1);
+  cur.aList->insertAtTail(moveArg1);
+
+  // Prepare the condition.
+  auto thenBlock = new BlockStmt();
+  pushBlock(thenBlock);
+
+  types::QualifiedType qtArg2;
+  auto exprArg2 = convertExpr(arg2, rv, &qtArg2);
+  auto tempArg2 = storeInTempIfNeeded(exprArg2, qtArg2);
+
+  auto moveArg2 = new CallExpr(PRIM_MOVE, temp, tempArg2);
+  cur.aList->insertAtTail(moveArg2);
+
+  popBlock();
+
+  // Negate the condition if we are dealing with '||'.
+  Expr* cond = new SymExpr(temp);
+  if (ci.name() == USTR("||")) {
+    const ResolvedFunction* rf = nullptr;
+    auto ciNeg = resolution::CallInfo::createSimple(ustr("!"), qtArg1);
+    auto fnNeg = convertFunctionForGeneratedCall(ciNeg, node, &rf);
+    INT_ASSERT(fnNeg && rf);
+
+    // TODO: Negation is not in a temporary, is that OK?
+    cond = new CallExpr(fnNeg, cond);
+  }
+
+  // Insert the prepared branch into the tree.
+  auto branch = new CondStmt(cond, thenBlock, nullptr);
+  cur.aList->insertAtTail(branch);
+
+  // But the result is the temporary.
+  auto ret = new SymExpr(temp);
 
   return ret;
 }
 
-Expr* TConverter::convertRegularNamedCallOrNull(const Call* node, RV& rv) {
+Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   auto re = rv.byAstOrNull(node);
 
   // Regular calls need the info from the 'ResolvedExpression'.
@@ -3152,27 +3484,51 @@ Expr* TConverter::convertRegularNamedCallOrNull(const Call* node, RV& rv) {
   // In mose cases the call should be specified in 're->mostSpecific()'.
   auto& candidate = re->mostSpecific().only();
   auto sig = candidate.fn();
-
-  // If we don't have a signature, then resolution probably failed.
-  if (!sig) return nullptr;
+  bool noCandidateForCall = !candidate || !sig;
 
   // Fetch the resolved function and elide the call entirely if possible.
+  // TODO: Can we make another overload that just takes the AST/RV?
+  //       Can we elide a call even if we don't know the signature if
+  //       the type of the call is 'param'?
   const ResolvedFunction* rf = nullptr;
-  if (Expr* elided = paramElideCallOrNull(sig, re->poiScope(), &rf)) {
-    return elided;
-  } else if (!rf) {
-    return nullptr;
+  if (sig) {
+    if (Expr* elided = paramElideCallOrNull(sig, re->poiScope(), &rf)) {
+      return elided;
+    } else if (!rf) {
+      return nullptr;
+    }
   }
-
-  auto calledFn = findOrConvertFunction(rf);
-  CallExpr* ret = new CallExpr(calledFn);
 
   // Create a 'CallInfo' to populate the actual ASTs as a side-effect.
   std::vector<const AstNode*> actualAsts;
   const bool raiseErrors = true;
-  std::ignore = resolution::CallInfo::create(context, node, rv.byPostorder(),
-                                             raiseErrors,
-                                             &actualAsts);
+  auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
+                                         raiseErrors,
+                                         &actualAsts);
+
+  if (noCandidateForCall) {
+    // The call may be to an intrinsic handled entirely by the compiler.
+    // Or it could be another call-like pattern e.g., field init-point.
+    Expr* ret = nullptr;
+
+    ret = convertFieldInitOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertIntrinsicTupleIndexingOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertIntrinsicCastOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertIntrinsicLogicalOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    TC_UNIMPL("Unhandled named call with no candidate!");
+    return placeholder();
+  }
+
+  auto calledFn = findOrConvertFunction(rf);
+  CallExpr* ret = new CallExpr(calledFn);
 
   // This mapping drives the conversion of actuals.
   auto& fam = candidate.formalActualMap();
@@ -3210,6 +3566,7 @@ TConverter::ActualConverter::ActualConverter(
       // A vararg formal can never be referred to by another formal.
       if (decl->isVarArgFormal()) continue;
 
+      // Add entries so that slots can be looked up by formal ID.
       auto it = formalIdToFormalActual_.find(decl->id());
       INT_ASSERT(it == formalIdToFormalActual_.end());
       formalIdToFormalActual_.emplace(decl->id(), fa);
@@ -3224,10 +3581,10 @@ TConverter::ActualConverter::ActualConverter(
     return;
   }
 
-  prepareFormalConversionState();
+  prepareCalledFnConversionState();
 }
 
-void TConverter::ActualConverter::prepareFormalConversionState() {
+void TConverter::ActualConverter::prepareCalledFnConversionState() {
   //
   // Otherwise, we prepare to convert default arguments by setting up
   // a temporary "conversion state" for the called function.
@@ -3245,6 +3602,7 @@ void TConverter::ActualConverter::prepareFormalConversionState() {
   auto moduleSymbol = tc_->findOrSetupModule(parentModule);
 
   // Prepare the state block for the called function.
+  // TODO: Helper function?
   calledFnState_ = {
     .symbol                 = parsing::idToAst(context, rf->id()),
     .fnSymbol               = tc_->findOrConvertFunction(rf),
@@ -3260,8 +3618,7 @@ void TConverter::ActualConverter::prepareFormalConversionState() {
   };
 }
 
-void
-TConverter::ActualConverter::convertActual(const FormalActual& fa) {
+void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return;
 
   Context* context = tc_->context;
@@ -3854,13 +4211,13 @@ void TConverter::exit(const Literal* node, RV& rv) {
   TC_DEBUGF(this, "exit literal %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
-// TODO: Figure out a way to merge this with 'convertRegularNamedCallOrNull'?
-Expr* TConverter::convertParenlessCallOrNull(const Identifier* node, RV& rv) {
+Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
+  INT_ASSERT(node && (node->isIdentifier() || node->isDot()));
+
   auto re = rv.byAstOrNull(node);
   auto candidate = re->mostSpecific().only();
   auto sig = candidate ? candidate.fn() : nullptr;
-
-  if (!candidate || !sig) return nullptr;
+  if (!sig) return nullptr;
 
   // Fetch the resolved function and elide the call entirely if possible.
   const ResolvedFunction* rf = nullptr;
@@ -3870,25 +4227,21 @@ Expr* TConverter::convertParenlessCallOrNull(const Identifier* node, RV& rv) {
     return placeholder();
   }
 
+  auto calledFn = findOrConvertFunction(rf);
+  auto ret = new CallExpr(calledFn);
+
   if (sig->isMethod()) {
     TC_UNIMPL("Handle parenless method call!");
     return placeholder();
   }
 
-  auto calledFn = findOrConvertFunction(rf);
-  auto ret = new CallExpr(calledFn);
-
-  // TODO: Add an actual AST for a method receiver.
-  std::vector<const AstNode*> actualAsts;
-
-  // This mapping drives the conversion of actuals.
-  auto fam = candidate.formalActualMap();
-  INT_ASSERT(fam.isValid());
-
-  convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
-
   return ret;
 }
+
+// Enter and convert the receiver first so we convert from left to right.
+bool TConverter::enter(const Dot* node, RV& rv) { return true; }
+
+void TConverter::exit(const Dot* node, RV& rv) {}
 
 bool TConverter::enter(const Identifier* node, RV& rv) {
   TC_DEBUGF(this, "enter identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
@@ -3905,41 +4258,28 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
       cur.aList->insertAtTail(got);
       return false;
 
-    } else if (auto id = re->toId()) {
+    } else if (auto& id = re->toId()) {
       Symbol* sym = findOrCreateSym(id, rv);
       SymExpr* se = new SymExpr(sym);
       cur.aList->insertAtTail(se);
       return false;
 
     } else if (node->name() == USTR("super")) {
-      // TODO: Generalize this branch to be come "implicit field access".
-      auto qt = re->type();
-      auto ct = qt.type() ? qt.type()->getCompositeType() : nullptr;
-      auto fn = cur.fnSymbol;
-      if (ct && fn && fn->isMethod()) {
-        if (auto at = toAggregateType(fn->getReceiverType())) {
-          auto field = at->getField(node->name().c_str());
-
-          // Fetch field by value since 'super' is a class reference.
-          auto get = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                  new SymExpr(fn->_this),
-                                  new SymExpr(field));
-          auto se = storeInTempIfNeeded(get, {});
-          cur.aList->insertAtTail(se);
-          return false;
-        }
-      }
+      // TODO: Migrate this to use the new field accessors.
+      TC_UNIMPL("Accessing 'super' field implicitly!");
+      cur.aList->insertAtTail(placeholder());
     }
   }
 
-  TC_UNIMPL("identifier case not handled");
+  TC_UNIMPL("Identifier case not handled!");
+  cur.aList->insertAtTail(placeholder());
 
   return false;
 }
+
 void TConverter::exit(const Identifier* node, RV& rv) {
   TC_DEBUGF(this, "exit identifier %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
-
 
 bool TConverter::enter(const Return* node, RV& rv) {
   TC_DEBUGF(this, "enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
@@ -3975,26 +4315,26 @@ void TConverter::exit(const Return* node, RV& rv) {
 bool TConverter::enter(const Call* node, RV& rv) {
   TC_DEBUGF(this, "enter call %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
+  // Branch to handle the different 'call-like' constructs.
   Expr* expr = nullptr;
-  if (Expr* got = convertPrimCallOrNull(node, rv)) {
-    expr = got;
-  } else if (Expr* got = convertNewCallOrNull(node, rv)) {
-    expr = got;
-  } else if (Expr* got = convertSpecialNamedCallOrNull(node, rv)) {
-    expr = got;
-  } else if (Expr* got = convertRegularNamedCallOrNull(node, rv)) {
-    expr = got;
-  } else {
-    TC_UNIMPL("Unhandled type of call");
-    return false;
+  if (auto x = convertPrimCallOrNull(node, rv)) {
+    expr = x;
+  } else if (auto x = convertNewCallOrNull(node, rv)) {
+    expr = x;
+  } else if (auto x = convertTupleCallOrNull(node, rv)) {
+    expr = x;
+  } else if (auto x = convertNamedCallOrNull(node, rv)) {
+    expr = x;
   }
 
-  if (expr) {
-    cur.aList->insertAtTail(expr);
-  } else {
-    // Insert a dummy value just to keep the converter happy.
-    cur.aList->insertAtTail(new SymExpr(gFalse));
+  if (!expr) {
+    // This may not always be the case, but for now we're missing cases.
+    TC_UNIMPL("Unhandled type of call!");
+    expr = this->placeholder();
   }
+
+  INT_ASSERT(expr);
+  cur.aList->insertAtTail(expr);
 
   return false;
 }
@@ -4031,11 +4371,12 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     INT_ASSERT(node->thenBlock()->numStmts() == 1);
     INT_ASSERT(node->elseBlock()->numStmts() == 1);
 
-    auto cond = storeInTempIfNeeded(convertExpr(node->condition(), rv), {});
+    types::QualifiedType qtCond;
+    auto condExpr = convertExpr(node->condition(), rv, &qtCond);
+    auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
 
     // Temp stores the result of the if expression.
-    // auto temp = makeNewTemp(rv.byAst(node).type());
-    auto temp = newTemp();
+    auto temp = makeNewTemp(rv.byAst(node).type());
     cur.aList->insertAtTail(new DefExpr(temp));
 
     // TODO: Insert conversion if necessary?
@@ -4049,7 +4390,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     auto elseBlock = new BlockStmt(elseMove);
 
     // After normalize the 'IfExpr' is lowered to a 'CondStmt'.
-    auto branch = new CondStmt(cond, thenBlock, elseBlock);
+    auto branch = new CondStmt(condTempUse, thenBlock, elseBlock);
     cur.aList->insertAtTail(branch);
 
     // The result of the 'if-expr' will be stored in 'temp'.
@@ -4057,6 +4398,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
   } else {
     astlocMarker markAstLoc(node->id());
 
+    types::QualifiedType qtCond;
     Expr* cond = nullptr;
     VarSymbol* ifVarSym = nullptr;
     BlockStmt* thenBlock = nullptr;
@@ -4070,6 +4412,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       INT_ASSERT(ifVar->initExpression());
 
       uast::Variable::Kind symbolKind = ifVar->kind();
+
       types::QualifiedType qtInitExpr;
       auto initExpr = convertExpr(ifVar->initExpression(), rv, &qtInitExpr);
 
@@ -4083,18 +4426,23 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
                                      { CallInfoActual(qtInitExpr),
                                        CallInfoActual(qtFalse) });
 
-      auto checkFn = convertFunctionForGeneratedCall(std::move(ci), ifVar);
-
       // TODO: Need to make sure this temporary is destroyed, and not the
       // inner variable which just contains a '.borrow()' / the results of
       // the 'check...' call.
-      auto initSymExpr = storeInTempIfNeeded(initExpr, {});
+      auto initSymExpr = storeInTempIfNeeded(initExpr, qtInitExpr);
+
+      const ResolvedFunction* rfCheckFn = nullptr;
+      auto checkFn = convertFunctionForGeneratedCall(std::move(ci), ifVar,
+                                                     &rfCheckFn);
+
+      // Set the condition type for use later.
+      qtCond = rfCheckFn->returnType();
 
       // Generate the 'chpl_checkBorrowIfVar' call.
       auto checkCall = new CallExpr(checkFn, initSymExpr, new SymExpr(gFalse));
 
       // The borrow will be inserted into 'cur.aList'. It is the condition.
-      cond = storeInTempIfNeeded(checkCall, {});
+      cond = storeInTempIfNeeded(checkCall, qtCond);
 
       // Now generate the 'if var' itself. Use 'findOrCreateVar' to ensure
       // that code in the 'if' will find it. The variable will be
@@ -4111,11 +4459,11 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
                              cur.moduleFromLibraryFile);
       attachSymbolVisibility(ifVar, ifVarSym);
     } else {
-      cond = convertExpr(node->condition(), rv);
+      cond = convertExpr(node->condition(), rv, &qtCond);
     }
     INT_ASSERT(cond);
 
-    cond = storeInTempIfNeeded(cond, {});
+    cond = storeInTempIfNeeded(cond, qtCond);
 
     // if it's not a 'bool', emit a call to '_cond_test'.
     if (auto rr = rv.byAstOrNull(node->condition())) {
