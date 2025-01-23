@@ -266,7 +266,34 @@ static void test4(Context* ctx) {
 
 // This is private issue #6022. It tests a case where a nested function uses
 // a field accessible through a outer method's receiver.
-static void test5(Context* ctx) {
+static void test5a(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foobar() {
+        proc helper(arg: T) { // Error for 'T' !
+        }
+
+        helper(x);
+      }
+    }
+
+    var r : R(int);
+    r.foobar();
+    )"""";
+
+  auto m = resolveTypesOfVariables(ctx, program, {"r"});
+  assert(!guard.realizeErrors());
+  assert(m["r"].type()->isRecordType());
+}
+
+static void test5b(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
   ErrorGuard guard(ctx);
 
@@ -287,6 +314,63 @@ static void test5(Context* ctx) {
 
     var r : R(int);
     var x = r.foobar();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
+static void test5c(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    proc test(ref arg: ?t) {
+      proc helper(ref x: t) {
+        if t == string {
+          return "test";
+        } else {
+          return 5;
+        }
+      }
+
+      return helper(arg);
+    }
+
+    var x = 5;
+    var y = test(x);
+    var z = test("foo");
+    )"""";
+
+  auto qt = resolveTypesOfVariables(ctx, program, { "y", "z" });
+  assert(!guard.realizeErrors());
+  assert(qt["y"].kind() == QualifiedType::VAR);
+  assert(qt["y"].type() && qt["y"].type()->isIntType());
+  assert(qt["z"].kind() == QualifiedType::VAR);
+  assert(qt["z"].type() && qt["z"].type()->isStringType());
+}
+
+static void test5d(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R""""(
+    record R {
+      type T;
+      var x : T;
+
+      proc foo() {
+        proc bar(): T { return x; }
+        return bar();
+      }
+    }
+
+    var r : R(int);
+    var x = r.foo();
     )"""";
 
   auto qt = resolveQualifiedTypeOfX(ctx, program);
@@ -567,7 +651,10 @@ int main() {
   test2(ctx);
   test3(ctx);
   test4(ctx);
-  test5(ctx);
+  test5a(ctx);
+  test5b(ctx);
+  test5c(ctx);
+  test5d(ctx);
   test6(ctx);
   // test7(ctx);
   // test8(ctx);

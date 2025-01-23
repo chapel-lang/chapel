@@ -25,6 +25,7 @@
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/forward-declare-uast.h"
+#include "chpl/uast/Pragma.h"
 #include "chpl/util/memory.h"
 
 #include <functional>
@@ -287,6 +288,9 @@ class AstNode {
 
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
+
+  /** Returns true if this AST has the pragma 'p' attached to it. */
+  bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
   // 'keep' is some old AST
   // 'addin' is some new AST we wish to combine with it

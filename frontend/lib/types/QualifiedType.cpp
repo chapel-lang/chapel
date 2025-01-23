@@ -23,7 +23,6 @@
 #include "chpl/types/all-types.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
-#include "chpl/types/TupleType.h"
 
 namespace chpl {
 namespace types {
@@ -76,6 +75,12 @@ bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
   return (isParam() && !hasParamPtr()) ||
     isUnknownKindOrType() ||
     resolution::getTypeGenericity(context, type()) == Type::GENERIC;
+}
+
+QualifiedType QualifiedType::createParamBool(Context* context, bool x) {
+  return QualifiedType(types::QualifiedType::PARAM,
+                       types::BoolType::get(context),
+                       types::BoolParam::get(context, x));
 }
 
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
