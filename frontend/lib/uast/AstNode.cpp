@@ -21,6 +21,7 @@
 #include "chpl/uast/AstNode.h"
 
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
 #include "chpl/uast/Identifier.h"
@@ -34,6 +35,15 @@
 namespace chpl {
 namespace uast {
 
+
+bool AstNode::hasPragma(Context* context, pragmatags::PragmaTag p) const {
+  if (auto& id = this->id()) {
+    if (auto ag = parsing::idToAttributeGroup(context, id)) {
+      return ag->hasPragma(p);
+    }
+  }
+  return false;
+}
 
 void AstNode::dumpFieldsInner(const DumpSettings& s) const {
 }

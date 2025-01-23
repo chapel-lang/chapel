@@ -369,6 +369,11 @@ class UntypedFnSignature {
     return formals_[i].defaultKind != DK_NO_DEFAULT;
   }
 
+  DefaultKind formalDefaultKind(int i) const {
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].defaultKind;
+  }
+
   /** Returns the Decl for the i'th formal / field.
       This will return nullptr for compiler-generated functions. */
   const uast::Decl* formalDecl(int i) const {
@@ -1597,6 +1602,9 @@ class FormalActualMap {
     CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
     byFormalIdx_[0].formalType_ = initializer->formalType(0);
   }
+
+  /** Return the number of slots in this mapping. */
+  int numSlots() const { return byFormalIdx_.size(); }
 
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,

@@ -240,6 +240,8 @@ class QualifiedType final {
   */
   bool needsSplitInitTypeInfo(Context* context) const;
 
+  static QualifiedType createParamBool(Context* context, bool x);
+
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
            type_ == other.type_ &&

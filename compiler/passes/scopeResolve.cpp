@@ -220,40 +220,45 @@ static void handleReceiverFormals() {
 
 static void markGenerics() {
   // Figure out which types are generic, in a transitive closure manner
-    bool changed;
-    do {
-      changed = false;
-      forv_Vec(AggregateType, at, gAggregateTypes) {
-        // don't try to mark generic again
-        if (!at->isGeneric()) {
+  bool changed = false;
+  do {
+    changed = false;
+    forv_Vec(AggregateType, at, gAggregateTypes) {
+      if (at->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        // Don't check types resolved early - they are always concrete.
+        continue;
+      }
 
-          bool anyGeneric = false;
-          bool anyNonDefaultedGeneric = false;
-          bool anyDefaultedGeneric = false;
-          for_fields(field, at) {
-            bool hasDefault = false;
-            if (at->fieldIsGeneric(field, hasDefault)) {
-              anyGeneric = true;
-              if (hasDefault == false)
-                anyNonDefaultedGeneric = true;
-              else
-                anyDefaultedGeneric = true;
-            }
-          }
+      // don't try to mark generic again
+      if (!at->isGeneric()) {
 
-          if (anyGeneric) {
-            at->markAsGeneric();
-            if (anyNonDefaultedGeneric == false)
-              at->markAsGenericWithDefaults();
-            else if (anyDefaultedGeneric == true &&
-                     anyNonDefaultedGeneric == true)
-              at->markAsGenericWithSomeDefaults();
-
-            changed = true;
+        bool anyGeneric = false;
+        bool anyNonDefaultedGeneric = false;
+        bool anyDefaultedGeneric = false;
+        for_fields(field, at) {
+          bool hasDefault = false;
+          if (at->fieldIsGeneric(field, hasDefault)) {
+            anyGeneric = true;
+            if (hasDefault == false)
+              anyNonDefaultedGeneric = true;
+            else
+              anyDefaultedGeneric = true;
           }
         }
+
+        if (anyGeneric) {
+          at->markAsGeneric();
+          if (anyNonDefaultedGeneric == false)
+            at->markAsGenericWithDefaults();
+          else if (anyDefaultedGeneric == true &&
+                   anyNonDefaultedGeneric == true)
+            at->markAsGenericWithSomeDefaults();
+
+          changed = true;
+        }
       }
-    } while (changed);
+    }
+  } while (changed);
 }
 
 static void checkClass(AggregateType* ct) {
