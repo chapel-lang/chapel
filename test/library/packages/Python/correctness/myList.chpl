@@ -3,7 +3,7 @@ import List;
 
 var pyCode = """
 def getList():
-  return list([1, 2, 3, 4, 5])
+  return [1, 2, "hi", False, 5]
 """;
 
 proc main() {
@@ -18,6 +18,7 @@ proc main() {
   writeln("size ", lst.size);
   writeln("lst[0] ", lst.getItem(int, 0));
   writeln("lst[1] ", lst.getItem(int, 1));
+  writeln("lst[2] ", lst.getItem(string, 2));
   writeln("lst[lst.size-1] ", lst.getItem(int, lst.size-1));
 
   try {
