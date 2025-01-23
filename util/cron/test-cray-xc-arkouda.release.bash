@@ -11,6 +11,9 @@ source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+# The parquetMultiIO test may exceed the default 300-second timeout
+export CHPL_TEST_TIMEOUT=500
+
 module list
 
 # setup for XC perf (ugni, gnu, 28-core broadwell)
