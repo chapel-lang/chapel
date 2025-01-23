@@ -1,0 +1,11 @@
+# --fast sets --no-checks
+#
+# --fast sets --no-checks and this test is explicitly checking that one
+# of our runtime checks is working correctly. There's been debate as to
+# whether tests like this should be suppressed or skipped. For now we
+# suppress with the argument that we're testing that --fast actually
+# turns our checks off. Note that we don't just turn checks on in the
+# comopts since we wouldn't be testing the default behavior, and
+# wouldn't be able to verify that checks are enabled by default. 
+
+COMPOPTS <= --fast
