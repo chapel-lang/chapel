@@ -119,7 +119,6 @@ testIfExpressionIntegralTypesHelper(std::string program,
   auto context = buildStdContext();
   ErrorGuard guard(context);
   // use only ints. 8, 16, 32, 64 bit. use each size with every other size.
-  //validated against the chart
   testIntegralReturn(program, boolCondition, "int(8)", "int(8)", IntType::get(context, 8), testType);
   testIntegralReturn(program, boolCondition, "int(8)", "int(16)", IntType::get(context, 16), testType);
   testIntegralReturn(program, boolCondition, "int(8)", "int(32)", IntType::get(context, 32), testType);

@@ -418,5 +418,6 @@ int main() {
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
   testIfVarNonNilInThen();
+
   return 0;
 }
