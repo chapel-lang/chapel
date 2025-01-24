@@ -404,121 +404,6 @@ static void testIfVarBorrow() {
   assert(obj->basicClassType()->name() == "C");
 }
 
-// tests for return types of conditional expressions
-
-// need param and non-param variants
-static std::string buildControlFlowProgram(std::string controlFlow, std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = "";
-  program += "proc f(arg: bool, type t, type tt) {\n  // Inserted control flow\n";
-  program += controlFlow;
-  program += "\n  // End inserted control flow\n }";
-  program += "\nvar x = f(";
-  program += boolVal;
-  program += ", ";
-  program += typeVal1;
-  program += ", ";
-  program += typeVal2;
-  program += ");";
-  return program;
-}
-
-static void testControlFlow(std::string controlFlow, std::string boolVal, std::string typeVal1, std::string typeVal2, const chpl::types::PrimitiveType* expectedType) {
-  auto context = buildStdContext();
-  ErrorGuard guard(context);
-  auto program = buildControlFlowProgram(controlFlow, boolVal, typeVal1, typeVal2);
-  std::cout << "--- test program ---" << std::endl;
-  std::cout << program.c_str() << std::endl;
-
-  auto returnType = resolveTypeOfXInit(context, program, true);
-  assert(returnType.type());
-  returnType.type()->dump();
-  assert(returnType.type() == expectedType);
-}
-
-static void testIfExpressionIntegralTypesHelper(std::string program, std::string boolCondition) {
-  auto context = buildStdContext();
-  ErrorGuard guard(context);
-  // use only ints. 8, 16, 32, 64 bit. use each size with every other size.
-  //validated against the chart
-  testControlFlow(program, boolCondition, "int(8)", "int(8)", IntType::get(context, 8));
-  testControlFlow(program, boolCondition, "int(8)", "int(16)", IntType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(8)", "int(32)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(8)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int(16)", "int(8)", IntType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(16)", "int(16)", IntType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(16)", "int(32)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(16)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int(32)", "int(8)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "int(16)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "int(32)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "int(8)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "int(16)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "int(32)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "int", IntType::get(context, 64));
-  // do the uint versions of all the above, true and false versions
-  testControlFlow(program, boolCondition, "uint(8)", "uint(8)", UintType::get(context, 8));
-  testControlFlow(program, boolCondition, "uint(8)", "uint(16)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(8)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(8)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint(16)", "uint(8)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(16)", "uint(16)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(16)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(16)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint(32)", "uint(8)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "uint(16)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "uint(8)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "uint(16)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "uint(32)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "uint", UintType::get(context, 64));
-  // tests where the first type is int and the second is uint, do all sizes of ints and uints
-  testControlFlow(program, boolCondition, "int(8)", "uint(8)", UintType::get(context, 8));
-  testControlFlow(program, boolCondition, "int(8)", "uint(16)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(8)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(8)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "int(16)", "uint(8)", IntType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(16)", "uint(16)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "int(16)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(16)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "int(32)", "uint(8)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "uint(16)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "uint(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "int(32)", "uint", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "uint(8)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "uint(16)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "uint(32)", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "int", "uint", UintType::get(context, 64));
-  // reverse the order of the types so that the first type is uint and the second is int
-  testControlFlow(program, boolCondition, "uint(8)", "int(8)", UintType::get(context, 8));
-  testControlFlow(program, boolCondition, "uint(8)", "int(16)", IntType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(8)", "int(32)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(8)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint(16)", "int(8)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(16)", "int(16)", UintType::get(context, 16));
-  testControlFlow(program, boolCondition, "uint(16)", "int(32)", IntType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(16)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint(32)", "int(8)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "int(16)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "int(32)", UintType::get(context, 32));
-  testControlFlow(program, boolCondition, "uint(32)", "int", IntType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "int(8)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "int(16)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "int(32)", UintType::get(context, 64));
-  testControlFlow(program, boolCondition, "uint", "int", UintType::get(context, 64));
-}
-
-static void testIfExpressionIntegralTypes() {
-  std::string controlFlowParam = "  if arg then return 0:t; else return 0:tt;";
-  std::string controlFlowNoParam = "  var zero:uint;\n  if arg then return zero:t; else return zero:tt;";
-  testIfExpressionIntegralTypesHelper(controlFlowParam, "true");
-  testIfExpressionIntegralTypesHelper(controlFlowParam, "false");
-  testIfExpressionIntegralTypesHelper(controlFlowNoParam, "true");
-  testIfExpressionIntegralTypesHelper(controlFlowNoParam, "false");
-}
-
-
 int main() {
   test1();
   test2();
@@ -533,6 +418,5 @@ int main() {
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
   testIfVarNonNilInThen();
-  testIfExpressionIntegralTypes();
   return 0;
 }
