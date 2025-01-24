@@ -2555,8 +2555,12 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
   // May need to resolve the body at this point to compute final TFS.
   if (result->isInitializer()) {
-    auto rf = resolveFunction(rc, result, poiScope);
-    result = rf->signature();
+    // capture compiler errors here because this may not be the candidate
+    // we choose, even if it's fully instantiated.
+    auto rf = rc->context()->runAndTrackErrors([rc, result, poiScope](Context* context) {
+      return resolveFunction(rc, result, poiScope);
+    });
+    result = rf.result()->signature();
   }
 
   return ApplicabilityResult::success(result);
