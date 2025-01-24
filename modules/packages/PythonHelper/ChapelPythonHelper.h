@@ -67,4 +67,22 @@ static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
 
+
+static inline PyStatus chpl_Py_NewIsolatedInterpreter(PyThreadState** tstate) {
+#if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
+  PyInterpreterConfig config = {
+    .use_main_obmalloc = 0,
+    .allow_fork = 0,
+    .allow_exec = 0,
+    .allow_threads = 1,
+    .allow_daemon_threads = 0,
+    .check_multi_interp_extensions = 1,
+    .gil = PyInterpreterConfig_OWN_GIL,
+  };
+  return Py_NewInterpreterFromConfig(tstate, &config);
+#else
+  return PyStatus_Error("Sub-interpreters are not supported in Python " PY_VERSION);
+#endif
+}
+
 #endif
