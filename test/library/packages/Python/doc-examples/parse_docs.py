@@ -15,6 +15,19 @@ class File:
         return os.path.splitext(self.filename)[0]
 
     def write(self, directory: str):
+
+        # find the first non-empty line, if it has leading whitespace, remove it
+        # then, remove the same amount of whitespace from all lines
+        whitespace = 0
+        for line in self.file_contents:
+            if line.strip() != "":
+                whitespace = len(line) - len(line.lstrip())
+                break
+        self.file_contents = [
+            line[whitespace:] if len(line) >= whitespace else line
+            for line in self.file_contents
+        ]
+
         with open(os.path.join(directory, self.filename), "w") as f:
             for line in self.file_contents:
                 f.write(line + "\n")
@@ -129,12 +142,12 @@ def parse(lines: typing.List[str]) -> typing.List[TestCase]:
 
         # add the file lines to the good file
         if test and good_file:
-            good_file.file_contents.append(lines[cur_line].strip())
+            good_file.file_contents.append(lines[cur_line].rstrip())
             cur_line += 1
             continue
         # add the file lines to the test file
         if test and not good_file and test_file:
-            test_file.file_contents.append(lines[cur_line].strip())
+            test_file.file_contents.append(lines[cur_line].rstrip())
             cur_line += 1
             continue
 
