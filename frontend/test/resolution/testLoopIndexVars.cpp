@@ -973,7 +973,7 @@ static void pairIteratorInLoopExpression(
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
   std::string program = std::string(iterators) + "\n";
-  program = program + "var r1 = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
+  program = program + "var r1: _iteratorRecord = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
   program = program + loopType[0] + " j in r1 "  + loopType[1] + " j;\n";
 
   printf("===== Resolving program =====\n");

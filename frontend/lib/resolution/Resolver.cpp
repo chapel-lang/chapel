@@ -27,6 +27,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
@@ -1315,6 +1316,35 @@ Resolver::computeCustomInferType(const AstNode* decl,
   return ret.type();
 }
 
+const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
+                                          const QualifiedType::Kind declKind,
+                                          const types::QualifiedType& initExprT) {
+
+  std::vector<CallInfoActual> actuals;
+  actuals.emplace_back(initExprT, UniqueString());
+  auto definedConst =
+    QualifiedType::makeParamBool(context, isConstQualifier(declKind));
+  actuals.emplace_back(std::move(definedConst), UniqueString());
+  auto ci = CallInfo (/* name */ UniqueString::get(context, "chpl__initCopy"),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+
+  const Scope* scope = scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(context, decl, ci, inScopes);
+  handleResolvedCallWithoutError(byPostorder.byAst(decl), decl,
+                                 c, {{ AssociatedAction::CUSTOM_COPY_INIT, decl->id() }});
+
+  if (!c.exprType().isUnknownOrErroneous()) {
+    return c.exprType().type();
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -1345,8 +1375,11 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
+    // Iterators are 'materialized' into arrays
+    if (initExprType.type()->isIteratorType()) {
+      typePtr = computeChplCopyInit(declForErr, declKind, initExprType);
     // Check if this type requires custom type inference
-    if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+    } else if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
       typePtr = computeCustomInferType(declForErr, rec);
     } else {
       // init but no declared type, so use init type
@@ -1361,7 +1394,25 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
-      if (declaredType.type()->isExternType()) {
+      if (initExprType.type()->isUnknownType()) {
+        // var x: declType = <unknown or erroneous>
+        //
+        // if declType is concrete use it, else use unknown.
+        //
+        // TODO: (Daniel) the code as I found it will not hit this case as
+        //       as often as it should, defaulting to the type expression
+        //       via the checks above instead. We need to be more precise
+        //       about "initialization expression is present but has unknown
+        //       type" vs "no initialization expression is present".
+        //       See also the HACK in Resolver::enter(IndexableLoop)
+
+        if (getTypeGenericity(context, declaredType.type()) == Type::CONCRETE) {
+          typePtr = declaredType.type();
+        } else {
+          typePtr = UnknownType::get(context);
+        }
+
+      } else if (declaredType.type()->isExternType()) {
         auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
         // We allow for default-init-then-assign for extern types
         std::vector<CallInfoActual> actuals;
@@ -3625,6 +3676,14 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
         computeDefaults = false;
       }
 
+      // If we're referring to variable-ish thing, don't instantiate
+      // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
+      // Peformance: finding the parent tag is pretty expensive. Can we fold
+      // the knowledge into IdAndFlags?
+      if (asttags::isVarLikeDecl(parsing::idToTag(context, id))) {
+        computeDefaults = false;
+      }
+
       // Other special exceptions like 'r' in:
       //
       //  proc r.init() { ... }
@@ -4447,6 +4506,8 @@ static const Type* getGenericType(Context* context, const Type* recv) {
                          cur->manager(), cur->decorator());
   } else if (recv->isDomainType()) {
     gen = DomainType::getGenericDomainType(context);
+  } else if (recv->isArrayType()) {
+    gen = ArrayType::getGenericArrayType(context);
   }
   return gen;
 }
@@ -4823,7 +4884,7 @@ void Resolver::exit(const Dot* dot) {
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->isCompositeType() &&
+        receiver.type().type()->getCompositeType() &&
         dot->field() != "init") {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
@@ -5049,6 +5110,7 @@ static void resolveNewForRecordLike(Resolver& rv, const New* node,
                                 const CompositeType* recordLikeType) {
   CHPL_ASSERT(recordLikeType->isRecordType() ||
               recordLikeType->isDomainType() ||
+              recordLikeType->isArrayType() ||
               recordLikeType->isUnionType());
 
   ResolvedExpression& re = rv.byPostorder.byAst(node);
@@ -5093,7 +5155,7 @@ void Resolver::exit(const New* node) {
   } else if (auto classType = type->toClassType()) {
     resolveNewForClass(*this, node, classType);
   } else if (type->isRecordType() || type->isDomainType() ||
-             type->isUnionType()) {
+             type->isUnionType() || type->isArrayType()) {
     resolveNewForRecordLike(*this, node, type->toCompositeType());
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
@@ -5792,7 +5854,10 @@ static bool handleArrayTypeExpr(Resolver& rv,
   }
 
   auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
-  auto arrayType = ArrayType::getArrayType(rv.context, domainType, eltType);
+  auto arrayType =
+    ArrayType::getArrayType(rv.context,
+                            /* TODO, see comment in getArrayType */ QualifiedType(),
+                            domainType, eltType);
 
   auto& re = rv.byPostorder.byAst(loop);
   re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
@@ -5924,6 +5989,15 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   if (!idxType.isUnknownOrErroneous()) {
     noteLoopExprType(*this, loop, ics);
+  } else {
+    // HACK: need this because declaration handling checks for typePtr()
+    //       and causes weirdness with `var r: _iteratorRecord = [...]`.
+    //       we should update the type-for-decl computation to handle
+    //       missing vs unknown types, but that's somewhat involved.
+    //       See the TODO in getTypeForDecl.
+    byPostorder.byAst(loop).setType(
+        QualifiedType(QualifiedType::UNKNOWN,
+                      UnknownType::get(context)));
   }
 
   return false;
@@ -6321,6 +6395,15 @@ bool Resolver::enter(const Import* node) {
 }
 
 void Resolver::exit(const Import* node) {}
+
+bool Resolver::enter(const uast::VisibilityClause* node) {
+  // Specially handled for use/import; the limitations are names (and
+  // not identifiers) for the purposes of forwarding.
+  node->symbol()->traverse(*this);
+  return false;
+}
+
+void Resolver::exit(const uast::VisibilityClause* node) {}
 
 bool Resolver::enter(const uast::Zip* zip) {
   return true;

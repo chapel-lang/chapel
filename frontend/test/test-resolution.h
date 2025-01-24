@@ -84,6 +84,7 @@ void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
 void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
 void ensureParamBool(const QualifiedType& type, bool expectedValue);
 void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
+void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName);
 void ensureErroneousType(const QualifiedType& type);
 
 QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);

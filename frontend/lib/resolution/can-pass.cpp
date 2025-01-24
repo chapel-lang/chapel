@@ -775,8 +775,7 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    // TODO: represent iterators
-    return false;
+    return actualT->isIteratorType();
   }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
@@ -1365,6 +1364,12 @@ QualifiedType::Kind KindProperties::toKind() const {
 types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind kind) {
   auto props = KindProperties::fromKind(kind);
   props.setConst(true);
+  return props.toKind();
+}
+
+types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind kind) {
+  auto props = KindProperties::fromKind(kind);
+  props.setRef(false);
   return props.toKind();
 }
 

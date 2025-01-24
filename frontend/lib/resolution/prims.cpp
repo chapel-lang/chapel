@@ -163,11 +163,11 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
+  bool foundField = false;
+  int field = 0;
   if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
-    bool foundField = false;
-    int field = 0;
 
     // TODO move this into a method on fields?
     for (int i = 0; i < fields->numFields(); i++) {
@@ -178,11 +178,22 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
         break;
       }
     }
+  } else if (firstActual.type() && firstActual.type()->isIteratorType()) {
+    // No "real" field called _shape_ in iterator record, but pretend there
+    // is one.
+    UniqueString fieldName;
+    if (!toParamStringActual(secondActual, fieldName)) return type;
 
-    if (!foundField) return type;
-    type = QualifiedType::makeParamInt(context, field);
+    if (fieldName == "_shape_" &&
+        shapeForIterator(context, firstActual.type()->toIteratorType())) {
+      foundField = true;
+      // Fields in these primitives are 1-indexed.
+      field = 1;
+    }
   }
-  return type;
+
+  if (!foundField) field = -1;
+  return QualifiedType::makeParamInt(context, field);
 }
 
 static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
@@ -221,6 +232,32 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
 
   bool callAndFnResolved = false;
   std::vector<CallInfoActual> actuals;
+
+  if (forMethod && ci.actual(0).type().isUnknownOrErroneous()) {
+    return QualifiedType();
+  }
+
+  // Currently, production uses a param proc _fromForExpr_ on iterators
+  // to signal iterators created from for expressions. In the long term,
+  // when only Dyno exists, we should use a better signaling mechanism.
+  // In the meantime, mimic that behavior here.
+  if (forMethod && ci.numActuals() == 2) {
+    if (auto iter = ci.actual(0).type().type()->toIteratorType()) {
+      bool isFromForExpr = fnName == "_fromForExpr_";
+      bool isFromForeachExpr = fnName == "_fromForeachExpr_";
+
+      if (isFromForExpr || isFromForeachExpr) {
+        bool result = false;
+        if (auto loopIt = iter->toLoopExprIteratorType()) {
+          auto tag = parsing::idToTag(context, loopIt->sourceLocation());
+          result = (isFromForExpr && tag == uast::asttags::For) ||
+                   (isFromForeachExpr && tag == uast::asttags::Foreach);
+        }
+        return QualifiedType::makeParamBool(context, result);
+      }
+    }
+  }
+
   if (forMethod) {
     actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
   }

@@ -158,6 +158,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "size") {
       return true;
     }
+  } else if (type->isIteratorType()) {
+    if (name == "_shape_") {
+      return true;
+    }
   }
 
   return false;
@@ -1047,6 +1051,62 @@ generateEnumMethod(Context* context,
   return result;
 }
 
+static const TypedFnSignature*
+generateIteratorMethod(Context* context,
+                       const IteratorType* it,
+                       UniqueString name) {
+
+  const TypedFnSignature* result = nullptr;
+  if (name == "_shape_" &&
+      shapeForIterator(context, it)) {
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    std::vector<QualifiedType> formalTypes;
+
+    formals.push_back(
+        UntypedFnSignature::FormalDetail(USTR("this"),
+          UntypedFnSignature::DK_NO_DEFAULT,
+          nullptr));
+    formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, it));
+
+    // It's a little scary to compute the ID for the function in this way
+    // here because for the FnIterator and PromotionIterator cases, it will
+    // conflict with the underlying function. Maybe that's okay?
+    ID id;
+    uast::asttags::AstTag tag = uast::asttags::Variable;
+    if (auto loopExprIt = it->toLoopExprIteratorType()) {
+      id = loopExprIt->sourceLocation();
+    } else if (auto fnIt = it->toFnIteratorType()) {
+      id = fnIt->iteratorFn()->id();
+    } else if (auto promoIt = it->toPromotionIteratorType()) {
+      id = promoIt->scalarFn()->id();
+    } else {
+      CHPL_ASSERT(false && "case not handled");
+    }
+
+    auto ufs = UntypedFnSignature::get(context,
+        /*id*/ id,
+        /*name*/ name,
+        /*isMethod*/ true,
+        /*isTypeConstructor*/ false,
+        /*isCompilerGenerated*/ true,
+        /*throws*/ false,
+        /*idTag*/ tag,
+        /*kind*/ uast::Function::Kind::PROC,
+        /*formals*/ std::move(formals),
+        /*whereClause*/ nullptr);
+
+    // now build the other pieces of the typed signature
+    result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+        TypedFnSignature::WHERE_NONE,
+        /* needsInstantiation */ false,
+        /* instantiatedFrom */ nullptr,
+        /* parentFn */ nullptr,
+        /* formalsInstantiated */ Bitmap(),
+        /* outerVariables */ {});
+  }
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
@@ -1058,7 +1118,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType());
+    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType() || type->isIteratorType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -1086,6 +1146,8 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       result = generatePtrMethod(context, receiverType, name);
     } else if (auto enumType = type->toEnumType()) {
       result = generateEnumMethod(context, enumType, name);
+    } else if (auto iterType = type->toIteratorType()) {
+      result = generateIteratorMethod(context, iterType, name);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }

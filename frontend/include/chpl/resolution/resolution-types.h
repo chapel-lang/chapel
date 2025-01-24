@@ -2013,6 +2013,11 @@ class CallResolutionResult {
     poiInfo_.mark(context);
   }
 
+  static bool update(CallResolutionResult& keep,
+                     CallResolutionResult& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   size_t hash() const {
     return chpl::hash(mostSpecific_, exprType_, yieldedType_, poiInfo_,
                       speciallyHandled_, rejectedPossibleIteratorCandidates_);
@@ -2284,6 +2289,7 @@ class AssociatedAction {
     ASSIGN,       // same type or different type assign
     COPY_INIT,    // init= from same type
     INIT_OTHER,   // init= from other type
+    CUSTOM_COPY_INIT, // chpl__copyInit for specialized behavior
     DEFAULT_INIT,
     DEINIT,
     ITERATE,      // aka "these"

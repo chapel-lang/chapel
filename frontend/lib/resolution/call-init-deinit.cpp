@@ -372,6 +372,10 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   // Type variables do not need default init.
   if (ast->storageKind() == Qualifier::TYPE) return;
 
+  if (isRef(ast->storageKind())) {
+    context->error(ast, "cannot default initialize references");
+  }
+
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
 
@@ -760,6 +764,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   bool handledFormal = false;
   bool isCatchVariable = false;
+  bool isRefLoopIntent = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -797,6 +802,12 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     auto catchNode = parent->toCatch();
     CHPL_ASSERT(ast == catchNode->error());
     isCatchVariable = true;
+
+  // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
+  } else if (parent && parent->isWithClause()) {
+    if (isRef(ast->storageKind())) {
+      isRefLoopIntent = true;
+    }
   }
 
   if (handledFormal) {
@@ -820,8 +831,9 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-  } else if (isCatchVariable) {
-    // initialized from the throw that activates this Catch
+  } else if (isCatchVariable || isRefLoopIntent) {
+    // initialized from the throw that activates this Catch, or implicitly with
+    // a reference to a variable in outer scope.
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);

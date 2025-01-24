@@ -287,8 +287,11 @@ class KindProperties {
 
   bool valid() const { return isValid; }
 
-  /* Creates an corresponding kind that is const */
+  /* Creates a corresponding kind that is const */
   static types::QualifiedType::Kind makeConst(types::QualifiedType::Kind kind);
+
+  /* Creates a corresponding kind that is not a reference */
+  static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
 };
 
 /**

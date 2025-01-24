@@ -414,8 +414,12 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
-  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+  const types::Type* computeCustomInferType(const uast::AstNode* decl,
                                             const types::CompositeType* ct);
+
+  const types::Type* computeChplCopyInit(const uast::AstNode* decl,
+                                         types::QualifiedType::Kind declKind,
+                                         const types::QualifiedType& initExprT);
 
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
@@ -711,6 +715,9 @@ struct Resolver {
 
   bool enter(const uast::Import* node);
   void exit(const uast::Import* node);
+
+  bool enter(const uast::VisibilityClause* node);
+  void exit(const uast::VisibilityClause* node);
 
   bool enter(const uast::Zip* node);
   void exit(const uast::Zip* node);
