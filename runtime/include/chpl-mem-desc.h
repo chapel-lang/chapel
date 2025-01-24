@@ -103,7 +103,7 @@ extern "C" {
   m(GPU_KERNEL_PARAM,      "pointer to a kernel arg",                 true ), \
   m(GPU_KERNEL_PARAM_BUFF, "array of pointers to kernel args",        true ), \
   m(GPU_KERNEL_PARAM_META, "metadata about kernel parameters",        true ), \
-  m(ERROR_MSG,            "error message",                            true ), \
+  m(ERROR_MSG,             "error message",                           true ), \
   m(NUM,                   "*** this must be the last entry ***",     true )
 
 //
