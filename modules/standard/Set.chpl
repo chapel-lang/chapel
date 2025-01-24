@@ -593,7 +593,7 @@ module Set {
                  elements in the set.  For standalone and serial iteration, this
                  must match the number of elements in the set.
     */
-    @unstable("The contents iterator is unstable because it is new")
+    @unstable("The contents iterator is unstable because it is still in development")
     iter const contents(size: int = this.size) const ref {
       if (size != _htb.tableNumFullSlots) {
         iterHalt("serial 'contents' iterator needs to be provided the set's " +
