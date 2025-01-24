@@ -390,7 +390,7 @@ module Curl {
   private extern const CURLOPT_READDATA: CURLoption;
 
   // Other Curl constants
-  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD_T: curl_off_t;
+  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD_T: CURLINFO;
 
   private extern const CURL_READFUNC_PAUSE:c_size_t;
   private extern const CURL_READFUNC_ABORT:c_size_t;
