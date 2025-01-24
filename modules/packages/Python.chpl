@@ -930,19 +930,7 @@ module Python {
         throwChapelException("Parent interpreter cannot be a sub-interpreter");
       }
 
-      var cfg: PyInterpreterConfig;
-      cfg.use_main_obmalloc = 0;
-      cfg.allow_fork = 0;
-      cfg.allow_exec = 0;
-      cfg.allow_threads = 1;
-      cfg.allow_daemon_threads = 0;
-      cfg.check_multi_interp_extensions = 1;
-      cfg.gil = PyInterpreterConfig_OWN_GIL;
-
-      var status = Py_NewInterpreterFromConfig(c_ptrTo(this.tstate), c_ptrTo(cfg));
-      if PyStatus_Exception(status) {
-        throwChapelException("Failed to create sub-interpreter");
-      }
+      checkPyStatus(chpl_Py_NewIsolatedInterpreter(c_ptrTo(this.tstate)));
     }
     @chpldoc.nodoc
     proc deinit() {
@@ -1900,24 +1888,10 @@ module Python {
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
 
 
-    // TODO: restrict to python 3.12+
     /*
       Sub Interpreters
     */
-    extern var PyInterpreterConfig_DEFAULT_GIL: c_int;
-    extern var PyInterpreterConfig_SHARED_GIL: c_int;
-    extern var PyInterpreterConfig_OWN_GIL: c_int;
-    extern record PyInterpreterConfig {
-      var use_main_obmalloc: c_int;
-      var allow_fork: c_int;
-      var allow_exec: c_int;
-      var allow_threads: c_int;
-      var allow_daemon_threads: c_int;
-      var check_multi_interp_extensions: c_int;
-      var gil: c_int;
-    }
-    extern proc Py_NewInterpreterFromConfig(tstate_p: c_ptr(PyThreadStatePtr),
-                                            config_: c_ptr(PyInterpreterConfig)): PyStatus;
+    extern proc chpl_Py_NewIsolatedInterpreter(tstate: c_ptr(PyThreadStatePtr)): PyStatus;
     extern proc Py_EndInterpreter(tstate: PyThreadStatePtr);
 
     /*
