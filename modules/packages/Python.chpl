@@ -299,10 +299,17 @@ module Python {
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
+    @chpldoc.nodoc
+    var isSubInterpreter: bool;
 
     @chpldoc.nodoc
-    proc init() throws {
+    proc init(isSubInterpreter: bool = false) {
+      this.isSubInterpreter = isSubInterpreter;
       init this;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if this.isSubInterpreter then return;
 
       // preinit
       var preconfig: PyPreConfig;
@@ -388,6 +395,7 @@ module Python {
     }
     @chpldoc.nodoc
     proc deinit()  {
+      if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
         // note: try! is used since we can't have a throwing deinit
@@ -901,6 +909,45 @@ module Python {
 
     // TODO: convert python dict to chapel map
 
+  }
+
+
+  class SubInterpreter: Interpreter {
+    @chpldoc.nodoc
+    var parent: borrowed Interpreter;
+    @chpldoc.nodoc
+    var tstate: PyThreadStatePtr;
+
+    @chpldoc.nodoc
+    proc init(parent: borrowed Interpreter) {
+      super.init(isSubInterpreter=true);
+      this.parent = parent;
+      init this;
+    }
+    @chpldoc.noddoc
+    proc postinit() throws {
+      if this.parent.isSubInterpreter {
+        throwChapelException("Parent interpreter cannot be a sub-interpreter");
+      }
+
+      var cfg: PyInterpreterConfig;
+      cfg.use_main_obmalloc = 0;
+      cfg.allow_fork = 0;
+      cfg.allow_exec = 0;
+      cfg.allow_threads = 1;
+      cfg.allow_daemon_threads = 0;
+      cfg.check_multi_interp_extensions = 1;
+      cfg.gil = PyInterpreterConfig_OWN_GIL;
+
+      var status = Py_NewInterpreterFromConfig(c_ptrTo(this.tstate), c_ptrTo(cfg));
+      if PyStatus_Exception(status) {
+        throwChapelException("Failed to create sub-interpreter");
+      }
+    }
+    @chpldoc.nodoc
+    proc deinit() {
+      Py_EndInterpreter(this.tstate);
+    }
   }
 
   /*
@@ -1853,6 +1900,25 @@ module Python {
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
 
 
+    // TODO: restrict to python 3.12+
+    /*
+      Sub Interpreters
+    */
+    extern var PyInterpreterConfig_DEFAULT_GIL: c_int;
+    extern var PyInterpreterConfig_SHARED_GIL: c_int;
+    extern var PyInterpreterConfig_OWN_GIL: c_int;
+    extern record PyInterpreterConfig {
+      var use_main_obmalloc: c_int;
+      var allow_fork: c_int;
+      var allow_exec: c_int;
+      var allow_threads: c_int;
+      var allow_daemon_threads: c_int;
+      var check_multi_interp_extensions: c_int;
+      var gil: c_int;
+    }
+    extern proc Py_NewInterpreterFromConfig(tstate_p: c_ptr(PyThreadStatePtr),
+                                            config_: c_ptr(PyInterpreterConfig)): PyStatus;
+    extern proc Py_EndInterpreter(tstate: PyThreadStatePtr);
 
     /*
       Global exec functions
@@ -1880,6 +1946,8 @@ module Python {
     */
     extern proc PyEval_SaveThread(): PyThreadStatePtr;
     extern proc PyEval_RestoreThread(state: PyThreadStatePtr);
+    extern proc PyThreadState_Get(): PyThreadStatePtr;
+    extern proc PyThreadState_Swap(state: PyThreadStatePtr): PyThreadStatePtr;
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
