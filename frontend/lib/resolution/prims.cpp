@@ -892,20 +892,7 @@ static QualifiedType primIsGenericType(Context* context, const CallInfo& ci) {
     auto g = t->genericity();
 
     if (g == Type::MAYBE_GENERIC) {
-      QualifiedType qtEval = qt;
-      auto ct = t->toCompositeType();
-      if (auto cls = t->toClassType()) ct = cls->basicClassType();
-
-      // A generic type with defaults will be computed to have default subs
-      // at this point, so calling 'getTypeGenericity' on it will produce
-      // 'CONCRETE' instead of 'GENERIC_WITH_DEFAULTS'. Back up and use the
-      // uninstantiated type to produce the latter.
-      if (ct) {
-        if (auto ctGeneric = ct->instantiatedFromCompositeType()) {
-          qtEval = QualifiedType(qt.kind(), ctGeneric);
-        }
-      }
-      g = getTypeGenericity(context, qtEval);
+      g = getTypeGenericity(context, qt);
     }
 
     // Both cases are considered 'generic' for this primitive.

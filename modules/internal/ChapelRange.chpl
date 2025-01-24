@@ -2378,15 +2378,17 @@ private proc isBCPindex(type t) param do
     chpl_range_check_stride(step, r.idxType);
 
     // streamline the simple cases
-    if step == 1 then return r;
-
-    if step == -1 then return if r.hasParamStrideAltvalAld()
-      then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, none, none)
-      else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, -r._stride, r._alignment);
-
-    return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    if step == 1 {
+      return r;
+    } else if step == -1 {
+      return if r.hasParamStrideAltvalAld()
+             then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, none, none)
+             else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, -r._stride, r._alignment);
+    } else {
+      return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    }
   }
 
   pragma "last resort"

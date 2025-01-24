@@ -264,6 +264,7 @@ static void testNoExplicitImplements() {
     )""";
 
   auto x = resolveTypesOfVariables(ctx, program, {"res"}).at("res");
+  assert(guard.realizeErrors(/* countWarnings */ false) == 0);
   assert(x.type()->isIntType());
 }
 
@@ -295,7 +296,7 @@ static void testWithoutInterfaceMatch() {
     }
   }
   assert(foundError);
-  assert(guard.realizeErrors() == 2); // one extra error for "no 'contextManager' on R"
+  assert(guard.realizeErrors(/* countWarnings */ false) == 2); // one extra error for "no 'contextManager' on R"
 }
 
 int main() {
