@@ -47,6 +47,41 @@ host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
+# For installations using --prefix, the lib final lib path are going to differ
+# figure it out now and write it to the rpath
+chpl_install_lib_path = None
+if os.path.exists(os.path.join(chpl_home, "configured-prefix")):
+    with open(os.path.join(chpl_home, "CMakeLists.txt"), "r") as f:
+        # read CMakeLists.txt to get the CHPL_MAJOR_VERSION and
+        # CHPL_MINOR_VERSION and then construct the path from that
+        chpl_major_version = None
+        chpl_minor_version = None
+        for line in f:
+            if "set(CHPL_MAJOR_VERSION" in line:
+                chpl_major_version = line.split()[1].strip(")")
+            if "set(CHPL_MINOR_VERSION" in line:
+                chpl_minor_version = line.split()[1].strip(")")
+            if (
+                chpl_major_version is not None
+                and chpl_minor_version is not None
+            ):
+                break
+    assert chpl_major_version is not None and chpl_minor_version is not None
+    chpl_version_string = "{}.{}".format(
+        chpl_major_version,
+        chpl_minor_version,
+    )
+    chpl_prefix = None
+    with open(os.path.join(chpl_home, "configured-prefix"), "r") as f:
+        chpl_prefix = f.read().strip()
+    assert chpl_prefix is not None
+    chpl_install_lib_path = os.path.join(
+        chpl_prefix,
+        "lib",
+        "chapel",
+        chpl_version_string,
+        "compiler",
+    )
 
 CXXFLAGS = []
 if have_llvm and have_llvm != "none":
@@ -67,6 +102,12 @@ LDFLAGS += [
     "-Wl,-rpath,{}".format(chpl_lib_path),
     "-lChplFrontendShared",
 ]
+
+if chpl_install_lib_path is not None:
+    LDFLAGS += [
+        "-L{}".format(chpl_install_lib_path),
+        "-Wl,-rpath,{}".format(chpl_install_lib_path),
+    ]
 
 if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
     if str(chpl_variables.get("CHPL_HOST_PLATFORM")) == "darwin":
