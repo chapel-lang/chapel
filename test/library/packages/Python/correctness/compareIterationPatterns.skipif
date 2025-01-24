@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # requires python 3.12+
 
 # respect CHPL_TEST_VENV_DIR if it is set and not none
