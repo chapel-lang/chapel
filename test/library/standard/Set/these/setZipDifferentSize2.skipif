@@ -1,0 +1,2 @@
+# Follower checks are skipped when compiling with --fast
+COMPOPTS <= --fast

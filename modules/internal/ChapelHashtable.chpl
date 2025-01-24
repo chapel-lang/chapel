@@ -144,7 +144,7 @@ module ChapelHashtable {
     const minSizePerTask = dataParMinGranularity;
 
     // We are simply slicing up the table here.  Trying to do something
-    //  more intelligent (like evenly dividing up the full slots, led
+    //  more intelligent (like evenly dividing up the full slots), led
     //  to poor speed ups.
 
     if debugAssocDataPar {
@@ -643,6 +643,104 @@ module ChapelHashtable {
       }
 
       rehash(newSize);
+    }
+
+    proc _determineEvenChunks(numChunks: int, numFull: int): [] int {
+      var numFullPerTask = numFull / numChunks;
+      var rem = numFull % numChunks;
+
+      var chunkEnds: [0..#(numChunks-1)] int;
+      var chunkIdx = 0;
+      var curNumFull = 0;
+      for i in 0..#(this.tableSize) {
+        if this.isSlotFull(i) {
+          curNumFull += 1;
+        }
+        /* If we've found the last full slot or we've filled our list of chunk
+           end points, exit the loop */
+        if (curNumFull == numFull) ||
+          (chunkIdx >= chunkEnds.size) {
+          break;
+        }
+
+        // Allows us to evenly distribute when the chunks don't divide the
+        // total number of elements evenly.
+        if chunkIdx < rem {
+          if (curNumFull == (numFullPerTask * (chunkIdx+1)) + (chunkIdx+1)) {
+            chunkEnds[chunkIdx] = i;
+            chunkIdx += 1;
+          }
+        } else {
+          if (curNumFull == (numFullPerTask * (chunkIdx+1)) + rem) {
+            chunkEnds[chunkIdx] = i;
+            chunkIdx += 1;
+          }
+        }
+      }
+      return chunkEnds;
+    }
+
+    iter _evenSlots(size: int, param tag) where tag == iterKind.leader {
+      var numChunks = _computeNumChunks(size);
+      var numFullPerTask = size / numChunks;
+      var rem = size % numChunks;
+
+      forall i in 0..#numChunks {
+        if (i < rem) {
+          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),);
+        } else {
+          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),);
+        }
+      }
+    }
+
+    proc _guessSlots(followThis) {
+      var iterSpace: range;
+      var intendedSpace = followThis;
+      var chunkSize = intendedSpace.size;
+      var numChunksGuess = this.tableNumFullSlots / chunkSize;
+      var intendedChunkGuess = intendedSpace.low / chunkSize;
+
+      if (intendedChunkGuess >= numChunksGuess) {
+        __primitive("chpl_error",
+                    "zippered iterations have non-equal lengths".c_str());
+      }
+
+      // Determine corresponding chunk to use.
+      var chunkEnds = _determineEvenChunks(numChunksGuess,
+                                           this.tableNumFullSlots);
+      if (intendedChunkGuess == 0) {
+        iterSpace = 0..chunkEnds[intendedChunkGuess];
+      } else if (intendedChunkGuess == chunkEnds.size) {
+        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..(this.tableSize - 1);
+      } else {
+        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..chunkEnds[intendedChunkGuess];
+      }
+      return iterSpace;
+    }
+
+    iter _evenSlots(size: int, followThis, param tag) const ref
+      where tag == iterKind.follower {
+      use Types;
+
+      if (size != this.tableNumFullSlots) {
+        __primitive("chpl_error",
+                    "zippered iterations have non-equal lengths".c_str());
+      }
+
+      var iterSpace: range;
+
+      if (isTuple(followThis)) {
+        iterSpace = _guessSlots(followThis(0));
+      } else {
+        iterSpace = _guessSlots(followThis);
+      }
+
+      foreach slot in iterSpace {
+        if this.isSlotFull(slot) then {
+          yield this.table[slot].key;
+        }
+      }
     }
   }
 }

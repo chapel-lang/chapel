@@ -1,0 +1,2 @@
+4 5
+badContentsCall.chpl:19: error: halt reached - leader 'contents' iterator needs to be provided the set's size as its argument (follower should be provided the size of the leader)
