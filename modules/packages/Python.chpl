@@ -83,6 +83,12 @@
   strongly recommend to limit the amount of data shared between
   sub-interpreters.
 
+  .. note::
+
+     This feature is only available in Python 3.12 and later. Attempting to use
+     sub-interpreters with earlier versions of Python will result in a runtime
+     exception.
+
   The following demonstrates using sub-interpreters in a ``coforall`` loop:
 
   ..
