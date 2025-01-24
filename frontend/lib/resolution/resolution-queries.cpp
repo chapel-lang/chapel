@@ -4118,8 +4118,11 @@ static bool resolveFnCallSpecial(Context* context,
   // between 'ref' and non-'ref' type formals. Moreover, this function is
   // filled in by the compiler in production.
   if (!ci.isMethodCall() && (ci.name() == USTR("_build_tuple") ||
-                             ci.name() == USTR("_build_tuple_noref"))) {
+                             ci.name() == USTR("_build_tuple_noref") ||
+                             ci.name() == USTR("_build_tuple_always_allow_ref"))) {
     bool removeRefs = ci.name() == USTR("_build_tuple_noref");
+    auto intent = ci.name() == USTR("_build_tuple_always_allow_ref") ?
+                  QualifiedType::CONST_VAR : QualifiedType::TYPE;
     std::vector<QualifiedType> components;
     for (size_t i = 0; i < ci.numActuals(); i++) {
       auto actual = ci.actual(i).type();
@@ -4131,7 +4134,7 @@ static bool resolveFnCallSpecial(Context* context,
     }
 
     auto resultTuple = TupleType::getQualifiedTuple(context, components);
-    exprTypeOut = QualifiedType(QualifiedType::TYPE, resultTuple);
+    exprTypeOut = QualifiedType(intent, resultTuple);
     return true;
   }
 
@@ -6769,7 +6772,6 @@ shapeForIteratorQuery(Context* context,
         break;
       }
     }
-    CHPL_ASSERT(!leaderType.isUnknownOrErroneous());
   }
 
   CHPL_ASSERT(!leaderType.isUnknownOrErroneous());

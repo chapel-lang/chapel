@@ -1068,7 +1068,7 @@ generateIteratorMethod(Context* context,
           nullptr));
     formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, it));
 
-    // It's a little scary to compue the ID for the function in this way
+    // It's a little scary to compute the ID for the function in this way
     // here because for the FnIterator and PromotionIterator cases, it will
     // conflict with the underlying function. Maybe that's okay?
     ID id;

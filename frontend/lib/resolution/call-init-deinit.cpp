@@ -832,7 +832,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
   } else if (isCatchVariable || isRefLoopIntent) {
-    // initialized from the throw that activates this Catch
+    // initialized from the throw that activates this Catch, or implicitly with
+    // a reference to a variable in outer scope.
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
