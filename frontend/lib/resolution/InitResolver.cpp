@@ -309,7 +309,7 @@ struct ImplCreateNTuple {
 
 // for the given N names, return N QualifiedTypes
 template <typename ...FieldNames, size_t ... Is>
-static auto extractFields(Context* context, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
+static auto helpExtractFields(Context* context, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
   auto& rf = fieldsForTypeDecl(context, bct,
                                DefaultsPolicy::IGNORE_DEFAULTS);
   CHPL_ASSERT(rf.numFields() >= 0 && (size_t) rf.numFields() >= sizeof...(names));
@@ -321,14 +321,19 @@ static auto extractFields(Context* context, const BasicClassType* bct, std::inde
   return ret;
 }
 
+template <typename ...FieldNames>
+static auto extractFields(Context* context, const BasicClassType* bct,  FieldNames... names) {
+  return helpExtractFields(context, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
+}
+
 static std::tuple<QualifiedType, QualifiedType, QualifiedType>
 extractRectangularInfo(Context* context, const BasicClassType* bct) {
-  return extractFields(context, bct, std::make_index_sequence<3>(), "rank", "idxType", "strides");
+  return extractFields(context, bct, "rank", "idxType", "strides");
 }
 
 static std::tuple<QualifiedType, QualifiedType>
 extractAssociativeInfo(Context* context, const BasicClassType* bct) {
-  return extractFields(context, bct, std::make_index_sequence<2>(), "idxType", "parSafe");
+  return extractFields(context, bct, "idxType", "parSafe");
 }
 
 // Extract domain type information from _instance substitution
@@ -385,7 +390,7 @@ static const ArrayType* arrayTypeFromSubsHelper(
     CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
 
     auto [rank, idxType, strides] = extractRectangularInfo(context, baseArrRect);
-    auto [eltType] = extractFields(context, baseArr, std::make_index_sequence<1>(), "eltType");
+    auto [eltType] = extractFields(context, baseArr, "eltType");
 
     auto domain = DomainType::getRectangularType(context, instanceQt, rank,
                                                  idxType, strides);
