@@ -2187,6 +2187,34 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.message("Variables cannot be referenced before they are defined.");
 }
 
+void ErrorUserDiagnosticEncounterError::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEncounterWarning::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEmitError::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEmitWarning::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   auto typeExpr = std::get<const uast::AstNode*>(info_);
   auto type = std::get<types::QualifiedType>(info_);

@@ -268,6 +268,14 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
+  if (err->type() == ErrorType::UserDiagnosticEncounterError ||
+      err->type() == ErrorType::UserDiagnosticEncounterWarning) {
+    // by default, don't print errors for encounters. The error will get
+    // printed (via UserDiagnosticEmitError etc.) when the desired call stack
+    // depth is reached.
+    return;
+  }
+
   ErrorWriter ew(context, std::cerr,
                  context->detailedErrors ?
                    ErrorWriter::DETAILED :

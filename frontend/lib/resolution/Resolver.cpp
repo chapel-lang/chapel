@@ -1918,6 +1918,26 @@ gatherUserDiagnostics(ResolutionContext* rc,
   return into;
 }
 
+static void emitUserDiagnostic(Context* context,
+                               const CompilerDiagnostic& diagnostic,
+                               const uast::AstNode* astForErr) {
+  if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
+    CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
+  } else {
+    CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
+  }
+}
+
+static void noteEncounteredUserDiagnostic(Context* context,
+                                          const CompilerDiagnostic& diagnostic,
+                                          const uast::AstNode* astForErr) {
+  if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
+    CHPL_REPORT(context, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
+  } else {
+    CHPL_REPORT(context, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
+  }
+}
+
 void
 Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                             const CallInfo& ci,
@@ -1925,7 +1945,7 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   bool foundUserDiagnostics = false;
   for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
     if (diagnostic.depth() - 1 == 0) {
-      fprintf(stderr, "%s: %s\n", diagnostic.kind() == CompilerDiagnostic::ERROR ? "error" : "warning", diagnostic.message().c_str());
+      emitUserDiagnostic(context, diagnostic, astForErr);
       foundUserDiagnostics = true;
     }
   }
@@ -2598,21 +2618,25 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
       message += qt.param()->toStringParam()->value().c_str();
     }
 
-    int64_t depth = 1;
+    // In Dyno, depth counts call sites, since we don't have an accessible stack.
+    // by default, we anchor the error to the function that invoked compilerError(),
+    // which means two call sites to skip: one of the __primitive("error"), and
+    // one for compilerError() itself. The next call site will be the call
+    // to the function that invoked compilerError().
+    int64_t depth = 2;
     if (depthParam) {
-      depth = depthParam->value();
+      depth = depthParam->value() + 1;
     }
 
-    // TODO: emit an error to Context so that it's logged regardless of
-    // whether it's emitted.
-
+    auto diagnostic =
+      CompilerDiagnostic(UniqueString::get(context, message.c_str()), kind, depth);
     if (depth == 0) {
-      // TODO: write error-like message, but do not actually emit an error
-      fprintf(stderr, "%s: %s\n", kind == CompilerDiagnostic::ERROR ? "error" : "warning", message.c_str());
+      emitUserDiagnostic(context, diagnostic, primCall);
     } else {
       // We are not the target recipient of the error; functions further up
       // the call stack ought to issue this error.
-      userDiagnostics.emplace_back(UniqueString::get(context, message.c_str()), kind, depth);
+      noteEncounteredUserDiagnostic(context, diagnostic, primCall);
+      userDiagnostics.push_back(std::move(diagnostic));
     }
 
     return true;
