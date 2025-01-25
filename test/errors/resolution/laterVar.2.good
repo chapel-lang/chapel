@@ -1,12 +1,94 @@
-─── error in laterVar.chpl:1 [UseOfLaterVariable] ───
+─── error in laterVar.chpl:20 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+       |
+    20 |   var gx = g + 2;
+       |
+  there is a reference to a variable defined later:
+       |
+    21 |   var g = 1;
+       |       ⎺⎺⎺⎺⎺
+       |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:32 ───
+  Cannot establish type for call expression
+
+─── error in laterVar.chpl:27 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+       |
+    27 |   bx += ly * 2;
+       |
+  there is a reference to a variable defined later:
+       |
+    28 |   var ly = 3;
+       |       ⎺⎺⎺⎺⎺⎺
+       |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:2 [UseOfLaterVariable] ───
   Statement references a variable before it is defined.
   In the following statement:
       |
-    1 | var x = y;
+    2 |   var a = b;
       |
   there is a reference to a variable defined later:
       |
-    2 | var y = 1;
+    3 |   var b = arg;
+      |       ⎺⎺⎺⎺⎺⎺⎺
       |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:8 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+      |
+    8 |   var a = x;
+      |
+  there is a reference to a variable defined later:
+      |
+    9 |   var x = 2.0;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:37 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+       |
+    37 | var ax = g;
+       |
+  there is a reference to a variable defined later:
+       |
+    38 | var g = 1;
+       |     ⎺⎺⎺⎺⎺
+       |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:41 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+       |
+    41 | bx += ly * 2;
+       |
+  there is a reference to a variable defined later:
+       |
+    42 | var ly = 3;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+  Variables cannot be referenced before they are defined.
+
+─── error in laterVar.chpl:46 [UseOfLaterVariable] ───
+  Statement references a variable before it is defined.
+  In the following statement:
+       |
+    46 | proc foo(arg:int = x, x: int = 5) { return 0; }
+       |
+  there is a reference to a variable defined later:
+       |
+    46 | proc foo(arg:int = x, x: int = 5) { return 0; }
+       |                       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
   Variables cannot be referenced before they are defined.
 
