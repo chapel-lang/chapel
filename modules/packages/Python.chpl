@@ -1228,6 +1228,58 @@ module Python {
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
+
+    /*
+      Set an attribute/field of this Python object. This is equivalent to
+      calling ``obj[attr] = value`` or ``setattr(obj, attr, value)`` in Python.
+
+      :arg attr: The name of the attribute/field to set.
+      :arg value: The value to set the attribute/field to.
+    */
+    proc setAttr(attr: string, value) throws {
+      var pyValue = interpreter.toPython(value);
+      defer Py_DECREF(pyValue);
+
+      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
+      interpreter.checkException();
+    }
+
+    /*
+      Call a method of this Python object. This is equivalent to calling
+      ``obj.method(args)`` in Python.
+
+      :arg retType: The Chapel type of the return value.
+      :arg method: The name of the method to call.
+      :arg args: The arguments to pass to the method.
+    */
+    proc call(type retType, method: string, const args...): retType throws {
+      var pyArgs: args.size * PyObjectPtr;
+      for param i in 0..#args.size {
+        pyArgs(i) = interpreter.toPython(args(i));
+      }
+      defer for pyArg in pyArgs do Py_DECREF(pyArg);
+
+      var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
+      var pyRes = PyObject_CallMethodObjArgs(
+        this.get(), methodName, (...pyArgs), nil);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+      return res;
+    }
+    @chpldoc.nodoc
+    proc call(type retType, method: string): retType throws {
+      var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
+      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+      return res;
+    }
   }
 
   /*
@@ -1276,26 +1328,52 @@ module Python {
     @chpldoc.nodoc
     var fnName: string;
 
+    /*
+      Get a handle to a function in a :class:`Module` by name.
+    */
     proc init(mod: borrowed Value, in fnName: string) {
       super.init(mod.interpreter,
                  PyObject_GetAttrString(mod.get(), fnName.c_str()),
                  isOwned=true);
       this.fnName = fnName;
     }
+    /*
+      Takes ownership of an existing Python object, pointed to by ``obj``
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg fnName: The name of the function.
+      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
+      :arg isOwned: Whether this object owns the Python object. This is true by default.
+    */
     proc init(interpreter: borrowed Interpreter,
               in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
       this.fnName = fnName;
     }
+    /*
+      Create a new Python lambda function from a string. The lambda arguments must
+      have a trailing comma.
+
+      For example, to create a lambda function that takes two arguments, use:
+
+      .. code-block:: python
+
+         new Function(interpreter, "lambda x, y,: x + y")
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg lambdaFn: The lambda function to create.
+    */
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
     }
+    @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter,
               obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
+      this.fnName = "<unknown>";
     }
   }
 
@@ -1306,6 +1384,13 @@ module Python {
   class Class: Value {
     @chpldoc.nodoc
     var className: string;
+
+    /*
+      Get a handle to a class in a :class:`Module` by name.
+
+      :arg mod: The module to get the class from.
+      :arg className: The name of the class.
+    */
     proc init(mod: borrowed Value, in className: string) {
       super.init(mod.interpreter,
                  PyObject_GetAttrString(mod.get(), className.c_str()),
@@ -1335,62 +1420,16 @@ module Python {
     }
 
     /*
-      Create a new instance of a python class
+      Create a new instance of a Python class
     */
-    proc this(const args...): owned ClassObject throws do
-      return new ClassObject(interpreter, newInstance((...args)));
-    proc this(): owned ClassObject throws do
-      return new ClassObject(interpreter, newInstance());
-
-  }
-
-
-  /*
-    Represents a Python class object.
-  */
-  class ClassObject: Value {
+    proc this(const args...): owned Value throws do
+      return new Value(interpreter, newInstance((...args)), isOwned=true);
     @chpldoc.nodoc
-    proc init(interp: borrowed Interpreter,
-              in obj: PyObjectPtr, isOwned: bool = true) {
-      super.init(interp, obj, isOwned=isOwned);
-    }
+    proc this(): owned Value throws do
+      return new Value(interpreter, newInstance(), isOwned=true);
 
-    proc setAttr(attr: string, value) throws {
-      var pyValue = interpreter.toPython(value);
-      defer Py_DECREF(pyValue);
-
-      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
-      interpreter.checkException();
-    }
-
-    proc call(type retType, method: string, const args...): retType throws {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      defer for pyArg in pyArgs do Py_DECREF(pyArg);
-
-      var methodName = interpreter.toPython(method);
-      defer Py_DECREF(methodName);
-
-      var pyRes = PyObject_CallMethodObjArgs(
-        this.get(), methodName, (...pyArgs), nil);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
-    proc call(type retType, method: string): retType throws {
-      var methodName = interpreter.toPython(method);
-      defer Py_DECREF(methodName);
-
-      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
   }
+
 
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one

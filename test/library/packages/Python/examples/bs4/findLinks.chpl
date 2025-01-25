@@ -25,7 +25,7 @@ proc main() {
   var cls = new Class(mod, "BeautifulSoup");
   var soup = cls(html, 'html.parser');
 
-  var res: list(owned ClassObject?);
+  var res: list(owned Value?);
   res = soup.call(res.type, "find_all", "a");
   for c in res {
     var linkText = c!.getAttr(string, "text");
