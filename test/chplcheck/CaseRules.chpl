@@ -47,9 +47,18 @@ module CaseRules {
   var _privateVar: int;
 
   extern proc proc_from_another_lang();
-  extern proc Proc_with_Bad_consistenty();
+  extern proc Proc_with_Bad_consistency();
   extern var c_var: int(32);
   extern const c_const: int(32);
+  extern type type_from_another_lang;
+  extern record record_from_another_lang {}
+
+  extern "externName" proc proc_from_another_lang2();
+  extern "externName" proc Proc_with_Bad_consistency2();
+  extern "externName" var c_var2: int(32);
+  extern "externName" const c_const2: int(32);
+  extern "externName" type type_from_another_lang2;
+  extern "externName" record record_from_another_lang2 {}
 
   var justOneCapitalLetterAtTheE: string;
   const justO: real;
