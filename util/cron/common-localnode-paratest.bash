@@ -30,3 +30,6 @@ function get_nightly_paratest_args
     gen_nodefile ${nodepara} ${parnodefile}
     echo "-parnodefile ${parnodefile}"
 }
+
+# Disable the launcher for local testing
+export CHPL_LAUNCHER=none
