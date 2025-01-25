@@ -84,6 +84,7 @@ if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
 
 os.environ["CC"] = host_cc
 os.environ["CXX"] = host_cxx
+
 setup(
     name="chapel",
     version="0.1",
@@ -96,6 +97,7 @@ setup(
             depends=glob.glob("src/**/*.h", recursive=True),
             extra_compile_args=CXXFLAGS,
             extra_link_args=LDFLAGS,
+            py_limited_api=True,
         )
     ],
 )

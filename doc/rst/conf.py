@@ -30,11 +30,13 @@ sys.path.insert(0, os.path.abspath('./'))
 # to prevent failures if chapel-py is not built/installed, check if its installed
 # if installed, add the path and generate the rst file
 # if not installed, just create the file so that the build doesn't fail
-chapel_py_dir = os.path.abspath(
-    "../../third-party/chpl-venv/install/chpl-frontend-py-deps-py"
-    + str(sys.version_info.major)
-    + str(sys.version_info.minor)
-)
+old_sys_path = sys.path.copy()
+sys.path.insert(0, os.path.abspath('../../util/chplenv'))
+import chpl_home_utils
+chapel_py_dir = chpl_home_utils.get_chpldeps(chapel_py=True)
+del chpl_home_utils
+sys.path = old_sys_path
+
 include_chapel_py_docs = False
 chapel_py_api_template = os.path.abspath("./tools/chapel-py/chapel-py-api-template.rst")
 chapel_py_api_rst = os.path.abspath("./tools/chapel-py/chapel-py-api.rst")

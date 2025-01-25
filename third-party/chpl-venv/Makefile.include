@@ -32,5 +32,5 @@ CHPL_VENV_VIRTUALENV_DIR_DEPS2_OK=$(CHPL_VENV_BUILD)/build-venv/ok2
 CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
 CHPL_VENV_INSTALL=$(CHPL_VENV_DIR)/install
 CHPL_VENV_CHPLDEPS=$(CHPL_VENV_INSTALL)/chpldeps
-CHPL_VENV_CHPL_FRONTEND_PY_DEPS=$(CHPL_VENV_INSTALL)/chpl-frontend-py-deps-py$(shell $(PYTHON) -c 'import sys; print(str(sys.version_info.major) + str(sys.version_info.minor))')
+CHPL_VENV_CHPL_FRONTEND_PY_DEPS=$(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps-chapel-py)
 CHPL_VENV_CHPLDEPS_MAIN=$(CHPL_VENV_CHPLDEPS)/__main__.py
