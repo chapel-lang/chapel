@@ -2,35 +2,21 @@
 import sys
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize, warning
+from utils import error, memoize, warning, check_valid_var
 
 
 @memoize
 def get():
     platform_val = chpl_platform.get('target')
-    linux = platform_val.startswith('linux64')
     osx = platform_val.startswith('darwin')
-    val = overrides.get('CHPL_UNWIND')
+    val = overrides.get('CHPL_UNWIND', 'none')
 
-    if val and val not in ('none', 'bundled', 'system'):
-        error("Invalid CHPL_UNWIND value {0}\n"
-              "Valid values are none, bundled, or system".format(val))
+    if osx and val == 'bundled':
+        error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
+              "\nUse CHPL_UNWIND=system instead.", ValueError)
 
-    if linux:
-        if val == 'bundled':
-            return 'bundled'
-        elif val == 'system':
-            return 'system'
-    if osx:
-        if val == 'bundled':
-            error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
-                  "\nUse CHPL_UNWIND=system instead.", ValueError)
-        elif val == 'system':
-            return 'system'
-    if val:
-        return val
-    else:
-        return 'none'
+    check_valid_var('CHPL_UNWIND', val, ['none', 'bundled', 'system'])
+    return val
 
 @memoize
 def get_uniq_cfg_path():

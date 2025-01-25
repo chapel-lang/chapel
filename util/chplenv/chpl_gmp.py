@@ -5,7 +5,7 @@ import optparse
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning, error
+from utils import memoize, warning, error, check_valid_var
 
 # returns True if CHPL_GMP was set by the user
 # (i.e. not inferred to be the default)
@@ -36,6 +36,7 @@ def get():
         else:
             gmp_val = 'none'
 
+    check_valid_var('CHPL_GMP', gmp_val, ['none', 'bundled', 'system'])
     return gmp_val
 
 @memoize
