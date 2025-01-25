@@ -1,2 +1,4 @@
 *.chpl
 *.good
+*.execopts
+*.compopts

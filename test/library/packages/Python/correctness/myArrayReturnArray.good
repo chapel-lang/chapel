@@ -1,0 +1,4 @@
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: In method 'callInternal':
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: error: Cannot create an Array from an existing PyObject
+  $CHPL_HOME/modules/packages/Python.chpl:nnnn: called as Value.callInternal(type retType = owned Array(nothing), pyArg: c_ptr(PyObject), kwargs: nothing) from method 'this'
+  myArrayReturnArray.chpl:16: called as Value.this(type retType = owned Array(nothing), args(0): owned Array(int(64)))
