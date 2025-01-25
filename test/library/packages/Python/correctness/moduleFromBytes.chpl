@@ -12,7 +12,7 @@ var MyClass = new Class(mod, "MyClass");
 var my_function = new Function(mod, "my_function");
 
 // run my_function
-var v = my_function(owned ClassObject);
+var v = my_function(owned Value);
 v.call(NoneType, "print");
 
 // create an instance of MyClass
