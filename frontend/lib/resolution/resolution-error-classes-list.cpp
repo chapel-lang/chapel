@@ -651,6 +651,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
     wr.message("");
+    auto reason = candidate.reason();
     if (/* skip printing detailed info_ here because computing the formal-actual
         map will go poorly with an unknown formal. */
         candidate.failedDueToWrongActual()) {
@@ -702,7 +703,6 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       if (!actualPrinted && actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
-
       auto formalReason = candidate.formalReason();
       if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
         auto formalDec = badPass.formalType().type()->toClassType()->decorator();
@@ -761,7 +761,6 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       wr.code(candidate.idForErr());
     } else {
-      auto reason = candidate.reason();
       std::string reasonStr = "";
       if (reason == resolution::FAIL_VARARG_MISMATCH) {
         reasonStr = "the number of varargs was incorrect:";

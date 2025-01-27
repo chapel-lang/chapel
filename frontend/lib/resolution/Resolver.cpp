@@ -1002,16 +1002,17 @@ handleRejectedCandidates(Context* context,
     if (/* skip computing the formal-actual map because it will go poorly
            with an unknown formal. */
         !candidate.failedDueToWrongActual()) {
-          continue;
+      continue;
     }
     auto fn = candidate.initialForErr();
     resolution::FormalActualMap fa(fn, ci);
     auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
-    CHPL_ASSERT(0 <= badPass.actualIdx() &&
-        (size_t)badPass.actualIdx() < actualAsts.size());
-    actualExpr = actualAsts[badPass.actualIdx()];
+    size_t actualIdx = badPass.actualIdx();
+    if (0 <= actualIdx && actualIdx < actualAsts.size()) {
+      actualExpr = actualAsts[badPass.actualIdx()];
+    }
 
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
