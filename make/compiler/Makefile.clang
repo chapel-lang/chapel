@@ -73,6 +73,10 @@ CXX_STD :=
 CXX11_STD :=
 endif
 
+ifndef CLANG_MAJOR_VERSION
+export CLANG_MAJOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+endif
+
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -100,6 +104,9 @@ endif
 
 # Set flag for lax or IEEE floating point
 FAST_FLOAT_GEN_CFLAGS = -ffast-math
+ifeq ($(shell test $(CLANG_MAJOR_VERSION) -ge 18; echo "$$?"),0)
+FAST_FLOAT_GEN_CFLAGS += -Wno-nan-infinity-disabled
+endif
 IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
