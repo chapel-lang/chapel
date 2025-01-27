@@ -1001,28 +1001,29 @@ handleRejectedCandidates(Context* context,
     auto &candidate = rejected[i];
     if (/* skip computing the formal-actual map because it will go poorly
            with an unknown formal. */
-        candidate.failedDueToWrongActual()) {
-      auto fn = candidate.initialForErr();
-      resolution::FormalActualMap fa(fn, ci);
-      auto& badPass = fa.byFormalIdx(candidate.formalIdx());
-      const uast::AstNode *actualExpr = nullptr;
-      const uast::VarLikeDecl *actualDecl = nullptr;
-      if (call && 0 <= badPass.actualIdx() &&
-          (size_t)badPass.actualIdx() < actualAsts.size()) {
-        actualExpr = actualAsts[badPass.actualIdx()];
-      }
-      // look for a definition point of the actual for error reporting of
-      // uninitialized vars typically in the case of bad split-initialization
-      if (actualExpr && actualExpr->isIdentifier()) {
-        auto &resolvedExpr = byPostorder.byAst(actualExpr->toIdentifier());
-        if (auto id = resolvedExpr.toId()) {
-          auto var = parsing::idToAst(context, id);
-          // should put a nullptr if not a VarLikeDecl
-          actualDecl = var->toVarLikeDecl();
-        }
-      }
-      actualDecls[i] = actualDecl;
+        !candidate.failedDueToWrongActual()) {
+          continue;
     }
+    auto fn = candidate.initialForErr();
+    resolution::FormalActualMap fa(fn, ci);
+    auto& badPass = fa.byFormalIdx(candidate.formalIdx());
+    const uast::AstNode *actualExpr = nullptr;
+    const uast::VarLikeDecl *actualDecl = nullptr;
+    CHPL_ASSERT(0 <= badPass.actualIdx() &&
+        (size_t)badPass.actualIdx() < actualAsts.size());
+    actualExpr = actualAsts[badPass.actualIdx()];
+
+    // look for a definition point of the actual for error reporting of
+    // uninitialized vars typically in the case of bad split-initialization
+    if (actualExpr && actualExpr->isIdentifier()) {
+      auto &resolvedExpr = byPostorder.byAst(actualExpr);
+      if (auto id = resolvedExpr.toId()) {
+        auto var = parsing::idToAst(context, id);
+        // should put a nullptr if not a VarLikeDecl
+        actualDecl = var->toVarLikeDecl();
+      }
+    }
+    actualDecls[i] = actualDecl;
   }
   CHPL_ASSERT(rejected.size() == actualDecls.size());
   CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, actualDecls);
@@ -2458,7 +2459,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScopes);
-  optional<ActionAndId> action = { { AssociatedAction::NEW_INIT, call->id() } };
+  optional<ActionAndId> action({ AssociatedAction::NEW_INIT, call->id() });
   handleResolvedCallPrintCandidates(re, call, ci, inScopes, QualifiedType(),
                                     crr, actualAsts, action);
 

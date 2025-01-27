@@ -685,7 +685,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
         wr.message("The actual ", actualName,
                    " expects to be split-initialized because it is declared without a type or initialization expression here:");
-        wr.code(offendingActual, { offendingActual });
+        wr.codeForDef(offendingActual);
         wr.message("The call to '", ci.name() ,"' occurs before any valid initialization points:");
         wr.code(actualExpr, { actualExpr });
         actualPrinted = true;
