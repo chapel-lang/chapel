@@ -245,20 +245,26 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   return command;
 }
 
+static void unlinkFile(char *name) {
+  int rc = unlink(name);
+  if (rc) {
+    char *fmt = "Unlink of \"%s\" failed: %s\n";
+    char *err = strerror(errno);
+    int msgSize = strlen(name) + strlen(err) + strlen(fmt) + 1;
+    char *msg = chpl_mem_alloc(msgSize, CHPL_RT_MD_ERROR_MSG, 0, 0);
+    snprintf(msg, msgSize, fmt, name, err);
+    chpl_internal_error(msg);
+    // Not reached.
+    chpl_mem_free(msg, 0, 0);
+  }
+}
+
+
 static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
   if (!chpl_doDryRun()) {
-    {
-      char command[sizeof(pbsFilename) + 4];
-      (void) snprintf(command, sizeof(command), "rm %s", pbsFilename);
-      system(command);
-    }
-
-    {
-      char command[sizeof(expectFilename) + 4];
-      (void) snprintf(command, sizeof(command), "rm %s", expectFilename);
-      system(command);
-    }
+    unlinkFile(pbsFilename);
+    unlinkFile(expectFilename);
   }
 #endif
   chpl_mem_free(pbsFilename, 0, 0);
