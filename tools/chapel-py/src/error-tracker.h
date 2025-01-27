@@ -20,7 +20,7 @@
 #ifndef CHAPEL_PY_ERROR_TRACKER_H
 #define CHAPEL_PY_ERROR_TRACKER_H
 
-#include "Python.h"
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 #include "python-class.h"

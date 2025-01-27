@@ -154,12 +154,12 @@ def add_vars_to_paths(s):
 # Get the chpl-venv install directory:
 # $CHPL_HOME/third-party/chpl-venv/install/chpldeps
 @memoize
-def get_chpldeps(version=None):
+def get_chpldeps(chapel_py=False):
     base = os.path.join(get_chpl_third_party(), "chpl-venv", "install")
-    if version is None:
+    if not chapel_py:
         chpl_venv = os.path.join(base, "chpldeps")
     else:
-        chpl_venv = os.path.join(base, "chpl-frontend-py-deps-py" + str(version))
+        chpl_venv = os.path.join(base, "chpl-frontend-py-deps")
     return chpl_venv
 
 @memoize
@@ -180,12 +180,10 @@ def _main():
     parser.add_option('--chpldeps', action='store_const',
                       dest='func', const=get_chpldeps)
     parser.add_option(
-        "--chpldeps-version",
+        "--chpldeps-chapel-py",
         action="store_const",
         dest="func",
-        const=lambda: get_chpldeps(
-            str(sys.version_info.major) + str(sys.version_info.minor)
-        ),
+        const=lambda: get_chpldeps(True),
     )
     parser.add_option('--using-module', action='store_const',
                       dest='func', const=using_chapel_module)
