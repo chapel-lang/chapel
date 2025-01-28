@@ -2895,6 +2895,36 @@ inferRefMaybeConstFormals(ResolutionContext* rc,
   return result;
 }
 
+static std::vector<std::tuple<const Decl*, QualifiedType>>
+collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
+  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
+
+  // Skip the 'this' formal since it will always be generic if one of the
+  // "real" formals is generic.
+  int formalIdx = 0;
+  if (tfs->untyped()->formalName(0) == USTR("this")) {
+    formalIdx++;
+  }
+
+  for (; formalIdx < tfs->numFormals(); formalIdx++) {
+    auto formalType = tfs->formalType(formalIdx);
+    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
+    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
+      ret.push_back(std::make_tuple(formalDecl, formalType));
+    }
+  }
+  return ret;
+}
+
+bool checkUninstantiatedFormal(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
+  if (!sig->needsInstantiation()) return false;
+
+  CHPL_REPORT(context, MissingFormalInstantiation,
+              astForErr,
+              collectGenericFormals(context, sig));
+  return true;
+}
+
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope,
@@ -4274,27 +4304,6 @@ considerCompilerGeneratedOperators(Context* context,
   return tfs;
 }
 
-static std::vector<std::tuple<const Decl*, QualifiedType>>
-collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
-  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
-
-  // Skip the 'this' formal since it will always be generic if one of the
-  // "real" formals is generic.
-  int formalIdx = 0;
-  if (tfs->untyped()->formalName(0) == USTR("this")) {
-    formalIdx++;
-  }
-
-  for (; formalIdx < tfs->numFormals(); formalIdx++) {
-    auto formalType = tfs->formalType(formalIdx);
-    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
-    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
-      ret.push_back(std::make_tuple(formalDecl, formalType));
-    }
-  }
-  return ret;
-}
-
 static void
 considerCompilerGeneratedCandidates(Context* context,
                                     const AstNode* astForErr,
@@ -4337,11 +4346,8 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  if (instantiated.candidate()->needsInstantiation() &&
-      !instantiated.candidate()->isInitializer()) {
-    CHPL_REPORT(context, MissingFormalInstantiation,
-                astForErr,
-                collectGenericFormals(context, instantiated.candidate()));
+  if (!instantiated.candidate()->isInitializer() &&
+      checkUninstantiatedFormal(context, astForErr, instantiated.candidate())) {
     return; // do not push invalid candidate into list
   }
 
@@ -4944,8 +4950,17 @@ findMostSpecificAndCheck(ResolutionContext* rc,
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate && candidate.fn()->instantiatedFrom()) {
+    if (!candidate) continue;
+
+    if (candidate.fn()->instantiatedFrom()) {
       checkSignature(rc->context(), candidate.fn());
+    }
+
+    // Initializers haven't yet been checked for uninstantiated formals,
+    // because prior to getting a MostSpecificCandidate we didn't resolve
+    // their bodies. Now we have, so we have a "final" TFS to check.
+    if (candidate.fn()->isInitializer()) {
+      checkUninstantiatedFormal(rc->context(), astContext, candidate.fn());
     }
   }
 

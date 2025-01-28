@@ -386,6 +386,12 @@ const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
 
+/**
+  Check if any of the formals are still generic, which is invalid. Emits
+  an error if so.
+ */
+bool checkUninstantiatedFormal(Context* context, const uast::AstNode* astForErr, const TypedFnSignature* sig);
+
 /////// call resolution
 
 /**
