@@ -64,10 +64,6 @@ for p in $CHAMPS_PATCH_PATH/*patch; do
   apply_patch $p
 done
 
-if [ "${CHPL_LLVM}" != "none" ] ; then
-  apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
-fi
-
 if [ ! -z "$CHAMPS_QUICKSTART" ]; then
   git checkout -b quickstart-triage
   echo "[New branch (quickstart-triage) created]"
