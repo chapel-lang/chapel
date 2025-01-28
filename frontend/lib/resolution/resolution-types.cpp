@@ -1200,13 +1200,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto instantiationPoiScope =
       Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
     auto rf = resolveFunction(rc, fn, instantiationPoiScope);
-
-    printf("Before: ");
-    fn->dump();
     fn = rf->signature();
-    printf("After: ");
-    fn->dump();
-    debuggerBreakHere();
     newFaMap.updateReceiverType(fn);
   }
 
