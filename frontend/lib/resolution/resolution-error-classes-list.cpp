@@ -644,19 +644,17 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const char* passedThing,
                                     const char* expectedThingArticle,
                                     const char* expectedThing,
-                                    GetActual&& getActual) {
+                                    GetActual&& getActual,
+                                    const std::vector<const uast::VarLikeDecl*>& actualDecls) {
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
-    printCount++;
-
-    auto reason = candidate.reason();
     wr.message("");
-    if (reason == resolution::FAIL_CANNOT_PASS &&
-        /* skip printing detailed info_ here because computing the formal-actual
-           map will go poorly with an unknown formal. */
-        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+    auto reason = candidate.reason();
+    if (/* skip printing detailed info_ here because computing the formal-actual
+        map will go poorly with an unknown formal. */
+        candidate.failedDueToWrongActual()) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
@@ -672,22 +670,39 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
-
+      bool actualPrinted = false;
+      const uast::VarLikeDecl* offendingActual = actualDecls.at(printCount);
       if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
+      } else if (badPass.actualType().isUnknown() &&
+                 offendingActual &&
+                 !offendingActual->initExpression() &&
+                 !offendingActual->typeExpression()) {
+        auto formalKind = badPass.formalType().kind();
+        auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
+        wr.message("The actual ", actualName,
+                   " expects to be split-initialized because it is declared without a type or initialization expression here:");
+        wr.codeForDef(offendingActual);
+        wr.message("The call to '", ci.name() ,"' occurs before any valid initialization points:");
+        wr.code(actualExpr, { actualExpr });
+        actualPrinted = true;
+        wr.message("The call to '", ci.name(), "' cannot initialize ",
+                   actualName,
+                   " because only 'out' formals can be used to split-initialize. However, ",
+                   actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
+
       } else {
         wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
                    ", but the ", passedThing, " was ", badPass.actualType(), ".");
       }
 
-      if (actualExpr) {
+      if (!actualPrinted && actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
-
       auto formalReason = candidate.formalReason();
       if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
         auto formalDec = badPass.formalType().type()->toClassType()->decorator();
@@ -769,6 +784,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       wr.code(candidate.idForErr());
     }
+    printCount++;
   }
 
   if (printCount < rejected.size()) {
@@ -824,7 +840,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   auto var = std::get<const uast::Variable*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'.");
   wr.codeForDef(var->id());
   wr.message("Required by the interface '", interface->name(), "':");
@@ -832,10 +848,9 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   wr.note(implPoint, "while checking the implementation point here:");
   wr.code<ID>(implPoint, { implPoint });
   wr.message("Associated types are resolved as 'type' calls on types constrained by the interface.");
-
   printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](int) -> const uast::AstNode* {
     return nullptr;
-  });
+  }, actualDecls);
 }
 
 void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
@@ -844,20 +859,19 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   auto fn = std::get<const resolution::TypedFnSignature*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'.");
   wr.codeForDef(fn->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
   wr.note(implPoint, "while checking the implementation point here:");
   wr.code<ID>(implPoint, { implPoint });
-
-  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "cadidate formal", [fn](int idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "candidate formal", [fn](int idx) -> const uast::AstNode* {
     if (idx >= 0 && idx < fn->numFormals()) {
       return fn->untyped()->formalDecl(idx);
     }
     return nullptr;
-  });
+  }, actualDecls);
 }
 
 void ErrorInterfaceMultipleImplements::write(ErrorWriterBase& wr) const {
@@ -1313,6 +1327,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto call = node->toCall();
   auto& ci = std::get<resolution::CallInfo>(info_);
   auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
 
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
@@ -1322,7 +1337,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       return call->actual(idx);
     }
     return nullptr;
-  });
+  }, actualDecls);
 }
 
 void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {

@@ -488,6 +488,7 @@ struct Resolver {
                                          const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
                                          const CallResolutionResult& c,
+                                         std::vector<const uast::AstNode*>& actualAsts,
                                          optional<ActionAndId> associatedActionAndId = {});
 
   // If the variable with the passed ID has unknown or generic type,
@@ -597,7 +598,8 @@ struct Resolver {
   // includes special handling for operators and tuple literals
   void prepareCallInfoActuals(const uast::Call* call,
                               std::vector<CallInfoActual>& actuals,
-                              const uast::AstNode*& questionArg);
+                              const uast::AstNode*& questionArg,
+                              std::vector<const uast::AstNode*>* actualAsts);
 
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
