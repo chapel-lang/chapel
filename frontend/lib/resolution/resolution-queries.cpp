@@ -4213,7 +4213,7 @@ resolveFnCallForTypeCtor(Context* context,
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
@@ -4933,7 +4933,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
 // * check signatures of selected candidates
 // * gather POI info from any instantiations
 static MostSpecificCandidates
-findMostSpecificAndCheck(Context* context,
+findMostSpecificAndCheck(ResolutionContext* rc,
                          const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
                          const AstNode* astContext,
@@ -4945,12 +4945,12 @@ findMostSpecificAndCheck(Context* context,
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate && candidate.fn()->instantiatedFrom()) {
-      checkSignature(context, candidate.fn());
+      checkSignature(rc->context(), candidate.fn());
     }
   }
 
@@ -4981,8 +4981,6 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        PoiInfo& poiInfo,
                                        bool& outRejectedPossibleIteratorCandidates,
                                        std::vector<ApplicabilityResult>* rejected) {
-  Context* context = rc->context();
-
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   auto candidates = gatherAndFilterCandidates(rc, astContext, call, ci,
@@ -4994,7 +4992,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   // * check signatures
   // * gather POI info
   auto mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+    findMostSpecificAndCheck(rc, candidates, firstPoiCandidate,
                              astContext, call, ci, inScopes.callScope(),
                              inScopes.poiScope(), poiInfo);
 

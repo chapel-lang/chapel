@@ -69,26 +69,26 @@ struct DisambiguationCandidate {
 };
 
 struct DisambiguationContext {
-  Context* context = nullptr;
+  ResolutionContext* rc = nullptr;
   const CallInfo* call = nullptr;
   const Scope* callInScope = nullptr;
   const PoiScope* callInPoiScope = nullptr;
   bool explain = false;
   bool isMethodCall = false;
   bool useOldVisibility = false;
-  DisambiguationContext(Context* context,
+  DisambiguationContext(ResolutionContext* rc,
                         const CallInfo* call,
                         const Scope* callInScope,
                         const PoiScope* callInPoiScope,
                         bool explain)
-    : context(context), call(call),
+    : rc(rc), call(call),
       callInScope(callInScope), callInPoiScope(callInPoiScope),
       explain(explain)
   {
     isMethodCall = call->isMethodCall();
 
     // this is a workaround -- a better solution would be preferred
-    if (parsing::idIsInInternalModule(context, callInScope->id())) {
+    if (parsing::idIsInInternalModule(rc->context(), callInScope->id())) {
       useOldVisibility = true;
     }
 
@@ -136,7 +136,7 @@ disambiguateByMatch(const DisambiguationContext& dctx,
                     CandidatesVec& ambiguousBest);
 
 static MostSpecificCandidates
-computeMostSpecificCandidates(Context* context,
+computeMostSpecificCandidates(ResolutionContext* rc,
                               const DisambiguationContext& dctx,
                               const CandidatesVec& candidates) ;
 
@@ -144,7 +144,7 @@ computeMostSpecificCandidates(Context* context,
 // with a particular return intent by disambiguating each group
 // individually.
 static MostSpecificCandidates
-computeMostSpecificCandidatesWithVecs(Context* context,
+computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
                                       const DisambiguationContext& dctx,
                                       const CandidatesVec& vec);
 
@@ -229,7 +229,7 @@ static void countByReturnIntent(const DisambiguationContext& dctx,
                                 int& nOther) {
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
@@ -254,29 +254,29 @@ static void countByReturnIntent(const DisambiguationContext& dctx,
 // if there is <= 1 most specific candidate with each intent,
 // return it as a MostSpecificCandidates
 static MostSpecificCandidates
-gatherByReturnIntent(Context* context,
+gatherByReturnIntent(ResolutionContext* rc,
                      const DisambiguationContext& dctx,
                      const CandidatesVec& vec) {
   MostSpecificCandidates ret;
 
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
       case Function::OUT:
       case Function::CONST:
         CHPL_ASSERT(!ret.bestValue());
-        ret.setBestValue(c->toMostSpecificCandidate(context));
+        ret.setBestValue(c->toMostSpecificCandidate(rc->context()));
         break;
       case Function::CONST_REF:
         CHPL_ASSERT(!ret.bestConstRef());
-        ret.setBestConstRef(c->toMostSpecificCandidate(context));
+        ret.setBestConstRef(c->toMostSpecificCandidate(rc->context()));
         break;
       case Function::REF:
         CHPL_ASSERT(!ret.bestRef());
-        ret.setBestRef(c->toMostSpecificCandidate(context));
+        ret.setBestRef(c->toMostSpecificCandidate(rc->context()));
         break;
       case Function::PARAM:
       case Function::TYPE:
@@ -297,7 +297,7 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
                                      CandidatesVec& valueCandidates) {
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.context, fn->id());
+    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
@@ -320,17 +320,17 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
 
 
 static const MostSpecificCandidates&
-findMostSpecificCandidatesQuery(Context* context,
+findMostSpecificCandidatesQuery(ResolutionContext* rc,
                                 CandidatesAndForwardingInfo lst,
                                 CallInfo call,
                                 const Scope* callInScope,
                                 const PoiScope* callInPoiScope) {
-  QUERY_BEGIN(findMostSpecificCandidatesQuery, context,
+  CHPL_RESOLUTION_QUERY_BEGIN(findMostSpecificCandidatesQuery, rc,
               lst, call, callInScope, callInPoiScope);
 
   // Construct the DisambiguationContext
   bool explain = true;
-  DisambiguationContext dctx(context, &call,
+  DisambiguationContext dctx(rc, &call,
                              callInScope, callInPoiScope,
                              explain);
 
@@ -350,7 +350,7 @@ findMostSpecificCandidatesQuery(Context* context,
 
   MostSpecificCandidates result =
     // disambiguateByMatch(dctx, candidates);
-    computeMostSpecificCandidates(context, dctx, candidates);
+    computeMostSpecificCandidates(rc, dctx, candidates);
 
   if (result.numBest() == 1) {
     MostSpecificCandidate only;
@@ -367,12 +367,12 @@ findMostSpecificCandidatesQuery(Context* context,
     delete elt;
   }
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
 // entry point for disambiguation
 MostSpecificCandidates
-findMostSpecificCandidates(Context* context,
+findMostSpecificCandidates(ResolutionContext* rc,
                            const CandidatesAndForwardingInfo& lst,
                            const CallInfo& call,
                            const Scope* callInScope,
@@ -388,8 +388,8 @@ findMostSpecificCandidates(Context* context,
     // Create a DisambiguationCandidate anyway, to re-use the promotion
     // counting logic.
     DisambiguationCandidate candidate(lst.get(0), QualifiedType(), call, 0);
-    candidate.computeConversionInfo(context, call.numActuals());
-    auto msc = candidate.toMostSpecificCandidate(context);
+    candidate.computeConversionInfo(rc->context(), call.numActuals());
+    auto msc = candidate.toMostSpecificCandidate(rc->context());
     return MostSpecificCandidates::getOnly(msc);
   }
 
@@ -397,13 +397,13 @@ findMostSpecificCandidates(Context* context,
   // run the query to handle the more complex case
   // TODO: is it worth storing this in a query? Or should
   // we recompute it each time?
-  return findMostSpecificCandidatesQuery(context, lst, call,
+  return findMostSpecificCandidatesQuery(rc, lst, call,
                                          callInScope, callInPoiScope);
 }
 
 
 static MostSpecificCandidates
-computeMostSpecificCandidates(Context* context,
+computeMostSpecificCandidates(ResolutionContext* rc,
                               const DisambiguationContext& dctx,
                               const CandidatesVec& candidates) {
   using Dcp = DisambiguationCandidate*;
@@ -416,7 +416,7 @@ computeMostSpecificCandidates(Context* context,
                                        ambiguousBest);
 
   if (best != nullptr) {
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc->context()));
   }
 
   if (ambiguousBest.size() == 0) {
@@ -448,11 +448,11 @@ computeMostSpecificCandidates(Context* context,
     if (ambiguousBest.size() > 1)
       return MostSpecificCandidates::getAmbiguous();
 
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc->context()));
   }
 
   if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
-    return gatherByReturnIntent(context, dctx, ambiguousBest);
+    return gatherByReturnIntent(rc, dctx, ambiguousBest);
   }
 
   // Otherwise, nRef > 1 || nConstRef > 1 || nValue > 1.
@@ -460,11 +460,11 @@ computeMostSpecificCandidates(Context* context,
   // handle the more complex case where there is > 1 candidate
   // with a particular return intent by disambiguating each group
   // individually.
-  return computeMostSpecificCandidatesWithVecs(context, dctx, ambiguousBest);
+  return computeMostSpecificCandidatesWithVecs(rc, dctx, ambiguousBest);
 }
 
 static MostSpecificCandidates
-computeMostSpecificCandidatesWithVecs(Context* context,
+computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
                                       const DisambiguationContext& dctx,
                                       const CandidatesVec& vec) {
   CandidatesVec refCandidates;
@@ -521,11 +521,11 @@ computeMostSpecificCandidatesWithVecs(Context* context,
   // so there is no ambiguity.
   MostSpecificCandidates ret;
   if (bestRef != nullptr)
-    ret.setBestRef(bestRef->toMostSpecificCandidate(context));
+    ret.setBestRef(bestRef->toMostSpecificCandidate(rc->context()));
   if (bestCRef != nullptr)
-    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(context));
+    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(rc->context()));
   if (bestValue != nullptr)
-    ret.setBestValue(bestValue->toMostSpecificCandidate(context));
+    ret.setBestValue(bestValue->toMostSpecificCandidate(rc->context()));
 
   return ret;
 }
@@ -818,7 +818,7 @@ static void discardWorseVisibility(const DisambiguationContext& dctx,
     auto scope = dctx.callInPoiScope == nullptr ?
                                         dctx.callInScope :
                                         dctx.callInPoiScope->inScope();
-    int distance = computeVisibilityDistance(dctx.context, scope, candidate->fn);
+    int distance = computeVisibilityDistance(dctx.rc->context(), scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
     if (distance >= 0) {
@@ -1265,7 +1265,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
 }
 
 void DisambiguationCandidate::computeConversionInfo(const DisambiguationContext& dctx) {
-  computeConversionInfo(dctx.context, dctx.call->numActuals());
+  computeConversionInfo(dctx.rc->context(), dctx.call->numActuals());
 }
 
 static void discardWorseConversions(const DisambiguationContext& dctx,
@@ -1461,9 +1461,9 @@ static int testArgMapping(const DisambiguationContext& dctx,
   // and value tuples.
   // TODO: not sure how to reproduce this code in Dyno
   if (actualType->isTupleType()) {
-    f1QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f1Type));
-    f2QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f2Type));
-    actualQualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, actualType));
+    f1QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), f1Type));
+    f2QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), f2Type));
+    actualQualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), actualType));
   }
   // TODO: Not sure we still need this here, based on production
   // Initializer work-around: Skip 'this' for generic initializers
@@ -1523,7 +1523,7 @@ static int testArgMapping(const DisambiguationContext& dctx,
 
   // Figure out scalar type for candidate matching
   if (formal1Promotes || formal2Promotes) {
-    actualScalarT = computeActualScalarType(dctx.context, actualQualType);
+    actualScalarT = computeActualScalarType(dctx.rc->context(), actualQualType);
   }
 
   // consider promotion
@@ -1690,7 +1690,7 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   if (forwardingTo.type() != nullptr) {
     actualType = forwardingTo;
   }
-  CanPassResult result = canPass(dctx.context, actualType, formalType);
+  CanPassResult result = canPass(dctx.rc->context(), actualType, formalType);
   CHPL_ASSERT(result.passes());
   *formalPromotes = result.promotes();
   *formalNarrows = result.convertsWithParamNarrowing();
@@ -1942,7 +1942,7 @@ static QualifiedType computeActualScalarType(Context* context,
 
 static bool moreSpecificCanDispatch(const DisambiguationContext& dctx,
                          QualifiedType actualType, QualifiedType formalType) {
-  CanPassResult result = canPass(dctx.context, actualType, formalType);
+  CanPassResult result = canPass(dctx.rc->context(), actualType, formalType);
 
   return result.passes();
 }
