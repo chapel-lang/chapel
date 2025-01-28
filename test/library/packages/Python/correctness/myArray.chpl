@@ -20,13 +20,11 @@ def loop(arr):
   sys.stdout.flush()
 """;
 
-proc testArray(type t) {
+proc testArray(type t, const testArr) {
   writeln("testing array of type ", t:string);
   IO.stdout.flush();
 
-  var arr: [1..10] t;
-  forall i in arr.domain do
-    arr[i] = i:t;
+  var arr = testArr: t;
 
   var interp = new Interpreter();
 
@@ -50,16 +48,31 @@ proc testArray(type t) {
   IO.stdout.flush();
 }
 
+proc testArray(arr) {
+  testArray(int(64), arr);
+  testArray(uint(64), arr);
+  testArray(int(32), arr);
+  testArray(uint(32), arr);
+  testArray(int(16), arr);
+  testArray(uint(16), arr);
+  testArray(int(8), arr);
+  testArray(uint(8), arr);
+  testArray(real(64), arr);
+  testArray(real(32), arr);
+  testArray(bool, arr);
+}
+
 proc main() {
-  testArray(int(64));
-  testArray(uint(64));
-  testArray(int(32));
-  testArray(uint(32));
-  testArray(int(16));
-  testArray(uint(16));
-  testArray(int(8));
-  testArray(uint(8));
-  testArray(real(64));
-  testArray(real(32));
-  testArray(bool);
+
+  {
+    // test non-zero indexed array
+    var arr: [1..10] int;
+    forall i in arr.domain do
+      arr[i] = i;
+    testArray(arr);
+  }
+
+  // test array literal
+  testArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
 }

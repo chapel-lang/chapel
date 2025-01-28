@@ -28,7 +28,7 @@
 // TODO: for some of the smaller types, when comsuming a PyObject we should check
 // if it will fit in the C type, and if not raise an error.
 //
-// args
+// args:
 // C datatype
 // Chapel datatype
 // array suffix

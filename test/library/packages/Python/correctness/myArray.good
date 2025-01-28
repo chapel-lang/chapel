@@ -108,3 +108,113 @@ printing Array(eltType=bool,size=10): True, True, True, True, True, True, True, 
 reset to 0
 from chapel: false false false false false false false false false false
 =========================
+testing array of type int(64)
+python: Array(eltType=int(64),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=int(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type uint(64)
+python: Array(eltType=uint(64),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=uint(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type int(32)
+python: Array(eltType=int(32),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=int(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type uint(32)
+python: Array(eltType=uint(32),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=uint(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type int(16)
+python: Array(eltType=int(16),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=int(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type uint(16)
+python: Array(eltType=uint(16),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=uint(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type int(8)
+python: Array(eltType=int(8),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=int(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type uint(8)
+python: Array(eltType=uint(8),size=10)
+at 2: 3
+size: 10
+chapel: 17 2 3 4 5 6 7 8 9 10
+from python
+printing Array(eltType=uint(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 9, 10
+reset to 0
+from chapel: 0 0 0 0 0 0 0 0 0 0
+=========================
+testing array of type real(64)
+python: Array(eltType=real(64),size=10)
+at 2: 3.0
+size: 10
+chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+from python
+printing Array(eltType=real(64),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0
+reset to 0
+from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+=========================
+testing array of type real(32)
+python: Array(eltType=real(32),size=10)
+at 2: 3.0
+size: 10
+chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+from python
+printing Array(eltType=real(32),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0
+reset to 0
+from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+=========================
+testing array of type bool
+python: Array(eltType=bool,size=10)
+at 2: true
+size: 10
+chapel: true true true true true true true true true true
+from python
+printing Array(eltType=bool,size=10): True, True, True, True, True, True, True, True, True, True
+reset to 0
+from chapel: false false false false false false false false false false
+=========================

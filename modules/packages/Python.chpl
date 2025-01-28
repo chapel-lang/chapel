@@ -366,7 +366,7 @@ module Python {
       // Chapel's write
 
       if !ArrayTypes.createArrayTypes() {
-        throwChapelException("Failed to create array types");
+        throwChapelException("Failed to create Python array types for Chapel arrays");
       }
 
       if pyMemLeaks {
@@ -1522,6 +1522,7 @@ module Python {
     .. code-block:: chapel
 
        myPythonFunction(NoneType, myChapelArray); // copies the data
+
        var arr = new Array(interpreter, myChapelArray);
        myPythonFunction(NoneType, arr); // no copy is done
 
@@ -1533,7 +1534,6 @@ module Python {
   class Array: Value {
     @chpldoc.nodoc
     type eltType = nothing;
-    // TODO: call proper function for proper array type
     /*
       Create a new :type:`Array` object from a Chapel array.
 
