@@ -19,17 +19,7 @@
  */
 
 
-// TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
-//  this can be done in a few ways.
-//   1. create a class that wraps the array and implements the python list interface
-//   2. create a class that wraps the array and implements the numpy array interface
-
 //  TODO: represent python context managers as Chapel context managers
-
-// TODO: create adapters for common Python types that are subclasses of a Value class
-// this will prevent needing to round trip through python for some operations
-// for example, a List, Set, Dict, Tuple, etc.
-// these should provide native like operation, so `for i in pyList` should work
 
 // TODO: implement operators as dunder methods
 
@@ -227,6 +217,7 @@ module Python {
   private import Map;
 
   private use CPythonInterface except PyObject;
+  private import this.ArrayTypes;
   private use CWChar;
   private use OS.POSIX only getenv;
 
@@ -278,6 +269,10 @@ module Python {
     return sep;
   }
 
+  private proc throwChapelException(message: string) throws {
+    throw new ChapelException(message);
+  }
+
   /*
     Represents the python interpreter. All code using the Python module should
     create and maintain a single instance of this class.
@@ -296,7 +291,7 @@ module Python {
       important for correctness, but may have a performance impact.
 
       See :config:`Python.checkExceptions` and
-      :method:`Interpreter.checkException` for more information.
+      :proc:`Interpreter.checkException` for more information.
     */
     // param checkExceptions: bool = Python.checkExceptions;
 
@@ -369,6 +364,10 @@ module Python {
       // I think we can do this by setting sys.stdout and sys.stderr to a python
       // object that looks like a python file but forwards calls like write to
       // Chapel's write
+
+      if !ArrayTypes.createArrayTypes() {
+        throwChapelException("Failed to create Python array types for Chapel arrays");
+      }
 
       if pyMemLeaks {
         // import objgraph
@@ -502,7 +501,7 @@ module Python {
     proc compileModule(b: bytes,
                        modname: string = "chplmod"): PyObjectPtr throws {
       var code =
-        PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(c_size_t));
+        PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(Py_ssize_t));
       this.checkException();
       defer Py_DECREF(code);
 
@@ -637,7 +636,7 @@ module Python {
         return v;
       } else if t == bytes {
         var v =
-          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(c_size_t));
+          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(Py_ssize_t));
         this.checkException();
         return v;
       } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
@@ -669,6 +668,16 @@ module Python {
          a :type:`TypeConverter`.
     */
     proc fromPython(type t, obj: PyObjectPtr): t throws {
+      if isClassType(t) &&
+         (!isSharedClassType(t) &&
+          !isOwnedClassType(t) &&
+          !isUnmanagedClassType(t)) {
+        compilerError("fromPython only supports shared, owned, and unmanaged classes");
+      }
+      if isSubtype(t, Array?) {
+        compilerError("Cannot create an Array from an existing PyObject");
+      }
+
       for converter in this.converters {
         if converter.handlesType(t) {
           return converter.fromPython(this, t, obj);
@@ -735,11 +744,11 @@ module Python {
     proc toList(arr): PyObjectPtr throws
       where isArrayType(arr.type) &&
             arr.rank == 1 && arr.isDefaultRectangular() {
-      var pyList = PyList_New(arr.size.safeCast(c_size_t));
+      var pyList = PyList_New(arr.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
-        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(arr[idx]));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(arr[idx]));
         this.checkException();
       }
       return pyList;
@@ -750,10 +759,10 @@ module Python {
     */
     @chpldoc.nodoc
     proc toList(l: List.list(?)): PyObjectPtr throws {
-      var pyList = PyList_New(l.size.safeCast(c_size_t));
+      var pyList = PyList_New(l.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<l.size {
-        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(l(i)));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(l(i)));
         this.checkException();
       }
       return pyList;
@@ -771,12 +780,12 @@ module Python {
 
       // if its a sequence with a known size, we can just iterate over it
       var res: T;
-      if PySequence_Size(obj) != res.size.safeCast(c_size_t) {
+      if PySequence_Size(obj) != res.size.safeCast(Py_ssize_t) {
         throw new ChapelException("Size mismatch");
       }
       for i in 0..<res.size {
         const idx = res.domain.orderToIndex(i);
-        var elm = PySequence_GetItem(obj, i.safeCast(c_size_t));
+        var elm = PySequence_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
         res[idx] = fromPython(res.eltType, elm);
         this.checkException();
@@ -1195,7 +1204,7 @@ module Python {
       }
       defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
-      var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
+      var pyArg = PyTuple_Pack(args.size.safeCast(Py_ssize_t), (...pyArgs));
       interpreter.checkException();
 
       return pyArg;
@@ -1431,6 +1440,153 @@ module Python {
   }
 
 
+  // TODO: create adapters for other common Python types like Set, Dict, Tuple
+  /*
+    Represents a Python list. This provides a Chapel interface to Python lists,
+    where the Python interpreter owns the list.
+  */
+  class PyList: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the list. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the list.
+    */
+    proc size: int throws {
+      var size = PyList_Size(this.get());
+      this.check();
+      return size;
+    }
+
+    /*
+      Get an item from the list. Equivalent to calling ``obj[idx]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    proc getItem(type T, idx: int): T throws {
+      var item = PyList_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      this.check();
+      return interpreter.fromPython(T, item);
+    }
+    /*
+      Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
+      Python.
+
+      :arg idx: The index of the item to set.
+      :arg item: The item to set.
+    */
+    proc setItem(idx: int, item: ?) throws {
+      PyList_SetItem(this.get(),
+                     idx.safeCast(Py_ssize_t),
+                     interpreter.toPython(item));
+      this.check();
+    }
+  }
+
+  @chpldoc.nodoc
+  proc isSupportedArrayType(arr) param : bool {
+    return isArrayType(arr.type) &&
+           arr.rank == 1 &&
+           arr.idxType == int &&
+           arr.isDefaultRectangular();
+  }
+
+  /*
+    Represents a handle to a Chapel array that is usable by Python code. This
+    allows code to pass Chapel arrays to Python without copying the data. This
+    only works for 1D local rectangular arrays.
+
+    .. note::
+
+       While Chapel arrays can be indexed arbitrarily by specifying a domain
+       (e.g. ``var myArr: [2..by 4 #2]``), the equivalent Python array will
+       also by indexed starting at 0 with a stride of 1. Methods like
+       :proc:`~Array.getItem` do no translation of the domain and should be
+       called with the Python interpretation of the index.
+
+
+    To pass a Chapel array to a Python function, you would normally
+    just use the Chapel array directly, resulting in the data being copied in.
+    To avoid this copy, first create an :type:`Array` object, then pass that to
+    the Python function.
+
+    For example,
+
+    .. code-block:: chapel
+
+       myPythonFunction(NoneType, myChapelArray); // copies the data
+
+       var arr = new Array(interpreter, myChapelArray);
+       myPythonFunction(NoneType, arr); // no copy is done
+
+    .. warning::
+
+       If the array is invalidated or deallocated in Chapel, the Python code
+       will crash when it tries to access the array.
+  */
+  class Array: Value {
+    @chpldoc.nodoc
+    type eltType = nothing;
+    /*
+      Create a new :type:`Array` object from a Chapel array.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg arr: The Chapel array to create the object from.
+    */
+    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+      where isSupportedArrayType(arr) {
+      super.init(interpreter, ArrayTypes.createArray(arr), isOwned=true);
+      this.eltType = arr.eltType;
+    }
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+      where !isSupportedArrayType(arr) {
+      compilerError("Only 1D local rectangular arrays are currently supported");
+      this.eltType = nothing;
+    }
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      compilerError("Cannot create an Array from an existing PyObject");
+      this.eltType = nothing;
+    }
+
+    /*
+      Get the size of the array. Equivalent to calling ``len(obj)`` in Python or
+      ``originalArray.size`` in Chapel.
+
+      :returns: The size of the array.
+    */
+    proc size: int throws do
+      return this.call(int, "__len__");
+    /*
+      Get an item from the array. Equivalent to calling ``obj[idx]`` in Python
+      or ``originalArray[idx]`` in Chapel.
+
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    proc getItem(idx: int): eltType throws do
+      return this.call(eltType, "__getitem__", idx);
+    /*
+      Set an item in the array. Equivalent to calling ``obj[idx] = item`` in
+      Python or ``originalArray[idx] = item`` in Chapel.
+
+      :arg idx: The index of the item to set.
+      :arg item: The item to set.
+    */
+    proc setItem(idx: int, item: eltType) throws do
+      this.call(NoneType, "__setitem__", idx, item);
+  }
+
+
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one
     thread is executing python code at a time. Each thread should have its own
@@ -1547,10 +1703,35 @@ module Python {
   }
 
   Value implements writeSerializable;
+  Function implements writeSerializable;
+  Module implements writeSerializable;
+  Class implements writeSerializable;
+  PyList implements writeSerializable;
+  Array implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
   override proc Value.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Function.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Module.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Class.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Array.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -1582,6 +1763,7 @@ module Python {
     require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
+    import HaltWrappers;
 
 
 
@@ -1592,6 +1774,11 @@ module Python {
     type PyObjectPtr = c_ptr(PyObject);
     extern type PyTypeObject;
     type PyTypeObjectPtr = c_ptr(PyTypeObject);
+
+    // technically this is an extern type defined by python, but if we treat it
+    // as an opaque type, we can't use it in Chapel code in casts and such.
+    // using c_ssize_t should be sufficient and safe
+    type Py_ssize_t = c_ssize_t;
 
     extern type PyThreadState;
     type PyThreadStatePtr = c_ptr(PyThreadState);
@@ -1685,7 +1872,7 @@ module Python {
     extern proc PyImport_ExecCodeModule(name: c_ptrConst(c_char),
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
-                                               size: c_size_t): PyObjectPtr;
+                                               size: Py_ssize_t): PyObjectPtr;
 
 
     /*
@@ -1722,9 +1909,9 @@ module Python {
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
     extern proc PyBytes_AsString(obj: PyObjectPtr): c_ptrConst(c_char);
-    extern proc PyBytes_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PyBytes_Size(obj: PyObjectPtr): Py_ssize_t;
     extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
-                                          size: c_size_t): PyObjectPtr;
+                                          size: Py_ssize_t): PyObjectPtr;
 
     proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
@@ -1743,11 +1930,11 @@ module Python {
       Sequences
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
-    extern proc PySequence_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PySequence_Size(obj: PyObjectPtr): Py_ssize_t;
     extern proc PySequence_GetItem(obj: PyObjectPtr,
-                                   idx: c_size_t): PyObjectPtr;
+                                   idx: Py_ssize_t): PyObjectPtr;
     extern proc PySequence_SetItem(obj: PyObjectPtr,
-                                   idx: c_size_t,
+                                   idx: Py_ssize_t,
                                    value: PyObjectPtr);
 
 
@@ -1762,14 +1949,14 @@ module Python {
       Lists
     */
     extern proc PyList_Check(obj: PyObjectPtr): c_int;
-    extern proc PyList_New(size: c_size_t): PyObjectPtr;
+    extern proc PyList_New(size: Py_ssize_t): PyObjectPtr;
     extern proc PyList_SetItem(list: PyObjectPtr,
-                               idx: c_size_t,
+                               idx: Py_ssize_t,
                                item: PyObjectPtr);
-    extern proc PyList_GetItem(list: PyObjectPtr, idx: c_size_t): PyObjectPtr;
-    extern proc PyList_Size(list: PyObjectPtr): c_size_t;
+    extern proc PyList_GetItem(list: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyList_Size(list: PyObjectPtr): Py_ssize_t;
     extern proc PyList_Insert(list: PyObjectPtr,
-                              idx: c_size_t,
+                              idx: Py_ssize_t,
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
 
@@ -1778,7 +1965,7 @@ module Python {
     */
     extern proc PySet_New(): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
-    extern proc PySet_Size(set: PyObjectPtr): c_size_t;
+    extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
 
 
     /*
@@ -1795,7 +1982,7 @@ module Python {
                                key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
-    extern proc PyDict_Size(dict: PyObjectPtr): c_size_t;
+    extern proc PyDict_Size(dict: PyObjectPtr): Py_ssize_t;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
@@ -1807,7 +1994,7 @@ module Python {
     /*
       Tuples
     */
-    extern proc PyTuple_Pack(size: c_size_t, args...): PyObjectPtr;
+    extern proc PyTuple_Pack(size: Py_ssize_t, args...): PyObjectPtr;
 
     /*
       Functions
@@ -1829,5 +2016,45 @@ module Python {
                                            method: PyObjectPtr,
                                            args...): PyObjectPtr;
 
+  }
+
+
+  @chpldoc.nodoc
+  module ArrayTypes {
+    private use super.CPythonInterface;
+    private use CTypes;
+    require "PythonHelper/ArrayTypes.h";
+    require "PythonHelper/ArrayTypes.c";
+
+    extern proc createArrayTypes(): bool;
+
+    proc typeToArraySuffix(type T) param {
+      select T {
+        when int(64) do return "I64";
+        when uint(64) do return "U64";
+        when int(32) do return "I32";
+        when uint(32) do return "U32";
+        when int(16) do return "I16";
+        when uint(16) do return "U16";
+        when int(8) do return "I8";
+        when uint(8) do return "U8";
+        when real(64) do return "R64";
+        when real(32) do return "R32";
+        when bool do return "Bool";
+        otherwise do return "";
+      }
+    }
+
+    proc createArray(ref arr: []): PyObjectPtr {
+      type T = arr.eltType;
+      param suffix = typeToArraySuffix(T);
+      if suffix == "" then compilerError("Unsupported array type: " + T:string);
+
+      param externalName = "createArray" + suffix;
+      extern externalName
+      proc createPyArray(arr: c_ptr(T), size: Py_ssize_t): PyObjectPtr;
+
+      return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+    }
   }
 }
