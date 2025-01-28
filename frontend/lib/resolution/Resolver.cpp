@@ -1918,9 +1918,8 @@ gatherUserDiagnostics(ResolutionContext* rc,
   return into;
 }
 
-static void emitUserDiagnostic(Context* context,
-                               const CompilerDiagnostic& diagnostic,
-                               const uast::AstNode* astForErr) {
+void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
+                                  const uast::AstNode* astForErr) {
   if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
     CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
   } else {
@@ -1928,14 +1927,14 @@ static void emitUserDiagnostic(Context* context,
   }
 }
 
-static void noteEncounteredUserDiagnostic(Context* context,
-                                          const CompilerDiagnostic& diagnostic,
-                                          const uast::AstNode* astForErr) {
+void Resolver::noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
+                                             const uast::AstNode* astForErr) {
   if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
     CHPL_REPORT(context, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
   } else {
     CHPL_REPORT(context, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
   }
+  userDiagnostics.push_back(std::move(diagnostic));
 }
 
 void
@@ -1945,7 +1944,7 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   bool foundUserDiagnostics = false;
   for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
     if (diagnostic.depth() - 1 == 0) {
-      emitUserDiagnostic(context, diagnostic, astForErr);
+      emitUserDiagnostic(diagnostic, astForErr);
       foundUserDiagnostics = true;
     }
   }
@@ -2631,12 +2630,11 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
     auto diagnostic =
       CompilerDiagnostic(UniqueString::get(context, message.c_str()), kind, depth);
     if (depth == 0) {
-      emitUserDiagnostic(context, diagnostic, primCall);
+      emitUserDiagnostic(diagnostic, primCall);
     } else {
       // We are not the target recipient of the error; functions further up
       // the call stack ought to issue this error.
-      noteEncounteredUserDiagnostic(context, diagnostic, primCall);
-      userDiagnostics.push_back(std::move(diagnostic));
+      noteEncounteredUserDiagnostic(diagnostic, primCall);
     }
 
     return true;

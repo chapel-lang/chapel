@@ -123,6 +123,12 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
     modStmt->traverse(visitor);
 
+    // There will be no further calls (it's a top-level statement), so if the
+    // diagnostics wanted to be higher up the call stack, too bad.
+    for (auto& diagnostic : visitor.userDiagnostics) {
+      visitor.emitUserDiagnostic(diagnostic, modStmt);
+    }
+
     if (auto rec = context->recoverFromSelfRecursion()) {
       CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }

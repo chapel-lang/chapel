@@ -448,6 +448,15 @@ struct Resolver {
                            const types::Type* typePtr,
                            const types::Param* paramPtr);
 
+  // given a user diagnostic, emit it unconditionally.
+  void emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
+                          const uast::AstNode* astForErr);
+
+  // save the diagnostic in the list of emitted diagnostics, and otherwise
+  // note that it has been encountered.
+  void noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
+                                     const uast::AstNode* astForErr);
+
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
