@@ -62,10 +62,125 @@
   Parallel Execution
   ------------------
 
-  Running any Python code in parallel from Chapel requires special care. Before
-  any parallel execution with Python code can occur, the thread state needs to
-  be saved. After the parallel execution, the thread state must to be restored.
-  Then for each thread, the Global Interpreter Lock (GIL) must be acquired and
+  Running any Python code in parallel from Chapel requires special care, due
+  to the Global Interpreter Lock (GIL) in the Python interpreter.
+  This module supports two ways of doing this.
+
+  .. note::
+
+     Newer Python versions offer a free-threading mode that allows multiple
+     threads concurrently. This currently requires a custom build of Python. If
+     you are using a Python like this, you should be able to use this module
+     freely in parallel code.
+
+  Using Multiple Interpreters
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The most performant way to run Python code in parallel is to use multiple
+  sub-interpreters. Each sub-interpreter is isolated from the others with its
+  own GIL. This allows multiple threads to run Python code concurrently. Note
+  that communication between sub-interpreters is severely limited and it is
+  strongly recommend to limit the amount of data shared between
+  sub-interpreters.
+
+  .. note::
+
+     This feature is only available in Python 3.12 and later. Attempting to use
+     sub-interpreters with earlier versions of Python will result in a runtime
+     exception.
+
+  The following demonstrates using sub-interpreters in a ``coforall`` loop:
+
+  ..
+     START_TEST
+     FILENAME: CoforallTestSub.chpl
+     START_GOOD
+     Hello from a task
+     Hello from a task
+     Hello from a task
+     Hello from a task
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     var code = """
+     import sys
+     def hello():
+       print('Hello from a task')
+       sys.stdout.flush()
+     """;
+
+     proc main() {
+       var interpreter = new Interpreter();
+       coforall 0..#4 {
+         var subInterpreter = new SubInterpreter(interpreter);
+         var m = new Module(subInterpreter, 'myMod', code);
+         var hello = new Function(m, 'hello');
+         hello(NoneType);
+       }
+     }
+
+  ..
+     END_TEST
+
+  To make use of a sub-interpreter in a ``forall`` loop, the sub-interpreter
+  should be created as a task private variable. It is recommended that users
+  wrap the sub-interpreter in a ``record`` to initialize their Python objects,
+  to prevent duplicated work. For example, the following code creates multiple
+  sub-interpreters in a ``forall`` loop, where each task gets its own copy of
+  the module.
+
+  ..
+     START_TEST
+     FILENAME: TaskPrivateSubInterp.chpl
+     START_GOOD
+     10
+     10
+     10
+     10
+     10
+     10
+     10
+     10
+     10
+     10
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     record perTaskModule {
+      var i: owned SubInterpreter?;
+      var m: owned Module?;
+      proc init(parent: borrowed Interpreter, code: string) {
+        init this;
+        i = try! (new SubInterpreter(parent));
+        m = try! (new Module(i!, "anon", code));
+      }
+     }
+
+     proc main() {
+       var interpreter = new Interpreter();
+       forall i in 1..10
+        with (var mod =
+          new perTaskModule(interpreter, "x = 10")) {
+          writeln(mod.m!.getAttr(int, "x"));
+       }
+     }
+
+  ..
+     END_TEST
+
+  Using A Single Interpreter
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  A single Python interpreter can execute code in parallel, as long as the GIL
+  is properly handled. Before any parallel execution with Python code can occur,
+  the thread state needs to be saved. After the parallel execution, the thread
+  state must to be restored. Then for each thread, the GIL must be acquired and
   released. This is necessary to prevent segmentation faults and deadlocks in
   the Python interpreter.
 
@@ -134,20 +249,6 @@
   In the examples above, because the GIL is being acquired and released for the
   entirety of each task, these examples will be no faster than running the tasks
   serially.
-
-  .. note::
-
-     Newer Python versions offer a free-threading mode that allows multiple
-     threads concurrently, without the need for the GIL. In this mode, users can
-     either remove the GIL acquisition code or not. Without the GIL, the GIL
-     acquisition code will have no effect.
-
-  .. note::
-
-     In the future, it may be possible to achieve better parallelism with Python
-     by using sub-interpreters. However, sub-interpreters are not yet supported
-     in Chapel and attempting to have more than one :type:`Interpreter` instance
-     will likely result in segmentation faults.
 
   Using Python Modules With Distributed Code
   -------------------------------------------
@@ -279,8 +380,8 @@ module Python {
 
     .. warning::
 
-       Multiple/sub interpreters are not yet supported.
-       Do not create more than one instance of this class.
+       Do not create more than one instance of this class per locale. Multiple
+       interpreters can be created by using :type:`SubInterpreter` instances.
   */
   class Interpreter {
 
@@ -299,10 +400,17 @@ module Python {
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
+    @chpldoc.nodoc
+    var isSubInterpreter: bool;
 
     @chpldoc.nodoc
-    proc init() throws {
+    proc init(isSubInterpreter: bool = false) {
+      this.isSubInterpreter = isSubInterpreter;
       init this;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if this.isSubInterpreter then return;
 
       // preinit
       var preconfig: PyPreConfig;
@@ -388,6 +496,7 @@ module Python {
     }
     @chpldoc.nodoc
     proc deinit()  {
+      if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
         // note: try! is used since we can't have a throwing deinit
@@ -901,6 +1010,39 @@ module Python {
 
     // TODO: convert python dict to chapel map
 
+  }
+
+  /*
+    Represents an isolated Python sub-interpreter. This is useful for running
+    truly parallel Python code, without the GIL interferring.
+  */
+  class SubInterpreter: Interpreter {
+    @chpldoc.nodoc
+    var parent: borrowed Interpreter;
+    @chpldoc.nodoc
+    var tstate: PyThreadStatePtr;
+
+    /*
+      Creates a new sub-interpreter with the given parent interpreter, which
+      must not be a sub-interpreter.
+    */
+    proc init(parent: borrowed Interpreter) {
+      super.init(isSubInterpreter=true);
+      this.parent = parent;
+      init this;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if this.parent.isSubInterpreter {
+        throwChapelException("Parent interpreter cannot be a sub-interpreter");
+      }
+
+      checkPyStatus(chpl_Py_NewIsolatedInterpreter(c_ptrTo(this.tstate)));
+    }
+    @chpldoc.nodoc
+    proc deinit() {
+      Py_EndInterpreter(this.tstate);
+    }
   }
 
   /*
@@ -1853,6 +1995,11 @@ module Python {
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
 
 
+    /*
+      Sub Interpreters
+    */
+    extern proc chpl_Py_NewIsolatedInterpreter(tstate: c_ptr(PyThreadStatePtr)): PyStatus;
+    extern proc Py_EndInterpreter(tstate: PyThreadStatePtr);
 
     /*
       Global exec functions
@@ -1880,6 +2027,8 @@ module Python {
     */
     extern proc PyEval_SaveThread(): PyThreadStatePtr;
     extern proc PyEval_RestoreThread(state: PyThreadStatePtr);
+    extern proc PyThreadState_Get(): PyThreadStatePtr;
+    extern proc PyThreadState_Swap(state: PyThreadStatePtr): PyThreadStatePtr;
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
