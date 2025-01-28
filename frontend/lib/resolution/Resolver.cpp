@@ -1947,6 +1947,7 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
       std::vector<const uast::VarLikeDecl*> uninitializedActuals;
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
+      CHPL_ASSERT(rejected.size() == uninitializedActuals.size());
       CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, uninitializedActuals);
     }
   } else {
