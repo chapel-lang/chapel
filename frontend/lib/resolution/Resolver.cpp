@@ -1010,9 +1010,8 @@ handleRejectedCandidates(Context* context,
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
     size_t actualIdx = badPass.actualIdx();
-    if (0 <= actualIdx && actualIdx < actualAsts.size()) {
-      actualExpr = actualAsts[badPass.actualIdx()];
-    }
+    CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
+    actualExpr = actualAsts[badPass.actualIdx()];
 
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
@@ -2445,7 +2444,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // Prepare receiver.
   auto receiverInfo = CallInfoActual(calledType, USTR("this"));
   actuals.push_back(std::move(receiverInfo));
-
+  actualAsts.push_back(newExpr->typeExpression());
   // Remaining actuals.
   prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
   CHPL_ASSERT(!questionArg);
@@ -2455,6 +2454,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
                      /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
+  CHPL_ASSERT(actualAsts.size() == (size_t)ci.numActuals());
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
