@@ -264,6 +264,11 @@ static void testNoExplicitImplements() {
     )""";
 
   auto x = resolveTypesOfVariables(ctx, program, {"res"}).at("res");
+
+  // There should be two warnings due to the way the user diagnostic system is
+  // implemented: one warning notes that a warning occurred (but was not necessarily
+  // shown yet), and another shows the warning.
+  assert(guard.numErrors() - guard.numErrors(/* countWarnings */ false) == 2);
   assert(guard.realizeErrors(/* countWarnings */ false) == 0);
   assert(x.type()->isIntType());
 }
