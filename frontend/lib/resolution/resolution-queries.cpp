@@ -4959,7 +4959,10 @@ findMostSpecificAndCheck(ResolutionContext* rc,
     // Initializers haven't yet been checked for uninstantiated formals,
     // because prior to getting a MostSpecificCandidate we didn't resolve
     // their bodies. Now we have, so we have a "final" TFS to check.
-    if (candidate.fn()->isInitializer()) {
+    //
+    // Note: this check "normally" only fires for compiler-generated cases,
+    // so match that here. See other calls to checkUninstantiatedFormal.
+    if (candidate.fn()->isInitializer() && candidate.fn()->isCompilerGenerated()) {
       checkUninstantiatedFormal(rc->context(), astContext, candidate.fn());
     }
   }
