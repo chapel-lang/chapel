@@ -1897,7 +1897,7 @@ gatherUserDiagnostics(ResolutionContext* rc,
   for (auto& msc : c.mostSpecific()) {
     if (!msc) continue;
 
-    // TODO: do we need this?
+    // compiler-generated fns don't always have ASTs, so we can't resolve them.
     if (msc.fn()->isCompilerGenerated()) continue;
 
     // shouldn't happen, but it currently does in some cases.
