@@ -63,8 +63,8 @@ struct DisambiguationCandidate {
   void computeConversionInfo(Context* context, int numActuals);
   void computeConversionInfo(const DisambiguationContext& dctx);
 
-  MostSpecificCandidate toMostSpecificCandidate(Context* context) const {
-    return MostSpecificCandidate::fromTypedFnSignature(context, fn, formalActualMap, promotedFormals);
+  MostSpecificCandidate toMostSpecificCandidate(ResolutionContext* rc, const Scope* callInScope, const PoiScope* callInPoiScope) const {
+    return MostSpecificCandidate::fromTypedFnSignature(rc, fn, formalActualMap, callInScope, callInPoiScope, promotedFormals);
   }
 };
 
@@ -268,15 +268,15 @@ gatherByReturnIntent(ResolutionContext* rc,
       case Function::OUT:
       case Function::CONST:
         CHPL_ASSERT(!ret.bestValue());
-        ret.setBestValue(c->toMostSpecificCandidate(rc->context()));
+        ret.setBestValue(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::CONST_REF:
         CHPL_ASSERT(!ret.bestConstRef());
-        ret.setBestConstRef(c->toMostSpecificCandidate(rc->context()));
+        ret.setBestConstRef(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::REF:
         CHPL_ASSERT(!ret.bestRef());
-        ret.setBestRef(c->toMostSpecificCandidate(rc->context()));
+        ret.setBestRef(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::PARAM:
       case Function::TYPE:
@@ -389,7 +389,7 @@ findMostSpecificCandidates(ResolutionContext* rc,
     // counting logic.
     DisambiguationCandidate candidate(lst.get(0), QualifiedType(), call, 0);
     candidate.computeConversionInfo(rc->context(), call.numActuals());
-    auto msc = candidate.toMostSpecificCandidate(rc->context());
+    auto msc = candidate.toMostSpecificCandidate(rc, callInScope, callInPoiScope);
     return MostSpecificCandidates::getOnly(msc);
   }
 
@@ -416,7 +416,7 @@ computeMostSpecificCandidates(ResolutionContext* rc,
                                        ambiguousBest);
 
   if (best != nullptr) {
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc->context()));
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   }
 
   if (ambiguousBest.size() == 0) {
@@ -448,7 +448,7 @@ computeMostSpecificCandidates(ResolutionContext* rc,
     if (ambiguousBest.size() > 1)
       return MostSpecificCandidates::getAmbiguous();
 
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc->context()));
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   }
 
   if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
@@ -521,11 +521,11 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   // so there is no ambiguity.
   MostSpecificCandidates ret;
   if (bestRef != nullptr)
-    ret.setBestRef(bestRef->toMostSpecificCandidate(rc->context()));
+    ret.setBestRef(bestRef->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   if (bestCRef != nullptr)
-    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(rc->context()));
+    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   if (bestValue != nullptr)
-    ret.setBestValue(bestValue->toMostSpecificCandidate(rc->context()));
+    ret.setBestValue(bestValue->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
 
   return ret;
 }

@@ -1584,6 +1584,15 @@ class FormalActualMap {
 
   int failingActualIdx() const { return failingActualIdx_; }
 
+  /* if we resolved the body of an initializer and got a more specific type
+     for the receiver, update the receiver type in the map */
+  void updateReceiverType(const TypedFnSignature* initializer) {
+    CHPL_ASSERT(initializer->isInitializer());
+    CHPL_ASSERT(byFormalIdx_[0].formal()->isNamedDecl());
+    CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
+    byFormalIdx_[0].formalType_ = initializer->formalType(0);
+  }
+
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
                         const TypedFnSignature* typed, const CallInfo& call);
@@ -1640,14 +1649,18 @@ class MostSpecificCandidate {
   MostSpecificCandidate(MostSpecificCandidate&& other) = default;
   MostSpecificCandidate(const MostSpecificCandidate& other) { *this = other; }
 
-  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
                                         const FormalActualMap& faMap,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
                                         const SubstitutionsMap& promotedFormals);
 
-  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
                                         const CallInfo& info,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
                                         const SubstitutionsMap& promotedFormals);
 
   const TypedFnSignature* fn() const { return fn_; }

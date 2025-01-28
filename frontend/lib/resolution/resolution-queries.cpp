@@ -2553,15 +2553,9 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                       std::move(formalsInstantiated),
                                       sig->outerVariables());
 
-  // May need to resolve the body at this point to compute final TFS.
-  if (result->isInitializer()) {
-    // capture compiler errors here because this may not be the candidate
-    // we choose, even if it's fully instantiated.
-    auto rf = rc->context()->runAndTrackErrors([rc, result, poiScope](Context* context) {
-      return resolveFunction(rc, result, poiScope);
-    });
-    result = rf.result()->signature();
-  }
+  // For initializers, may need to resolve the body to compute final TFS.
+  // Don't do that here because disambiguation might discard the candidate.
+  // Body resolution will be done by MostSpecificCandidate when constructed.
 
   return ApplicabilityResult::success(result);
 }
@@ -4343,7 +4337,8 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  if (instantiated.candidate()->needsInstantiation()) {
+  if (instantiated.candidate()->needsInstantiation() &&
+      !instantiated.candidate()->isInitializer()) {
     CHPL_REPORT(context, MissingFormalInstantiation,
                 astForErr,
                 collectGenericFormals(context, instantiated.candidate()));
