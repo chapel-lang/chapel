@@ -1199,9 +1199,12 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
   if (fn->isInitializer()) {
     auto instantiationPoiScope =
       Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
-    auto rf = resolveFunction(rc, fn, instantiationPoiScope);
-    fn = rf->signature();
-    newFaMap.updateReceiverType(fn);
+    auto rf = resolveFunction(rc, fn, instantiationPoiScope, /* skipIfRunning */ true);
+
+    if (rf) {
+      fn = rf->signature();
+      newFaMap.updateReceiverType(fn);
+    }
   }
 
   int coercionFormal = -1;
