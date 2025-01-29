@@ -83,7 +83,8 @@ def get_chpl_configured_install_lib_prefix():
         chpl_prefix = None
         with open(os.path.join(chpl_home, "configured-prefix"), "r") as f:
             chpl_prefix = f.read().strip()
-        assert chpl_prefix is not None
+        # Problems with the configured-prefix file - maybe empty
+        assert chpl_prefix != "" and chpl_prefix is not None
         return os.path.join(
             chpl_prefix,
             "lib",
@@ -91,6 +92,7 @@ def get_chpl_configured_install_lib_prefix():
             chpl_version_string,
             "compiler",
         )
+    return None
 
 @memoize
 def get_chpl_version_from_install():

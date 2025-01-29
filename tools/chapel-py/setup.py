@@ -58,7 +58,6 @@ chpl_install_lib_path = (
     )
     .decode(sys.stdout.encoding)
     .strip()
-    .splitlines()
 )
 
 CXXFLAGS = []
@@ -81,7 +80,7 @@ LDFLAGS += [
     "-lChplFrontendShared",
 ]
 
-if chpl_install_lib_path is not None:
+if chpl_install_lib_path != 'None':
     LDFLAGS += [
         "-L{}".format(chpl_install_lib_path),
         "-Wl,-rpath,{}".format(chpl_install_lib_path),
