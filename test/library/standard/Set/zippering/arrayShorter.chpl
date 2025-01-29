@@ -13,7 +13,7 @@ var A: [0..3] int;
 writeln(A.size, " ", LocalSet.size);
 
 // Expect this to fail to zip, the set is longer than the array
-forall (a,b) in zip(A,LocalSet.contents(A.size)) {
+forall (a,b) in zip(A,LocalSet) {
     a=b;
     if verbose then writeln(b);
 }

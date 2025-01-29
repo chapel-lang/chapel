@@ -1,0 +1,1 @@
+withArray2.chpl:14: error: rank mismatch in zippered iteration (can't zip a 3D expression with a 1D array)

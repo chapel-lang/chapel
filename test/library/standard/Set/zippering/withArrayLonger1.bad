@@ -1,0 +1,2 @@
+10 10
+withArrayLonger1.chpl:12: error: zippered iterations have non-equal lengths

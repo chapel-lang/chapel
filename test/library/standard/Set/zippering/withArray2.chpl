@@ -11,7 +11,7 @@ LocalSet.add(5);
 
 var A : [0..4] int;
 writeln(A.size, " ", LocalSet.size);
-forall (b, a) in zip(LocalSet.contents(LocalSet.size), A) {
+forall (b, a) in zip(LocalSet, A) {
     a=b;
     if verbose then writeln(b);
 }

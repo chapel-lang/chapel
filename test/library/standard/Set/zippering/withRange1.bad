@@ -1,0 +1,4 @@
+r1 = 1..10
+s1 = {5, 7, 8, 1, 4, 6, 2, 10, 9, 3}
+withRange1.chpl:11: error: zippered iterations have non-equal lengths
+1 5
