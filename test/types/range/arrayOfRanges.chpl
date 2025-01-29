@@ -7,7 +7,7 @@ var arr2: [arr.domain] int;
 
 // I wanted to store the size of each of the ranges into a separate array, but
 // writing it like this didn't work.
-forall (i, r) in (arr.domain, arr) {
+forall (i, r) in zip(arr.domain, arr) {
   arr2[i] = r.size;
 }
 /* Had to use this instead:
