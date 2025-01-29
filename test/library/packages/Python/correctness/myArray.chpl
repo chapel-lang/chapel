@@ -32,6 +32,8 @@ proc testArray(type t, const testArr) {
   writeln("python: ", pyArr);
   pyArr.setItem(0, 17:t);
   writeln("at 2: ", pyArr.getItem(2));
+  writeln("at -1: ", pyArr.getItem(-1));
+  pyArr.setItem(-2, 42:t);
   writeln("size: ", pyArr.size);
   writeln("chapel: ", arr);
   IO.stdout.flush();
