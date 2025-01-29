@@ -1838,7 +1838,12 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         if (inferFromInit == false && !isTypeOrParam)  {
           // check also for a generic type as the type expression
           auto g = getTypeGenericity(context, typeExprT);
-          if (g != Type::GENERIC) {
+
+          // "generic with defaults" at this point means "generic" because
+          // getTypeGenericity considers the type expression's substitutions,
+          // and existing logic would have inserted the defaults if possible.
+          // Thus, this expression is explicitly generic.
+          if (g != Type::GENERIC && g != Type::GENERIC_WITH_DEFAULTS) {
             inferFromInit = true;
           }
         }
