@@ -1,4 +1,4 @@
-ArrayViewElision supported (dynamic locality check required) localToDistributed.chpl:11
+ArrayViewElision supported localToDistributed.chpl:11
 	lhsBaseType: [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -6,7 +6,7 @@ ArrayViewElision supported (dynamic locality check required) localToDistributed.
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) localToDistributed.chpl:24
+ArrayViewElision supported localToDistributed.chpl:24
 	lhsBaseType: [CyclicDom(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -14,7 +14,7 @@ ArrayViewElision supported (dynamic locality check required) localToDistributed.
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) localToDistributed.chpl:35
+ArrayViewElision supported localToDistributed.chpl:35
 	lhsBaseType: [StencilDom(1,int(64),one,false)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -22,14 +22,6 @@ ArrayViewElision supported (dynamic locality check required) localToDistributed.
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-operator =(a:[],b:[]): in chpl__bulkTransferArray
-operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
-In DefaultRectangular._simpleTransfer(): Alo=(0,), Blo=(0,), len=1, elemSize=8
-operator =(a:[],b:[]): successfully completed bulk transfer
-operator =(a:[],b:[]): in chpl__bulkTransferArray
-operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
-In DefaultRectangular._simpleTransfer(): Alo=(0,), Blo=(0,), len=1, elemSize=8
-operator =(a:[],b:[]): successfully completed bulk transfer
 Performing protoSlice bulk transfer
 operator =(a:[],b:[]): in chpl__bulkTransferArray
 operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
