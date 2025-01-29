@@ -564,7 +564,7 @@ module Set {
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
       var space = 0..#_htb.tableSize;
-      for followThis in space.these(tag) {
+      for followThis in _htb._evenSlots(tag) {
         yield followThis;
       }
     }
@@ -572,71 +572,7 @@ module Set {
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
-      foreach idx in followThis(0) do
-        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
-    }
-
-    /*
-      Iterate over the elements of this set. Yields constant references
-      that cannot be modified.
-
-      .. warning::
-
-        Modifying this set while iterating over it may invalidate the
-        references returned by an iterator and is considered undefined
-        behavior.
-
-      :yields: A constant reference to an element in this set.
-
-      :arg size: the number of elements in the leader, when participating in
-                 zippered parallel iteration.  Defaults to the number of
-                 elements in the set.  For standalone and serial iteration, this
-                 must match the number of elements in the set.
-    */
-    @unstable("The contents iterator is unstable because it is still in development")
-    iter const contents(size: int = this.size) const ref {
-      if (size != _htb.tableNumFullSlots) {
-        iterHalt("serial 'contents' iterator needs to be provided the set's " +
-                 "size as its argument");
-      }
-
-      foreach idx in 0..#_htb.tableSize {
-        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
-      }
-    }
-
-    @chpldoc.nodoc
-    iter const contents(size: int = this.size, param tag) const ref
-      where tag == iterKind.standalone {
-      if (size != _htb.tableNumFullSlots) {
-        iterHalt("standalone 'contents' iterator needs to be provided the " +
-                 "set's size as its argument");
-      }
-
-      var space = 0..#_htb.tableSize;
-      foreach idx in space.these(tag) do
-        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
-    }
-
-    @chpldoc.nodoc
-    iter const contents(size: int = this.size, param tag)
-      where tag == iterKind.leader {
-      if (size != _htb.tableNumFullSlots) {
-        iterHalt("leader 'contents' iterator needs to be provided the " +
-                 "set's size as its argument (follower should be provided the" +
-                 " size of the leader)");
-      }
-
-      for followThis in _htb._evenSlots(size, tag) {
-        yield followThis;
-      }
-    }
-
-    @chpldoc.nodoc
-    iter const contents(size: int = this.size, param tag,
-                        followThis) const ref
-    where tag == iterKind.follower {
-      foreach val in _htb._evenSlots(size, followThis, tag) {
+      foreach val in _htb._evenSlots(followThis, tag) {
         yield val;
       }
     }
