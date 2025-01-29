@@ -5,6 +5,7 @@ use Time;
 config const print = true;
 config const time = false;
 config const n = 10;
+config const runSubInterp = false;
 
 config const lambdaStr = "lambda x,: x + 1 if x % 2 != 0 else x";
 proc makeEven(x: int): int do return if x % 2 != 0 then x+1 else x;
@@ -112,7 +113,7 @@ proc main() {
       writeln("Parallel Python result: ", res);
   }
 
-  {
+  if runSubInterp {
     data = 1..#n;
     var s = new stopwatch();
     s.start();

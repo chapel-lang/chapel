@@ -1,6 +1,5 @@
 data: 1 2 3 4 5 6 7 8 9 10
 Serial Python result: 2 2 4 4 6 6 8 8 10 10
 Parallel Python result: 2 2 4 4 6 6 8 8 10 10
-Parallel Python SubInterpreter result: 2 2 4 4 6 6 8 8 10 10
 Serial Chapel result: 2 2 4 4 6 6 8 8 10 10
 Parallel Chapel result: 2 2 4 4 6 6 8 8 10 10
