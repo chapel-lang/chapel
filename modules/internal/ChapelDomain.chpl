@@ -1572,11 +1572,9 @@ module ChapelDomain {
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be 'void'");
-      }
-      if eltType == nothing {
+      } else if eltType == nothing {
         compilerError("array element type cannot be 'nothing'");
-      }
-      if isGenericType(eltType) {
+      } else if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
         if isClassType(eltType) && !isGenericType(eltType:borrowed) {

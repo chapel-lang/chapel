@@ -1932,10 +1932,72 @@ void Resolver::computeFormalIntent(const uast::NamedDecl *decl,
   qtKind = resolveIntent(formalQt, isThis, isInit);
 }
 
+// Peformance: this re-computes the vector each time it is called.
+// We could make it a query, or try writing an iterator that handles this.
+// In the meantime, though, I'll keep it as is.
+static std::vector<CompilerDiagnostic>
+gatherUserDiagnostics(ResolutionContext* rc,
+                      const CallResolutionResult& c) {
+  std::vector<CompilerDiagnostic> into;
+  for (auto& msc : c.mostSpecific()) {
+    if (!msc) continue;
+
+    // compiler-generated fns don't always have ASTs, so we can't resolve them.
+    if (msc.fn()->isCompilerGenerated()) continue;
+
+    // shouldn't happen, but it currently does in some cases.
+    if (msc.fn()->needsInstantiation()) continue;
+
+    // HACK: suppress errors from resolving the function here. this is a hack to
+    //       avoid breaking existing tests which didn't expect errors emitted
+    //       during eager resolution.
+    auto resultAndErrors = rc->context()->runAndTrackErrors([rc, &msc, &c](Context* context) {
+      return resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
+    });
+    auto resolvedFn = resultAndErrors.result();
+    if (!resolvedFn) continue;
+
+    into.insert(into.end(), resolvedFn->diagnostics().begin(),
+                resolvedFn->diagnostics().end());
+  }
+  return into;
+}
+
+void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
+                                  const uast::AstNode* astForErr) {
+  if (diagnostic.isError()) {
+    CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
+  } else if (diagnostic.isWarning()) {
+    CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
+  }
+}
+
+void Resolver::noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
+                                             const uast::AstNode* astForErr) {
+  if (diagnostic.isError()) {
+    CHPL_REPORT(context, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
+  } else if (diagnostic.isWarning()) {
+    CHPL_REPORT(context, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
+  }
+  userDiagnostics.push_back(std::move(diagnostic));
+}
+
 void
 Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                             const CallInfo& ci,
                                             const CallResolutionResult& c) {
+  bool foundUserDiagnostics = false;
+  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
+    if (diagnostic.depth() - 1 == 0) {
+      emitUserDiagnostic(diagnostic, astForErr);
+      foundUserDiagnostics = true;
+    }
+  }
+
+  if (foundUserDiagnostics) {
+    return;
+  }
+
   if (c.mostSpecific().isEmpty()) {
     // if the call resolution result is empty, we need to issue an error
     if (c.mostSpecific().isAmbiguous()) {
@@ -2021,6 +2083,21 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
                                               const uast::AstNode* astForErr,
                                               const CallResolutionResult& c,
                                               optional<ActionAndId> actionAndId) {
+  bool needsErrors = false;
+
+  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
+    // The diagnostic's depth means it's aimed for further up the call stack.
+    // Note it in our own diagnostic list.
+    if (diagnostic.depth() - 1 > 0) {
+      userDiagnostics.emplace_back(diagnostic.message(),
+                                   diagnostic.kind(),
+                                   diagnostic.depth() - 1);
+    } else if (diagnostic.depth() - 1 == 0) {
+      // we're asked not to emit errors, and only return if errors are
+      // needed.
+      needsErrors = true;
+    }
+  }
 
   if (!c.exprType().hasTypePtr()) {
     if (!actionAndId) {
@@ -2032,7 +2109,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
 
     // If the call was specially handled, assume special-case logic has already
     // issued its own error, so we shouldn't emit a general error.
-    return !c.speciallyHandled();
+    return !c.speciallyHandled() || needsErrors;
   } else {
     if (actionAndId) {
       // save candidates as associated functions
@@ -2050,7 +2127,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
-  return false;
+  return needsErrors;
 }
 
 void Resolver::handleResolvedCall(ResolvedExpression& r,
@@ -2555,9 +2632,147 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
 
     byPostorder.byAst(primCall).setType(result);
     return true;
+  } else if (primCall->prim() == PRIM_ERROR ||
+             primCall->prim() == PRIM_WARNING) {
+    // No matter what, this primitive is void-returning.
+    byPostorder.byAst(primCall).setType({ QualifiedType::VAR, VoidType::get(context) });
+
+    auto kind = primCall->prim() == PRIM_ERROR ? CompilerDiagnostic::ERROR
+                                               : CompilerDiagnostic::WARNING;
+
+    const TupleType* messageComponents = nullptr;
+    const IntParam* depthParam = nullptr;
+    if (typedSignature) {
+      for (int i = 0; i < typedSignature->numFormals(); i++) {
+        auto& qt = typedSignature->formalType(i);
+        if (qt.isUnknownOrErroneous()) continue;
+
+        if (typedSignature->untyped()->formalName(i) == "msg") {
+          messageComponents = qt.type()->toTupleType();
+        } else if (typedSignature->untyped()->formalName(i) == "errorDepth") {
+          depthParam = qt.param() ? qt.param()->toIntParam() : nullptr;
+        }
+      }
+    }
+
+    if (!messageComponents) {
+      context->error(primCall, "invalid use of compiler diagnostic primitive");
+      return true;
+    }
+
+    std::string message;
+    for (int i = 0; i < messageComponents->numElements(); i++) {
+      auto qt = messageComponents->elementType(i);
+      if (!qt.param()) continue;
+      message += qt.param()->toStringParam()->value().c_str();
+    }
+
+    // In Dyno, depth counts call sites, since we don't have an accessible stack.
+    // by default, we anchor the error to the function that invoked compilerError(),
+    // which means two call sites to skip: one of the __primitive("error"), and
+    // one for compilerError() itself. The next call site will be the call
+    // to the function that invoked compilerError().
+    int64_t depth = 2;
+    if (depthParam) {
+      depth = depthParam->value() + 1;
+    }
+
+    auto diagnostic =
+      CompilerDiagnostic(UniqueString::get(context, message.c_str()), kind, depth);
+    if (depth == 0) {
+      emitUserDiagnostic(diagnostic, primCall);
+    } else {
+      // We are not the target recipient of the error; functions further up
+      // the call stack ought to issue this error.
+      noteEncounteredUserDiagnostic(diagnostic, primCall);
+    }
+
+    return true;
   }
 
   return false;
+}
+
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci) {
+  Context* context = rv->context;
+  SkipCallResolutionReason skip = NONE;
+  auto& byPostorder = rv->byPostorder;
+
+  if (callLike->isTuple()) return skip;
+
+  int actualIdx = 0;
+  for (const auto& actual : ci.actuals()) {
+    ID toId; // does the actual refer directly to a particular variable?
+    const AstNode* actualAst = actualAsts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      toId = byPostorder.byAst(actualAst).toId();
+    }
+    QualifiedType qt = actual.type();
+    const Type* t = qt.type();
+
+    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+    bool isNonOutFormal = formalAst != nullptr &&
+                          formalAst->isFormal() &&
+                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
+    if (t != nullptr && t->isErroneousType()) {
+      // always skip if there is an ErroneousType
+      skip = ERRONEOUS_ACT;
+    } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.kind() != QualifiedType::PARAM &&
+               qt.kind() != QualifiedType::TYPE &&
+               qt.isRef() == false) {
+      // don't skip because it could be initialized with 'out' intent,
+      // but not for non-out formals because they can't be split-initialized.
+    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+      // don't skip for type queries in type constructors
+    } else {
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = UNKNOWN_PARAM;
+      } else if (qt.isUnknown()) {
+        skip = UNKNOWN_ACT;
+      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
+        // For initializer calls, allow generic formals using the above
+        // condition; this way, 'this.init(..)' while 'this' is generic
+        // should be fine.
+
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
+          skip = GENERIC_TYPE;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = GENERIC_VALUE;
+        }
+      }
+    }
+
+    // Don't skip for type constructors, except due to unknown params.
+    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+      skip = NONE;
+    }
+
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
+      skip = NONE;
+    }
+
+    if (skip) {
+      break;
+    }
+    actualIdx++;
+  }
+
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = OTHER_REASON;
+  }
+
+  return skip;
 }
 
 bool Resolver::resolveSpecialKeywordCall(const Call* call) {
@@ -2571,11 +2786,18 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   auto fnName = fnCall->calledExpression()->toIdentifier()->name();
   if (fnName == "index") {
     auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      std::vector<const AstNode*> actualAsts;
       auto ci = CallInfo::create(context, call, byPostorder,
                                  /* raiseErrors */ true,
-                                 /* actualAsts */ nullptr,
+                                 /* actualAsts */ &actualAsts,
                                  /* moduleScopeId */ nullptr,
                                  /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
+
+      auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
+      if (skip != NONE) {
+        return CallResolutionResult::getEmpty();
+      }
+
       auto scope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto result = resolveGeneratedCall(context, call, ci, inScopes);
@@ -3982,7 +4204,7 @@ bool Resolver::enter(const uast::Manage* manage) {
                        /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
     auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
     auto c = resolveGeneratedCall(context, manage, ci, inScopes);
-    handleResolvedCallWithoutError(byPostorder.byAst(manage), manage, c);
+    handleResolvedCall(byPostorder.byAst(manage), manage, ci, c);
     CHPL_ASSERT(c.mostSpecific().only());
 
     // Now, we actually want the witness for the interface if one exists.
@@ -4224,89 +4446,6 @@ void Resolver::exit(const TupleDecl* decl) {
   resolveTupleDecl(decl, /* useType */ nullptr);
   exitScope(decl);
 }
-
-static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
-                         std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
-  Context* context = rv->context;
-  SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
-
-  if (callLike->isTuple()) return skip;
-
-  int actualIdx = 0;
-  for (const auto& actual : ci.actuals()) {
-    ID toId; // does the actual refer directly to a particular variable?
-    const AstNode* actualAst = actualAsts[actualIdx];
-    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-      toId = byPostorder.byAst(actualAst).toId();
-    }
-    QualifiedType qt = actual.type();
-    const Type* t = qt.type();
-
-    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
-    bool isNonOutFormal = formalAst != nullptr &&
-                          formalAst->isFormal() &&
-                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
-
-    if (t != nullptr && t->isErroneousType()) {
-      // always skip if there is an ErroneousType
-      skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
-      // don't skip for type queries in type constructors
-    } else {
-      if (qt.isParam() && qt.param() == nullptr) {
-        skip = UNKNOWN_PARAM;
-      } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
-      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
-        // For initializer calls, allow generic formals using the above
-        // condition; this way, 'this.init(..)' while 'this' is generic
-        // should be fine.
-
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
-          skip = GENERIC_TYPE;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
-        }
-      }
-    }
-
-    // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
-      skip = NONE;
-    }
-
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
-      skip = NONE;
-    }
-
-    if (skip) {
-      break;
-    }
-    actualIdx++;
-  }
-
-  // Don't try to resolve calls to '=' until later
-  if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = OTHER_REASON;
-  }
-
-  return skip;
-}
-
 
 bool Resolver::enter(const Range* range) {
   return true;

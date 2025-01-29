@@ -123,6 +123,12 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
     modStmt->traverse(visitor);
 
+    // There will be no further calls (it's a top-level statement), so if the
+    // diagnostics wanted to be higher up the call stack, too bad.
+    for (auto& diagnostic : visitor.userDiagnostics) {
+      visitor.emitUserDiagnostic(diagnostic, modStmt);
+    }
+
     if (auto rec = context->recoverFromSelfRecursion()) {
       CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }
@@ -2553,11 +2559,9 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                       std::move(formalsInstantiated),
                                       sig->outerVariables());
 
-  // May need to resolve the body at this point to compute final TFS.
-  if (result->isInitializer()) {
-    auto rf = resolveFunction(rc, result, poiScope);
-    result = rf->signature();
-  }
+  // For initializers, may need to resolve the body to compute final TFS.
+  // Don't do that here because disambiguation might discard the candidate.
+  // Body resolution will be done by MostSpecificCandidate when constructed.
 
   return ApplicabilityResult::success(result);
 }
@@ -2639,6 +2643,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(rr),
                                   std::move(resolvedPoiInfo),
                                   std::move(visitor.returnType),
+                                  std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr)));
   return ret;
@@ -2896,10 +2901,40 @@ inferRefMaybeConstFormals(ResolutionContext* rc,
   return result;
 }
 
+static std::vector<std::tuple<const Decl*, QualifiedType>>
+collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
+  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
+
+  // Skip the 'this' formal since it will always be generic if one of the
+  // "real" formals is generic.
+  int formalIdx = 0;
+  if (tfs->isMethod()) {
+    formalIdx++;
+  }
+
+  for (; formalIdx < tfs->numFormals(); formalIdx++) {
+    auto formalType = tfs->formalType(formalIdx);
+    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
+    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
+      ret.push_back(std::make_tuple(formalDecl, formalType));
+    }
+  }
+  return ret;
+}
+
+bool checkUninstantiatedFormals(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
+  if (!sig->needsInstantiation()) return false;
+
+  CHPL_REPORT(context, MissingFormalInstantiation,
+              astForErr,
+              collectGenericFormals(context, sig));
+  return true;
+}
+
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
-  bool skipIfRunning = false;
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning) {
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
@@ -3111,7 +3146,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         std::move(resolutionById),
                                         PoiInfo(),
                                         QualifiedType(),
-                                        {}, {}));
+                                        {}, {}, {}));
   return result;
 }
 
@@ -4208,7 +4243,7 @@ resolveFnCallForTypeCtor(Context* context,
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
@@ -4275,27 +4310,6 @@ considerCompilerGeneratedOperators(Context* context,
   return tfs;
 }
 
-static std::vector<std::tuple<const Decl*, QualifiedType>>
-collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
-  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
-
-  // Skip the 'this' formal since it will always be generic if one of the
-  // "real" formals is generic.
-  int formalIdx = 0;
-  if (tfs->untyped()->formalName(0) == USTR("this")) {
-    formalIdx++;
-  }
-
-  for (; formalIdx < tfs->numFormals(); formalIdx++) {
-    auto formalType = tfs->formalType(formalIdx);
-    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
-    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
-      ret.push_back(std::make_tuple(formalDecl, formalType));
-    }
-  }
-  return ret;
-}
-
 static void
 considerCompilerGeneratedCandidates(Context* context,
                                     const AstNode* astForErr,
@@ -4338,10 +4352,8 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  if (instantiated.candidate()->needsInstantiation()) {
-    CHPL_REPORT(context, MissingFormalInstantiation,
-                astForErr,
-                collectGenericFormals(context, instantiated.candidate()));
+  if (!instantiated.candidate()->isInitializer() &&
+      checkUninstantiatedFormals(context, astForErr, instantiated.candidate())) {
     return; // do not push invalid candidate into list
   }
 
@@ -4928,7 +4940,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
 // * check signatures of selected candidates
 // * gather POI info from any instantiations
 static MostSpecificCandidates
-findMostSpecificAndCheck(Context* context,
+findMostSpecificAndCheck(ResolutionContext* rc,
                          const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
                          const AstNode* astContext,
@@ -4940,12 +4952,24 @@ findMostSpecificAndCheck(Context* context,
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate && candidate.fn()->instantiatedFrom()) {
-      checkSignature(context, candidate.fn());
+    if (!candidate) continue;
+
+    if (candidate.fn()->instantiatedFrom()) {
+      checkSignature(rc->context(), candidate.fn());
+    }
+
+    // Initializers haven't yet been checked for uninstantiated formals,
+    // because prior to getting a MostSpecificCandidate we didn't resolve
+    // their bodies. Now we have, so we have a "final" TFS to check.
+    //
+    // Note: this check "normally" only fires for compiler-generated cases,
+    // so match that here. See other calls to checkUninstantiatedFormal.
+    if (candidate.fn()->isInitializer() && candidate.fn()->isCompilerGenerated()) {
+      checkUninstantiatedFormals(rc->context(), astContext, candidate.fn());
     }
   }
 
@@ -4976,8 +5000,6 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        PoiInfo& poiInfo,
                                        bool& outRejectedPossibleIteratorCandidates,
                                        std::vector<ApplicabilityResult>* rejected) {
-  Context* context = rc->context();
-
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   auto candidates = gatherAndFilterCandidates(rc, astContext, call, ci,
@@ -4989,7 +5011,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   // * check signatures
   // * gather POI info
   auto mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+    findMostSpecificAndCheck(rc, candidates, firstPoiCandidate,
                              astContext, call, ci, inScopes.callScope(),
                              inScopes.poiScope(), poiInfo);
 

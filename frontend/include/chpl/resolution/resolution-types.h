@@ -1589,6 +1589,15 @@ class FormalActualMap {
 
   int failingActualIdx() const { return failingActualIdx_; }
 
+  /* if we resolved the body of an initializer and got a more specific type
+     for the receiver, update the receiver type in the map */
+  void updateReceiverType(const TypedFnSignature* initializer) {
+    CHPL_ASSERT(initializer->isInitializer());
+    CHPL_ASSERT(byFormalIdx_[0].formal()->isNamedDecl());
+    CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
+    byFormalIdx_[0].formalType_ = initializer->formalType(0);
+  }
+
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
                         const TypedFnSignature* typed, const CallInfo& call);
@@ -1645,14 +1654,18 @@ class MostSpecificCandidate {
   MostSpecificCandidate(MostSpecificCandidate&& other) = default;
   MostSpecificCandidate(const MostSpecificCandidate& other) { *this = other; }
 
-  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
                                         const FormalActualMap& faMap,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
                                         const SubstitutionsMap& promotedFormals);
 
-  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
                                         const CallInfo& info,
+                                        const Scope* scope,
+                                        const PoiScope* poiScope,
                                         const SubstitutionsMap& promotedFormals);
 
   const TypedFnSignature* fn() const { return fn_; }
@@ -2571,6 +2584,66 @@ class ResolutionResultByPostorderID {
 };
 
 /**
+  Represents a compiler diagnostic emit from Chapel code, e.g. via
+  'compilerError' or 'compilerWarning'. These diagnostics can be emitted
+  at various call stack depths (to hide invocations to intermediate utility
+  functions, for example). As a result, this type stores the depth in
+  addition to the diagnostic message.
+
+  For the purposes of properly integrating into the query system and
+  `runAndTrackErrors`, the compiler immediately issues an Error diagnostic,
+  but doesn't print it. Otherwise, (e.g., if the error message requests
+  a depth 10,000), the error may be encountered but never emitted.
+
+  Error messages are presently not tracked through the query system; however,
+  if they were, it would be interesting to include the Error* into this
+  diagnostic and thereby reason about whether each (immediately) noted error
+  message is printed.
+ */
+struct CompilerDiagnostic {
+ public:
+  enum Kind {
+    ERROR, WARNING
+  };
+ private:
+  UniqueString message_;
+  Kind kind_;
+  int64_t depth_;
+
+ public:
+  CompilerDiagnostic(UniqueString message, Kind kind, int64_t depth)
+    : message_(std::move(message)), kind_(kind), depth_(depth) {}
+
+  bool operator==(const CompilerDiagnostic& other) const {
+    return message_ == other.message_ &&
+           kind_ == other.kind_ &&
+           depth_ == other.depth_;
+  }
+
+  bool operator!=(const CompilerDiagnostic& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    message_.mark(context);
+  }
+
+  size_t hash() const {
+    return chpl::hash(message_, kind_, depth_);
+  }
+
+  UniqueString message() const { return message_; }
+
+  Kind kind() const { return kind_; }
+
+  int64_t depth() const { return depth_; }
+
+  bool isError() const { return kind_ == ERROR; }
+
+  bool isWarning() const { return kind_ == WARNING; }
+};
+
+/**
   This type represents a resolved function.
 
   When a function 'F' is resolved, any child functions that were resolved
@@ -2603,6 +2676,9 @@ class ResolvedFunction {
   // the return type computed for this function
   types::QualifiedType returnType_;
 
+  // diagnostics that callers of this function should emit
+  std::vector<CompilerDiagnostic> diagnostics_;
+
   // These two maps attempt to mimick what is done to cache generic
   // instantiations in the queries 'resolveFunctionByInfo' and
   // 'resolveFunctionByPois'. The maps take the place of the query cache
@@ -2617,6 +2693,7 @@ class ResolvedFunction {
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo,
                    types::QualifiedType returnType,
+                   std::vector<CompilerDiagnostic> diagnostics,
                    PoiTraceToChildMap poiTraceToChild,
                    SigAndInfoToChildPtrMap sigAndInfoToChildPtr)
       : signature_(signature),
@@ -2624,6 +2701,7 @@ class ResolvedFunction {
         resolutionById_(std::move(resolutionById)),
         poiInfo_(std::move(poiInfo)),
         returnType_(std::move(returnType)),
+        diagnostics_(std::move(diagnostics)),
         poiTraceToChild_(std::move(poiTraceToChild)),
         sigAndInfoToChildPtr_(std::move(sigAndInfoToChildPtr)) {}
  ~ResolvedFunction() = default;
@@ -2641,6 +2719,11 @@ class ResolvedFunction {
     return returnType_;
   }
 
+  /** the diagnostic incurred by this function */
+  const std::vector<CompilerDiagnostic>& diagnostics() const {
+    return diagnostics_;
+  }
+
   /** this is the output of the resolution process */
   const ResolutionResultByPostorderID& resolutionById() const {
     return resolutionById_;
@@ -2655,6 +2738,7 @@ class ResolvedFunction {
            resolutionById_ == other.resolutionById_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
            returnType_ == other.returnType_ &&
+           diagnostics_ == other.diagnostics_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
            sigAndInfoToChildPtr_ == other.sigAndInfoToChildPtr_;
   }
@@ -2668,6 +2752,7 @@ class ResolvedFunction {
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
     returnType_.swap(other.returnType_);
+    std::swap(diagnostics_, other.diagnostics_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
     std::swap(sigAndInfoToChildPtr_, other.sigAndInfoToChildPtr_);
   }
@@ -2680,6 +2765,7 @@ class ResolvedFunction {
     resolutionById_.mark(context);
     poiInfo_.mark(context);
     returnType_.mark(context);
+    chpl::mark<decltype(diagnostics_)>{}(context, diagnostics_);
     for (auto& p : poiTraceToChild_) {
       chpl::mark<decltype(p.first)>{}(context, p.first);
       context->markPointer(p.second);
@@ -2692,7 +2778,7 @@ class ResolvedFunction {
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
-    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, returnType_);
+    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, returnType_, diagnostics_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
       ret = hash_combine(ret, chpl::hash(p.second));
@@ -3222,6 +3308,7 @@ CHPL_DEFINE_STD_HASH_(FormalActual, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FormalActualMap, (key.hash()));
 CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CompilerDiagnostic, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));

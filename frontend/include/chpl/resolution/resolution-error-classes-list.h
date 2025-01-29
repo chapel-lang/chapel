@@ -118,4 +118,8 @@ WARNING_CLASS(UseImportTransitiveRename, chpl::UniqueString, chpl::UniqueString,
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind, std::string, std::string, std::vector<const uast::AstNode*>)
 ERROR_CLASS(UseImportUnknownSym, std::string, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, const resolution::VisibilityStmtKind, bool)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
+ERROR_CLASS(UserDiagnosticEncounterError, UniqueString, ID)
+ERROR_CLASS(UserDiagnosticEmitError, UniqueString, ID)
+WARNING_CLASS(UserDiagnosticEncounterWarning, UniqueString, ID)
+WARNING_CLASS(UserDiagnosticEmitWarning, UniqueString, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)

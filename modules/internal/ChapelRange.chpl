@@ -376,17 +376,19 @@ module ChapelRange {
     }
     type newRule = (low+high).type;
     type oldRule = computeParamRangeIndexType_Old(low, high);
-    if newRule == oldRule then
+    if newRule == oldRule {
       return newRule;
-    compilerWarning("the idxType of this range literal ",
-                    low:string, "..", high:string,
-                    " with the low bound of the type ", low.type:string,
-                    " and the high bound of the type ", high.type:string,
-                    " is currently ", oldRule:string,
-          ". In a future release it will be switched to ", newRule:string,
-          ". To switch to this new typing and turn off this warning,",
-          " compile with -snewRangeLiteralType.");
-    return oldRule;
+    } else {
+      compilerWarning("the idxType of this range literal ",
+                      low:string, "..", high:string,
+                      " with the low bound of the type ", low.type:string,
+                      " and the high bound of the type ", high.type:string,
+                      " is currently ", oldRule:string,
+            ". In a future release it will be switched to ", newRule:string,
+            ". To switch to this new typing and turn off this warning,",
+            " compile with -snewRangeLiteralType.");
+      return oldRule;
+    }
   }
   proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
@@ -2376,15 +2378,17 @@ private proc isBCPindex(type t) param do
     chpl_range_check_stride(step, r.idxType);
 
     // streamline the simple cases
-    if step == 1 then return r;
-
-    if step == -1 then return if r.hasParamStrideAltvalAld()
-      then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, none, none)
-      else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, -r._stride, r._alignment);
-
-    return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    if step == 1 {
+      return r;
+    } else if step == -1 {
+      return if r.hasParamStrideAltvalAld()
+             then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, none, none)
+             else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, -r._stride, r._alignment);
+    } else {
+      return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    }
   }
 
   pragma "last resort"

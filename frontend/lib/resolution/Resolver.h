@@ -142,6 +142,10 @@ struct Resolver {
   // the return type of the function (inferred or not)
   types::QualifiedType returnType;
 
+  // diagnostics emitted by compilerError / compilerWarning that are
+  // to be issued further up the call stack.
+  std::vector<CompilerDiagnostic> userDiagnostics;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();
@@ -443,6 +447,15 @@ struct Resolver {
                                  types::QualifiedType::Kind& qtKind,
                            const types::Type* typePtr,
                            const types::Param* paramPtr);
+
+  // given a user diagnostic, emit it unconditionally.
+  void emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
+                          const uast::AstNode* astForErr);
+
+  // save the diagnostic in the list of emitted diagnostics, and otherwise
+  // note that it has been encountered.
+  void noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
+                                     const uast::AstNode* astForErr);
 
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
