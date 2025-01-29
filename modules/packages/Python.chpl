@@ -101,10 +101,6 @@
      FILENAME: CoforallTestSub.chpl
      NOEXEC
      START_GOOD
-     Hello from a task
-     Hello from a task
-     Hello from a task
-     Hello from a task
      END_GOOD
 
   .. code-block:: chapel
@@ -143,16 +139,6 @@
      FILENAME: TaskPrivateSubInterp.chpl
      NOEXEC
      START_GOOD
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
      END_GOOD
 
   .. code-block:: chapel
