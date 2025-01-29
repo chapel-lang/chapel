@@ -2632,6 +2632,10 @@ struct CompilerDiagnostic {
   Kind kind() const { return kind_; }
 
   int64_t depth() const { return depth_; }
+
+  bool isError() const { return kind_ == ERROR; }
+
+  bool isWarning() const { return kind_ == WARNING; }
 };
 
 /**

@@ -154,6 +154,31 @@ static void testVarArgs() {
   guard.realizeErrors();
 }
 
+static void testTwoErrors() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  std::string program =
+    R"""(
+    proc foo(): int do compilerError("no", 2);
+    proc first() do return foo();
+    proc second() do return foo();
+    proc third() do return second();
+
+    var x = first();
+    var y = third();
+    )""";
+
+  resolveTypesOfVariables(ctx, program, {"x", "y"});
+  // Note: the HACK in which we silence errors from resolving nested calls
+  // (because we can't fully resolve the standard library) is in play,
+  // which means we don't see the UserDiagnosticEncounterError. Once
+  // that workaround is disabled (i.e., when we can resolve all functions without
+  // errors), we should test for that error here.
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
+  guard.realizeErrors();
+}
+
 static void testRunAndTrackErrors() {
   auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
@@ -186,5 +211,6 @@ int main() {
   testDepth3();
   testTooDeep();
   testVarArgs();
+  testTwoErrors();
   testRunAndTrackErrors();
 }

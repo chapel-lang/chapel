@@ -1191,7 +1191,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const SubstitutionsMap& promotedFormals) {
   auto newFaMap = faMap;
 
-  // Earlier, we didn't resolve the body of the funciton, but when it's an
+  // Earlier, we didn't resolve the body of the function, but when it's an
   // initializer, it can have substitution-producing statements such
   // as `this.typeField = int`. Now that we have picked this candidate
   // as most specific, it's safe to resolve the body without worrying about

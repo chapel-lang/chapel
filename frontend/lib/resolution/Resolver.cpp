@@ -1920,18 +1920,18 @@ gatherUserDiagnostics(ResolutionContext* rc,
 
 void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
                                   const uast::AstNode* astForErr) {
-  if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
+  if (diagnostic.isError()) {
     CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
-  } else {
+  } else if (diagnostic.isWarning()) {
     CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
   }
 }
 
 void Resolver::noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
                                              const uast::AstNode* astForErr) {
-  if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
+  if (diagnostic.isError()) {
     CHPL_REPORT(context, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
-  } else {
+  } else if (diagnostic.isWarning()) {
     CHPL_REPORT(context, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
   }
   userDiagnostics.push_back(std::move(diagnostic));

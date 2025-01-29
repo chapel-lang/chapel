@@ -2908,7 +2908,7 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
   // Skip the 'this' formal since it will always be generic if one of the
   // "real" formals is generic.
   int formalIdx = 0;
-  if (tfs->untyped()->formalName(0) == USTR("this")) {
+  if (tfs->isMethod()) {
     formalIdx++;
   }
 
@@ -2922,7 +2922,7 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
   return ret;
 }
 
-bool checkUninstantiatedFormal(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
+bool checkUninstantiatedFormals(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
   if (!sig->needsInstantiation()) return false;
 
   CHPL_REPORT(context, MissingFormalInstantiation,
@@ -4353,7 +4353,7 @@ considerCompilerGeneratedCandidates(Context* context,
   }
 
   if (!instantiated.candidate()->isInitializer() &&
-      checkUninstantiatedFormal(context, astForErr, instantiated.candidate())) {
+      checkUninstantiatedFormals(context, astForErr, instantiated.candidate())) {
     return; // do not push invalid candidate into list
   }
 
@@ -4969,7 +4969,7 @@ findMostSpecificAndCheck(ResolutionContext* rc,
     // Note: this check "normally" only fires for compiler-generated cases,
     // so match that here. See other calls to checkUninstantiatedFormal.
     if (candidate.fn()->isInitializer() && candidate.fn()->isCompilerGenerated()) {
-      checkUninstantiatedFormal(rc->context(), astContext, candidate.fn());
+      checkUninstantiatedFormals(rc->context(), astContext, candidate.fn());
     }
   }
 
