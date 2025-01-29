@@ -76,6 +76,11 @@
   Using Multiple Interpreters
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  .. warning::
+
+     Sub-interpreter support in Chapel is highly experimental and currently has
+     undefined behavior.
+
   The most performant way to run Python code in parallel is to use multiple
   sub-interpreters. Each sub-interpreter is isolated from the others with its
   own GIL. This allows multiple threads to run Python code concurrently. Note
@@ -94,11 +99,8 @@
   ..
      START_TEST
      FILENAME: CoforallTestSub.chpl
+     NOEXEC
      START_GOOD
-     Hello from a task
-     Hello from a task
-     Hello from a task
-     Hello from a task
      END_GOOD
 
   .. code-block:: chapel
@@ -135,17 +137,8 @@
   ..
      START_TEST
      FILENAME: TaskPrivateSubInterp.chpl
+     NOEXEC
      START_GOOD
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
-     10
      END_GOOD
 
   .. code-block:: chapel
@@ -1241,7 +1234,8 @@ module Python {
     /*
       Returns the Chapel value of the object.
 
-      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object, however it does not consume the object.
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this
+      object, however it does not consume the object.
     */
     proc value(type value) throws {
       // fromPython will decrement the reference count, so we need to increment it

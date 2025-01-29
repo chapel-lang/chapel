@@ -39,6 +39,7 @@ class TestCase:
     good_file: File = field(default_factory=File)
     compopts: typing.Optional[File] = None
     execopts: typing.Optional[File] = None
+    noexec: bool = False
 
     def write(self, directory: str):
         self.test_file.write(directory)
@@ -47,6 +48,12 @@ class TestCase:
             self.compopts.write(directory)
         if self.execopts:
             self.execopts.write(directory)
+        if self.noexec:
+            noexec_file = os.path.join(
+                directory, self.test_file.basename() + ".noexec"
+            )
+            with open(noexec_file, "w"):
+                pass
 
 
 def parse(lines: typing.List[str]) -> typing.List[TestCase]:
@@ -130,6 +137,12 @@ def parse(lines: typing.List[str]) -> typing.List[TestCase]:
         ):
             mylines = [lines[cur_line].strip().split(":", maxsplit=1)[1].strip()]
             test.execopts = File(test_file.basename() + ".execopts", mylines)
+            cur_line += 1
+            continue
+
+        # set the noexec flag
+        if test and test_file and lines[cur_line].strip() == "NOEXEC":
+            test.noexec = True
             cur_line += 1
             continue
 

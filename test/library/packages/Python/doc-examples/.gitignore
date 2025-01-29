@@ -2,3 +2,4 @@
 *.good
 *.execopts
 *.compopts
+*.noexec
