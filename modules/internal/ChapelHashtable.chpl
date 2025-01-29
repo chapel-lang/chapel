@@ -680,60 +680,52 @@ module ChapelHashtable {
       return chunkEnds;
     }
 
-    iter _evenSlots(size: int, param tag) where tag == iterKind.leader {
-      var numChunks = _computeNumChunks(size);
-      var numFullPerTask = size / numChunks;
-      var rem = size % numChunks;
+    iter _evenSlots(param tag) where tag == iterKind.leader {
+      var numChunks = _computeNumChunks(this.tableNumFullSlots);
+      var numFullPerTask = this.tableNumFullSlots / numChunks;
+      var rem = this.tableNumFullSlots % numChunks;
 
       forall i in 0..#numChunks {
         if (i < rem) {
-          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),);
+          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),
+                 i, numChunks);
         } else {
-          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),);
+          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),
+                 i, numChunks);
         }
       }
     }
 
-    proc _guessSlots(followThis) {
-      var iterSpace: range;
-      var intendedSpace = followThis;
-      var chunkSize = intendedSpace.size;
-      var numChunksGuess = this.tableNumFullSlots / chunkSize;
-      var intendedChunkGuess = intendedSpace.low / chunkSize;
 
-      if (intendedChunkGuess >= numChunksGuess) {
-        __primitive("chpl_error",
-                    "zippered iterations have non-equal lengths".c_str());
-      }
-
-      // Determine corresponding chunk to use.
-      var chunkEnds = _determineEvenChunks(numChunksGuess,
-                                           this.tableNumFullSlots);
-      if (intendedChunkGuess == 0) {
-        iterSpace = 0..chunkEnds[intendedChunkGuess];
-      } else if (intendedChunkGuess == chunkEnds.size) {
-        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..(this.tableSize - 1);
-      } else {
-        iterSpace = (chunkEnds[intendedChunkGuess-1]+1)..chunkEnds[intendedChunkGuess];
-      }
-      return iterSpace;
-    }
-
-    iter _evenSlots(size: int, followThis, param tag) const ref
+    iter _evenSlots(followThis, param tag) const ref
       where tag == iterKind.follower {
       use Types;
-
-      if (size != this.tableNumFullSlots) {
-        __primitive("chpl_error",
-                    "zippered iterations have non-equal lengths".c_str());
-      }
 
       var iterSpace: range;
 
       if (isTuple(followThis)) {
-        iterSpace = _guessSlots(followThis(0));
+        if (followThis.size == 3) {
+          // Using _evenSlots iterator gives us a specific set up to iterate
+          // over the full chunks in an even manner.
+          var intendedSpace = followThis(0);
+          var intendedChunk = followThis(1);
+          var numChunks = followThis(2);
+
+          // Determine corresponding chunk to use.
+          var chunkEnds = _determineEvenChunks(numChunks,
+                                               this.tableNumFullSlots);
+          if (intendedChunk == 0) {
+            iterSpace = 0..chunkEnds[intendedChunk];
+          } else if (intendedChunk == chunkEnds.size) {
+            iterSpace = (chunkEnds[intendedChunk-1]+1)..(this.tableSize - 1);
+          } else {
+            iterSpace = (chunkEnds[intendedChunk-1]+1)..chunkEnds[intendedChunk];
+          }
+        } else {
+          iterSpace = followThis(0);
+        }
       } else {
-        iterSpace = _guessSlots(followThis);
+        iterSpace = followThis;
       }
 
       foreach slot in iterSpace {
