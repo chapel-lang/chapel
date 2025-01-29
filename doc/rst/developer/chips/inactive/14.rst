@@ -51,7 +51,7 @@ The user can select the unwind library using an environment variable, for
 example CHPL_UNWIND. If an unwind library is not specified, the runtime doesn't
 produce a stack trace.
 
-A candidate as the unwind library is `libunwind <http://www.nongnu.org/libunwind/index.html>`_. 
+A candidate as the unwind library is `libunwind <http://www.nongnu.org/libunwind/>`_. 
 libunwind is a MIT licensed library for stack unwinding under Linux on several
 architectures.
 

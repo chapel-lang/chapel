@@ -5,32 +5,32 @@ Documentation Archives
 
 Online Documentation Archives
 -----------------------------
-* `Chapel 2.2  <https://chapel-lang.org/docs/2.2/index.html>`_
-* `Chapel 2.1  <https://chapel-lang.org/docs/2.1/index.html>`_
-* `Chapel 2.0  <https://chapel-lang.org/docs/2.0/index.html>`_
-* `Chapel 1.33 <https://chapel-lang.org/docs/1.33/index.html>`_
-* `Chapel 1.32 <https://chapel-lang.org/docs/1.32/index.html>`_
-* `Chapel 1.31 <https://chapel-lang.org/docs/1.31/index.html>`_
-* `Chapel 1.30 <https://chapel-lang.org/docs/1.30/index.html>`_
-* `Chapel 1.29 <https://chapel-lang.org/docs/1.29/index.html>`_
-* `Chapel 1.28 <https://chapel-lang.org/docs/1.28/index.html>`_
-* `Chapel 1.27 <https://chapel-lang.org/docs/1.27/index.html>`_
-* `Chapel 1.26 <https://chapel-lang.org/docs/1.26/index.html>`_
-* `Chapel 1.25 <https://chapel-lang.org/docs/1.25/index.html>`_
-* `Chapel 1.24 <https://chapel-lang.org/docs/1.24/index.html>`_
-* `Chapel 1.23 <https://chapel-lang.org/docs/1.23/index.html>`_
-* `Chapel 1.22 <https://chapel-lang.org/docs/1.22/index.html>`_
-* `Chapel 1.21 <https://chapel-lang.org/docs/1.21/index.html>`_
-* `Chapel 1.20 <https://chapel-lang.org/docs/1.20/index.html>`_
-* `Chapel 1.19 <https://chapel-lang.org/docs/1.19/index.html>`_
-* `Chapel 1.18 <https://chapel-lang.org/docs/1.18/index.html>`_
-* `Chapel 1.17 <https://chapel-lang.org/docs/1.17/index.html>`_
-* `Chapel 1.16 <https://chapel-lang.org/docs/1.16/index.html>`_
-* `Chapel 1.15 <https://chapel-lang.org/docs/1.15/index.html>`_
-* `Chapel 1.14 <https://chapel-lang.org/docs/1.14/index.html>`_
-* `Chapel 1.13 <https://chapel-lang.org/docs/1.13/index.html>`_
-* `Chapel 1.12 <https://chapel-lang.org/docs/1.12/index.html>`_
-* `Chapel 1.11 <https://chapel-lang.org/docs/1.11/index.html>`_
+* `Chapel 2.2  <https://chapel-lang.org/docs/2.2/>`_
+* `Chapel 2.1  <https://chapel-lang.org/docs/2.1/>`_
+* `Chapel 2.0  <https://chapel-lang.org/docs/2.0/>`_
+* `Chapel 1.33 <https://chapel-lang.org/docs/1.33/>`_
+* `Chapel 1.32 <https://chapel-lang.org/docs/1.32/>`_
+* `Chapel 1.31 <https://chapel-lang.org/docs/1.31/>`_
+* `Chapel 1.30 <https://chapel-lang.org/docs/1.30/>`_
+* `Chapel 1.29 <https://chapel-lang.org/docs/1.29/>`_
+* `Chapel 1.28 <https://chapel-lang.org/docs/1.28/>`_
+* `Chapel 1.27 <https://chapel-lang.org/docs/1.27/>`_
+* `Chapel 1.26 <https://chapel-lang.org/docs/1.26/>`_
+* `Chapel 1.25 <https://chapel-lang.org/docs/1.25/>`_
+* `Chapel 1.24 <https://chapel-lang.org/docs/1.24/>`_
+* `Chapel 1.23 <https://chapel-lang.org/docs/1.23/>`_
+* `Chapel 1.22 <https://chapel-lang.org/docs/1.22/>`_
+* `Chapel 1.21 <https://chapel-lang.org/docs/1.21/>`_
+* `Chapel 1.20 <https://chapel-lang.org/docs/1.20/>`_
+* `Chapel 1.19 <https://chapel-lang.org/docs/1.19/>`_
+* `Chapel 1.18 <https://chapel-lang.org/docs/1.18/>`_
+* `Chapel 1.17 <https://chapel-lang.org/docs/1.17/>`_
+* `Chapel 1.16 <https://chapel-lang.org/docs/1.16/>`_
+* `Chapel 1.15 <https://chapel-lang.org/docs/1.15/>`_
+* `Chapel 1.14 <https://chapel-lang.org/docs/1.14/>`_
+* `Chapel 1.13 <https://chapel-lang.org/docs/1.13/>`_
+* `Chapel 1.12 <https://chapel-lang.org/docs/1.12/>`_
+* `Chapel 1.11 <https://chapel-lang.org/docs/1.11/>`_
 
 
 Language Specification Archives

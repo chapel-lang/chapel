@@ -528,7 +528,7 @@ Tool Improvements
 Documentation Improvements
 --------------------------
 * linked the module index from the documentation landing page  
-  (see https://chapel-lang.org/docs/2.2/index.html#indexes)
+  (see https://chapel-lang.org/docs/2.2/#indexes)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -972,7 +972,7 @@ Documentation Improvements
 Documentation Improvements for Tools
 ------------------------------------
 * refactored the tools documentation to be more user-friendly  
-  (see https://chapel-lang.org/docs/2.1/tools/index.html)
+  (see https://chapel-lang.org/docs/2.1/tools/)
 * documented how to install the language server and linter tools for Emacs  
   (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#emacs  
    and https://chapel-lang.org/docs/2.1/tools/chplcheck/chplcheck.html#emacs)
@@ -4893,7 +4893,7 @@ Documentation
 * updated GPU technote to expand on currently known limitations  
   (see https://chapel-lang.org/docs/1.26/technotes/gpu.html)
 * added chapter groupings to the language specification  
-  (see https://chapel-lang.org/docs/1.26/language/spec/index.html)
+  (see https://chapel-lang.org/docs/1.26/language/spec/)
 * grouped package modules by topic  
   (see https://chapel-lang.org/docs/1.26/modules/packages.html)
 * added documentation for many methods in the 'BigInteger' module  
@@ -4905,7 +4905,7 @@ Documentation
 * documented which elements are preserved in `set` operations with overlap  
   (see https://chapel-lang.org/docs/1.26/modules/standard/Set.html)
 * added a link to the online documentation index at the bottom of its sidebar  
-  (see https://chapel-lang.org/docs/1.26/index.html)
+  (see https://chapel-lang.org/docs/1.26/)
 * added documentation for the `CHPL_LLVM_GCC_PREFIX` environment variable  
   (see https://chapel-lang.org/docs/1.26/usingchapel/chplenv.html#chpl-llvm)
 
@@ -5200,9 +5200,9 @@ Documentation
    https://chapel-lang.org/docs/1.25/language/spec/types.html#module-ChapelComplex_forDocs,  
    and https://chapel-lang.org/docs/1.25/language/spec/locales.html#locale-methods)
 * added contributor documentation, such as best practices, to the online docs  
-  (see https://chapel-lang.org/docs/1.25/developer/index.html)
+  (see https://chapel-lang.org/docs/1.25/developer/)
 * added contributor documentation for the new compiler front-end  
-  (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/index.html)
+  (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/)
 * improved the description of the prerequisites for documentation builds  
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
 * documented `CHPL_RT_UNWIND`  
@@ -5305,7 +5305,7 @@ Developer-oriented changes: Documentation
 * added a note about passing environment variables to `paratest`  
   (see https://chapel-lang.org/docs/1.25/developer/bestPractices/Sanitizers.html)
 * `make docs` now includes compiler docs if `doxygen` and `cmake` are available  
-  (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/index.html)
+  (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/)
 * combined the docs for `.join()` on `string`/`bytes` for arrays and tuples
 * updated `ofi` communication layer developer documentation
 
@@ -7111,7 +7111,7 @@ Memory Improvements
 Documentation
 -------------
 * converted the language specification from PDF (LaTeX) to HTML (rst)  
-  (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
+  (see https://chapel-lang.org/docs/1.21/language/spec/)
 * generally updated documentation with respect to the changes in this release
 * improved the documentation for `owned` and `shared` classes  
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html  
@@ -9910,7 +9910,7 @@ Example Codes
 Documentation
 -------------
 * added new users guide sections on promotion, constants, type aliases, configs  
-  (see https://chapel-lang.org/docs/1.15/users-guide/index.html)
+  (see https://chapel-lang.org/docs/1.15/users-guide/)
 * revised QUICKSTART instructions for clarity  
   (see https://chapel-lang.org/docs/1.15/usingchapel/QUICKSTART.html)
 * reorganized the doc/ directory in the release tarball  
@@ -9922,7 +9922,7 @@ Documentation
 * improved the Docker README information  
   (see https://hub.docker.com/r/chapel/chapel/)
 * reorganized the platform-specific documentation pages into categories  
-  (see https://chapel-lang.org/docs/1.15/platforms/index.html)
+  (see https://chapel-lang.org/docs/1.15/platforms/)
 * added documentation for dim() and dims() on arrays  
   (see https://chapel-lang.org/docs/1.15/builtins/internal/ChapelArray.html#ChapelArray.dims)
 * fixed the documentation for string.strip()  
@@ -10215,13 +10215,13 @@ Highlights (see subsequent sections for more details)
     (see https://chapel-lang.org/docs/1.14/technotes/extern.html#c-fn-ptr)
 * documentation and example code highlights:
   - added the primer and "hello world" example codes to the online documentation  
-    (see https://chapel-lang.org/docs/1.14/primers/index.html and  
-     https://chapel-lang.org/docs/1.14/examples/index.html)
+    (see https://chapel-lang.org/docs/1.14/primers/ and  
+     https://chapel-lang.org/docs/1.14/examples/)
   - completed and updated our suite of Computer Language Benchmark Game codes  
     (see $CHPL_HOME/examples/benchmarks/shootout/* and  
      http://benchmarksgame.alioth.debian.org/)
   - added several new pages to the online users guide  
-    (see https://chapel-lang.org/docs/1.14/users-guide/index.html)
+    (see https://chapel-lang.org/docs/1.14/users-guide/)
 * additional highlights:
   - made significant improvements to the 'chplvis' execution analysis tool  
     (see https://chapel-lang.org/docs/1.14/tools/chplvis/chplvis.html)
@@ -10399,13 +10399,13 @@ Tool Changes
 Documentation
 -------------
 * added the primer example codes to the online documentation  
-  (see https://chapel-lang.org/docs/1.14/primers/index.html)
+  (see https://chapel-lang.org/docs/1.14/primers/)
 * added the 'hello world' examples to the online documentation  
-  (see https://chapel-lang.org/docs/1.14/examples/index.html)
+  (see https://chapel-lang.org/docs/1.14/examples/)
 * added a new primer example for modules and 'use' statements  
   (see doc/release/examples/primers/modules.chpl)
 * added a number of new sections to the user's guide  
-  (see https://chapel-lang.org/docs/1.14/users-guide/index.html)
+  (see https://chapel-lang.org/docs/1.14/users-guide/)
 * significantly re-worked the multi-locale execution and quickstart docs  
   (see https://chapel-lang.org/docs/1.14/usingchapel/multilocale.html and  
    https://chapel-lang.org/docs/1.14/usingchapel/QUICKSTART.html)
@@ -10868,7 +10868,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.13/language/evolution.html)
 * split the top-level README.rst file into README.rst and QUICKSTART.rst
 * started writing a Chapel Users Guide, though much work remains  
-  (see https://chapel-lang.org/docs/1.13/users-guide/index.html)
+  (see https://chapel-lang.org/docs/1.13/users-guide/)
 * improved the accuracy of Chapel's prerequisites list  
   (see https://chapel-lang.org/docs/1.13/usingchapel/prereqs.html)
 * improved wordings and descriptions in the language specification
@@ -11117,7 +11117,7 @@ Highlights
 * added new 'Barrier', 'Spawn', and 'LAPACK' modules to the standard set  
   (see "Standard Library/Modules" section below)
 * added chplvis: a new tool for visualizing Chapel communication and concurrency  
-  (see https://chapel-lang.org/docs/1.12/tools/chplvis/index.html)
+  (see https://chapel-lang.org/docs/1.12/tools/chplvis/)
 * added a new chapter describing Chapel's memory consistency model in detail  
   (see 'Memory Consistency Model' in the language spec)
 * added a 'vectorizeOnly()' iterator that vectorizes without task creation  
@@ -11155,7 +11155,7 @@ Environment/Configuration Changes
 Tool Changes
 ------------
 * added chplvis: a new tool for visualizing Chapel communication and concurrency  
-  (see https://chapel-lang.org/docs/1.12/tools/chplvis/index.html)
+  (see https://chapel-lang.org/docs/1.12/tools/chplvis/)
 * chpldoc improvements:
   - improved handling of enum, real, imag, and complex initializers
   - 'chpldoc' now generates values for enum symbols
