@@ -3004,6 +3004,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isModule(tag)) {
     return QualifiedType(QualifiedType::MODULE, nullptr);
+  } else if (asttags::isEnum(tag)) {
+    const Type* t = initialTypeForTypeDecl(context, id);
+    return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isInterface(tag)) {
     const Type* t = initialTypeForInterface(context, id);
     return QualifiedType(QualifiedType::TYPE, t);
