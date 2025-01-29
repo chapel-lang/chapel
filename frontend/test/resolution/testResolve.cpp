@@ -1874,6 +1874,31 @@ static void testGetLocalePrim() {
   assert(guard.realizeErrors() == 0);
 }
 
+// even if a formal's type has defaults, if it's explicitly made generic
+// with (?) it should not be concrete.
+static void testExplicitlyGenericFormal() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R {
+        type myType = int;
+      }
+      var intR: R(int);
+      var realR: R(real);
+
+      proc foo(x: R(?) = intR) do return x;
+      var x = foo(realR);
+    )""");
+
+  CHPL_ASSERT(qt.type()->isRecordType());
+  CHPL_ASSERT(qt.type()->toRecordType()->name() == "R");
+  for (auto& sub : qt.type()->toRecordType()->substitutions()) {
+    CHPL_ASSERT(sub.second.type()->isRealType());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1911,6 +1936,8 @@ int main() {
 
   testPromotionPrim();
   testGetLocalePrim();
+
+  testExplicitlyGenericFormal();
 
   return 0;
 }
