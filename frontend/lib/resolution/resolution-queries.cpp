@@ -2417,6 +2417,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
       r.byAst(formal).setType(vat);
+      visitor.resolveVarArgSizeQuery(formal, t->numElements());
 
       // note that a substitution was used here
       if ((size_t) varArgIdx >= formalsInstantiated.size()) {

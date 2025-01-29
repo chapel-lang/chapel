@@ -394,6 +394,9 @@ struct Resolver {
                           bool isNonStarVarArg = false,
                           bool isTopLevel = true);
 
+  void resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
+                              int numVarArgs);
+
   /* When resolving a function with a TypeQuery, we need to
      resolve the type that is queried, since it can be used
      on its own later.

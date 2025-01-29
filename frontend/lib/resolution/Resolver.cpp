@@ -1255,16 +1255,23 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   }
 }
 
+void Resolver::resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
+                                      int numVarArgs) {
+  if (auto countQuery = varArgFormal->count()) {
+    if (countQuery->isTypeQuery()) {
+      ResolvedExpression& result = byPostorder.byAst(countQuery);
+      result.setType(QualifiedType::makeParamInt(context, numVarArgs));
+    }
+  }
+}
+
 void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
                                                 QualifiedType formalType) {
   if (auto varargs = formal->toVarArgFormal()) {
     const TupleType* tuple = formalType.type()->toTupleType();
 
     // args...?n
-    if (auto countQuery = varargs->count()) {
-      ResolvedExpression& result = byPostorder.byAst(countQuery);
-      result.setType(QualifiedType::makeParamInt(context, tuple->numElements()));
-    }
+    resolveVarArgSizeQuery(varargs, tuple->numElements());
 
     if (auto typeExpr = formal->typeExpression()) {
       QualifiedType useType = tuple->elementType(0);
