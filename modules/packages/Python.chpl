@@ -1594,7 +1594,7 @@ module Python {
       :returns: The size of the list.
     */
     proc size: int throws {
-      var size = PyList_Size(this.get());
+      var size = PySequence_Length(this.get());
       this.check();
       return size;
     }
@@ -1607,7 +1607,7 @@ module Python {
       :returns: The item at the given index.
     */
     proc getItem(type T, idx: int): T throws {
-      var item = PyList_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
@@ -1619,7 +1619,7 @@ module Python {
       :arg item: The item to set.
     */
     proc setItem(idx: int, item: ?) throws {
-      PyList_SetItem(this.get(),
+      PySequence_SetItem(this.get(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
       this.check();
@@ -1700,8 +1700,12 @@ module Python {
 
       :returns: The size of the array.
     */
-    proc size: int throws do
-      return this.call(int, "__len__");
+    proc size: int throws {
+      var size = PySequence_Length(this.get());
+      this.check();
+      return size;
+    }
+
     /*
       Get an item from the array. Equivalent to calling ``obj[idx]`` in Python
       or ``originalArray[idx]`` in Chapel.
@@ -1709,8 +1713,11 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
-    proc getItem(idx: int): eltType throws do
-      return this.call(eltType, "__getitem__", idx);
+    proc getItem(idx: int): eltType throws {
+      var pyObj = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      this.check();
+      return interpreter.fromPython(eltType, pyObj);
+    }
     /*
       Set an item in the array. Equivalent to calling ``obj[idx] = item`` in
       Python or ``originalArray[idx] = item`` in Chapel.
@@ -1718,8 +1725,11 @@ module Python {
       :arg idx: The index of the item to set.
       :arg item: The item to set.
     */
-    proc setItem(idx: int, item: eltType) throws do
-      this.call(NoneType, "__setitem__", idx, item);
+    proc setItem(idx: int, item: eltType) throws {
+      var pyItem = interpreter.toPython(item);
+      PySequence_SetItem(this.get(), idx.safeCast(Py_ssize_t), pyItem);
+      this.check();
+    }
   }
 
 
