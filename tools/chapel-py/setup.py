@@ -80,7 +80,7 @@ LDFLAGS += [
     "-lChplFrontendShared",
 ]
 
-if chpl_install_lib_path != 'None':
+if chpl_install_lib_path != "None":
     LDFLAGS += [
         "-L{}".format(chpl_install_lib_path),
         "-Wl,-rpath,{}".format(chpl_install_lib_path),
