@@ -47,7 +47,8 @@
   V(uint8_t, "uint(8)", U8, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong) \
   V(_real64, "real(64)", R64, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble) \
   V(_real32, "real(32)", R32, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble) \
-  V(chpl_bool, "bool", Bool, PyBool_Check, PyObject_IsTrue, PyBool_FromLong)
+  V(chpl_bool, "bool", Bool, PyBool_Check, PyObject_IsTrue, PyBool_FromLong) \
+  V(PyObject*, "array", A, (intptr_t), (PyObject*), (PyObject*))
 
 
 #define chpl_MAKE_ARRAY_TYPES(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) extern PyTypeObject* Array##NAMESUFFIX##Type;

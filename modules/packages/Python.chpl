@@ -2084,6 +2084,7 @@ module Python {
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
     extern proc PySequence_Size(obj: PyObjectPtr): Py_ssize_t;
+    extern proc PySequence_Length(obj: PyObjectPtr): Py_ssize_t;
     extern proc PySequence_GetItem(obj: PyObjectPtr,
                                    idx: Py_ssize_t): PyObjectPtr;
     extern proc PySequence_SetItem(obj: PyObjectPtr,
@@ -2182,6 +2183,7 @@ module Python {
     extern proc createArrayTypes(): bool;
 
     proc typeToArraySuffix(type T) param {
+      if isArrayType(T) then return "A";
       select T {
         when int(64) do return "I64";
         when uint(64) do return "U64";
@@ -2205,9 +2207,18 @@ module Python {
 
       param externalName = "createArray" + suffix;
       extern externalName
-      proc createPyArray(arr: c_ptr(T), size: Py_ssize_t): PyObjectPtr;
+      proc createPyArray(arr: c_ptr(void), size: Py_ssize_t): PyObjectPtr;
 
-      return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+      if !isArrayType(T) then
+        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+
+      // TODO: someone needs to be responsible for cleaning up the memory
+      var sub = allocate(PyObjectPtr, arr.size);
+      for i in 0..#arr.size {
+        sub(i) = createArray(arr(i));
+      }
+      return createPyArray(sub, arr.size.safeCast(Py_ssize_t));
+
     }
   }
 }

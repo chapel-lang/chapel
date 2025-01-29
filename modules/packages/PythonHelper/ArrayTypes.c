@@ -52,7 +52,11 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 
 // TODO: how can we remove the error checking here with --no-checks or -scheckExceptions=false?
 #define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, _0) \
-  static int Array##NAMESUFFIX##Object_setitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index, PyObject* value) { \
+  static int Array##NAMESUFFIX##Object_sq_setitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index, PyObject* value) { \
+    if (!value) { \
+      PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
+      return -1; \
+    } \
     if (!CHECKTYPE(value)) { \
       PyErr_SetString(PyExc_TypeError, "can only assign "CHAPELDATATYPE" to this array"); \
       return -1; \
@@ -68,8 +72,53 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
   }
 chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 #undef chpl_MAKE_SETITEM
+
+#define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, _0) \
+  static int Array##NAMESUFFIX##Object_mp_setitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj, PyObject* value) { \
+    if (!value) { \
+      PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
+      return -1; \
+    } \
+    if (!CHECKTYPE(value)) { \
+      PyErr_SetString(PyExc_TypeError, "can only assign "CHAPELDATATYPE" to this array"); \
+      return -1; \
+    } \
+    DATATYPE val = ASTYPE(value); \
+    if (PyErr_Occurred()) return -1; \
+    if (!PyLong_Check(indexObj)) { \
+      /* TODO: support slices */ \
+      PyErr_SetString(PyExc_TypeError, "index must be an integer"); \
+      return -1; \
+    } \
+    Py_ssize_t index = PyLong_AsSsize_t(indexObj); \
+    if (index < 0 || index >= self->size) { \
+      PyErr_SetString(PyExc_IndexError, "index out of bounds"); \
+      return -1; \
+    } \
+    self->data[index] = val; \
+    return 0; \
+  }
+chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
+#undef chpl_MAKE_SETITEM
+
 #define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE) \
-  static PyObject* Array##NAMESUFFIX##Object_getitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index) { \
+  static PyObject* Array##NAMESUFFIX##Object_sq_getitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index) { \
+    if (index < 0 || index >= self->size) { \
+      PyErr_SetString(PyExc_IndexError, "index out of bounds"); \
+      return NULL; \
+    } \
+    return FROMTYPE(self->data[index]); \
+  }
+chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
+#undef chpl_MAKE_GETITEM
+#define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE) \
+  static PyObject* Array##NAMESUFFIX##Object_mp_getitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj) { \
+    if (!PyLong_Check(indexObj)) { \
+      /* TODO: support slices */ \
+      PyErr_SetString(PyExc_TypeError, "index must be an integer"); \
+      return NULL; \
+    } \
+    Py_ssize_t index = PyLong_AsSsize_t(indexObj); \
     if (index < 0 || index >= self->size) { \
       PyErr_SetString(PyExc_IndexError, "index out of bounds"); \
       return NULL; \
@@ -89,22 +138,33 @@ chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
 
 #define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
   static chpl_bool createArray##NAMESUFFIX##Type(void) { \
+    PyMethodDef methods[] = { \
+      {NULL, NULL, 0, NULL}  /* Sentinel */ \
+    }; \
+    /* Do not expose size and data as members */ \
+    PyMemberDef members[] = { \
+      {NULL, 0, 0, 0, NULL} /* Sentinel */\
+    }; \
     PyType_Slot slots[] = { \
       {Py_tp_init, (void*) ArrayGenericObject_init}, \
       {Py_tp_dealloc, (void*) Array##NAMESUFFIX##Object_dealloc}, \
       {Py_tp_doc, (void*) PyDoc_STR("Array" #NAMESUFFIX "Object")}, \
-      {Py_tp_new, (void*) PyType_GenericNew}, \
       {Py_tp_repr, (void*) Array##NAMESUFFIX##Object_repr}, \
-      {Py_sq_ass_item, (void*) Array##NAMESUFFIX##Object_setitem}, \
-      {Py_sq_item, (void*) Array##NAMESUFFIX##Object_getitem}, \
-      {Py_mp_length, (void*)Array##NAMESUFFIX##Object_length}, \
+      {Py_sq_ass_item, (void*) Array##NAMESUFFIX##Object_sq_setitem}, \
+      {Py_sq_item, (void*) Array##NAMESUFFIX##Object_sq_getitem}, \
+      {Py_sq_length, (void*) Array##NAMESUFFIX##Object_length}, \
+      {Py_mp_ass_subscript, (void*) Array##NAMESUFFIX##Object_mp_setitem}, \
+      {Py_mp_subscript, (void*) Array##NAMESUFFIX##Object_mp_getitem}, \
+      {Py_mp_length, (void*) Array##NAMESUFFIX##Object_length}, \
+      {Py_tp_methods, (void*) methods}, \
+      {Py_tp_members, (void*) members}, \
       {0, NULL} \
     }; \
     PyType_Spec spec = { \
       /*name*/ "Array"#NAMESUFFIX, \
       /*basicsize*/ sizeof(Array##NAMESUFFIX##Object), \
       /*itemsize*/ 0, \
-      /*flags*/ Py_TPFLAGS_DEFAULT, \
+      /*flags*/ Py_TPFLAGS_DEFAULT | Py_TPFLAGS_SEQUENCE, \
       /*slots*/ slots \
     }; \
     Array##NAMESUFFIX##Type = (PyTypeObject*)PyType_FromSpec(&spec); \
