@@ -62,18 +62,32 @@ module ChapelHashtable {
 
     const sizeofElement = _ddata_sizeof_element(ret);
 
+    inline proc ptrTo(ref x) {
+      return c_pointer_return(x);
+    }
+
     select initMethod {
       when ArrayInit.noInit {
         // do nothing
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
+          var x = c_addrOf(ret[slot]);
+          var y = ptrTo(ret[slot]);
+          if x != y then {
+            halt("waat");
+          }
           memset(c_addrOf(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
+          var x = c_addrOf(ret[slot]);
+          var y = ptrTo(ret[slot]);
+          if x != y then {
+            halt("waat");
+          }
           memset(c_addrOf(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }

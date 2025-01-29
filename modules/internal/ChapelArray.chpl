@@ -3694,6 +3694,10 @@ module ChapelArray {
 
     use CTypes;
     const ptr = c_addrOf(arr[arr.domain.low]);
+    const oldptr = c_pointer_return(arr[arr.domain.low]);
+    if ptr != oldptr then {
+      halt("what the heck");
+    }
     if castToVoidStar then
       return ptr: c_ptr(void);
     else
@@ -3704,6 +3708,10 @@ module ChapelArray {
 
     use CTypes;
     const ptr = c_addrOfConst(arr[arr.domain.low]);
+    const oldptr = c_pointer_return_const(arr[arr.domain.low]);
+    if ptr != oldptr then {
+      halt("what the heck const");
+    }
     if castToVoidStar then
       return ptr: c_ptrConst(void);
     else
