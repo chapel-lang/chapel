@@ -80,7 +80,10 @@ ArrayType::getArrayType(Context* context,
   auto genericArray = getGenericArrayType(context);
 
   SubstitutionsMap subs;
+  CHPL_ASSERT(domainType.isType() && domainType.type() &&
+              domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
+  CHPL_ASSERT(eltType.isType() && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
 
   // Add substitution for _instance field
