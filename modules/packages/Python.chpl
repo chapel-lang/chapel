@@ -469,6 +469,9 @@ module Python {
       if !ArrayTypes.createArrayTypes() {
         throwChapelException("Failed to create Python array types for Chapel arrays");
       }
+      if !ArrayTypes.registerArrayTypeEnum() {
+        throwChapelException("Failed to register Python array types for Chapel arrays");
+      }
 
       if pyMemLeaks {
         // import objgraph
@@ -1670,6 +1673,8 @@ module Python {
   class Array: Value {
     @chpldoc.nodoc
     type eltType = nothing;
+    @chpldoc.nodoc
+    var buffer: c_ptr(void);
     /*
       Create a new :type:`Array` object from a Chapel array.
 
@@ -2181,6 +2186,7 @@ module Python {
     require "PythonHelper/ArrayTypes.c";
 
     extern proc createArrayTypes(): bool;
+    extern proc registerArrayTypeEnum(): bool;
 
     proc typeToArraySuffix(type T) param {
       if isArrayType(T) then return "A";
@@ -2207,17 +2213,18 @@ module Python {
 
       param externalName = "createArray" + suffix;
       extern externalName
-      proc createPyArray(arr: c_ptr(void), size: Py_ssize_t): PyObjectPtr;
+      proc createPyArray(arr: c_ptr(void),
+                         size: Py_ssize_t, isOwned: bool): PyObjectPtr;
 
-      if !isArrayType(T) then
-        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
-
-      // TODO: someone needs to be responsible for cleaning up the memory
-      var sub = allocate(PyObjectPtr, arr.size);
-      for i in 0..#arr.size {
-        sub(i) = createArray(arr(i));
+      if isArrayType(T) {
+        var sub = allocate(PyObjectPtr, arr.size);
+        for i in 0..#arr.size {
+          sub(i) = createArray(arr(i));
+        }
+        return createPyArray(sub, arr.size.safeCast(Py_ssize_t), true);
+      } else {
+        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t), false);
       }
-      return createPyArray(sub, arr.size.safeCast(Py_ssize_t));
 
     }
   }

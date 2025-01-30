@@ -19,12 +19,49 @@
  */
 
 #include "ArrayTypes.h"
+#include "chpl-mem.h"
+
+
+static PyObject* ArrayTypeEnum = NULL;
+chpl_bool registerArrayTypeEnum(void) {
+
+  PyObject* elements = PyDict_New();
+  if (!elements) return false;
+  {
+    int i = 0;
+#define chpl_MAKE_ENUM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+  PyDict_SetItemString(elements, #NAMESUFFIX, PyLong_FromLong(i++));
+chpl_ARRAY_TYPES(chpl_MAKE_ENUM)
+#undef chpl_MAKE_ENUM
+  }
+
+  PyObject* enumModule = PyImport_ImportModule("enum");
+  if (!enumModule) {
+    Py_CLEAR(elements);
+    return false;
+  }
+
+  ArrayTypeEnum = PyObject_CallMethod(enumModule, "Enum", "sO", "ArrayType", elements);
+  if (!ArrayTypeEnum) {
+    Py_CLEAR(elements);
+    Py_CLEAR(enumModule);
+    return false;
+  }
+
+  Py_CLEAR(elements);
+  Py_CLEAR(enumModule);
+  return true;
+}
+
 
 #define chpl_MAKE_ARRAY_STRUCT(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
   typedef struct { \
     PyObject_HEAD \
     DATATYPE* data; \
     Py_ssize_t size; \
+    chpl_bool isOwned; \
+    PyObject* eltType; \
+    Py_ssize_t ndim; \
   } Array##NAMESUFFIX##Object; \
   PyTypeObject* Array##NAMESUFFIX##Type = NULL;
 chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_STRUCT)
@@ -35,6 +72,8 @@ static int ArrayGenericObject_init(PyObject* self, PyObject* args, PyObject* kwa
 }
 #define chpl_MAKE_DEALLOC(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
   static void Array##NAMESUFFIX##Object_dealloc(Array##NAMESUFFIX##Object* self) { \
+    if (self->isOwned) chpl_mem_free(self->data, 0, 0); \
+    Py_CLEAR(self->eltType); \
     void (*tp_free)(PyObject*) = (void (*)(PyObject*))(PyType_GetSlot(Array##NAMESUFFIX##Type, Py_tp_free)); \
     if (!tp_free) PyErr_SetString(PyExc_RuntimeError, "Could not free object"); \
     else          tp_free((PyObject*) self); \
@@ -141,9 +180,12 @@ chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
     PyMethodDef methods[] = { \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
-    /* Do not expose size and data as members */ \
+    /* Do not expose data as a member!!!! */ \
     PyMemberDef members[] = { \
-      {NULL, 0, 0, 0, NULL} /* Sentinel */\
+      {"size", Py_T_PYSSIZET, offsetof(Array##NAMESUFFIX##Object, size), Py_READONLY, PyDoc_STR("size of the array")}, \
+      {"eltType", Py_T_OBJECT_EX, offsetof(Array##NAMESUFFIX##Object, eltType), Py_READONLY, PyDoc_STR("type of elements in the array")}, \
+      {"ndim", Py_T_PYSSIZET, offsetof(Array##NAMESUFFIX##Object, ndim), Py_READONLY, PyDoc_STR("number of dimensions in the array")}, \
+      {NULL} /* Sentinel */\
     }; \
     PyType_Slot slots[] = { \
       {Py_tp_init, (void*) ArrayGenericObject_init}, \
@@ -183,13 +225,17 @@ chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
 }
 
 #define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
-  PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size) { \
+  PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned) { \
     assert(Array##NAMESUFFIX##Type); \
+    assert(ArrayTypeEnum); \
     PyObject* objPy = PyObject_CallNoArgs((PyObject *) Array##NAMESUFFIX##Type); \
     Array##NAMESUFFIX##Object* obj = (Array##NAMESUFFIX##Object*) objPy; \
     if (!obj) return NULL; \
     obj->data = data; \
     obj->size = size; \
+    obj->isOwned = isOwned; \
+    obj->eltType = PyObject_GetAttrString(ArrayTypeEnum, #NAMESUFFIX); \
+    obj->ndim = 1; /*TODO: when we support proper ND chapel arrays, set dynamicly */\
     return objPy; \
   }
 chpl_ARRAY_TYPES(chpl_CREATE_ARRAY)

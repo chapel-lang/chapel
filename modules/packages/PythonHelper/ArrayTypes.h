@@ -55,9 +55,10 @@
 chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_TYPES)
 #undef chpl_MAKE_ARRAY_TYPES
 
+chpl_bool registerArrayTypeEnum(void);
 chpl_bool createArrayTypes(void);
 
-#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size);
+#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned);
 chpl_ARRAY_TYPES(chpl_CREATE_ARRAY)
 #undef chpl_CREATE_ARRAY
 
