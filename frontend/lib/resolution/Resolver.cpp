@@ -6215,7 +6215,10 @@ static bool handleArrayTypeExpr(Resolver& rv,
     return false;
   }
 
-  // It is an array. Time to build the array type.
+  // Get element type
+  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
+
+  // Determine the domain type
   QualifiedType domainType;
   auto iterandExpr = loop->iterand();
   auto iterandType = rv.byPostorder.byAst(iterandExpr).type();
@@ -6247,36 +6250,41 @@ static bool handleArrayTypeExpr(Resolver& rv,
       }
     }
   }
-
+  // TODO: allow empty domain expression if this is a formal type expr or a
+  // return/yield type expr
   if (domainType.isUnknown()) {
     rv.context->error(iterandExpr, "Invalid domain expression for array type");
     re.setType(genericArrayType);
     return true;
   }
 
-  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
-
-  // get array type via call to builder function on its domain
+  // Assemble the array type
   auto arrayType = genericArrayType;
-  const char* arrayBuilderProc = "buildArray";
-  std::vector<CallInfoActual> actuals;
-  actuals.emplace_back(domainType, USTR("this"));
-  actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
-  // TODO: set initElts properly
-  actuals.emplace_back(QualifiedType::makeParamBool(rv.context, false),
-                       UniqueString::get(rv.context, "initElts"));
-  auto ci = CallInfo(
-      /* name */ UniqueString::get(rv.context, arrayBuilderProc),
-      /* calledType */ domainType,
-      /* isMethodCall */ true,
-      /* hasQuestionArg */ false,
-      /* isParenless */ false,
-      actuals);
-  auto scope = rv.scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-  auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
-  if (!c.exprType().isUnknownOrErroneous()) {
-    arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+  if (domainType.type() == DomainType::getGenericDomainType(rv.context)) {
+    // Short circuit to return generic array in the case of a generic domain.
+  } else {
+    // We have an instantiated domain, so get array type via call to its
+    // array builder function.
+    const char* arrayBuilderProc = "buildArray";
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(domainType, USTR("this"));
+    actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+    // TODO: set initElts properly
+    actuals.emplace_back(QualifiedType::makeParamBool(rv.context, false),
+                         UniqueString::get(rv.context, "initElts"));
+    auto ci = CallInfo(
+        /* name */ UniqueString::get(rv.context, arrayBuilderProc),
+        /* calledType */ domainType,
+        /* isMethodCall */ true,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false,
+        actuals);
+    auto scope = rv.scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    if (!c.exprType().isUnknownOrErroneous()) {
+      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+    }
   }
 
   re.setType(arrayType);
