@@ -328,8 +328,8 @@
      var interp = new Interpreter();
      var func = new Function(interp, "lambda x,: print(x)");
      var sys = new Module(interp, "sys");
-     var pyStdout = sys.getAttr("stdout");
-     var pyStdoutFlush = pyStdout.getAttr("flush");
+     var pyStdout = sys.getAttr(owned Value, "stdout");
+     var pyStdoutFlush = pyStdout.getAttr(owned Value, "flush");
 
      writeln("Hello from Chapel");
      writeln("Let's call some Python!");
