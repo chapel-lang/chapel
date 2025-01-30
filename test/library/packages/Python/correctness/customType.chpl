@@ -1,6 +1,7 @@
 use Python;
 import Reflection;
 use CTypes;
+use IO;
 
 record myRec {
   var x: int;
@@ -35,6 +36,7 @@ proc main() {
   var pyClsType = new Class(m, "MyRec");
   interp.registerConverter(new myRecConverter(pyClsType));
 
+  IO.stdout.flush();
   var printAndReturn = new Function(m, "printAndReturn");
   var fromPy = printAndReturn(myRec, new myRec(42, "hello"));
   writeln(fromPy);
