@@ -401,13 +401,6 @@ static const ArrayType* arrayTypeFromSubsHelper(
   if (!instanceBct || !baseArr) return genericArray;
 
   if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
-    // TODO: the ArrayType predates our '_instance-aware' code (developed
-    //       by Anna and currently at work in Domains). For now, just use the
-    //       "old" style containing a domain type and element type to instantiate
-    //       the array.
-    //
-    //       Anna is planning on tackling this in future work.
-
     auto baseArrRect = baseArr->parentClassType();
     CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
 
@@ -420,6 +413,10 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
+  } else if (baseArr->id().symbolPath() == "DefaultAssociative.DefaultAssociativeArr") {
+    // TODO: support associative arrays
+  } else if (baseArr->id().symbolPath() == "ChapelDistribution.BaseSparseArr") {
+    // TODO: support sparse arrays
   }
 
   // If we reach here, we weren't able to resolve the array type
