@@ -4036,10 +4036,14 @@ static bool resolveFnCallSpecial(Context* context,
       // cast (borrowed class) : unmanaged
       auto srcClass = srcTy->toClassType();
       auto dstClass = dstTy->toClassType();
-      if (srcClass->decorator().isBorrowed() &&
-          dstClass->manageableType()->isAnyClassType() &&
-          dstClass->decorator().isUnmanaged()) {
-        auto decorator = ClassTypeDecorator(ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED);
+      bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
+                        (dstClass->decorator().isUnmanaged() ||
+                         dstClass->decorator().isBorrowed());
+      bool isValidSrc = srcClass->decorator().isBorrowed() ||
+                        srcClass->decorator().isUnmanaged();
+      if (isValidDst && isValidSrc) {
+        auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
+        auto decorator = ClassTypeDecorator(management);
         decorator = decorator.copyNilabilityFrom(srcClass->decorator());
         auto outTy = ClassType::get(context, srcClass->manageableType(),
                                     nullptr, decorator);
