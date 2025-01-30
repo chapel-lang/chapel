@@ -996,6 +996,7 @@ handleRejectedCandidates(Context* context,
   // explaining why each candidate was rejected.
   std::vector<const uast::VarLikeDecl*> actualDecls;
   actualDecls.resize(rejected.size());
+  std::reverse(rejected.begin(), rejected.end());
   // check each rejected candidate for uninitialized actuals
   for (size_t i = 0; i < rejected.size(); i++) {
     auto &candidate = rejected[i];

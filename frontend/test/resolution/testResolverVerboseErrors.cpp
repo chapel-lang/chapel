@@ -309,10 +309,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    8 | proc f(x: uint(64)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(64)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -320,10 +320,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    2 | proc f(x: int(16)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    7 | proc f(x: uint(32)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(32)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
