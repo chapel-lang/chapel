@@ -472,10 +472,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
     auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
-    auto c = resolveGeneratedCall(context, ast, ci, inScopes);
-    ResolvedExpression& opR = rv.byAst(ast);
-    resolver.handleResolvedCall(opR, ast, ci, c,
-                                { { AssociatedAction::DEFAULT_INIT, ast->id() } });
+    auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
+    c.noteResult(&rv.byAst(ast), { { AssociatedAction::DEFAULT_INIT, ast->id() } });
   }
 }
 
@@ -507,17 +505,16 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
-  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
   if (op != nullptr && op->op() == USTR("=")) {
     // if the syntax shows a '=' call, resolve that into the assign
-    resolver.handleResolvedCall(opR, ast, ci, c);
+    c.noteResult(&opR);
   } else {
     // otherwise, add an associated action
-    resolver.handleResolvedCall(opR, ast, ci, c,
-                                { { AssociatedAction::ASSIGN, ast->id() } });
+    c.noteResult(&opR, { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
 
@@ -543,7 +540,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
-  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -551,7 +548,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
 
-  computeActualFormalIntents(context, c.mostSpecific(), ci, actualAsts,
+  computeActualFormalIntents(context, c.result.mostSpecific(), ci, actualAsts,
                              intents, formalTypes);
 
   bool formalUsesInIntent = false;
@@ -581,7 +578,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   if (lhsType.type() != rhsType.type()) {
     action = AssociatedAction::INIT_OTHER;
   }
-  resolver.handleResolvedCall(opR, ast, ci, c, { { action, ast->id() } });
+  c.noteResult(&opR, { { action, ast->id() } });
 
   // If we were trying to move, but had to run an init= to change types,
   // and that init= did not accept its argument by 'in' intent, we need
@@ -735,7 +732,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
-  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
@@ -744,8 +741,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   }
 
   ResolvedExpression& opR = rv.byAst(assocAst);
-  resolver.handleResolvedCall(opR, assocAst, ci, c,
-                              { { AssociatedAction::DEINIT, deinitedId } });
+  c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
