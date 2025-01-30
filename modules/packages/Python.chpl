@@ -315,7 +315,7 @@
      FILENAME: Printing.chpl
      START_GOOD
      Hello from Chapel
-     Lets call some Python!
+     Let's call some Python!
      Hello, World!
      Goodbye, World!
      Back to Chapel
