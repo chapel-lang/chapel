@@ -645,92 +645,31 @@ module ChapelHashtable {
       rehash(newSize);
     }
 
-    proc _determineEvenChunks(numChunks: int, numFull: int): [] int {
-      var numFullPerTask = numFull / numChunks;
-      var rem = numFull % numChunks;
-
-      var chunkEnds: [0..#(numChunks-1)] int;
-      var chunkIdx = 0;
-      var curNumFull = 0;
-      for i in 0..#(this.tableSize) {
-        if this.isSlotFull(i) {
-          curNumFull += 1;
-        }
-        /* If we've found the last full slot or we've filled our list of chunk
-           end points, exit the loop */
-        if (curNumFull == numFull) ||
-          (chunkIdx >= chunkEnds.size) {
-          break;
-        }
-
-        // Allows us to evenly distribute when the chunks don't divide the
-        // total number of elements evenly.
-        if chunkIdx < rem {
-          if (curNumFull == (numFullPerTask * (chunkIdx+1)) + (chunkIdx+1)) {
-            chunkEnds[chunkIdx] = i;
-            chunkIdx += 1;
-          }
-        } else {
-          if (curNumFull == (numFullPerTask * (chunkIdx+1)) + rem) {
-            chunkEnds[chunkIdx] = i;
-            chunkIdx += 1;
-          }
-        }
-      }
-      return chunkEnds;
-    }
-
     iter _evenSlots(param tag) where tag == iterKind.leader {
-      var numChunks = _computeNumChunks(this.tableNumFullSlots);
-      var numFullPerTask = this.tableNumFullSlots / numChunks;
-      var rem = this.tableNumFullSlots % numChunks;
-
-      forall i in 0..#numChunks {
-        if (i < rem) {
-          yield (((numFullPerTask*i)+i)..<((numFullPerTask*(i+1))+(i+1)),
-                 i, numChunks);
-        } else {
-          yield (((numFullPerTask*i)+rem)..<((numFullPerTask*(i+1))+rem),
-                 i, numChunks);
-        }
+      for i in (0..<this.tableNumFullSlots).these(tag) {
+        yield i;
       }
     }
 
 
     iter _evenSlots(followThis, param tag) const ref
       where tag == iterKind.follower {
-      use Types;
 
-      var iterSpace: range;
+      var space = followThis(0);
 
-      if (isTuple(followThis)) {
-        if (followThis.size == 3) {
-          // Using _evenSlots iterator gives us a specific set up to iterate
-          // over the full chunks in an even manner.
-          var intendedSpace = followThis(0);
-          var intendedChunk = followThis(1);
-          var numChunks = followThis(2);
+      var curNumFull = 0;
 
-          // Determine corresponding chunk to use.
-          var chunkEnds = _determineEvenChunks(numChunks,
-                                               this.tableNumFullSlots);
-          if (intendedChunk == 0) {
-            iterSpace = 0..chunkEnds[intendedChunk];
-          } else if (intendedChunk == chunkEnds.size) {
-            iterSpace = (chunkEnds[intendedChunk-1]+1)..(this.tableSize - 1);
-          } else {
-            iterSpace = (chunkEnds[intendedChunk-1]+1)..chunkEnds[intendedChunk];
+      for i in 0..#(this.tableSize) {
+        if this.isSlotFull(i) {
+          if (curNumFull >= space.low) {
+            if (curNumFull <= space.high) {
+              yield this.table[i].key;
+            } else {
+              break;
+            }
           }
-        } else {
-          iterSpace = followThis(0);
-        }
-      } else {
-        iterSpace = followThis;
-      }
 
-      foreach slot in iterSpace {
-        if this.isSlotFull(slot) then {
-          yield this.table[slot].key;
+          curNumFull += 1;
         }
       }
     }
