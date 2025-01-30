@@ -1299,9 +1299,14 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     }
 
     // if there are no returns with a value, use void return type
-    if (fn->linkage() == Decl::EXTERN && fn->returnType() == nullptr) {
-      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-      return true;
+    if (fn->linkage() == Decl::EXTERN) {
+      if (fn->returnType() == nullptr) {
+        result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+        return true;
+      } else {
+        result = QualifiedType(QualifiedType::CONST_VAR, ErroneousType::get(context));
+        return true;
+      }
     } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;
