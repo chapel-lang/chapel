@@ -5,6 +5,7 @@ var pythonCode = """
 def loop(arr):
   print("printing", arr, end=": ")
   print(", ".join(str(x) for x in arr))
+  print("len:", len(arr), "size:", arr.size, "eltType:", arr.eltType, "ndim:", arr.ndim)
   print("reset to 0")
   for i in range(len(arr)):
     if isinstance(arr[i], bool):

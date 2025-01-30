@@ -6,6 +6,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I64 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -17,6 +18,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U64 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -28,6 +30,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I32 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -39,6 +42,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U32 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -50,6 +54,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I16 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -61,6 +66,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U16 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -72,6 +78,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I8 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -83,6 +90,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U8 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -94,6 +102,7 @@ size: 10
 chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 42.0 10.0
 from python
 printing Array(eltType=real(64),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 42.0, 10.0
+len: 10 size: 10 eltType: ArrayType.R64 ndim: 1
 reset to 0
 from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 =========================
@@ -105,6 +114,7 @@ size: 10
 chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 42.0 10.0
 from python
 printing Array(eltType=real(32),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 42.0, 10.0
+len: 10 size: 10 eltType: ArrayType.R32 ndim: 1
 reset to 0
 from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 =========================
@@ -116,6 +126,7 @@ size: 10
 chapel: true true true true true true true true true true
 from python
 printing Array(eltType=bool,size=10): True, True, True, True, True, True, True, True, True, True
+len: 10 size: 10 eltType: ArrayType.Bool ndim: 1
 reset to 0
 from chapel: false false false false false false false false false false
 =========================
@@ -127,6 +138,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I64 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -138,6 +150,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(64),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U64 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -149,6 +162,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I32 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -160,6 +174,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(32),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U32 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -171,6 +186,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I16 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -182,6 +198,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(16),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U16 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -193,6 +210,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=int(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.I8 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -204,6 +222,7 @@ size: 10
 chapel: 17 2 3 4 5 6 7 8 42 10
 from python
 printing Array(eltType=uint(8),size=10): 17, 2, 3, 4, 5, 6, 7, 8, 42, 10
+len: 10 size: 10 eltType: ArrayType.U8 ndim: 1
 reset to 0
 from chapel: 0 0 0 0 0 0 0 0 0 0
 =========================
@@ -215,6 +234,7 @@ size: 10
 chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 42.0 10.0
 from python
 printing Array(eltType=real(64),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 42.0, 10.0
+len: 10 size: 10 eltType: ArrayType.R64 ndim: 1
 reset to 0
 from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 =========================
@@ -226,6 +246,7 @@ size: 10
 chapel: 17.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 42.0 10.0
 from python
 printing Array(eltType=real(32),size=10): 17.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 42.0, 10.0
+len: 10 size: 10 eltType: ArrayType.R32 ndim: 1
 reset to 0
 from chapel: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 =========================
@@ -237,6 +258,7 @@ size: 10
 chapel: true true true true true true true true true true
 from python
 printing Array(eltType=bool,size=10): True, True, True, True, True, True, True, True, True, True
+len: 10 size: 10 eltType: ArrayType.Bool ndim: 1
 reset to 0
 from chapel: false false false false false false false false false false
 =========================
