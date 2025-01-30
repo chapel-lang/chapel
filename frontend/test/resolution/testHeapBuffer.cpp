@@ -199,6 +199,46 @@ static void test9() {
   assert(guard.realizeErrors() == 0);
 }
 
+static void test10() {
+  testHeapBufferArg("_ddata(int)", "_nilType", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT == IntType::get(eg.context(), 64));
+  });
+}
+
+static void test11() {
+  // regression test for an issue with nil and generic formals.
+  // during initial candidate selection, information from previous formals'
+  // instantiation is not available for subsequent formal. Thus,
+  // y will have a generic type. This should not preclude the candidate from
+  // being considered when 'nil' is passed (because later, y will be instantiated
+  // and only a conversion from nil will be needed).
+
+  context->advanceToNextRevision(false);
+  if (!context->chplHome().empty())
+    setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  proc foo(x: _ddata(?t), y: _ddata(t)) do return y;
+  var ptrInt: _ddata(int);
+  var ptrReal: _ddata(real);
+  var x = foo(ptrInt, nil);
+  var y = foo(ptrReal, nil);
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars["x"].type()->isHeapBufferType());
+  assert(vars["x"].type()->toHeapBufferType()->eltType()->isIntType());
+  assert(vars["y"].type()->isHeapBufferType());
+  assert(vars["y"].type()->toHeapBufferType()->eltType()->isRealType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 static void runAllTests() {
   test1();
   test2();
@@ -209,6 +249,8 @@ static void runAllTests() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
 }
 
 int main() {
