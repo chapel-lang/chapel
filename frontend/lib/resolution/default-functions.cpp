@@ -163,11 +163,7 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   }
 
-  if (type->isArrayType()) {
-    if (name == "domain" || name == "eltType") {
-      return true;
-    }
-  } else if (type->isPtrType()) {
+  if (type->isPtrType()) {
     if (name == "eltType") {
       return true;
     } else if (type->isHeapBufferType() && name == "this") {
@@ -697,46 +693,6 @@ generateDeSerialize(Context* context, const CompositeType* compType,
 }
 
 static const TypedFnSignature*
-generateArrayMethod(Context* context,
-                    const ArrayType* at,
-                    UniqueString name) {
-  // Build a basic function signature for methods on an array
-  // TODO: we should really have a way to just set the return type here
-  const TypedFnSignature* result = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> formals;
-  std::vector<QualifiedType> formalTypes;
-
-  formals.push_back(
-      UntypedFnSignature::FormalDetail(USTR("this"),
-                                       UntypedFnSignature::DK_NO_DEFAULT,
-                                       nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
-
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ at->id(),
-                        /*name*/ name,
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, at->id()),
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(formals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
-                                 TypedFnSignature::WHERE_NONE,
-                                 /* needsInstantiation */ false,
-                                 /* instantiatedFrom */ nullptr,
-                                 /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap(),
-                                 /* outerVariables */ {});
-
-  return result;
-}
-
-static const TypedFnSignature*
 generateTupleMethod(Context* context,
                     const TupleType* at,
                     UniqueString name) {
@@ -1153,8 +1109,6 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       result = generateDeSerialize(context, compType, name, "writer", "serializer");
     } else if (name == USTR("deserialize")) {
       result = generateDeSerialize(context, compType, name, "reader", "deserializer");
-    } else if (auto arrayType = type->toArrayType()) {
-      result = generateArrayMethod(context, arrayType, name);
     } else if (auto tupleType = type->toTupleType()) {
       result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
