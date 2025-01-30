@@ -521,13 +521,6 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
       !formalT->isCStringType()) {
     bool instantiates = false;
-    if (auto ct = formalT->toClassType()) {
-      if (auto mt = ct->manageableType()) {
-        if (mt->isAnyClassType()) {
-          instantiates = true;
-        }
-      }
-    }
     return CanPassResult(/* no fail reason */ {},
                          instantiates,
                          /*promotes*/ false,
