@@ -654,11 +654,11 @@ generateDeSerialize(Context* context, const CompositeType* compType,
   ufsFormals.push_back(
       UntypedFnSignature::FormalDetail(UniqueString::get(context, channel),
                                        UntypedFnSignature::DK_NO_DEFAULT,
-                                       genFn->formal(0)));
+                                       genFn->formal(1)));
   ufsFormals.push_back(
       UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer),
                                        UntypedFnSignature::DK_NO_DEFAULT,
-                                       genFn->formal(1)));
+                                       genFn->formal(2)));
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
