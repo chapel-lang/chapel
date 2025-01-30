@@ -6194,8 +6194,7 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 
 static bool handleArrayTypeExpr(Resolver& rv,
                                 const IndexableLoop* loop) {
-
-  auto bodyType = QualifiedType();
+  QualifiedType bodyType;
   if (loop->numStmts() == 1) {
     bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
   } else {
@@ -6213,14 +6212,35 @@ static bool handleArrayTypeExpr(Resolver& rv,
   }
 
   // It is an array. Time to build the array type.
-
-  auto domainType = QualifiedType();
-  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
+  QualifiedType domainType;
+  auto iterandExpr = loop->iterand();
+  auto iterandType = rv.byPostorder.byAst(iterandExpr).type();
   if (!iterandType.isUnknownOrErroneous()) {
     if (iterandType.type()->isDomainType()) {
       domainType = iterandType;
-    } else {
-      // TODO: convert range into domain
+    } else if (iterandType.type()->isRecordType() &&
+               iterandType.type()->toRecordType()->id() ==
+                   CompositeType::getRangeType(rv.context)->id()) {
+      // Convert range into domain.
+      // Note this is only hit for a plain old range, not a comma-separated list
+      // of them which is already recognized as a domain.
+      // TODO: This code is largely copied from Domain decl resolution, can
+      // likely be refactored.
+
+      std::vector<CallInfoActual> actuals;
+      actuals.emplace_back(iterandType, UniqueString());
+      auto ci = CallInfo(
+          /* name */ UniqueString::get(rv.context, "chpl__ensureDomainExpr"),
+          /* calledType */ QualifiedType(),
+          /* isMethodCall */ false,
+          /* hasQuestionArg */ false,
+          /* isParenless */ false, actuals);
+      auto scope = rv.scopeStack.back();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+      auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+      if (!c.exprType().isUnknownOrErroneous()) {
+        domainType = c.exprType();
+      }
     }
   }
 
