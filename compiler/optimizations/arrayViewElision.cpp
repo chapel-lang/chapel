@@ -95,6 +95,8 @@
 // `--report-array-view-elision` flag to enable some output during compilation
 // to help with understanding what's optimized and what's not.
 
+static const char* createConstProtoSlice = "chpl__createConstProtoSlice";
+static const char* createProtoSlice = "chpl__createProtoSlice";
 
 ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
     origCall_(origCall) {
@@ -181,8 +183,7 @@ CallExpr* ArrayViewElisionTransformer::genCreateProtoSlice(CallExpr* call) {
 
   const bool isConst = base->symbol()->isConstant();
 
-  const char* factory = isConst ? "chpl__createConstProtoSlice" :
-                                  "chpl__createProtoSlice";
+  const char* factory = isConst ? createConstProtoSlice : createProtoSlice;
 
   CallExpr* ret = new CallExpr(factory, base->copy());
   for_actuals(actual, call) {
@@ -341,6 +342,11 @@ bool ArrayViewElisionPrefolder::handleOneProtoSlice(bool isLhs) {
   }
 
   CallExpr* typeCheck = new CallExpr("chpl__ave_exprCanBeProtoSlice");
+
+  // add the isConst flag for a workaround
+  //   See: https://github.com/chapel-lang/chapel/issues/26626
+  typeCheck->insertAtTail(call->isNamed(createConstProtoSlice) ? gTrue:gFalse);
+
   for_actuals (actual, call) {
     INT_ASSERT(isSymExpr(actual));
     typeCheck->insertAtTail(actual->copy());
