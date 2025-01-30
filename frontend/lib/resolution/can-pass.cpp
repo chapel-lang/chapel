@@ -519,8 +519,20 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                                             const Type* formalT) {
   // nil -> pointers
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
-      !formalT->isCStringType())
-    return convert(SUBTYPE);
+      !formalT->isCStringType()) {
+    bool instantiates = false;
+    if (auto ct = formalT->toClassType()) {
+      if (auto mt = ct->manageableType()) {
+        if (mt->isAnyClassType()) {
+          instantiates = true;
+        }
+      }
+    }
+    return CanPassResult(/* no fail reason */ {},
+                         instantiates,
+                         /*promotes*/ false,
+                         /*conversion*/ SUBTYPE);
+  }
 
   // class types
   if (auto actualCt = actualT->toClassType()) {
@@ -880,6 +892,21 @@ shouldConvertClassTypeIntoManagerRecord(Context* context,
   return empty;
 }
 
+CanPassResult CanPassResult::ensureSubtypeConversionInstantiates(CanPassResult got) {
+  if (got.instantiates()) {
+    return got;
+  }
+
+  // The type passed, but didn't actually instantiate. This is odd
+  // since we are trying to instantiate a generic formal. This suggests
+  // the actual is generic, too, which typically doesn't make sense.
+  // Explicitly set the fail reason but keep the rest of the properties
+  // intact, so that that the caller can dismiss this error if
+  // generic actuals are allowed.
+  got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
+  return got;
+}
+
 CanPassResult CanPassResult::canInstantiate(Context* context,
                                             const QualifiedType& actualQT,
                                             const QualifiedType& formalQT) {
@@ -901,15 +928,11 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     return instantiate();
   }
 
-  // TODO: Should we move this to the section below and have it call canPassSubtypeOrBorrowing?
-  // TODO: There may be cases for nilType that are not covered
   // this is to allow instantiating 'class?' type with nil
-  if (auto cls = formalT->toClassType()) {
-    if (auto mt = cls->manageableType()) {
-      if (mt->isAnyClassType()) {
-        if (cls->decorator().isNilable() && actualT->isNilType())
-          return instantiate();
-      }
+  if (actualT->isNilType()) {
+    auto got = canPassSubtypeOrBorrowing(context, actualT, formalT);
+    if (got.passes()) {
+      return ensureSubtypeConversionInstantiates(got);
     }
   }
 
@@ -928,18 +951,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
       if (got.passes()) {
-        if (got.instantiates()) {
-          return got;
-        }
-
-        // The type passed, but didn't actually instantiate. This is odd
-        // since we are trying to instantiate a generic formal. This suggests
-        // the actual is generic, too, which typically doesn't make sense.
-        // Explicitly set the fail reason but keep the rest of the properties
-        // intact, so that that the caller can dismiss this error if
-        // generic actuals are allowed.
-        got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
-        return got;
+        return ensureSubtypeConversionInstantiates(got);
       }
     }
   } else if (auto actualCt = actualT->toCompositeType()) {

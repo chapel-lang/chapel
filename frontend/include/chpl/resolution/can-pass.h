@@ -96,6 +96,8 @@ class CanPassResult {
   static bool isTypeGeneric(Context* context, const types::QualifiedType& qt);
   static bool isTypeGeneric(Context* context, const types::Type* t);
 
+  static CanPassResult ensureSubtypeConversionInstantiates(CanPassResult r);
+
   static bool
   canConvertNumeric(Context* context,
                     const types::Type* actualT,

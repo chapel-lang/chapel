@@ -3289,7 +3289,15 @@ isInitialTypedSignatureApplicable(Context* context,
       } else {
         got = canPassFn(context, actualType, formalType);
       }
-      if (!got.passes()) {
+      if (got.passes()) {
+        // fine, continue to next entry
+      } else if (got.reason() == FAIL_DID_NOT_INSTANTIATE) {
+        // A conversion is possible, but the formal type is generic and
+        // the actual doesn't have enough info to instantiate. However,
+        // this is only the "initial" check -- previous formals might contribute
+        // information that makes the formal concrete. Allow this for now.
+      } else {
+        CHPL_ASSERT(!got.passes());
         return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
       }
     }
