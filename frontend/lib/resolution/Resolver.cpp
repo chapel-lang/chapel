@@ -5235,6 +5235,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
 
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+  ResolvedExpression& r = byPostorder.byAst(dot);
 
   bool deferToFunctionResolution = false;
   bool resolvingCalledDot = nearestCalledExpression() == dot;
@@ -5263,7 +5264,6 @@ void Resolver::exit(const Dot* dot) {
       auto c = resolveGeneratedCall(dot, &ci, &inScopes);
       if (!c.result.mostSpecific().isEmpty()) {
         // save the most specific candidates in the resolution result for the id
-        ResolvedExpression& r = byPostorder.byAst(dot);
         c.noteResult(&r);
       }
       return;
@@ -5272,8 +5272,6 @@ void Resolver::exit(const Dot* dot) {
 
   if (dot->field() == USTR("type")) {
     const Type* receiverType = nullptr;
-    ResolvedExpression& r = byPostorder.byAst(dot);
-
     if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
@@ -5286,6 +5284,29 @@ void Resolver::exit(const Dot* dot) {
       r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
                                 receiver.toId()));
     }
+    return;
+  }
+
+  // Resolve .domain on an array as a call to._dom, as that's how production
+  // does it.
+  if (receiver.type().type() && receiver.type().type()->isArrayType() &&
+      dot->field() == USTR("domain")) {
+    gdbShouldBreakHere();
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(receiver.type(), USTR("this"));
+    auto ci = CallInfo(/* name */ UniqueString::get(context, "_dom"),
+                       /* calledType */ receiver.type(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ true, actuals);
+    auto inScope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    auto c = resolveGeneratedCall(context, dot, ci, inScopes);
+
+    // Save result of _dom call
+    auto domainTy = c.exprType().type();
+    CHPL_ASSERT(domainTy);
+    r.setType(QualifiedType(QualifiedType::CONST_VAR, domainTy));
     return;
   }
 
@@ -5307,7 +5328,6 @@ void Resolver::exit(const Dot* dot) {
                                  /* methodLookupHelper */ nullptr,
                                  /* receiverScopeHelper */ nullptr,
                                  dot->field(), config);
-    ResolvedExpression& r = byPostorder.byAst(dot);
     if (ids.numIds() == 0) {
       // emit a "can't find that thing" error
       issueErrorForFailedModuleDot(dot, moduleId, config);
@@ -5345,7 +5365,6 @@ void Resolver::exit(const Dot* dot) {
     // resolve E.x where E is an enum.
     auto enumAst = parsing::idToAst(context, receiver.toId())->toEnum();
     CHPL_ASSERT(enumAst != nullptr);
-    ResolvedExpression& r = byPostorder.byAst(dot);
 
     bool ambiguous;
     auto elemId = scopeResolveEnumElement(enumAst, dot->field(), dot, ambiguous);
@@ -5372,12 +5391,10 @@ void Resolver::exit(const Dot* dot) {
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
     r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
     return;
   }
   if (receiver.type().type()->isErroneousType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
     r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
     return;
   }
@@ -5406,7 +5423,7 @@ void Resolver::exit(const Dot* dot) {
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(dot, &ci, &inScopes);
   // save the most specific candidates in the resolution result for the id
-  c.noteResult(&byPostorder.byAst(dot));
+  c.noteResult(&r);
 }
 
 bool Resolver::enter(const New* node) {
