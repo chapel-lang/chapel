@@ -139,7 +139,16 @@ void InitResolver::resolveImplicitSuperInit() {
                   NoMatchingSuper, result.astForContext, *result.ci,
                   rejected, actualDecls, this->useOfSuperFields_);
     };
-    c.noteResultPrintCandidates(nullptr);
+
+    // Capture the errors emitted here and defer them until we know we haven't
+    // found a "real" super.init call (which means a different error supercedes
+    // these).
+    auto cAndErrors = ctx_->runAndTrackErrors([&c](Context* ctx) {
+      c.noteResultPrintCandidates(nullptr);
+      return true;
+    });
+
+    errorsFromImplicitSuperInit = std::move(cAndErrors.errors());
     updateSuperType(&c.result);
   }
 }
@@ -600,6 +609,10 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
 
+  for (auto& error : errorsFromImplicitSuperInit) {
+    ctx_->report(std::move(error));
+  }
+
   auto ret = initResolver_.typedSignature;
 
   if (phase_ < PHASE_COMPLETE) {
@@ -768,6 +781,7 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
         updateSuperType(c);
 
         this->explicitSuperInit = true;
+        this->errorsFromImplicitSuperInit.clear();
 
         return true;
       }

@@ -72,6 +72,9 @@ class InitResolver {
   // Uses of parent fields before a super.init is seen.
   // Stores field ID and ID of the uAST referencing the field.
   std::vector<std::pair<ID, ID>> useOfSuperFields_;
+  // These errors are captured but deferred until we know we haven't found
+  // a "real" super.init call.
+  std::vector<owned<ErrorBase>> errorsFromImplicitSuperInit;
 
   //initialization points to guide handling `=` operators
   std::set<const uast::AstNode*> initPoints;
