@@ -128,7 +128,15 @@ void InitResolver::resolveImplicitSuperInit() {
     actuals.push_back(CallInfoActual(superQT, USTR("this")));
     auto ci = CallInfo(USTR("init"), superQT, true, false, false, actuals);
     auto inScopes = CallScopeInfo::forNormalCall(initResolver_.scopeStack.back(), initResolver_.poiScope);
-    auto c = resolveGeneratedCall(ctx_, fn_->body()->child(0), ci, inScopes);
+
+    auto callContext = fn_->body();
+    auto c = resolveGeneratedCall(ctx_, callContext, ci, inScopes);
+    initResolver_.handleResolvedCallPrintCandidates(nullptr, callContext, ci, inScopes,
+                                                    QualifiedType(), c,
+                                                    /* actualAsts */ { nullptr },
+                                                    /* action */ chpl::empty,
+                                                    /* wasCallGenerated */ true,
+                                                    /* nameForCall */ "super.init");
 
     updateSuperType(&c);
   }

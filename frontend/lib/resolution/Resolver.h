@@ -463,7 +463,8 @@ struct Resolver {
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
-                                         const CallResolutionResult& c);
+                                         const CallResolutionResult& c,
+                                         const char* callName = nullptr);
 
   // issue error for M.x where x is not found in a module M
   void issueErrorForFailedModuleDot(const uast::Dot* dot,
@@ -486,7 +487,7 @@ struct Resolver {
   //  * issueErrorForFailedCallResolution if there was an error
   //
   // Instead, returns 'true' if an error needs to be issued.
-  bool handleResolvedCallWithoutError(ResolvedExpression& r,
+  bool handleResolvedCallWithoutError(ResolvedExpression* r,
                                       const uast::AstNode* astForErr,
                                       const CallResolutionResult& c,
                                       optional<ActionAndId> associatedActionAndId = {});
@@ -496,16 +497,31 @@ struct Resolver {
                           const CallInfo& ci,
                           const CallResolutionResult& c,
                           optional<ActionAndId> associatedActionAndId = {});
+
+  // general helper for issuing resolution errors, used by handleResolvedCallPrintCandidates.
+  // Re-runs the call enabling tracking rejected candidates, then issues the error
+  // that includes the candidates etc.
+  //
+  // returns true if it issued a "no matching candidates" error with rejected candidates.
+  bool rerunCallToPrintCandidates(const uast::AstNode* astForContext,
+                                  const CallInfo& ci,
+                                  const CallScopeInfo& inScopes,
+                                  const types::QualifiedType& receiverType,
+                                  const CallResolutionResult& c,
+                                  const std::vector<const uast::AstNode*>& actualAsts,
+                                  bool wasCallGenerated);
   // like handleResolvedCall, but prints the candidates that were rejected
   // by the error in detail.
-  void handleResolvedCallPrintCandidates(ResolvedExpression& r,
-                                         const uast::Call* call,
+  void handleResolvedCallPrintCandidates(ResolvedExpression* r,
+                                         const uast::AstNode* call,
                                          const CallInfo& ci,
                                          const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
                                          const CallResolutionResult& c,
-                                         std::vector<const uast::AstNode*>& actualAsts,
-                                         optional<ActionAndId> associatedActionAndId = {});
+                                         const std::vector<const uast::AstNode*>& actualAsts,
+                                         optional<ActionAndId> associatedActionAndId = {},
+                                         bool wasGeneratedCall = false,
+                                         const char* callName = nullptr);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
