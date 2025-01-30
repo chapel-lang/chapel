@@ -1,1 +1,0 @@
-withRange2.chpl:11: error: rank mismatch in zippered iteration (can't zip a 3D expression with a range, which is 1D)

@@ -12,7 +12,8 @@ LocalSet.add(5);
 var A: [0..3] int;
 writeln(A.size, " ", LocalSet.size);
 
-// Expect this to fail to zip, the set is longer than the array
+// This should fail to zip, the set is longer than the array.  But it doesn't,
+// improvements to leader/follower (#11505) would make it easier to detect
 forall (a,b) in zip(A,LocalSet) {
     a=b;
     if verbose then writeln(b);
