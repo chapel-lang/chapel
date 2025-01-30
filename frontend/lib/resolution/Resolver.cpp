@@ -986,11 +986,8 @@ static bool isCallToPtr(const AstNode* formalTypeExpr) {
 
 // helper to gather bad actuals and report NoMatchingCandidates error
 static void
-handleRejectedCandidates(Context* context,
-                         ResolutionResultByPostorderID& byPostorder,
+handleRejectedCandidates(Resolver::ResolvedCallResult& result,
                          std::vector<ApplicabilityResult>& rejected,
-                         const resolution::CallInfo& ci,
-                         const uast::AstNode* call,
                          const std::vector<const uast::AstNode*>& actualAsts) {
   // By performing some processing in the resolver, we can issue a nicer error
   // explaining why each candidate was rejected.
@@ -1006,7 +1003,7 @@ handleRejectedCandidates(Context* context,
       continue;
     }
     auto fn = candidate.initialForErr();
-    resolution::FormalActualMap fa(fn, ci);
+    resolution::FormalActualMap fa(fn, *result.ci);
     auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
@@ -1017,9 +1014,9 @@ handleRejectedCandidates(Context* context,
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
     if (actualExpr && actualExpr->isIdentifier()) {
-      auto &resolvedExpr = byPostorder.byAst(actualExpr);
+      auto &resolvedExpr = result.parent->byPostorder.byAst(actualExpr);
       if (auto id = resolvedExpr.toId()) {
-        auto var = parsing::idToAst(context, id);
+        auto var = parsing::idToAst(result.parent->context, id);
         // should put a nullptr if not a VarLikeDecl
         actualDecl = var->toVarLikeDecl();
       }
@@ -1027,7 +1024,7 @@ handleRejectedCandidates(Context* context,
     actualDecls[i] = actualDecl;
   }
   CHPL_ASSERT(rejected.size() == actualDecls.size());
-  CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, actualDecls);
+  result.reportError(result, rejected, actualDecls);
 }
 
 static void varArgTypeQueryError(Context* context,
@@ -2175,10 +2172,10 @@ bool Resolver::ResolvedCallResult::rerunCallAndPrintCandidates() {
   if (!rejected.empty()) {
     // There were candidates but we threw them out. Report on those.
     if (actualAsts) {
-      handleRejectedCandidates(parent->context, parent->byPostorder, rejected, *ci, astForContext, *actualAsts);
+      handleRejectedCandidates(*this, rejected, *actualAsts);
     } else {
       std::vector<const uast::AstNode*> actualAsts(ci->numActuals(), nullptr);
-      handleRejectedCandidates(parent->context, parent->byPostorder, rejected, *ci, astForContext, actualAsts);
+      handleRejectedCandidates(*this, rejected, actualAsts);
     }
     return true;
   }

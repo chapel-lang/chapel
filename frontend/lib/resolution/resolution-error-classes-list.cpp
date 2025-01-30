@@ -1366,6 +1366,34 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   }, actualDecls);
 }
 
+void ErrorNoMatchingSuper::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
+  auto& superUses = std::get<std::vector<std::pair<ID, ID>>>(info_);
+
+  wr.heading(kind_, type_, node, "failed to resolve implicit call to 'super.init': no matching candidates.");
+  wr.code(node);
+  wr.message("The call to 'super.init' was triggered by the use of fields from the parent type.");
+
+  for (auto& superUse : superUses) {
+    wr.note(superUse.first, "the field defined in a parent class here...");
+    wr.codeForLocation(superUse.first);
+    wr.note(superUse.second, "...was used in the child initializer here:");
+    wr.codeForLocation(superUse.second);
+  }
+
+  wr.message("In order to use fields from a parent class, the parent's initializer must have been called.");
+  wr.message("Chapel attempts to automatically call a zero-argument initializer on the parent class if an explicit call is not present.");
+
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [](int idx) -> const uast::AstNode* {
+    return nullptr;
+  }, actualDecls);
+
+  wr.message("If the parent type's initializer has formals, consider invoking it explicitly.");
+}
+
 void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {
   auto ad = std::get<const uast::AggregateDecl*>(info_);
   auto inheritanceExpr = std::get<const uast::AstNode*>(info_);

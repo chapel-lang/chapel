@@ -132,6 +132,13 @@ void InitResolver::resolveImplicitSuperInit() {
     auto callContext = fn_->body();
     auto c = initResolver_.resolveGeneratedCall(callContext, &ci, &inScopes);
     c.callName = "super.init";
+    c.reportError = [this](const Resolver::ResolvedCallResult& result,
+                            std::vector<ApplicabilityResult>& rejected,
+                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
+      CHPL_REPORT(result.parent->context,
+                  NoMatchingSuper, result.astForContext, *result.ci,
+                  rejected, actualDecls, this->useOfSuperFields_);
+    };
     c.noteResultPrintCandidates(nullptr);
     updateSuperType(&c.result);
   }
@@ -1018,12 +1025,14 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   if (isSuperField) {
     if (explicitSuperInit == false && phase_ != PHASE_COMPLETE) {
       // Upon first use of parent field, need to insert a super.init() call
+      bool firstUseOfField = useOfSuperFields_.empty();
+      useOfSuperFields_.push_back({id, node->id()});
+
       // TODO: store this as an associated action
-      if (useOfSuperFields_.empty()) {
+      if (firstUseOfField) {
         this->resolveImplicitSuperInit();
       }
 
-      useOfSuperFields_.push_back({id, node->id()});
       return true;
     } else {
       isValidPreInitMention = true;

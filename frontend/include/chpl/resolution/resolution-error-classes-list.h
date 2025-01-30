@@ -82,6 +82,7 @@ ERROR_CLASS(MultipleInheritance, const uast::Class*, const uast::AstNode*, const
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NestedClassFieldRef, const uast::TypeDecl*, const uast::TypeDecl*, const uast::AstNode*, ID)
 ERROR_CLASS(NoMatchingCandidates, const uast::AstNode*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>, std::vector<const uast::VarLikeDecl*>)
+ERROR_CLASS(NoMatchingSuper, const uast::AstNode*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>, std::vector<const uast::VarLikeDecl*>, std::vector<std::pair<ID, ID>>)
 ERROR_CLASS(NonClassInheritance, const uast::AggregateDecl*, const uast::AstNode*, const types::Type*)
 ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType, std::vector<std::tuple<uast::Function::IteratorKind, chpl::resolution::TheseResolutionResult>>)
 ERROR_CLASS(NoMatchingEnumValue, const uast::AstNode*, const types::EnumType*, types::QualifiedType)
