@@ -23,8 +23,6 @@
 
 // TODO: implement operators as dunder methods
 
-// TODO: make python use chapel stdout/stderr
-
 /* Library for interfacing with Python from Chapel code.
 
   This module provides a Chapel interface to a Python interpreter.
@@ -304,6 +302,35 @@
   To translate custom Chapel types to Python objects, users should define and
   register custom :type:`TypeConverter` classes.
 
+  Notes on Python + Chapel I/O
+  ----------------------------
+
+  When interspersing Python and Chapel I/O, it is important to flush the output
+  buffers to ensure that the output is displayed in the correct order. This is
+  needed at the point where the output changes from Python to Chapel or
+  vice-versa. For example:
+
+  .. code-block:: chapel
+
+     use Python, IO;
+
+     var interp = new Interpreter();
+     var func = new Function(interp, "lambda x,: print(x)");
+     var sys = new Module(interp, "sys");
+     var pyStdout = sys.getAttr("stdout");
+      var pyStdoutFlush = pyStdout.getAttr("flush");
+
+     writeln("Hello from Chapel");
+     writeln("Lets call some Python!");
+     IO.stdout.flush(); // flush the Chapel output buffer before calling Python
+
+     // run the Python function
+     func(NoneType, "Hello, World!");
+     func(NoneType, "Goodbye, World!");
+     pyStdoutFlush(NoneType); // flush the Python output buffer before calling Chapel again
+
+     writeln("Back to Chapel");
+
   More Examples:
   --------------
 
@@ -468,10 +495,6 @@ module Python {
         PyList_Insert(path, 0, Py_BuildValue("s", "."));
         this.checkException();
       }
-      // TODO: reset stdout and stderr to Chapel's handles
-      // I think we can do this by setting sys.stdout and sys.stderr to a python
-      // object that looks like a python file but forwards calls like write to
-      // Chapel's write
 
       if !ArrayTypes.createArrayTypes() {
         throwChapelException("Failed to create Python array types for Chapel arrays");
