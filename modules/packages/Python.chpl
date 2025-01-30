@@ -310,6 +310,17 @@
   needed at the point where the output changes from Python to Chapel or
   vice-versa. For example:
 
+  ..
+     START_TEST
+     FILENAME: Printing.chpl
+     START_GOOD
+     Hello from Chapel
+     Lets call some Python!
+     Hello, World!
+     Goodbye, World!
+     Back to Chapel
+     END_GOOD
+
   .. code-block:: chapel
 
      use Python, IO;
@@ -318,18 +329,21 @@
      var func = new Function(interp, "lambda x,: print(x)");
      var sys = new Module(interp, "sys");
      var pyStdout = sys.getAttr("stdout");
-      var pyStdoutFlush = pyStdout.getAttr("flush");
+     var pyStdoutFlush = pyStdout.getAttr("flush");
 
      writeln("Hello from Chapel");
-     writeln("Lets call some Python!");
+     writeln("Let's call some Python!");
      IO.stdout.flush(); // flush the Chapel output buffer before calling Python
 
-     // run the Python function
      func(NoneType, "Hello, World!");
      func(NoneType, "Goodbye, World!");
      pyStdoutFlush(NoneType); // flush the Python output buffer before calling Chapel again
 
      writeln("Back to Chapel");
+
+  ..
+     END_TEST
+
 
   More Examples:
   --------------
