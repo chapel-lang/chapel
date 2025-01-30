@@ -6194,6 +6194,10 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 
 static bool handleArrayTypeExpr(Resolver& rv,
                                 const IndexableLoop* loop) {
+  auto& re = rv.byPostorder.byAst(loop);
+  const auto genericArrayType = QualifiedType(
+      QualifiedType::TYPE, ArrayType::getGenericArrayType(rv.context));
+
   QualifiedType bodyType;
   if (loop->numStmts() == 1) {
     bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
@@ -6201,7 +6205,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
     bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
-  // The body wasn't a type, so this isn't an array type expression
+  // The body wasn't a type, so this isn't an array type expression.
   // Make an exception for unknown or erroneous bodies, since the user may
   // have been trying to define a type but made a mistake (or we may be
   // in a partially-instantiated situation and the type is not yet known).
@@ -6246,18 +6250,36 @@ static bool handleArrayTypeExpr(Resolver& rv,
 
   if (domainType.isUnknown()) {
     rv.context->error(iterandExpr, "Invalid domain expression for array type");
+    re.setType(genericArrayType);
     return true;
   }
 
   auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
-  auto arrayType =
-    ArrayType::getArrayType(rv.context,
-                            /* TODO, see comment in getArrayType */ QualifiedType(),
-                            domainType, eltType);
 
-  auto& re = rv.byPostorder.byAst(loop);
-  re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
+  // get array type via call to builder function on its domain
+  auto arrayType = genericArrayType;
+  const char* arrayBuilderProc = "buildArray";
+  std::vector<CallInfoActual> actuals;
+  actuals.emplace_back(domainType, USTR("this"));
+  actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+  // TODO: set initElts properly
+  actuals.emplace_back(QualifiedType::makeParamBool(rv.context, false),
+                       UniqueString::get(rv.context, "initElts"));
+  auto ci = CallInfo(
+      /* name */ UniqueString::get(rv.context, arrayBuilderProc),
+      /* calledType */ domainType,
+      /* isMethodCall */ true,
+      /* hasQuestionArg */ false,
+      /* isParenless */ false,
+      actuals);
+  auto scope = rv.scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+  auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+  if (!c.exprType().isUnknownOrErroneous()) {
+    arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+  }
 
+  re.setType(arrayType);
   return true;
 }
 
