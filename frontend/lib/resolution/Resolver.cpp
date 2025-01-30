@@ -6259,7 +6259,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   }
 
   if (domainType.isUnknown()) {
-    // TODO: emit an error here
+    rv.context->error(iterandExpr, "Invalid domain expression for array type");
     return true;
   }
 
