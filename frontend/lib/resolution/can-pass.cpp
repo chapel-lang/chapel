@@ -559,7 +559,14 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         instantiates = true;
         pass = true;
       } else if (actualCt->manageableType()->isAnyClassType()) {
-        CHPL_ASSERT(false && "probably shouldn't happen");
+        // We might encounter this case when relying on 'canPass' to implement
+        // the various 'subtype' primitives. Types like 'borrowed class' are
+        // valid arguments in production, and can be found in the where-clauses
+        // of some basic operator implementations.
+
+        // From the previous conditional, we know the formal isn't another
+        // 'any' class, so this actual cannot be passed.
+        pass = false;
       } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
