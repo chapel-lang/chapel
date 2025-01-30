@@ -123,6 +123,12 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
     modStmt->traverse(visitor);
 
+    // There will be no further calls (it's a top-level statement), so if the
+    // diagnostics wanted to be higher up the call stack, too bad.
+    for (auto& diagnostic : visitor.userDiagnostics) {
+      visitor.emitUserDiagnostic(diagnostic, modStmt);
+    }
+
     if (auto rec = context->recoverFromSelfRecursion()) {
       CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }
@@ -1063,7 +1069,7 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
     if (ct->isBasicClassType() || ct->isRecordType() || ct->isDomainType() ||
-        ct->isUnionType()) {
+        ct->isArrayType() || ct->isUnionType()) {
       ID ctId = ct->id();
       if (!ctId.isEmpty()) {
         return parsing::aggregateUsesForwarding(context, ctId);
@@ -2553,11 +2559,9 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
                                       std::move(formalsInstantiated),
                                       sig->outerVariables());
 
-  // May need to resolve the body at this point to compute final TFS.
-  if (result->isInitializer()) {
-    auto rf = resolveFunction(rc, result, poiScope);
-    result = rf->signature();
-  }
+  // For initializers, may need to resolve the body to compute final TFS.
+  // Don't do that here because disambiguation might discard the candidate.
+  // Body resolution will be done by MostSpecificCandidate when constructed.
 
   return ApplicabilityResult::success(result);
 }
@@ -2639,6 +2643,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   std::move(rr),
                                   std::move(resolvedPoiInfo),
                                   std::move(visitor.returnType),
+                                  std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
                                   std::move(visitor.sigAndInfoToChildPtr)));
   return ret;
@@ -2896,10 +2901,40 @@ inferRefMaybeConstFormals(ResolutionContext* rc,
   return result;
 }
 
+static std::vector<std::tuple<const Decl*, QualifiedType>>
+collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
+  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
+
+  // Skip the 'this' formal since it will always be generic if one of the
+  // "real" formals is generic.
+  int formalIdx = 0;
+  if (tfs->isMethod()) {
+    formalIdx++;
+  }
+
+  for (; formalIdx < tfs->numFormals(); formalIdx++) {
+    auto formalType = tfs->formalType(formalIdx);
+    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
+    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
+      ret.push_back(std::make_tuple(formalDecl, formalType));
+    }
+  }
+  return ret;
+}
+
+bool checkUninstantiatedFormals(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
+  if (!sig->needsInstantiation()) return false;
+
+  CHPL_REPORT(context, MissingFormalInstantiation,
+              astForErr,
+              collectGenericFormals(context, sig));
+  return true;
+}
+
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
-  bool skipIfRunning = false;
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning) {
   return helpResolveFunction(rc, sig, poiScope, skipIfRunning);
 }
 
@@ -3111,7 +3146,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
                                         std::move(resolutionById),
                                         PoiInfo(),
                                         QualifiedType(),
-                                        {}, {}));
+                                        {}, {}, {}));
   return result;
 }
 
@@ -3580,8 +3615,10 @@ static const Type* getManagedClassType(Context* context,
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     if (t != nullptr && !t->isUnknownType()) {
       context->error(astForErr, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else {
+      return UnknownType::get(context);
     }
-    return ErroneousType::get(context);
   }
 
   const ManageableType* mt = nullptr;
@@ -4112,6 +4149,30 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  // In Dyno, we don't have a _ref wrapper type, so we can't distinguish
+  // between 'ref' and non-'ref' type formals. Moreover, this function is
+  // filled in by the compiler in production.
+  if (!ci.isMethodCall() && (ci.name() == USTR("_build_tuple") ||
+                             ci.name() == USTR("_build_tuple_noref") ||
+                             ci.name() == USTR("_build_tuple_always_allow_ref"))) {
+    bool removeRefs = ci.name() == USTR("_build_tuple_noref");
+    auto intent = ci.name() == USTR("_build_tuple_always_allow_ref") ?
+                  QualifiedType::CONST_VAR : QualifiedType::TYPE;
+    std::vector<QualifiedType> components;
+    for (size_t i = 0; i < ci.numActuals(); i++) {
+      auto actual = ci.actual(i).type();
+      if (removeRefs) {
+        CHPL_ASSERT(actual.param() == nullptr);
+        actual = QualifiedType(KindProperties::removeRef(actual.kind()), actual.type());
+      }
+      components.push_back(std::move(actual));
+    }
+
+    auto resultTuple = TupleType::getQualifiedTuple(context, components);
+    exprTypeOut = QualifiedType(intent, resultTuple);
+    return true;
+  }
+
   return false;
 }
 
@@ -4182,7 +4243,7 @@ resolveFnCallForTypeCtor(Context* context,
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
@@ -4249,27 +4310,6 @@ considerCompilerGeneratedOperators(Context* context,
   return tfs;
 }
 
-static std::vector<std::tuple<const Decl*, QualifiedType>>
-collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
-  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
-
-  // Skip the 'this' formal since it will always be generic if one of the
-  // "real" formals is generic.
-  int formalIdx = 0;
-  if (tfs->untyped()->formalName(0) == USTR("this")) {
-    formalIdx++;
-  }
-
-  for (; formalIdx < tfs->numFormals(); formalIdx++) {
-    auto formalType = tfs->formalType(formalIdx);
-    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
-    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
-      ret.push_back(std::make_tuple(formalDecl, formalType));
-    }
-  }
-  return ret;
-}
-
 static void
 considerCompilerGeneratedCandidates(Context* context,
                                     const AstNode* astForErr,
@@ -4312,10 +4352,8 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  if (instantiated.candidate()->needsInstantiation()) {
-    CHPL_REPORT(context, MissingFormalInstantiation,
-                astForErr,
-                collectGenericFormals(context, instantiated.candidate()));
+  if (!instantiated.candidate()->isInitializer() &&
+      checkUninstantiatedFormals(context, astForErr, instantiated.candidate())) {
     return; // do not push invalid candidate into list
   }
 
@@ -4902,7 +4940,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
 // * check signatures of selected candidates
 // * gather POI info from any instantiations
 static MostSpecificCandidates
-findMostSpecificAndCheck(Context* context,
+findMostSpecificAndCheck(ResolutionContext* rc,
                          const CandidatesAndForwardingInfo& candidates,
                          size_t firstPoiCandidate,
                          const AstNode* astContext,
@@ -4914,12 +4952,24 @@ findMostSpecificAndCheck(Context* context,
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(context, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate && candidate.fn()->instantiatedFrom()) {
-      checkSignature(context, candidate.fn());
+    if (!candidate) continue;
+
+    if (candidate.fn()->instantiatedFrom()) {
+      checkSignature(rc->context(), candidate.fn());
+    }
+
+    // Initializers haven't yet been checked for uninstantiated formals,
+    // because prior to getting a MostSpecificCandidate we didn't resolve
+    // their bodies. Now we have, so we have a "final" TFS to check.
+    //
+    // Note: this check "normally" only fires for compiler-generated cases,
+    // so match that here. See other calls to checkUninstantiatedFormal.
+    if (candidate.fn()->isInitializer() && candidate.fn()->isCompilerGenerated()) {
+      checkUninstantiatedFormals(rc->context(), astContext, candidate.fn());
     }
   }
 
@@ -4950,8 +5000,6 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        PoiInfo& poiInfo,
                                        bool& outRejectedPossibleIteratorCandidates,
                                        std::vector<ApplicabilityResult>* rejected) {
-  Context* context = rc->context();
-
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   auto candidates = gatherAndFilterCandidates(rc, astContext, call, ci,
@@ -4963,7 +5011,7 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
   // * check signatures
   // * gather POI info
   auto mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+    findMostSpecificAndCheck(rc, candidates, firstPoiCandidate,
                              astContext, call, ci, inScopes.callScope(),
                              inScopes.poiScope(), poiInfo);
 
@@ -6684,6 +6732,98 @@ yieldTypeForIterator(ResolutionContext* rc,
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+static const CallResolutionResult&
+resolveIteratorShapeComputation(Context* context,
+                                const IteratorType* iter,
+                                QualifiedType qt) {
+
+  QUERY_BEGIN(resolveIteratorShapeComputation, context, iter, qt);
+  std::vector<CallInfoActual> actuals;
+  actuals.emplace_back(qt, UniqueString());
+
+  auto ci = CallInfo(UniqueString::get(context, "chpl_computeIteratorShape"),
+                     QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     /* actuals */ std::move(actuals));
+  auto inScopes = callScopeInfoForIterator(context, iter, /* overrideScopes */ nullptr);
+
+  auto c = resolveGeneratedCall(context, /* astForScopeOrErr */ nullptr, ci, inScopes);
+  return QUERY_END(c);
+}
+
+static const Type* const&
+shapeForIteratorQuery(Context* context,
+                      const types::IteratorType* iter) {
+  QUERY_BEGIN(shapeForIteratorQuery, context, iter);
+  // shape is determined by the leader / standalone. In some cases,
+  // the iterator doesn't have the notion of a leader, so we will early-return.
+  // Otherwise, we will fall through and work on leader below.
+  QualifiedType leaderType;
+
+  if (auto loopIter = iter->toLoopExprIteratorType()) {
+    // The first iterand in the zip, if any, is a leader. Otherwise, there's
+    // only one iterand, and that's the leader.
+
+    CHPL_ASSERT(!loopIter->iterand().isUnknownOrErroneous());
+    if (loopIter->isZippered()) {
+      auto iteratedTuple = loopIter->iterand().type()->toTupleType();
+      CHPL_ASSERT(iteratedTuple);
+
+      leaderType = iteratedTuple->elementType(0);
+    } else {
+      leaderType = loopIter->iterand();
+    }
+  } else if (iter->isFnIteratorType()) {
+    // `iter` subroutines can have arbitrary behavior, and thus don't
+    // have a shape.
+
+    const Type* result = nullptr;
+    return QUERY_END(result);
+  } else if (auto promoIterator = iter->toPromotionIteratorType()) {
+    auto scalarFn = promoIterator->scalarFn();
+    auto untypedScalarFn = scalarFn->untyped();
+    auto& formalMap = promoIterator->promotedFormals();
+    for (int i = 0; i < scalarFn->numFormals(); i++) {
+      auto promotedEntry = formalMap.find(untypedScalarFn->formalDecl(i)->id());
+      if (promotedEntry != formalMap.end()) {
+        leaderType = promotedEntry->second;
+        break;
+      }
+    }
+  }
+
+  CHPL_ASSERT(!leaderType.isUnknownOrErroneous());
+  const Type* result = nullptr;
+  if (auto leaderIter = leaderType.type()->toIteratorType()) {
+    return QUERY_END(shapeForIteratorQuery(context, leaderIter));
+  } else {
+    // Resolve this using  call, and make that call a query because typed
+    // conversion might eventually require access to it for the purposes
+    // of runtime types. Some additional wrangling will be needed to avoid
+    // re-extracing leaderType (could we have a set-only query that computes
+    // the CallResolutionResult from iter, that we set right here?) but I
+    // leave that to you, O brave future implementer.
+
+    auto cr = resolveIteratorShapeComputation(context, iter, leaderType);
+    if (!cr.exprType().isUnknownOrErroneous()) {
+      result = cr.exprType().type();
+    } else {
+      // At the time of writing, it should not be possible for us to
+      // not find a call, because we have a catch-all overload. However,
+      // just in case, handle the case gracefully, simply returning "no shape".
+      result = nullptr;
+    }
+  }
+  return QUERY_END(result);
+}
+
+const Type* shapeForIterator(Context* context,
+                             const types::IteratorType* iter) {
+  return shapeForIteratorQuery(context, iter);
 }
 
 static TheseResolutionResult

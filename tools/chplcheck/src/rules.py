@@ -162,7 +162,7 @@ def rules(driver: LintDriver):
 
         if node.name() == "_":
             return True
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(
@@ -174,6 +174,9 @@ def rules(driver: LintDriver):
         """
         Warn for records that are not 'camelCase'.
         """
+
+        if node.linkage() == "extern" and node.linkage_name() is None:
+            return True
 
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(context, node, internal_prefixes)
@@ -189,7 +192,7 @@ def rules(driver: LintDriver):
         if node.is_override():
             return True
 
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         if node.kind() == "operator":
             return True

@@ -26,6 +26,7 @@
 #include <vector>
 #include <set>
 #include <tuple>
+#include "python-type-helper.h"
 
 /* The general idea here is the following: we want to add an allowlist
    of C++ types that have defined conversions to and from Python types.
@@ -135,7 +136,7 @@ PyObject* wrapOptional(ContextObject* context, const std::optional<T>& opt) {
   if (opt) {
     return PythonReturnTypeInfo<T>::wrap(context, *opt);
   } else {
-    Py_RETURN_NONE;
+    chpl_PY_RETURN_NONE;
   }
 }
 
@@ -211,7 +212,7 @@ PyObject* wrapNilable(ContextObject* context, const Nilable<T>& opt) {
   if (opt.value) {
     return PythonReturnTypeInfo<T>::wrap(context, opt.value);
   } else {
-    Py_RETURN_NONE;
+    chpl_PY_RETURN_NONE;
   }
 }
 
@@ -237,9 +238,9 @@ std::string nilableTypeString() {
 
 DEFINE_INOUT_TYPE(bool, "bool", PyBool_FromLong(TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
-DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
-DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, PyUnicode_AsUTF8(TO_UNWRAP)));
-DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
+DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), getCStringFromPyObjString(TO_UNWRAP));
+DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, getCStringFromPyObjString(TO_UNWRAP)));
+DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(getCStringFromPyObjString(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(const chpl::uast::AstNode*, "AstNode", wrapGeneratedType(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(const chpl::types::Type*, "ChapelType", wrapGeneratedType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->value_);
 DEFINE_INOUT_TYPE(const chpl::types::Param*, "Param", wrapGeneratedType(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->value_);

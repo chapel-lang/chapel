@@ -24,11 +24,11 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
-const char* chpl_PY_VERSION = PY_VERSION;
-const unsigned long chpl_PY_MAJOR_VERSION = PY_MAJOR_VERSION;
-const unsigned long chpl_PY_MINOR_VERSION = PY_MINOR_VERSION;
-const unsigned long chpl_PY_MICRO_VERSION = PY_MICRO_VERSION;
+static const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
+static const char* chpl_PY_VERSION = PY_VERSION;
+static const unsigned long chpl_PY_MAJOR_VERSION = PY_MAJOR_VERSION;
+static const unsigned long chpl_PY_MINOR_VERSION = PY_MINOR_VERSION;
+static const unsigned long chpl_PY_MICRO_VERSION = PY_MICRO_VERSION;
 
 static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 #if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
@@ -66,5 +66,23 @@ static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
+
+
+static inline PyStatus chpl_Py_NewIsolatedInterpreter(PyThreadState** tstate) {
+#if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
+  PyInterpreterConfig config = {
+    .use_main_obmalloc = 0,
+    .allow_fork = 0,
+    .allow_exec = 0,
+    .allow_threads = 1,
+    .allow_daemon_threads = 0,
+    .check_multi_interp_extensions = 1,
+    .gil = PyInterpreterConfig_OWN_GIL,
+  };
+  return Py_NewInterpreterFromConfig(tstate, &config);
+#else
+  return PyStatus_Error("Sub-interpreters are not supported in Python " PY_VERSION);
+#endif
+}
 
 #endif

@@ -1,0 +1,31 @@
+onlySerial.chpl:7: In function 'main':
+onlySerial.chpl:9: warning: The serial version of foo is unstable
+onlySerial.chpl:68: In iterator 'foo':
+onlySerial.chpl:73: warning: range.translate() is unstable and its behavior may change in the future
+  onlySerial.chpl:22: called as foo(param tag = iterKind.leader)
+onlySerial.chpl:80: In iterator 'foo':
+onlySerial.chpl:85: warning: range.translate() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:nnnn: called as foo(param tag = iterKind.follower, followThis: 1*range(int(64),both,one))
+  within internal functions (use --print-callstack-on-error to see)
+testing call of serial
+in the serial iterator
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+testing call of standalone
+in the standalone iterator
+0 1 2 3 4 5 6 7 8 9
+testing call of leader (and follower)
+in the leader iterator
+in the follower iterator at least once
+0 2 4 6 8 10 12 14 16 18
+testing call of just follower
+in the follower iterator at least once
+0 3 6 9 12 15 18 21 24 27

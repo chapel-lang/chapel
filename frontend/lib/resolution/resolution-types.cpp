@@ -1182,10 +1182,31 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false;
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const FormalActualMap& faMap,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const FormalActualMap& faMap,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
+  auto newFaMap = faMap;
+
+  // Earlier, we didn't resolve the body of the function, but when it's an
+  // initializer, it can have substitution-producing statements such
+  // as `this.typeField = int`. Now that we have picked this candidate
+  // as most specific, it's safe to resolve the body without worrying about
+  // spurious errors from other andidates.
+  if (fn->isInitializer()) {
+    auto instantiationPoiScope =
+      Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
+    auto rf = resolveFunction(rc, fn, instantiationPoiScope, /* skipIfRunning */ true);
+
+    if (rf) {
+      fn = rf->signature();
+      newFaMap.updateReceiverType(fn);
+    }
+  }
+
   int coercionFormal = -1;
   int coercionActual = -1;
   for (auto fa : faMap.byFormals()) {
@@ -1194,7 +1215,7 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
 
     if (!formalType.type() || !actualType.type()) continue;
 
-    auto got = canPass(context, actualType, formalType);
+    auto got = canPass(rc->context(), actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
@@ -1202,15 +1223,18 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, faMap, promotedFormals, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual);
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const CallInfo& ci,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const CallInfo& ci,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap, promotedFormals);
+  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
@@ -1282,6 +1306,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "copy-init";
     case DEFAULT_INIT:
       return "default-init";
+    case CUSTOM_COPY_INIT:
+      return "custom-copy-init";
     case INIT_OTHER:
       return "init-from-other";
     case DEINIT:

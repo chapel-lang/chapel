@@ -193,7 +193,7 @@ TupleType::getStarTuple(Context* context,
   }
 }
 
-QualifiedType TupleType::elementType(int i) const {
+const QualifiedType& TupleType::elementType(int i) const {
   CHPL_ASSERT(isKnownSize_);
   CHPL_ASSERT(0 <= i && (size_t) i < subs_.size());
   // find subs[id]
@@ -202,7 +202,8 @@ QualifiedType TupleType::elementType(int i) const {
     return search->second;
   } else {
     CHPL_ASSERT(false && "ID mismatch in tuple elements");
-    return QualifiedType();
+    static QualifiedType empty;
+    return empty;
   }
 }
 

@@ -27,6 +27,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/util/version-info.h"
+#include "python-type-helper.h"
 
 using namespace chpl;
 using namespace uast;
@@ -42,10 +43,10 @@ using namespace uast;
    We particularly want this to make sure we call the AstNode constructor,
    which sets the context object etc.
  */
-#define DEFINE_INIT_FOR(NAME, TAG)\
+#define DEFINE_INIT_FOR(NAME, TAG) \
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return parentTypeFor(TAG)->tp_init((PyObject*) self, args, kwargs); \
-  } \
+    return callPyTypeSlot_tp_init(parentTypeFor(TAG), (PyObject*) self, args, kwargs); \
+  }
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
@@ -92,7 +93,7 @@ struct InvokeHelper<void(Args...)> {
   template <typename F>
   static PyObject* invoke(ContextObject* contextObject, F&& fn) {
     fn();
-    Py_RETURN_NONE;
+    chpl_PY_RETURN_NONE;
   }
 };
 
@@ -128,7 +129,7 @@ struct InvokeHelper<void(Args...)> {
     if (!node) return nullptr; \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
-    auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
+    auto astCallIterObjectPy = PyObject_CallObject((PyObject *) AstCallIterType, argList); \
     Py_XDECREF(argList); \
     \
     auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy; \
@@ -153,27 +154,36 @@ ACTUAL_ITERATOR(FnCall);
    macro defines what a type object for an AST node (abstract or not) should
    look like. */
 
-#define DEFINE_PY_TYPE_FOR(NAME)\
-  PyTypeObject NAME##Type = { \
-    PyVarObject_HEAD_INIT(NULL, 0) \
-  }; \
+#define DEFINE_PY_TYPE_FOR(NAME) PyTypeObject* NAME##Type = NULL;
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
 #include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
-  TYPE.tp_name = "chapel."#NAME; \
-  TYPE.tp_basicsize = sizeof(NAME##Object); \
-  TYPE.tp_itemsize = 0; \
-  TYPE.tp_flags = FLAGS; \
-  TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
-  TYPE.tp_methods = (PyMethodDef*) PerTypeMethods<NAME##Object>::methods; \
-  TYPE.tp_base = parentTypeFor(TAG); \
-  TYPE.tp_init = (initproc) NAME##Object_init; \
-  TYPE.tp_new = PyType_GenericNew; \
+  do { \
+    PyType_Slot slots[] = { \
+      {Py_tp_doc, (void*) PyDoc_STR("A Chapel " #NAME " AST node")}, \
+      {Py_tp_methods, (void*) PerTypeMethods<NAME##Object>::methods}, \
+      {Py_tp_init, (void*) NAME##Object_init}, \
+      {Py_tp_new, (void*) PyType_GenericNew}, \
+      {0, nullptr} \
+    }; \
+    PyType_Spec spec = { \
+      /*name*/ "chapel."#NAME, \
+      /*basicsize*/ sizeof(NAME##Object), \
+      /*itemsize*/ 0, \
+      /*flags*/ FLAGS, \
+      /*slots*/ slots \
+    }; \
+    auto parentType = parentTypeFor(TAG); \
+    auto bases = PyTuple_Pack(1, parentType); \
+    TYPE = (PyTypeObject*)PyType_FromSpecWithBases(&spec, bases); \
+    if (!TYPE || PyType_Ready(TYPE) < 0) return false; \
+  } while(0);
 
-void setupGeneratedTypes() {
-#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
-#include "generated-types-list.h"
+bool setupGeneratedTypes() {
+  #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+  #include "generated-types-list.h"
+  return true;
 }

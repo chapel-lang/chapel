@@ -44,7 +44,7 @@ namespace resolution {
  */
 MostSpecificCandidates
 findMostSpecificCandidates(
-    Context* context,
+    ResolutionContext* rc,
     const CandidatesAndForwardingInfo& lst,
     const CallInfo& call,
     const Scope* callInScope,

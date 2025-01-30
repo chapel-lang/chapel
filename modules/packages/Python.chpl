@@ -19,17 +19,7 @@
  */
 
 
-// TODO: manufacture a custom ArrayAdapter for Chapel arrays, allows for easy conversion to python types without copying
-//  this can be done in a few ways.
-//   1. create a class that wraps the array and implements the python list interface
-//   2. create a class that wraps the array and implements the numpy array interface
-
 //  TODO: represent python context managers as Chapel context managers
-
-// TODO: create adapters for common Python types that are subclasses of a Value class
-// this will prevent needing to round trip through python for some operations
-// for example, a List, Set, Dict, Tuple, etc.
-// these should provide native like operation, so `for i in pyList` should work
 
 // TODO: implement operators as dunder methods
 
@@ -72,10 +62,118 @@
   Parallel Execution
   ------------------
 
-  Running any Python code in parallel from Chapel requires special care. Before
-  any parallel execution with Python code can occur, the thread state needs to
-  be saved. After the parallel execution, the thread state must to be restored.
-  Then for each thread, the Global Interpreter Lock (GIL) must be acquired and
+  Running any Python code in parallel from Chapel requires special care, due
+  to the Global Interpreter Lock (GIL) in the Python interpreter.
+  This module supports two ways of doing this.
+
+  .. note::
+
+     Newer Python versions offer a free-threading mode that allows multiple
+     threads concurrently. This currently requires a custom build of Python. If
+     you are using a Python like this, you should be able to use this module
+     freely in parallel code.
+
+  Using Multiple Interpreters
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  .. warning::
+
+     Sub-interpreter support in Chapel is highly experimental and currently has
+     undefined behavior.
+
+  The most performant way to run Python code in parallel is to use multiple
+  sub-interpreters. Each sub-interpreter is isolated from the others with its
+  own GIL. This allows multiple threads to run Python code concurrently. Note
+  that communication between sub-interpreters is severely limited and it is
+  strongly recommend to limit the amount of data shared between
+  sub-interpreters.
+
+  .. note::
+
+     This feature is only available in Python 3.12 and later. Attempting to use
+     sub-interpreters with earlier versions of Python will result in a runtime
+     exception.
+
+  The following demonstrates using sub-interpreters in a ``coforall`` loop:
+
+  ..
+     START_TEST
+     FILENAME: CoforallTestSub.chpl
+     NOEXEC
+     START_GOOD
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     var code = """
+     import sys
+     def hello():
+       print('Hello from a task')
+       sys.stdout.flush()
+     """;
+
+     proc main() {
+       var interpreter = new Interpreter();
+       coforall 0..#4 {
+         var subInterpreter = new SubInterpreter(interpreter);
+         var m = new Module(subInterpreter, 'myMod', code);
+         var hello = new Function(m, 'hello');
+         hello(NoneType);
+       }
+     }
+
+  ..
+     END_TEST
+
+  To make use of a sub-interpreter in a ``forall`` loop, the sub-interpreter
+  should be created as a task private variable. It is recommended that users
+  wrap the sub-interpreter in a ``record`` to initialize their Python objects,
+  to prevent duplicated work. For example, the following code creates multiple
+  sub-interpreters in a ``forall`` loop, where each task gets its own copy of
+  the module.
+
+  ..
+     START_TEST
+     FILENAME: TaskPrivateSubInterp.chpl
+     NOEXEC
+     START_GOOD
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python;
+
+     record perTaskModule {
+      var i: owned SubInterpreter?;
+      var m: owned Module?;
+      proc init(parent: borrowed Interpreter, code: string) {
+        init this;
+        i = try! (new SubInterpreter(parent));
+        m = try! (new Module(i!, "anon", code));
+      }
+     }
+
+     proc main() {
+       var interpreter = new Interpreter();
+       forall i in 1..10
+        with (var mod =
+          new perTaskModule(interpreter, "x = 10")) {
+          writeln(mod.m!.getAttr(int, "x"));
+       }
+     }
+
+  ..
+     END_TEST
+
+  Using A Single Interpreter
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  A single Python interpreter can execute code in parallel, as long as the GIL
+  is properly handled. Before any parallel execution with Python code can occur,
+  the thread state needs to be saved. After the parallel execution, the thread
+  state must to be restored. Then for each thread, the GIL must be acquired and
   released. This is necessary to prevent segmentation faults and deadlocks in
   the Python interpreter.
 
@@ -145,20 +243,6 @@
   entirety of each task, these examples will be no faster than running the tasks
   serially.
 
-  .. note::
-
-     Newer Python versions offer a free-threading mode that allows multiple
-     threads concurrently, without the need for the GIL. In this mode, users can
-     either remove the GIL acquisition code or not. Without the GIL, the GIL
-     acquisition code will have no effect.
-
-  .. note::
-
-     In the future, it may be possible to achieve better parallelism with Python
-     by using sub-interpreters. However, sub-interpreters are not yet supported
-     in Chapel and attempting to have more than one :type:`Interpreter` instance
-     will likely result in segmentation faults.
-
   Using Python Modules With Distributed Code
   -------------------------------------------
 
@@ -227,6 +311,7 @@ module Python {
   private import Map;
 
   private use CPythonInterface except PyObject;
+  private import this.ArrayTypes;
   private use CWChar;
   private use OS.POSIX only getenv;
 
@@ -278,14 +363,18 @@ module Python {
     return sep;
   }
 
+  private proc throwChapelException(message: string) throws {
+    throw new ChapelException(message);
+  }
+
   /*
     Represents the python interpreter. All code using the Python module should
     create and maintain a single instance of this class.
 
     .. warning::
 
-       Multiple/sub interpreters are not yet supported.
-       Do not create more than one instance of this class.
+       Do not create more than one instance of this class per locale. Multiple
+       interpreters can be created by using :type:`SubInterpreter` instances.
   */
   class Interpreter {
 
@@ -296,7 +385,7 @@ module Python {
       important for correctness, but may have a performance impact.
 
       See :config:`Python.checkExceptions` and
-      :method:`Interpreter.checkException` for more information.
+      :proc:`Interpreter.checkException` for more information.
     */
     // param checkExceptions: bool = Python.checkExceptions;
 
@@ -304,10 +393,17 @@ module Python {
     var converters: List.list(owned TypeConverter);
     @chpldoc.nodoc
     var objgraph: PyObjectPtr = nil;
+    @chpldoc.nodoc
+    var isSubInterpreter: bool;
 
     @chpldoc.nodoc
-    proc init() throws {
+    proc init(isSubInterpreter: bool = false) {
+      this.isSubInterpreter = isSubInterpreter;
       init this;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if this.isSubInterpreter then return;
 
       // preinit
       var preconfig: PyPreConfig;
@@ -370,6 +466,10 @@ module Python {
       // object that looks like a python file but forwards calls like write to
       // Chapel's write
 
+      if !ArrayTypes.createArrayTypes() {
+        throwChapelException("Failed to create Python array types for Chapel arrays");
+      }
+
       if pyMemLeaks {
         // import objgraph
         this.objgraph = this.importModule("objgraph");
@@ -389,6 +489,7 @@ module Python {
     }
     @chpldoc.nodoc
     proc deinit()  {
+      if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
         // note: try! is used since we can't have a throwing deinit
@@ -502,7 +603,7 @@ module Python {
     proc compileModule(b: bytes,
                        modname: string = "chplmod"): PyObjectPtr throws {
       var code =
-        PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(c_size_t));
+        PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(Py_ssize_t));
       this.checkException();
       defer Py_DECREF(code);
 
@@ -637,7 +738,7 @@ module Python {
         return v;
       } else if t == bytes {
         var v =
-          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(c_size_t));
+          PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(Py_ssize_t));
         this.checkException();
         return v;
       } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
@@ -669,6 +770,16 @@ module Python {
          a :type:`TypeConverter`.
     */
     proc fromPython(type t, obj: PyObjectPtr): t throws {
+      if isClassType(t) &&
+         (!isSharedClassType(t) &&
+          !isOwnedClassType(t) &&
+          !isUnmanagedClassType(t)) {
+        compilerError("fromPython only supports shared, owned, and unmanaged classes");
+      }
+      if isSubtype(t, Array?) {
+        compilerError("Cannot create an Array from an existing PyObject");
+      }
+
       for converter in this.converters {
         if converter.handlesType(t) {
           return converter.fromPython(this, t, obj);
@@ -735,11 +846,11 @@ module Python {
     proc toList(arr): PyObjectPtr throws
       where isArrayType(arr.type) &&
             arr.rank == 1 && arr.isDefaultRectangular() {
-      var pyList = PyList_New(arr.size.safeCast(c_size_t));
+      var pyList = PyList_New(arr.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
-        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(arr[idx]));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(arr[idx]));
         this.checkException();
       }
       return pyList;
@@ -750,10 +861,10 @@ module Python {
     */
     @chpldoc.nodoc
     proc toList(l: List.list(?)): PyObjectPtr throws {
-      var pyList = PyList_New(l.size.safeCast(c_size_t));
+      var pyList = PyList_New(l.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<l.size {
-        PyList_SetItem(pyList, i.safeCast(c_size_t), toPython(l(i)));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(l(i)));
         this.checkException();
       }
       return pyList;
@@ -771,12 +882,12 @@ module Python {
 
       // if its a sequence with a known size, we can just iterate over it
       var res: T;
-      if PySequence_Size(obj) != res.size.safeCast(c_size_t) {
+      if PySequence_Size(obj) != res.size.safeCast(Py_ssize_t) {
         throw new ChapelException("Size mismatch");
       }
       for i in 0..<res.size {
         const idx = res.domain.orderToIndex(i);
-        var elm = PySequence_GetItem(obj, i.safeCast(c_size_t));
+        var elm = PySequence_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
         res[idx] = fromPython(res.eltType, elm);
         this.checkException();
@@ -892,6 +1003,39 @@ module Python {
 
     // TODO: convert python dict to chapel map
 
+  }
+
+  /*
+    Represents an isolated Python sub-interpreter. This is useful for running
+    truly parallel Python code, without the GIL interferring.
+  */
+  class SubInterpreter: Interpreter {
+    @chpldoc.nodoc
+    var parent: borrowed Interpreter;
+    @chpldoc.nodoc
+    var tstate: PyThreadStatePtr;
+
+    /*
+      Creates a new sub-interpreter with the given parent interpreter, which
+      must not be a sub-interpreter.
+    */
+    proc init(parent: borrowed Interpreter) {
+      super.init(isSubInterpreter=true);
+      this.parent = parent;
+      init this;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if this.parent.isSubInterpreter {
+        throwChapelException("Parent interpreter cannot be a sub-interpreter");
+      }
+
+      checkPyStatus(chpl_Py_NewIsolatedInterpreter(c_ptrTo(this.tstate)));
+    }
+    @chpldoc.nodoc
+    proc deinit() {
+      Py_EndInterpreter(this.tstate);
+    }
   }
 
   /*
@@ -1090,7 +1234,8 @@ module Python {
     /*
       Returns the Chapel value of the object.
 
-      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this object, however it does not consume the object.
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this
+      object, however it does not consume the object.
     */
     proc value(type value) throws {
       // fromPython will decrement the reference count, so we need to increment it
@@ -1195,7 +1340,7 @@ module Python {
       }
       defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
-      var pyArg = PyTuple_Pack(args.size.safeCast(c_size_t), (...pyArgs));
+      var pyArg = PyTuple_Pack(args.size.safeCast(Py_ssize_t), (...pyArgs));
       interpreter.checkException();
 
       return pyArg;
@@ -1226,6 +1371,58 @@ module Python {
       interpreter.checkException();
 
       var res = interpreter.fromPython(t, pyAttr);
+      return res;
+    }
+
+    /*
+      Set an attribute/field of this Python object. This is equivalent to
+      calling ``obj[attr] = value`` or ``setattr(obj, attr, value)`` in Python.
+
+      :arg attr: The name of the attribute/field to set.
+      :arg value: The value to set the attribute/field to.
+    */
+    proc setAttr(attr: string, value) throws {
+      var pyValue = interpreter.toPython(value);
+      defer Py_DECREF(pyValue);
+
+      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
+      interpreter.checkException();
+    }
+
+    /*
+      Call a method of this Python object. This is equivalent to calling
+      ``obj.method(args)`` in Python.
+
+      :arg retType: The Chapel type of the return value.
+      :arg method: The name of the method to call.
+      :arg args: The arguments to pass to the method.
+    */
+    proc call(type retType, method: string, const args...): retType throws {
+      var pyArgs: args.size * PyObjectPtr;
+      for param i in 0..#args.size {
+        pyArgs(i) = interpreter.toPython(args(i));
+      }
+      defer for pyArg in pyArgs do Py_DECREF(pyArg);
+
+      var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
+      var pyRes = PyObject_CallMethodObjArgs(
+        this.get(), methodName, (...pyArgs), nil);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
+      return res;
+    }
+    @chpldoc.nodoc
+    proc call(type retType, method: string): retType throws {
+      var methodName = interpreter.toPython(method);
+      defer Py_DECREF(methodName);
+
+      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
+      interpreter.checkException();
+
+      var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
   }
@@ -1276,26 +1473,52 @@ module Python {
     @chpldoc.nodoc
     var fnName: string;
 
+    /*
+      Get a handle to a function in a :class:`Module` by name.
+    */
     proc init(mod: borrowed Value, in fnName: string) {
       super.init(mod.interpreter,
                  PyObject_GetAttrString(mod.get(), fnName.c_str()),
                  isOwned=true);
       this.fnName = fnName;
     }
+    /*
+      Takes ownership of an existing Python object, pointed to by ``obj``
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg fnName: The name of the function.
+      :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
+      :arg isOwned: Whether this object owns the Python object. This is true by default.
+    */
     proc init(interpreter: borrowed Interpreter,
               in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
       this.fnName = fnName;
     }
+    /*
+      Create a new Python lambda function from a string. The lambda arguments must
+      have a trailing comma.
+
+      For example, to create a lambda function that takes two arguments, use:
+
+      .. code-block:: python
+
+         new Function(interpreter, "lambda x, y,: x + y")
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg lambdaFn: The lambda function to create.
+    */
     proc init(interpreter: borrowed Interpreter, in lambdaFn: string) throws {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
       this.obj = interpreter.compileLambda(lambdaFn);
     }
+    @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter,
               obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
+      this.fnName = "<unknown>";
     }
   }
 
@@ -1306,6 +1529,13 @@ module Python {
   class Class: Value {
     @chpldoc.nodoc
     var className: string;
+
+    /*
+      Get a handle to a class in a :class:`Module` by name.
+
+      :arg mod: The module to get the class from.
+      :arg className: The name of the class.
+    */
     proc init(mod: borrowed Value, in className: string) {
       super.init(mod.interpreter,
                  PyObject_GetAttrString(mod.get(), className.c_str()),
@@ -1335,62 +1565,163 @@ module Python {
     }
 
     /*
-      Create a new instance of a python class
+      Create a new instance of a Python class
     */
-    proc this(const args...): owned ClassObject throws do
-      return new ClassObject(interpreter, newInstance((...args)));
-    proc this(): owned ClassObject throws do
-      return new ClassObject(interpreter, newInstance());
+    proc this(const args...): owned Value throws do
+      return new Value(interpreter, newInstance((...args)), isOwned=true);
+    @chpldoc.nodoc
+    proc this(): owned Value throws do
+      return new Value(interpreter, newInstance(), isOwned=true);
 
   }
 
+
+  // TODO: create adapters for other common Python types like Set, Dict, Tuple
+  /*
+    Represents a Python list. This provides a Chapel interface to Python lists,
+    where the Python interpreter owns the list.
+  */
+  class PyList: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the list. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the list.
+    */
+    proc size: int throws {
+      var size = PyList_Size(this.get());
+      this.check();
+      return size;
+    }
+
+    /*
+      Get an item from the list. Equivalent to calling ``obj[idx]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    proc getItem(type T, idx: int): T throws {
+      var item = PyList_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      this.check();
+      return interpreter.fromPython(T, item);
+    }
+    /*
+      Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
+      Python.
+
+      :arg idx: The index of the item to set.
+      :arg item: The item to set.
+    */
+    proc setItem(idx: int, item: ?) throws {
+      PyList_SetItem(this.get(),
+                     idx.safeCast(Py_ssize_t),
+                     interpreter.toPython(item));
+      this.check();
+    }
+  }
+
+  @chpldoc.nodoc
+  proc isSupportedArrayType(arr) param : bool {
+    return isArrayType(arr.type) &&
+           arr.rank == 1 &&
+           arr.idxType == int &&
+           arr.isDefaultRectangular();
+  }
 
   /*
-    Represents a Python class object.
+    Represents a handle to a Chapel array that is usable by Python code. This
+    allows code to pass Chapel arrays to Python without copying the data. This
+    only works for 1D local rectangular arrays.
+
+    .. note::
+
+       While Chapel arrays can be indexed arbitrarily by specifying a domain
+       (e.g. ``var myArr: [2..by 4 #2]``), the equivalent Python array will
+       also by indexed starting at 0 with a stride of 1. Methods like
+       :proc:`~Array.getItem` do no translation of the domain and should be
+       called with the Python interpretation of the index.
+
+
+    To pass a Chapel array to a Python function, you would normally
+    just use the Chapel array directly, resulting in the data being copied in.
+    To avoid this copy, first create an :type:`Array` object, then pass that to
+    the Python function.
+
+    For example,
+
+    .. code-block:: chapel
+
+       myPythonFunction(NoneType, myChapelArray); // copies the data
+
+       var arr = new Array(interpreter, myChapelArray);
+       myPythonFunction(NoneType, arr); // no copy is done
+
+    .. warning::
+
+       If the array is invalidated or deallocated in Chapel, the Python code
+       will crash when it tries to access the array.
   */
-  class ClassObject: Value {
+  class Array: Value {
     @chpldoc.nodoc
-    proc init(interp: borrowed Interpreter,
+    type eltType = nothing;
+    /*
+      Create a new :type:`Array` object from a Chapel array.
+
+      :arg interpreter: The interpreter that this object is associated with.
+      :arg arr: The Chapel array to create the object from.
+    */
+    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+      where isSupportedArrayType(arr) {
+      super.init(interpreter, ArrayTypes.createArray(arr), isOwned=true);
+      this.eltType = arr.eltType;
+    }
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+      where !isSupportedArrayType(arr) {
+      compilerError("Only 1D local rectangular arrays are currently supported");
+      this.eltType = nothing;
+    }
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
               in obj: PyObjectPtr, isOwned: bool = true) {
-      super.init(interp, obj, isOwned=isOwned);
+      compilerError("Cannot create an Array from an existing PyObject");
+      this.eltType = nothing;
     }
 
-    proc setAttr(attr: string, value) throws {
-      var pyValue = interpreter.toPython(value);
-      defer Py_DECREF(pyValue);
+    /*
+      Get the size of the array. Equivalent to calling ``len(obj)`` in Python or
+      ``originalArray.size`` in Chapel.
 
-      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
-      interpreter.checkException();
-    }
+      :returns: The size of the array.
+    */
+    proc size: int throws do
+      return this.call(int, "__len__");
+    /*
+      Get an item from the array. Equivalent to calling ``obj[idx]`` in Python
+      or ``originalArray[idx]`` in Chapel.
 
-    proc call(type retType, method: string, const args...): retType throws {
-      var pyArgs: args.size * PyObjectPtr;
-      for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
-      }
-      defer for pyArg in pyArgs do Py_DECREF(pyArg);
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    proc getItem(idx: int): eltType throws do
+      return this.call(eltType, "__getitem__", idx);
+    /*
+      Set an item in the array. Equivalent to calling ``obj[idx] = item`` in
+      Python or ``originalArray[idx] = item`` in Chapel.
 
-      var methodName = interpreter.toPython(method);
-      defer Py_DECREF(methodName);
-
-      var pyRes = PyObject_CallMethodObjArgs(
-        this.get(), methodName, (...pyArgs), nil);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
-    proc call(type retType, method: string): retType throws {
-      var methodName = interpreter.toPython(method);
-      defer Py_DECREF(methodName);
-
-      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
-      interpreter.checkException();
-
-      var res = interpreter.fromPython(retType, pyRes);
-      return res;
-    }
+      :arg idx: The index of the item to set.
+      :arg item: The item to set.
+    */
+    proc setItem(idx: int, item: eltType) throws do
+      this.call(NoneType, "__setitem__", idx, item);
   }
+
 
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one
@@ -1508,10 +1839,35 @@ module Python {
   }
 
   Value implements writeSerializable;
+  Function implements writeSerializable;
+  Module implements writeSerializable;
+  Class implements writeSerializable;
+  PyList implements writeSerializable;
+  Array implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
   override proc Value.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Function.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Module.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Class.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc Array.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -1543,6 +1899,7 @@ module Python {
     require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
+    import HaltWrappers;
 
 
 
@@ -1553,6 +1910,11 @@ module Python {
     type PyObjectPtr = c_ptr(PyObject);
     extern type PyTypeObject;
     type PyTypeObjectPtr = c_ptr(PyTypeObject);
+
+    // technically this is an extern type defined by python, but if we treat it
+    // as an opaque type, we can't use it in Chapel code in casts and such.
+    // using c_ssize_t should be sufficient and safe
+    type Py_ssize_t = c_ssize_t;
 
     extern type PyThreadState;
     type PyThreadStatePtr = c_ptr(PyThreadState);
@@ -1627,6 +1989,11 @@ module Python {
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
 
 
+    /*
+      Sub Interpreters
+    */
+    extern proc chpl_Py_NewIsolatedInterpreter(tstate: c_ptr(PyThreadStatePtr)): PyStatus;
+    extern proc Py_EndInterpreter(tstate: PyThreadStatePtr);
 
     /*
       Global exec functions
@@ -1646,7 +2013,7 @@ module Python {
     extern proc PyImport_ExecCodeModule(name: c_ptrConst(c_char),
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
-                                               size: c_size_t): PyObjectPtr;
+                                               size: Py_ssize_t): PyObjectPtr;
 
 
     /*
@@ -1654,6 +2021,8 @@ module Python {
     */
     extern proc PyEval_SaveThread(): PyThreadStatePtr;
     extern proc PyEval_RestoreThread(state: PyThreadStatePtr);
+    extern proc PyThreadState_Get(): PyThreadStatePtr;
+    extern proc PyThreadState_Swap(state: PyThreadStatePtr): PyThreadStatePtr;
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
@@ -1683,9 +2052,9 @@ module Python {
     extern proc PyString_FromString(s: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyUnicode_AsUTF8(obj: PyObjectPtr): c_ptrConst(c_char);
     extern proc PyBytes_AsString(obj: PyObjectPtr): c_ptrConst(c_char);
-    extern proc PyBytes_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PyBytes_Size(obj: PyObjectPtr): Py_ssize_t;
     extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
-                                          size: c_size_t): PyObjectPtr;
+                                          size: Py_ssize_t): PyObjectPtr;
 
     proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
@@ -1704,11 +2073,11 @@ module Python {
       Sequences
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
-    extern proc PySequence_Size(obj: PyObjectPtr): c_size_t;
+    extern proc PySequence_Size(obj: PyObjectPtr): Py_ssize_t;
     extern proc PySequence_GetItem(obj: PyObjectPtr,
-                                   idx: c_size_t): PyObjectPtr;
+                                   idx: Py_ssize_t): PyObjectPtr;
     extern proc PySequence_SetItem(obj: PyObjectPtr,
-                                   idx: c_size_t,
+                                   idx: Py_ssize_t,
                                    value: PyObjectPtr);
 
 
@@ -1723,14 +2092,14 @@ module Python {
       Lists
     */
     extern proc PyList_Check(obj: PyObjectPtr): c_int;
-    extern proc PyList_New(size: c_size_t): PyObjectPtr;
+    extern proc PyList_New(size: Py_ssize_t): PyObjectPtr;
     extern proc PyList_SetItem(list: PyObjectPtr,
-                               idx: c_size_t,
+                               idx: Py_ssize_t,
                                item: PyObjectPtr);
-    extern proc PyList_GetItem(list: PyObjectPtr, idx: c_size_t): PyObjectPtr;
-    extern proc PyList_Size(list: PyObjectPtr): c_size_t;
+    extern proc PyList_GetItem(list: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyList_Size(list: PyObjectPtr): Py_ssize_t;
     extern proc PyList_Insert(list: PyObjectPtr,
-                              idx: c_size_t,
+                              idx: Py_ssize_t,
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
 
@@ -1739,7 +2108,7 @@ module Python {
     */
     extern proc PySet_New(): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
-    extern proc PySet_Size(set: PyObjectPtr): c_size_t;
+    extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
 
 
     /*
@@ -1756,7 +2125,7 @@ module Python {
                                key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
-    extern proc PyDict_Size(dict: PyObjectPtr): c_size_t;
+    extern proc PyDict_Size(dict: PyObjectPtr): Py_ssize_t;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
@@ -1768,7 +2137,7 @@ module Python {
     /*
       Tuples
     */
-    extern proc PyTuple_Pack(size: c_size_t, args...): PyObjectPtr;
+    extern proc PyTuple_Pack(size: Py_ssize_t, args...): PyObjectPtr;
 
     /*
       Functions
@@ -1790,5 +2159,45 @@ module Python {
                                            method: PyObjectPtr,
                                            args...): PyObjectPtr;
 
+  }
+
+
+  @chpldoc.nodoc
+  module ArrayTypes {
+    private use super.CPythonInterface;
+    private use CTypes;
+    require "PythonHelper/ArrayTypes.h";
+    require "PythonHelper/ArrayTypes.c";
+
+    extern proc createArrayTypes(): bool;
+
+    proc typeToArraySuffix(type T) param {
+      select T {
+        when int(64) do return "I64";
+        when uint(64) do return "U64";
+        when int(32) do return "I32";
+        when uint(32) do return "U32";
+        when int(16) do return "I16";
+        when uint(16) do return "U16";
+        when int(8) do return "I8";
+        when uint(8) do return "U8";
+        when real(64) do return "R64";
+        when real(32) do return "R32";
+        when bool do return "Bool";
+        otherwise do return "";
+      }
+    }
+
+    proc createArray(ref arr: []): PyObjectPtr {
+      type T = arr.eltType;
+      param suffix = typeToArraySuffix(T);
+      if suffix == "" then compilerError("Unsupported array type: " + T:string);
+
+      param externalName = "createArray" + suffix;
+      extern externalName
+      proc createPyArray(arr: c_ptr(T), size: Py_ssize_t): PyObjectPtr;
+
+      return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+    }
   }
 }

@@ -466,7 +466,7 @@ static void test7() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isRealType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
 }
 
 // Test that 'except' clause doesn't exclude other symbols.
@@ -481,7 +481,7 @@ static void test8() {
     R""""(
     module M {
       record Foo {
-        var _instance : owned Bar;
+        var _instance : unmanaged Bar;
 
         proc init(value) {
           this._instance = value;
@@ -503,7 +503,7 @@ static void test8() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isIntType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
 }
 
 

@@ -5,6 +5,7 @@ use Time;
 config const print = true;
 config const time = false;
 config const n = 10;
+config const runSubInterp = false;
 
 config const lambdaStr = "lambda x,: x + 1 if x % 2 != 0 else x";
 proc makeEven(x: int): int do return if x % 2 != 0 then x+1 else x;
@@ -32,6 +33,30 @@ proc parallelPythonApply(interp: borrowed, type t, arr, l) {
     res(i) = lambdaFunc(t, arr(i));
   }
   ts.restore();
+  return res;
+}
+//
+// Calling a python Lambda function from Chapel in parallel using SubInterpreter
+//
+proc parallelPythonApplySubInterp(interp: borrowed, type t, arr, l) {
+
+  record funcPair {
+    var interp: owned SubInterpreter?;
+    var func: owned Value?;
+    proc init(parent: borrowed, s) {
+      init this;
+      interp = try! (new SubInterpreter(parent));
+      func = try! (new Function(interp!, s));
+    }
+    inline proc this(type t, a) throws {
+      return func!(t, a);
+    }
+  }
+
+  var res: [arr.domain] t;
+  forall i in arr.domain with (var lambdaFunc = new funcPair(interp, l)) {
+    res(i) = lambdaFunc(t, arr(i));
+  }
   return res;
 }
 
@@ -86,6 +111,18 @@ proc main() {
       writeln("Elapsed time (Parallel Python): ", s.elapsed(), " seconds");
     if print then
       writeln("Parallel Python result: ", res);
+  }
+
+  if runSubInterp {
+    data = 1..#n;
+    var s = new stopwatch();
+    s.start();
+    var res = parallelPythonApplySubInterp(interp, int, data, lambdaStr);
+    s.stop();
+    if time then
+      writeln("Elapsed time (Parallel Python SubInterpreter): ", s.elapsed(), " seconds");
+    if print then
+      writeln("Parallel Python SubInterpreter result: ", res);
   }
 
   {

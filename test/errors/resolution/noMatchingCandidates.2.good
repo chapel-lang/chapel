@@ -1,0 +1,45 @@
+─── error in noMatchingCandidates.chpl:6 [NoMatchingCandidates] ───
+  Unable to resolve call to 'fn': no matching candidates.
+      |
+    6 |   fn(x);
+      |
+  
+  The following candidate didn't match because an actual couldn't be passed to a formal:
+      |
+    2 |   proc fn(const arg) {
+      |           ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    3 |     arg;
+    4 |   }  
+      |
+  The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here:
+      |
+    5 |   var x;
+      |       ⎺
+      |
+  The call to 'fn' occurs before any valid initialization points:
+      |
+    6 |   fn(x);
+      |      ⎺
+      |
+  The call to 'fn' cannot initialize 'x' because only 'out' formals can be used to split-initialize. However, 'x' is passed to formal 'arg' which has intent 'const'.
+
+─── error in noMatchingCandidates.chpl:14 [NoMatchingCandidates] ───
+  Unable to resolve call to 'fn': no matching candidates.
+       |
+    14 |   fn(x);  
+       |
+  
+  The following candidate didn't match because an actual couldn't be passed to a formal:
+       |
+    10 |   proc fn(arg:string) {
+       |           ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    11 |     arg;
+    12 |   }  
+       |
+  The formal 'arg' expects a value of type 'string', but the actual was a value of type 'int(64)'.
+       |
+    14 |   fn(x);  
+       |      ⎺
+       |
+  Formals with kind 'const ref' expect the actual to be a subtype, but 'int(64)' is not a subtype of 'string'.
+

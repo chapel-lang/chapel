@@ -1849,8 +1849,6 @@ operations
   This is an alternative way to create a :record:`file`.  The main way to do so
   is via the :proc:`open` function.
 
-The system file descriptor will be closed when the Chapel file is closed.
-
 .. note::
 
   This function can be used to create Chapel files that refer to system file

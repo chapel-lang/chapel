@@ -142,6 +142,10 @@ struct Resolver {
   // the return type of the function (inferred or not)
   types::QualifiedType returnType;
 
+  // diagnostics emitted by compilerError / compilerWarning that are
+  // to be issued further up the call stack.
+  std::vector<CompilerDiagnostic> userDiagnostics;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();
@@ -414,8 +418,12 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
-  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+  const types::Type* computeCustomInferType(const uast::AstNode* decl,
                                             const types::CompositeType* ct);
+
+  const types::Type* computeChplCopyInit(const uast::AstNode* decl,
+                                         types::QualifiedType::Kind declKind,
+                                         const types::QualifiedType& initExprT);
 
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
@@ -439,6 +447,15 @@ struct Resolver {
                                  types::QualifiedType::Kind& qtKind,
                            const types::Type* typePtr,
                            const types::Param* paramPtr);
+
+  // given a user diagnostic, emit it unconditionally.
+  void emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
+                          const uast::AstNode* astForErr);
+
+  // save the diagnostic in the list of emitted diagnostics, and otherwise
+  // note that it has been encountered.
+  void noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
+                                     const uast::AstNode* astForErr);
 
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
@@ -484,6 +501,7 @@ struct Resolver {
                                          const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
                                          const CallResolutionResult& c,
+                                         std::vector<const uast::AstNode*>& actualAsts,
                                          optional<ActionAndId> associatedActionAndId = {});
 
   // If the variable with the passed ID has unknown or generic type,
@@ -593,7 +611,8 @@ struct Resolver {
   // includes special handling for operators and tuple literals
   void prepareCallInfoActuals(const uast::Call* call,
                               std::vector<CallInfoActual>& actuals,
-                              const uast::AstNode*& questionArg);
+                              const uast::AstNode*& questionArg,
+                              std::vector<const uast::AstNode*>* actualAsts);
 
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
@@ -711,6 +730,9 @@ struct Resolver {
 
   bool enter(const uast::Import* node);
   void exit(const uast::Import* node);
+
+  bool enter(const uast::VisibilityClause* node);
+  void exit(const uast::VisibilityClause* node);
 
   bool enter(const uast::Zip* node);
   void exit(const uast::Zip* node);

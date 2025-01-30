@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+#
+# Remove warning about PSHM being disabled when there are co-locales.
+#
+import sys, re
+
+outfname = sys.argv[2]
+with open(outfname, "r") as f:
+    outText = f.read()
+
+msg = r"""\*\*\* WARNING \(proc 0\): Running with multiple processes per host without shared-memory communication support \(PSHM\).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
+"""
+outText = re.sub(msg, "", outText, flags = re.MULTILINE)
+
+with open(outfname, "w") as f:
+    f.write(outText)

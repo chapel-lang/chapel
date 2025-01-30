@@ -128,7 +128,7 @@ class TupleType final : public CompositeType {
   }
 
   /** Return the type of the i'th element */
-  QualifiedType elementType(int i) const;
+  const QualifiedType& elementType(int i) const;
 
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */

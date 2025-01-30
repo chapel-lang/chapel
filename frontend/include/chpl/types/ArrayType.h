@@ -69,14 +69,16 @@ class ArrayType final : public CompositeType {
   static const ArrayType* getGenericArrayType(Context* context);
 
   static const ArrayType* getArrayType(Context* context,
+                                       const QualifiedType& instance,
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return getArrayType(context,
-                        domainType().substitute(context, subs),
-                        eltType().substitute(context, subs));
+    return getArrayTypeQuery(context,
+                             id_, name_,
+                             Type::substitute(context, instantiatedFrom_->toArrayType(), subs),
+                             resolution::substituteInMap(context, subs_, subs)).get();
   }
 
   QualifiedType domainType() const {

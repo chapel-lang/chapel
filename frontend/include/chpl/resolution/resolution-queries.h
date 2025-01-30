@@ -295,7 +295,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
  */
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope);
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning = false);
 
 
 /**
@@ -384,6 +385,12 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
 const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
+
+/**
+  Check if any of the formals are still generic, which is invalid. Emits
+  an error if so.
+ */
+bool checkUninstantiatedFormals(Context* context, const uast::AstNode* astForErr, const TypedFnSignature* sig);
 
 /////// call resolution
 
@@ -610,6 +617,9 @@ taggedYieldTypeForType(ResolutionContext* rc,
 const types::QualifiedType&
 yieldTypeForIterator(ResolutionContext* rc,
                      const types::IteratorType* iter);
+
+const types::Type* shapeForIterator(Context* context,
+                                    const types::IteratorType* iter);
 
 /**
   Resolve a call to the special 'these' iterator method. For certain types,
