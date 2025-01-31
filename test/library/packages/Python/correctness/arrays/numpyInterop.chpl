@@ -8,6 +8,10 @@ def saxpy(x, y, a):
   x_np = np.asarray(x)
   y_np = np.asarray(y)
   return a*x_np + y_np
+
+def numpyAssign(arr):
+  np_arr = np.asarray(arr)
+  np_arr[:] = 100
 """;
 
 proc main() {
@@ -15,6 +19,7 @@ proc main() {
   var interp = new Interpreter();
   var m = new Module(interp, '__empty__', code);
   var saxpy = new Function(m, 'saxpy');
+  var numpyAssign = new Function(m, 'numpyAssign');
 
   {
     var x = [1, 2, 3];
@@ -25,7 +30,7 @@ proc main() {
     var yArr = new Array(interp, y);
 
     var result = saxpy(owned Value, xArr, yArr, a);
-    writeln(result);
+    writeln("saxpy on 1D arrays: ", result);
   }
   writeln();
   {
@@ -37,7 +42,17 @@ proc main() {
     var yArr = new Array(interp, y);
 
     var result = saxpy(owned Value, xArr, yArr, a);
-    writeln(result);
+    writeln("saxpy on nested arrays: ", result);
+  }
+  writeln();
+  {
+    var x = [1, 2, 3, 4];
+    writeln("Before numpyAssign: ", x);
+    {
+      var xArr = new Array(interp, x);
+      numpyAssign(NoneType, xArr);
+    }
+    writeln("After numpyAssign: ", x);
   }
 
 
