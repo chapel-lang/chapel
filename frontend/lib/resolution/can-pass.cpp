@@ -520,9 +520,8 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
   // nil -> pointers
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
       !formalT->isCStringType()) {
-    bool instantiates = false;
     return CanPassResult(/* no fail reason */ {},
-                         instantiates,
+                         /* instantiates */ false,
                          /*promotes*/ false,
                          /*conversion*/ SUBTYPE);
   }
