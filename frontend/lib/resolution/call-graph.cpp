@@ -175,6 +175,8 @@ int gatherTransitiveFnsCalledByFn(Context* context,
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
   for (auto kv : directCalls) {
+    if (kv.first == nullptr) continue;
+
     auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.

@@ -2381,7 +2381,14 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
       // unknown at this point, we couldn't extract the type queries, which
       // means the call is ill-formed.
       if (qFormalType.isUnknownKindOrType()) {
-        return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+        if (entry.hasActual()) {
+          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+        } else {
+          // Something else has gone wrong. Use this failure kind to avoid
+          // situations down the line where someone wants to know which
+          // actual the failure corresponds to.
+          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx());
+        }
       }
 
       auto checkType = !useType.isUnknown() ? useType : formalType;
@@ -3402,7 +3409,7 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     fn->thisFormal()->traverse(vis);
     auto res = vis.byPostorder.byAst(fn->thisFormal());
 
-    auto got = canPass(context, recv, res.type());
+    auto got = canPassScalar(context, recv, res.type());
     // Allow passing directly or via implicit borrowing only.
     if (!got.passes() || (got.converts() && !got.convertsWithBorrowing())) {
       return ApplicabilityResult::failure(candidateId,
@@ -4567,7 +4574,8 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
   // want to consider forwarding.
   ResolvedFields forwards;
   UniqueString name = ci.name();
-  if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
+  if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit") ||
+      name == USTR("postfix!")) {
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;

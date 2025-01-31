@@ -137,7 +137,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   if (type->isNothingType()) return false;
 
-  if (isNameOfCompilerGeneratedMethod(name) ||
+  bool isAggregate = type->getCompositeType() || type->isRecordLike();
+  if ((isAggregate && isNameOfCompilerGeneratedMethod(name)) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
     if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
