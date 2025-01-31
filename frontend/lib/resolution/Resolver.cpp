@@ -6261,7 +6261,14 @@ static bool handleArrayTypeExpr(Resolver& rv,
   // Assemble the array type
   auto arrayType = genericArrayType;
   if (domainType.type() == DomainType::getGenericDomainType(rv.context)) {
-    // Short circuit to return generic array in the case of a generic domain.
+    auto domainTypeAsType =
+        QualifiedType(QualifiedType::TYPE, domainType.type());
+    arrayType =
+        QualifiedType(QualifiedType::TYPE,
+                      ArrayType::getArrayType(rv.context,
+                                              /* instance */ QualifiedType(),
+                                              /* domainType */ domainTypeAsType,
+                                              /* eltType */ eltType));
   } else {
     // We have an instantiated domain, so get array type via call to its
     // array builder function.
