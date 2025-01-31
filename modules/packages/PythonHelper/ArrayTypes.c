@@ -21,6 +21,20 @@
 #include "ArrayTypes.h"
 #include "chpl-mem.h"
 
+// required for Python <12
+#if PY_VERSION_HEX < 0x030c0000
+#include "structmember.h"
+#ifndef Py_T_PYSSIZET
+#define Py_T_PYSSIZET T_PYSSIZET
+#endif
+#ifndef Py_T_OBJECT_EX
+#define Py_T_OBJECT_EX T_OBJECT_EX
+#endif
+#ifndef Py_READONLY
+#define Py_READONLY READONLY
+#endif
+#endif
+
 
 static PyObject* ArrayTypeEnum = NULL;
 chpl_bool registerArrayTypeEnum(void) {
