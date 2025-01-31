@@ -312,6 +312,36 @@ static void test9() {
   ensureParamBool(variables.at("r7"), false);
 }
 
+static void test10() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+      R"""(
+      module M {
+        use Reflection;
+
+        param lineno = getLineNumber();
+
+        param toplevelFn = getRoutineName();
+
+        proc bar() param {
+          return getRoutineName();
+        }
+        param fn = bar();
+
+        param filename = getFileName();
+
+        param modname = getModuleName();
+      }
+      )""", {"lineno", "filename", "toplevelFn", "fn", "modname"});
+  ensureParamInt(variables["lineno"], 5);
+  ensureParamString(variables["filename"], "input.chpl");
+  ensureParamString(variables["toplevelFn"], "chpl__init_M");
+  ensureParamString(variables["fn"], "bar");
+  ensureParamString(variables["modname"], "M");
+}
+
 int main() {
   test1();
   test2();
@@ -322,5 +352,6 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
   return 0;
 }

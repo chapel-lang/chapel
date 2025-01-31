@@ -5097,6 +5097,49 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
                               exprType, yieldedType, poiInfo);
 }
 
+static bool handleReflectionFunction(ResolutionContext* rc,
+                                     const TypedFnSignature* sig,
+                                     const Call* call,
+                                     QualifiedType& result) {
+  if (sig->isCompilerGenerated()) return false;
+
+  auto context = rc->context();
+  auto fn = parsing::idToAst(context, sig->id())->toFunction();
+  if (fn && fn->attributeGroup()) {
+    auto attr = fn->attributeGroup();
+    if (attr->hasPragma(pragmatags::PRAGMA_GET_LINE_NUMBER)) {
+      auto loc = parsing::locateId(context, call->id());
+      result = QualifiedType::makeParamInt(context, loc.firstLine());
+      return true;
+    } else if (attr->hasPragma(pragmatags::PRAGMA_GET_FILE_NAME)) {
+      auto loc = parsing::locateId(context, call->id());
+      result = QualifiedType::makeParamString(context, loc.path());
+      return true;
+    } else if (attr->hasPragma(pragmatags::PRAGMA_GET_FUNCTION_NAME)) {
+      auto func = parsing::idToParentFunctionId(context, call->id());
+      if (!func.isEmpty()) {
+        auto name = func.symbolName(context);
+        result = QualifiedType::makeParamString(context, name);
+      } else {
+        // For compatibility with production
+        // TODO: What *should* happen here?
+        auto mod = parsing::idToParentModule(context, call->id());
+        auto name = mod.symbolName(context);
+        auto initFn = UniqueString::get(context, "chpl__init_" + name.str());
+        result = QualifiedType::makeParamString(context, initFn);
+      }
+      return true;
+    } else if (attr->hasPragma(pragmatags::PRAGMA_GET_MODULE_NAME)) {
+      auto mod = parsing::idToParentModule(context, call->id());
+      auto name = mod.symbolName(context);
+      result = QualifiedType::makeParamString(context, name);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
 static CallResolutionResult
@@ -5171,8 +5214,18 @@ resolveFnCall(ResolutionContext* rc,
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate.fn() != nullptr) {
       bool isIterator = candidate.fn()->isIterator();
-      QualifiedType rt = returnType(rc, candidate.fn(),
-                                    instantiationPoiScope);
+
+      QualifiedType rt;
+      // TODO: Ideally we'd refactor things such that we instantiate some kind
+      // of hidden argument to these functions that is then returned. Alas, we
+      // still need this stuff to work with production, so we create this hack.
+      if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
+        CHPL_ASSERT(rt.isParam() && rt.hasParamPtr());
+      } else {
+        rt = returnType(rc, candidate.fn(),
+                        instantiationPoiScope);
+      }
+
       QualifiedType yt;
 
       if (!candidate.promotedFormals().empty()) {
