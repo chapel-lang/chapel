@@ -5872,6 +5872,20 @@ struct ParamRangeInfo {
   }
 };
 
+struct TupleInfo {
+  const TupleType* tupleType;
+  int idx = 0;
+
+  bool done() const {
+    return idx >= tupleType->numElements();
+  }
+
+  QualifiedType advance(Context* context) {
+    CHPL_ASSERT(!done());
+    return tupleType->elementType(idx++);
+  }
+};
+
 template <typename BoundInfo>
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& boundInfo) {
   Context* context = rv.context;
@@ -5914,6 +5928,11 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   if (!iterandInfo) return false;
 
   return resolveParamForLoop(rv, forLoop, std::move(iterandInfo));
+}
+
+static bool resolveHeterogenousTupleForLoop(Resolver& rv, const For* forLoop, const TupleType* tupleType) {
+  auto tupleInfo = TupleInfo { tupleType };
+  return resolveParamForLoop(rv, forLoop, &tupleInfo);
 }
 
 static QualifiedType
@@ -6136,6 +6155,19 @@ bool Resolver::enter(const IndexableLoop* loop) {
     // exit the scope here.
     } else {
       exitScope(loop);
+    }
+  }
+
+  // iteration over non-homogenous tuples is handled directly by
+  // the compiler, very much like a param loop.
+  if (forLoop && !scopeResolveOnly && !iterand->isZip()) {
+    auto iterandRe = byPostorder.byAst(iterand);
+    if (!iterandRe.type().isUnknownOrErroneous()) {
+      if (auto tt = iterandRe.type().type()->toTupleType()) {
+        if (!tt->isStarTuple()) {
+          return resolveHeterogenousTupleForLoop(*this, forLoop, tt);
+        }
+      }
     }
   }
 
