@@ -22,7 +22,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
 
 1) If you don't already have the Chapel 2.3 source release, see
-   https://chapel-lang.org/download.html.
+   https://chapel-lang.org/download/
 
 
 2) Build Chapel in its 'Quickstart' configuration:
