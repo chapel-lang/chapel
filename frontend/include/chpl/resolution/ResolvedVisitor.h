@@ -31,41 +31,43 @@ using namespace uast;
 template <typename ResolvedVisitorImpl>
 static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
                                     const uast::For* loop) {
-  if (loop->isParam()) {
-    // Enter the param for-loop with the current resolution results, so that
-    // the user-defined visitor can choose to do something custom if it
-    // wants.
-    bool goInto = v.userVisitor().enter(loop, v);
+  bool goInto = v.userVisitor().enter(loop, v);
+  if (!goInto) return false;
 
-    if (goInto) {
-      const ResolvedExpression& rr = v.byAst(loop);
-      const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+  // don't return 'true' if it's a param loop, we'll enter it below if able.
+  if (loop->isParam()) goInto = false;
 
-      if (resolvedLoop == nullptr) return false;
+  // some loops have 'paramLoop' info (param loops, loops over heterogeneous tuples)
+  // but most don't, so check hasAst and bail if it's not there.
+  if (!v.hasAst(loop)) {
+    return goInto;
+  }
 
-      const AstNode* iterand = loop->iterand();
-      iterand->traverse(v);
+  const ResolvedExpression& rr = v.byAst(loop);
+  const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
 
-      // TODO: Should there be some kind of function the UserVisitor can
-      // implement to observe a new iteration of the loop body?
-      for (const auto& loopBody : resolvedLoop->loopBodies()) {
-        ResolvedVisitorImpl loopVis(v.rc(), loop,
-                                    v.userVisitor(), loopBody);
+  // no param resolution results, act like a normal loop
+  if (resolvedLoop == nullptr) return goInto;
 
-        for (const AstNode* child : loop->children()) {
-          // Written to visit "all but the iterand" in case we add more
-          // fields/children to the For class later.
-          if (child != iterand) {
-            child->traverse(loopVis);
-          }
-        }
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(v);
+
+  // TODO: Should there be some kind of function the UserVisitor can
+  // implement to observe a new iteration of the loop body?
+  for (const auto& loopBody : resolvedLoop->loopBodies()) {
+    ResolvedVisitorImpl loopVis(v.rc(), loop,
+                                v.userVisitor(), loopBody);
+
+    for (const AstNode* child : loop->children()) {
+      // Written to visit "all but the iterand" in case we add more
+      // fields/children to the For class later.
+      if (child != iterand) {
+        child->traverse(loopVis);
       }
     }
-
-    return false;
-  } else {
-    return v.userVisitor().enter(loop, v);
   }
+
+  return false;
 }
 
 template <typename ResolvedVisitorImpl>

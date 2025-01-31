@@ -515,6 +515,70 @@ static void testNestedParamFor() {
   assert(resolvedVals == pc.resolvedVals);
 }
 
+struct TupleCollector {
+  using RV = ResolvedVisitor<TupleCollector>;
+
+  std::multimap<std::string, const Type*> resolvedVals;
+
+  TupleCollector() { }
+
+  bool enter(const uast::VarLikeDecl* decl, RV& rv) {
+    if (decl->storageKind() == Qualifier::PARAM ||
+        decl->storageKind() == Qualifier::INDEX) {
+      const ResolvedExpression& rr = rv.byAst(decl);
+      if (!rr.type().isUnknownOrErroneous()) {
+        resolvedVals.emplace(decl->name().str(), rr.type().type());
+      }
+    }
+    return true;
+  }
+
+  bool enter(const uast::AstNode* ast, RV& rv) {
+    return true;
+  }
+  void exit(const uast::AstNode* ast, RV& rv) {}
+};
+
+static void testHeteroTuples() {
+  printf("testHeteroTuples\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  auto loopText = R"""(
+  var tmp = (1.0, 1, true);
+
+  for x in tmp {
+    for y in tmp {
+
+    }
+  }
+  )""";
+  const Module* m = parseModule(context, loopText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  TupleCollector pc;
+  ResolvedVisitor<TupleCollector> rv(rc, m, pc, rr);
+  m->traverse(rv);
+
+  std::multimap<std::string, const Type*> expected;
+  expected.emplace("x", RealType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", IntType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", BoolType::get(context));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+
+  assert(expected == pc.resolvedVals);
+}
+
 static void testIndexScope0() {
   printf("testIndexScope0\n");
   auto context = buildStdContext();
@@ -1469,6 +1533,7 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
+  testHeteroTuples();
   testIndexScope0();
   testIndexScope1();
 
