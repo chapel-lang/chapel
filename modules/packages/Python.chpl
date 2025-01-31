@@ -1597,7 +1597,7 @@ module Python {
       :returns: The size of the list.
     */
     proc size: int throws {
-      var size = PySequence_Length(this.get());
+      var size = PySequence_Size(this.get());
       this.check();
       return size;
     }
@@ -1706,7 +1706,7 @@ module Python {
       :returns: The size of the array.
     */
     proc size: int throws {
-      var size = PySequence_Length(this.get());
+      var size = PySequence_Size(this.get());
       this.check();
       return size;
     }
@@ -2089,7 +2089,6 @@ module Python {
     */
     extern proc PySequence_Check(obj: PyObjectPtr): c_int;
     extern proc PySequence_Size(obj: PyObjectPtr): Py_ssize_t;
-    extern proc PySequence_Length(obj: PyObjectPtr): Py_ssize_t;
     extern proc PySequence_GetItem(obj: PyObjectPtr,
                                    idx: Py_ssize_t): PyObjectPtr;
     extern proc PySequence_SetItem(obj: PyObjectPtr,
