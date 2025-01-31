@@ -6263,14 +6263,17 @@ static bool handleArrayTypeExpr(Resolver& rv,
   // Assemble the array type
   auto arrayType = genericArrayType;
   if (domainType.type() == DomainType::getGenericDomainType(rv.context)) {
-    auto domainTypeAsType =
-        QualifiedType(QualifiedType::TYPE, domainType.type());
-    arrayType =
-        QualifiedType(QualifiedType::TYPE,
-                      ArrayType::getArrayType(rv.context,
-                                              /* instance */ QualifiedType(),
-                                              /* domainType */ domainTypeAsType,
-                                              /* eltType */ eltType));
+    // Preserve eltType info, if we have it.
+    if (!eltType.isUnknownOrErroneous()) {
+      auto domainTypeAsType =
+          QualifiedType(QualifiedType::TYPE, domainType.type());
+      arrayType = QualifiedType(
+          QualifiedType::TYPE,
+          ArrayType::getArrayType(rv.context,
+                                  /* instance */ QualifiedType(),
+                                  /* domainType */ domainTypeAsType,
+                                  /* eltType */ eltType));
+    }
   } else {
     // We have an instantiated domain, so get array type via call to its
     // array builder function.
