@@ -1299,9 +1299,17 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     }
 
     // if there are no returns with a value, use void return type
-    if (fn->linkage() == Decl::EXTERN && fn->returnType() == nullptr) {
-      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-      return true;
+    if (fn->linkage() == Decl::EXTERN) {
+      if (fn->returnType() == nullptr) {
+        result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+        return true;
+      } else {
+        // TODO: This is a workaround for a bug where the return type was
+        // not found for some reason. By returning a type we prevent an attempt
+        // to resolve the non-existent function body.
+        result = QualifiedType(QualifiedType::CONST_VAR, UnknownType::get(context));
+        return true;
+      }
     } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;

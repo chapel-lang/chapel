@@ -471,15 +471,24 @@ static void test45() {
       var f = new owned Foo();
       var b : borrowed Foo = f.borrow();
       var x = b:unmanaged;
+
+      var y = x:borrowed;
       )""";
 
-    auto xInit = resolveTypeOfXInit(context, program);
+    auto types = resolveTypesOfVariables(context, program, {"x", "y"});
+
+    auto xInit = types["x"];
     assert(xInit.type());
     auto ct = xInit.type()->toClassType();
     assert(ct);
     assert(ct->decorator().isUnmanaged());
     assert(!ct->decorator().isUnknownNilability());
     assert(ct->decorator().isNonNilable());
+
+    auto yt = types["y"].type()->toClassType();
+    assert(yt->decorator().isBorrowed());
+    assert(!yt->decorator().isUnknownNilability());
+    assert(yt->decorator().isNonNilable());
   }
 
   // Nilable
@@ -494,15 +503,24 @@ static void test45() {
       var f = new owned Foo();
       var b : borrowed Foo? = f.borrow();
       var x = b:unmanaged;
+
+      var y = x:borrowed;
       )""";
 
-    auto xInit = resolveTypeOfXInit(context, program);
+    auto types = resolveTypesOfVariables(context, program, {"x", "y"});
+
+    auto xInit = types["x"];
     assert(xInit.type());
     auto ct = xInit.type()->toClassType();
     assert(ct);
     assert(ct->decorator().isUnmanaged());
     assert(!ct->decorator().isUnknownNilability());
     assert(ct->decorator().isNilable());
+
+    auto yt = types["y"].type()->toClassType();
+    assert(yt->decorator().isBorrowed());
+    assert(!yt->decorator().isUnknownNilability());
+    assert(yt->decorator().isNilable());
   }
 }
 

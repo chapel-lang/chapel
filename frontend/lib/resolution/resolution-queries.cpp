@@ -4033,13 +4033,18 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
-      // cast (borrowed class) : unmanaged
+      // cast (borrowed class) : unmanaged,
+      // and (unmanaged class) : borrowed
       auto srcClass = srcTy->toClassType();
       auto dstClass = dstTy->toClassType();
-      if (srcClass->decorator().isBorrowed() &&
-          dstClass->manageableType()->isAnyClassType() &&
-          dstClass->decorator().isUnmanaged()) {
-        auto decorator = ClassTypeDecorator(ClassTypeDecorator::ClassTypeDecoratorEnum::UNMANAGED);
+      bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
+                        (dstClass->decorator().isUnmanaged() ||
+                         dstClass->decorator().isBorrowed());
+      bool isValidSrc = srcClass->decorator().isBorrowed() ||
+                        srcClass->decorator().isUnmanaged();
+      if (isValidDst && isValidSrc) {
+        auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
+        auto decorator = ClassTypeDecorator(management);
         decorator = decorator.copyNilabilityFrom(srcClass->decorator());
         auto outTy = ClassType::get(context, srcClass->manageableType(),
                                     nullptr, decorator);
