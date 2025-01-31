@@ -1255,16 +1255,23 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   }
 }
 
+void Resolver::resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
+                                      int numVarArgs) {
+  if (auto countQuery = varArgFormal->count()) {
+    if (countQuery->isTypeQuery()) {
+      ResolvedExpression& result = byPostorder.byAst(countQuery);
+      result.setType(QualifiedType::makeParamInt(context, numVarArgs));
+    }
+  }
+}
+
 void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
                                                 QualifiedType formalType) {
   if (auto varargs = formal->toVarArgFormal()) {
     const TupleType* tuple = formalType.type()->toTupleType();
 
     // args...?n
-    if (auto countQuery = varargs->count()) {
-      ResolvedExpression& result = byPostorder.byAst(countQuery);
-      result.setType(QualifiedType::makeParamInt(context, tuple->numElements()));
-    }
+    resolveVarArgSizeQuery(varargs, tuple->numElements());
 
     if (auto typeExpr = formal->typeExpression()) {
       QualifiedType useType = tuple->elementType(0);
@@ -1831,7 +1838,12 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         if (inferFromInit == false && !isTypeOrParam)  {
           // check also for a generic type as the type expression
           auto g = getTypeGenericity(context, typeExprT);
-          if (g != Type::GENERIC) {
+
+          // "generic with defaults" at this point means "generic" because
+          // getTypeGenericity considers the type expression's substitutions,
+          // and existing logic would have inserted the defaults if possible.
+          // Thus, this expression is explicitly generic.
+          if (g != Type::GENERIC && g != Type::GENERIC_WITH_DEFAULTS) {
             inferFromInit = true;
           }
         }
@@ -2470,6 +2482,60 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   resolveTupleUnpackDecl(td, useT);
 }
 
+static bool addExistingSubstitutionsAsActuals(Context* context,
+                                              const Type* type,
+                                              std::vector<CallInfoActual>& outActuals,
+                                              std::vector<const AstNode*>& outActualAsts) {
+  bool addedSubs = false;
+  while (auto ct = type->getCompositeType()) {
+    if (!ct->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : ct->substitutions()) {
+      auto fieldName = parsing::fieldIdToName(context, id);
+      addedSubs = true;
+      outActuals.emplace_back(qt, fieldName);
+      outActualAsts.push_back(nullptr);
+    }
+
+    if (auto clt = ct->toBasicClassType()) {
+      type = clt->parentClassType();
+    } else {
+      break;
+    }
+  }
+
+  return addedSubs;
+}
+
+static void findMismatchedInstantiations(Context* context,
+                                         const CompositeType* originalCT,
+                                         const CompositeType* finalCT,
+                                         std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>>& out) {
+  while (originalCT) {
+    CHPL_ASSERT(finalCT);
+    if (!originalCT->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : originalCT->substitutions()) {
+      auto finalSub = finalCT->substitutions().find(id);
+      if (finalSub == finalCT->substitutions().end()) {
+        out.emplace_back(id, parsing::fieldIdToName(context, id), qt, QualifiedType());
+      } else {
+        auto& finalQt = finalSub->second;
+        if (qt != finalQt) {
+          out.emplace_back(id, parsing::fieldIdToName(context, id), qt, finalQt);
+        }
+      }
+    }
+
+    if (auto clt = originalCT->toBasicClassType()) {
+      originalCT = clt->parentClassType();
+      finalCT = finalCT->toBasicClassType()->parentClassType();
+    } else {
+      break;
+    }
+  }
+}
+
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
       !call->calledExpression()->isNew()) {
@@ -2522,6 +2588,14 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto receiverInfo = CallInfoActual(calledType, USTR("this"));
   actuals.push_back(std::move(receiverInfo));
   actualAsts.push_back(newExpr->typeExpression());
+
+  // if the type has existing substitutions, we feed them as named actuals
+  // to the constructor. However, the constructor can do something entirely
+  // different, and override the subs we passed in. This is an error, which
+  // we should check for if we added named actuals.
+  bool validateFinalType =
+    addExistingSubstitutionsAsActuals(context, qtNewExpr.type(), actuals, actualAsts);
+
   // Remaining actuals.
   prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
   CHPL_ASSERT(!questionArg);
@@ -2566,6 +2640,19 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
     auto qt = QualifiedType(QualifiedType::VAR, type);
     re.setType(qt);
+
+    if (validateFinalType) {
+      auto originalCT = initReceiverType->getCompositeType();
+      auto finalCT = type->getCompositeType();
+      CHPL_ASSERT(originalCT);
+      CHPL_ASSERT(finalCT);
+
+      if (!finalCT->isInstantiationOf(context, originalCT)) {
+        std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>> mismatches;
+        findMismatchedInstantiations(context, originalCT, finalCT, mismatches);
+        CHPL_REPORT(context, MismatchedInitializerResult, call, originalCT, finalCT, std::move(mismatches));
+      }
+    }
   }
 
   return true;
@@ -3004,6 +3091,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isModule(tag)) {
     return QualifiedType(QualifiedType::MODULE, nullptr);
+  } else if (asttags::isEnum(tag)) {
+    const Type* t = initialTypeForTypeDecl(context, id);
+    return QualifiedType(QualifiedType::TYPE, t);
   } else if (asttags::isInterface(tag)) {
     const Type* t = initialTypeForInterface(context, id);
     return QualifiedType(QualifiedType::TYPE, t);

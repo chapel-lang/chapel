@@ -1873,6 +1873,150 @@ static void testDefaultArgs() {
   }
 }
 
+static void testInitInstantiation(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+      }
+
+      type intPairFirst = pair(int, ?);
+      var x = new intPairFirst(real);
+
+      type intPairSecond = pair(snd=int, ?);
+      var y = new intPairSecond(real);
+
+      type intPairBoth = pair(int, int);
+      var z = new intPairBoth();
+      )""";
+
+  auto getPairComponents = [](Context* context, const QualifiedType& qt) {
+    CHPL_ASSERT(!qt.isUnknownOrErroneous());
+    auto ct = qt.type()->getCompositeType();
+    CHPL_ASSERT(ct);
+    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+
+    assert(fields.fieldName(0) == "fst");
+    assert(fields.fieldName(1) == "snd");
+
+    auto fstType = fields.fieldType(0);
+    assert(!fstType.isUnknownOrErroneous());
+
+    auto sndType = fields.fieldType(1);
+    assert(!sndType.isUnknownOrErroneous());
+
+    return std::make_pair(fstType, sndType);
+  };
+
+  for (auto version : getAllVersions(prog)) {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveTypesOfVariables(context, version, {"x", "y", "z"});
+
+    auto [xFst, xSnd] = getPairComponents(context, qt.at("x"));
+    assert(xFst.type()->isIntType());
+    assert(xSnd.type()->isRealType());
+
+    auto [yFst, ySnd] = getPairComponents(context, qt.at("y"));
+    assert(yFst.type()->isRealType());
+    assert(ySnd.type()->isIntType());
+
+    auto [zFst, zSnd] = getPairComponents(context, qt.at("z"));
+    assert(zFst.type()->isIntType());
+    assert(zSnd.type()->isIntType());
+  }
+}
+
+static void testInitInstantiationInherit() {
+  std::string program =
+    R"""(
+    class A {
+      type TA;
+    }
+
+    class B : A(?) {
+      type TB;
+
+      proc init(type TA, type TB) {
+        super.init(TA);
+        this.TB = TB;
+      }
+    }
+
+    type tmp = B(real, int);
+    var x = new tmp();
+    )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context, program);
+
+  assert(qt.type());
+  auto recType = qt.type()->getCompositeType();
+  assert(recType);
+  assert(recType->name() == "B");
+
+  auto childFields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(childFields.fieldName(0) == "TB");
+  assert(childFields.fieldType(0).type()->isIntType());
+
+  auto parent = recType->toBasicClassType()->parentClassType();
+  auto parentFields = fieldsForTypeDecl(context, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(parentFields.fieldName(0) == "TA");
+  assert(parentFields.fieldType(0).type()->isRealType());
+}
+
+static void testInitInstantiationInheritWrong() {
+  // this program isn't correct, since while trying to init B(real, int),
+  // we end up with B(real, real) because this.TB = TA and not this.TB = TB.
+  std::string program =
+    R"""(
+    class A {
+      type TA;
+    }
+
+    class B : A(?) {
+      type TB;
+
+      proc init(type TA, type TB) {
+        super.init(TA);
+        this.TB = TA;
+      }
+    }
+
+    type tmp = B(real, int);
+    var x = new tmp();
+    )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context, program);
+
+  assert(qt.type());
+  auto recType = qt.type()->getCompositeType();
+  assert(recType);
+  assert(recType->name() == "B");
+
+  auto childFields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(childFields.fieldName(0) == "TB");
+  assert(childFields.fieldType(0).type()->isRealType());
+
+  auto parent = recType->toBasicClassType()->parentClassType();
+  auto parentFields = fieldsForTypeDecl(context, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(parentFields.fieldName(0) == "TA");
+  assert(parentFields.fieldType(0).type()->isRealType());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::MismatchedInitializerResult);
+  guard.realizeErrors();
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1924,6 +2068,10 @@ int main() {
   testGenericFieldInit();
 
   testDefaultArgs();
+
+  testInitInstantiation();
+  testInitInstantiationInherit();
+  testInitInstantiationInheritWrong();
 
   return 0;
 }

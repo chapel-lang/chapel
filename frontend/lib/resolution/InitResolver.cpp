@@ -454,6 +454,12 @@ static const Type* ctFromSubs(Context* context,
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto ctInitial = initialRecvType_->getCompositeType();
 
+  // for the purposes of determing if subs are needed, we want to inspect the
+  // base type.
+  if (auto ctInitialBase = ctInitial->instantiatedFromCompositeType()) {
+    ctInitial = ctInitialBase;
+  }
+
   // The non-default fields are used to determine if we need to create
   // substitutions. I.e., if a field is concrete even if we ignore defaults,
   // no reason to add a substitution.
@@ -791,8 +797,8 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
   }
 
   auto initialCompType = initialRecvType_->getCompositeType();
-  if (initialCompType->instantiatedFromCompositeType()) {
-    initialCompType = initialCompType->instantiatedFromCompositeType();
+  if (auto initialCompTypeBase = initialCompType->instantiatedFromCompositeType()) {
+    initialCompType = initialCompTypeBase;
   }
 
   CHPL_ASSERT(receiverCompType == initialCompType);

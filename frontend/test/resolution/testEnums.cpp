@@ -719,6 +719,28 @@ static void test21() {
   check(vars.at("z"), "blue");
 }
 
+static void test22() {
+  auto context = buildStdContext();
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         proc id(param x) param do return x;
+                         proc foo() param {
+                           enum color {
+                             red, green, blue
+                           }
+
+                           return id(color.red);
+                         }
+
+                         var x = foo();
+                         )"""");
+  assert(qt.kind() == QualifiedType::PARAM);
+  assert(qt.type() && qt.type()->isEnumType());
+  assert(qt.param() && qt.param()->isEnumParam());
+
+  ensureParamEnumStr(qt, "red");
+}
+
 int main() {
   test1();
   test2();
@@ -741,6 +763,7 @@ int main() {
   test19();
   test20();
   test21();
+  test22();
 
   return 0;
 }

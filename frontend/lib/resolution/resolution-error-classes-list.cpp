@@ -1213,6 +1213,32 @@ void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorMismatchedInitializerResult::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info_);
+  auto initialCT = std::get<1>(info_);
+  auto finalCT = std::get<2>(info_);
+  auto& mismatches = std::get<3>(info_);
+
+  wr.heading(kind_, type_, node, "final result of initialization does not match the initial type.");
+  wr.message("In the following initialization: ");
+  wr.code(justOneLine(node), { node });
+  wr.message("The initializer was invoked with an instantiated type '", initialCT, "'.");
+  wr.message("However, the initializer resulted in a value of type '", finalCT, "'.");
+
+  for (auto& mismatch : mismatches) {
+    auto& id = std::get<0>(mismatch);
+    auto fieldName = std::get<1>(mismatch);
+    auto& expectedType = std::get<2>(mismatch);
+    auto& actualType = std::get<3>(mismatch);
+
+    wr.message("");
+    wr.note(id, "field '", fieldName, "' started with type '", expectedType.type(),
+            "', but had incompatible type '", actualType.type(), "' "
+            "after initialization.");
+    wr.codeForDef(id);
+  }
+}
+
 void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
   auto node = std::get<0>(info_);
   auto parent = std::get<1>(info_);
