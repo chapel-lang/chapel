@@ -36,30 +36,31 @@
 // consuming PyObject function
 // producing PyObject function
 // supports buffer protocol
+// format string
 //
 #define chpl_ARRAY_TYPES(V) \
-  V(int64_t, "int(64)", I64, PyLong_Check, PyLong_AsLongLong, PyLong_FromLongLong, true) \
-  V(uint64_t, "uint(64)", U64, PyLong_Check, PyLong_AsUnsignedLongLong, PyLong_FromUnsignedLongLong, true) \
-  V(int32_t, "int(32)", I32, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true) \
-  V(uint32_t, "uint(32)", U32, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true) \
-  V(int16_t, "int(16)", I16, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true) \
-  V(uint16_t, "uint(16)", U16, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true) \
-  V(int8_t, "int(8)", I8, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true) \
-  V(uint8_t, "uint(8)", U8, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true) \
-  V(_real64, "real(64)", R64, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble, true) \
-  V(_real32, "real(32)", R32, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble, true) \
-  V(chpl_bool, "bool", Bool, PyBool_Check, PyObject_IsTrue, PyBool_FromLong, true) \
-  V(PyObject*, "array", A, (intptr_t), (PyObject*), (PyObject*), false)
+  V(int64_t, "int(64)", I64, PyLong_Check, PyLong_AsLongLong, PyLong_FromLongLong, true, "q") \
+  V(uint64_t, "uint(64)", U64, PyLong_Check, PyLong_AsUnsignedLongLong, PyLong_FromUnsignedLongLong, true, "Q") \
+  V(int32_t, "int(32)", I32, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true, "l") \
+  V(uint32_t, "uint(32)", U32, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true, "L") \
+  V(int16_t, "int(16)", I16, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true, "h") \
+  V(uint16_t, "uint(16)", U16, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true, "H") \
+  V(int8_t, "int(8)", I8, PyLong_Check, PyLong_AsLong, PyLong_FromLong, true, "b") \
+  V(uint8_t, "uint(8)", U8, PyLong_Check, PyLong_AsUnsignedLong, PyLong_FromUnsignedLong, true, "B") \
+  V(_real64, "real(64)", R64, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble, true, "d") \
+  V(_real32, "real(32)", R32, PyFloat_Check, PyFloat_AsDouble, PyFloat_FromDouble, true, "f") \
+  V(chpl_bool, "bool", Bool, PyBool_Check, PyObject_IsTrue, PyBool_FromLong, true, "?") \
+  V(PyObject*, "array", A, (intptr_t), (PyObject*), (PyObject*), false, "P")
 
 
-#define chpl_MAKE_ARRAY_TYPES(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, _3) extern PyTypeObject* Array##NAMESUFFIX##Type;
+#define chpl_MAKE_ARRAY_TYPES(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) extern PyTypeObject* Array##NAMESUFFIX##Type;
 chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_TYPES)
 #undef chpl_MAKE_ARRAY_TYPES
 
 chpl_bool registerArrayTypeEnum(void);
 chpl_bool createArrayTypes(void);
 
-#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, _3) PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned);
+#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned);
 chpl_ARRAY_TYPES(chpl_CREATE_ARRAY)
 #undef chpl_CREATE_ARRAY
 

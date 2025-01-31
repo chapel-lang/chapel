@@ -195,7 +195,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
 // 3. Increment an internal counter for the number of exports.
 // 4. Set view->obj to exporter and increment view->obj.
 // 5. Return 0.
-#define chpl_MAKE_GET_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS) \
+#define chpl_MAKE_GET_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS, FORMATSTRING) \
 static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr, Py_buffer* view, int flags) { \
   if (!SUPPORTSBUFFERS) { \
     PyErr_SetString(PyExc_BufferError, "This array does not support the buffer protocol"); \
@@ -211,7 +211,7 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
   view->ndim = arr->ndim; \
   view->format = NULL; \
   if (flags & PyBUF_FORMAT) { \
-    view->format = "q"; /*compute format string based on datatype */ \
+    view->format = FORMATSTRING; \
   } \
   /*TODO: support nd arrays*/ \
   view->shape = NULL; \
