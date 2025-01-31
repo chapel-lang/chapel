@@ -4033,7 +4033,8 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
-      // cast (borrowed class) : unmanaged
+      // cast (borrowed class) : unmanaged,
+      // and (unmanaged class) : borrowed
       auto srcClass = srcTy->toClassType();
       auto dstClass = dstTy->toClassType();
       bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
