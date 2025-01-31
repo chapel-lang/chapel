@@ -5861,13 +5861,43 @@ struct ParamRangeInfo {
     return (current < end);
   }
 
-  int64_t advance() {
+  QualifiedType advance(Context* context) {
     CHPL_ASSERT(!done());
     int64_t save = current;
     current += step;
-    return save;
+
+    return QualifiedType(QualifiedType::PARAM,
+                         yieldType,
+                         IntParam::get(context, save));
   }
 };
+
+template <typename BoundInfo>
+static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& boundInfo) {
+  Context* context = rv.context;
+  std::vector<ResolutionResultByPostorderID> loopResults;
+  while (!boundInfo->done()) {
+    ResolutionResultByPostorderID bodyResults;
+    auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
+
+    cur.enterScope(forLoop);
+
+    ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
+    idx.setType(boundInfo->advance(context));
+    forLoop->body()->traverse(cur);
+
+    cur.exitScope(forLoop);
+
+    loopResults.push_back(std::move(cur.byPostorder));
+  }
+
+  auto paramLoop = new ResolvedParamLoop(forLoop);
+  paramLoop->setLoopBodies(loopResults);
+  auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
+  resolvedLoopExpr.setParamLoop(paramLoop);
+
+  return false;
+}
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   const AstNode* iterand = forLoop->iterand();
@@ -5883,31 +5913,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   auto iterandInfo = ParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
   if (!iterandInfo) return false;
 
-  std::vector<ResolutionResultByPostorderID> loopResults;
-  while (!iterandInfo->done()) {
-    ResolutionResultByPostorderID bodyResults;
-    auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
-
-    cur.enterScope(forLoop);
-
-    ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
-    auto qt = QualifiedType(QualifiedType::PARAM,
-                            iterandInfo->yieldType,
-                            IntParam::get(context, iterandInfo->advance()));
-    idx.setType(qt);
-    forLoop->body()->traverse(cur);
-
-    cur.exitScope(forLoop);
-
-    loopResults.push_back(std::move(cur.byPostorder));
-  }
-
-  auto paramLoop = new ResolvedParamLoop(forLoop);
-  paramLoop->setLoopBodies(loopResults);
-  auto& resolvedLoopExpr = rv.byPostorder.byAst(forLoop);
-  resolvedLoopExpr.setParamLoop(paramLoop);
-
-  return false;
+  return resolveParamForLoop(rv, forLoop, std::move(iterandInfo));
 }
 
 static QualifiedType
