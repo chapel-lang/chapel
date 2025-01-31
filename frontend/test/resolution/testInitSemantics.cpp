@@ -1605,6 +1605,42 @@ static void testImplicitSuperInit() {
   }
 }
 
+static void testImplicitSuperInitErrors() {
+  // use 'test' to ensure 'q' has the right type
+  std::string program = R"""(
+    class Parent {
+      var x : int = 42;
+      proc init(x: int) {
+        this.x = x;
+      }
+    }
+
+    class Child : Parent {
+      var y : string;
+      proc init() {
+        // tries to resolve 'super.init()', but parent 'init' requires an argument!
+        this.y = x:string;
+      }
+    }
+
+    var w = new Child();
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"w"});
+  auto qt = vars.at("w");
+
+  auto t = qt.type();
+  assert(t);
+  assert(t->isClassType());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::NoMatchingSuper);
+  guard.realizeErrors();
+}
+
 static void testInitGenericAfterConcrete() {
   // With generic var initialized properly
   {
@@ -2060,6 +2096,7 @@ int main() {
   testInheritance();
 
   testImplicitSuperInit();
+  testImplicitSuperInitErrors();
 
   testInitGenericAfterConcrete();
 
