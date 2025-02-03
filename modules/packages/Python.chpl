@@ -327,9 +327,6 @@
 
      var interp = new Interpreter();
      var func = new Function(interp, "lambda x,: print(x)");
-     var sys = new Module(interp, "sys");
-     var pyStdout = sys.getAttr(owned Value, "stdout");
-     var pyStdoutFlush = pyStdout.getAttr(owned Value, "flush");
 
      writeln("Hello from Chapel");
      writeln("Let's call some Python!");
@@ -337,7 +334,7 @@
 
      func(NoneType, "Hello, World!");
      func(NoneType, "Goodbye, World!");
-     pyStdoutFlush(NoneType); // flush the Python output buffer before calling Chapel again
+     interp.flush(); // flush the Python output buffer before calling Chapel again
 
      writeln("Back to Chapel");
 
@@ -725,6 +722,26 @@ module Python {
       if Python.checkExceptions {
         var exc = chpl_PyErr_GetRaisedException();
         if exc then throw PythonException.build(this, exc);
+      }
+    }
+
+    /*
+      Flush the standard output buffers of the Python interpreter. This is
+      useful when mixing Python and Chapel I/O to ensure that the output is
+      displayed in the correct order.
+    */
+    inline proc flush(flushStderr: bool = false) throws {
+      var stdout = PySys_GetObject("stdout");
+      if stdout == nil then throw new ChapelException("stdout not found");
+
+      var flushStr = this.toPython("flush");
+      defer Py_DECREF(flushStr);
+
+      PyObject_CallMethodNoArgs(stdout, flushStr);
+      if flushStderr {
+        var stderr = PySys_GetObject("stderr");
+        if stderr == nil then throw new ChapelException("stderr not found");
+        PyObject_CallMethodNoArgs(stderr, flushStr);
       }
     }
 
@@ -2030,6 +2047,8 @@ module Python {
     extern "chpl_PY_MAJOR_VERSION" const PY_MAJOR_VERSION: c_ulong;
     extern "chpl_PY_MINOR_VERSION" const PY_MINOR_VERSION: c_ulong;
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
+
+    extern proc PySys_GetObject(name: c_ptrConst(c_char)): PyObjectPtr;
 
 
     /*
