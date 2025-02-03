@@ -161,7 +161,7 @@ class ArchivedSpecUpdater(FileUpdater):
             # add 1 or 2 spaces depending on the length of the previous minor version
             padding = 3 - len(str(self.prev_minor_version))
             archive_string = (
-                "* `Chapel {}{}<https://chapel-lang.org/docs/{}/index.html>`_\n".format(
+                "* `Chapel {}{}<https://chapel-lang.org/docs/{}/>`_\n".format(
                     self.short_version(self.VersionType.PREVIOUS),
                     " " * padding,
                     self.short_version(self.VersionType.PREVIOUS),
