@@ -15,13 +15,13 @@ raise Exception('Hello, World!')
 
 // explicitly use no checking, blocked by https://github.com/chapel-lang/chapel/issues/26579
 {
-  var interp = new Interpreter(false);
+  var interp = new Interpreter(checkExceptions=false);
   var mod = new Module(interp, 'hello', hello);
 }
 
 // explicitly use checking, blocked by https://github.com/chapel-lang/chapel/issues/26579
 {
-  var interp = new Interpreter(true);
+  var interp = new Interpreter(checkExceptions=true);
   try {
     var mod = new Module(interp, 'hello', hello_raise);
   } catch e: PythonException {
