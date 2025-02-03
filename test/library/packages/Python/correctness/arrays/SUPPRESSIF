@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# tests require numpy
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+export PYTHONPATH=$FILE_DIR/python_libs:$PYTHONPATH
+
+# try and import numpy
+if ! $chpl_python -c "import numpy" &>/dev/null; then
+  echo "True"
+else
+  echo "False"
+fi
