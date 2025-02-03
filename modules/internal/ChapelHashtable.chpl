@@ -144,7 +144,7 @@ module ChapelHashtable {
     const minSizePerTask = dataParMinGranularity;
 
     // We are simply slicing up the table here.  Trying to do something
-    //  more intelligent (like evenly dividing up the full slots, led
+    //  more intelligent (like evenly dividing up the full slots), led
     //  to poor speed ups.
 
     if debugAssocDataPar {
@@ -643,6 +643,35 @@ module ChapelHashtable {
       }
 
       rehash(newSize);
+    }
+
+    iter _evenSlots(param tag) where tag == iterKind.leader {
+      for i in (0..<this.tableNumFullSlots).these(tag) {
+        yield i;
+      }
+    }
+
+
+    iter _evenSlots(followThis, param tag) const ref
+      where tag == iterKind.follower {
+
+      var space = followThis(0);
+
+      var curNumFull = 0;
+
+      for i in 0..#(this.tableSize) {
+        if this.isSlotFull(i) {
+          if (curNumFull >= space.low) {
+            if (curNumFull <= space.high) {
+              yield this.table[i].key;
+            } else {
+              break;
+            }
+          }
+
+          curNumFull += 1;
+        }
+      }
     }
   }
 }
