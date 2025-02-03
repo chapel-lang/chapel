@@ -474,13 +474,13 @@ struct Resolver {
   // to re-run it if needed and emit error messages. The information
   // is largely present at the call site for resolve*Call, but
   // storing it here makes it easy to pass around.
-  struct ResolvedCallResult {
+  struct CallResultWrapper {
     using ReportFn =
-      std::function<void(const ResolvedCallResult&,
+      std::function<void(const CallResultWrapper&,
                          std::vector<ApplicabilityResult>&,
                          std::vector<const uast::VarLikeDecl*>&)>;
 
-    static void reportNoMatchingCandidates(const ResolvedCallResult& r,
+    static void reportNoMatchingCandidates(const CallResultWrapper& r,
                                            std::vector<ApplicabilityResult>& rejected,
                                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
       CHPL_REPORT(r.parent->context, NoMatchingCandidates,
@@ -541,7 +541,7 @@ struct Resolver {
      Stores additional information into a ResolvedCallResult to enable
      updating the resolver with results of the call if needed.
    */
-  ResolvedCallResult resolveGeneratedCall(const uast::AstNode* astForContext,
+  CallResultWrapper resolveGeneratedCall(const uast::AstNode* astForContext,
                                           const CallInfo* ci,
                                           const CallScopeInfo* inScopes,
                                           const char* callName = nullptr);
@@ -555,13 +555,13 @@ struct Resolver {
 
     If implicitReceiver.type() == nullptr, it will be ignored.
    */
-  ResolvedCallResult
+  CallResultWrapper
   resolveGeneratedCallInMethod(const uast::AstNode* astForContext,
                                const CallInfo* ci,
                                const CallScopeInfo* inScopes,
                                types::QualifiedType implicitReceiver);
 
-  ResolvedCallResult
+  CallResultWrapper
   resolveCallInMethod(const uast::Call* call,
                       const CallInfo* ci,
                       const CallScopeInfo* inScopes,

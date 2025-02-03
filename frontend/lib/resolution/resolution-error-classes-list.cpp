@@ -661,7 +661,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
 
-    bool isThisCandidateDcent = true;
+    bool isThisCandidateDecent = true;
 
     auto reason = candidate.reason();
     if (/* skip printing detailed info_ here because computing the formal-actual
@@ -798,7 +798,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
 
       if (reasonStr.empty()) {
-        isThisCandidateDcent = false;
+        isThisCandidateDecent = false;
         if (!printedDecentCandidate) {
           wr.message("");
           wr.note(candidate.idForErr(), "the following candidate didn't match:");
@@ -812,7 +812,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       wr.code(candidate.idForErr());
     }
-    printedDecentCandidate |= isThisCandidateDcent;
+    printedDecentCandidate |= isThisCandidateDecent;
     printCount++;
   }
 

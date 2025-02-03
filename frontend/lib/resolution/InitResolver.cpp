@@ -132,7 +132,7 @@ void InitResolver::resolveImplicitSuperInit() {
     auto callContext = fn_->body();
     auto c = initResolver_.resolveGeneratedCall(callContext, &ci, &inScopes);
     c.callName = "super.init";
-    c.reportError = [this](const Resolver::ResolvedCallResult& result,
+    c.reportError = [this](const Resolver::CallResultWrapper& result,
                             std::vector<ApplicabilityResult>& rejected,
                             std::vector<const uast::VarLikeDecl*>& actualDecls) {
       CHPL_REPORT(result.parent->context,

@@ -986,7 +986,7 @@ static bool isCallToPtr(const AstNode* formalTypeExpr) {
 
 // helper to gather bad actuals and report NoMatchingCandidates error
 static void
-handleRejectedCandidates(Resolver::ResolvedCallResult& result,
+handleRejectedCandidates(Resolver::CallResultWrapper& result,
                          std::vector<ApplicabilityResult>& rejected,
                          const std::vector<const uast::AstNode*>& actualAsts) {
   // By performing some processing in the resolver, we can issue a nicer error
@@ -2052,7 +2052,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 
 }
 
-void Resolver::ResolvedCallResult::issueBasicError() {
+void Resolver::CallResultWrapper::issueBasicError() {
   bool foundUserDiagnostics = false;
   for (auto& diagnostic : gatherUserDiagnostics(parent->rc, result)) {
     if (diagnostic.depth() - 1 == 0) {
@@ -2086,7 +2086,7 @@ void Resolver::ResolvedCallResult::issueBasicError() {
   }
 }
 
-bool Resolver::ResolvedCallResult::noteResultWithoutError(
+bool Resolver::CallResultWrapper::noteResultWithoutError(
     Resolver& resolver,
     ResolvedExpression* r,
     const uast::AstNode* astForContext,
@@ -2141,19 +2141,19 @@ bool Resolver::ResolvedCallResult::noteResultWithoutError(
 }
 
 
-bool Resolver::ResolvedCallResult::noteResultWithoutError(ResolvedExpression* r,
+bool Resolver::CallResultWrapper::noteResultWithoutError(ResolvedExpression* r,
                                                           optional<ActionAndId> actionAndId) {
   return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionAndId));
 }
 
-void Resolver::ResolvedCallResult::noteResult(ResolvedExpression* r,
+void Resolver::CallResultWrapper::noteResult(ResolvedExpression* r,
                                               optional<ActionAndId> actionAndId) {
   if (noteResultWithoutError(r, std::move(actionAndId))) {
     issueBasicError();
   }
 }
 
-bool Resolver::ResolvedCallResult::rerunCallAndPrintCandidates() {
+bool Resolver::CallResultWrapper::rerunCallAndPrintCandidates() {
   if (!result.mostSpecific().isEmpty() || result.mostSpecific().isAmbiguous()) return false;
 
   // The call isn't ambiguous; it might be that we rejected all the candidates
@@ -2183,7 +2183,7 @@ bool Resolver::ResolvedCallResult::rerunCallAndPrintCandidates() {
   return false;
 }
 
-void Resolver::ResolvedCallResult::noteResultPrintCandidates(ResolvedExpression* r,
+void Resolver::CallResultWrapper::noteResultPrintCandidates(ResolvedExpression* r,
                                                              optional<ActionAndId> actionAndId) {
   CHPL_ASSERT(!wasGeneratedCall || receiverType.isUnknown());
   if (noteResultWithoutError(r, std::move(actionAndId))) {
@@ -4856,7 +4856,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
 // the resolution with the other candidates.
 //
 // Note that the order here should match resolveIterDetailsInPriorityOrder.
-static Resolver::ResolvedCallResult
+static Resolver::CallResultWrapper
 resolveCallInMethodReattemptIfNeeded(Resolver& r,
                                      const uast::Call* call,
                                      ResolvedExpression& rr,
@@ -5048,7 +5048,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   }
 }
 
-Resolver::ResolvedCallResult
+Resolver::CallResultWrapper
 Resolver::resolveGeneratedCall(const uast::AstNode* astForContext,
                                const CallInfo* ci,
                                const CallScopeInfo* inScopes,
@@ -5067,7 +5067,7 @@ Resolver::resolveGeneratedCall(const uast::AstNode* astForContext,
   };
 }
 
-Resolver::ResolvedCallResult
+Resolver::CallResultWrapper
 Resolver::resolveGeneratedCallInMethod(const AstNode* astContext,
                                        const CallInfo* ci,
                                        const CallScopeInfo* inScopes,
@@ -5086,7 +5086,7 @@ Resolver::resolveGeneratedCallInMethod(const AstNode* astContext,
   };
 }
 
-Resolver::ResolvedCallResult
+Resolver::CallResultWrapper
 Resolver::resolveCallInMethod(const uast::Call* call,
                               const CallInfo* ci,
                               const CallScopeInfo* inScopes,
@@ -5808,7 +5808,7 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
 
   auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
   if (auto cr = tr.callResult()) {
-    Resolver::ResolvedCallResult::noteResultWithoutError(
+    Resolver::CallResultWrapper::noteResultWithoutError(
         rv, &iterandRe, iterandAstCtx, *cr,
         { { AssociatedAction::ITERATE, iterandAstCtx->id() } });
   }
