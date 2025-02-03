@@ -836,6 +836,12 @@ module Python {
       if isSubtype(t, Array?) {
         compilerError("Cannot create an Array from an existing PyObject");
       }
+      if isSubtype(t, PyArray?) {
+        if isGeneric(t) {
+          compilerError("Cannot get a generic PyArray, try specifying the eltType like 'PyArray(int)'");
+        }
+        return new t(this, obj);
+      }
 
       for converter in this.converters {
         if converter.handlesType(t) {
@@ -1128,6 +1134,7 @@ module Python {
       }
     }
   }
+
   /*
     Represents an ImportError in the Python code
   */
@@ -1136,6 +1143,16 @@ module Python {
       super.init(message);
     }
   }
+
+  /*
+    Represents a BufferError in the Python code
+  */
+  class BufferError: PythonException {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+
   /*
     Represents an exception caused by code in the Chapel module,
     not forwarded from Python.
@@ -1680,6 +1697,101 @@ module Python {
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
       this.check();
+    }
+  }
+
+  private proc checkFormatWithEltType(format: c_ptr(c_char),
+                              itemSize: Py_ssize_t, type eltType): bool {
+    if format == nil {
+      // make sure item size matches numBytes
+      // but since format is nil we cannot check the type more than this
+      return numBytes(eltType) == itemSize;
+    }
+    if format.deref() == "c".toByte() && eltType == c_char then return true;
+    if format.deref() == "b".toByte() && eltType == c_schar then return true;
+    if format.deref() == "B".toByte() && eltType == c_uchar then return true;
+    if format.deref() == "?".toByte() && eltType == bool then return true;
+    if format.deref() == "h".toByte() && eltType == c_short then return true;
+    if format.deref() == "H".toByte() && eltType == c_ushort then return true;
+    if format.deref() == "i".toByte() && eltType == c_int then return true;
+    if format.deref() == "I".toByte() && eltType == c_uint then return true;
+    if format.deref() == "l".toByte() && eltType == c_long then return true;
+    if format.deref() == "L".toByte() && eltType == c_ulong then return true;
+    if format.deref() == "q".toByte() && eltType == c_longlong then return true;
+    if format.deref() == "Q".toByte() && eltType == c_ulonglong then return true;
+    if format.deref() == "n".toByte() && eltType == c_ssize_t then return true;
+    if format.deref() == "N".toByte() && eltType == c_size_t then return true;
+    if format.deref() == "f".toByte() && eltType == c_float then return true;
+    if format.deref() == "d".toByte() && eltType == c_double then return true;
+    return false;
+  }
+
+  /*
+    Represents a Python array. This provides a Chapel interface to Python types
+    that are array-like. This includes
+    `array.array <https://docs.python.org/3/library/array.html>`_ and
+    `numpy.ndarray <https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html>`_.
+  */
+  class PyArray: Value {
+    type eltType;
+    @chpldoc.nodoc
+    var view: Py_buffer;
+    @chpldoc.nodoc
+    var itemSize: Py_ssize_t;
+
+    @chpldoc.nodoc
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+      this.eltType = eltType;
+    }
+    @chpldoc.nodoc
+    proc postinit() throws {
+      if PyObject_CheckBuffer(this.get()) == 0 {
+        throw new ChapelException("Object does not support buffer protocol");
+      }
+      var flags: c_int =
+        PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
+      if PyObject_GetBuffer(this.get(), c_ptrTo(this.view), flags) == -1 {
+        this.check();
+        // this.check should have raised an exception, if it didn't, raise one
+        throw new BufferError("Failed to get buffer");
+      }
+
+      if this.view.ndim > 1 {
+        throw new ChapelException("Only 1D arrays are currently supported");
+      }
+
+      this.itemSize = PyBuffer_SizeFromFormat(this.view.format);
+      if this.itemSize == -1 {
+        if this.view.shape != nil {
+          this.itemSize = this.view.itemsize;
+        } else {
+          // disregard itemsize, use 1
+          this.itemSize = 1;
+        }
+      }
+
+      if !checkFormatWithEltType(this.view.format, this.itemSize, this.eltType) {
+        throw new ChapelException("Format does not match element type");
+      }
+
+    }
+
+    proc deinit() {
+      PyBuffer_Release(c_ptrTo(this.view));
+    }
+
+    proc array: [] {
+      var buf = view.buf: c_ptr(this.eltType);
+      var size = view.len / this.itemSize;
+      var res = makeArrayFromPtr(buf, size);
+      return res;
     }
   }
 
@@ -2229,6 +2341,62 @@ module Python {
     extern proc PyObject_CallMethodObjArgs(obj: PyObjectPtr,
                                            method: PyObjectPtr,
                                            args...): PyObjectPtr;
+
+
+    /*
+      Buffer protocol: https://docs.python.org/3/c-api/buffer.html
+    */
+    extern record Py_buffer {
+      var buf: c_ptr(void);
+      var obj: PyObjectPtr;
+      var len: Py_ssize_t;
+      var itemsize: Py_ssize_t;
+      var readonly: c_int;
+      var ndim: c_int;
+      var format: c_ptr(c_char);
+      var shape: c_ptr(Py_ssize_t);
+      var strides: c_ptr(Py_ssize_t);
+      var suboffsets: c_ptr(Py_ssize_t);
+      var internal: c_ptr(void);
+    }
+
+    extern proc PyObject_CheckBuffer(obj: PyObjectPtr): c_int;
+    extern proc PyObject_GetBuffer(obj: PyObjectPtr,
+                                   view: c_ptr(Py_buffer),
+                                   flags: c_int): c_int;
+    extern proc PyBuffer_Release(view: c_ptr(Py_buffer));
+    extern proc PyBuffer_SizeFromFormat(format: c_ptrConst(c_char)): Py_ssize_t;
+    extern proc PyBuffer_IsContiguous(view: c_ptr(Py_buffer),
+                                      order: c_char): c_int;
+    extern proc PyBuffer_GetPointer(view: c_ptr(Py_buffer),
+                                    inidices: c_ptr(Py_ssize_t)): c_ptr(void);
+    extern proc PyBuffer_FromContiguous(view: c_ptr(Py_buffer),
+                                        buf: c_ptr(void),
+                                        len: Py_ssize_t,
+                                        order: c_char): c_int;
+    extern proc PyBuffer_ToContiguous(buf: c_ptr(void),
+                                      view: c_ptr(Py_buffer),
+                                      len: Py_ssize_t,
+                                      order: c_char): c_int;
+    extern proc PyObject_CopyData(dst: PyObjectPtr,
+                                 src: PyObjectPtr): c_int;
+    extern proc PyBuffer_FillContiguousStrides(ndims: Py_ssize_t,
+                                              shape: c_ptr(Py_ssize_t),
+                                              strides: c_ptr(Py_ssize_t),
+                                              itemsize: c_int,
+                                              order: c_char);
+    extern proc PyBuffer_FillInfo(view: c_ptr(Py_buffer),
+                                  exporter: PyObjectPtr,
+                                  buf: c_ptr(void),
+                                  len: Py_ssize_t,
+                                  readonly: c_int,
+                                  flags: c_int): c_int;
+
+
+    extern "chpl_PyBUF_SIMPLE" const PyBUF_SIMPLE: c_int;
+    extern "chpl_PyBUF_WRITABLE" const PyBUF_WRITABLE: c_int;
+    extern "chpl_PyBUF_FORMAT" const PyBUF_FORMAT: c_int;
+    extern "chpl_PyBUF_ND" const PyBUF_ND: c_int;
 
   }
 
