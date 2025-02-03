@@ -23,8 +23,6 @@
 
 // TODO: implement operators as dunder methods
 
-// TODO: make python use chapel stdout/stderr
-
 /* Library for interfacing with Python from Chapel code.
 
   This module provides a Chapel interface to a Python interpreter.
@@ -297,6 +295,46 @@
   To translate custom Chapel types to Python objects, users should define and
   register custom :type:`TypeConverter` classes.
 
+  Notes on Python + Chapel I/O
+  ----------------------------
+
+  When interspersing Python and Chapel I/O, it is important to flush the output
+  buffers to ensure that the output is displayed in the correct order. This is
+  needed at the point where the output changes from Python to Chapel or
+  vice-versa. For example:
+
+  ..
+     START_TEST
+     FILENAME: Printing.chpl
+     START_GOOD
+     Hello from Chapel
+     Let's call some Python!
+     Hello, World!
+     Goodbye, World!
+     Back to Chapel
+     END_GOOD
+
+  .. code-block:: chapel
+
+     use Python, IO;
+
+     var interp = new Interpreter();
+     var func = new Function(interp, "lambda x,: print(x)");
+
+     writeln("Hello from Chapel");
+     writeln("Let's call some Python!");
+     IO.stdout.flush(); // flush the Chapel output buffer before calling Python
+
+     func(NoneType, "Hello, World!");
+     func(NoneType, "Goodbye, World!");
+     interp.flush(); // flush the Python output buffer before calling Chapel again
+
+     writeln("Back to Chapel");
+
+  ..
+     END_TEST
+
+
   More Examples:
   --------------
 
@@ -319,7 +357,7 @@ module Python {
     Use 'objgraph' to detect memory leaks in the Python code. Care should be
     taken when interpreting the output of this flag, not all memory leaks are
     under Chapel's control. For example, printing a Python list leaks memory
-    according to 'objgraph'. Furthermore, some memory is still held when until
+    according to 'objgraph'. Furthermore, some memory is still held until
     the interpreter is closed, like the module import cache.
   */
   config const pyMemLeaks = false;
@@ -461,10 +499,6 @@ module Python {
         PyList_Insert(path, 0, Py_BuildValue("s", "."));
         this.checkException();
       }
-      // TODO: reset stdout and stderr to Chapel's handles
-      // I think we can do this by setting sys.stdout and sys.stderr to a python
-      // object that looks like a python file but forwards calls like write to
-      // Chapel's write
 
       if !ArrayTypes.createArrayTypes() {
         throwChapelException("Failed to create Python array types for Chapel arrays");
@@ -684,6 +718,26 @@ module Python {
       if Python.checkExceptions {
         var exc = chpl_PyErr_GetRaisedException();
         if exc then throw PythonException.build(this, exc);
+      }
+    }
+
+    /*
+      Flush the standard output buffers of the Python interpreter. This is
+      useful when mixing Python and Chapel I/O to ensure that the output is
+      displayed in the correct order.
+    */
+    inline proc flush(flushStderr: bool = false) throws {
+      var stdout = PySys_GetObject("stdout");
+      if stdout == nil then throw new ChapelException("stdout not found");
+
+      var flushStr = this.toPython("flush");
+      defer Py_DECREF(flushStr);
+
+      PyObject_CallMethodNoArgs(stdout, flushStr);
+      if flushStderr {
+        var stderr = PySys_GetObject("stderr");
+        if stderr == nil then throw new ChapelException("stderr not found");
+        PyObject_CallMethodNoArgs(stderr, flushStr);
       }
     }
 
@@ -2002,6 +2056,8 @@ module Python {
     extern "chpl_PY_MAJOR_VERSION" const PY_MAJOR_VERSION: c_ulong;
     extern "chpl_PY_MINOR_VERSION" const PY_MINOR_VERSION: c_ulong;
     extern "chpl_PY_MICRO_VERSION" const PY_MICRO_VERSION: c_ulong;
+
+    extern proc PySys_GetObject(name: c_ptrConst(c_char)): PyObjectPtr;
 
 
     /*

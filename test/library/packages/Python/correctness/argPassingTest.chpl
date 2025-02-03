@@ -1,5 +1,6 @@
 use Python;
 import Reflection;
+use IO;
 
 proc test_no_args(mod: borrowed Module) {
   const funcName = "no_args";
@@ -9,13 +10,13 @@ proc test_no_args(mod: borrowed Module) {
 
   // error: wrong return type
   try { func(int); }
-  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
-  catch                    { writeln("Caught unknown exception"); }
+  catch e: PythonException { mod.interpreter.flush(); writeln("Caught PythonException: ", e.message()); IO.stdout.flush(); }
+  catch                    { mod.interpreter.flush(); writeln("Caught unknown exception"); IO.stdout.flush(); }
 
   // error: too many args
   try { func(NoneType, 2); }
-  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
-  catch                    { writeln("Caught unknown exception"); }
+  catch e: PythonException { mod.interpreter.flush(); writeln("Caught PythonException: ", e.message()); IO.stdout.flush(); }
+  catch                    { mod.interpreter.flush(); writeln("Caught unknown exception"); IO.stdout.flush(); }
 }
 proc test_one_arg(mod: borrowed Module) {
   const funcName = "one_arg";
@@ -25,13 +26,13 @@ proc test_one_arg(mod: borrowed Module) {
 
   // error: not enough args
   try { func(NoneType); }
-  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
-  catch                    { writeln("Caught unknown exception"); }
+  catch e: PythonException { mod.interpreter.flush(); writeln("Caught PythonException: ", e.message()); IO.stdout.flush(); }
+  catch                    { mod.interpreter.flush(); writeln("Caught unknown exception"); IO.stdout.flush(); }
 
   // error: too many args
   try { func(NoneType, 2, 3); }
-  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
-  catch                    { writeln("Caught unknown exception"); }
+  catch e: PythonException { mod.interpreter.flush(); writeln("Caught PythonException: ", e.message()); IO.stdout.flush(); }
+  catch                    { mod.interpreter.flush(); writeln("Caught unknown exception"); IO.stdout.flush(); }
 }
 proc test_two_args(mod: borrowed Module) {
   const funcName = "two_args";
@@ -43,8 +44,8 @@ proc test_two_args(mod: borrowed Module) {
 
   // error: not enough args
   try { func(NoneType, 3); }
-  catch e: PythonException { writeln("Caught PythonException: ", e.message()); }
-  catch                    { writeln("Caught unknown exception"); }
+  catch e: PythonException { mod.interpreter.flush(); writeln("Caught PythonException: ", e.message()); IO.stdout.flush(); }
+  catch                    { mod.interpreter.flush(); writeln("Caught unknown exception"); IO.stdout.flush(); }
 }
 proc test_three_args(mod: borrowed Module) {
   const funcName = "three_args";

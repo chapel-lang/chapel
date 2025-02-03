@@ -1,14 +1,14 @@
+called no_args
+called no_args
 Caught PythonException: 'NoneType' object cannot be interpreted as an integer
 Caught PythonException: no_args() takes 0 positional arguments but 1 was given
+called one_arg with 1
 Caught PythonException: one_arg() missing 1 required positional argument: 'a'
 Caught PythonException: one_arg() takes 1 positional argument but 2 were given
-Caught PythonException: two_args() missing 1 required positional argument: 'b'
-called no_args
-called no_args
-called one_arg with 1
 called two_args with 1 and 2
 called two_args with hello and world
 called two_args with None and None
+Caught PythonException: two_args() missing 1 required positional argument: 'b'
 called three_args with 1, 2, and 3
 called varargs
   args:
