@@ -4,5 +4,6 @@ lst[0] 1
 lst[1] 2
 lst[2] hi
 lst[lst.size-1] 5
+lst[-3] hi
 lst[lst.size] Caught exception: PythonException: list index out of range
 lst [100, 2, 'hi', False, 5]

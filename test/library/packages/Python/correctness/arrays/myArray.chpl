@@ -5,6 +5,7 @@ var pythonCode = """
 def loop(arr):
   print("printing", arr, end=": ")
   print(", ".join(str(x) for x in arr))
+  print("len:", len(arr), "size:", arr.size, "eltType:", arr.eltType, "ndim:", arr.ndim)
   print("reset to 0")
   for i in range(len(arr)):
     if isinstance(arr[i], bool):
@@ -32,6 +33,8 @@ proc testArray(type t, const testArr) {
   writeln("python: ", pyArr);
   pyArr.setItem(0, 17:t);
   writeln("at 2: ", pyArr.getItem(2));
+  writeln("at -1: ", pyArr.getItem(-1));
+  pyArr.setItem(-2, 42:t);
   writeln("size: ", pyArr.size);
   writeln("chapel: ", arr);
   IO.stdout.flush();

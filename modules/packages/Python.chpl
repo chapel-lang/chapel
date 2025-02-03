@@ -469,6 +469,9 @@ module Python {
       if !ArrayTypes.createArrayTypes() {
         throwChapelException("Failed to create Python array types for Chapel arrays");
       }
+      if !ArrayTypes.registerArrayTypeEnum() {
+        throwChapelException("Failed to register Python array types for Chapel arrays");
+      }
 
       if pyMemLeaks {
         // import objgraph
@@ -1594,7 +1597,7 @@ module Python {
       :returns: The size of the list.
     */
     proc size: int throws {
-      var size = PyList_Size(this.get());
+      var size = PySequence_Size(this.get());
       this.check();
       return size;
     }
@@ -1607,7 +1610,7 @@ module Python {
       :returns: The item at the given index.
     */
     proc getItem(type T, idx: int): T throws {
-      var item = PyList_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
@@ -1619,7 +1622,7 @@ module Python {
       :arg item: The item to set.
     */
     proc setItem(idx: int, item: ?) throws {
-      PyList_SetItem(this.get(),
+      PySequence_SetItem(this.get(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
       this.check();
@@ -1670,6 +1673,8 @@ module Python {
   class Array: Value {
     @chpldoc.nodoc
     type eltType = nothing;
+    @chpldoc.nodoc
+    var buffer: c_ptr(void);
     /*
       Create a new :type:`Array` object from a Chapel array.
 
@@ -1700,8 +1705,12 @@ module Python {
 
       :returns: The size of the array.
     */
-    proc size: int throws do
-      return this.call(int, "__len__");
+    proc size: int throws {
+      var size = PySequence_Size(this.get());
+      this.check();
+      return size;
+    }
+
     /*
       Get an item from the array. Equivalent to calling ``obj[idx]`` in Python
       or ``originalArray[idx]`` in Chapel.
@@ -1709,8 +1718,11 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
-    proc getItem(idx: int): eltType throws do
-      return this.call(eltType, "__getitem__", idx);
+    proc getItem(idx: int): eltType throws {
+      var pyObj = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      this.check();
+      return interpreter.fromPython(eltType, pyObj);
+    }
     /*
       Set an item in the array. Equivalent to calling ``obj[idx] = item`` in
       Python or ``originalArray[idx] = item`` in Chapel.
@@ -1718,8 +1730,11 @@ module Python {
       :arg idx: The index of the item to set.
       :arg item: The item to set.
     */
-    proc setItem(idx: int, item: eltType) throws do
-      this.call(NoneType, "__setitem__", idx, item);
+    proc setItem(idx: int, item: eltType) throws {
+      var pyItem = interpreter.toPython(item);
+      PySequence_SetItem(this.get(), idx.safeCast(Py_ssize_t), pyItem);
+      this.check();
+    }
   }
 
 
@@ -2170,8 +2185,10 @@ module Python {
     require "PythonHelper/ArrayTypes.c";
 
     extern proc createArrayTypes(): bool;
+    extern proc registerArrayTypeEnum(): bool;
 
     proc typeToArraySuffix(type T) param {
+      if isArrayType(T) then return "A";
       select T {
         when int(64) do return "I64";
         when uint(64) do return "U64";
@@ -2195,9 +2212,19 @@ module Python {
 
       param externalName = "createArray" + suffix;
       extern externalName
-      proc createPyArray(arr: c_ptr(T), size: Py_ssize_t): PyObjectPtr;
+      proc createPyArray(arr: c_ptr(void),
+                         size: Py_ssize_t, isOwned: bool): PyObjectPtr;
 
-      return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t));
+      if isArrayType(T) {
+        var sub = allocate(PyObjectPtr, arr.size);
+        for i in 0..#arr.size {
+          sub(i) = createArray(arr(i));
+        }
+        return createPyArray(sub, arr.size.safeCast(Py_ssize_t), true);
+      } else {
+        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t), false);
+      }
+
     }
   }
 }
