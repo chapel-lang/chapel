@@ -1815,6 +1815,26 @@ static void test23d() {
       });
 }
 
+// Test if var declaration
+static void test24() {
+  testActions("test24",
+    R""""(
+      module M {
+        class R { }
+        proc test() {
+          var y : unmanaged R? = new unmanaged R();
+          if var x = y {
+            x;
+          }
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.test@6",    ""},
+      {AssociatedAction::ASSIGN,   "x",           ""},
+    });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1910,6 +1930,8 @@ int main() {
   test23b();
   test23c();
   test23d();
+
+  test24();
 
   return 0;
 }
