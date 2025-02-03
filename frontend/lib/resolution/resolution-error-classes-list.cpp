@@ -646,11 +646,23 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const char* expectedThing,
                                     GetActual&& getActual,
                                     const std::vector<const uast::VarLikeDecl*>& actualDecls) {
+  bool noActuals =
+    (ci.numActuals() == 0 && !ci.isMethodCall()) ||
+    (ci.numActuals() == 1 && ci.isMethodCall());
+
+  // "decent" candidates are rejected with some explanation (as opposed
+  // to a generic 'didn't match'). If we found a candidate with a decent
+  // explanation, don't print other ones since they're unlikely to be
+  // helpful.
+  bool printedDecentCandidate = false;
+
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
-    wr.message("");
+
+    bool isThisCandidateDecent = true;
+
     auto reason = candidate.reason();
     if (/* skip printing detailed info_ here because computing the formal-actual
         map will go poorly with an unknown formal. */
@@ -661,6 +673,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
 
+      wr.message("");
       wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
       wr.code(fn->id(), { formalDecl });
 
@@ -745,16 +758,24 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         if (fa.failingActualIdx() != -1 && fa.failingFormalIdx() == -1) {
           auto& actual = ci.actual(fa.failingActualIdx());
           if (!actual.byName().isEmpty()) {
+            wr.message("");
             wr.note(candidate.idForErr(), "the following candidate didn't match"
                     " because ", passedThing, " ", fa.failingActualIdx() + 1,
                     " was named '", actual.byName(), "', but no ", expectedThing,
                     " with that name was found.");
             printedSpecial = true;
           }
+        } else if (noActuals) {
+          auto numFormals = fn->numFormals() - (int) fn->isMethod();
+          const char* usePlural = numFormals > 1 ? "s" : "";
+          wr.message("");
+          wr.note(candidate.idForErr(), "the following candidate didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
+          printedSpecial = true;
         }
       }
 
       if (!printedSpecial) {
+        wr.message("");
         wr.note(candidate.idForErr(), "the following candidate didn't match ",
                 "because the provided ", passedThing, "s could not be mapped to its ",
                 expectedThing, "s:");
@@ -777,13 +798,21 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
 
       if (reasonStr.empty()) {
-        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+        isThisCandidateDecent = false;
+        if (!printedDecentCandidate) {
+          wr.message("");
+          wr.note(candidate.idForErr(), "the following candidate didn't match:");
+        } else {
+          continue;
+        }
       } else {
+        wr.message("");
         wr.note(candidate.idForErr(), "the following candidate didn't match ",
                 "because ", reasonStr);
       }
       wr.code(candidate.idForErr());
     }
+    printedDecentCandidate |= isThisCandidateDecent;
     printCount++;
   }
 
@@ -1364,6 +1393,34 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
     }
     return nullptr;
   }, actualDecls);
+}
+
+void ErrorNoMatchingSuper::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
+  auto& superUses = std::get<std::vector<std::pair<ID, ID>>>(info_);
+
+  wr.heading(kind_, type_, node, "failed to resolve implicit call to 'super.init': no matching candidates.");
+  wr.code(node);
+  wr.message("The call to 'super.init' was triggered by the use of fields from the parent type.");
+
+  for (auto& superUse : superUses) {
+    wr.note(superUse.first, "the field defined in a parent class here...");
+    wr.codeForLocation(superUse.first);
+    wr.note(superUse.second, "...was used in the child initializer here:");
+    wr.codeForLocation(superUse.second);
+  }
+
+  wr.message("In order to use fields from a parent class, the parent's initializer must have been called.");
+  wr.message("Chapel attempts to automatically call a zero-argument initializer on the parent class if an explicit call is not present.");
+
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [](int idx) -> const uast::AstNode* {
+    return nullptr;
+  }, actualDecls);
+
+  wr.message("If the parent type's initializer has formals, consider invoking it explicitly.");
 }
 
 void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {

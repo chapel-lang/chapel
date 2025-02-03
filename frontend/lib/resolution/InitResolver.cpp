@@ -128,9 +128,28 @@ void InitResolver::resolveImplicitSuperInit() {
     actuals.push_back(CallInfoActual(superQT, USTR("this")));
     auto ci = CallInfo(USTR("init"), superQT, true, false, false, actuals);
     auto inScopes = CallScopeInfo::forNormalCall(initResolver_.scopeStack.back(), initResolver_.poiScope);
-    auto c = resolveGeneratedCall(ctx_, fn_->body()->child(0), ci, inScopes);
 
-    updateSuperType(&c);
+    auto callContext = fn_->body();
+    auto c = initResolver_.resolveGeneratedCall(callContext, &ci, &inScopes);
+    c.callName = "super.init";
+    c.reportError = [this](const Resolver::CallResultWrapper& result,
+                            std::vector<ApplicabilityResult>& rejected,
+                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
+      CHPL_REPORT(result.parent->context,
+                  NoMatchingSuper, result.astForContext, *result.ci,
+                  rejected, actualDecls, this->useOfSuperFields_);
+    };
+
+    // Capture the errors emitted here and defer them until we know we haven't
+    // found a "real" super.init call (which means a different error supercedes
+    // these).
+    auto cAndErrors = ctx_->runAndTrackErrors([&c](Context* ctx) {
+      c.noteResultPrintCandidates(nullptr);
+      return true;
+    });
+
+    errorsFromImplicitSuperInit = std::move(cAndErrors.errors());
+    updateSuperType(&c.result);
   }
 }
 
@@ -590,6 +609,10 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
 
+  for (auto& error : errorsFromImplicitSuperInit) {
+    ctx_->report(std::move(error));
+  }
+
   auto ret = initResolver_.typedSignature;
 
   if (phase_ < PHASE_COMPLETE) {
@@ -758,6 +781,7 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
         updateSuperType(c);
 
         this->explicitSuperInit = true;
+        this->errorsFromImplicitSuperInit.clear();
 
         return true;
       }
@@ -1015,12 +1039,14 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   if (isSuperField) {
     if (explicitSuperInit == false && phase_ != PHASE_COMPLETE) {
       // Upon first use of parent field, need to insert a super.init() call
+      bool firstUseOfField = useOfSuperFields_.empty();
+      useOfSuperFields_.push_back({id, node->id()});
+
       // TODO: store this as an associated action
-      if (useOfSuperFields_.empty()) {
+      if (firstUseOfField) {
         this->resolveImplicitSuperInit();
       }
 
-      useOfSuperFields_.push_back({id, node->id()});
       return true;
     } else {
       isValidPreInitMention = true;

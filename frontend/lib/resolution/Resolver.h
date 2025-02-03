@@ -460,11 +460,6 @@ struct Resolver {
   void noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
                                      const uast::AstNode* astForErr);
 
-  // issue ambiguity / no matching candidates / etc error
-  void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
-                                         const CallInfo& ci,
-                                         const CallResolutionResult& c);
-
   // issue error for M.x where x is not found in a module M
   void issueErrorForFailedModuleDot(const uast::Dot* dot,
                                     ID moduleId,
@@ -475,37 +470,103 @@ struct Resolver {
   // control flow, and we want to make sure to always keep callNodeStack in sync.
   void handleCallExpr(const uast::Call* call);
 
-  // handle the result of one of the functions to resolve a call. Handles:
-  //  * r.setMostSpecific
-  //  * r.setPoiScope
-  //  * r.setType
-  //  * poiInfo.accumulate
-  //
-  // Does not handle:
-  //
-  //  * issueErrorForFailedCallResolution if there was an error
-  //
-  // Instead, returns 'true' if an error needs to be issued.
-  bool handleResolvedCallWithoutError(ResolvedExpression& r,
-                                      const uast::AstNode* astForErr,
-                                      const CallResolutionResult& c,
-                                      optional<ActionAndId> associatedActionAndId = {});
-  // Same as handleResolvedCallWithoutError, except actually issues the error.
-  void handleResolvedCall(ResolvedExpression& r,
-                          const uast::AstNode* astForErr,
-                          const CallInfo& ci,
-                          const CallResolutionResult& c,
-                          optional<ActionAndId> associatedActionAndId = {});
-  // like handleResolvedCall, but prints the candidates that were rejected
-  // by the error in detail.
-  void handleResolvedCallPrintCandidates(ResolvedExpression& r,
-                                         const uast::Call* call,
-                                         const CallInfo& ci,
-                                         const CallScopeInfo& inScopes,
-                                         const types::QualifiedType& receiverType,
-                                         const CallResolutionResult& c,
-                                         std::vector<const uast::AstNode*>& actualAsts,
-                                         optional<ActionAndId> associatedActionAndId = {});
+  // wraps a CallResolutionResult with additional contextual information
+  // to re-run it if needed and emit error messages. The information
+  // is largely present at the call site for resolve*Call, but
+  // storing it here makes it easy to pass around.
+  struct CallResultWrapper {
+    using ReportFn =
+      std::function<void(const CallResultWrapper&,
+                         std::vector<ApplicabilityResult>&,
+                         std::vector<const uast::VarLikeDecl*>&)>;
+
+    static void reportNoMatchingCandidates(const CallResultWrapper& r,
+                                           std::vector<ApplicabilityResult>& rejected,
+                                           std::vector<const uast::VarLikeDecl*>& actualDecls) {
+      CHPL_REPORT(r.parent->context, NoMatchingCandidates,
+                  r.astForContext, *r.ci, rejected, actualDecls);
+    }
+
+    Resolver* parent = nullptr;
+    CallResolutionResult result;
+    uast::AstNode const* astForContext = nullptr;
+    CallInfo const* ci = nullptr;
+    CallScopeInfo const* inScopes = nullptr;
+    types::QualifiedType receiverType;
+    bool wasGeneratedCall = true;
+    std::vector<const uast::AstNode*> const* actualAsts = nullptr;
+    const char* callName = nullptr;
+    ReportFn reportError = reportNoMatchingCandidates;
+
+    // issue ambiguity / no matching candidates / etc error
+    void issueBasicError();
+
+    // handle the result of one of the functions to resolve a call. Handles:
+    //  * r.setMostSpecific
+    //  * r.setPoiScope
+    //  * r.setType
+    //  * poiInfo.accumulate
+    //  * userDiagnostics
+    //
+    // Does not handle:
+    //
+    //  * issueErrorForFailedCallResolution if there was an error
+    //
+    // Instead, returns 'true' if an error needs to be issued.
+    bool noteResultWithoutError(ResolvedExpression* r,
+                                optional<ActionAndId> associatedActionAndId = {});
+
+    static bool noteResultWithoutError(Resolver& resolver,
+                                       ResolvedExpression* r,
+                                       const uast::AstNode* astForContext,
+                                       const CallResolutionResult& c,
+                                       optional<ActionAndId> associatedActionAndId = {});
+
+    // Same as noteResultWithoutError, but also issues errors.
+    void noteResult(ResolvedExpression* r,
+                    optional<ActionAndId> associatedActionAndId = {});
+
+    // Issues a more specific error (listing rejected candidates) if possible.
+    // To collect the candidates, re-runs the call. Returns true if an error
+    // was emitted.
+    bool rerunCallAndPrintCandidates();
+
+    // Like noteResult, except attempts to do more work to print fancier errors
+    // (see rerunCallAndPrintCandidates).
+    void noteResultPrintCandidates(ResolvedExpression* r,
+                                   optional<ActionAndId> associatedActionAndId = {});
+  };
+
+  /* The resolver's wrapper of resolution::resolveGeneratedCall.
+     Stores additional information into a ResolvedCallResult to enable
+     updating the resolver with results of the call if needed.
+   */
+  CallResultWrapper resolveGeneratedCall(const uast::AstNode* astForContext,
+                                          const CallInfo* ci,
+                                          const CallScopeInfo* inScopes,
+                                          const char* callName = nullptr);
+
+  /**
+    Similar to resolveGeneratedCall but handles the implicit scope
+    provided by a method.
+
+    When a resolving a call within a method, the implicitReceiver should be
+    set to the 'this' type of the method.
+
+    If implicitReceiver.type() == nullptr, it will be ignored.
+   */
+  CallResultWrapper
+  resolveGeneratedCallInMethod(const uast::AstNode* astForContext,
+                               const CallInfo* ci,
+                               const CallScopeInfo* inScopes,
+                               types::QualifiedType implicitReceiver);
+
+  CallResultWrapper
+  resolveCallInMethod(const uast::Call* call,
+                      const CallInfo* ci,
+                      const CallScopeInfo* inScopes,
+                      types::QualifiedType implicitReceiver,
+                      std::vector<const uast::AstNode*>& actualAsts);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.

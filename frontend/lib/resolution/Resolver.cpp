@@ -986,16 +986,14 @@ static bool isCallToPtr(const AstNode* formalTypeExpr) {
 
 // helper to gather bad actuals and report NoMatchingCandidates error
 static void
-handleRejectedCandidates(Context* context,
-                         ResolutionResultByPostorderID& byPostorder,
+handleRejectedCandidates(Resolver::CallResultWrapper& result,
                          std::vector<ApplicabilityResult>& rejected,
-                         const resolution::CallInfo& ci,
-                         const uast::Call*& call,
                          const std::vector<const uast::AstNode*>& actualAsts) {
   // By performing some processing in the resolver, we can issue a nicer error
   // explaining why each candidate was rejected.
   std::vector<const uast::VarLikeDecl*> actualDecls;
   actualDecls.resize(rejected.size());
+  std::reverse(rejected.begin(), rejected.end());
   // check each rejected candidate for uninitialized actuals
   for (size_t i = 0; i < rejected.size(); i++) {
     auto &candidate = rejected[i];
@@ -1005,7 +1003,7 @@ handleRejectedCandidates(Context* context,
       continue;
     }
     auto fn = candidate.initialForErr();
-    resolution::FormalActualMap fa(fn, ci);
+    resolution::FormalActualMap fa(fn, *result.ci);
     auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
@@ -1016,9 +1014,9 @@ handleRejectedCandidates(Context* context,
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
     if (actualExpr && actualExpr->isIdentifier()) {
-      auto &resolvedExpr = byPostorder.byAst(actualExpr);
+      auto &resolvedExpr = result.parent->byPostorder.byAst(actualExpr);
       if (auto id = resolvedExpr.toId()) {
-        auto var = parsing::idToAst(context, id);
+        auto var = parsing::idToAst(result.parent->context, id);
         // should put a nullptr if not a VarLikeDecl
         actualDecl = var->toVarLikeDecl();
       }
@@ -1026,7 +1024,7 @@ handleRejectedCandidates(Context* context,
     actualDecls[i] = actualDecl;
   }
   CHPL_ASSERT(rejected.size() == actualDecls.size());
-  CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected, actualDecls);
+  result.reportError(result, rejected, actualDecls);
 }
 
 static void varArgTypeQueryError(Context* context,
@@ -1356,11 +1354,11 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* isParenless */ false,
                      std::move(actuals));
   auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
-  auto rr = resolveGeneratedCall(context, nullptr, ci, inScopes);
-  if (rr.mostSpecific().only()) {
-    ret = rr.exprType();
-    handleResolvedCall(byPostorder.byAst(decl), decl, ci, rr,
-                       { { AssociatedAction::INFER_TYPE, decl->id() } });
+  auto rr = resolveGeneratedCall(nullptr, &ci, &inScopes);
+  if (rr.result.mostSpecific().only()) {
+    ret = rr.result.exprType();
+    rr.noteResult(&byPostorder.byAst(decl),
+                   { { AssociatedAction::INFER_TYPE, decl->id() } });
   } else {
     context->error(ct->id(), "'chpl__inferCopyType' is unimplemented");
   }
@@ -1386,12 +1384,12 @@ const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
 
   const Scope* scope = scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  auto c = resolveGeneratedCall(context, decl, ci, inScopes);
-  handleResolvedCallWithoutError(byPostorder.byAst(decl), decl,
-                                 c, {{ AssociatedAction::CUSTOM_COPY_INIT, decl->id() }});
+  auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+  c.noteResultWithoutError(&byPostorder.byAst(decl),
+                            {{ AssociatedAction::CUSTOM_COPY_INIT, decl->id() }});
 
-  if (!c.exprType().isUnknownOrErroneous()) {
-    return c.exprType().type();
+  if (!c.result.exprType().isUnknownOrErroneous()) {
+    return c.result.exprType().type();
   }
 
   return nullptr;
@@ -1480,7 +1478,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         // TODO: store an associated action?
         const Scope* scope = scopeStack.back();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-        auto c = resolveGeneratedCall(context, declForErr, ci, inScopes);
+        auto c = resolution::resolveGeneratedCall(context, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
@@ -1994,43 +1992,6 @@ void Resolver::noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
   userDiagnostics.push_back(std::move(diagnostic));
 }
 
-void
-Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
-                                            const CallInfo& ci,
-                                            const CallResolutionResult& c) {
-  bool foundUserDiagnostics = false;
-  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
-    if (diagnostic.depth() - 1 == 0) {
-      emitUserDiagnostic(diagnostic, astForErr);
-      foundUserDiagnostics = true;
-    }
-  }
-
-  if (foundUserDiagnostics) {
-    return;
-  }
-
-  if (c.mostSpecific().isEmpty()) {
-    // if the call resolution result is empty, we need to issue an error
-    if (c.mostSpecific().isAmbiguous()) {
-      // ambiguity between candidates
-      context->error(astForErr, "Cannot resolve call to '%s': ambiguity",
-                     ci.name().c_str());
-    } else {
-      std::vector<const uast::VarLikeDecl*> uninitializedActuals;
-      // could not find a most specific candidate
-      std::vector<ApplicabilityResult> rejected;
-      CHPL_ASSERT(rejected.size() == uninitializedActuals.size());
-      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected, uninitializedActuals);
-    }
-  } else {
-    context->error(astForErr, "Cannot establish type for call expression");
-
-    // expecting call site to check for hasTypePtr.
-    CHPL_ASSERT(!c.exprType().hasTypePtr());
-  }
-}
-
 void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
                                             ID moduleId,
                                             LookupConfig config) {
@@ -2091,19 +2052,55 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 
 }
 
-bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
-                                              const uast::AstNode* astForErr,
-                                              const CallResolutionResult& c,
-                                              optional<ActionAndId> actionAndId) {
+void Resolver::CallResultWrapper::issueBasicError() {
+  bool foundUserDiagnostics = false;
+  for (auto& diagnostic : gatherUserDiagnostics(parent->rc, result)) {
+    if (diagnostic.depth() - 1 == 0) {
+      parent->emitUserDiagnostic(diagnostic, astForContext);
+      foundUserDiagnostics = true;
+    }
+  }
+
+  if (foundUserDiagnostics) {
+    return;
+  }
+
+  if (result.mostSpecific().isEmpty()) {
+    // if the call resolution result is empty, we need to issue an error
+    if (result.mostSpecific().isAmbiguous()) {
+      // ambiguity between candidates
+      parent->context->error(astForContext, "Cannot resolve call to '%s': ambiguity",
+                     callName ? callName : ci->name().c_str());
+    } else {
+      std::vector<const uast::VarLikeDecl*> uninitializedActuals;
+      // could not find a most specific candidate
+      std::vector<ApplicabilityResult> rejected;
+      CHPL_ASSERT(rejected.size() == uninitializedActuals.size());
+      CHPL_REPORT(parent->context, NoMatchingCandidates, astForContext, *ci, rejected, uninitializedActuals);
+    }
+  } else {
+    parent->context->error(astForContext, "Cannot establish type for call expression");
+
+    // expecting call site to check for hasTypePtr.
+    CHPL_ASSERT(!result.exprType().hasTypePtr());
+  }
+}
+
+bool Resolver::CallResultWrapper::noteResultWithoutError(
+    Resolver& resolver,
+    ResolvedExpression* r,
+    const uast::AstNode* astForContext,
+    const CallResolutionResult& result,
+    optional<ActionAndId> actionAndId) {
   bool needsErrors = false;
 
-  for (auto& diagnostic : gatherUserDiagnostics(rc, c)) {
+  for (auto& diagnostic : gatherUserDiagnostics(resolver.rc, result)) {
     // The diagnostic's depth means it's aimed for further up the call stack.
     // Note it in our own diagnostic list.
     if (diagnostic.depth() - 1 > 0) {
-      userDiagnostics.emplace_back(diagnostic.message(),
-                                   diagnostic.kind(),
-                                   diagnostic.depth() - 1);
+      resolver.userDiagnostics.emplace_back(diagnostic.message(),
+                                            diagnostic.kind(),
+                                            diagnostic.depth() - 1);
     } else if (diagnostic.depth() - 1 == 0) {
       // we're asked not to emit errors, and only return if errors are
       // needed.
@@ -2111,81 +2108,91 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
     }
   }
 
-  if (!c.exprType().hasTypePtr()) {
-    if (!actionAndId) {
+  if (!result.exprType().hasTypePtr()) {
+    if (!actionAndId && r) {
       // Only set the type to erroneous if we're handling an actual user call,
       // and not an associated action.
-      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
-      r.setMostSpecific(c.mostSpecific());
+      r->setType(QualifiedType(r->type().kind(), ErroneousType::get(resolver.context)));
+      r->setMostSpecific(result.mostSpecific());
     }
 
     // If the call was specially handled, assume special-case logic has already
     // issued its own error, so we shouldn't emit a general error.
-    return !c.speciallyHandled() || needsErrors;
+    return !result.speciallyHandled() || needsErrors;
   } else {
     if (actionAndId) {
       // save candidates as associated functions
-      for (auto& sig : c.mostSpecific()) {
-        if (sig) {
-          r.addAssociatedAction(std::get<0>(*actionAndId), sig.fn(),
-                                std::get<1>(*actionAndId));
+      for (auto& sig : result.mostSpecific()) {
+        if (sig && r) {
+          r->addAssociatedAction(std::get<0>(*actionAndId), sig.fn(),
+                                 std::get<1>(*actionAndId));
         }
       }
-    } else {
-      r.setPoiScope(c.poiInfo().poiScope());
-      r.setType(c.exprType());
-      validateAndSetMostSpecific(r, astForErr, c.mostSpecific());
+    } else if (r) {
+      r->setPoiScope(result.poiInfo().poiScope());
+      r->setType(result.exprType());
+      resolver.validateAndSetMostSpecific(*r, astForContext, result.mostSpecific());
     }
     // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo());
+    resolver.poiInfo.accumulate(result.poiInfo());
   }
   return needsErrors;
+
 }
 
-void Resolver::handleResolvedCall(ResolvedExpression& r,
-                                  const uast::AstNode* astForErr,
-                                  const CallInfo& ci,
-                                  const CallResolutionResult& c,
-                                  optional<ActionAndId> actionAndId) {
-  if (handleResolvedCallWithoutError(r, astForErr, c, std::move(actionAndId))) {
-    issueErrorForFailedCallResolution(astForErr, ci, c);
+
+bool Resolver::CallResultWrapper::noteResultWithoutError(ResolvedExpression* r,
+                                                          optional<ActionAndId> actionAndId) {
+  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionAndId));
+}
+
+void Resolver::CallResultWrapper::noteResult(ResolvedExpression* r,
+                                              optional<ActionAndId> actionAndId) {
+  if (noteResultWithoutError(r, std::move(actionAndId))) {
+    issueBasicError();
   }
 }
 
-void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
-                                                 const uast::Call* call,
-                                                 const CallInfo& ci,
-                                                 const CallScopeInfo& inScopes,
-                                                 const QualifiedType& receiverType,
-                                                 const CallResolutionResult& c,
-                                                 std::vector<const uast::AstNode*>& actualAsts,
-                                                 optional<ActionAndId> actionAndId) {
-  bool wasCallGenerated = (bool) actionAndId;
-  CHPL_ASSERT(!wasCallGenerated || receiverType.isUnknown());
-  if (handleResolvedCallWithoutError(r, call, c, std::move(actionAndId))) {
-    if (c.mostSpecific().isEmpty() &&
-        !c.mostSpecific().isAmbiguous()) {
-      // The call isn't ambiguous; it might be that we rejected all the candidates
-      // that we encountered. Re-run resolution, providing a 'rejected' vector
-      // this time to preserve the list of rejected candidates.
-      std::vector<ApplicabilityResult> rejected;
-      if (wasCallGenerated) {
-        std::ignore = resolveGeneratedCall(context, call, ci, inScopes, &rejected);
-      } else {
-        std::ignore = resolveCallInMethod(rc, call, ci, inScopes,
-                                          receiverType,
-                                          &rejected);
-      }
+bool Resolver::CallResultWrapper::rerunCallAndPrintCandidates() {
+  if (!result.mostSpecific().isEmpty() || result.mostSpecific().isAmbiguous()) return false;
 
-      if (!rejected.empty()) {
-        // There were candidates but we threw them out. Report on those.
-        handleRejectedCandidates(context, byPostorder, rejected, ci, call, actualAsts);
-        return;
-      }
+  // The call isn't ambiguous; it might be that we rejected all the candidates
+  // that we encountered. Re-run resolution, providing a 'rejected' vector
+  // this time to preserve the list of rejected candidates.
+  std::vector<ApplicabilityResult> rejected;
+  if (wasGeneratedCall) {
+    std::ignore = resolution::resolveGeneratedCall(parent->context, astForContext, *ci, *inScopes, &rejected);
+  } else {
+    CHPL_ASSERT(astForContext->isCall());
+    std::ignore = resolution::resolveCallInMethod(parent->rc, astForContext->toCall(), *ci, *inScopes,
+                                                  receiverType,
+                                                  &rejected);
+  }
+
+  if (!rejected.empty()) {
+    // There were candidates but we threw them out. Report on those.
+    if (actualAsts) {
+      handleRejectedCandidates(*this, rejected, *actualAsts);
+    } else {
+      std::vector<const uast::AstNode*> actualAsts(ci->numActuals(), nullptr);
+      handleRejectedCandidates(*this, rejected, actualAsts);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+void Resolver::CallResultWrapper::noteResultPrintCandidates(ResolvedExpression* r,
+                                                             optional<ActionAndId> actionAndId) {
+  CHPL_ASSERT(!wasGeneratedCall || receiverType.isUnknown());
+  if (noteResultWithoutError(r, std::move(actionAndId))) {
+    if (rerunCallAndPrintCandidates()) {
+      return;
     }
 
     // Fall through to the more general error handling.
-    issueErrorForFailedCallResolution(call, ci, c);
+    issueBasicError();
   }
 }
 
@@ -2344,9 +2351,8 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           /* isParenless */ false,
                           actuals);
 
-      auto c = resolveGeneratedCall(context, actual, ci, inScopes);
-      handleResolvedCall(r, astForErr, ci, c,
-                         { { AssociatedAction::ASSIGN, lhsTuple->id() } });
+      auto c = resolveGeneratedCall(actual, &ci, &inScopes);
+      c.noteResult(&r, { { AssociatedAction::ASSIGN, lhsTuple->id() } });
     }
     i++;
   }
@@ -2611,15 +2617,14 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
   // note: the resolution machinery will get compiler generated candidates
-  auto crr = resolveGeneratedCall(context, call, ci, inScopes);
+  auto c = resolveGeneratedCall(call, &ci, &inScopes);
   optional<ActionAndId> action({ AssociatedAction::NEW_INIT, call->id() });
-  handleResolvedCallPrintCandidates(re, call, ci, inScopes, QualifiedType(),
-                                    crr, actualAsts, action);
+  c.noteResultPrintCandidates(&re, std::move(action));
 
 
   // there should be one or zero applicable candidates
-  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
-  if (auto initMsc = crr.mostSpecific().only()) {
+  CHPL_ASSERT(c.result.mostSpecific().numBest() <= 1);
+  if (auto initMsc = c.result.mostSpecific().only()) {
     auto initTfs = initMsc.fn();
 
     // Set the final output type based on the result of the 'new' call.
@@ -2887,10 +2892,9 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       auto scope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-      auto result = resolveGeneratedCall(context, call, ci, inScopes);
-
-      handleResolvedCall(r, call, ci, result);
-      return result;
+      auto c = resolveGeneratedCall(call, &ci, &inScopes);
+      c.noteResult(&r);
+      return c.result;
     });
 
     if (!runResult.ranWithoutErrors()) {
@@ -2940,16 +2944,15 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto scope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-        return resolveGeneratedCall(context, call, ci, inScopes);
+        return resolveGeneratedCall(call, &ci, &inScopes);
       });
 
       // Use the init call's receiver type as the resulting TYPE
       QualifiedType receiverTy;
       if (runResult.ranWithoutErrors()) {
-        auto result = runResult.result();
-        if (auto initMsc = result.mostSpecific().only()) {
-          handleResolvedCall(r, call, ci, result,
-                             {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
+        auto& c = runResult.result();
+        if (auto initMsc = c.result.mostSpecific().only()) {
+          c.noteResult(&r, {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
           receiverTy = initMsc.fn()->formalType(0);
         }
       }
@@ -3379,11 +3382,10 @@ bool Resolver::enter(const uast::Select* sel) {
                             /* hasQuestionArg */ false,
                             /* isParenless */ false,
                             actuals);
-        auto c = resolveGeneratedCall(context, caseExpr, ci, inScopes);
-        handleResolvedCall(caseResult, caseExpr, ci, c,
-                           { { AssociatedAction::COMPARE, caseExpr->id() } });
+        auto c = resolveGeneratedCall(caseExpr, &ci, &inScopes);
+        c.noteResult(&caseResult, { { AssociatedAction::COMPARE, caseExpr->id() } });
 
-        auto type = c.exprType();
+        auto type = c.result.exprType();
         anyParamTrue = anyParamTrue || type.isParamTrue();
         allParamFalse = allParamFalse && type.isParamFalse();
         byPostorder.byAst(caseExpr).setType(type);
@@ -3747,24 +3749,23 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
   // If some IDs were methods and some weren't, we have to resolve two
   // calls: one with the (implicit) receiver, and one without.
   if (info.hasMethodCandidates() && info.hasNonMethodCandidates()) {
-    auto cMethod = resolveGeneratedCallInMethod(context, ident, ci,
-                                               inScopes,
-                                               methodReceiverType());
-    auto cNonMethod = resolveGeneratedCall(context, ident, ci,
-                                           inScopes);
+    auto cMethod = resolveGeneratedCallInMethod(ident, &ci,
+                                                &inScopes,
+                                                methodReceiverType());
+    auto cNonMethod = resolveGeneratedCall(ident, &ci, &inScopes);
 
-    if (!cMethod.mostSpecific().isEmpty() &&
-        !cNonMethod.mostSpecific().foundCandidates()) {
+    if (!cMethod.result.mostSpecific().isEmpty() &&
+        !cNonMethod.result.mostSpecific().foundCandidates()) {
       // Only found a valid method call.
-      handleResolvedCall(r, ident, ci, cMethod);
-    } else if (!cNonMethod.mostSpecific().isEmpty() &&
-               !cMethod.mostSpecific().foundCandidates()) {
+      cMethod.noteResult(&r);
+    } else if (!cNonMethod.result.mostSpecific().isEmpty() &&
+               !cMethod.result.mostSpecific().foundCandidates()) {
       // Only found a valid non-method call.
-      handleResolvedCall(r, ident, ci, cNonMethod);
-    } else if (cMethod.mostSpecific().isEmpty() && cNonMethod.mostSpecific().isEmpty()) {
+      cNonMethod.noteResult(&r);
+    } else if (cMethod.result.mostSpecific().isEmpty() && cNonMethod.result.mostSpecific().isEmpty()) {
       // Found neither; lots of candidates, but none worked! Use handleResolvedCall
       // on cMethod to issue an error and record the result.
-      handleResolvedCall(r, ident, ci, cMethod);
+      cMethod.noteResult(&r);
     } else {
       // Found both, it's an ambiguity after all. Issue the ambiguity error
       // late, for which we need to recover some context.
@@ -3779,19 +3780,17 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
 
     }
   } else if (info.hasMethodCandidates()) {
-    auto c = resolveGeneratedCallInMethod(context, ident, ci,
-                                          inScopes,
+    auto c = resolveGeneratedCallInMethod(ident, &ci, &inScopes,
                                           methodReceiverType());
     // save the most specific candidates in the resolution result
-    handleResolvedCall(r, ident, ci, c);
+    c.noteResult(&r);
   } else {
     CHPL_ASSERT(info.hasNonMethodCandidates());
 
     // as above, but don't consider method scopes
-    auto c = resolveGeneratedCall(context, ident, ci,
-                                  inScopes);
+    auto c = resolveGeneratedCall(ident, &ci, &inScopes);
     // save the most specific candidates in the resolution result
-    handleResolvedCall(r, ident, ci, c);
+    c.noteResult(&r);
   }
 }
 
@@ -3936,15 +3935,15 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
                          /* isParenless */ true, actuals);
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-      auto c = resolveGeneratedCall(context, ident, ci, inScopes);
+      auto c = resolveGeneratedCall(ident, &ci, &inScopes);
       MatchingIdsWithName redeclarations;
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
-      if (c.mostSpecific().numBest() == 1) {
+      if (c.result.mostSpecific().numBest() == 1) {
         // A local variable would be ambiguous with a paren-less method, so
         // let's check for redeclarations within the current method.
         if (!redeclarations.isEmpty()) {
-          auto only = c.mostSpecific().only();
+          auto only = c.result.mostSpecific().only();
           bool otherThanParenless = false;
           for (auto& elt : redeclarations) {
             if (only.fn()->id() != elt) {
@@ -3959,9 +3958,9 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
           }
         } else {
           // Save result if successful
-          if (handleResolvedCallWithoutError(result, ident, c) &&
+          if (c.noteResultWithoutError(&result) &&
               emitLookupErrors) {
-            issueErrorForFailedCallResolution(ident, ci, c);
+            c.issueBasicError();
           }
         }
       }
@@ -4293,21 +4292,21 @@ bool Resolver::enter(const uast::Manage* manage) {
                        /* isParenless */ false,
                        /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
     auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
-    auto c = resolveGeneratedCall(context, manage, ci, inScopes);
-    handleResolvedCall(byPostorder.byAst(manage), manage, ci, c);
-    CHPL_ASSERT(c.mostSpecific().only());
+    auto c = resolveGeneratedCall(manage, &ci, &inScopes);
+    c.noteResult(&byPostorder.byAst(manage));
+    CHPL_ASSERT(c.result.mostSpecific().only());
 
     // Now, we actually want the witness for the interface if one exists.
     // Use the POI scope from the call so that POI is the same as if we were
     // resolving from inside the body of chpl__verifyTypeContext. This
     // should improve re-use of interface search.
     auto inScopesForInterface =
-      CallScopeInfo::forNormalCall(scopeStack.back(), c.poiInfo().poiScope());
+      CallScopeInfo::forNormalCall(scopeStack.back(), c.result.poiInfo().poiScope());
     auto contextManagerInterface = InterfaceType::getContextManagerType(context);
     bool ignoredFoundExisting;
     auto witness =
       findOrImplementInterface(rc, contextManagerInterface, rr.type().type(),
-                               inScopesForInterface, c.mostSpecific().only().fn()->id(),
+                               inScopesForInterface, c.result.mostSpecific().only().fn()->id(),
                                ignoredFoundExisting);
 
     if (!witness) {
@@ -4584,8 +4583,8 @@ void Resolver::exit(const Range* range) {
   if (!skip) {
     auto scope = scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-    auto c = resolveGeneratedCall(context, range, ci, inScopes);
-    handleResolvedCall(byPostorder.byAst(range), range, ci, c);
+    auto c = resolveGeneratedCall(range, &ci, &inScopes);
+    c.noteResult(&byPostorder.byAst(range));
   } else {
     auto& r = byPostorder.byAst(range);
     r.setType(QualifiedType());
@@ -4661,10 +4660,10 @@ void Resolver::exit(const uast::Domain* decl) {
                        actuals);
     auto scope = scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-    auto c = resolveGeneratedCall(context, decl, ci, inScopes);
+    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
     ResolvedExpression& r = byPostorder.byAst(decl);
-    handleResolvedCall(r, decl, ci, c);
+    c.noteResult(&r);
   }
 }
 
@@ -4857,29 +4856,27 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
 // the resolution with the other candidates.
 //
 // Note that the order here should match resolveIterDetailsInPriorityOrder.
-static CallResolutionResult
-resolveCallInMethodReattemptIfNeeded(ResolutionContext* rc,
+static Resolver::CallResultWrapper
+resolveCallInMethodReattemptIfNeeded(Resolver& r,
                                      const uast::Call* call,
-                                     ResolvedExpression& r,
+                                     ResolvedExpression& rr,
                                      const CallInfo& ci,
                                      const CallScopeInfo& inScopes,
                                      QualifiedType receiverType,
-                                     std::vector<ApplicabilityResult>* rejected) {
-  auto c = resolveCallInMethod(rc, call, ci, inScopes,
-                               receiverType,
-                               rejected);
+                                     std::vector<const AstNode*>& actuals) {
+  auto c = r.resolveCallInMethod(call, &ci, &inScopes,
+                                 receiverType, actuals);
 
   // Other overloads are present and may be usable to fill in for 'foo()'.
-  if (c.mostSpecific().isEmpty() && c.rejectedPossibleIteratorCandidates()) {
+  if (c.result.mostSpecific().isEmpty() && c.result.rejectedPossibleIteratorCandidates()) {
     if (auto standalone =
-          rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
+          rerunCallInfoWithIteratorTag(r.rc, call, rr, ci, inScopes, receiverType,
                                        Function::STANDALONE)) {
-      return *standalone;
-    }
-    if (auto parallel =
-        rerunCallInfoWithIteratorTag(rc, call, r, ci, inScopes, receiverType,
-                                     Function::LEADER)) {
-      return *parallel;
+      c.result = std::move(*standalone);
+    } else if (auto parallel =
+                rerunCallInfoWithIteratorTag(r.rc, call, rr, ci, inScopes, receiverType,
+                                             Function::LEADER)) {
+      c.result = std::move(*parallel);
     }
   }
   return c;
@@ -5024,22 +5021,20 @@ void Resolver::handleCallExpr(const uast::Call* call) {
       }
     }
 
-    std::vector<ApplicabilityResult>* rejected = nullptr;
-    auto c = resolveCallInMethodReattemptIfNeeded(rc, call, r, ci, inScopes,
-                                                  receiverType,
-                                                  rejected);
+    auto c = resolveCallInMethodReattemptIfNeeded(*this, call, r, ci, inScopes,
+                                                  receiverType, actualAsts);
 
     // save the most specific candidates in the resolution result for the id
-    handleResolvedCallPrintCandidates(r, call, ci, inScopes, receiverType, c, actualAsts);
+    c.noteResultPrintCandidates(&r);
 
     // handle type inference for variables split-inited by 'out' formals
-    adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+    adjustTypesForOutFormals(ci, actualAsts, c.result.mostSpecific());
 
     // issue errors for iterator groups where e.g. serial/standalone types mismatch
-    issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c);
+    issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c.result);
 
     if (initResolver) {
-      initResolver->handleResolvedCall(call, &c);
+      initResolver->handleResolvedCall(call, &c.result);
     }
   } else {
     // We're skipping the call, but explicitly store the 'unknown type'
@@ -5051,6 +5046,64 @@ void Resolver::handleCallExpr(const uast::Call* call) {
       initResolver->handleResolvedCall(call, /* call resolution result */ nullptr);
     }
   }
+}
+
+Resolver::CallResultWrapper
+Resolver::resolveGeneratedCall(const uast::AstNode* astForContext,
+                               const CallInfo* ci,
+                               const CallScopeInfo* inScopes,
+                               const char* callName) {
+  auto result = resolution::resolveGeneratedCall(context, astForContext, *ci, *inScopes);
+  return {
+    /* parent */ this,
+    /* result */ std::move(result),
+    /* astForContext */ astForContext,
+    /* ci */ ci,
+    /* inScopes */ inScopes,
+    /* receiverType */ types::QualifiedType(),
+    /* wasGeneratedCall */ true,
+    /* actualAsts */ nullptr,
+    /* callName */ callName
+  };
+}
+
+Resolver::CallResultWrapper
+Resolver::resolveGeneratedCallInMethod(const AstNode* astContext,
+                                       const CallInfo* ci,
+                                       const CallScopeInfo* inScopes,
+                                       QualifiedType implicitReceiver) {
+  auto result = resolution::resolveGeneratedCallInMethod(context, astContext, *ci, *inScopes, implicitReceiver);
+  return {
+    /* parent */ this,
+    /* result */ std::move(result),
+    /* astForContext */ astContext,
+    /* ci */ ci,
+    /* inScopes */ inScopes,
+    /* receiverType */ std::move(implicitReceiver),
+    /* wasGeneratedCall */ true,
+    /* actualAsts */ nullptr,
+    /* callName */ nullptr
+  };
+}
+
+Resolver::CallResultWrapper
+Resolver::resolveCallInMethod(const uast::Call* call,
+                              const CallInfo* ci,
+                              const CallScopeInfo* inScopes,
+                              types::QualifiedType implicitReceiver,
+                              std::vector<const uast::AstNode*>& actualAsts) {
+  auto result = resolution::resolveCallInMethod(rc, call, *ci, *inScopes, implicitReceiver);
+  return {
+    /* parent */ this,
+    /* result */ std::move(result),
+    /* astForContext */ call,
+    /* ci */ ci,
+    /* inScopes */ inScopes,
+    /* receiverType */ std::move(implicitReceiver),
+    /* wasGeneratedCall */ false,
+    /* actualAsts */ &actualAsts,
+    /* callName */ nullptr
+  };
 }
 
 void Resolver::exit(const Call* call) {
@@ -5175,11 +5228,11 @@ void Resolver::exit(const Dot* dot) {
                          /* isParenless */ true, actuals);
       auto inScope = scopeStack.back();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-      auto c = resolveGeneratedCall(context, dot, ci, inScopes);
-      if (!c.mostSpecific().isEmpty()) {
+      auto c = resolveGeneratedCall(dot, &ci, &inScopes);
+      if (!c.result.mostSpecific().isEmpty()) {
         // save the most specific candidates in the resolution result for the id
         ResolvedExpression& r = byPostorder.byAst(dot);
-        handleResolvedCall(r, dot, ci, c);
+        c.noteResult(&r);
       }
       return;
     }
@@ -5319,10 +5372,9 @@ void Resolver::exit(const Dot* dot) {
                       actuals);
   auto inScope = scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-  auto c = resolveGeneratedCall(context, dot, ci, inScopes);
+  auto c = resolveGeneratedCall(dot, &ci, &inScopes);
   // save the most specific candidates in the resolution result for the id
-  ResolvedExpression& r = byPostorder.byAst(dot);
-  handleResolvedCall(r, dot, ci, c);
+  c.noteResult(&byPostorder.byAst(dot));
 }
 
 bool Resolver::enter(const New* node) {
@@ -5756,7 +5808,8 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
 
   auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
   if (auto cr = tr.callResult()) {
-    rv.handleResolvedCallWithoutError(iterandRe, iterandAstCtx, *cr,
+    Resolver::CallResultWrapper::noteResultWithoutError(
+        rv, &iterandRe, iterandAstCtx, *cr,
         { { AssociatedAction::ITERATE, iterandAstCtx->id() } });
   }
 
@@ -6408,17 +6461,16 @@ constructReduceScanOpClass(Resolver& resolver,
                       actuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
-  auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
-  auto opType = c.exprType();
+  auto c = resolver.resolveGeneratedCall(reduceOrScan, &ci, &inScopes);
+  auto opType = c.result.exprType();
 
   // Couldn't resolve the call; is opName a valid reduction?
   if (opType.isUnknown()) {
     CHPL_REPORT(context, ReductionInvalidName, reduceOrScan, opName, iterType);
     return nullptr;
   } else {
-    resolver.handleResolvedCall(resolver.byPostorder.byAst(reduceOrScan),
-                                reduceOrScan, ci, c,
-                                { { AssociatedAction::REDUCE_SCAN, reduceOrScan->id() } });
+    c.noteResult(&resolver.byPostorder.byAst(reduceOrScan),
+                  { { AssociatedAction::REDUCE_SCAN, reduceOrScan->id() } });
   }
 
   // We found some type; is it a subclass of ReduceScanOp?
@@ -6488,6 +6540,9 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
                       typeActuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+
+  // don't use resolver's wrapper of resolveGeneratedCall, since we don't
+  // do anything beyond getting the result type.
   auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
   return c.exprType();
 }
