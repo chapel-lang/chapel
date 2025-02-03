@@ -5207,24 +5207,6 @@ resolveFnCall(ResolutionContext* rc,
   // infer types of generic 'out' formals from function bodies
   mostSpecific.inferOutFormals(rc, instantiationPoiScope);
 
-  // Make sure that we are resolving initializer bodies even when the
-  // signature is concrete, because there are semantic checks.
-  bool isCallInfoForInit = (ci.name() == USTR("init") ||
-                            ci.name() == USTR("init=")) &&
-                            ci.isMethodCall();
-  if (isCallInfoForInit && mostSpecific.numBest() == 1) {
-    auto candidateFn = mostSpecific.only().fn();
-    CHPL_ASSERT(candidateFn->isInitializer());
-
-    // TODO: Can we move this into the 'InitVisitor'?
-    // Note: resolveFunction is already called on the initializer during
-    // instantiation
-    if (!candidateFn->untyped()->isCompilerGenerated() &&
-        candidateFn->instantiatedFrom() == nullptr) {
-      std::ignore = resolveFunction(rc, candidateFn, inScopes.poiScope());
-    }
-  }
-
   // compute the return types
   optional<QualifiedType> retType;
   optional<QualifiedType> yieldedType;
