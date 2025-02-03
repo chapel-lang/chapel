@@ -167,7 +167,8 @@ The following are further requirements for GPU support:
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
-    use that LLVM.
+    use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
+    using ROCm 6.x.
 
   * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported.
 
@@ -704,9 +705,9 @@ marked with * are covered in our nightly testing configurations.
 
 * AMD
 
-  * Hardware: MI60*, MI100 and MI250X*
+  * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 5.4*, 6.0, 6.1, 6.2*
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2*
 
 
 GPU Support on Windows Subsystem for Linux
