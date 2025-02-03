@@ -612,7 +612,9 @@ all:
   01/06/25:
     - text: Partially revert Qthreads patch from #26328 (#26468)
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
-
+  02/03/25:
+    - text: Started using ROCm 6.x
+      config: 1-node-mi250x
 
 # End all
 
