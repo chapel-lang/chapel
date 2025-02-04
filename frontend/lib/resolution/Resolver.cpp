@@ -29,6 +29,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Qualifier.h"
 #include "chpl/uast/all-uast.h"
+#include "call-init-deinit.h"
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
@@ -1422,6 +1423,45 @@ const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
   return nullptr;
 }
 
+static const Type* tryFindTypeViaCopyFn(Resolver& resolver,
+                                        const AstNode* declForErr,
+                                        const AstNode* typeForErr,
+                                        const AstNode* initForErr,
+                                        const QualifiedType& declaredType,
+                                        const QualifiedType& initExprType) {
+  const bool tryResolveCopyInit = (declaredType.type()->isRecordType() ||
+                                   declaredType.type()->isArrayType() ||
+                                   declaredType.type()->isDomainType() ||
+                                   declaredType.type()->isUnionType());
+
+  if (tryResolveCopyInit) {
+    // Note: This code assumes that this init= will be added as an
+    // associated action by ``CallInitDeinit::resolveCopyInit``
+    std::vector<const AstNode*> ignoredAsts;
+    auto [ci, inScopes] = setupCallForCopyOrMove(resolver, declForErr, initForErr,
+                                                 declaredType, initExprType,
+                                                 /* forMoveInit */ false,
+                                                 ignoredAsts);
+    auto c = resolver.resolveGeneratedCall(declForErr, &ci, &inScopes);
+
+    if (c.result.mostSpecific().only()) {
+      // For init=, use the receiver type of the function as the new type.
+      if (ci.name() == USTR("init=")) {
+        return c.result.mostSpecific().only().fn()->formalType(0).type();
+
+      // Otherwise, we resolved some other copy function, use its return type
+      } else if (!c.result.exprType().isUnknownOrErroneous()) {
+        return c.result.exprType().type();
+      }
+    }
+  }
+
+  // No cigar, issue an error and return ErroneousType
+  CHPL_REPORT(resolver.context, IncompatibleTypeAndInit, declForErr, typeForErr,
+              initForErr, declaredType.type(), initExprType.type());
+  return ErroneousType::get(resolver.context);
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -1514,23 +1554,8 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           typePtr = ErroneousType::get(context);
         }
       } else {
-          // For a record/union, check for an init= from the provided type
-        const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
-                                      declaredType.type()->isUnionType());
-        const TypedFnSignature* initEq = nullptr;
-        if (isRecordOrUnion) {
-          // Note: This code assumes that this init= will be added as an
-          // associated action by ``CallInitDeinit::resolveCopyInit``
-          initEq = tryResolveInitEq(context, declForErr, declaredType.type(),
-                                    initExprType.type(), poiScope);
-        }
-        if (initEq == nullptr) {
-          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
-          typePtr = ErroneousType::get(context);
-        } else {
-          typePtr = initEq->formalType(0).type();
-        }
+        typePtr = tryFindTypeViaCopyFn(*this, declForErr, typeForErr, initForErr,
+                                       declaredType, initExprType);
       }
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
