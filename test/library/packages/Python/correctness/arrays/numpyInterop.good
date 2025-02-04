@@ -1,4 +1,7 @@
-[ 6  9 12]
+saxpy on 1D arrays: [ 6  9 12]
 
-[[22. 40.]
+saxpy on nested arrays: [[22. 40.]
  [58. 76.]]
+
+Before numpyAssign: 1 2 3 4
+After numpyAssign: 100 100 100 100

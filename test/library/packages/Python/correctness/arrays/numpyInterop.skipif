@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-$FILE_DIR/../../skipIfAndInstallPackage.sh $FILE_DIR numpy

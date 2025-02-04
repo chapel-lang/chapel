@@ -43,7 +43,7 @@ chpl_bool registerArrayTypeEnum(void) {
   if (!elements) return false;
   {
     int i = 0;
-#define chpl_MAKE_ENUM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_ENUM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   PyDict_SetItemString(elements, #NAMESUFFIX, PyLong_FromLong(i++));
 chpl_ARRAY_TYPES(chpl_MAKE_ENUM)
 #undef chpl_MAKE_ENUM
@@ -68,7 +68,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_ENUM)
 }
 
 
-#define chpl_MAKE_ARRAY_STRUCT(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_ARRAY_STRUCT(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   typedef struct { \
     PyObject_HEAD \
     DATATYPE* data; \
@@ -84,7 +84,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_STRUCT)
 static int ArrayGenericObject_init(PyObject* self, PyObject* args, PyObject* kwargs) {
   return 0;
 }
-#define chpl_MAKE_DEALLOC(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_DEALLOC(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static void Array##NAMESUFFIX##Object_dealloc(Array##NAMESUFFIX##Object* self) { \
     if (self->isOwned) chpl_mem_free(self->data, 0, 0); \
     Py_CLEAR(self->eltType); \
@@ -96,7 +96,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_DEALLOC)
 #undef chpl_MAKE_DEALLOC
 
 
-#define chpl_MAKE_REPR(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_REPR(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static PyObject* Array##NAMESUFFIX##Object_repr(Array##NAMESUFFIX##Object* self) { \
     return PyUnicode_FromFormat("Array(eltType="CHAPELDATATYPE",size=%zd)", self->size); \
   }
@@ -104,7 +104,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 #undef chpl_MAKE_REPR
 
 // TODO: how can we remove the error checking here with --no-checks or -scheckExceptions=false?
-#define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, _0) \
+#define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, ...) \
   static int Array##NAMESUFFIX##Object_sq_setitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index, PyObject* value) { \
     if (!value) { \
       PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
@@ -126,7 +126,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 #undef chpl_MAKE_SETITEM
 
-#define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, _0) \
+#define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, ...) \
   static int Array##NAMESUFFIX##Object_mp_setitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj, PyObject* value) { \
     if (!value) { \
       PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
@@ -154,7 +154,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 #undef chpl_MAKE_SETITEM
 
-#define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE) \
+#define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE, ...) \
   static PyObject* Array##NAMESUFFIX##Object_sq_getitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index) { \
     if (index < 0 || index >= self->size) { \
       PyErr_SetString(PyExc_IndexError, "index out of bounds"); \
@@ -164,7 +164,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
   }
 chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
 #undef chpl_MAKE_GETITEM
-#define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE) \
+#define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE, ...) \
   static PyObject* Array##NAMESUFFIX##Object_mp_getitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj) { \
     if (!PyLong_Check(indexObj)) { \
       /* TODO: support slices */ \
@@ -181,7 +181,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
 chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
 #undef chpl_MAKE_GETITEM
 
-#define chpl_MAKE_LENGTH(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_LENGTH(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static Py_ssize_t Array##NAMESUFFIX##Object_length(Array##NAMESUFFIX##Object* self) { \
     return self->size; \
   }
@@ -189,7 +189,42 @@ chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
 #undef chpl_MAKE_LENGTH
 
 
-#define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+// https://docs.python.org/3/c-api/typeobj.html#c.PyBufferProcs.bf_getbuffer
+// 1. Check if the request can be met. If not, raise BufferError, set view->obj to NULL and return -1.
+// 2. Fill in the requested fields.
+// 3. Increment an internal counter for the number of exports.
+// 4. Set view->obj to exporter and increment view->obj.
+// 5. Return 0.
+#define chpl_MAKE_GET_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS, FORMATSTRING) \
+static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr, Py_buffer* view, int flags) { \
+  if (!SUPPORTSBUFFERS) { \
+    PyErr_SetString(PyExc_BufferError, "This array does not support the buffer protocol"); \
+    view->obj = NULL; \
+    return -1; \
+  } \
+  /* other error checking for invalid request in flags?! */ \
+  view->buf = arr->data; \
+  view->obj = (PyObject*) arr; \
+  view->len = arr->size * sizeof(DATATYPE); \
+  view->itemsize = sizeof(DATATYPE); \
+  view->readonly = 0; \
+  view->ndim = arr->ndim; \
+  view->format = NULL; \
+  if (flags & PyBUF_FORMAT) { \
+    view->format = FORMATSTRING; \
+  } \
+  /*TODO: support nd arrays*/ \
+  view->shape = NULL; \
+  view->strides = NULL; \
+  view->suboffsets = NULL; \
+  Py_INCREF(view->obj); \
+  return 0; \
+}
+chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
+#undef chpl_MAKE_GET_BUFFER
+
+
+#define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static chpl_bool createArray##NAMESUFFIX##Type(void) { \
     PyMethodDef methods[] = { \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
@@ -214,6 +249,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
       {Py_mp_length, (void*) Array##NAMESUFFIX##Object_length}, \
       {Py_tp_methods, (void*) methods}, \
       {Py_tp_members, (void*) members}, \
+      {Py_bf_getbuffer, (void*) Array##NAMESUFFIX##Object_bf_getbuffer}, \
       {0, NULL} \
     }; \
     PyType_Spec spec = { \
@@ -231,14 +267,14 @@ chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
 #undef chpl_MAKE_TYPE
 
 chpl_bool createArrayTypes(void) {
-#define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   if (!createArray##NAMESUFFIX##Type()) return false;
 chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
 #undef chpl_MAKE_TYPE
   return true;
 }
 
-#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2) \
+#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned) { \
     assert(Array##NAMESUFFIX##Type); \
     assert(ArrayTypeEnum); \
