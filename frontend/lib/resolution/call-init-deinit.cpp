@@ -133,9 +133,9 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
-  void handleDisjunction(const AstNode * node, 
+  void handleDisjunction(const AstNode * node,
                          VarFrame * currentFrame,
-                         const std::vector<VarFrame*>& frames, 
+                         const std::vector<VarFrame*>& frames,
                          bool total, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
@@ -622,6 +622,8 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                         rv);
       }
     }
+  } else if (isValue(lhsType.kind()) && (rhsType.isUnknown())) {
+    // don't do anything for move initialization of unknown types
   } else {
     CHPL_UNIMPL("value = copy init from ref");
   }
@@ -1036,11 +1038,11 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   processDeinitsAndPropagate(frame, parent, rv);
 }
 
-void CallInitDeinit::handleDisjunction(const uast::AstNode * node, 
-                                 VarFrame* currentFrame, 
-                                 const std::vector<VarFrame*>& frames, 
+void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
+                                 VarFrame* currentFrame,
+                                 const std::vector<VarFrame*>& frames,
                                  bool total, RV& rv) {
-  
+
   for (auto frame : frames) {
     if(!frame->returnsOrThrows) {
       processDeinitsAndPropagate(frame, currentFrame, rv);

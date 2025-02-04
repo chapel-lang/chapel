@@ -3045,25 +3045,12 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
                          !id.isSymbolDefiningScope());
-  bool error = false;
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
       // OK, proceed using local result
     } else {
       useLocalResult = false;
-      // attempting to get a type for a value that has a later post-order ID
-      // than curStmt should result in an error since we want resolution to
-      // behave as though things are resolved in order.
-      if (id.postOrderId() > curStmt->id().postOrderId()) {
-        error = true;
-      }
     }
-  }
-
-  if (error) {
-    CHPL_REPORT(context, UseOfLaterVariable, curStmt, id);
-    auto unknownType = UnknownType::get(context);
-    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
   }
 
   if (useLocalResult) {
@@ -3550,6 +3537,8 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   return m;
 }
 
+
+
 static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
                               const ID& target) {
@@ -3620,6 +3609,45 @@ checkForErrorNestedClassFieldRef(Context* context, const AstNode* node,
   return false;
 }
 
+static bool
+checkForErrorSelfDefinition(Context* context, const AstNode* node,
+                            const ID& target) {
+  auto targetAst = parsing::idToAst(context, target);
+  if (node->isIdentifier() && target.contains(node->id())) {
+    if (targetAst && targetAst->isVarLikeDecl() ) {
+      auto namedDeclMaybeVar = targetAst->toVarLikeDecl();
+      auto identNode = node->toIdentifier();
+      if (namedDeclMaybeVar->name() == identNode->name()) {
+        // This is a self-reference, so it's an error.
+        CHPL_REPORT(context, SelfDefinition, namedDeclMaybeVar, identNode);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool
+checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
+                             const ID& target) {
+    // treat self-definition as a special case of use-before-define
+    if (checkForErrorSelfDefinition(context, node, target)) {
+      return true;
+    }
+    if (node->tag() == AstTag::Identifier) {
+      if (node->id().symbolPath() == target.symbolPath()) {
+        if (target.postOrderId() > node->id().postOrderId()) {
+          // resolved to an identifier defined later
+          auto nd = parsing::idToAst(context, target)->toNamedDecl();
+          CHPL_ASSERT(nd && "identifier target was not a NamedDecl");
+          CHPL_REPORT(context, UseOfLaterVariable, node, target, nd->name());
+          return true;
+        }
+    }
+  }
+  return false;
+}
+
 static const bool&
 checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   QUERY_BEGIN(checkForIdentifierTargetErrorsQuery, context, nodeId, targetId);
@@ -3630,6 +3658,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   // Use bitwise-OR here to avoid short-circuiting.
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
+  ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
 
   return QUERY_END(ret);
 }
