@@ -2053,6 +2053,119 @@ static void testInitInstantiationInheritWrong() {
   guard.realizeErrors();
 }
 
+static void testInitEqRecursion() {
+  // this comes up in prod: an `init=` that calls a function that uses the
+  // `init=` (see: string -> buffer operations -> new Error -> string).
+  // test that the recursion doesn't kill us.
+  std::string program =
+    R"""(
+    proc compilerError(param msg: string...) {
+      __primitive("error");
+    }
+
+    proc useX(x) {}
+
+    record R {
+      proc init=(const ref rhs: R) {
+        foo();
+      }
+    }
+
+    proc bar(r1: R) {
+      var r2 = r1;
+      return r1;
+    }
+    bar(new R());
+
+    proc foo() {
+      var tmp: R;
+      var other = tmp;
+      useX(tmp);
+    }
+
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "temp.chpl");
+  setFileText(context, filename, program);
+  auto modules = parse(context, filename, UniqueString());
+  CHPL_ASSERT(modules.size() == 1);
+  auto r2 = findVariable(modules, "r2");
+  auto barId = idToParentFunctionId(context, r2->id());
+  CHPL_ASSERT(r2);
+  auto& barRr = resolveConcreteFunction(context, barId)->resolutionById();
+  auto& resolvedR2 = barRr.byAst(r2);
+
+  for (auto& aa : resolvedR2.associatedActions()) {
+    if (aa.action() == AssociatedAction::COPY_INIT) {
+      auto fn = aa.fn();
+      ResolutionContext rc(context);
+      std::ignore = resolveFunction(&rc, fn, resolvedR2.poiScope());
+    }
+  }
+}
+
+static void testInitEqRecursionError() {
+  // same as testInitEqRecursion, but lock down that although we avoid
+  // resolving `init=` in some cases (to prevent recursion), we do resolve
+  // its body and this issue compilerErrors if they are present.
+  std::string program =
+    R"""(
+    proc compilerError(param msg: string...) {
+      __primitive("error");
+    }
+
+    proc useX(x) {}
+
+    record R {
+      proc init=(const ref rhs: R) {
+        foo();
+        compilerError("I should be issued eventually!");
+      }
+    }
+
+    proc bar(r1: R) {
+      var r2 = r1;
+      return r1;
+    }
+    bar(new R());
+
+    proc foo() {
+      var tmp: R;
+      var other = tmp;
+      useX(tmp);
+    }
+
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "temp.chpl");
+  setFileText(context, filename, program);
+  auto modules = parse(context, filename, UniqueString());
+  CHPL_ASSERT(modules.size() == 1);
+  auto r2 = findVariable(modules, "r2");
+  auto barId = idToParentFunctionId(context, r2->id());
+  CHPL_ASSERT(r2);
+  auto& barRr = resolveConcreteFunction(context, barId)->resolutionById();
+  auto& resolvedR2 = barRr.byAst(r2);
+
+  for (auto& aa : resolvedR2.associatedActions()) {
+    if (aa.action() == AssociatedAction::COPY_INIT) {
+      auto fn = aa.fn();
+      ResolutionContext rc(context);
+      std::ignore = resolveFunction(&rc, fn, resolvedR2.poiScope());
+    }
+  }
+
+  assert(guard.realizeErrors() > 0);
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2109,6 +2222,9 @@ int main() {
   testInitInstantiation();
   testInitInstantiationInherit();
   testInitInstantiationInheritWrong();
+
+  testInitEqRecursion();
+  testInitEqRecursionError();
 
   return 0;
 }
