@@ -259,7 +259,7 @@ To build Chapel from source for use on the cluster, follow these steps:
 
     If using a GPU instance, install the CUDA toolkit from the `NVIDIA website <https://developer.nvidia.com/cuda-downloads>`_.
 
-* Download a Chapel release from the `Download <https://chapel-lang.org/download.html>`_ page.
+* Download a Chapel release from the `Download <https://chapel-lang.org/download/>`_ page.
 * Build the Chapel release with ``CHPL_COMM=ofi`` as shown on the :ref:`readme-building` page.
 
    For best results, we recommend running the following prior to building

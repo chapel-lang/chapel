@@ -23,10 +23,10 @@ with the project via the following steps:
   since that chapter was published, it may be helpful to refer to:
 
   - the CUG 2018 paper or presentation, "Chapel Comes of Age..."
-    available from https://chapel-lang.org/papers.html
+    available from https://chapel-lang.org/papers/
 
-  - the "State of the Project" talk from the most recent `CHIUW
-    workshop <https://chapel-lang.org/CHIUW.html>`_
+  - the "State of the Project" talk from the most recent `ChapelCon
+    meeting <https://chapel-lang.org/ChapelCon.html>`_
 
   - the `release notes <https://chapel-lang.org/releaseNotes.html>`_
     from the most recent Chapel release.
@@ -51,9 +51,9 @@ with the project via the following steps:
 * To learn the language, your best bets are to read the Chapel chapter
   mentioned above, read through the release's primer examples (located
   in ``test/[release/]examples/primers``), watch or browse a `Chapel
-  presentation <https://chapel-lang.org/presentations.html>`_, or
+  presentation <https://chapel-lang.org/presentations/>`_, or
   refer to the `learning Chapel page
-  <https://chapel-lang.org/learning.html>`_.
+  <https://chapel-lang.org/learn/>`_.
 
 * Familiarize yourself with the `language specification
   <https://chapel-lang.org/docs/language/spec/>`_.  This can
