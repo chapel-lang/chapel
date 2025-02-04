@@ -211,7 +211,7 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
   view->ndim = arr->ndim; \
   view->format = NULL; \
   if (flags & PyBUF_FORMAT) { \
-    view->format = FORMATSTRING; \
+    view->format = (char*)FORMATSTRING; \
   } \
   /*TODO: support nd arrays*/ \
   view->shape = NULL; \
