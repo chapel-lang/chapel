@@ -116,7 +116,7 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
-    inline proc flush() {
+    inline proc ref flush() {
       if aggregate then agg.flush();
     }
   }
@@ -134,7 +134,7 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
-    inline proc flush() {
+    inline proc ref flush() {
       if aggregate then agg.flush();
     }
   }
