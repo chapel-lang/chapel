@@ -389,6 +389,7 @@ bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
+bool   fDynoBreakOnHashSet = false;
 bool fDynoNoBreakError = false;
 static std::string fDynoTimingPath;
 
@@ -1049,6 +1050,10 @@ static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) 
   setWarnTupleIteration(desc, unused);
 }
 
+static void setDynoBreakOnHash(const ArgumentDescription* desc, const char* arg) {
+  fDynoBreakOnHashSet = true;
+}
+
 static void setLogDir(const ArgumentDescription* desc, const char* arg) {
   fLogDir = true;
 }
@@ -1487,7 +1492,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-timing", ' ', NULL, "Enable [disable] timing output when using dyno compiler library", "P", &fDynoTimingPath, "CHPL_DYNO_TIMING", NULL},
  {"dyno-debug-print-parsed-files", ' ', NULL, "Enable [disable] printing all files that were parsed by Dyno", "N", &fDynoDebugPrintParsedFiles, "CHPL_DYNO_DEBUG_PRINT_PARSED_FILES", NULL},
- {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+ {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", setDynoBreakOnHash},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
@@ -2353,7 +2358,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
                                         cmdLineModPaths,
                                         getChplFilenames());
   gContext->setDebugTraceFlag(fDynoDebugTrace);
-  gContext->setBreakOnHash(fDynoBreakOnHash);
+  if (fDynoBreakOnHashSet) gContext->setBreakOnHash(fDynoBreakOnHash);
 
   // set whether dyno assertions should fire based on developer flag
   chpl::setAssertions(developer);

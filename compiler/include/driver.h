@@ -338,6 +338,7 @@ extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+extern bool   fDynoBreakOnHashSet;
 
 extern bool fResolveConcreteFns;
 extern bool fIdBasedMunging;

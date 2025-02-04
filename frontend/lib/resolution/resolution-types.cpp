@@ -1215,7 +1215,10 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
 
     if (!formalType.type() || !actualType.type()) continue;
 
-    auto got = canPass(rc->context(), actualType, formalType);
+    auto canPassFn =
+      actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
+                                                        : canPass;
+    auto got = canPassFn(rc->context(), actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
