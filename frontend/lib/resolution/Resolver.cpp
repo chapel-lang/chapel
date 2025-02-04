@@ -3537,44 +3537,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
   return m;
 }
 
-static bool
-checkForErrorSelfDefinition(Context* context, const AstNode* node,
-                            const ID& target) {
-  auto targetAst = parsing::idToAst(context, target);
-  if (node->tag() == AstTag::Identifier && target.contains(node->id())) {
-    if (targetAst && targetAst->isVarLikeDecl() ) {
-      auto nd = targetAst->toVarLikeDecl();
-      auto identNode = node->toIdentifier();
-      if (nd->name() == identNode->name()) {
-        // This is a self-reference, so it's an error.
-        CHPL_REPORT(context, SelfDefinition, nd, identNode);        
-        return true;
-      }
-    }
-  }
-  return false;
-}
 
-static bool
-checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
-                             const ID& target) {
-    // treat self-definition as a special case of use-before-define
-    if (checkForErrorSelfDefinition(context, node, target)) {
-      return true;
-    }
-    if (node->tag() == AstTag::Identifier) {
-      if (node->id().symbolPath() == target.symbolPath()) {
-        if (target.postOrderId() > node->id().postOrderId()) {
-          // resolved to an identifier defined later
-          auto decl = parsing::idToAst(context, target)->toNamedDecl();
-          CHPL_ASSERT(decl && "identifier target was not a NamedDecl");
-          CHPL_REPORT(context, UseOfLaterVariable, node, target, decl->name());
-          return true;
-        }
-    }
-  }
-  return false;
-}
 
 static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
@@ -3641,6 +3604,45 @@ checkForErrorNestedClassFieldRef(Context* context, const AstNode* node,
 
       // Move on to the surrounding ID.
       searchId = searchId.parentSymbolId(context);
+    }
+  }
+  return false;
+}
+
+static bool
+checkForErrorSelfDefinition(Context* context, const AstNode* node,
+                            const ID& target) {
+  auto targetAst = parsing::idToAst(context, target);
+  if (node->isIdentifier() && target.contains(node->id())) {
+    if (targetAst && targetAst->isVarLikeDecl() ) {
+      auto namedDeclMaybeVar = targetAst->toVarLikeDecl();
+      auto identNode = node->toIdentifier();
+      if (namedDeclMaybeVar->name() == identNode->name()) {
+        // This is a self-reference, so it's an error.
+        CHPL_REPORT(context, SelfDefinition, namedDeclMaybeVar, identNode);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static bool
+checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
+                             const ID& target) {
+    // treat self-definition as a special case of use-before-define
+    if (checkForErrorSelfDefinition(context, node, target)) {
+      return true;
+    }
+    if (node->tag() == AstTag::Identifier) {
+      if (node->id().symbolPath() == target.symbolPath()) {
+        if (target.postOrderId() > node->id().postOrderId()) {
+          // resolved to an identifier defined later
+          auto nd = parsing::idToAst(context, target)->toNamedDecl();
+          CHPL_ASSERT(nd && "identifier target was not a NamedDecl");
+          CHPL_REPORT(context, UseOfLaterVariable, node, target, nd->name());
+          return true;
+        }
     }
   }
   return false;
