@@ -1036,6 +1036,7 @@ module Python {
       Converts a python dictionary to an associative array.
       Steals a reference to obj.
     */
+    @chpldoc.nodoc
     proc fromDict(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
 
