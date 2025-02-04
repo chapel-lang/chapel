@@ -434,7 +434,8 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected=nullptr);
+                                 std::vector<ApplicabilityResult>* rejected=nullptr,
+                                 bool skipForwarding = false);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
