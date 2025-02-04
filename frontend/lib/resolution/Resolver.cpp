@@ -1977,8 +1977,10 @@ void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
                                   const uast::AstNode* astForErr) {
   if (diagnostic.isError()) {
     CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
+    noteErrorMessage(context, diagnostic.message());
   } else if (diagnostic.isWarning()) {
     CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
+    noteWarningMessage(context, diagnostic.message());
   }
 }
 

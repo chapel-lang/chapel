@@ -37,6 +37,7 @@
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/util/filesystem.h"
 
 #include "llvm/Support/FileSystem.h"
@@ -122,6 +123,16 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
       // checking them for 'proc main'.
       // ImplicitModuleSameName is deferred as well since it makes more sense
       // if it follows the regular implicit module warning.
+      deferredErrors_.push_back(err->clone());
+    } else if (err->type() == chpl::ErrorType::UserDiagnosticEncounterError ||
+               err->type() == chpl::ErrorType::UserDiagnosticEncounterWarning) {
+      // The Dyno API reports user diagnostics twice: once when they are
+      // detected (so that they are never forgotten) and once when they are
+      // reached at the desired issue point. When the latter happens,
+      // we set a query.
+      //
+      // If the query is set, we don't report the diagnostic here. We
+      // can only check that later, though, so defer the diagnostic for now.
       deferredErrors_.push_back(err->clone());
     } else {
       errors_.push_back(err->clone());
@@ -906,6 +917,20 @@ static bool dynoRealizeDeferredErrors(void) {
       if (implicitMod->id().symbolPathWithoutRepeats(gContext) == mainModulePath) {
         // Do not emit the implicit file module warning for the main module,
         // since it's a very common pattern.
+        continue;
+      }
+    } else if (err->type() == chpl::ErrorType::UserDiagnosticEncounterError ||
+               err->type() == chpl::ErrorType::UserDiagnosticEncounterWarning) {
+      // See gDynoErrorHandler::report for why these messages are deferred.
+      // Check if we need to report them after all, which can happen if
+      // a compiler diagnostic is misused.
+
+      bool isError = err->type() == chpl::ErrorType::UserDiagnosticEncounterError;
+      auto query = isError ? resolution::noteErrorMessage : resolution::noteWarningMessage;
+      auto errorMessage = std::get<0>(
+          isError ? ((chpl::ErrorUserDiagnosticEncounterError*) err.get())->info()
+                  : ((chpl::ErrorUserDiagnosticEncounterWarning*) err.get())->info());
+      if (gContext->hasCurrentResultForQuery(query, std::make_tuple(errorMessage))) {
         continue;
       }
     }

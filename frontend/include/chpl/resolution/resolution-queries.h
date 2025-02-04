@@ -660,6 +660,18 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
                                   bool& outAmbiguity);
 
+/**
+  This query is invoked when a diagnostic message via `compilerError` is
+  emitted at the place it wanted to be emitted. This can be used by
+  library consumers to see if fallback diagnostics can be skipped.
+ */
+bool const& noteErrorMessage(Context* context, UniqueString message);
+
+/**
+  Same as `noteErrorMessage`, but for warning messages.
+ */
+bool const& noteWarningMessage(Context* context, UniqueString message);
+
 
 } // end namespace resolution
 } // end namespace chpl
