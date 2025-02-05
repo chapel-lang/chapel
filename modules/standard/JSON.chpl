@@ -1185,7 +1185,12 @@ module JSON {
   proc fromJson(jsonString: string, type loadAs): loadAs throws {
     var fileReader = openStringReader(jsonString,
                                       deserializer=new jsonDeserializer());
-    return fileReader.read(loadAs);
+    // we want `return fileReader.read(loadAs)`. But that ends up using a
+    // non-throwing compiler-generated initializer. That prevents the user to
+    // catch errors that are due to malformed jsonString.
+    var ret: loadAs;
+    fileReader.read(ret);
+    return ret;
   }
 
   /* Given a Chapel value, serialize it into a JSON string using the
