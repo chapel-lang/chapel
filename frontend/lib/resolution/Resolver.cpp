@@ -2917,7 +2917,6 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       r.setType(rCalledExp.type());
     } else {
       // Get type by resolving the type of corresponding domain builder call
-      // TODO: prohibit associative domain with idxType 'domain'
       const AstNode* questionArg = nullptr;
       std::vector<CallInfoActual> actuals;
       // Set up distribution arg
@@ -2941,21 +2940,35 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         return resolveGeneratedCall(call, &ci, &inScopes);
       });
-      runResult.result().noteResultWithoutError(&r, { { AssociatedAction::RUNTIME_TYPE, fnCall->id() } });
+      auto& crr = runResult.result().result;
 
-      QualifiedType receiverTy;
-      if (runResult.ranWithoutErrors()) {
-        receiverTy = runResult.result().result.exprType();
-      }
-      if (receiverTy.isUnknownOrErroneous()) {
+      // Note: this issues errors from compilerError in the body of the
+      // domain builder.
+      optional<ActionAndId> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
+      bool needsErrors =
+        runResult.result().noteResultWithoutError(&r, std::move(action));
+
+      const Type* domainTy;
+      if (runResult.ranWithoutErrors() &&
+          !crr.exprType().isUnknownOrErroneous()) {
+        domainTy = crr.exprType().type();
+      } else if (crr.mostSpecific().numBest() >= 1) {
+        // Errors were issued, but we found a candidate. This means the errors
+        // came from resolving the body of the domain builder, which
+        // are probably more specific than "InvalidDomainCall". Do not issue
+        // more errors.
+        CHPL_ASSERT(needsErrors);
+        runResult.result().issueBasicError();
+        domainTy = ErroneousType::get(context);
+      } else {
         std::vector<QualifiedType> actualTypesForErr;
         for (auto it = actuals.begin() + 1; it != actuals.end(); ++it) {
           actualTypesForErr.push_back(it->type());
         }
-        receiverTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
-                                     actualTypesForErr);
+        domainTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
+                                   actualTypesForErr).type();
       }
-      r.setType(QualifiedType(QualifiedType::TYPE, receiverTy.type()));
+      r.setType(QualifiedType(QualifiedType::TYPE, domainTy));
     }
     return true;
   }
