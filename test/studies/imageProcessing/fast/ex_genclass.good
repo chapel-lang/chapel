@@ -1,0 +1,13 @@
+
+filling array, storing first element
+ storing second element
+ storing third element
+grew array to {1..4}
+
+using array
+ corners data in {1..3}   size 3
+ corner #2 (xc = 150, yc = 75, len = 13)
+ dump array:
+  corner at 100, 50   len 10
+  corner at 150, 75   len 13
+  corner at 125, 100   len 12
