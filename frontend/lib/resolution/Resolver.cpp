@@ -6268,10 +6268,12 @@ static bool handleArrayTypeExpr(Resolver& rv,
           QualifiedType(QualifiedType::TYPE, domainType.type());
       arrayType = QualifiedType(
           QualifiedType::TYPE,
-          ArrayType::getArrayType(rv.context,
-                                  /* instance */ QualifiedType(),
-                                  /* domainType */ domainTypeAsType,
-                                  /* eltType */ eltType));
+          ArrayType::getArrayType(
+              rv.context,
+              /* instance */
+              QualifiedType(QualifiedType::VAR, getAnyType(rv, loop->id())),
+              /* domainType */ domainTypeAsType,
+              /* eltType */ eltType));
     }
   } else {
     // We have an instantiated domain, so get array type via call to its
