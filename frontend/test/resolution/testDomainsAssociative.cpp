@@ -130,6 +130,28 @@ module M {
   assert(guard.errors().size() == 0);
 }
 
+static void testDisallowDomainDomain(Context* context) {
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+
+  std::string program = "var D: domain(domain(1));";
+
+  auto qtD = resolveTypesOfVariables(context, program, {"D"}).at("D");
+  assert(qtD.type()->isErroneousType());
+
+  // some extraneous errors from not handling early `compilerError` returns
+  assert(guard.numErrors() >= 1);
+  for (auto& err : guard.errors()) {
+    if (err->message() == "Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type") {
+      guard.realizeErrors();
+      return;
+    }
+  }
+  guard.realizeErrors();
+  assert(false && "didn't find expected error");
+}
+
 int main() {
   // Set up context with standard modules, re-used between tests for
   // performance.
@@ -147,6 +169,8 @@ int main() {
 
   testDomainIndex(context, "domain(int)", "int");
   testDomainIndex(context, "domain(string)", "string");
+
+  testDisallowDomainDomain(context);
 
   return 0;
 }
