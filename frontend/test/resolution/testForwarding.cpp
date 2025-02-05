@@ -506,6 +506,41 @@ static void test8() {
   assert(guard.realizeErrors() == 0);
 }
 
+// Ensure we don't search for forwarded candidates after finding non-forwarded
+// ones, even if the forwarded candidates are methods.
+static void test9() {
+  printf("test9\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      class Bar {
+        proc getVal() : real do return 4;
+      }
+
+      proc getVal() : int do return 3;
+
+      class Foo {
+        var b : owned Bar = new Bar();
+        forwarding b;
+
+        proc doSomething() do return getVal();
+      }
+
+      var f : Foo = new Foo();
+      var x = f.doSomething();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 
 int main() {
   test1();
@@ -525,6 +560,7 @@ int main() {
   // TODO: forwarding with only, except
 
   test8();
+  test9();
 
   return 0;
 }
