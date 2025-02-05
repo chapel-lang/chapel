@@ -81,7 +81,7 @@ module M {
   setFileText(context, path, std::move(program));
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Module* m = vec[1];
+  const Module* m = vec[0];
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
