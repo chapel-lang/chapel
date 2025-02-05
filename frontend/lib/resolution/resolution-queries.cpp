@@ -4872,7 +4872,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
                           const CallScopeInfo& inScopes,
                           size_t& firstPoiCandidate,
                           bool& outRejectedPossibleIteratorCandidates,
-                          std::vector<ApplicabilityResult>* rejected) {
+                          std::vector<ApplicabilityResult>* rejected,
+                          bool skipForwarding = false) {
   Context* context = rc->context();
   CandidatesAndForwardingInfo candidates;
   LastResortCandidateGroups lrcGroups;
@@ -4912,7 +4913,8 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   }
 
   // If no candidates were found and it's a method, try forwarding
-  if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
+  if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1 &&
+      !skipForwarding) {
     const Type* receiverType = ci.actual(0).type().type();
 
     // TODO: Should this information come as a boolean argument set by the
@@ -5021,14 +5023,16 @@ resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
                                        const CallScopeInfo& inScopes,
                                        PoiInfo& poiInfo,
                                        bool& outRejectedPossibleIteratorCandidates,
-                                       std::vector<ApplicabilityResult>* rejected) {
+                                       std::vector<ApplicabilityResult>* rejected,
+                                       bool skipForwarding = false) {
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   auto candidates = gatherAndFilterCandidates(rc, astContext, call, ci,
                                               inScopes,
                                               firstPoiCandidate,
                                               outRejectedPossibleIteratorCandidates,
-                                              rejected);
+                                              rejected,
+                                              skipForwarding);
   // * find most specific candidates / disambiguate
   // * check signatures
   // * gather POI info
@@ -5165,7 +5169,8 @@ resolveFnCall(ResolutionContext* rc,
               const Call* call,
               const CallInfo& ci,
               const CallScopeInfo& inScopes,
-              std::vector<ApplicabilityResult>* rejected) {
+              std::vector<ApplicabilityResult>* rejected,
+              bool skipForwarding = false) {
   Context* context = rc->context();
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
@@ -5191,7 +5196,8 @@ resolveFnCall(ResolutionContext* rc,
                                              inScopes,
                                              poiInfo,
                                              rejectedPossibleIteratorCandidates,
-                                             rejected);
+                                             rejected,
+                                             skipForwarding);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
@@ -5356,7 +5362,8 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
                                  const Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected) {
+                                 std::vector<ApplicabilityResult>* rejected,
+                                 bool skipForwarding) {
   Context* context = rc->context();
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
@@ -5374,7 +5381,7 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
     }
 
     // otherwise do regular call resolution
-    return resolveFnCall(rc, call, call, ci, inScopes, rejected);
+    return resolveFnCall(rc, call, call, ci, inScopes, rejected, skipForwarding);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(rc, prim, ci, inScopes.callScope(), inScopes.poiScope());
   } else if (auto tuple = call->toTuple()) {
@@ -5409,13 +5416,14 @@ resolveCallInMethod(ResolutionContext* rc,
   CallResolutionResult asMethod;
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    asMethod = resolveCall(rc, call, methodCi, inScopes, rejected);
+    bool skipForwarding = asFunction.mostSpecific().foundCandidates();
+    asMethod = resolveCall(rc, call, methodCi, inScopes, rejected, skipForwarding);
   }
   if (asMethod.mostSpecific().foundCandidates() && asFunction.mostSpecific().foundCandidates()) {
     ID methodId = asMethod.mostSpecific().only().fn()->id();
     ID functionId = asFunction.mostSpecific().only().fn()->id();
     CHPL_REPORT(rc->context(), AmbiguousCall, call, methodId, functionId);
-  } 
+  }
   if (asMethod.mostSpecific().foundCandidates()) {
     return asMethod;
   } else {
