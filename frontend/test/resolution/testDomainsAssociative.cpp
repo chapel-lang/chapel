@@ -129,9 +129,9 @@ int main() {
   // performance.
   auto context = buildStdContext();
 
-  testAssociative(context, "domain(int)", "int", true);
-  testAssociative(context, "domain(int, false)", "int", false);
-  testAssociative(context, "domain(string)", "string", true);
+  testAssociative(context, "domain(int)", "int", false);
+  testAssociative(context, "domain(int, true)", "int", true);
+  testAssociative(context, "domain(string)", "string", false);
 
   testDomainLiteral(context, "{1, 2, 3}", DomainType::Kind::Associative);
   testDomainLiteral(context, "{\"apple\", \"banana\"}", DomainType::Kind::Associative);

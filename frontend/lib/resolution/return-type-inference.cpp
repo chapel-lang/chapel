@@ -329,7 +329,7 @@ struct ReturnTypeInferrer {
   // input
   ResolutionContext* rc;
   Context* context = rc ? rc->context() : nullptr;
-  const Function* fnAstForErr;
+  const Function* fnAst;
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
   const Type* declaredReturnType;
@@ -344,7 +344,7 @@ struct ReturnTypeInferrer {
                      const Function* fn,
                      const Type* declaredReturnType)
     : rc(rc),
-      fnAstForErr(fn),
+      fnAst(fn),
       returnIntent(fn->returnIntent()),
       functionKind(fn->kind()),
       declaredReturnType(declaredReturnType) {
@@ -353,7 +353,8 @@ struct ReturnTypeInferrer {
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
-  void checkReturn(const AstNode* inExpr, const QualifiedType& qt);
+  // emits errors for invalid return type and adjusts it for magic special cases
+  void checkReturn(const AstNode* inExpr, QualifiedType& qt);
   void noteVoidReturnType(const AstNode* inExpr);
   void noteReturnType(const AstNode* expr, const AstNode* inExpr, RV& rv);
 
@@ -406,7 +407,7 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
 }
 
 void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
-                                     const QualifiedType& qt) {
+                                     QualifiedType& qt) {
   if (!qt.type()) {
     return;
   }
@@ -426,6 +427,15 @@ void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
       ok = false;
     } else if (returnIntent == Function::TYPE && !qt.isType()) {
       ok = false;
+
+      // runtime type builders have a body that returns a value, but
+      // their intent is 'type'. Allow that.
+      if (auto ag = fnAst->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_RUNTIME_TYPE_INIT_FN)) {
+          ok = true;
+          qt = QualifiedType(QualifiedType::TYPE, qt.type());
+        }
+      }
     } else if (returnIntent == Function::PARAM && !qt.isParam()) {
       ok = false;
     }
@@ -472,7 +482,7 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       // Couldn't find common type, so return type is incorrect.
       // TODO: replace with custom error class, and give more information about
       // why we couldn't determine a return type
-      context->error(fnAstForErr, "could not determine return type for function");
+      context->error(fnAst, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
     auto adjType = adjustForReturnIntent(returnIntent, *retType);
@@ -1479,6 +1489,29 @@ void computeReturnType(Resolver& resolver) {
       auto v = ReturnTypeInferrer(resolver.rc, fn, declaredReturnType);
       v.process(fn->body(), resolver.byPostorder);
       resolver.returnType = v.returnedType();
+    }
+
+    if (auto ag = fn->attributeGroup()) {
+      if (ag->hasPragma(uast::pragmatags::PRAGMA_RUNTIME_TYPE_INIT_FN)) {
+        // This function creates a runtime type, which notionally associates
+        // with the function's return type a record that contains
+        // all of the functions' arguments. Do that now.
+        auto rtt = RuntimeType::get(resolver.context, resolver.typedSignature);
+        const Type* newType = resolver.returnType.type();
+        if (resolver.returnType.isUnknownOrErroneous()) {
+          // Inference fail, nothing to embed with the runtime type.
+        } else if (auto dt = newType->toDomainType()) {
+          newType = DomainType::getWithRuntimeType(resolver.context, dt, rtt);
+        } else if (auto at = newType->toArrayType()) {
+          newType = ArrayType::getWithRuntimeType(resolver.context, at, rtt);
+        } else {
+          resolver.context->error(fn, "unsupported return type for runtime type constructor");
+          newType = ErroneousType::get(resolver.context);
+        }
+
+        resolver.returnType =
+          QualifiedType(resolver.returnType.kind(), newType, resolver.returnType.param());
+      }
     }
   }
 }
