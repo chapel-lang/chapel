@@ -118,7 +118,7 @@
          var subInterpreter = new SubInterpreter(interpreter);
          var m = new Module(subInterpreter, 'myMod', code);
          var hello = new Function(m, 'hello');
-         hello(NoneType);
+         hello();
        }
      }
 
@@ -325,8 +325,8 @@
      writeln("Let's call some Python!");
      IO.stdout.flush(); // flush the Chapel output buffer before calling Python
 
-     func(NoneType, "Hello, World!");
-     func(NoneType, "Goodbye, World!");
+     func("Hello, World!");
+     func("Goodbye, World!");
      interp.flush(); // flush the Python output buffer before calling Chapel again
 
      writeln("Back to Chapel");
@@ -1730,11 +1730,19 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
+    pragma "docs only"
+    proc getItem(type T = owned Value, idx: int): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
     proc getItem(type T, idx: int): T throws {
       var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
+    proc getItem(idx: int): owned Value throws do
+      return this.getItem(owned Value, idx);
+
     /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
       Python.

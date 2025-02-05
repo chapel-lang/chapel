@@ -24,7 +24,7 @@ proc test(func: borrowed Function) {
 
   {
     // convert to a list via a Value
-    var obj = func(owned Value, low, high);
+    var obj = func(low, high);
     if print then writeln("  Value: ", obj.str());
 
     var res = obj.value(List.list(int));

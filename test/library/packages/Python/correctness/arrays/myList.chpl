@@ -21,6 +21,7 @@ proc main() {
   writeln("lst[2] ", lst.getItem(string, 2));
   writeln("lst[lst.size-1] ", lst.getItem(int, lst.size-1));
   writeln("lst[-3] ", lst.getItem(owned Value, -3));
+  writeln("lst[-3] ", lst.getItem(-3));
 
   try {
     write("lst[lst.size] ");

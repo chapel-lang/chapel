@@ -11,10 +11,10 @@ var my_function =
                interp.loadPickle(openReader("my_function.pkl").readAll(bytes)));
 
 // run my_function
-var res = my_function(owned Value);
-res.call(NoneType, "print");
+var res = my_function();
+res.call("print");
 
 // create an instance of MyClass
 var obj = MyClass(10);
-obj.call(NoneType, "print");
+obj.call("print");
 

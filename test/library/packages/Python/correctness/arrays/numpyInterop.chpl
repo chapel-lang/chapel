@@ -29,7 +29,7 @@ proc main() {
     var xArr = new Array(interp, x);
     var yArr = new Array(interp, y);
 
-    var result = saxpy(owned Value, xArr, yArr, a);
+    var result = saxpy(xArr, yArr, a);
     writeln("saxpy on 1D arrays: ", result);
   }
   writeln();
@@ -41,7 +41,7 @@ proc main() {
     var xArr = new Array(interp, x);
     var yArr = new Array(interp, y);
 
-    var result = saxpy(owned Value, xArr, yArr, a);
+    var result = saxpy(xArr, yArr, a);
     writeln("saxpy on nested arrays: ", result);
   }
   writeln();
@@ -50,7 +50,7 @@ proc main() {
     writeln("Before numpyAssign: ", x);
     {
       var xArr = new Array(interp, x);
-      numpyAssign(NoneType, xArr);
+      numpyAssign(xArr);
     }
     writeln("After numpyAssign: ", x);
   }
