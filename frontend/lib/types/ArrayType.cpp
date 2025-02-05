@@ -83,7 +83,7 @@ ArrayType::getArrayType(Context* context,
   CHPL_ASSERT(domainType.isType() && domainType.type() &&
               domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
-  CHPL_ASSERT(eltType.isType() && eltType.type());
+  CHPL_ASSERT((eltType.isType() || eltType.isTypeQuery()) && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
 
   // Add substitution for _instance field

@@ -6200,25 +6200,24 @@ static bool handleArrayTypeExpr(Resolver& rv,
   const auto genericArrayType = QualifiedType(
       QualifiedType::TYPE, ArrayType::getGenericArrayType(rv.context));
 
-  QualifiedType bodyType;
+  // Get element type from loop body
+  QualifiedType eltType;
   if (loop->numStmts() == 1) {
-    bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
-  } else {
-    bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
+    eltType = rv.byPostorder.byAst(loop->stmt(0)).type();
+  } else if (loop->numStmts() == 0) {
+    // Interpret no body as generic element type
+    eltType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
   // The body wasn't a type, so this isn't an array type expression.
   // Make an exception for unknown or erroneous bodies, since the user may
   // have been trying to define a type but made a mistake (or we may be
   // in a partially-instantiated situation and the type is not yet known).
-  if (!bodyType.isUnknownOrErroneous() &&
-      !bodyType.isType() &&
-      bodyType.kind() != QualifiedType::TYPE_QUERY) {
+  if (!eltType.isUnknownOrErroneous() &&
+      !eltType.isType() &&
+      !eltType.isTypeQuery()) {
     return false;
   }
-
-  // Get element type
-  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
 
   // Determine the domain type
   QualifiedType domainType;

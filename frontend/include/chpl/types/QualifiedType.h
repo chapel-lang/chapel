@@ -197,6 +197,9 @@ class QualifiedType final {
   */
   bool isParamKnownTuple() const;
 
+  /** Returns true if kind is TYPE_QUERY */
+  bool isTypeQuery() const { return kind_ == Kind::TYPE_QUERY; }
+
   /**
     Returns true if the value cannot be modified directly (but might
     be modified by some other aliasing variable).
