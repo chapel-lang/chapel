@@ -62,6 +62,7 @@ class ArrayType final : public CompositeType {
 
   static const ID domainId;
   static const ID eltTypeId;
+  static const ID runtimeTypeId;
 
  public:
 
@@ -72,6 +73,10 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& instance,
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
+
+  static const ArrayType* getWithRuntimeType(Context* context,
+                                             const ArrayType* arrayType,
+                                             const RuntimeType* runtimeType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -92,6 +97,15 @@ class ArrayType final : public CompositeType {
 
   QualifiedType eltType() const {
     auto it = subs_.find(eltTypeId);
+    if (it != subs_.end()) {
+      return it->second;
+    } else {
+      return QualifiedType();
+    }
+  }
+
+  QualifiedType runtimeType() const {
+    auto it = subs_.find(runtimeTypeId);
     if (it != subs_.end()) {
       return it->second;
     } else {

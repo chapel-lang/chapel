@@ -19,6 +19,7 @@
 
 #include "chpl/types/DomainType.h"
 
+#include "chpl/types/RuntimeType.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -29,6 +30,12 @@
 namespace chpl {
 namespace types {
 
+const ID DomainType::rankId = ID(UniqueString(), 0, 0);
+const ID DomainType::rectangularIdxTypeId = ID(UniqueString(), 1, 0);
+const ID DomainType::nonRectangularIdxTypeId = ID(UniqueString(), 0, 0);
+const ID DomainType::stridesId = ID(UniqueString(), 2, 0);
+const ID DomainType::parSafeId = ID(UniqueString(), 1, 0);
+const ID DomainType::runtimeTypeId = ID(UniqueString(), 3, 0);
 
 void DomainType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -147,6 +154,25 @@ DomainType::getAssociativeType(Context* context,
   auto id = getDomainID(context);
   return getDomainType(context, id, name, /* instantiatedFrom */ genericDomain,
                        subs, DomainType::Kind::Associative).get();
+}
+
+const DomainType* DomainType::getWithRuntimeType(Context* context,
+                                                 const DomainType* domainType,
+                                                 const RuntimeType* runtimeType) {
+  CHPL_ASSERT(runtimeType != nullptr);
+  auto rttQt = QualifiedType(QualifiedType::TYPE, runtimeType);
+  auto subs = domainType->substitutions();
+  subs.emplace(runtimeTypeId, rttQt);
+
+  const DomainType* instantiatedFrom = nullptr;
+  if (auto sourceInstFrom = domainType->instantiatedFromCompositeType()) {
+    CHPL_ASSERT(sourceInstFrom->isDomainType());
+    instantiatedFrom = sourceInstFrom->toDomainType();
+  }
+
+  return getDomainType(context, domainType->id(), domainType->name(),
+                       instantiatedFrom, std::move(subs),
+                       domainType->kind()).get();
 }
 
 const QualifiedType& DomainType::getDefaultDistType(Context* context) {

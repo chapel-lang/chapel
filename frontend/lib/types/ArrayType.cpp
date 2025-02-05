@@ -19,6 +19,7 @@
 
 #include "chpl/types/ArrayType.h"
 
+#include "chpl/types/RuntimeType.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
@@ -30,6 +31,7 @@ namespace types {
 
 const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
 const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
+const ID ArrayType::runtimeTypeId = ID(UniqueString(), 2, 0);
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -105,6 +107,24 @@ ArrayType::getArrayType(Context* context,
   auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
+}
+
+const ArrayType* ArrayType::getWithRuntimeType(Context* context,
+                                               const ArrayType* arrayType,
+                                               const RuntimeType* runtimeType) {
+  CHPL_ASSERT(runtimeType != nullptr);
+  auto rttQt = QualifiedType(QualifiedType::TYPE, runtimeType);
+  auto subs = arrayType->substitutions();
+  subs.emplace(runtimeTypeId, rttQt);
+
+  const ArrayType* instantiatedFrom = nullptr;
+  if (auto sourceInstFrom = arrayType->instantiatedFromCompositeType()) {
+    CHPL_ASSERT(sourceInstFrom->isArrayType());
+    instantiatedFrom = sourceInstFrom->toArrayType();
+  }
+
+  return getArrayTypeQuery(context, arrayType->id(), arrayType->name(),
+                           instantiatedFrom, subs).get();
 }
 
 

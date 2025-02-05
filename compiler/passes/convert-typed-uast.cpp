@@ -1464,6 +1464,9 @@ Type* TConverter::helpConvertType(const types::Type* t) {
     case typetags::DomainType:
        CHPL_UNIMPL("convert domain type");
       return dtUnknown; // TODO
+    case typetags::RuntimeType:
+       CHPL_UNIMPL("convert runtime type");
+      return dtUnknown; // TODO
 
     case typetags::BasicClassType:
       return helpConvertBasicClassType(t->toBasicClassType());

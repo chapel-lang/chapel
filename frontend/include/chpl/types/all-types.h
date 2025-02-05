@@ -50,6 +50,7 @@
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/RealType.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/types/RuntimeType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/Type.h"
