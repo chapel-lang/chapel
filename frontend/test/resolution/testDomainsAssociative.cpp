@@ -50,6 +50,9 @@ module M {
   param rk = d.isRectangular();
   param ak = d.isAssociative();
 
+  type rttI = __primitive("get runtime type field", d, "idxType");
+  param rttS = __primitive("get runtime type field", d, "parSafe");
+
   var p = d.pid;
 
   for loopI in d {
@@ -85,7 +88,10 @@ module M {
   auto fullIndexType = findVarType(m, rr, "i");
   assert(findVarType(m, rr, "ig") == fullIndexType);
 
+  assert(findVarType(m, rr, "rttI").type() == fullIndexType.type());
+
   ensureParamBool(findVarType(m, rr, "s"), parSafe);
+  ensureParamBool(findVarType(m, rr, "rttS"), parSafe);
 
   ensureParamBool(findVarType(m, rr, "rk"), false);
 
