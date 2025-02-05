@@ -503,7 +503,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
       if (auto ty = rhsType.type()) {
         auto ct = ty->toClassType();
         // Enforced during type resolution
-        assert(ct);
+        CHPL_ASSERT(ct);
 
         rhsType = QualifiedType(
             rhsType.kind(),
