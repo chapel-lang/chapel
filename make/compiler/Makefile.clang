@@ -193,10 +193,11 @@ WARN_CXXFLAGS += -Wno-deprecated-declarations
 endif
 
 #
-# Don't warn for deprecated declarations with clang 18
+# Don't warn for deprecated declarations with clang 18 or 19
 # https://github.com/llvm/llvm-project/issues/76515
 #
 COMP_CXXFLAGS += $(shell test $(CLANG_VER) -eq 18 && echo -Wno-deprecated-declarations)
+COMP_CXXFLAGS += $(shell test $(CLANG_VER) -eq 19 && echo -Wno-deprecated-declarations)
 
 endif
 
