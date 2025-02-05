@@ -1822,7 +1822,7 @@ static void test24() {
       module M {
         class R { }
         proc test() {
-          var y : unmanaged R? = new unmanaged R();
+          var y : unmanaged R? = new unmanaged R?();
           if var x = y {
             x;
           }
@@ -1830,7 +1830,7 @@ static void test24() {
       }
     )"""",
     {
-      {AssociatedAction::NEW_INIT, "M.test@6",    ""},
+      {AssociatedAction::NEW_INIT, "M.test@7",    ""},
       {AssociatedAction::ASSIGN,   "x",           ""},
     });
 }
