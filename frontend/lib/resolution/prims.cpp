@@ -461,32 +461,80 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
   return QualifiedType();
 }
 
-static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
-  // Note: this is slightly different semantically from the primitive in
-  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
-  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
-  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
-
-  if (ci.numActuals() != 2) return QualifiedType();
+static bool getTypeAndFieldName(Context* context,
+                                const CallInfo& ci,
+                                const CompositeType*& outType,
+                                UniqueString& outFieldName) {
+  if (ci.numActuals() != 2) return false;
 
   auto typeActualQt = ci.actual(0).type();
   auto fieldActualQt = ci.actual(1).type();
 
   if (!typeActualQt.type() ||
       !fieldActualQt.isParam() || !fieldActualQt.type() || !fieldActualQt.param()) {
-    return QualifiedType();
+    return false;
   }
 
   auto compositeType = typeActualQt.type()->getCompositeType();
   auto fieldNameParam = fieldActualQt.param()->toStringParam();
 
   if (!compositeType || !fieldNameParam) {
+    return false;
+  }
+
+  outType = compositeType;
+  outFieldName = fieldNameParam->value();
+  return true;
+}
+
+static QualifiedType primGetRuntimeTypeField(Context* context,
+                                             const CallInfo& ci) {
+  const CompositeType* compositeType;
+  UniqueString fieldName;
+
+  if (!getTypeAndFieldName(context, ci, compositeType, fieldName)) {
+    return QualifiedType();
+  }
+
+  const RuntimeType* rtt = nullptr;
+  if (auto dt = compositeType->toDomainType()) {
+    if (auto domainRtt = dt->runtimeType().type()) {
+      CHPL_ASSERT(domainRtt->isRuntimeType());
+      rtt = domainRtt->toRuntimeType();
+    }
+  } else if (auto at = compositeType->toArrayType()) {
+    if (auto arrayRtt = at->runtimeType().type()) {
+      CHPL_ASSERT(arrayRtt->isRuntimeType());
+      rtt = arrayRtt->toRuntimeType();
+    }
+  }
+
+  if (!rtt) return QualifiedType();
+
+  for (int i = 0; i < rtt->initializer()->numFormals(); i++) {
+    if (rtt->initializer()->formalName(i) == fieldName) {
+      return rtt->initializer()->formalType(i);
+    }
+  }
+
+  return QualifiedType();
+}
+
+static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
+  // Note: this is slightly different semantically from the primitive in
+  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
+  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
+  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
+
+  const CompositeType* compositeType;
+  UniqueString fieldName;
+  if (!getTypeAndFieldName(context, ci, compositeType, fieldName)) {
     return QualifiedType();
   }
 
   auto& fields = fieldsForTypeDecl(context, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
   for (int i = 0; fields.numFields(); i++) {
-    if (fields.fieldName(i) == fieldNameParam->value()) {
+    if (fields.fieldName(i) == fieldName) {
       auto returnType = fields.fieldType(i).type();
       return QualifiedType(QualifiedType::TYPE, returnType);
     }
@@ -1780,7 +1828,13 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_GET_RUNTIME_TYPE_FIELD:
+      type = primGetRuntimeTypeField(context, ci);
+      break;
+
     case PRIM_GET_VISIBLE_SYMBOLS:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_ZIP:
