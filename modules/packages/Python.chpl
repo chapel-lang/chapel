@@ -2052,6 +2052,10 @@ module Python {
     writer.write(this:string);
 
   @chpldoc.nodoc
+  proc NoneType.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
   module CWChar {
     require "wchar.h";
     extern "wchar_t" type c_wchar;
