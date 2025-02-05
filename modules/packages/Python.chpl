@@ -3028,7 +3028,6 @@ module Python {
   @chpldoc.nodoc
   proc isSupportedArrayType(arr) param : bool {
     return isArrayType(arr.type) &&
-           arr.rank == 1 &&
            arr.idxType == int &&
            arr.isDefaultRectangular();
   }
@@ -3087,6 +3086,7 @@ module Python {
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
       where !isSupportedArrayType(arr) {
+      super.init(interpreter, nil: PyObjectPtr, isOwned=false);
       compilerError("Only 1D local rectangular arrays are currently supported");
       this.eltType = nothing;
     }
@@ -3725,16 +3725,34 @@ module Python {
       param externalName = "createArray" + suffix;
       extern externalName
       proc createPyArray(arr: c_ptr(void),
-                         size: Py_ssize_t, isOwned: bool): PyObjectPtr;
+                         size: Py_ssize_t,
+                         ndim: Py_ssize_t,
+                         shape: c_ptr(Py_ssize_t),
+                         isOwned: bool): PyObjectPtr;
+
+      var shape = arr.shape;
+      var pyShape = allocate(Py_ssize_t, arr.rank);
+      for i in 0..# arr.rank {
+        pyShape(i) = shape(i).safeCast(Py_ssize_t);
+      }
+
 
       if isArrayType(T) {
         var sub = allocate(PyObjectPtr, arr.size);
         for i in 0..#arr.size {
           sub(i) = createArray(arr(i));
         }
-        return createPyArray(sub, arr.size.safeCast(Py_ssize_t), true);
+        return createPyArray(sub,
+                             arr.size.safeCast(Py_ssize_t),
+                             arr.rank.safeCast(Py_ssize_t),
+                             pyShape,
+                             true);
       } else {
-        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t), false);
+        return createPyArray(c_ptrTo(arr),
+                             arr.size.safeCast(Py_ssize_t),
+                             arr.rank.safeCast(Py_ssize_t),
+                             pyShape,
+                             false);
       }
 
     }
