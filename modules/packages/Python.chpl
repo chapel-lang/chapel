@@ -1740,6 +1740,7 @@ module Python {
       this.check();
       return interpreter.fromPython(T, item);
     }
+    @chpldoc.nodoc
     proc getItem(idx: int): owned Value throws do
       return this.getItem(owned Value, idx);
 
