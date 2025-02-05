@@ -1579,14 +1579,14 @@ static void test20a() {
         proc C.deinit() { }
 
         proc foo() {
-          var x : owned C = new C();
+          var x = new C();
           return x;
         }
       }
     )"""",
     {
-      {AssociatedAction::NEW_INIT, "M.foo@5",          ""},
-      {AssociatedAction::DEINIT,   "M.foo@9",          "x"},
+      {AssociatedAction::NEW_INIT, "M.foo@2",          ""},
+      {AssociatedAction::DEINIT,   "M.foo@6",          "x"},
     });
 }
 
@@ -1605,15 +1605,15 @@ static void test20a() {
 /*         proc C.deinit() { } */
 
 /*         proc foo() { */
-/*           var x : owned C = new C(3); */
+/*           var x = new C(3); */
 /*           return x; */
 /*         } */
 /*       } */
 /*     )"""", */
 /*     { */
-/*       {AssociatedAction::NEW_INIT,   "M.foo@6",    ""}, */
-/*       {AssociatedAction::INIT_OTHER, "x",          ""}, */
-/*       {AssociatedAction::DEINIT,     "M.foo@10",   "x"}, */
+/*       {AssociatedAction::NEW_INIT,   "M.foo@3",    ""},  */
+/*       {AssociatedAction::INIT_OTHER, "x",          ""},  */
+/*       {AssociatedAction::DEINIT,     "M.foo@7",    "x"}, */
 /*     }); */
 /* } */
 
@@ -1628,14 +1628,14 @@ static void test20c() {
         proc C.deinit() { }
 
         proc foo() {
-          var x : owned C? = new C();
+          var x = new C?();
           return x;
         }
       }
     )"""",
     {
-      {AssociatedAction::NEW_INIT,   "M.foo@6",    ""},
-      {AssociatedAction::DEINIT,     "M.foo@10",   "x"},
+      {AssociatedAction::NEW_INIT,   "M.foo@3",    ""},
+      {AssociatedAction::DEINIT,     "M.foo@7",    "x"},
     });
 }
 
@@ -1815,6 +1815,26 @@ static void test23d() {
       });
 }
 
+// Test if var declaration
+static void test24() {
+  testActions("test24",
+    R""""(
+      module M {
+        class R { }
+        proc test() {
+          var y = new unmanaged R?();
+          if var x = y {
+            x;
+          }
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.test@3",    ""},
+      {AssociatedAction::ASSIGN,   "x",           ""},
+    });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1910,6 +1930,8 @@ int main() {
   test23b();
   test23c();
   test23d();
+
+  test24();
 
   return 0;
 }

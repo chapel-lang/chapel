@@ -479,8 +479,11 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
 
 void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
-                                   const QualifiedType& rhsType,
+                                   const QualifiedType& rhsTypeIn,
                                    RV& rv) {
+  VarFrame* frame = currentFrame();
+
+  auto rhsType = rhsTypeIn;
   if (lhsType.isUnknown() || lhsType.isErroneousType() ||
       rhsType.isUnknown() || rhsType.isErroneousType()) {
     return;
@@ -491,6 +494,21 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
       // Tuple unpacking assignment, handled directly by Resolver
       // (a, b, c) = foo();
       return;
+    }
+  }
+  // In an 'if var' decl, resolve assign as though the RHS is non-nil.
+  // We'll verify it is at runtime.
+  if (auto conditional = frame->scopeAst->toConditional()) {
+    if (ast->id() == conditional->condition()->id()) {
+      if (auto ty = rhsType.type()) {
+        auto ct = ty->toClassType();
+        // Enforced during type resolution
+        CHPL_ASSERT(ct);
+
+        rhsType = QualifiedType(
+            rhsType.kind(),
+            ct->withDecorator(context, ct->decorator().addNonNil()));
+      }
     }
   }
 

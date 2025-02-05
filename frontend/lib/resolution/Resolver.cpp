@@ -3236,13 +3236,14 @@ bool Resolver::enter(const uast::Conditional* cond) {
     if (!reVar.type().isUnknown()) {
       auto t = reVar.type().type();
 
-      // Resolve as non-nil borrowed class
       if (auto ct = t->toClassType()) {
         if (auto basicClass = ct->basicClassType()) {
-          auto newClassType = ClassType::get(context,
-              basicClass,
-              /* no manager for borrowed class */ nullptr,
-              ct->decorator().toBorrowed().addNonNil());
+          // Resolve variable type as the non-nil variant of the init type.
+          // Keep management if it was borrowed or unmanaged, otherwise borrow.
+          auto dec = ct->decorator();
+          dec = (dec.isUnmanaged() ? dec : dec.toBorrowed()).addNonNil();
+          auto newClassType = ClassType::get(context, basicClass,
+                                             /* manager */ nullptr, dec);
           reVar.setType(QualifiedType(reVar.type().kind(), newClassType));
         }
       } else {
