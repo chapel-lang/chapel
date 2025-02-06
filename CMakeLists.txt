@@ -405,6 +405,30 @@ if (${CHPL_OFFICIAL_RELEASE})
 else()
   set(RELEASE_FLAG "")
 endif()
+
+# Gather files that are sensitive to version number changes and update them.
+# Check if they exist here because in the release tarball, some of these
+# files will not be present.
+set(VERSION_FILES "")
+list(APPEND VERSION_FILES
+  "${SRC_DIR}/doc/rst/conf.py"
+  "${SRC_DIR}/doc/rst/language/archivedSpecs.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/chplenv.rst"
+  "${SRC_DIR}/man/confchpl.rst"
+  "${SRC_DIR}/man/confchpldoc.rst"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh"
+  "${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart"
+)
+
+set(EXISTING_VERSION_FILES "")
+foreach(FILE ${VERSION_FILES})
+  if(EXISTS ${FILE})
+    list(APPEND EXISTING_VERSION_FILES ${FILE})
+  endif()
+endforeach()
+
 add_custom_target(update-release-and-version-info ALL
   COMMAND ${CHPL_CMAKE_PYTHON}
           ${SRC_DIR}/util/config/update-release-and-version-info
@@ -415,15 +439,7 @@ add_custom_target(update-release-and-version-info ALL
           ${CHPL_PREV_MINOR_VERSION}
           ${CHPL_PREV_PATCH_VERSION}
           "--files"
-          ${SRC_DIR}/doc/rst/conf.py
-          ${SRC_DIR}/doc/rst/language/archivedSpecs.rst
-          ${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst
-          ${SRC_DIR}/doc/rst/usingchapel/chplenv.rst
-          ${SRC_DIR}/man/confchpl.rst
-          ${SRC_DIR}/man/confchpldoc.rst
-          ${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh
-          ${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh
-          ${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart
+          ${EXISTING_VERSION_FILES}
           ${RELEASE_FLAG}
   COMMENT "checking sensitive files for version changes..."
   VERBATIM)
