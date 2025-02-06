@@ -122,8 +122,8 @@ class ID final {
     which means this is an ID for something that defines a new symbol
     scope.
    */
-   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
-                                                      postOrderId_ == ID_GEN_START; }
+   bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
+                                               postOrderId_ == ID_GEN_START; }
 
   /**
     Some IDs are introduced during compilation and don't represent

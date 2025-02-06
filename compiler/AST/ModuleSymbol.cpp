@@ -54,10 +54,13 @@ static std::vector<ModuleSymbol*>  sTopLevelModules;
 *                                                                             *
 ************************************** | *************************************/
 
-void ModuleSymbol::addTopLevelModule(ModuleSymbol* module) {
-  sTopLevelModules.push_back(module);
-
-  theProgram->block->insertAtTail(new DefExpr(module));
+void ModuleSymbol::addTopLevelModule(ModuleSymbol* mod) {
+  if (!mod->defPoint) {
+    sTopLevelModules.push_back(mod);
+    theProgram->block->insertAtTail(new DefExpr(mod));
+  } else {
+    INT_ASSERT(mod->defPoint->parentSymbol == theProgram);
+  }
 }
 
 void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
