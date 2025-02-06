@@ -6223,37 +6223,37 @@ static bool handleArrayTypeExpr(Resolver& rv,
   QualifiedType domainType;
   auto iterandExpr = loop->iterand();
   auto iterandType = rv.byPostorder.byAst(iterandExpr).type();
-  if (!iterandType.isUnknownOrErroneous()) {
-    if (iterandType.type()->isDomainType()) {
-      domainType = iterandType;
-    } else if (iterandType.type()->isRecordType() &&
-               iterandType.type()->toRecordType()->id() ==
-                   CompositeType::getRangeType(rv.context)->id()) {
-      // Convert range into domain.
-      // Note this is only hit for a plain old range, not a comma-separated list
-      // of them which is already recognized as a domain.
-      // TODO: This code is largely copied from Domain decl resolution, can
-      // likely be refactored.
+  if (iterandType.isUnknown() || iterandType.isTypeQuery()) {
+    domainType = iterandType;
+  } else if (iterandType.type()->isDomainType()) {
+    domainType = iterandType;
+  } else if (iterandType.type()->isRecordType() &&
+             iterandType.type()->toRecordType()->id() ==
+                 CompositeType::getRangeType(rv.context)->id()) {
+    // Convert range into domain.
+    // Note this is only hit for a plain old range, not a comma-separated list
+    // of them which is already recognized as a domain.
+    // TODO: This code is largely copied from Domain decl resolution, can
+    // likely be refactored.
 
-      std::vector<CallInfoActual> actuals;
-      actuals.emplace_back(iterandType, UniqueString());
-      auto ci = CallInfo(
-          /* name */ UniqueString::get(rv.context, "chpl__ensureDomainExpr"),
-          /* calledType */ QualifiedType(),
-          /* isMethodCall */ false,
-          /* hasQuestionArg */ false,
-          /* isParenless */ false, actuals);
-      auto scope = rv.scopeStack.back();
-      auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-      auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
-      if (!c.exprType().isUnknownOrErroneous()) {
-        domainType = c.exprType();
-      }
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(iterandType, UniqueString());
+    auto ci = CallInfo(
+        /* name */ UniqueString::get(rv.context, "chpl__ensureDomainExpr"),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ false,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false, actuals);
+    auto scope = rv.scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    if (!c.exprType().isUnknownOrErroneous()) {
+      domainType = c.exprType();
     }
   }
   // TODO: allow empty domain expression if this is a formal type expr or a
   // return/yield type expr
-  if (domainType.isUnknown()) {
+  if (domainType.isUnknown() && !domainType.isTypeQuery()) {
     rv.context->error(iterandExpr, "Invalid domain expression for array type");
     re.setType(genericArrayType);
     return true;
@@ -6261,9 +6261,10 @@ static bool handleArrayTypeExpr(Resolver& rv,
 
   // Assemble the array type
   auto arrayType = genericArrayType;
-  if (domainType.type() == DomainType::getGenericDomainType(rv.context)) {
+  if (domainType.isTypeQuery() ||
+      domainType.type() == DomainType::getGenericDomainType(rv.context)) {
     // Preserve eltType info, if we have it.
-    if (!eltType.isUnknownOrErroneous()) {
+    if (!eltType.isUnknownOrErroneous() && !eltType.isTypeQuery()) {
       auto domainTypeAsType =
           QualifiedType(QualifiedType::TYPE, domainType.type());
       arrayType = QualifiedType(
