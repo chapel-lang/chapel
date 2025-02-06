@@ -6221,9 +6221,13 @@ static bool handleArrayTypeExpr(Resolver& rv,
 
   // Determine the domain type
   QualifiedType domainType;
+  const auto genericDomainType = QualifiedType(
+      QualifiedType::TYPE, DomainType::getGenericDomainType(rv.context));
   auto iterandExpr = loop->iterand();
   auto iterandType = rv.byPostorder.byAst(iterandExpr).type();
-  if (iterandType.isUnknown() || iterandType.isTypeQuery()) {
+  if (iterandExpr->isDomain() && iterandExpr->toDomain()->numExprs() == 0) {
+    domainType = genericDomainType;
+  } else if (iterandType.isUnknown() || iterandType.isTypeQuery()) {
     domainType = iterandType;
   } else if (iterandType.type()->isDomainType()) {
     domainType = iterandType;
@@ -6262,7 +6266,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   // Assemble the array type
   auto arrayType = genericArrayType;
   if (domainType.isTypeQuery() ||
-      domainType.type() == DomainType::getGenericDomainType(rv.context)) {
+      domainType.type() == genericDomainType.type()) {
     // Preserve eltType info, if we have it.
     if (!eltType.isUnknownOrErroneous() && !eltType.isTypeQuery()) {
       auto domainTypeAsType =
