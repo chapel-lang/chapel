@@ -347,6 +347,7 @@ module Python {
   private use CTypes;
   private import List;
   private import Map;
+  private import Set;
 
   private use CPythonInterface except PyObject;
   private import this.ArrayTypes;
@@ -1676,7 +1677,7 @@ module Python {
   }
 
 
-  // TODO: create adapters for other common Python types like Set, Dict, Tuple
+  // TODO: create adapters for other common Python types like Dict, Tuple
   /*
     Represents a Python list. This provides a Chapel interface to Python lists,
     where the Python interpreter owns the list.
@@ -1722,6 +1723,56 @@ module Python {
 
     /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
+      Python.
+
+      :arg idx: The index of the item to set.
+      :arg item: The item to set.
+    */
+    proc setItem(idx: int, item: ?) throws {
+      PySequence_SetItem(this.get(),
+                     idx.safeCast(Py_ssize_t),
+                     interpreter.toPython(item));
+      this.check();
+    }
+  }
+
+  /*
+    Represents a Python set. This provides a Chapel interface to Python sets,
+    where the Python interpreter owns the set.
+  */
+  class PySet: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the set. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the set.
+    */
+    proc size: int throws {
+      var size = PySequence_Size(this.get());
+      this.check();
+      return size;
+    }
+
+    /*
+      Get an item from the set. Equivalent to calling ``obj[idx]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    proc getItem(type T, idx: int): T throws {
+      var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+      this.check();
+      return interpreter.fromPython(T, item);
+    }
+
+    /*
+      Set an item in the set. Equivalent to calling ``obj[idx] = item`` in
       Python.
 
       :arg idx: The index of the item to set.
@@ -2331,6 +2382,11 @@ module Python {
     extern proc PySet_New(): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
     extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
+    // Lydia TODO: do I need these?
+    extern proc PySet_Contains(set: PyObjectPtr, item: PyObjectPtr): c_int;
+    extern proc PySet_Discard(set: PyObjectPtr, item: PyObjectPtr): c_int;
+    extern proc PySet_Pop(set: PyObjectPtr): PyObjectPtr;
+    extern proc PySet_Clear(set: PyObjectPtr): c_int;
 
 
     /*
