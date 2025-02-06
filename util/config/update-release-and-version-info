@@ -286,91 +286,35 @@ def main():
     )
 
     args = parser.parse_args()
+    updaters = {
+        "conf.py": ConfPyUpdater,
+        "confchpl.rst": ManConfUpdater,
+        "confchpldoc.rst": ManConfUpdater,
+        "archivedSpecs.rst": ArchivedSpecUpdater,
+        "QUICKSTART.rst": QuickStartUpdater,
+        "chplenv.rst": ChplEnvUpdater,
+        "versionhelp.sh": VersionHelpUpdater,
+        "versionhelp-chpldoc.sh": VersionHelpUpdater,
+        "version.goodstart": GoodStartUpdater,
+    }
+
     for fpath in args.files:
-        # Determine which updater to use based on the file name or other criteria
-        if fpath.endswith("conf.py"):
-            updater = ConfPyUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("confchpl.rst") or fpath.endswith("confchpldoc.rst"):
-            updater = ManConfUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("archivedSpecs.rst"):
-            updater = ArchivedSpecUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("QUICKSTART.rst"):
-            updater = QuickStartUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("chplenv.rst"):
-            updater = ChplEnvUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("versionhelp.sh") or fpath.endswith(
-            "versionhelp-chpldoc.sh"
-        ):
-            updater = VersionHelpUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
-        elif fpath.endswith("version.goodstart"):
-            updater = GoodStartUpdater(
-                fpath,
-                args.major_version,
-                args.minor_version,
-                args.patch_version,
-                args.release,
-                args.prev_major_version,
-                args.prev_minor_version,
-                args.prev_patch_version,
-            )
+        for key, updater_class in updaters.items():
+            if fpath.endswith(key):
+                updater = updater_class(
+                    fpath,
+                    args.major_version,
+                    args.minor_version,
+                    args.patch_version,
+                    args.release,
+                    args.prev_major_version,
+                    args.prev_minor_version,
+                    args.prev_patch_version,
+                )
+                updater.update()
+                break
         else:
             raise ValueError("Unrecognized file name: {}".format(fpath))
-
-        updater.update()
 
 
 if __name__ == "__main__":
