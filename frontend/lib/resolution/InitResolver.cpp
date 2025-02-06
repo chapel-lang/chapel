@@ -333,6 +333,7 @@ static auto helpExtractFields(Context* context, const BasicClassType* bct, std::
                                DefaultsPolicy::IGNORE_DEFAULTS);
   CHPL_ASSERT(rf.numFields() >= 0 && (size_t) rf.numFields() >= sizeof...(names));
 
+  // TODO: error if any requested fields are not found
   typename ImplCreateNTuple<Is...>::type ret;
   for (int i = 0; i < rf.numFields(); i++) {
     ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 0) : 0), ...);
@@ -404,11 +405,14 @@ static const ArrayType* arrayTypeFromSubsHelper(
     auto baseArrRect = baseArr->parentClassType();
     CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
 
-    auto [rank, idxType, strides] = extractRectangularInfo(context, baseArrRect);
-    auto [eltType] = extractFields(context, baseArr, "eltType");
-
-    auto domain = DomainType::getRectangularType(context, instanceQt, rank,
+    // Recreate the domain type
+    auto [rank, idxType, strides] =
+        extractRectangularInfo(context, baseArrRect);
+    auto [domInstanceQt] = extractFields(context, instanceBct, "dom");
+    auto domain = DomainType::getRectangularType(context, domInstanceQt, rank,
                                                  idxType, strides);
+
+    auto [eltType] = extractFields(context, baseArr, "eltType");
     return ArrayType::getArrayType(context,
                                    instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
