@@ -976,7 +976,7 @@ module DistributedBag
       if (block.tailId + size > block.cap) {
         const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) then
-          size = distributedBagMaxSegmentCap - block.tailId - 1;
+          size = distributedBagMaxSegmentCap - block.tailId;
         lock_block.readFE();
         block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
@@ -984,7 +984,12 @@ module DistributedBag
       }
 
       // add the elements to the tail
-      for elt in elts do block.pushTail(elt);
+      var c = 0;
+      for elt in elts {
+        block.pushTail(elt);
+        c += 1;
+        if (c == size) then break;
+      }
       tail += size;
 
       // check split request
