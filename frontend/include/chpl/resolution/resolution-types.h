@@ -343,7 +343,17 @@ class UntypedFnSignature {
     return isMethod_;
   }
 
-  /** Returns true if this is an iterator */
+  /** Returns true if this is a procedure. */
+  bool isProcedure() const {
+    return kind_ == uast::Function::PROC;
+  }
+
+  /** Returns true if this is an operator. */
+  bool isOperator() const {
+    return kind_ == uast::Function::OPERATOR;
+  }
+
+  /** Returns true if this is an iterator. */
   bool isIterator() const {
     return kind_ == uast::Function::ITER;
   }
@@ -1123,6 +1133,10 @@ class TypedFnSignature {
   const types::QualifiedType& formalType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
+  }
+
+  bool isOperator() const {
+    return untypedSignature_->isOperator();
   }
 
   bool isIterator() const {
