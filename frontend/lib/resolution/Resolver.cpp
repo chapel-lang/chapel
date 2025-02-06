@@ -6255,20 +6255,20 @@ static bool handleArrayTypeExpr(Resolver& rv,
       domainType = c.exprType();
     }
   }
-  // TODO: allow empty domain expression if this is a formal type expr or a
-  // return/yield type expr
-  if (domainType.isUnknown() && !domainType.isTypeQuery()) {
-    rv.context->error(iterandExpr, "Invalid domain expression for array type");
-    re.setType(genericArrayType);
-    return true;
+  if (domainType.isUnknown()) {
+    domainType = genericDomainType;
   }
+
 
   // Assemble the array type
   auto arrayType = genericArrayType;
-  if (domainType.isTypeQuery() ||
-      domainType.type() == genericDomainType.type()) {
+  if (domainType.isErroneousType() || eltType.isErroneousType()) {
+    // Propagate error from domain or element type
+    arrayType =
+        QualifiedType(QualifiedType::TYPE, ErroneousType::get(rv.context));
+  } else if (domainType.type() == genericDomainType.type()) {
     // Preserve eltType info, if we have it.
-    if (!eltType.isUnknownOrErroneous() && !eltType.isTypeQuery()) {
+    if (!eltType.isUnknown() && !eltType.isTypeQuery()) {
       auto domainTypeAsType =
           QualifiedType(QualifiedType::TYPE, domainType.type());
       arrayType = QualifiedType(
