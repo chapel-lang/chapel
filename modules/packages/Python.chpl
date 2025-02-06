@@ -1672,31 +1672,6 @@ module Python {
               obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
     }
-
-    @chpldoc.nodoc
-    proc newInstance(const args...): PyObjectPtr throws {
-      var pyArg = packTuple((...args));
-      defer Py_DECREF(pyArg);
-      var pyRes = PyObject_Call(this.get(), pyArg, nil);
-      this.check();
-      return pyRes;
-    }
-    @chpldoc.nodoc
-    proc newInstance(): PyObjectPtr throws {
-      var pyRes = PyObject_CallNoArgs(this.get());
-      this.check();
-      return pyRes;
-    }
-
-    /*
-      Create a new instance of a Python class
-    */
-    proc this(const args...): owned Value throws do
-      return new Value(interpreter, newInstance((...args)), isOwned=true);
-    @chpldoc.nodoc
-    proc this(): owned Value throws do
-      return new Value(interpreter, newInstance(), isOwned=true);
-
   }
 
 
