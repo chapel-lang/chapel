@@ -34,6 +34,10 @@
 
 static void testArray(std::string domainType,
                       std::string eltType) {
+  std::string arrayText;
+  arrayText += "[" + domainType + "] " + eltType;
+  printf("Testing: %s\n", arrayText.c_str());
+
   Context* context = buildStdContext();
   ErrorGuard guard(context);
 
@@ -125,10 +129,6 @@ module M {
   }
 
   assert(guard.realizeErrors() == 0);
-
-  std::string arrayText;
-  arrayText += "[" + domainType + "] " + eltType;
-  printf("Success: %s\n", arrayText.c_str());
 }
 
 int main() {
