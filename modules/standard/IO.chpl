@@ -9705,6 +9705,9 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the ``fileWriter`` as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments could be
                      written.
@@ -9713,23 +9716,20 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
 pragma "fn exempt instantiation limit"
-inline proc fileWriter.write(const args ...?k) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    for param i in 0..k-1 {
-      if serializerType != nothing {
-        if serializerType == binarySerializer {
-          warnBinary(args(i).type, 2);
-        }
-        this._serializeOne(args(i), origLocale);
-      } else {
-        try _writeOne(_iokind.dynamic, args(i), origLocale);
-      }
-    }
-  }
+inline proc fileWriter.write(const args ...?k, sep: string = "") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(args, none, sep);
 }
+
+pragma "fn exempt instantiation limit"
+@chpldoc.nodoc
+inline proc fileWriter.write(const args ...?k) throws {
+  this.writeHelper(args, none, none);
+}
+
 
 // documented in varargs version
 @chpldoc.nodoc
@@ -9747,6 +9747,9 @@ proc fileWriter.writeln() throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the fileWriter as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments
                      could be written.
@@ -9755,8 +9758,40 @@ proc fileWriter.writeln() throws {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
+proc fileWriter.writeln(const args ...?k, sep:string="") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(args, new chpl_ioNewline(), sep);
+}
+
+@chpldoc.nodoc
 proc fileWriter.writeln(const args ...?k) throws {
-  try this.write((...args), new chpl_ioNewline());
+  this.writeHelper(args, new chpl_ioNewline(), none);
+}
+
+@chpldoc.nodoc
+proc fileWriter.writeHelper(const args, endl: ?endlType, sep: ?sepType) throws {
+  const origLocale = this.getLocaleOfIoRequest();
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for param i in 0..<args.size {
+      if i != 0 && sepType != nothing then
+        try _writeOne(_iokind.dynamic, sep, origLocale);
+
+      if serializerType != nothing {
+        if serializerType == binarySerializer {
+          warnBinary(args(i).type, 2);
+        }
+        this._serializeOne(args(i), origLocale);
+      } else {
+        try _writeOne(_iokind.dynamic, args(i), origLocale);
+      }
+    }
+    if endlType != nothing then
+      try _writeOne(_iokind.dynamic, endl, origLocale);
+  }
 }
 
 /*
