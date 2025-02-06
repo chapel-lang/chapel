@@ -17,36 +17,36 @@ proc main() {
 
   // create the model
   var model = myModelClass();
-  var input_tensor = tensor(owned Value, [[1.0,]], kwargs=["requires_grad" => false]);
+  var input_tensor = tensor([[1.0,]], kwargs=["requires_grad" => false]);
   writeln("Input tensor: ", input_tensor);
 
   // init model weights to 0.9
   {
     var params = model.call(list(owned Value?), "parameters");
     for p in params {
-      var data_ = p!.getAttr(owned Value, "data");
-      data_.call(NoneType, "fill_", 0.9);
+      var data_ = p!.getAttr("data");
+      data_.call("fill_", 0.9);
     }
   }
 
   // run model
-  var pred = model(owned Value, input_tensor);
+  var pred = model(input_tensor);
 
   // compute the loss
   var loss_fn = MSELoss();
-  var target = tensor(owned Value, [[2.0,]]);
+  var target = tensor([[2.0,]]);
   writeln("Target: ", target);
-  var loss = loss_fn(owned Value, pred, target);
-  loss.call(NoneType, "backward");
+  var loss = loss_fn(pred, target);
+  loss.call("backward");
 
   // update the model's parameters
   var learning_rate = 0.01;
   var params = model.call(list(owned Value?), "parameters");
   for p in params {
-    var data = p!.getAttr(owned Value, "data");
-    var grad = p!.getAttr(owned Value, "grad");
-    var temp = grad.call(owned Value, "__mul__", learning_rate);
-    var temp2 = data.call(owned Value, "__sub__", temp);
+    var data = p!.getAttr("data");
+    var grad = p!.getAttr("grad");
+    var temp = grad.call("__mul__", learning_rate);
+    var temp2 = data.call("__sub__", temp);
     p!.setAttr("data", temp2);
   }
 

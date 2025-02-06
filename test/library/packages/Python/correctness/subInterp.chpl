@@ -20,7 +20,7 @@ proc main() {
     var m = new Module(localInterp, '__empty__', code);
     var f = new Function(m, 'hello');
     for i in 1..#itersPerTask {
-      f(NoneType, tid, i);
+      f(tid, i);
     }
   }
 

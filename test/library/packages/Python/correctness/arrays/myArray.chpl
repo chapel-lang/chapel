@@ -43,7 +43,7 @@ proc testArray(type t, const testArr) {
   IO.stdout.flush();
   var pyCode = new Module(interp, '__empty__', pythonCode);
   var func = new Function(pyCode, 'loop');
-  func(NoneType, pyArr);
+  func(pyArr);
   IO.stdout.flush();
 
   writeln("from chapel: ", arr);

@@ -30,7 +30,7 @@ proc main() {
   var res: [arr.domain] real;
   {
     var pyRes = new Array(interp, res);
-    gradModifyArg(NoneType, pyArr, pyRes);
+    gradModifyArg(pyArr, pyRes);
   }
   write("gradModifyArg: ", res);
   write(" dom: ", res.domain);

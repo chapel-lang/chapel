@@ -118,7 +118,7 @@
          var subInterpreter = new SubInterpreter(interpreter);
          var m = new Module(subInterpreter, 'myMod', code);
          var hello = new Function(m, 'hello');
-         hello(NoneType);
+         hello();
        }
      }
 
@@ -325,8 +325,8 @@
      writeln("Let's call some Python!");
      IO.stdout.flush(); // flush the Chapel output buffer before calling Python
 
-     func(NoneType, "Hello, World!");
-     func(NoneType, "Goodbye, World!");
+     func("Hello, World!");
+     func("Goodbye, World!");
      interp.flush(); // flush the Python output buffer before calling Chapel again
 
      writeln("Back to Chapel");
@@ -1375,7 +1375,14 @@ module Python {
       :arg args: The arguments to pass to the callable.
       :arg kwargs: The keyword arguments to pass to the callable.
     */
+    pragma "docs only"
+    proc this(type retType = owned Value,
+              const args...,
+              kwargs:?=none): retType throws
+              where kwargs.isAssociative() do compilerError("docs only");
+
     pragma "last resort"
+    @chpldoc.nodoc
     proc this(type retType,
               const args...,
               kwargs:?=none): retType throws
@@ -1386,12 +1393,29 @@ module Python {
     }
     pragma "last resort"
     @chpldoc.nodoc
+    proc this(const args...,
+              kwargs:?=none): owned Value throws
+              where kwargs.isAssociative() {
+      var pyArg = this.packTuple((...args));
+      defer Py_DECREF(pyArg);
+      return callInternal(owned Value, pyArg, kwargs);
+    }
+    pragma "last resort"
+    @chpldoc.nodoc
     proc this(type retType,
               kwargs:?=none): retType throws where kwargs.isAssociative() {
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
       return callInternal(retType, pyArgs, kwargs);
     }
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc this(kwargs:?=none): owned Value throws where kwargs.isAssociative() {
+      var pyArgs = Py_BuildValue("()");
+      defer Py_DECREF(pyArgs);
+      return callInternal(owned Value, pyArgs, kwargs);
+    }
+
     @chpldoc.nodoc
     proc this(type retType, const args...): retType throws {
       var pyArg = this.packTuple((...args));
@@ -1399,7 +1423,10 @@ module Python {
       return callInternal(retType, pyArg, none);
     }
     @chpldoc.nodoc
-    proc this(type retType): retType throws {
+    proc this(const args...): owned Value throws do
+      return this(owned Value, (...args));
+    @chpldoc.nodoc
+    proc this(type retType = owned Value): retType throws {
       var pyRes = PyObject_CallNoArgs(this.get());
       this.check();
 
@@ -1441,6 +1468,11 @@ module Python {
       :arg t: The Chapel type of the value to return.
       :arg attr: The name of the attribute/field to access.
     */
+    pragma "docs only"
+    proc getAttr(type t=owned Value, attr: string): t throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
     proc getAttr(type t, attr: string): t throws {
       var pyAttr = PyObject_GetAttrString(this.get(), attr.c_str());
       interpreter.checkException();
@@ -1448,6 +1480,10 @@ module Python {
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
+    @chpldoc.nodoc
+    proc getAttr(attr: string): owned Value throws do
+      return this.getAttr(owned Value, attr);
+
 
     /*
       Set an attribute/field of this Python object. This is equivalent to
@@ -1472,6 +1508,11 @@ module Python {
       :arg method: The name of the method to call.
       :arg args: The arguments to pass to the method.
     */
+    pragma "docs only"
+    proc call(type retType = owned Value, method: string, const args...): retType throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
     proc call(type retType, method: string, const args...): retType throws {
       var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
@@ -1490,6 +1531,10 @@ module Python {
       return res;
     }
     @chpldoc.nodoc
+    proc call(method: string, const args...): owned Value throws do
+      return this.call(owned Value, method, (...args));
+
+    @chpldoc.nodoc
     proc call(type retType, method: string): retType throws {
       var methodName = interpreter.toPython(method);
       defer Py_DECREF(methodName);
@@ -1500,6 +1545,11 @@ module Python {
       var res = interpreter.fromPython(retType, pyRes);
       return res;
     }
+    @chpldoc.nodoc
+    proc call(method: string): owned Value throws do
+      return this.call(owned Value, method);
+
+    // TODO: call should support kwargs
   }
 
   /*
@@ -1623,31 +1673,6 @@ module Python {
               obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
     }
-
-    @chpldoc.nodoc
-    proc newInstance(const args...): PyObjectPtr throws {
-      var pyArg = packTuple((...args));
-      defer Py_DECREF(pyArg);
-      var pyRes = PyObject_Call(this.get(), pyArg, nil);
-      this.check();
-      return pyRes;
-    }
-    @chpldoc.nodoc
-    proc newInstance(): PyObjectPtr throws {
-      var pyRes = PyObject_CallNoArgs(this.get());
-      this.check();
-      return pyRes;
-    }
-
-    /*
-      Create a new instance of a Python class
-    */
-    proc this(const args...): owned Value throws do
-      return new Value(interpreter, newInstance((...args)), isOwned=true);
-    @chpldoc.nodoc
-    proc this(): owned Value throws do
-      return new Value(interpreter, newInstance(), isOwned=true);
-
   }
 
 
@@ -1681,11 +1706,20 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
+    pragma "docs only"
+    proc getItem(type T = owned Value, idx: int): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
     proc getItem(type T, idx: int): T throws {
       var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
+    @chpldoc.nodoc
+    proc getItem(idx: int): owned Value throws do
+      return this.getItem(owned Value, idx);
+
     /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
       Python.
@@ -2050,6 +2084,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc Array.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  proc NoneType.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc

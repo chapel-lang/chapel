@@ -7,6 +7,7 @@ proc test_no_args(mod: borrowed Module) {
   var func = new Function(mod, funcName);
 
   func(NoneType);
+  func();
 
   // error: wrong return type
   try { func(int); }
@@ -23,6 +24,7 @@ proc test_one_arg(mod: borrowed Module) {
   var func = new Function(mod, funcName);
 
   func(NoneType, 1);
+  func(2);
 
   // error: not enough args
   try { func(NoneType); }
@@ -39,8 +41,8 @@ proc test_two_args(mod: borrowed Module) {
   var func = new Function(mod, funcName);
 
   func(NoneType, 1, 2);
-  func(NoneType, "hello", "world");
-  func(NoneType, None, None);
+  func("hello", "world");
+  func(None, None);
 
   // error: not enough args
   try { func(NoneType, 3); }
@@ -58,12 +60,13 @@ proc test_varargs(mod: borrowed Module) {
   var func = new Function(mod, funcName);
 
   func(NoneType);
-  func(NoneType, 1);
-  func(NoneType, 1, 2);
-  func(NoneType, 1, 2, 3);
-  func(NoneType, 1, 2, 3, [1,2,3,]);
-  func(NoneType, 1, 2, 3, [1,2,3,], 4);
+  func(1);
+  func(1, 2);
+  func(1, 2, 3);
+  func(1, 2, 3, [1,2,3,]);
+  func(1, 2, 3, [1,2,3,], 4);
   func(NoneType, 1, 2, 3, [1,2,3,], 4, ["key" => "value", "key2" => "value2"]);
+  func(1, 2, 3, [1,2,3,], 4, ["key" => "value", "key2" => "value2"]);
 }
 proc test_one_arg_with_default(mod: borrowed Module) {
   const funcName = "one_arg_with_default";
@@ -71,6 +74,8 @@ proc test_one_arg_with_default(mod: borrowed Module) {
 
   func(NoneType);
   func(NoneType, 7);
+  func();
+  func(7);
 }
 proc test_three_args_with_default(mod: borrowed Module) {
   const funcName = "three_args_with_default";
@@ -80,6 +85,7 @@ proc test_three_args_with_default(mod: borrowed Module) {
   func(NoneType, 8, 9);
   func(NoneType, 8, 9, 10);
   func(NoneType, 8, kwargs=["c" => 10]);
+  func(8, kwargs=["c" => 10]);
 }
 proc test_three_args_with_default_and_kwargs(mod: borrowed Module) {
   const funcName = "three_args_with_default_and_kwargs";
@@ -88,7 +94,7 @@ proc test_three_args_with_default_and_kwargs(mod: borrowed Module) {
   func(NoneType, 8);
   func(NoneType, 8, 9);
   func(NoneType, 8, 9, 10);
-  func(NoneType, 8, kwargs=["b" => 10]);
+  func(8, kwargs=["b" => 10]);
   func(NoneType, 8, kwargs=["c" => 11, "abc" => 12]);
 }
 proc test_varargs_and_kwargs(mod: borrowed Module) {
@@ -99,6 +105,7 @@ proc test_varargs_and_kwargs(mod: borrowed Module) {
   func(NoneType, 1);
   func(NoneType, 1, ["key" => "value"]);
   func(NoneType, kwargs=["a" => 19]);
+  func(kwargs=["a" => 19]);
   func(NoneType, 1, kwargs=["a" => 20]);
   func(NoneType, 1, 2, ["key" => "value"], kwargs=["a" => 7, "b" => 8]);
 }
