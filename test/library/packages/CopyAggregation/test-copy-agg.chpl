@@ -2,7 +2,9 @@ use CopyAggregation;
 use BlockDist;
 use RangeChunk;
 
+config const freeBuffers = true;
 config const n = 1_000_000;
+
 proc main() {
   assert(n > 2); // this test assumes this
 
@@ -50,7 +52,7 @@ proc main() {
           const elt = A[i];
           agg.copy(B[elt], elt);
         }
-        agg.flush();
+        agg.flush(freeBuffers=freeBuffers);
         // check that the aggregator still works after flush
         for i in secondchunk {
           const elt = A[i];
@@ -83,7 +85,7 @@ proc main() {
         for i in firstchunk {
           agg.copy(B[i], A[n-1-i]);
         }
-        agg.flush();
+        agg.flush(freeBuffers=freeBuffers);
         // check that the aggregator still works after flush
         for i in secondchunk {
           agg.copy(B[i], A[n-1-i]);
