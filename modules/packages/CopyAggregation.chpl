@@ -116,8 +116,8 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
-    inline proc ref flush() {
-      if aggregate then agg.flush();
+    inline proc ref flush(freeBuffers=true) { // TODO
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -134,8 +134,8 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
-    inline proc ref flush() {
-      if aggregate then agg.flush();
+    inline proc ref flush(freeBuffers=true) { // TODO
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -162,7 +162,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(lBuffers[loc]);
       }
@@ -170,10 +170,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
@@ -263,7 +263,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(dstAddrs[loc]);
         deallocate(lSrcAddrs[loc]);
@@ -273,10 +273,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
