@@ -45,6 +45,7 @@
 #include "chpl/types/VoidType.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "../resolution/default-functions.h"
 
 namespace chpl {
 namespace types {
@@ -360,6 +361,8 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
   bool result = true;
   if (!t || t->isUnknownType() || t->isErroneousType()) {
     result = false;
+  } else if (t->isBuiltinType()) {
+    result = t->genericity() == Type::CONCRETE;
   } else if (auto at = t->toArrayType()) {
     result = isDefaultInitializableQuery(context, at->eltType().type());
   } else if (auto dt = t->toDomainType()) {
@@ -372,9 +375,15 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
     result = true;
   } else if (auto ct = t->toClassType()) {
     result = ct->decorator().isNilable();
+  } else if (t->isTupleType()) {
+    result = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
   } else if (t->isRecordLike()) {
-    auto fieldsDefaultInitializable =
-      checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+    // If the type doesn't have a user-defined initializer or is a tuple, check
+    // its fields.
+    auto fieldsDefaultInitializable = true;
+    if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
+      fieldsDefaultInitializable = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+    }
 
     if (!fieldsDefaultInitializable) {
       result = false;

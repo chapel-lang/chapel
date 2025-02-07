@@ -684,7 +684,7 @@ static void test14() {
       { {"record"}, Test::FALSE },
       { {"class"}, Test::FALSE },
       { {"class?"}, Test::TRUE },
-      { {"shared"}, Test::TRUE },
+      { {"shared"}, Test::FALSE },
       { {"shared class"}, Test::FALSE },
       { {"shared class?"}, Test::TRUE },
       /* user-defined types */
@@ -695,7 +695,7 @@ static void test14() {
       { {"(int, bool)"}, Test::TRUE },
       { {"(int, color)"}, Test::TRUE },
       { {"(int, owned Foo)"}, Test::FALSE },
-      { {"baz"}, Test::TRUE },
+      { {"baz"}, Test::FALSE },
      },
   };
   testPrimitive(tpg);

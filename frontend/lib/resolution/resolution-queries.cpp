@@ -5498,6 +5498,31 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   return c.mostSpecific().only().fn();
 }
 
+bool addExistingSubstitutionsAsActuals(Context* context,
+                                       const types::Type* type,
+                                       std::vector<CallInfoActual>& outActuals,
+                                       std::vector<const uast::AstNode*>& outActualAsts) {
+  bool addedSubs = false;
+  while (auto ct = type->getCompositeType()) {
+    if (!ct->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : ct->substitutions()) {
+      auto fieldName = parsing::fieldIdToName(context, id);
+      addedSubs = true;
+      outActuals.emplace_back(qt, fieldName);
+      outActualAsts.push_back(nullptr);
+    }
+
+    if (auto clt = ct->toBasicClassType()) {
+      type = clt->parentClassType();
+    } else {
+      break;
+    }
+  }
+
+  return addedSubs;
+}
+
 const TypedFnSignature* tryResolveZeroArgInit(Context* context,
                                               const AstNode* astForScopeOrErr,
                                               const types::Type* toInit,
@@ -5507,7 +5532,9 @@ const TypedFnSignature* tryResolveZeroArgInit(Context* context,
   QualifiedType toInitQt(QualifiedType::INIT_RECEIVER, toInit);
 
   std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> ignoredActualAsts;
   actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
+  addExistingSubstitutionsAsActuals(context, toInit, actuals, ignoredActualAsts);
   auto ci = CallInfo(/* name */ USTR("init"),
                      /* calledType */ toInitQt,
                      /* isMethodCall */ true,
