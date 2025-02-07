@@ -5507,10 +5507,13 @@ bool addExistingSubstitutionsAsActuals(Context* context,
     if (!ct->instantiatedFromCompositeType()) break;
 
     for (auto& [id, qt] : ct->substitutions()) {
-      auto fieldName = parsing::fieldIdToName(context, id);
-      addedSubs = true;
-      outActuals.emplace_back(qt, fieldName);
-      outActualAsts.push_back(nullptr);
+      auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
+      if (fieldAst->storageKind() == QualifiedType::TYPE ||
+          fieldAst->storageKind() == QualifiedType::PARAM) {
+        addedSubs = true;
+        outActuals.emplace_back(qt, fieldAst->name());
+        outActualAsts.push_back(nullptr);
+      }
     }
 
     if (auto clt = ct->toBasicClassType()) {
