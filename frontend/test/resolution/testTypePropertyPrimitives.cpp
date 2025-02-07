@@ -84,13 +84,13 @@ assertParamStringMatch(chpl::types::QualifiedType qt, std::string str,
   }
 }
 
-static void testPrimitive(const Test& tpg) {
+static void testPrimitive(const Test& tpg, int unrelatedErrors = 0) {
   Context* context = tpg.useStdContext ? buildStdContext() : new Context();
   ErrorGuard guard(context);
 
   std::stringstream ps;
   int counter = 0;
-  int expectedErrorCount = 0;
+  int expectedErrorCount = unrelatedErrors;
   std::vector<std::string> variables;
   const auto tagStr = chpl::uast::primtags::primTagToName(tpg.primitive);
 
@@ -698,7 +698,7 @@ static void test14() {
       { {"baz"}, Test::FALSE },
      },
   };
-  testPrimitive(tpg);
+  testPrimitive(tpg, /* unrelatedErrors */ 1 /* sync.init has an unrelated error in its body */);
 }
 
 int main() {
