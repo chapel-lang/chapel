@@ -52,7 +52,7 @@ struct Test {
   };
 
   std::string testName;
-  bool isChplHomeRequired = false;
+  bool useStdContext = false;
   std::string prelude;
   chpl::uast::primtags::PrimitiveTag primitive;
   std::vector<PrimitiveCalls> calls;
@@ -85,22 +85,8 @@ assertParamStringMatch(chpl::types::QualifiedType qt, std::string str,
 }
 
 static void testPrimitive(const Test& tpg) {
-  Context::Configuration config;
-  if (tpg.isChplHomeRequired) {
-    if (const char* chplHomeEnv = getenv("CHPL_HOME")) {
-      config.chplHome = chplHomeEnv;
-    } else {
-      std::cout << "CHPL_HOME must be set!" << std::endl;
-      exit(1);
-    }
-  }
-  Context ctx(config);
-  Context* context = &ctx;
+  Context* context = tpg.useStdContext ? buildStdContext() : new Context();
   ErrorGuard guard(context);
-
-  if (tpg.isChplHomeRequired) {
-    setupModuleSearchPaths(context, false, false, {}, {});
-  }
 
   std::stringstream ps;
   int counter = 0;
@@ -168,7 +154,7 @@ static void testPrimitive(const Test& tpg) {
 static void test0() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
                record r1 { var x: int; }
                record r2 { type T; var x: T; }
@@ -235,7 +221,7 @@ static void test0() {
 static void test1() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -257,7 +243,7 @@ static void test1() {
 static void test2() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -278,7 +264,7 @@ static void test2() {
 static void test3() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -300,7 +286,7 @@ static void test3() {
 static void test4() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -322,7 +308,7 @@ static void test4() {
 static void test5() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
@@ -347,7 +333,7 @@ static void test5() {
 static void test6() {
   Test tpg {
     .testName=__FUNCTION__,
-    .isChplHomeRequired= true,
+    .useStdContext= true,
     .prelude=R"""(
              record r1 { var x: int; }
              )""",
@@ -367,7 +353,7 @@ static void test6() {
 static void test7() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
@@ -391,7 +377,7 @@ static void test7() {
 static void test8() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -437,7 +423,7 @@ static void test8() {
 static void test9() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
                record r1 { var x: int; }
                class c1 { var x: int; }
@@ -467,7 +453,7 @@ static void test9() {
 static void test10() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
@@ -520,7 +506,7 @@ static void test10() {
 static void test11() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
@@ -570,7 +556,7 @@ static void test11() {
 static void test12() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,    // TODO: True...
+    /* useStdContext */ false,    // TODO: True...
     /* prelude */ R"""(
             pragma "ignore noinit"
             record r1 {}
@@ -648,7 +634,7 @@ static void test12() {
 static void test13() {
   Test tpg {
     /* testName */ __FUNCTION__,
-    /* isChplHomeRequired */ false,
+    /* useStdContext */ false,
     /* prelude */ R"""(
                extern type foo;
                extern record bar {}
