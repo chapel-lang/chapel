@@ -5266,11 +5266,23 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  // Handle .domain on an array, which doesn't exist in module code.
+  // Handle .domain on an array (which doesn't exist in module code) as a call
+  // to _dom.
   if (receiver.type().type() && receiver.type().type()->isArrayType() &&
       dot->field() == USTR("domain")) {
-    auto domainType = receiver.type().type()->toArrayType()->domainType();
-    r.setType(QualifiedType(QualifiedType::CONST_VAR, domainType.type()));
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(receiver.type(), USTR("this"));
+    auto name = UniqueString::get(context, "_dom");
+    auto ci = CallInfo(/* name */ name,
+                       /* calledType */ receiver.type(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ true, actuals);
+    auto inScope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
+
+    rr.noteResult(&r);
     return;
   }
 
