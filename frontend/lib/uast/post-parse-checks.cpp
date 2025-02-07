@@ -124,7 +124,6 @@ struct Visitor {
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
   void checkSparseDomainArgCount(const FnCall* node);
-  void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkNonAssociativeComparisons(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
@@ -210,7 +209,6 @@ struct Visitor {
   void visit(const Local* node);
   void visit(const Module* node);
   void visit(const OpCall* node);
-  void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const Select* node);
   void visit(const Serial* node);
@@ -759,12 +757,6 @@ void Visitor::checkSparseDomainArgCount(const FnCall* node) {
           if (childCall->numActuals() != 1)
             error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
   }
-}
-
-void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
-  CHPL_ASSERT(isUserCode());
-  // Emit any errors or warnings for primitive calls in user code.
-  // This is a placeholder, as we don't have any such diagnostics at the moment.
 }
 
 void Visitor::checkDmappedKeyword(const OpCall* node) {
@@ -1709,10 +1701,6 @@ void Visitor::visit(const FnCall* node) {
   checkSparseKeyword(node);
   checkSparseDomainArgCount(node);
 
-}
-
-void Visitor::visit(const PrimCall* node) {
-  if (isUserCode()) checkPrimCallInUserCode(node);
 }
 
 void Visitor::visit(const OpCall* node) {
