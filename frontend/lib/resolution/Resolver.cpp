@@ -5402,6 +5402,13 @@ getDecoratedClassForNew(Context* context, const New* node,
 
   switch (node->management()) {
     case New::DEFAULT_MANAGEMENT:
+      // Management might've been provided for us already; otherwise
+      // fall back to the default: 'owned'.
+      if (!classType->decorator().isUnknownManagement())
+        break;
+
+      // Fall through to 'owned' management.
+
     case New::OWNED:
       decorator = ClassTypeDecorator(ClassTypeDecorator::MANAGED);
       manager = AnyOwnedType::get(context);

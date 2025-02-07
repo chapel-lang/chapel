@@ -1040,6 +1040,23 @@ static void testUserGenericNew() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void testExplicitManagementNew() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  auto var = resolveTypeOfXInit(ctx,
+      R"""(
+      class C{}
+
+      proc getType() type do return unmanaged C;
+
+      var x = new (getType())();
+      )""");
+
+  assert(var.type()->isClassType());
+  assert(var.type()->toClassType()->decorator().isUnmanaged());
+}
+
 
 int main() {
   testEmptyRecordUserInit();
@@ -1056,6 +1073,7 @@ int main() {
   testCompilerGeneratedGenericNewClass();
   testSimpleUserGenericNew();
   testUserGenericNew();
+  testExplicitManagementNew();
 
   return 0;
 }
