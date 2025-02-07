@@ -5152,10 +5152,14 @@ chpl_bool postOtherBuffer(void) {
   OFI_CHK_2(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV), rc,
             -FI_EAGAIN);
   if (rc == -FI_EAGAIN) {
+    DBG_PRINTF(DBG_AM_BUF,
+               "(re)post fi_recvmsg(AMLZs %p, len %#zx) returned EAGAIN",
+               ofi_msg_reqs[i].msg_iov->iov_base,
+               ofi_msg_reqs[i].msg_iov->iov_len);
     posted = false;
   } else {
     DBG_PRINTF(DBG_AM_BUF,
-               "(re)post fi_recvmsg(AMLZs %p, len %#zx)",
+               "(re)post fi_recvmsg(AMLZs %p, len %#zx) succeeded",
                ofi_msg_reqs[i].msg_iov->iov_base,
                ofi_msg_reqs[i].msg_iov->iov_len);
     ofi_msg_i = i;
@@ -5183,6 +5187,7 @@ void processRxAmReqCQ(void) {
     //
     // Post the other buffer if there is a post pending.
     if (post) {
+      DBG_PRINTF(DBG_AM_BUF, "post pending\n");
       if (postOtherBuffer() == true) {
         post = false;
       }
@@ -5197,9 +5202,10 @@ void processRxAmReqCQ(void) {
         //
         amRequest_t* req = (amRequest_t*) cqes[i].buf;
         DBG_PRINTF(DBG_AM_BUF,
-                   "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s",
+                   "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s %s",
                    (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
-                   cqes[i].len, am_seqIdStr(req));
+                   cqes[i].len, am_seqIdStr(req),
+                   (cqes[i].flags & FI_MULTI_RECV) ? "FI_MULTI_RECV" : "");
         DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                    "rx AM req: %s",
                    am_reqStr(chpl_nodeID, req, cqes[i].len));
@@ -5209,7 +5215,6 @@ void processRxAmReqCQ(void) {
         //
         // Multi-receive buffer filled; post the other one.
         //
-
         if (postOtherBuffer() == false) {
           //
           // Buffer was not posted due to FI_EAGAIN. Go around the outer loop
