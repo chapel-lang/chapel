@@ -139,6 +139,7 @@ int main() {
 
   // associative
   testArray("domain(int)", "int");
+  testArray("domain(int, true)", "int");
 
   return 0;
 }
