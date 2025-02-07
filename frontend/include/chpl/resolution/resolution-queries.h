@@ -487,6 +487,12 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope = nullptr);
 
+// tries to resolve an (unambiguous) init()
+const TypedFnSignature* tryResolveZeroArgInit(Context* context,
+                                              const uast::AstNode* astForScopeOrErr,
+                                              const types::Type* toInit,
+                                              const PoiScope* poiScope = nullptr);
+
 // tries to resolve an (unambiguous) assign
 const TypedFnSignature* tryResolveAssign(Context* context,
                                          const uast::AstNode* astForScopeOrErr,
