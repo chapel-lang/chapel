@@ -280,6 +280,7 @@ struct TConverter final : UastConverter {
 
     // Convert a single actual considering 'fa'.
     void convertActual(const FormalActual& fa);
+
    public:
     ActualConverter(TConverter* tc,
                     const AstNode* astForCall,
@@ -354,15 +355,6 @@ struct TConverter final : UastConverter {
   std::unordered_map<const ResolvedFunction*, FnSymbol*> newWrappers;
   std::unordered_map<const types::Type*, FnSymbol*> chplTupleInit;
 
-  // TODO: delete
-  /*
-  // fixup lists
-  std::vector<std::pair<SymExpr*, ID>> identFixups;
-  std::vector<std::pair<SymExpr*, const ResolvedFunction*>> callFixups;
-  // stores type fixups that are needed
-  std::vector<Symbol*> typeFixups;
-  */
-
   // stores a mapping from chpl::Type* to Type*
   std::unordered_map<const types::Type*, Type*> convertedTypes;
 
@@ -388,8 +380,6 @@ struct TConverter final : UastConverter {
     untypedConverter = createUntypedConverter(context);
 
     setupEssentialModuleGlobalVars();
-    // TODO: delete
-    // setupEssentialAggregateTypeGlobalVars();
   }
 
   ~TConverter();
@@ -427,39 +417,6 @@ struct TConverter final : UastConverter {
       if (ptr2) *ptr2 = mod;
     }
   }
-
-  // TODO: delete
-  // These are types that _MUST_ be installed for the rest of the compiler
-  // passes to function correctly (e.g., '_ref'). All other types, even
-  // essential ones, should be converted lazily. These require a walk in
-  // order to make sure that they have been installed, so make use of the
-  // frontend to locate their AST.
-  /*
-  void setupEssentialAggregateTypeGlobalVars() {
-    std::vector<std::tuple<ModuleSymbol*, AggregateType**, const char*>> v = {
-      { modChapelBase, &dtRef, "_ref" }
-    };
-
-    for (auto [mod, ptr, str] : v) {
-      INT_ASSERT(mod && ptr);
-      if (*ptr) continue;
-
-      auto path = ustr(astr(mod->name, ".", str));
-      auto id = ID(std::move(path));
-
-      if (auto t = initialTypeForTypeDecl(context, id)) {
-        // This is sufficient and the type does not have to be fully
-        // instantiated. We just need the base type so the rest of
-        // the compiler can function.
-        auto at = toAggregateType(convertType(t));
-        INT_ASSERT(at);
-        *ptr = at;
-      } else {
-        INT_FATAL(mod, "Unable to locate essential aggregate: %s", str);
-      }
-    }
-  }
-  */
 
   // supporting UastConverter methods
   void setModulesToConvert(const std::vector<ID>& vec) override {
@@ -570,19 +527,6 @@ struct TConverter final : UastConverter {
   VarSymbol* findOrCreateHiddenVarArg(const VarArgFormal* node, RV& rv);
   Symbol* findConvertedSym(const ID& id);
   Symbol* findOrCreateSym(const ID& id, RV& rv);
-
-  /*
-  // TODO: delete
-  AggregateType* findOrCreateClass(const types::BasicClassType* bct);
-  AggregateType* findOrCreateRecord(const types::RecordType* rt);
-  AggregateType* findOrCreateUnion(const types::UnionType* ut);
-
-  Type* findOrCreateType(const types::Type* t);
-  // type conversion helpers
-  // note: this does not check if the type has already been converted;
-  // or update the 'convertedTypes' map; that happens in convertType.
-  Type* helpConvertType(const types::Type* t);
-  */
 
   /* Look up a type in the converted types map. Does not convert. */
   Type* findConvertedType(const types::Type* t);
@@ -2253,11 +2197,6 @@ struct ConvertTypeHelper {
   Type* visit(const types::TupleType* t) {
     SET_LINENO(tc_->modChapelTuple);
 
-    // TODO: delete
-    // Make sure the tuple base type is installed correctly.
-    // auto dtTupleDef = insertTypeIntoModule(t->id(), dtTuple);
-    // INT_ASSERT(dtTupleDef);
-
     auto ret = new AggregateType(AGGREGATE_RECORD);
 
     // Construct the 'size' field which exists in every tuple.
@@ -2479,14 +2418,6 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
 
   return ret;
 }
-
-/*
-// TODO: delete
-Type* TConverter::helpConvertType(const types::Type* t) {
-  if (t == nullptr)
-    return dtUnknown;
-}
-*/
 
 struct ConvertDefaultValueHelper {
   TConverter* tc_;
