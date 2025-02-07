@@ -6299,8 +6299,8 @@ static bool handleArrayTypeExpr(Resolver& rv,
     std::vector<CallInfoActual> actuals;
     actuals.emplace_back(domainType, USTR("this"));
     actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
-    // TODO: set initElts properly
-    actuals.emplace_back(QualifiedType::makeParamBool(rv.context, false),
+    // TODO: Implement noinit (allowing initElts to be false)
+    actuals.emplace_back(QualifiedType::makeParamBool(rv.context, true),
                          UniqueString::get(rv.context, "initElts"));
     auto ci = CallInfo(
         /* name */ UniqueString::get(rv.context, arrayBuilderProc),
