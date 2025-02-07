@@ -230,10 +230,12 @@ static void test4() {
         var x : int;
       }
 
-      var a : R;
-      var b : R;
-
-      var x = a == b;
+      proc foo() {
+        const a : R;
+        const b : R;
+        return a == b;
+      }
+      var x = foo();
     )"""";
 
   QualifiedType initType = resolveTypeOfXInit(context, program);
