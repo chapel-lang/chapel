@@ -338,8 +338,14 @@ bool Type::isPod(Context* context, const Type* t) {
 }
 
 bool Type::isDefaultInitializable(const Type* t) {
-  if (t->isClassType() && t->toClassType()->decorator().isNonNilable()) {
-    return false;
+  if (t->isAnySharedType() || t->isAnyOwnedType()) {
+    return true;
+  } else if (t->isRecordType() || t->isUnionType()) {
+    return true;
+  } else if (t->isBuiltinType()) {
+    return t->genericity() == Type::CONCRETE;
+  } else if (auto ct = t->toClassType()) {
+    return ct->decorator().isNilable();
   } else if (auto tup = t->toTupleType()) {
     for (int i = 0; i < tup->numElements(); i++) {
       if (!isDefaultInitializable(tup->elementType(i).type())) {
