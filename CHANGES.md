@@ -1,6 +1,16 @@
 Release Changes List
 ====================
 
+version 2.3.1
+=============
+
+released February 7, 2025
+
+This version is an update to the 2.3 release to address a build issue
+that can sometimes arise when a system has multiple versions of LLVM
+installed.
+
+
 version 2.3
 ===========
 
