@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
 
+# skip valgrind testing: if CHPL_TEST_VGRND_EXE is set and 'on'
+if [ -n "$CHPL_TEST_VGRND_EXE" ] && [ "$CHPL_TEST_VGRND_EXE" == "on" ]; then
+  echo "True"
+  exit 0
+else
+
 FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 $FILE_DIR/../../skipIfAndInstallPackage.sh $FILE_DIR torch numpy
