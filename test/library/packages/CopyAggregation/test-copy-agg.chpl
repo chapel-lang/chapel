@@ -10,7 +10,7 @@ proc main() {
     if dataParTasksPerLocale > 0
     then dataParTasksPerLocale
     else here.maxTaskPar;
-                          
+
   // store numbers in forward order in Fwd
   var Fwd =  blockDist.createArray(0..<n, int);
   Fwd = 0..<n;
@@ -43,11 +43,19 @@ proc main() {
       const locRegion = locDom.dim(0)[0..<n];
       coforall chunk in chunks(locRegion, nTasksPerLocale) {
         var agg = new DstAggregator(int);
-        for i in chunk {
+        const halfway = chunk.low + chunk.size / 2;
+        const firstchunk = chunk.low..<halfway;
+        const secondchunk = halfway..chunk.high;
+        for i in firstchunk {
           const elt = A[i];
           agg.copy(B[elt], elt);
         }
         agg.flush();
+        // check that the aggregator still works after flush
+        for i in secondchunk {
+          const elt = A[i];
+          agg.copy(B[elt], elt);
+        }
       }
     }
   }
@@ -69,10 +77,17 @@ proc main() {
       const locRegion = locDom.dim(0)[0..<n];
       coforall chunk in chunks(locRegion, nTasksPerLocale) {
         var agg = new SrcAggregator(int);
-        for i in chunk {
+        const halfway = chunk.low + chunk.size / 2;
+        const firstchunk = chunk.low..<halfway;
+        const secondchunk = halfway..chunk.high;
+        for i in firstchunk {
           agg.copy(B[i], A[n-1-i]);
         }
         agg.flush();
+        // check that the aggregator still works after flush
+        for i in secondchunk {
+          agg.copy(B[i], A[n-1-i]);
+        }
       }
     }
   }
