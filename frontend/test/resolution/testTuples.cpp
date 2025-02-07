@@ -963,6 +963,23 @@ static void test21() {
   ensureParamBool(vars["secondMatch"], true);
 }
 
+static void test22() {
+  // Ensure that homogeneous tuple addition works
+
+  auto context = buildStdContext();
+  auto program = R"""(
+    var t1 = (1,2,3);
+    var t2 = t1 + 1;
+    param match = t1.type == t2.type;
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program,
+                                      {"t1", "t2", "match"});
+  assert(vars["t1"].type()->isTupleType());
+  assert(vars["t2"].type()->isTupleType());
+  ensureParamBool(vars["match"], true);
+}
+
 
 int main() {
   test1();
@@ -991,5 +1008,6 @@ int main() {
 
   test20();
   test21();
+  test22();
   return 0;
 }
