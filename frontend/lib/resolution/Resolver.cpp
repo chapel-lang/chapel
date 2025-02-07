@@ -5245,7 +5245,7 @@ void Resolver::exit(const Dot* dot) {
     if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
-      receiverType = ErroneousType::get(context);
+      receiverType = UnknownType::get(context);
     }
 
     if (!receiver.type().isType()) {
