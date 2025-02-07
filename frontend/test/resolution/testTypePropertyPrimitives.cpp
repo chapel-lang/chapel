@@ -658,6 +658,7 @@ static void test14() {
                class Foo {}
                record bar {}
                enum color {blue, red}
+               union baz { var f : owned Foo; }
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_HAS_DEFAULT_VALUE,
     /* calls */ {
@@ -677,13 +678,14 @@ static void test14() {
       { {"sync int"}, Test::TRUE },
       { {"atomic int"}, Test::TRUE },
       /* generic builtin types */
-      { {"integral"}, Test::TRUE },
-      { {"numeric"}, Test::TRUE },
+      { {"integral"}, Test::FALSE },
+      { {"numeric"}, Test::FALSE },
       { {"enum"}, Test::FALSE },
       { {"record"}, Test::FALSE },
       { {"class"}, Test::FALSE },
       { {"class?"}, Test::TRUE },
-      { {"shared"}, Test::FALSE },
+      { {"shared"}, Test::TRUE },
+      { {"shared class"}, Test::FALSE },
       { {"shared class?"}, Test::TRUE },
       /* user-defined types */
       { {"bar"}, Test::TRUE },
@@ -693,6 +695,7 @@ static void test14() {
       { {"(int, bool)"}, Test::TRUE },
       { {"(int, color)"}, Test::TRUE },
       { {"(int, owned Foo)"}, Test::FALSE },
+      { {"baz"}, Test::TRUE },
      },
   };
   testPrimitive(tpg);
