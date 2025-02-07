@@ -5498,6 +5498,30 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   return c.mostSpecific().only().fn();
 }
 
+const TypedFnSignature* tryResolveZeroArgInit(Context* context,
+                                              const AstNode* astForScopeOrErr,
+                                              const types::Type* toInit,
+                                              const PoiScope* poiScope) {
+  if (!toInit->getCompositeType()) return nullptr;
+
+  QualifiedType toInitQt(QualifiedType::INIT_RECEIVER, toInit);
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
+  auto ci = CallInfo(/* name */ USTR("init"),
+                     /* calledType */ toInitQt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+                                CallScopeInfo::forNormalCall(scope, poiScope));
+  return c.mostSpecific().only().fn();
+}
+
 const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const AstNode* astForScopeOrErr,
                                          const types::Type* t,
