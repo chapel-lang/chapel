@@ -3,7 +3,7 @@ name: Monitor Homebrew Formula
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
-    - cron: '0 */4 * * *' # Runs every 4 hours
+    - cron: '0 0 * * *' # Runs every 24 hours
 
 
 env:
@@ -12,6 +12,7 @@ env:
 
 jobs:
   check-and-update:
+    if: github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-latest
 
     steps:
