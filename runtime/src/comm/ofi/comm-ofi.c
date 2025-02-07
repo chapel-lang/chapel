@@ -5143,9 +5143,8 @@ void processRxAmReqCntr(void) {
 // Post the other of the two message buffers.
 //
 static
-chpl_bool postOtherBuffer(void) {
+chpl_bool postBuffer(int i) {
   chpl_bool posted = true;
-  int i = 1 - ofi_msg_i;
   int rc;
   OFI_CHK_2(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV), rc,
             -FI_EAGAIN);
@@ -5160,7 +5159,6 @@ chpl_bool postOtherBuffer(void) {
                "(re)post fi_recvmsg(AMLZs %p, len %#zx) succeeded",
                ofi_msg_reqs[i].msg_iov->iov_base,
                ofi_msg_reqs[i].msg_iov->iov_len);
-    ofi_msg_i = i;
   }
   return posted;
 }
