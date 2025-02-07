@@ -403,7 +403,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
 
   if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
     auto baseArrRect = baseArr->parentClassType();
-    CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
+    CHPL_ASSERT(baseArrRect &&
+                baseArrRect->id().symbolPath() ==
+                    "ChapelDistribution.BaseArrOverRectangularDom");
 
     auto [rank, idxType, strides] =
         extractRectangularInfo(context, baseArrRect);
@@ -412,26 +414,25 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                                  idxType, strides);
 
     auto [eltType] = extractFields(context, baseArr, "eltType");
-    return ArrayType::getArrayType(context,
-                                   instanceQt,
+    return ArrayType::getArrayType(context, instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
-  } else if (instanceBct->id().symbolPath() == "DefaultAssociative.DefaultAssociativeArr") {
-
+  } else if (instanceBct->id().symbolPath() ==
+             "DefaultAssociative.DefaultAssociativeArr") {
     auto [idxType, parSafe, domInstanceQt] =
         extractFields(context, instanceBct, "idxType", "parSafeDom", "dom");
     auto domain = DomainType::getAssociativeType(context, domInstanceQt,
                                                  idxType, parSafe);
 
-    CHPL_ASSERT(baseArr && baseArr->id().symbolPath() ==
-                               "ChapelDistribution.AbsBaseArr");
+    CHPL_ASSERT(baseArr &&
+                baseArr->id().symbolPath() == "ChapelDistribution.AbsBaseArr");
     auto [eltType] = extractFields(context, baseArr, "eltType");
 
-    return ArrayType::getArrayType(context,
-                                   instanceQt,
+    return ArrayType::getArrayType(context, instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
-  } else if (instanceBct->id().symbolPath() == "ChapelDistribution.BaseSparseArr") {
+  } else if (instanceBct->id().symbolPath() ==
+             "ChapelDistribution.BaseSparseArr") {
     // TODO: support sparse arrays
     CHPL_UNIMPL("sparse arrays");
   } else {
