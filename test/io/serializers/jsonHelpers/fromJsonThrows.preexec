@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "{\"fiel\":10}" > fromJsonThrows.in
