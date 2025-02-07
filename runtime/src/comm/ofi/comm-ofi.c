@@ -3166,6 +3166,8 @@ void init_ofiForAms(void) {
   // against receiving "buffer filled and released" events out of order
   // with respect to the messages stored within them.
 
+  // XXX TODO: update this
+
   // There are two receive buffers and we alternate between them. If there
   // were only one buffer then there might be a window during which there is
   // no available buffer space because we are processing the last message in
@@ -3214,16 +3216,11 @@ void init_ofiForAms(void) {
   for (int i = 0; i < 2; i++) {
     memset(ofi_msg_reqs[i].msg_iov->iov_base, '\0',
            ofi_msg_reqs[i].msg_iov->iov_len);
-  }
-  //
-  // Post the first receive buffer. The other will be posted when this
-  // one has been consumed.
-  //
-  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[0], FI_MULTI_RECV));
-  DBG_PRINTF(DBG_AM_BUF,
-           "post fi_recvmsg(AMLZs %p, len %#zx)",
-            ofi_msg_reqs[0].msg_iov->iov_base,
-            ofi_msg_reqs[0].msg_iov->iov_len);
+    OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV));
+    DBG_PRINTF(DBG_AM_BUF,
+             "post fi_recvmsg(AMLZs %p, len %#zx)",
+              ofi_msg_reqs[i].msg_iov->iov_base,
+              ofi_msg_reqs[i].msg_iov->iov_len);
   init_amHandling();
 }
 
@@ -5185,10 +5182,12 @@ void processRxAmReqCQ(void) {
     }
 
     //
-    // Post the other buffer if there is a post pending.
+    // Post the other buffer if we were unable to do it when
+    // we received FI_MULTI_RECV below.
+    //
     if (post) {
       DBG_PRINTF(DBG_AM_BUF, "post pending\n");
-      if (postOtherBuffer() == true) {
+      if (postBuffer(1-ofi_msg_i) == true) {
         post = false;
       }
     }
@@ -5213,9 +5212,12 @@ void processRxAmReqCQ(void) {
       }
       if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
         //
-        // Multi-receive buffer filled; post the other one.
+        // Multi-receive buffer filled; libfabric has switched to the other
+        // buffer. Repost this one.
         //
-        if (postOtherBuffer() == false) {
+        ofi_msg_i = 1-ofi_msg_i;
+
+        if (postBuffer(1-ofi_msg_i) == false) {
           //
           // Buffer was not posted due to FI_EAGAIN. Go around the outer loop
           // again which will call fi_cq_read to progress the endpoint and
