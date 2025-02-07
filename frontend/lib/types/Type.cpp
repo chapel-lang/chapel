@@ -365,9 +365,9 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
     result = t->genericity() == Type::CONCRETE;
   } else if (auto at = t->toArrayType()) {
     result = isDefaultInitializableQuery(context, at->eltType().type());
-  } else if (auto dt = t->toDomainType()) {
+  } else if (t->isDomainType()) {
     result = true; // production always returns true for domains.
-  } else if (auto et = t->toExternType()) {
+  } else if (t->isExternType()) {
     // Currently extern records aren't initialized at all by default.
     // But it's not necessarily reasonable to expect them to have
     // initializers. See issue #7992 and preFold.cpp's setRecordDefaultValueFlags
