@@ -95,13 +95,13 @@ DomainType::getRectangularType(Context* context,
 
   SubstitutionsMap subs;
   CHPL_ASSERT(rank.isParam() && rank.param()->isIntParam());
-  subs.emplace(ID(UniqueString(), 0, 0), rank);
+  subs.emplace(rankId, rank);
   CHPL_ASSERT(idxType.isType());
-  subs.emplace(ID(UniqueString(), 1, 0), idxType);
+  subs.emplace(rectangularIdxTypeId, idxType);
   CHPL_ASSERT(strides.isParam() && strides.param()->isEnumParam() &&
               strides.param()->toEnumParam()->value().id.symbolPath() ==
                   "ChapelRange.strideKind");
-  subs.emplace(ID(UniqueString(), 2, 0), strides);
+  subs.emplace(stridesId, strides);
 
 
   // Add substitution for _instance field
@@ -131,9 +131,9 @@ DomainType::getAssociativeType(Context* context,
   auto genericDomain = getGenericDomainType(context);
 
   SubstitutionsMap subs;
-  subs.emplace(ID(UniqueString(), 0, 0), idxType);
+  subs.emplace(nonRectangularIdxTypeId, idxType);
   CHPL_ASSERT(idxType.isType());
-  subs.emplace(ID(UniqueString(), 1, 0), parSafe);
+  subs.emplace(parSafeId, parSafe);
   CHPL_ASSERT(parSafe.isParam() && parSafe.param() &&
               parSafe.param()->isBoolParam());
 
