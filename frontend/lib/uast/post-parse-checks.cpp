@@ -761,17 +761,10 @@ void Visitor::checkSparseDomainArgCount(const FnCall* node) {
   }
 }
 
-// TODO: remove this check and warning after 2.0?
 void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
-  // suppress this warning from chpldoc
-  if (isUserCode())
-    if ((node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
-         node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT) &&
-        context_->configuration().toolName != "chpldoc")
-          warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
-               " have changed behavior in Chapel 1.32. Please use"
-               " the 'Communication' module's 'get' and 'put' procedures"
-               " as replacements for calling the primitives directly");
+  CHPL_ASSERT(isUserCode());
+  // Emit any errors or warnings for primitive calls in user code.
+  // This is a placeholder, as we don't have any such diagnostics at the moment.
 }
 
 void Visitor::checkDmappedKeyword(const OpCall* node) {
@@ -1719,7 +1712,7 @@ void Visitor::visit(const FnCall* node) {
 }
 
 void Visitor::visit(const PrimCall* node) {
-  checkPrimCallInUserCode(node);
+  if (isUserCode()) checkPrimCallInUserCode(node);
 }
 
 void Visitor::visit(const OpCall* node) {
