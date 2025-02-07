@@ -85,6 +85,13 @@ class DomainType final : public CompositeType {
                SubstitutionsMap subs,
                Kind kind = Kind::Unknown);
 
+  static const ID rankId;
+  static const ID rectangularIdxTypeId;
+  static const ID nonRectangularIdxTypeId;
+  static const ID stridesId;
+  static const ID parSafeId;
+  static const ID runtimeTypeId;
+
  public:
 
   /** Return the generic domain type */
@@ -102,6 +109,11 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& instance,
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
+
+  /** embellishes the domain type with a runtime type. */
+  static const DomainType* getWithRuntimeType(Context* context,
+                                              const DomainType* domainType,
+                                              const RuntimeType* runtimeType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -126,25 +138,29 @@ class DomainType final : public CompositeType {
 
   const QualifiedType& rank() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
-    return subs_.at(ID(UniqueString(), 0, 0));
+    return subs_.at(rankId);
   }
 
   const QualifiedType& idxType() const {
     if (kind_ == Kind::Rectangular) {
-      return subs_.at(ID(UniqueString(), 1, 0));
+      return subs_.at(rectangularIdxTypeId);
     } else {
-      return subs_.at(ID(UniqueString(), 0, 0));
+      return subs_.at(nonRectangularIdxTypeId);
     }
   }
 
   const QualifiedType& strides() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
-    return subs_.at(ID(UniqueString(), 2, 0));
+    return subs_.at(stridesId);
   }
 
   const QualifiedType& parSafe() const {
     CHPL_ASSERT(kind_ == Kind::Associative);
-    return subs_.at(ID(UniqueString(), 1, 0));
+    return subs_.at(parSafeId);
+  }
+
+  const QualifiedType& runtimeType() const {
+    return subs_.at(runtimeTypeId);
   }
 
   ~DomainType() = default;

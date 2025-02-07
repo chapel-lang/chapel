@@ -54,6 +54,10 @@ module M {
   param rk = d.isRectangular();
   param ak = d.isAssociative();
 
+  param rttR = __primitive("get runtime type field", d, "rank");
+  type rttI = __primitive("get runtime type field", d, "idxType");
+  param rttS = __primitive("get runtime type field", d, "strides");
+
   var p = d.pid;
 
   for loopI in d {
@@ -105,13 +109,19 @@ module M {
   assert(rankVarTy == dType->rank());
   ensureParamInt(rankVarTy, rank);
 
+  assert(findVarType(m, rr, "rttR") == rankVarTy);
+
   auto idxTypeVarTy = findVarType(m, rr, "i");
   assert(idxTypeVarTy == dType->idxType());
   assert(findVarType(m, rr, "ig") == idxTypeVarTy);
 
+  assert(findVarType(m, rr, "rttI") == idxTypeVarTy);
+
   auto stridesVarTy = findVarType(m, rr, "s");
   assert(stridesVarTy == dType->strides());
   assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
+
+  assert(findVarType(m, rr, "rttS") == stridesVarTy);
 
   ensureParamBool(findVarType(m, rr, "rk"), true);
 
