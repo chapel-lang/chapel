@@ -7235,6 +7235,16 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
   return best;
 }
 
+bool const& noteErrorMessage(Context* context, UniqueString message) {
+  QUERY_BEGIN(noteErrorMessage, context, message);
+  return QUERY_END(true);
+}
+
+bool const& noteWarningMessage(Context* context, UniqueString message) {
+  QUERY_BEGIN(noteWarningMessage, context, message);
+  return QUERY_END(true);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl
