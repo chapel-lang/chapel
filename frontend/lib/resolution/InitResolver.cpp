@@ -417,10 +417,14 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
-  } else if (baseArr->id().symbolPath() == "DefaultAssociative.DefaultAssociativeArr") {
+  } else if (instanceBct->id().symbolPath() == "DefaultAssociative.DefaultAssociativeArr") {
     // TODO: support associative arrays
-  } else if (baseArr->id().symbolPath() == "ChapelDistribution.BaseSparseArr") {
+    CHPL_UNIMPL("associative arrays");
+  } else if (instanceBct->id().symbolPath() == "ChapelDistribution.BaseSparseArr") {
     // TODO: support sparse arrays
+    CHPL_UNIMPL("sparse arrays");
+  } else {
+    CHPL_UNIMPL("unknown kind of array class");
   }
 
   // If we reach here, we weren't able to resolve the array type
