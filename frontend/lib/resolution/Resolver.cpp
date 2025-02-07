@@ -324,6 +324,30 @@ Resolver::createForInstantiatedSignature(Context* context,
   return ret;
 }
 
+static void setFormalTypesUsingSignature(Resolver& rv) {
+  // set the resolution results for the formals according to
+  // the typedFnSignature
+  const TypedFnSignature* sig = rv.typedSignature;
+  const UntypedFnSignature* uSig = sig->untyped();
+  int nFormals = rv.typedSignature->numFormals();
+  for (int i = 0; i < nFormals; i++) {
+    const Decl* decl = uSig->formalDecl(i);
+    const auto& qt = sig->formalType(i);
+
+    ResolvedExpression& re = rv.byPostorder.byAst(decl);
+    re.setType(qt);
+
+    // TODO: Aren't these results already computed when we traverse formals
+    // in resolution-queries?
+    if (auto formal = decl->toFormal())
+      rv.resolveTypeQueriesFromFormalType(formal, qt);
+    if (auto formal = decl->toVarArgFormal())
+      rv.resolveTypeQueriesFromFormalType(formal, qt);
+    if (auto td = decl->toTupleDecl())
+      rv.resolveTupleUnpackDecl(td, qt);
+  }
+}
+
 Resolver
 Resolver::createForFunction(ResolutionContext* rc,
                             const Function* fn,
@@ -345,26 +369,19 @@ Resolver::createForFunction(ResolutionContext* rc,
 
   ret.byPostorder.setupForFunction(fn);
 
-  // set the resolution results for the formals according to
-  // the typedFnSignature
-  const UntypedFnSignature* uSig = typedFnSignature->untyped();
-  int nFormals = typedFnSignature->numFormals();
+  // First, set the formal types using the types in the signature.
+  setFormalTypesUsingSignature(ret);
+
+  // Then, re-resolve the formals to set e.g., init-exprs.
+  int nFormals = ret.typedSignature->numFormals();
   for (int i = 0; i < nFormals; i++) {
-    const Decl* decl = uSig->formalDecl(i);
-    const auto& qt = typedFnSignature->formalType(i);
-
-    ResolvedExpression& r = ret.byPostorder.byAst(decl);
-    r.setType(qt);
-
-    // TODO: Aren't these results already computed when we traverse formals
-    // in resolution-queries?
-    if (auto formal = decl->toFormal())
-      ret.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto formal = decl->toVarArgFormal())
-      ret.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto td = decl->toTupleDecl())
-      ret.resolveTupleUnpackDecl(td, qt);
+    const Decl* decl = ret.typedSignature->untyped()->formalDecl(i);
+    CHPL_ASSERT(decl);
+    decl->traverse(ret);
   }
+
+  // Set the formal types again since the TFS has the final say.
+  setFormalTypesUsingSignature(ret);
 
   if (typedFnSignature->isMethod()) {
     // allow computing the receiver scope from the typedSignature.
