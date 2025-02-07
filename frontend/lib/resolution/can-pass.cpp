@@ -1236,7 +1236,7 @@ bool canInstantiateSubstitutions(Context* context,
                                  const SubstitutionsMap& instances,
                                  const SubstitutionsMap& generics,
                                  bool allowMissing) {
-  // Check to see if the substitutions in `instaces` are all instantiations
+  // Check to see if the substitutions in `instances` are all instantiations
   // of the substitutions in `generics`
   //
   // check, for each substitution in mySubs, that it matches

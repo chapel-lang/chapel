@@ -19,7 +19,6 @@
 
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"

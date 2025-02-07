@@ -80,7 +80,10 @@ ArrayType::getArrayType(Context* context,
   auto genericArray = getGenericArrayType(context);
 
   SubstitutionsMap subs;
+  CHPL_ASSERT(domainType.isType() && domainType.type() &&
+              domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
+  CHPL_ASSERT((eltType.isType() || eltType.isTypeQuery()) && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
 
   // Add substitution for _instance field
@@ -94,15 +97,8 @@ ArrayType::getArrayType(Context* context,
       break;
     }
   }
+  subs.emplace(instanceFieldId, instance);
 
-  // TODO: resolver currently doesn't bother to set up the array instance type.
-  //       as a result, this is sometimes unknown, which leads to problems
-  //       when doing canInstantiate (which uses canPass). So, don't include
-  //       the unknown sub to avoid those issues. Remove this when
-  //       resolver handles _instance.
-  if (!instance.isUnknown()) {
-    subs.emplace(instanceFieldId, instance);
-  }
   auto id = getArrayID(context);
   auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);

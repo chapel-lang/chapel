@@ -18,7 +18,6 @@
  */
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -35,11 +34,11 @@
 
 static void testArray(std::string domainType,
                       std::string eltType) {
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context ctx(config);
-  Context* context = &ctx;
-  setupModuleSearchPaths(context, false, false, {}, {});
+  std::string arrayText;
+  arrayText += "[" + domainType + "] " + eltType;
+  printf("Testing: %s\n", arrayText.c_str());
+
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   // a different element type from the one we were given
@@ -48,11 +47,8 @@ static void testArray(std::string domainType,
     altElt = "string";
   }
 
-  std::string program = ArrayModule +
-R"""(
+  std::string program = R"""(
 module M {
-  use ChapelArray;
-  
   var d : )""" + domainType + R"""(;
   type eltType = )""" + eltType + R"""(;
 
@@ -89,7 +85,7 @@ module M {
   setFileText(context, path, std::move(program));
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Module* m = vec[1];
+  const Module* m = vec[0];
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -133,19 +129,17 @@ module M {
   }
 
   assert(guard.realizeErrors() == 0);
-
-  std::string arrayText;
-  arrayText += "[" + domainType + "] " + eltType;
-  printf("Success: %s\n", arrayText.c_str());
 }
 
 int main() {
+  // rectangular
   testArray("domain(1)", "int");
   testArray("domain(1)", "string");
   testArray("domain(2)", "int");
 
-  // TODO: re-enable once associative domains are working
-  // testArray("domain(int)", "int");
+  // associative
+  testArray("domain(int)", "int");
+  testArray("domain(int, true)", "int");
 
   return 0;
 }

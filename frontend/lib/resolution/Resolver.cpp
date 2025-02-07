@@ -5239,6 +5239,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
 
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
+  ResolvedExpression& r = byPostorder.byAst(dot);
 
   bool deferToFunctionResolution = false;
   bool resolvingCalledDot = nearestCalledExpression() == dot;
@@ -5267,7 +5268,6 @@ void Resolver::exit(const Dot* dot) {
       auto c = resolveGeneratedCall(dot, &ci, &inScopes);
       if (!c.result.mostSpecific().isEmpty()) {
         // save the most specific candidates in the resolution result for the id
-        ResolvedExpression& r = byPostorder.byAst(dot);
         c.noteResult(&r);
       }
       return;
@@ -5276,8 +5276,6 @@ void Resolver::exit(const Dot* dot) {
 
   if (dot->field() == USTR("type")) {
     const Type* receiverType = nullptr;
-    ResolvedExpression& r = byPostorder.byAst(dot);
-
     if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
@@ -5290,6 +5288,26 @@ void Resolver::exit(const Dot* dot) {
       r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
                                 receiver.toId()));
     }
+    return;
+  }
+
+  // Handle .domain on an array (which doesn't exist in module code) as a call
+  // to _dom.
+  if (receiver.type().type() && receiver.type().type()->isArrayType() &&
+      dot->field() == USTR("domain")) {
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(receiver.type(), USTR("this"));
+    auto name = UniqueString::get(context, "_dom");
+    auto ci = CallInfo(/* name */ name,
+                       /* calledType */ receiver.type(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ true, actuals);
+    auto inScope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
+
+    rr.noteResult(&r);
     return;
   }
 
@@ -5311,7 +5329,6 @@ void Resolver::exit(const Dot* dot) {
                                  /* methodLookupHelper */ nullptr,
                                  /* receiverScopeHelper */ nullptr,
                                  dot->field(), config);
-    ResolvedExpression& r = byPostorder.byAst(dot);
     if (ids.numIds() == 0) {
       // emit a "can't find that thing" error
       issueErrorForFailedModuleDot(dot, moduleId, config);
@@ -5349,7 +5366,6 @@ void Resolver::exit(const Dot* dot) {
     // resolve E.x where E is an enum.
     auto enumAst = parsing::idToAst(context, receiver.toId())->toEnum();
     CHPL_ASSERT(enumAst != nullptr);
-    ResolvedExpression& r = byPostorder.byAst(dot);
 
     bool ambiguous;
     auto elemId = scopeResolveEnumElement(enumAst, dot->field(), dot, ambiguous);
@@ -5376,12 +5392,10 @@ void Resolver::exit(const Dot* dot) {
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
     r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
     return;
   }
   if (receiver.type().type()->isErroneousType()) {
-    ResolvedExpression& r = byPostorder.byAst(dot);
     r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
     return;
   }
@@ -5410,7 +5424,7 @@ void Resolver::exit(const Dot* dot) {
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(dot, &ci, &inScopes);
   // save the most specific candidates in the resolution result for the id
-  c.noteResult(&byPostorder.byAst(dot));
+  c.noteResult(&r);
 }
 
 bool Resolver::enter(const New* node) {
@@ -6212,50 +6226,116 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 
 static bool handleArrayTypeExpr(Resolver& rv,
                                 const IndexableLoop* loop) {
+  auto& re = rv.byPostorder.byAst(loop);
+  const auto genericArrayType = QualifiedType(
+      QualifiedType::TYPE, ArrayType::getGenericArrayType(rv.context));
 
-  auto bodyType = QualifiedType();
+  // Get element type from loop body
+  QualifiedType eltType;
   if (loop->numStmts() == 1) {
-    bodyType = rv.byPostorder.byAst(loop->stmt(0)).type();
-  } else {
-    bodyType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
+    eltType = rv.byPostorder.byAst(loop->stmt(0)).type();
+  } else if (loop->numStmts() == 0) {
+    // Interpret no body as generic element type
+    eltType = QualifiedType(QualifiedType::TYPE, getAnyType(rv, loop->id()));
   }
 
-  // The body wasn't a type, so this isn't an array type expression
+  // The body wasn't a type, so this isn't an array type expression.
   // Make an exception for unknown or erroneous bodies, since the user may
   // have been trying to define a type but made a mistake (or we may be
   // in a partially-instantiated situation and the type is not yet known).
-  if (!bodyType.isUnknownOrErroneous() &&
-      !bodyType.isType() &&
-      bodyType.kind() != QualifiedType::TYPE_QUERY) {
+  if (!eltType.isUnknownOrErroneous() &&
+      !eltType.isType() &&
+      !eltType.isTypeQuery()) {
     return false;
   }
 
-  // It is an array. Time to build the array type.
+  // Determine the domain type
+  QualifiedType domainType;
+  const auto genericDomainType = QualifiedType(
+      QualifiedType::TYPE, DomainType::getGenericDomainType(rv.context));
+  auto iterandExpr = loop->iterand();
+  auto iterandType = rv.byPostorder.byAst(iterandExpr).type();
+  if (iterandExpr->isDomain() && iterandExpr->toDomain()->numExprs() == 0) {
+    domainType = genericDomainType;
+  } else if (iterandType.isUnknown() || iterandType.isTypeQuery()) {
+    domainType = iterandType;
+  } else if (iterandType.type()->isDomainType()) {
+    domainType = iterandType;
+  } else if (iterandType.type()->isRecordType() &&
+             iterandType.type()->toRecordType()->id() ==
+                 CompositeType::getRangeType(rv.context)->id()) {
+    // Convert range into domain.
+    // Note this is only hit for a plain old range, not a comma-separated list
+    // of them which is already recognized as a domain.
+    // TODO: This code is largely copied from Domain decl resolution, can
+    // likely be refactored.
 
-  auto domainType = QualifiedType();
-  auto iterandType = rv.byPostorder.byAst(loop->iterand()).type();
-  if (!iterandType.isUnknownOrErroneous()) {
-    if (iterandType.type()->isDomainType()) {
-      domainType = iterandType;
-    } else {
-      // TODO: convert range into domain
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(iterandType, UniqueString());
+    auto ci = CallInfo(
+        /* name */ UniqueString::get(rv.context, "chpl__ensureDomainExpr"),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ false,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false, actuals);
+    auto scope = rv.scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    if (!c.exprType().isUnknownOrErroneous()) {
+      domainType = c.exprType();
+    }
+  }
+  if (domainType.isUnknown()) {
+    domainType = genericDomainType;
+  }
+
+
+  // Assemble the array type
+  auto arrayType = genericArrayType;
+  if (domainType.isErroneousType() || eltType.isErroneousType()) {
+    // Propagate error from domain or element type
+    arrayType =
+        QualifiedType(QualifiedType::TYPE, ErroneousType::get(rv.context));
+  } else if (domainType.type() == genericDomainType.type()) {
+    // Preserve eltType info, if we have it.
+    if (!eltType.isUnknown() && !eltType.isTypeQuery()) {
+      auto domainTypeAsType =
+          QualifiedType(QualifiedType::TYPE, domainType.type());
+      arrayType = QualifiedType(
+          QualifiedType::TYPE,
+          ArrayType::getArrayType(
+              rv.context,
+              /* instance */
+              QualifiedType(QualifiedType::VAR, getAnyType(rv, loop->id())),
+              /* domainType */ domainTypeAsType,
+              /* eltType */ eltType));
+    }
+  } else {
+    // We have an instantiated domain, so get array type via call to its
+    // array builder function.
+    const char* arrayBuilderProc = "buildArray";
+    std::vector<CallInfoActual> actuals;
+    actuals.emplace_back(domainType, USTR("this"));
+    actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+    // TODO: Implement noinit (allowing initElts to be false)
+    actuals.emplace_back(QualifiedType::makeParamBool(rv.context, true),
+                         UniqueString::get(rv.context, "initElts"));
+    auto ci = CallInfo(
+        /* name */ UniqueString::get(rv.context, arrayBuilderProc),
+        /* calledType */ domainType,
+        /* isMethodCall */ true,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false,
+        actuals);
+    auto scope = rv.scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    if (!c.exprType().isUnknownOrErroneous()) {
+      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
     }
   }
 
-  if (domainType.isUnknown()) {
-    // TODO: emit an error here
-    return true;
-  }
-
-  auto eltType = QualifiedType(QualifiedType::TYPE, bodyType.type());
-  auto arrayType =
-    ArrayType::getArrayType(rv.context,
-                            /* TODO, see comment in getArrayType */ QualifiedType(),
-                            domainType, eltType);
-
-  auto& re = rv.byPostorder.byAst(loop);
-  re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
-
+  re.setType(arrayType);
   return true;
 }
 
