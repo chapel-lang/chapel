@@ -714,7 +714,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
 }
 
 proc tcpListener.accept(timeout: real): tcpConn throws {
-  return this.accept(timeout:struct_timeval);
+  return this.accept(realToTimeVal(timeout));
 }
 
 /*
@@ -884,7 +884,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
 }
 
 proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
-  return connect(address, timeout:struct_timeval);
+  return connect(address, realToTimeVal(timeout));
 }
 
 /*
@@ -945,7 +945,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
 
 proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
              timeout:real): tcpConn throws {
-  return connect(host, service, family, timeout:struct_timeval);
+  return connect(host, service, family, realToTimeVal(timeout));
 }
 
 /*
@@ -981,7 +981,7 @@ proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPU
 
 proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
              timeout:real): tcpConn throws {
-  return connect(host, port, family, timeout:struct_timeval);
+  return connect(host, port, family, realToTimeVal(timeout));
 }
 
 /*
@@ -1102,7 +1102,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
 }
 
 proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, ipAddr) throws {
-  return this.recvfrom(bufferLen, timeout:struct_timeval, flags);
+  return this.recvfrom(bufferLen, realToTimeVal(timeout), flags);
 }
 
 /*
@@ -1133,7 +1133,7 @@ proc udpSocket.recv(bufferLen: int, in timeout = indefiniteTimeout) throws {
 }
 
 proc udpSocket.recv(bufferLen: int, timeout: real) throws {
-  return this.recv(bufferLen, timeout:struct_timeval);
+  return this.recv(bufferLen, realToTimeVal(timeout));
 }
 
 @chpldoc.nodoc
@@ -1212,7 +1212,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
 }
 
 proc udpSocket.send(data: bytes, in address: ipAddr, timeout: real) throws {
-  return this.send(data, address, timeout:struct_timeval);
+  return this.send(data, address, realToTimeVal(timeout));
 }
 
 @chpldoc.nodoc
@@ -1595,5 +1595,12 @@ proc deinit() {
   pthread_join(event_loop_thread, nil:c_ptr(c_ptr(void)));
   event_base_free(event_loop_base);
   libevent_global_shutdown();
+}
+
+private proc realToTimeVal(x: real) {
+  const sec = x:int;
+  const usec = ((x-sec)*1_000_000):int;
+  return new struct_timeval(sec, usec);
+
 }
 }
