@@ -2939,10 +2939,7 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) {
-      printf("Ignoring %s\n", node->id().str().c_str());
-      return nullptr;
-    }
+    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;

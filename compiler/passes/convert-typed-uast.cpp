@@ -18,15 +18,6 @@
  * limitations under the License.
  */
 
-/* This file supports conversion of uAST+types to the older AST used by
-   the rest of the compiler. It uses recursive functions to perform
-   the conversion.
-
-   This pass is currently experimental. While it is optional, it should
-   generate AST similar to what the production compiler emits after
-   the callDestructors pass.
- */
-
 #include "convert-uast.h"
 
 #include "CForLoop.h"
@@ -91,7 +82,8 @@ using namespace uast;
 // The 'typed converter' uses the fully resolved uAST provided by the 'dyno'
 // frontend in order to generate typed legacy AST that is equivalent to the
 // AST produced at the end of the 'callDestructors' pass (with a few
-// deliberate exceptions).
+// deliberate exceptions). It uses recursive functions to perform the
+// conversion.
 //
 // One of the goals of this pass is to (for the functions generated here)
 // completely sidestep the use of the legacy normalizer and resolver.
@@ -192,18 +184,116 @@ struct TConverter final : UastConverter {
   class ActualConverter;
 
   // This state is used to drive conversion of a module or function.
+  // It is swapped in or out of the converter as needed in order to
+  // convert different functions.
   struct ConvertedSymbolState {
+
+    // The function or module that we are currently converting.
     const AstNode* symbol = nullptr;
+
+    // When converting functions, this is the 'FnSymbol*'.
     FnSymbol* fnSymbol = nullptr;
+
+    // The module containing the symbol we are converting.
     ModuleSymbol* moduleSymbol = nullptr;
+
+    // In functions, this is the return variable (if it exists).
     Symbol* retVar = nullptr;
+
+    // In functions, this is the epilogue jump label (if it exists).
     LabelSymbol* epilogueLabel = nullptr;
+
+    // When converting functions, this is the 'ResolvedFunction*'.
     const ResolvedFunction* resolvedFunction = nullptr;
+
+    // This will be set only when converting default arguments for formals.
     ActualConverter* actualConverter = nullptr;
+
+    // Set to 'true' if this module was loaded from a library file.
     bool moduleFromLibraryFile = false;
+
+    // A mapping from 'dyno' symbols to old AST symbols for local variables.
     std::unordered_map<ID, Symbol*> localSyms;
+
+    // The current insertion point for expressions.
     AList* AList = nullptr;
+
+    // Used to determine if we are in a USER context or not.
     ModTag topLevelModTag = MOD_USER;
+  };
+
+  // This state is used to drive conversion of call actuals. To support
+  // default arguments, we may need to suspend/resume conversion of the
+  // called function at the same time (in order to convert default values
+  // for formals), kind of like a coroutine.
+  class ActualConverter {
+   public:
+    // The first component is the converted expression. The second is
+    // the actual temp, created on demand if needed while converting
+    // default arguments.
+    //
+    // If the first slot is 'nullptr' then no actual was created for it,
+    // which is possible if the actual was elided (e.g., the formal is
+    // param or a type).
+    //
+    // If the second slot is 'nullptr' then no actual temp was needed.
+    using ActualInfo = std::tuple<Expr*, Symbol*>;
+
+   private:
+    // The typed converter.
+    TConverter* tc_ = nullptr;
+
+    // Does this call require defaults at all?
+    bool callRequiresDefaults_ = false;
+
+    // The state of the called function. This is swapped on and off
+    // the converter as needed in order to interleave conversion of
+    // default argument values with conversion of call actuals.
+    ConvertedSymbolState calledFnState_;
+
+    // The signature of the called function.
+    const TypedFnSignature* tfs_ = nullptr;
+
+    // State for actuals. Not all slots may be used.
+    std::vector<ActualInfo> actualState_;
+
+    // The AST representing the call's location.
+    const AstNode* astForCall_ = nullptr;
+
+    // Collected actual ASTs. Do not have to be children of 'astForCall'.
+    const std::vector<const AstNode*> actualAsts_;
+
+    // The map driving conversion of the call actuals.
+    const FormalActualMap& fam_;
+
+    // The resolved visitor for the symbol containing the call.
+    RV& rv_;
+
+    // Mapping from a formal's ID to the 'FormalActual' slot.
+    std::unordered_map<ID, const FormalActual&> formalIdToFormalActual_;
+
+    // Used to insert actual temps if needed.
+    AList* tempInsertionPoint_ = nullptr;
+
+    // Extra setup done only if there are default arguments.
+    void prepareFormalConversionState();
+
+    // Convert a single actual considering 'fa'.
+    void convertActual(const FormalActual& fa);
+   public:
+    ActualConverter(TConverter* tc,
+                    const AstNode* astForCall,
+                    const std::vector<const AstNode*>& actualAsts,
+                    const resolution::TypedFnSignature* tfs,
+                    const FormalActualMap& fam,
+                    RV& rv);
+
+    // Insert converted actuals into the given 'CallExpr'.
+    void convertAndInsertActuals(CallExpr* call);
+
+    // When converting a default argument, this is called to replace a
+    // reference to a formal with a reference to an actual if needed.
+    Symbol* interceptFormalUse(const ID& id);
   };
 
   /// ------ ///
@@ -410,7 +500,7 @@ struct TConverter final : UastConverter {
 
   // This should not be called. To use untyped conversion, call below.
   Expr* convertAST(const AstNode* node) override {
-    CHPL_ASSERT(false && "Should not be called here!");
+    INT_ASSERT(false && "Should not be called here!");
     return nullptr;
   }
 
@@ -509,7 +599,7 @@ struct TConverter final : UastConverter {
                          const ResolvedFields& rf,
                          AggregateType* at);
 
-  Symbol* convertParam(types::QualifiedType qt);
+  Symbol* convertParam(const types::QualifiedType& qt);
 
   // note: the relevant calls and DefExpr are added to cur.AList;
   // this function returns the VarSymbol*
@@ -603,11 +693,10 @@ struct TConverter final : UastConverter {
   // Create a new temporary. The type used for it must be supplied.
   Symbol* makeNewTemp(const types::QualifiedType& qt);
 
-  // Create a new temporary. The type used for it must be supplied.
-  Symbol* makeNewTemp(const QualifiedType& qt);
-
   // Store 'e' in a temporary if it does not already refer to one.
-  SymExpr* storeInTempIfNeeded(Expr* e);
+  // The type for the temporary must be provided and cannot easily
+  // be retrieved from the converted expression.
+  SymExpr* storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt);
 
   Expr* convertLifetimeClause(const AstNode* node, RV& rv);
 
@@ -1115,7 +1204,7 @@ void TConverter::convertFunction(const ResolvedFunction* rf) {
 
   pushBlock(modSym->block);
 
-  // Traversing the symbol will let the typed converter drive conversion.
+  // Traversing the symbol will use the typed converter as a visitor.
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rv(&rcval, cur.symbol, *this, rr);
   cur.symbol->traverse(rv);
@@ -1710,12 +1799,19 @@ Symbol* TConverter::findOrCreateSym(const ID& id, RV& rv) {
     return ret;
   }
 
-  const AstNode* ast = parsing::idToAst(context, id);
+  auto ast = parsing::idToAst(context, id);
+  auto parent = ast ? parsing::parentAst(context, ast) : nullptr;
   INT_ASSERT(ast);
 
-  if (cur.actualConverter != nullptr) {
-    TC_UNIMPL("Intercepting reference to another formal when converting "
-              "default argument values");
+  if (cur.symbol && cur.symbol->isFunction() &&
+      cur.symbol == parent &&
+      cur.actualConverter) {
+    INT_ASSERT(ast->isFormal() || ast->isVarArgFormal() ||
+               ast->isTupleDecl());
+    // It's a formal. Since the 'actualConverter' field is set, then we
+    // are converting a default argument and need to let the actual
+    // converter intercept the formal to replace it with an actual.
+    return cur.actualConverter->interceptFormalUse(id);
   }
 
   if (auto varargs = ast->toVarArgFormal()) {
@@ -2433,33 +2529,27 @@ Expr* TConverter::defaultValueForType(const types::Type* t) {
 
 Symbol* TConverter::makeNewTemp(const types::QualifiedType& qt) {
   auto ret = newTemp();
+  ret->addFlag(FLAG_EXPR_TEMP);
   ret->qual = convertQualifier(qt.kind());
   ret->type = convertType(qt.type());
   return ret;
 }
 
-SymExpr* TConverter::storeInTempIfNeeded(Expr* e) {
+SymExpr*
+TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
   if (SymExpr* se = toSymExpr(e)) {
     return se;
   }
 
   // otherwise, store the value in a temp
-  VarSymbol* t = newTemp();
-  t->addFlag(FLAG_EXPR_TEMP);
-  // TODO: Cannot call 'qualType()' because it can try to use the old resolver.
-  // TODO: Do temporaries need to be typed or can the backend handle that?
-  /*
-  auto qt = e->qualType();
-  t->type = qt.type();
-  t->qual = qt.getQual();
-  */
+  auto t = makeNewTemp(qt);
   cur.AList->insertAtTail(new DefExpr(t));
   cur.AList->insertAtTail(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
 }
 
 // note: new_IntSymbol etc already returns existing if already created
-Symbol* TConverter::convertParam(types::QualifiedType qt) {
+Symbol* TConverter::convertParam(const types::QualifiedType& qt) {
   const types::Param* p = qt.param();
   const types::Type* t = qt.type();
   INT_ASSERT(p && t);
@@ -3001,7 +3091,7 @@ Expr* TConverter::convertSpecialTupleParamIndexingOrNull(
       auto name = astr("x", istr(val));
       auto field = at->getField(name);
       auto get = new CallExpr(PRIM_GET_MEMBER, tuple, new SymExpr(field));
-      Expr* ret = storeInTempIfNeeded(get);
+      Expr* ret = storeInTempIfNeeded(get, {});
 
       return ret;
     }
@@ -3208,70 +3298,6 @@ Expr* TConverter::convertRegularNamedCallOrNull(const Call* node, RV& rv) {
   return ret;
 }
 
-  // This state is used to drive conversion of call actuals. To support
-  // default arguments, we may need to suspend/resume conversion of the
-  // called function at the same time (in order to convert default values
-  // for formals), kind of like a coroutine.
-  class TConverter::ActualConverter {
-   public:
-    // The first component is the converted expression. The second is
-    // the actual temp, created on demand if needed while converting
-    // default arguments.
-    //
-    // If the first slot is 'nullptr' then no actual was created for it,
-    // which is possible if the actual was elided (e.g., the formal is
-    // param or a type).
-    //
-    // If the second slot is 'nullptr' then no actual temp was needed.
-    using ActualInfo = std::tuple<Expr*, DefExpr*>;
-
-   private:
-    // The typed converter.
-    TConverter* tc_ = nullptr;
-
-    // Does this call require defaults at all?
-    bool callRequiresDefaults_ = false;
-
-    // The state of the called function. This is swapped on and off
-    // the converter as needed in order to interleave conversion of
-    // default argument values with conversion of call actuals.
-    ConvertedSymbolState calledFnState_;
-
-    // The signature of the called function.
-    const TypedFnSignature* tfs_ = nullptr;
-
-    // State for actuals. Not all slots may be used.
-    std::vector<ActualInfo> actualState_;
-
-    // The AST representing the call's location.
-    const AstNode* astForCall_ = nullptr;
-
-    // Collected actual ASTs. Do not have to be children of 'astForCall'.
-    const std::vector<const AstNode*> actualAsts_;
-
-    // The map driving conversion of the call actuals.
-    const FormalActualMap& fam_;
-
-    // The resolved visitor for the symbol containing the call.
-    RV& rv_;
-
-    // Extra setup done only if there are default arguments.
-    void prepareFormalConversionState();
-
-    // Convert a single actual considering 'fa'.
-    void convertActual(const FormalActual& fa);
-   public:
-    ActualConverter(TConverter* tc,
-                    const AstNode* astForCall,
-                    const std::vector<const AstNode*>& actualAsts,
-                    const resolution::TypedFnSignature* tfs,
-                    const FormalActualMap& fam,
-                    RV& rv);
-
-    // Insert converted actuals into the given 'CallExpr'.
-    void convertAndInsertActuals(CallExpr* call);
-  };
-
 TConverter::ActualConverter::ActualConverter(
                                 TConverter* tc,
                                 const AstNode* astForCall,
@@ -3282,18 +3308,28 @@ TConverter::ActualConverter::ActualConverter(
     : tc_(tc), tfs_(tfs), astForCall_(astForCall),
       actualAsts_(actualAsts),
       fam_(fam),
-      rv_(rv) {
-
-  // Determine if the call requires any defaults at all.
-  for (auto& fa : fam_.byFormals()) {
-    callRequiresDefaults_ = fa.hasDefault();
-    if (callRequiresDefaults_) break;
-  }
+      rv_(rv),
+      tempInsertionPoint_(tc->cur.AList) {
+  INT_ASSERT(tempInsertionPoint_);
 
   // Use the arity provided by 'fam' since it has already accounted for
   // variable-arity formals such as varargs when computing alignment.
   INT_ASSERT(fam_.isValid());
   actualState_.resize(fam_.numSlots());
+
+  // Determine if the call requires any defaults at all.
+  for (auto& fa : fam_.byFormals()) {
+    callRequiresDefaults_ |= fa.hasDefault();
+
+    if (auto decl = fa.formal()) {
+      // A vararg formal can never be referred to by another formal.
+      if (decl->isVarArgFormal()) continue;
+
+      auto it = formalIdToFormalActual_.find(decl->id());
+      INT_ASSERT(it == formalIdToFormalActual_.end());
+      formalIdToFormalActual_.emplace(decl->id(), fa);
+    }
+  }
 
   // Exit early if defaults are not required.
   if (!callRequiresDefaults_) return;
@@ -3344,17 +3380,32 @@ TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return;
 
   Context* context = tc_->context;
-  int idxActual = fa.actualIdx();
-  auto astActual = actualAsts_[idxActual];
-  auto& slot = actualState_[idxActual];
 
-  // If a default argument is not required, convert and leave.
+  // One or the other must hold in order to compute the slot index.
+  INT_ASSERT(fa.hasDefault() || fa.hasActual());
+
+  int idxSlot = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
+  INT_ASSERT(0 <= idxSlot && idxSlot < actualState_.size());
+  auto& slot = actualState_[idxSlot];
+
   if (!fa.hasDefault()) {
+    INT_ASSERT(fa.hasActual());
+
+    // If there is no default argument then an actual is present.
+    int idxActual = fa.actualIdx();
+    INT_ASSERT(0 <= idxActual && idxActual < actualAsts_.size());
+
+    // And there should be AST there.
+    auto astActual = fa.hasActual() ? actualAsts_[idxActual] : nullptr;
+    INT_ASSERT(astActual);
+
+    // Convert the actual and leave.
     std::get<Expr*>(slot) = tc_->convertExpr(astActual, rv_);
+
     return;
   }
 
-  // Find the init expression for the formal.
+  // Otherwise we need a default argument. Get the formal's init expression.
   const Function* fn = calledFnState_.symbol->toFunction();
   const Decl* decl = fn->formal(fa.formalIdx());
   const AstNode* initExpr = nullptr;
@@ -3371,14 +3422,14 @@ TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   }
 
   //
-  // At this point, we are resolving a default argument value. In
-  // order to do so, we have to swap on the temporary "conversion
-  // state" that we prepared for the called function, run the
-  // converter on the formal's init-expr in order to generate AST,
-  // and then swap back to the "conversion state" of the function
-  // that contains the call. To handle the case where a formal's
-  // init-expr refers to another formal, the converter is set up
-  // to replace references to formals with actuals "on demand".
+  // At this point, we are resolving a default argument value. In order to
+  // do so, we have to swap on the temporary "conversion state" that we
+  // prepared for the called function, run the converter on the formal's
+  // init-expr in order to generate AST, and then swap back to the
+  // "conversion state" of the function that contains the call. To handle
+  // the case where a formal's init-expr refers to another formal, the
+  // converter is set up to replace references to formals with actuals
+  // "on demand".
   //
 
   auto rf = calledFnState_.resolvedFunction;
@@ -3416,13 +3467,13 @@ TConverter::ActualConverter::convertAndInsertActuals(CallExpr* call) {
   // Ensure the 'current AST list' matches - converter may swap contexts.
   INT_ASSERT(aList == tc_->cur.AList);
 
-  // Then insert their ASTs at the callsite.
-  for (auto [actual, temp] : actualState_) {
-    if (actual) call->insertAtTail(actual);
-
-    // TODO: Handle associated actions for 'in' 'out', deinit tmp, etc.
-    // TODO: Reliable way to insert temps above current statement.
-    if (temp) tc_->cur.AList->insertAtTail(temp);
+  // Then insert their ASTs into the call.
+  for (auto& slot : actualState_) {
+    if (auto temp = std::get<Symbol*>(slot)) {
+      call->insertAtTail(new SymExpr(temp));
+    } else if (auto expr = std::get<Expr*>(slot)) {
+      call->insertAtTail(expr);
+    }
   }
 }
 
@@ -3436,6 +3487,36 @@ void TConverter::convertAndInsertActuals(
                                 RV& rv) {
   ActualConverter ac(this, node, actualAsts, tfs, fam, rv);
   ac.convertAndInsertActuals(c);
+}
+
+Symbol* TConverter::ActualConverter::interceptFormalUse(const ID& id) {
+  auto it = formalIdToFormalActual_.find(id);
+  if (it != formalIdToFormalActual_.end()) {
+    auto& fa = it->second;
+    int idxActual = fa.actualIdx();
+    auto& slot = actualState_[idxActual];
+    auto& temp = std::get<Symbol*>(slot);
+
+    // If a temporary exists, then return it.
+    if (temp) return temp;
+
+    // Otherwise, we need to create the temporary.
+    auto expr = std::get<Expr*>(slot);
+    INT_ASSERT(expr);
+
+    auto ret = newTemp(astr("actual_", istr(idxActual)));
+    tempInsertionPoint_->insertAtTail(new DefExpr(ret));
+
+    auto move = new CallExpr(PRIM_MOVE, ret, expr);
+    tempInsertionPoint_->insertAtTail(move);
+
+    temp = ret;
+
+    return ret;
+  } else {
+    INT_ASSERT(false && "Expected entry for formal ID!");
+  }
+  return nullptr;
 }
 
 void TConverter::handlePostCallActions(CallExpr* c,
@@ -3958,7 +4039,7 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
           auto get = new CallExpr(PRIM_GET_MEMBER_VALUE,
                                   new SymExpr(fn->_this),
                                   new SymExpr(field));
-          auto se = storeInTempIfNeeded(get);
+          auto se = storeInTempIfNeeded(get, {});
           cur.AList->insertAtTail(se);
           return false;
         }
@@ -4065,7 +4146,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     INT_ASSERT(node->thenBlock()->numStmts() == 1);
     INT_ASSERT(node->elseBlock()->numStmts() == 1);
 
-    auto cond = storeInTempIfNeeded(convertExpr(node->condition(), rv));
+    auto cond = storeInTempIfNeeded(convertExpr(node->condition(), rv), {});
 
     // Temp stores the result of the if expression.
     // auto temp = makeNewTemp(rv.byAst(node).type());
@@ -4122,13 +4203,13 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       // TODO: Need to make sure this temporary is destroyed, and not the
       // inner variable which just contains a '.borrow()' / the results of
       // the 'check...' call.
-      auto initSymExpr = storeInTempIfNeeded(initExpr);
+      auto initSymExpr = storeInTempIfNeeded(initExpr, {});
 
       // Generate the 'chpl_checkBorrowIfVar' call.
       auto checkCall = new CallExpr(checkFn, initSymExpr, new SymExpr(gFalse));
 
       // The borrow will be inserted into 'cur.AList'. It is the condition.
-      cond = storeInTempIfNeeded(checkCall);
+      cond = storeInTempIfNeeded(checkCall, {});
 
       // Now generate the 'if var' itself. Use 'findOrCreateVar' to ensure
       // that code in the 'if' will find it. The variable will be
@@ -4149,7 +4230,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     }
     INT_ASSERT(cond);
 
-    cond = storeInTempIfNeeded(cond);
+    cond = storeInTempIfNeeded(cond, {});
 
     // if it's not a 'bool', emit a call to '_cond_test'.
     if (auto rr = rv.byAstOrNull(node->condition())) {
@@ -4166,7 +4247,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
                                {CallInfoActual(qt)});
           FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
           CallExpr* condCall = new CallExpr(condFn, cond);
-          cond = storeInTempIfNeeded(condCall);
+          cond = storeInTempIfNeeded(condCall, {});
         }
       }
     }
