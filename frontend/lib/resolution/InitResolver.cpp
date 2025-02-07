@@ -405,7 +405,6 @@ static const ArrayType* arrayTypeFromSubsHelper(
     auto baseArrRect = baseArr->parentClassType();
     CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
 
-    // Recreate the domain type
     auto [rank, idxType, strides] =
         extractRectangularInfo(context, baseArrRect);
     auto [domInstanceQt] = extractFields(context, instanceBct, "dom");
@@ -418,8 +417,20 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
   } else if (instanceBct->id().symbolPath() == "DefaultAssociative.DefaultAssociativeArr") {
-    // TODO: support associative arrays
-    CHPL_UNIMPL("associative arrays");
+
+    auto [idxType, parSafe, domInstanceQt] =
+        extractFields(context, instanceBct, "idxType", "parSafeDom", "dom");
+    auto domain = DomainType::getAssociativeType(context, domInstanceQt,
+                                                 idxType, parSafe);
+
+    CHPL_ASSERT(baseArr && baseArr->id().symbolPath() ==
+                               "ChapelDistribution.AbsBaseArr");
+    auto [eltType] = extractFields(context, baseArr, "eltType");
+
+    return ArrayType::getArrayType(context,
+                                   instanceQt,
+                                   QualifiedType(QualifiedType::TYPE, domain),
+                                   eltType);
   } else if (instanceBct->id().symbolPath() == "ChapelDistribution.BaseSparseArr") {
     // TODO: support sparse arrays
     CHPL_UNIMPL("sparse arrays");
