@@ -3221,6 +3221,7 @@ void init_ofiForAms(void) {
              "post fi_recvmsg(AMLZs %p, len %#zx)",
               ofi_msg_reqs[i].msg_iov->iov_base,
               ofi_msg_reqs[i].msg_iov->iov_len);
+  }
   init_amHandling();
 }
 
