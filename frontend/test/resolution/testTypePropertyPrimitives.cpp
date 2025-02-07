@@ -650,6 +650,54 @@ static void test13() {
   testPrimitive(tpg);
 }
 
+static void test14() {
+  Test tpg {
+    /* testName */ __FUNCTION__,
+    /* useStdContext */ true,
+    /* prelude */ R"""(
+               class Foo {}
+               record bar {}
+               enum color {blue, red}
+               )""",
+    /* primitive */ chpl::uast::primtags::PRIM_HAS_DEFAULT_VALUE,
+    /* calls */ {
+      /* primitive types */
+      { {"bool"}, Test::TRUE },
+      { {"int"}, Test::TRUE },
+      { {"int(64)"}, Test::TRUE },
+      { {"int(32)"}, Test::TRUE },
+      { {"uint"}, Test::TRUE },
+      { {"real"}, Test::TRUE },
+      { {"imag"}, Test::TRUE },
+      { {"complex"}, Test::TRUE },
+      /* record-like builtin types */
+      { {"string"}, Test::TRUE },
+      { {"bytes"}, Test::TRUE },
+      { {"range"}, Test::TRUE },
+      { {"sync int"}, Test::TRUE },
+      { {"atomic int"}, Test::TRUE },
+      /* generic builtin types */
+      { {"integral"}, Test::TRUE },
+      { {"numeric"}, Test::TRUE },
+      { {"enum"}, Test::FALSE },
+      { {"record"}, Test::FALSE },
+      { {"class"}, Test::FALSE },
+      { {"class?"}, Test::TRUE },
+      { {"shared"}, Test::FALSE },
+      { {"shared class?"}, Test::TRUE },
+      /* user-defined types */
+      { {"bar"}, Test::TRUE },
+      { {"owned Foo"}, Test::FALSE },
+      { {"owned Foo?"}, Test::TRUE },
+      { {"color"}, Test::TRUE },
+      { {"(int, bool)"}, Test::TRUE },
+      { {"(int, color)"}, Test::TRUE },
+      { {"(int, owned Foo)"}, Test::FALSE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
 int main() {
   test0();
   test1();
@@ -665,4 +713,5 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
 }
