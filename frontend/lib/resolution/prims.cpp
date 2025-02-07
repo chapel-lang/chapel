@@ -1017,6 +1017,12 @@ static QualifiedType primNeedsAutoDestroy(Context* context, const CallInfo& ci) 
   });
 }
 
+static QualifiedType primHasDefaultValue(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return Type::isDefaultInitializable(t);
+  });
+}
+
 static QualifiedType
 primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
@@ -1275,7 +1281,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_HAS_DEFAULT_VALUE:
-      CHPL_UNIMPL("various primitives");
+      type = primHasDefaultValue(context, ci);
       break;
 
     case PRIM_NEEDS_AUTO_DESTROY:

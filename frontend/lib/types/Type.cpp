@@ -337,6 +337,21 @@ bool Type::isPod(Context* context, const Type* t) {
   return true;
 }
 
+bool Type::isDefaultInitializable(const Type* t) {
+  if (t->isClassType() && t->toClassType()->decorator().isNonNilable()) {
+    return false;
+  } else if (auto tup = t->toTupleType()) {
+    for (int i = 0; i < tup->numElements(); i++) {
+      if (!isDefaultInitializable(tup->elementType(i).type())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return !needsInitDeinitCall(t);
+}
+
 bool Type::needsInitDeinitCall(const Type* t) {
   if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
     // can't do anything with these

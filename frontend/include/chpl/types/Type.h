@@ -347,6 +347,8 @@ class Type {
   */
   static bool isPod(Context* context, const Type* t);
 
+  static bool isDefaultInitializable(const Type* t);
+
   static bool needsInitDeinitCall(const Type* t);
 
   /// \cond DO_NOT_DOCUMENT
