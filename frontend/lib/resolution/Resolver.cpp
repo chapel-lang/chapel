@@ -6826,6 +6826,19 @@ bool Resolver::enter(const uast::Zip* zip) {
 }
 void Resolver::exit(const uast::Zip* zip) {}
 
+bool Resolver::enter(const uast::Let* node) {
+  enterScope(node);
+  return true;
+}
+
+void Resolver::exit(const uast::Let* node) {
+  // The type of a let-expression is the type of its expression.
+  auto& otherR = byPostorder.byAst(node->expression());
+  auto& thisR = byPostorder.byAst(node);
+  thisR.setType(otherR.type());
+  exitScope(node);
+}
+
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
 

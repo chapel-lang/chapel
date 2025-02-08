@@ -801,6 +801,9 @@ struct Resolver {
   bool enter(const uast::Zip* node);
   void exit(const uast::Zip* node);
 
+  bool enter(const uast::Let* node);
+  void exit(const uast::Let* node);
+
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
   void exit(const uast::AstNode* ast);
