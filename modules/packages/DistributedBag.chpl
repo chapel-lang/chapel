@@ -208,6 +208,21 @@ module DistributedBag
   config const distributedBagWorkStealingMinElts: int = 1;
 
   /*
+    The victim selection policy in work stealing.
+  */
+  enum VictimPolicy {
+    /*
+      Random selection.
+    */
+    RAND,
+    /*
+      Circular or ring-like selection, where each task steals work from the next
+      task in sequence, with the last task stealing from the first.
+    */
+    RING
+  }
+
+  /*
     Reference counter for DistributedBag.
   */
   @chpldoc.nodoc
@@ -425,13 +440,16 @@ module DistributedBag
       :arg taskId: The index of the segment from which the element is removed.
       :type taskId: `int`
 
+      :arg policy: The victim selection policy in work stealing.
+      :type policy: :type:`VictimPolicy`
+
       :return: Depending on the scenarios: `(true, elt)` if we successfully removed
                element `elt` from distBag; `(false, defaultOf(eltType))` otherwise.
       :rtype: `(bool, eltType)`
     */
-    proc remove(taskId: int): (bool, eltType)
+    proc remove(taskId: int, param policy: VictimPolicy = VictimPolicy.RAND): (bool, eltType)
     {
-      return bag!.remove(taskId);
+      return bag!.remove(taskId, policy);
     }
     /*
       TODO: There are types in Chapel that cannot be default-initialized. One example
@@ -660,7 +678,7 @@ module DistributedBag
       calling task/locale cannot be chosen. We can also specify how many victims
       to check for eligibility; 1 by default.
     */
-    iter victim(const N: int, const callerId: int, const policy: string = "rand",
+    iter victim(const N: int, const callerId: int, param policy: VictimPolicy,
       const tries: int = 1): int
     {
       var count: int;
@@ -668,7 +686,7 @@ module DistributedBag
 
       select policy {
         // In the 'ring' strategy, victims are selected in a round-robin fashion.
-        when "ring" {
+        when VictimPolicy.RING {
           var id = (callerId + 1) % N;
 
           while ((count < limit) && (count < tries)) {
@@ -678,7 +696,7 @@ module DistributedBag
           }
         }
         // In the 'rand' strategy, victims are randomly selected.
-        when "rand" {
+        when VictimPolicy.RAND {
           var id: int;
           const victims = permute(0..#N);
 
@@ -693,9 +711,6 @@ module DistributedBag
         otherwise halt("DistributedBag internal error: Unknown victim choice policy");
       }
     }
-    /*
-      TODO: Probably better to use an enum Policy instead of string here.
-    */
     /*
       TODO: Create a seed here for the RNG that includes the locale ID. Since we aren't
       specifying the seed, we get one based on the time, but this might lead multiple
@@ -718,7 +733,7 @@ module DistributedBag
       best case fails, it trigger a work stealing mechanism (See the Implementation
       Details section).
     */
-    proc remove(const taskId: int): (bool, eltType)
+    proc remove(const taskId: int, param policy: VictimPolicy): (bool, eltType)
     {
       var phase = REMOVE_BEST_CASE;
       if (numLocales > 1) then phase = PERFORMANCE_PATCH;
@@ -767,7 +782,7 @@ module DistributedBag
             if globalStealInProgress.read() then return (REMOVE_FAST_EXIT, default);
 
             // iterate over the victim tasks
-            for victimTaskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
+            for victimTaskId in victim(here.maxTaskPar, taskId, policy, here.maxTaskPar) {
               ref targetSegment = segments[victimTaskId];
 
               if !targetSegment.globalSteal.read() {
@@ -823,11 +838,11 @@ module DistributedBag
             */
 
             // iterate over the victim locales
-            for victimLocaleId in victim(numLocales, here.id, "rand", 1) {
+            for victimLocaleId in victim(numLocales, here.id, policy, 1) {
               on Locales[victimLocaleId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // iterate over the victim tasks
-                for victimTaskId in victim(here.maxTaskPar, -1, "rand", here.maxTaskPar) {
+                for victimTaskId in victim(here.maxTaskPar, -1, policy, here.maxTaskPar) {
                   ref targetSegment = targetBag!.segments[victimTaskId];
 
                   targetSegment.globalSteal.write(true);
