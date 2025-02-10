@@ -698,7 +698,7 @@ static void test14() {
       { {"baz"}, Test::FALSE },
      },
   };
-  testPrimitive(tpg, /* unrelatedErrors */ 1 /* sync.init has an unrelated error in its body */);
+  testPrimitive(tpg);
 }
 
 int main() {
