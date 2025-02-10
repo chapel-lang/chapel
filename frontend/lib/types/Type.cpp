@@ -22,6 +22,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
+#include "chpl/types/ArrayType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/CStringType.h"
@@ -44,6 +45,7 @@
 #include "chpl/types/VoidType.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "../resolution/default-functions.h"
 
 namespace chpl {
 namespace types {
@@ -258,6 +260,38 @@ const CompositeType* Type::getCompositeType() const {
   return nullptr;
 }
 
+template <typename F>
+static bool checkFieldsWithPredicate(Context* context, const Type* t, F&& pred) {
+  using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  CHPL_ASSERT(ct);
+
+  if (auto tt = t->toTupleType()) {
+    for (int i = 0; i < tt->numElements(); i++) {
+      auto& eltType = tt->elementType(i);
+      if (!eltType.type()) return false;
+      if (!pred(context, eltType.type())) return false;
+    }
+
+    return true;
+  }
+
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!pred(context, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static bool
 compositeTypeIsPod(Context* context, const Type* t) {
   using namespace resolution;
@@ -269,31 +303,15 @@ compositeTypeIsPod(Context* context, const Type* t) {
   auto ct = t->getCompositeType();
   if (!ct) return false;
 
-  if (auto tt = t->toTupleType()) {
-    // A tuple is plain old data if all of its components are plain old data.
-    for (int i = 0; i < tt->numElements(); i++) {
-      auto& eltType = tt->elementType(i);
-      if (!eltType.type()) return false;
-      if (!Type::isPod(context, eltType.type())) return false;
-    }
+  bool fieldsArePod = checkFieldsWithPredicate(context, t, Type::isPod);
+  if (!fieldsArePod) return false;
 
-    return true;
-  }
+  // for tuple, this is enough; for other composite types, see if any user-defined
+  // methods are present.
+  if (t->isTupleType()) return true;
 
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
-
-  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto qt = rf.fieldType(i);
-    if (auto ft = qt.type()) {
-      if (qt.kind() == QualifiedType::PARAM ||
-          qt.kind() == QualifiedType::TYPE) continue;
-      if (!Type::isPod(context, ft)) return false;
-    } else {
-      return false;
-    }
-  }
 
   if (auto tfs = tryResolveDeinit(context, ast, t)) {
     if (!tfs->isCompilerGenerated()) return false;
@@ -335,6 +353,61 @@ bool Type::isPod(Context* context, const Type* t) {
   if (g != Type::CONCRETE) return false;
   if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
   return true;
+}
+
+static bool const& isDefaultInitializableQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(isDefaultInitializableQuery, context, t);
+
+  bool result = true;
+  if (!t || t->isUnknownType() || t->isErroneousType()) {
+    result = false;
+  } else if (t->isBuiltinType()) {
+    result = t->genericity() == Type::CONCRETE;
+  } else if (auto at = t->toArrayType()) {
+    result = isDefaultInitializableQuery(context, at->eltType().type());
+  } else if (t->isDomainType()) {
+    result = true; // production always returns true for domains.
+  } else if (t->isExternType()) {
+    // Currently extern records aren't initialized at all by default.
+    // But it's not necessarily reasonable to expect them to have
+    // initializers. See issue #7992 and preFold.cpp's setRecordDefaultValueFlags
+    // for FLAG_EXTERN.
+    result = true;
+  } else if (auto ct = t->toClassType()) {
+    result = ct->decorator().isNilable();
+  } else if (t->isTupleType()) {
+    result = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+  } else if (t->isRecordLike()) {
+    // If the type doesn't have a user-defined initializer or is a tuple, check
+    // its fields.
+    auto fieldsDefaultInitializable = true;
+    if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
+      fieldsDefaultInitializable = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+    }
+
+    if (!fieldsDefaultInitializable) {
+      result = false;
+    } else {
+      const uast::AstNode* ast = nullptr;
+      if (auto ct = t->getCompositeType()) {
+        if (auto id = ct->id()) {
+          ast = parsing::idToAst(context, std::move(id));
+        }
+      }
+
+      // note: production disallows default-init for generic fields like `var x;`,
+      // even if they are instantiated with a type that is default-initializable.
+      // But why? Seems like this is an implementation detail. Allow it in Dyno.
+
+      result = resolution::tryResolveZeroArgInit(context, ast, t) != nullptr;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool Type::isDefaultInitializable(Context* context, const Type* t) {
+  return isDefaultInitializableQuery(context, t);
 }
 
 bool Type::needsInitDeinitCall(const Type* t) {

@@ -487,6 +487,21 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope = nullptr);
 
+// helper for tryResolveZeroArgInit: add substitutions from a type to a list
+// of actuals. In practice, "zero-arg" init calls are really init calls where
+// arguments are given by the field substitutions etc.
+bool addExistingSubstitutionsAsActuals(Context* context,
+                                       const types::Type* type,
+                                       std::vector<CallInfoActual>& outActuals,
+                                       std::vector<const uast::AstNode*>& outActualAsts);
+
+
+// tries to resolve an (unambiguous) init()
+const TypedFnSignature* tryResolveZeroArgInit(Context* context,
+                                              const uast::AstNode* astForScopeOrErr,
+                                              const types::Type* toInit,
+                                              const PoiScope* poiScope = nullptr);
+
 // tries to resolve an (unambiguous) assign
 const TypedFnSignature* tryResolveAssign(Context* context,
                                          const uast::AstNode* astForScopeOrErr,

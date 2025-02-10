@@ -22,6 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/resolution/copy-elision.h"
@@ -427,6 +428,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     // try to resolve 'init'
     // TODO: handle instantiations passing field types
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> ignoredActualAsts;
     actuals.push_back(CallInfoActual(varType, USTR("this")));
     if (classType != nullptr && classType->manager() != nullptr) {
       // when default-initializing a shared C? or owned C?,
@@ -444,17 +446,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
           CallInfoActual(QualifiedType(QualifiedType::TYPE, t), chpl_t));
     } else if (compositeType != nullptr &&
                compositeType->instantiatedFromCompositeType() != nullptr) {
-      // pass generic type and param fields by the name
-      auto subs = compositeType->sortedSubstitutions();
-      for (const auto& pair : subs) {
-        const ID& id = pair.first;
-        const QualifiedType& qt = pair.second;
-        auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
-        if (fieldAst->storageKind() == QualifiedType::TYPE ||
-            fieldAst->storageKind() == QualifiedType::PARAM) {
-          actuals.push_back(CallInfoActual(qt, fieldAst->name()));
-        }
-      }
+      addExistingSubstitutionsAsActuals(context, compositeType, actuals,
+                                        ignoredActualAsts);
     }
 
     // Get the 'root' instantiation

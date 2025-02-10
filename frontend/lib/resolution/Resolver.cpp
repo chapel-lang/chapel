@@ -2490,31 +2490,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   resolveTupleUnpackDecl(td, useT);
 }
 
-static bool addExistingSubstitutionsAsActuals(Context* context,
-                                              const Type* type,
-                                              std::vector<CallInfoActual>& outActuals,
-                                              std::vector<const AstNode*>& outActualAsts) {
-  bool addedSubs = false;
-  while (auto ct = type->getCompositeType()) {
-    if (!ct->instantiatedFromCompositeType()) break;
-
-    for (auto& [id, qt] : ct->substitutions()) {
-      auto fieldName = parsing::fieldIdToName(context, id);
-      addedSubs = true;
-      outActuals.emplace_back(qt, fieldName);
-      outActualAsts.push_back(nullptr);
-    }
-
-    if (auto clt = ct->toBasicClassType()) {
-      type = clt->parentClassType();
-    } else {
-      break;
-    }
-  }
-
-  return addedSubs;
-}
-
 static void findMismatchedInstantiations(Context* context,
                                          const CompositeType* originalCT,
                                          const CompositeType* finalCT,

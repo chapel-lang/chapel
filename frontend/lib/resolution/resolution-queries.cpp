@@ -5498,6 +5498,60 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   return c.mostSpecific().only().fn();
 }
 
+bool addExistingSubstitutionsAsActuals(Context* context,
+                                       const types::Type* type,
+                                       std::vector<CallInfoActual>& outActuals,
+                                       std::vector<const uast::AstNode*>& outActualAsts) {
+  bool addedSubs = false;
+  while (auto ct = type->getCompositeType()) {
+    if (!ct->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : ct->substitutions()) {
+      auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
+      if (fieldAst->storageKind() == QualifiedType::TYPE ||
+          fieldAst->storageKind() == QualifiedType::PARAM) {
+        addedSubs = true;
+        outActuals.emplace_back(qt, fieldAst->name());
+        outActualAsts.push_back(nullptr);
+      }
+    }
+
+    if (auto clt = ct->toBasicClassType()) {
+      type = clt->parentClassType();
+    } else {
+      break;
+    }
+  }
+
+  return addedSubs;
+}
+
+const TypedFnSignature* tryResolveZeroArgInit(Context* context,
+                                              const AstNode* astForScopeOrErr,
+                                              const types::Type* toInit,
+                                              const PoiScope* poiScope) {
+  if (!toInit->getCompositeType()) return nullptr;
+
+  QualifiedType toInitQt(QualifiedType::INIT_RECEIVER, toInit);
+
+  std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> ignoredActualAsts;
+  actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
+  addExistingSubstitutionsAsActuals(context, toInit, actuals, ignoredActualAsts);
+  auto ci = CallInfo(/* name */ USTR("init"),
+                     /* calledType */ toInitQt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+                                CallScopeInfo::forNormalCall(scope, poiScope));
+  return c.mostSpecific().only().fn();
+}
+
 const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const AstNode* astForScopeOrErr,
                                          const types::Type* t,
