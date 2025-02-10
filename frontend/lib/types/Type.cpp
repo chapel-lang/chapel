@@ -396,7 +396,8 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
       }
 
       // note: production disallows default-init for generic fields like `var x;`,
-      // but why? Seems like this is an implementation detail. Allow it in Dyno.
+      // even if they are instantiated with a type that is default-initializable.
+      // But why? Seems like this is an implementation detail. Allow it in Dyno.
 
       result = resolution::tryResolveZeroArgInit(context, ast, t) != nullptr;
     }
