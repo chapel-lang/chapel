@@ -6835,7 +6835,12 @@ void Resolver::exit(const uast::Let* node) {
   // The type of a let-expression is the type of its expression.
   auto& otherR = byPostorder.byAst(node->expression());
   auto& thisR = byPostorder.byAst(node);
-  thisR.setType(otherR.type());
+
+  auto& resultQt = otherR.type();
+  if (resultQt.type() && resultQt.type()->isVoidType()) {
+    context->error(node, "invalid use of 'void' value as expression");
+  }
+  thisR.setType(resultQt);
   exitScope(node);
 }
 
