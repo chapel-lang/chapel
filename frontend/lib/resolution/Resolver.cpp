@@ -654,7 +654,8 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
       }
     */
     // Return 'false' if the module is not the most immediate parent AST.
-    auto targetParentAstId = parsing::idToParentId(context, target);
+    auto enclosingMutliDecl = parsing::idToContainingMultiDeclId(context, target);
+    auto targetParentAstId = parsing::idToParentId(context, enclosingMutliDecl);
     return targetParentSymbolId != targetParentAstId;
   }
 

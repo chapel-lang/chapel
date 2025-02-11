@@ -598,6 +598,7 @@ bool idIsFunctionWithWhere(Context* context, ID id);
 /**
   Given an ID for a Variable, returns the ID of the containing
   MultiDecl or TupleDecl, if any, and the ID of the variable otherwise.
+  For other IDs, returns the original ID.
  */
 ID idToContainingMultiDeclId(Context* context, ID id);
 
