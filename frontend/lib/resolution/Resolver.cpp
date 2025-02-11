@@ -6536,7 +6536,7 @@ constructReduceScanOpClass(Resolver& resolver,
   if (opType.kind() != QualifiedType::TYPE ||
       !actualClass ||
       !actualClass->basicClassType() ||
-      !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
+      !actualClass->basicClassType()->isSubtypeOf(context, baseClass, converts, instantiates)) {
     CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
   }
 
@@ -6731,7 +6731,7 @@ bool Resolver::enter(const Catch* node) {
       bool instantiates = false;
       if (auto bct = ct->basicClassType()) {
         isBasicClass = true;
-        if (!bct->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
+        if (!bct->isSubtypeOf(context, CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
           // get the penultimate type in the chain
           while (!bct->parentClassType()->isObjectType()) {
             bct = bct->parentClassType();

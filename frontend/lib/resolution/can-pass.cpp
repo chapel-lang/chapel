@@ -571,7 +571,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         // From the previous conditional, we know the formal isn't another
         // 'any' class, so this actual cannot be passed.
         pass = false;
-      } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+      } else if (actualBct->isSubtypeOf(context, formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation

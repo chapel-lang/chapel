@@ -75,7 +75,8 @@ BasicClassType::getReduceScanOpType(Context* context) {
                            SubstitutionsMap()).get();
 }
 
-bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
+bool BasicClassType::isSubtypeOf(Context* context,
+                                 const BasicClassType* parentType,
                                  bool& converts,
                                  bool& instantiates) const {
 
@@ -92,7 +93,7 @@ bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
     }
 
     // check also if t is an instantiation of parentType
-    if (t->instantiatedFrom() == parentType) {
+    if (t->isInstantiationOf(context, parentType)) {
       if (t != this) converts = true;
       instantiates = true;
       return true;
