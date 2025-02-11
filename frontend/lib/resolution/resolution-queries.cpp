@@ -2854,6 +2854,15 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
     if (CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(f, rc, sig, poiInfo)) {
       return nullptr;
     }
+
+    // unstable resolver frames mean no query is running, but we could
+    // still be recursively processing the function. This is still
+    // considered "running".
+    for (auto& frame : rc->frames()) {
+      if (frame.signature() == sig) {
+        return nullptr;
+      }
+    }
   }
 
   // lookup in the map using this PoiInfo
