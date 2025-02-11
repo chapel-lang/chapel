@@ -116,9 +116,7 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
-    inline proc ref flush(freeBuffers=true) {
-      // TODO: consider having no default or defaulting to 'false'
-
+    inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
@@ -136,9 +134,7 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
-    inline proc ref flush(freeBuffers=true) {
-      // TODO: consider having no default or defaulting to 'false'
-
+    inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
