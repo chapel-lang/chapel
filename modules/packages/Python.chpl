@@ -600,7 +600,7 @@ module Python {
       Compile a lambda function like 'lambda x,: x + 1'
 
       Note: this only works with lambdas that accept a tuple of arguments,
-      like 'x,' or '*args'
+      like 'x,' or '\*args'
 
       For example:
       .. code-block:: python
@@ -638,7 +638,7 @@ module Python {
       Compile a lambda function like 'lambda x,: x + 1'
 
       Note: this only works with lambdas that accept a tuple of arguments,
-      like 'x,' or '*args'
+      like 'x,' or '\*args'
 
       Creates a new reference
     */
@@ -1722,7 +1722,7 @@ module Python {
       Import a Python module from bytecode using an arbitrary name.
 
       This is equivalent to running the code in a file, and then importing the
-      module. However, this takes the bytecode directly (i.e. *.pyc files),
+      module. However, this takes the bytecode directly (i.e. ``*.pyc`` files),
       rather than the source.
 
       .. warning::
