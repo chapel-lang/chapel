@@ -43,17 +43,17 @@ proc roundTripClass(clsType: borrowed) {
     var obj = clsType(value);
     if print then writeln("    obj: ", obj);
 
-    res = obj.getAttr(t, "value");
+    res = obj.get(t, "value");
     if print then writeln("    obj.value: ", res);
     assert(res == value);
 
-    obj.setAttr("value", other);
+    obj.set("value", other);
     res = obj.call(t, "getter");
     if print then writeln("    obj.getter(): ", res);
     assert(res == other);
 
     obj.call("setter", value);
-    res = obj.getAttr(t, "value");
+    res = obj.get(t, "value");
     if print then writeln("    obj.value: ", res);
     assert(res == value);
 
@@ -83,14 +83,14 @@ proc main() {
   var interp = new Interpreter();
 
   var modName = Reflection.getModuleName();
-  var m = new Module(interp, modName);
+  var m = interp.importModule(modName);
   if print then writeln("module: ", m);
 
-  var func = new Function(m, "round_trip");
+  var func = m.get("round_trip");
   if print then writeln("func: ", func);
   roundTripFunction(func);
 
-  var clsType = new Class(m, "RoundTrip");
+  var clsType = m.get("RoundTrip");
   if print then writeln("class: ", clsType);
   roundTripClass(clsType);
 

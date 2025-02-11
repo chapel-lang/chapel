@@ -6,14 +6,14 @@ proc main() {
   var interp = new Interpreter();
 
   // imports from mymodel
-  var myModelModule = new Module(interp, "mymodel");
-  var myModelClass = new Class(myModelModule, "MyModel");
+  var myModelModule = interp.importModule("mymodel");
+  var myModelClass = myModelModule.get("MyModel");
 
   // imports from torch
-  var torch = new Module(interp, "torch");
-  var tensor = new Function(torch, "tensor");
-  var nn = new Module(interp, "torch.nn");
-  var MSELoss = new Class(nn, "MSELoss");
+  var torch = interp.importModule("torch");
+  var tensor = torch.get("tensor");
+  var nn = interp.importModule("torch.nn");
+  var MSELoss = nn.get("MSELoss");
 
   // create the model
   var model = myModelClass();
@@ -24,7 +24,7 @@ proc main() {
   {
     var params = model.call(list(owned Value?), "parameters");
     for p in params {
-      var data_ = p!.getAttr("data");
+      var data_ = p!.get("data");
       data_.call("fill_", 0.9);
     }
   }
@@ -43,11 +43,11 @@ proc main() {
   var learning_rate = 0.01;
   var params = model.call(list(owned Value?), "parameters");
   for p in params {
-    var data = p!.getAttr("data");
-    var grad = p!.getAttr("grad");
+    var data = p!.get("data");
+    var grad = p!.get("grad");
     var temp = grad.call("__mul__", learning_rate);
     var temp2 = data.call("__sub__", temp);
-    p!.setAttr("data", temp2);
+    p!.set("data", temp2);
   }
 
   writeln("Prediction: ", pred.call(real, "item"));

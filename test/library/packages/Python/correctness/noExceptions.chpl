@@ -10,20 +10,20 @@ raise Exception('Hello, World!')
 // use default checking
 {
   var interp = new Interpreter();
-  var mod = new Module(interp, 'hello', hello);
+  var mod = interp.importModule('hello', hello);
 }
 
 // explicitly use no checking, blocked by https://github.com/chapel-lang/chapel/issues/26579
 {
   var interp = new Interpreter(checkExceptions=false);
-  var mod = new Module(interp, 'hello', hello);
+  var mod = interp.importModule('hello', hello);
 }
 
 // explicitly use checking, blocked by https://github.com/chapel-lang/chapel/issues/26579
 {
   var interp = new Interpreter(checkExceptions=true);
   try {
-    var mod = new Module(interp, 'hello', hello_raise);
+    var mod = interp.importModule('hello', hello_raise);
   } catch e: PythonException {
     writeln("Caught exception: ", e.message());
   } catch {

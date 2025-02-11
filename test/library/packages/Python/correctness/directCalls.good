@@ -1,0 +1,6 @@
+mod.call('bar'): 18
+bar(): 18
+mod.get('bar')(): 18
+c.call('foo'): 17
+foo(): 17
+mod.get('C')().call('foo'): 17
