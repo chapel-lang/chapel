@@ -1707,7 +1707,8 @@ QualifiedType getInstantiationType(Context* context,
 
   // this function should only be called when instantiation is required
   CHPL_ASSERT(canPass(context, actualType, formalType).passes());
-  CHPL_ASSERT(canPass(context, actualType, formalType).instantiates());
+  CHPL_ASSERT(canPass(context, actualType, formalType).instantiates() ||
+              formalType.isType());
 
   if (auto actualCt = actualT->toClassType()) {
     // handle decorated class passed to decorated class
@@ -2249,7 +2250,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         scalarType = getPromotionType(context, actualType);
       }
 
-      if (got.instantiates()) {
+      if (got.instantiates() || formalType.isType()) {
         // add a substitution for a valid value
         if (!got.converts()) {
           // use the actual type since no conversion/promotion was needed
