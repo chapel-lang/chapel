@@ -1254,6 +1254,16 @@ bool canInstantiateSubstitutions(Context* context,
       auto r = canPass(context, mySubType, pSubType);
       if (r.passes() && !r.promotes() && !r.converts()) {
         // instantiation and same-type passing are allowed here
+        //
+        // canPass doesn't check param values for equivalence to allow handling
+        // coerciions and narrowing, so explicitly check them here.
+        if (pSubType.isParam()) {
+          bool compatible = pSubType.param() == nullptr ||
+                            mySubType.param() == pSubType.param();
+          if (!compatible) {
+            return false;
+          }
+        }
       } else {
         // it was not an instantiation
         return false;
