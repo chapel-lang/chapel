@@ -5,8 +5,8 @@ use Python;
 proc main() {
 
   var interp = new Interpreter();
-  var m = new Module(interp, 'nestedArrays');
-  var strNested = new Function(m, "strNested");
+  var m = interp.importModule('nestedArrays');
+  var strNested = m.get("strNested");
 
   {
     var input = [[1, 2], [3, 4]];

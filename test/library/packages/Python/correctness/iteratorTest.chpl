@@ -43,7 +43,7 @@ proc main() {
   var interp = new Interpreter();
 
   var modName = Reflection.getModuleName();
-  var m = new Module(interp, modName);
+  var m = interp.importModule(modName);
 
   var myiter = new Function(m, "myiter");
   test(myiter);
