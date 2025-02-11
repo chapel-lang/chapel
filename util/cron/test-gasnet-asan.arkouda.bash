@@ -31,4 +31,4 @@ source $UTIL_CRON_DIR/common-arkouda.bash
 
 export CHPL_FLAGS="--parallel-make 16 --ccflags -Og"
 
-test_correctness
+test_nightly_correctness

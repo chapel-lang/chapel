@@ -84,6 +84,10 @@ export CHPL_TARGET_CPU=none
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
 css_prefix=/hpcdc/project/chapel
+log_info "About to set log prefix. explicit: ${explicit_prefix}"
+log_info "About to set log prefix. default: ${default_prefix}"
+log_info "About to set log prefix. css: ${css_prefix}"
+
 if [ -n "$explicit_prefix" ]; then
     LOGDIR_PREFIX=$explicit_prefix
 elif [ -d $css_prefix ] ; then
