@@ -2792,6 +2792,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
       // always skip if there is an ErroneousType
       skip = ERRONEOUS_ACT;
     } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.isUnknown() &&
                qt.kind() != QualifiedType::PARAM &&
                qt.kind() != QualifiedType::TYPE &&
                qt.isRef() == false) {
