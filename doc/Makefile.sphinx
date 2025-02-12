@@ -85,7 +85,8 @@ html-release: check-sphinxbuild source
 	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
-	@$(COPY_IF_DIFFERENT) util/versionButton.php $(BUILDDIR)/html/versionButton.php
+	rm -f $(BUILDDIR)/html/versionButton.php
+	cp -RP util/versionButton.php $(BUILDDIR)/html/versionButton.php
 	@echo "ErrorDocument 404 https://chapel-lang.org/docs/$(WEB_DOC_VERSION)/" > $(BUILDDIR)/html/.htaccess
 	@echo copying searchtools.js
 	@cp $(CHPL_MAKE_HOME)/doc/rst/meta/static/searchtools.js $(BUILDDIR)/html/_static
