@@ -614,6 +614,35 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
   return ret;
 }
 
+static void findMismatchedInstantiations(Context* context,
+                                         const CompositeType* originalCT,
+                                         const CompositeType* finalCT,
+                                         std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>>& out) {
+  while (originalCT) {
+    CHPL_ASSERT(finalCT);
+    if (!originalCT->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : originalCT->substitutions()) {
+      auto finalSub = finalCT->substitutions().find(id);
+      if (finalSub == finalCT->substitutions().end()) {
+        out.emplace_back(id, parsing::fieldIdToName(context, id), qt, QualifiedType());
+      } else {
+        auto& finalQt = finalSub->second;
+        if (qt != finalQt) {
+          out.emplace_back(id, parsing::fieldIdToName(context, id), qt, finalQt);
+        }
+      }
+    }
+
+    if (auto clt = originalCT->toBasicClassType()) {
+      originalCT = clt->parentClassType();
+      finalCT = finalCT->toBasicClassType()->parentClassType();
+    } else {
+      break;
+    }
+  }
+}
+
 // TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
@@ -639,6 +668,17 @@ const TypedFnSignature* InitResolver::finalize(void) {
   if (isFinalReceiverStateValid()) {
     auto newRecvType = computeReceiverTypeConsideringState();
     ret = computeTypedSignature(newRecvType);
+
+    auto originalCt = initialRecvType_->getCompositeType();
+    auto finalCt = newRecvType->getCompositeType();
+
+    CHPL_ASSERT((originalCt != nullptr) == (finalCt != nullptr));
+    if (finalCt && finalCt->instantiatedFromCompositeType() &&
+        !finalCt->isInstantiationOf(ctx_, originalCt)) {
+      std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>> mismatches;
+      findMismatchedInstantiations(ctx_, originalCt, finalCt, mismatches);
+      CHPL_REPORT(ctx_, MismatchedInitializerResult, fn_, originalCt, finalCt, std::move(mismatches));
+    }
   }
 
   return ret;
