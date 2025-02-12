@@ -37,7 +37,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CHPL_MAJOR_VERSION 2)
 set(CHPL_MINOR_VERSION 3)
-set(CHPL_PATCH_VERSION 0)
+set(CHPL_PATCH_VERSION 1)
 set(CHPL_BUILD_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
