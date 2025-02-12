@@ -582,9 +582,9 @@ module Python {
       :arg modName: The name of the module that will be created. Note that if
                     the module name already exists, it will be replaced.
       :arg moduleContents: The contents of the module. This can be a
-                           :type:`string` of Python code or a :type:`bytes`
-                           object containing Python bytecode
-                           (i.e. from a ``*.pyc`` file).
+                           :type:`~String.string` of Python code or a
+                           :type:`~Bytes.bytes` object containing Python
+                           bytecode (i.e. from a ``*.pyc`` file).
     */
     proc importModule(modName: string, moduleContents): owned Module throws
       where moduleContents.type == string || moduleContents.type == bytes {
@@ -1318,7 +1318,7 @@ module Python {
 
     /*
       Creates a new Python object from a pickle.
-      See :proc:`Interpreter.loadPickle`.
+      See :proc:`Interpreter.load`.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg pickleData: The pickle data to load.
