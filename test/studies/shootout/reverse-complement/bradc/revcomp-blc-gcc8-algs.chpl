@@ -192,7 +192,8 @@ proc revcomp(ref seq, size) {
       if waitAlg == WaitFor {
         charsWritten.waitFor(myStartChar);
       } else if waitAlg == Spin {
-        while charsWritten.read() != myStartChar {}
+        while charsWritten.read() != myStartChar do
+          currentTask.yieldExecution();
       } else {
         compilerError("Unexpected wait algorithm: " + waitAlg:string);
       }
