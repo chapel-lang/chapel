@@ -5,6 +5,7 @@ Documentation Archives
 
 Online Documentation Archives
 -----------------------------
+* `Chapel 2.3  <https://chapel-lang.org/docs/2.3/>`_
 * `Chapel 2.2  <https://chapel-lang.org/docs/2.2/index.html>`_
 * `Chapel 2.1  <https://chapel-lang.org/docs/2.1/index.html>`_
 * `Chapel 2.0  <https://chapel-lang.org/docs/2.0/index.html>`_
