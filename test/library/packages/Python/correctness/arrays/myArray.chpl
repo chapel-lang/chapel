@@ -31,18 +31,18 @@ proc testArray(type t, const testArr) {
 
   var pyArr = new Array(interp, arr);
   writeln("python: ", pyArr);
-  pyArr.setItem(0, 17:t);
-  writeln("at 2: ", pyArr.getItem(2));
-  writeln("at -1: ", pyArr.getItem(-1));
-  pyArr.setItem(-2, 42:t);
+  pyArr.set(0, 17:t);
+  writeln("at 2: ", pyArr.get(2));
+  writeln("at -1: ", pyArr.get(-1));
+  pyArr.set(-2, 42:t);
   writeln("size: ", pyArr.size);
   writeln("chapel: ", arr);
   IO.stdout.flush();
 
   writeln("from python");
   IO.stdout.flush();
-  var pyCode = new Module(interp, '__empty__', pythonCode);
-  var func = new Function(pyCode, 'loop');
+  var pyCode = interp.importModule('__empty__', pythonCode);
+  var func = pyCode.get('loop');
   func(pyArr);
   IO.stdout.flush();
 
