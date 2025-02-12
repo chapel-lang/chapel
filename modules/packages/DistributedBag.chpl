@@ -208,7 +208,7 @@ module DistributedBag
   config const distributedBagWorkStealingMinElts: int = 1;
 
   /*
-    The victim selection policy in work stealing.
+    The victim selection policy for work stealing.
   */
   enum VictimPolicy {
     /*
@@ -440,7 +440,7 @@ module DistributedBag
       :arg taskId: The index of the segment from which the element is removed.
       :type taskId: `int`
 
-      :arg policy: The victim selection policy in work stealing.
+      :arg policy: The victim selection policy for work stealing.
       :type policy: :type:`VictimPolicy`
 
       :return: Depending on the scenarios: `(true, elt)` if we successfully removed
@@ -685,7 +685,7 @@ module DistributedBag
       var limit: int = if (callerId == -1) then N else N-1;
 
       select policy {
-        // In the 'ring' strategy, victims are selected in a round-robin fashion.
+        // Circular or ring-like selection.
         when VictimPolicy.RING {
           var id = (callerId + 1) % N;
 
@@ -695,7 +695,7 @@ module DistributedBag
             id = (id + 1) % N;
           }
         }
-        // In the 'rand' strategy, victims are randomly selected.
+        // Random selection.
         when VictimPolicy.RAND {
           var id: int;
           const victims = permute(0..#N);
@@ -1070,7 +1070,7 @@ module DistributedBag
         // try to move the pointers
         if simCAS(head, split, h, s, h+1, s) {
           lock_n.readFE();
-          // get an element from the head of the private portion
+          // get an element from the head of the shared portion
           var elt = block.popHead();
           nElts_shared.sub(1);
           lock_n.writeEF(true);
