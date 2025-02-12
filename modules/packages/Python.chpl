@@ -53,7 +53,7 @@
 
   .. warning::
 
-    Chapel programs compiled in this was are compiled for a specific Python
+    Chapel programs compiled in this way are compiled for a specific Python
     version. Attempting to run the compiled program with a different Python
     version may have unexpected results.
 
@@ -116,8 +116,8 @@
        var interpreter = new Interpreter();
        coforall 0..#4 {
          var subInterpreter = new SubInterpreter(interpreter);
-         var m = new Module(subInterpreter, 'myMod', code);
-         var hello = new Function(m, 'hello');
+         var m = subInterpreter.importModule('myMod', code);
+         var hello = m.get('hello');
          hello();
        }
      }
@@ -149,7 +149,7 @@
       proc init(parent: borrowed Interpreter, code: string) {
         init this;
         i = try! (new SubInterpreter(parent));
-        m = try! (new Module(i!, "anon", code));
+        m = try! (i!.importModule("anon", code));
       }
      }
 
@@ -158,7 +158,7 @@
        forall i in 1..10
         with (var mod =
           new perTaskModule(interpreter, "x = 10")) {
-          writeln(mod.m!.getAttr(int, "x"));
+          writeln(mod.m!.get(int, "x"));
        }
      }
 
@@ -192,7 +192,7 @@
      var Arr: [1..10] int = 1..10;
 
      var interp = new Interpreter();
-     var func = new Function(interp, "lambda x,: x * x");
+     var func = interp.compileLambda("lambda x,: x * x");
 
      var ts = new threadState();
      ts.save(); // save the thread state
@@ -224,7 +224,7 @@
      var Arr: [1..10] int = 1..10;
 
      var interp = new Interpreter();
-     var func = new Function(interp, "lambda x,: x * x");
+     var func = interp.compileLambda("lambda x,: x * x");
 
      var ts = new threadState();
      ts.save(); // save the thread state
@@ -270,7 +270,7 @@
         on l {
           // each locale has its own interpreter
           const interp = new Interpreter();
-          const func = new Function(interp, "lambda x,: x + 1");
+          const func = interp.compileLambda("lambda x,: x + 1");
 
           var ts = new threadState();
           ts.save();
@@ -319,7 +319,7 @@
      use Python, IO;
 
      var interp = new Interpreter();
-     var func = new Function(interp, "lambda x,: print(x)");
+     var func = interp.compileLambda("lambda x,: print(x)");
 
      writeln("Hello from Chapel");
      writeln("Let's call some Python!");
@@ -509,7 +509,7 @@ module Python {
 
       if pyMemLeaks {
         // import objgraph
-        this.objgraph = this.importModule("objgraph");
+        this.objgraph = this.importModuleInternal("objgraph");
         if this.objgraph == nil {
           writeln("objgraph not found, memory leak detection disabled. " +
                   "Install objgraph with 'pip install objgraph'");
@@ -555,6 +555,67 @@ module Python {
 
       Py_Finalize();
     }
+
+    /*
+      Import a Python module. This is equivalent to calling ``import modName``
+      in Python.
+
+      .. warning::
+
+         Importing a second module with the same name will overwrite the first.
+
+      :arg modName: The name of the module that will be created. Note that if
+                    the module name already exists, it will be replaced.
+    */
+    proc importModule(modName: string): owned Module throws {
+      return new Module(this, modName);
+    }
+    /*
+      Import a Python module, using the provided ``moduleContents``. This is
+      equivalent to putting the code in a file, and then importing the file
+      via the file/module name.
+
+      .. warning::
+
+         Importing a second module with the same name will overwrite the first.
+
+      :arg modName: The name of the module that will be created. Note that if
+                    the module name already exists, it will be replaced.
+      :arg moduleContents: The contents of the module. This can be a
+                           :type:`~String.string` of Python code or a
+                           :type:`~Bytes.bytes` object containing Python
+                           bytecode (i.e. from a ``*.pyc`` file).
+    */
+    proc importModule(modName: string, moduleContents): owned Module throws
+      where moduleContents.type == string || moduleContents.type == bytes {
+      return new Module(this, modName, moduleContents);
+    }
+
+    /*
+      Load a `Python Pickle <https://docs.python.org/3/library/pickle.html>`_
+      as a Python object.
+
+      :arg pickle: The pickle data to load
+    */
+    proc load(pickle: bytes): owned Value throws {
+      return new Value(this, pickle);
+    }
+
+    /*
+      Compile a lambda function like 'lambda x,: x + 1'
+
+      Note: this only works with lambdas that accept a tuple of arguments,
+      like 'x,' or '\*args'
+
+      For example:
+      .. code-block:: chapel
+
+         interpreter.compileLambda("lambda x, y,: x + y");
+    */
+    proc compileLambda(code: string): owned Function throws {
+      return new Function(this, code);
+    }
+
     /*
       Run a string of python code.
 
@@ -582,12 +643,12 @@ module Python {
       Compile a lambda function like 'lambda x,: x + 1'
 
       Note: this only works with lambdas that accept a tuple of arguments,
-      like 'x,' or '*args'
+      like 'x,' or '\*args'
 
       Creates a new reference
     */
     @chpldoc.nodoc
-    proc compileLambda(l: string): PyObjectPtr throws {
+    proc compileLambdaInternal(l: string): PyObjectPtr throws {
       var globals = chpl_PyEval_GetFrameGlobals();
       var globalsNeedDecref = false;
       // create a globals if it doesn't exist
@@ -607,15 +668,12 @@ module Python {
     }
 
     /*
-      Compile a chunk of python code as a module and return the module object.
-
-      This is equivalent to running the code in a file, and then importing the
-      module.
+      Compile a chunk of Python code as a module and return the module object.
 
       Creates a new reference
     */
     @chpldoc.nodoc
-    proc compileModule(s: string, modname: string = "chplmod"): PyObjectPtr throws
+    proc compileModule(s: string, modname: string): PyObjectPtr throws
     {
       var code = Py_CompileString(s.c_str(), "<string>", Py_file_input);
       this.checkException();
@@ -630,15 +688,10 @@ module Python {
       Interpret a chunk of Python bytecode as a Python module and return the
       module object.
 
-      This is equivalent to running the code in a file, and then importing the
-      module. However, this takes the bytecode directly (i.e. *.pyc files),
-      rather than the source.
-
       Creates a new reference
     */
     @chpldoc.nodoc
-    proc compileModule(b: bytes,
-                       modname: string = "chplmod"): PyObjectPtr throws {
+    proc compileModule(b: bytes, modname: string): PyObjectPtr throws {
       var code =
         PyMarshal_ReadObjectFromString(b.c_str(), b.size.safeCast(Py_ssize_t));
       this.checkException();
@@ -656,7 +709,7 @@ module Python {
     */
     @chpldoc.nodoc
     proc loadPickle(b: bytes): PyObjectPtr throws {
-      var pickle = importModule("pickle");
+      var pickle = importModuleInternal("pickle");
       this.checkException();
       defer Py_DECREF(pickle);
       var loads = PyObject_GetAttrString(pickle, "loads");
@@ -682,7 +735,7 @@ module Python {
       // the first 4 bytes are the magic number
       // we validate it against 'importlib.util.MAGIC_NUMBER'
       var magic = header[0..#4];
-      var importlib_util = importModule("importlib.util");
+      var importlib_util = importModuleInternal("importlib.util");
       this.checkException();
       defer Py_DECREF(importlib_util);
       var MAGIC_NUMBER_py =
@@ -742,7 +795,7 @@ module Python {
     }
 
     @chpldoc.nodoc
-    inline proc importModule(in modName: string): PyObjectPtr throws {
+    inline proc importModuleInternal(in modName: string): PyObjectPtr throws {
       var mod = PyImport_ImportModule(modName.c_str());
       try {
         this.checkException();
@@ -805,8 +858,8 @@ module Python {
       } else if isSubtype(t, List.list) {
         return toList(val);
       } else if isSubtype(t, Value) {
-        Py_INCREF(val.get());
-        return val.get();
+        Py_INCREF(val.getPyObject());
+        return val.getPyObject();
       } else if t == NoneType {
         return Py_None;
       } else {
@@ -1265,6 +1318,7 @@ module Python {
 
     /*
       Creates a new Python object from a pickle.
+      See :proc:`Interpreter.load`.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg pickleData: The pickle data to load.
@@ -1299,50 +1353,14 @@ module Python {
         Py_DECREF(this.obj);
     }
 
+    /*
+      Check if an exception has occurred in the interpreter.
+
+      ``val.check();`` is equivalent to ``val.interpreter.checkException();``
+
+      See :proc:`~Interpreter.checkException` for more information.
+    */
     inline proc check() throws do this.interpreter.checkException();
-
-    /*
-      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
-    */
-    proc get() do return this.obj;
-
-    /*
-      Returns the Chapel value of the object.
-
-      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this
-      object, however it does not consume the object.
-    */
-    proc value(type value) throws {
-      // fromPython will decrement the reference count, so we need to increment it
-      Py_INCREF(this.obj);
-      return interpreter.fromPython(value, this.obj);
-    }
-
-    /*
-      Stop owning val, return the underlying ptr.
-    */
-    proc type release(in val: owned Value): PyObjectPtr {
-      var valUn: unmanaged = owned.release(val);
-      valUn.isOwned = false;
-      var ptr: PyObjectPtr = valUn.obj;
-      delete valUn;
-      return ptr;
-    }
-    /*
-      Create a new Value, taking ownership of the object.
-    */
-    proc type adopting(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
-      var val = new Value(interpreter, ptr, isOwned=true);
-      return val;
-    }
-    /*
-      Create a new Value, borrowing the object.
-    */
-    proc type borrowing(in interpreter: borrowed Interpreter, in ptr: PyObjectPtr): owned Value throws {
-      var val = new Value(interpreter, ptr, isOwned=false);
-      return val;
-    }
-
 
     /*
       Returns the string representation of the object.
@@ -1389,7 +1407,7 @@ module Python {
               where kwargs.isAssociative() {
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
-      return callInternal(retType, pyArg, kwargs);
+      return callInternal(retType, this.getPyObject(), pyArg, kwargs);
     }
     pragma "last resort"
     @chpldoc.nodoc
@@ -1398,7 +1416,7 @@ module Python {
               where kwargs.isAssociative() {
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
-      return callInternal(owned Value, pyArg, kwargs);
+      return callInternal(owned Value, this.getPyObject(), pyArg, kwargs);
     }
     pragma "last resort"
     @chpldoc.nodoc
@@ -1406,28 +1424,28 @@ module Python {
               kwargs:?=none): retType throws where kwargs.isAssociative() {
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
-      return callInternal(retType, pyArgs, kwargs);
+      return callInternal(retType, this.getPyObject(), pyArgs, kwargs);
     }
     pragma "last resort"
     @chpldoc.nodoc
     proc this(kwargs:?=none): owned Value throws where kwargs.isAssociative() {
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
-      return callInternal(owned Value, pyArgs, kwargs);
+      return callInternal(owned Value, this.getPyObject(), pyArgs, kwargs);
     }
 
     @chpldoc.nodoc
     proc this(type retType, const args...): retType throws {
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
-      return callInternal(retType, pyArg, none);
+      return callInternal(retType, this.getPyObject(), pyArg, none);
     }
     @chpldoc.nodoc
     proc this(const args...): owned Value throws do
       return this(owned Value, (...args));
     @chpldoc.nodoc
     proc this(type retType = owned Value): retType throws {
-      var pyRes = PyObject_CallNoArgs(this.get());
+      var pyRes = PyObject_CallNoArgs(this.getPyObject());
       this.check();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1449,12 +1467,14 @@ module Python {
     }
     @chpldoc.nodoc
     proc callInternal(type retType,
-                      pyArg: PyObjectPtr, kwargs: ?t): retType throws {
+                      pyFunc: PyObjectPtr,
+                      pyArg: PyObjectPtr,
+                      kwargs: ?t): retType throws {
       var pyKwargs;
       if t != nothing then pyKwargs = interpreter.toPython(kwargs);
                       else pyKwargs = nil;
 
-      var pyRes = PyObject_Call(this.obj, pyArg, pyKwargs);
+      var pyRes = PyObject_Call(pyFunc, pyArg, pyKwargs);
       this.check();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1463,27 +1483,48 @@ module Python {
 
     /*
       Access an attribute/field of this Python object. This is equivalent to
-      calling ``obj[attr]`` or ``getattr(obj, attr)`` in Python.
+      calling ``getattr(obj, attr)`` or ``obj[attr]`` in Python.
+
+      This method can be used as a general accessor for Python objects.
+      For example:
+
+      ..
+         START_TEST
+         FILENAME: GetFac.chpl
+         START_GOOD
+         END_GOOD
+
+      .. code-block:: chapel
+
+         use Python;
+         var interp = new Interpreter();
+         var mod = interp.importModule("math");
+
+         // the following two lines are equivalent
+         var fac1: Value = mod.get("factorial");
+         var fac2: Value = new Function(mod, "factorial");
+
+      ..
+         END_TEST
 
       :arg t: The Chapel type of the value to return.
       :arg attr: The name of the attribute/field to access.
     */
     pragma "docs only"
-    proc getAttr(type t=owned Value, attr: string): t throws do
+    proc get(type t=owned Value, attr: string): t throws do
       compilerError("docs only");
 
     @chpldoc.nodoc
-    proc getAttr(type t, attr: string): t throws {
-      var pyAttr = PyObject_GetAttrString(this.get(), attr.c_str());
+    proc get(type t, attr: string): t throws {
+      var pyAttr = PyObject_GetAttrString(this.getPyObject(), attr.c_str());
       interpreter.checkException();
 
       var res = interpreter.fromPython(t, pyAttr);
       return res;
     }
     @chpldoc.nodoc
-    proc getAttr(attr: string): owned Value throws do
-      return this.getAttr(owned Value, attr);
-
+    proc get(attr: string): owned Value throws do
+      return this.get(owned Value, attr);
 
     /*
       Set an attribute/field of this Python object. This is equivalent to
@@ -1492,11 +1533,11 @@ module Python {
       :arg attr: The name of the attribute/field to set.
       :arg value: The value to set the attribute/field to.
     */
-    proc setAttr(attr: string, value) throws {
+    proc set(attr: string, value) throws {
       var pyValue = interpreter.toPython(value);
       defer Py_DECREF(pyValue);
 
-      PyObject_SetAttrString(this.get(), attr.c_str(), pyValue);
+      PyObject_SetAttrString(this.getPyObject(), attr.c_str(), pyValue);
       interpreter.checkException();
     }
 
@@ -1507,10 +1548,48 @@ module Python {
       :arg retType: The Chapel type of the return value.
       :arg method: The name of the method to call.
       :arg args: The arguments to pass to the method.
+      :arg kwargs: The keyword arguments to pass to the callable.
     */
     pragma "docs only"
-    proc call(type retType = owned Value, method: string, const args...): retType throws do
-      compilerError("docs only");
+    proc call(type retType = owned Value,
+              method: string,
+              const args...,
+              kwargs:?=none): retType throws
+              where kwargs.isAssociative() do compilerError("docs only");
+
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc call(method: string,
+              type retType,
+              const args...,
+              kwargs:?=none): retType throws
+              where kwargs.isAssociative() {
+      var pyArg = this.packTuple((...args));
+      defer Py_DECREF(pyArg);
+
+      var methodFunc =
+        PyObject_GetAttrString(this.getPyObject(), method.c_str());
+      this.check();
+      defer Py_DECREF(methodFunc);
+
+      return callInternal(retType, methodFunc, pyArg, kwargs);
+    }
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc call(method: string,const args...,
+              kwargs:?=none): owned Value throws
+              where kwargs.isAssociative() {
+      var pyArg = this.packTuple((...args));
+      defer Py_DECREF(pyArg);
+
+      var methodFunc =
+        PyObject_GetAttrString(this.getPyObject(), method.c_str());
+      this.check();
+      defer Py_DECREF(methodFunc);
+
+      return callInternal(owned Value, methodFunc, pyArg, kwargs);
+    }
+
 
     @chpldoc.nodoc
     proc call(type retType, method: string, const args...): retType throws {
@@ -1524,7 +1603,7 @@ module Python {
       defer Py_DECREF(methodName);
 
       var pyRes = PyObject_CallMethodObjArgs(
-        this.get(), methodName, (...pyArgs), nil);
+        this.getPyObject(), methodName, (...pyArgs), nil);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1539,7 +1618,7 @@ module Python {
       var methodName = interpreter.toPython(method);
       defer Py_DECREF(methodName);
 
-      var pyRes = PyObject_CallMethodNoArgs(this.get(), methodName);
+      var pyRes = PyObject_CallMethodNoArgs(this.getPyObject(), methodName);
       interpreter.checkException();
 
       var res = interpreter.fromPython(retType, pyRes);
@@ -1548,6 +1627,86 @@ module Python {
     @chpldoc.nodoc
     proc call(method: string): owned Value throws do
       return this.call(owned Value, method);
+
+
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc call(type retType,
+              method: string,
+              kwargs:?=none): retType throws where kwargs.isAssociative() {
+      var pyArgs = Py_BuildValue("()");
+      defer Py_DECREF(pyArgs);
+
+      var methodFunc =
+        PyObject_GetAttrString(this.getPyObject(), method.c_str());
+      this.check();
+      defer Py_DECREF(methodFunc);
+
+      return callInternal(retType, methodFunc, pyArgs, kwargs);
+    }
+    pragma "last resort"
+    @chpldoc.nodoc
+    proc call(method: string,
+              kwargs:?=none): owned Value throws where kwargs.isAssociative() {
+      return this.call(owned Value, method, kwargs=kwargs);
+    }
+
+
+    /*
+      Returns the Chapel value of the object.
+
+      This is a shortcut for calling :proc:`~Interpreter.fromPython` on this
+      object, however it does not consume the object.
+    */
+    proc value(type value) throws {
+      // fromPython will decrement the ref count, so we need to increment it
+      Py_INCREF(this.obj);
+      return interpreter.fromPython(value, this.obj);
+    }
+
+    /*
+      Stop owning ``val``, returns the underlying ``c_ptr(PyObject)``.
+
+      The caller is responsible for decrementing the reference count of the
+      returned object.
+    */
+    proc type release(in val: owned Value): PyObjectPtr {
+      var valUn: unmanaged = owned.release(val);
+      valUn.isOwned = false;
+      var ptr: PyObjectPtr = valUn.obj;
+      delete valUn;
+      return ptr;
+    }
+    /*
+      Create a new :type:`Value`, adopting the object.
+
+      When the new :type:`Value` is deleted, the reference count of the object
+      will be decremented.
+    */
+    proc type adopting(in interpreter: borrowed Interpreter,
+                       in object: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, object, isOwned=true);
+      return val;
+    }
+    /*
+      Create a new :type:`Value`, adopting the object.
+
+      When the new :type:`Value` is deleted, the reference count of the object
+      will be untouched.
+    */
+    proc type borrowing(in interpreter: borrowed Interpreter,
+                        in object: PyObjectPtr): owned Value throws {
+      var val = new Value(interpreter, object, isOwned=false);
+      return val;
+    }
+
+    /*
+      Returns the :type:`~CTypes.c_ptr` to the underlying Python object.
+
+      Most users should not need to call this method directly, except when
+      calling low-level CPython functions.
+    */
+    proc getPyObject() do return this.obj;
 
     // TODO: call should support kwargs
   }
@@ -1560,7 +1719,7 @@ module Python {
     var modName: string;
 
     /*
-      Import a Python module by name.
+      Import a Python module by name. See :proc:`Interpreter.importModule`.
     */
     proc init(interpreter: borrowed Interpreter, in modName: string) {
       super.init(interpreter,
@@ -1570,6 +1729,7 @@ module Python {
 
     /*
       Import a Python module from a string using an arbitrary name.
+      See :proc:`Interpreter.importModule`.
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleContents: string) throws {
@@ -1580,7 +1740,8 @@ module Python {
     }
 
     /*
-      Import a Python module from a string using an arbitrary name.
+      Import a Python module from bytecode using an arbitrary name.
+      See :proc:`Interpreter.importModule`.
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleBytecode: bytes) throws {
@@ -1599,16 +1760,18 @@ module Python {
     var fnName: string;
 
     /*
-      Get a handle to a function in a :class:`Module` by name.
+      Get a handle to a function in a :class:`Value` by name.
+
+      This is equivalent to ``mod.get(className)``. See :proc:`Value.get`.
     */
     proc init(mod: borrowed Value, in fnName: string) {
       super.init(mod.interpreter,
-                 PyObject_GetAttrString(mod.get(), fnName.c_str()),
+                 PyObject_GetAttrString(mod.getPyObject(), fnName.c_str()),
                  isOwned=true);
       this.fnName = fnName;
     }
     /*
-      Takes ownership of an existing Python object, pointed to by ``obj``
+      Takes ownership of an existing Python object, pointed to by ``obj``.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg fnName: The name of the function.
@@ -1621,14 +1784,16 @@ module Python {
       this.fnName = fnName;
     }
     /*
-      Create a new Python lambda function from a string. The lambda arguments must
-      have a trailing comma.
+      Create a new Python lambda function from a string. The lambda arguments
+      must have a trailing comma.
 
       For example, to create a lambda function that takes two arguments, use:
 
       .. code-block:: python
 
          new Function(interpreter, "lambda x, y,: x + y")
+
+      See also :proc:`Interpreter.compileLambda`.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg lambdaFn: The lambda function to create.
@@ -1637,7 +1802,7 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
-      this.obj = interpreter.compileLambda(lambdaFn);
+      this.obj = interpreter.compileLambdaInternal(lambdaFn);
     }
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter,
@@ -1656,14 +1821,16 @@ module Python {
     var className: string;
 
     /*
-      Get a handle to a class in a :class:`Module` by name.
+      Get a handle to a class in a :class:`Value` by name.
+
+      This is equivalent to ``mod.get(className)``. See :proc:`Value.get`.
 
       :arg mod: The module to get the class from.
       :arg className: The name of the class.
     */
     proc init(mod: borrowed Value, in className: string) {
       super.init(mod.interpreter,
-                 PyObject_GetAttrString(mod.get(), className.c_str()),
+                 PyObject_GetAttrString(mod.getPyObject(), className.c_str()),
                  isOwned=true);
       this.className = className;
     }
@@ -1694,7 +1861,7 @@ module Python {
       :returns: The size of the list.
     */
     proc size: int throws {
-      var size = PySequence_Size(this.get());
+      var size = PySequence_Size(this.getPyObject());
       this.check();
       return size;
     }
@@ -1707,18 +1874,18 @@ module Python {
       :returns: The item at the given index.
     */
     pragma "docs only"
-    proc getItem(type T = owned Value, idx: int): T throws do
+    proc get(type T = owned Value, idx: int): T throws do
       compilerError("docs only");
 
     @chpldoc.nodoc
-    proc getItem(type T, idx: int): T throws {
-      var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+    proc get(type T, idx: int): T throws {
+      var item = PySequence_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
     @chpldoc.nodoc
-    proc getItem(idx: int): owned Value throws do
-      return this.getItem(owned Value, idx);
+    proc get(idx: int): owned Value throws do
+      return this.get(owned Value, idx);
 
     /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
@@ -1727,8 +1894,8 @@ module Python {
       :arg idx: The index of the item to set.
       :arg item: The item to set.
     */
-    proc setItem(idx: int, item: ?) throws {
-      PySequence_SetItem(this.get(),
+    proc set(idx: int, item: ?) throws {
+      PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
       this.check();
@@ -1787,12 +1954,12 @@ module Python {
     }
     @chpldoc.nodoc
     proc postinit() throws {
-      if PyObject_CheckBuffer(this.get()) == 0 {
+      if PyObject_CheckBuffer(this.getPyObject()) == 0 {
         throw new ChapelException("Object does not support buffer protocol");
       }
       var flags: c_int =
         PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
-      if PyObject_GetBuffer(this.get(), c_ptrTo(this.view), flags) == -1 {
+      if PyObject_GetBuffer(this.getPyObject(), c_ptrTo(this.view), flags) == -1 {
         this.check();
         // this.check should have raised an exception, if it didn't, raise one
         throw new BufferError("Failed to get buffer");
@@ -1848,7 +2015,7 @@ module Python {
        While Chapel arrays can be indexed arbitrarily by specifying a domain
        (e.g. ``var myArr: [2..by 4 #2]``), the equivalent Python array will
        also by indexed starting at 0 with a stride of 1. Methods like
-       :proc:`~Array.getItem` do no translation of the domain and should be
+       :proc:`~Array.get` do no translation of the domain and should be
        called with the Python interpretation of the index.
 
 
@@ -1907,7 +2074,7 @@ module Python {
       :returns: The size of the array.
     */
     proc size: int throws {
-      var size = PySequence_Size(this.get());
+      var size = PySequence_Size(this.getPyObject());
       this.check();
       return size;
     }
@@ -1919,8 +2086,8 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
-    proc getItem(idx: int): eltType throws {
-      var pyObj = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+    proc get(idx: int): eltType throws {
+      var pyObj = PySequence_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(eltType, pyObj);
     }
@@ -1931,9 +2098,9 @@ module Python {
       :arg idx: The index of the item to set.
       :arg item: The item to set.
     */
-    proc setItem(idx: int, item: eltType) throws {
+    proc set(idx: int, item: eltType) throws {
       var pyItem = interpreter.toPython(item);
-      PySequence_SetItem(this.get(), idx.safeCast(Py_ssize_t), pyItem);
+      PySequence_SetItem(this.getPyObject(), idx.safeCast(Py_ssize_t), pyItem);
       this.check();
     }
   }

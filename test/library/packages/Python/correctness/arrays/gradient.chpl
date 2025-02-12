@@ -19,9 +19,9 @@ def grad(arr):
 
 proc main() {
   var interp = new Interpreter();
-  var mod = new Module(interp, '__empty__', code);
-  var gradModifyArg = new Function(mod, 'gradModifyArg');
-  var grad = new Function(mod, 'grad');
+  var mod = interp.importModule('__empty__', code);
+  var gradModifyArg = mod.get('gradModifyArg');
+  var grad = mod.get('grad');
 
   var arr = [1, 2, 4, 7, 11, 16];
   var pyArr = new Array(interp, arr);

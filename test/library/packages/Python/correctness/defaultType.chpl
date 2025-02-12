@@ -11,10 +11,10 @@ def pass_through(x):
 """;
 
 var interp = new Interpreter();
-var mod = new Module(interp, '__empty__', code);
-var do_nothing = new Function(mod, 'do_nothing');
-var get_int = new Function(mod, 'get_int');
-var pass_through = new Function(mod, 'pass_through');
+var mod = interp.importModule('__empty__', code);
+var do_nothing = mod.get('do_nothing');
+var get_int = mod.get('get_int');
+var pass_through = mod.get('pass_through');
 
 {
   writeln("do_nothing()");
