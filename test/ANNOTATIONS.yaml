@@ -638,6 +638,8 @@ arguments:
     - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
+  02/04/25:
+    - Avoid passing 'size=0' to memalign (#26645)
 
 arrayInitDeinitPerf:
   02/28/23:
