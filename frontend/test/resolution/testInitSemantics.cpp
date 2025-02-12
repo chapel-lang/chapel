@@ -1208,6 +1208,36 @@ static void testInitEqOtherChangeTypeBad(void) {
   guard.realizeErrors();
 }
 
+static void testInitEqOtherThisType(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: this.type.T) {
+      this.T = other.type;
+      this.field = other;
+    }
+    var x: R(int) = 4;
+    var y: R(int) = 4.0;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  auto yt = results["y"];
+  assert(yt.type()->isErroneousType());
+
+  assert(guard.realizeErrors());
+}
+
 static void testInheritance() {
   std::string parentChild = R"""(
     class Parent {
@@ -2285,6 +2315,7 @@ int main() {
   testInitEqOtherIncomplete();
   testInitEqOtherChangeType();
   testInitEqOtherChangeTypeBad();
+  testInitEqOtherThisType();
 
   testInheritance();
 
