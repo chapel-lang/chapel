@@ -5,8 +5,8 @@ var interp = new Interpreter();
 var sp = interp.importModule("scipy");
 var spi = interp.importModule("scipy.integrate");
 
-// integrate a Python Function using scipy.integrate.quad
-proc integrate(f: owned Function, a: real, b: real): real {
+// integrate a function using scipy.integrate.quad
+proc integrate(f: borrowed Value, a: real, b: real): real {
   return spi.call("quad", f, a, b).call(real, "__getitem__", 0);
 }
 
@@ -19,8 +19,7 @@ proc integrate(f: owned Function, a: real, b: real): real {
 }
 
 
-// integrate a Chapel Function using scipy.integrate.quad
-proc integrate(f:proc(_: real):real, a: real, b: real): real {
+proc chapelProcToPython(f:proc(_: real):real): owned Value {
   use CTypes;
   // get a c_ptr to a Chapel proc
   var f_ptr = c_ptrTo(f):c_ptr(void);
@@ -36,13 +35,13 @@ proc integrate(f:proc(_: real):real, a: real, b: real): real {
   // create a LowLevelCallable for scipy usage
   var fPy = sp.call("LowLevelCallable", f_ptrPy,
                     kwargs=["signature"=>"double (double)"]);
-
-  return spi.call("quad", fPy, a, b).call(real, "__getitem__", 0);
+  return fPy;
 }
 
 {
   writeln("Integrating x**3, defined in Chapel");
-  export proc f(x: real): real do return x;
+  proc chplFunc(x: real): real do return x;
+  var f = chapelProcToPython(cChplFunc);
   writeln(integrate(f, 0.0, 2.0));
   writeln(integrate(f, 0.0, 4.0));
   writeln(integrate(f, 0.0, 8.0));
