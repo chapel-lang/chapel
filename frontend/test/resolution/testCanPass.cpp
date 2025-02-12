@@ -615,6 +615,28 @@ static void test9() {
   r = canPass(context, vars.at("b"), formal); assert(passesAsIs(r));
 }
 
+static void test10() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      class C {
+        type A, B;
+      }
+
+      type a = Bar(int);
+      type b = Bar(int, int);
+      )""", {"a", "b"});
+
+
+  // test that partial instantiation passing works with classes
+  CanPassResult r;
+  r = canPass(context, vars.at("b"), vars.at("a"));
+  assert(passesInstantiates(r));
+}
+
 int main() {
   test1();
   test2();
@@ -625,6 +647,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }

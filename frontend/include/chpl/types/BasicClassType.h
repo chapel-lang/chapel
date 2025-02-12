@@ -110,7 +110,8 @@ class BasicClassType final : public ManageableType {
       using a parent type and 'instantiates' is set to true if
       it requires instantiation.
    */
-  bool isSubtypeOf(const BasicClassType* parentType,
+  bool isSubtypeOf(Context* context,
+                   const BasicClassType* parentType,
                    bool& converts,
                    bool& instantiates) const;
 
