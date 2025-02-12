@@ -158,7 +158,16 @@ void InitResolver::doSetupInitialState(void) {
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  std::ignore = setupFromType(initialRecvType_);
+  // when initializing, don't insert substitutions into the fields. The user
+  // ought to explicitly set fields that need instantiations, unless they
+  // have defaults, but we'll figure those out later.
+  const Type* setupFrom = initialRecvType_;
+  if (auto initialCt = initialRecvType_->toCompositeType()) {
+    if (auto initialCtInst = initialCt->instantiatedFromCompositeType()) {
+      setupFrom = initialCtInst;
+    }
+  }
+  std::ignore = setupFromType(setupFrom);
 }
 
 void InitResolver::markComplete() {
@@ -659,6 +668,17 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
     auto state = fieldStateFromId(id);
     CHPL_ASSERT(state);
     CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
+
+    if ((state->qt.kind() == QualifiedType::TYPE ||
+         state->qt.kind() == QualifiedType::PARAM) &&
+        !rf.fieldHasDefaultValue(i)) {
+      // Chapel does not allow default-initialization of type fields without
+      // defaults. Without a default value and needing default initialization,
+      // this field ought to be generic anyway.
+      ctx_->error(fn_, "cannot implicitly initialize field '%s', which does "
+                       "not have a default value.", rf.fieldName(i).c_str());
+    }
+
     state->qt = rf.fieldType(i);
     state->isInitialized = true;
   }
