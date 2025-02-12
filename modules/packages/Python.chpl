@@ -608,7 +608,7 @@ module Python {
       like 'x,' or '\*args'
 
       For example:
-      .. code-block:: python
+      .. code-block:: chapel
 
          interpreter.compileLambda("lambda x, y,: x + y");
     */
@@ -1483,7 +1483,29 @@ module Python {
 
     /*
       Access an attribute/field of this Python object. This is equivalent to
-      calling ``obj[attr]`` or ``getattr(obj, attr)`` in Python.
+      calling ``getattr(obj, attr)`` or ``obj[attr]`` in Python.
+
+      This method can be used as a general accessor for Python objects.
+      For example:
+
+      ..
+         START_TEST
+         FILENAME: GetFac.chpl
+         START_GOOD
+         END_GOOD
+
+      .. code-block:: chapel
+
+         use Python;
+         var interp = new Interpreter();
+         var mod = interp.importModule("math");
+
+         // the following two lines are equivalent
+         var fac1: Value = mod.get("factorial");
+         var fac2: Value = new Function(mod, "factorial");
+
+      ..
+         END_TEST
 
       :arg t: The Chapel type of the value to return.
       :arg attr: The name of the attribute/field to access.
@@ -1738,7 +1760,9 @@ module Python {
     var fnName: string;
 
     /*
-      Get a handle to a function in a :class:`Module` by name.
+      Get a handle to a function in a :class:`Value` by name.
+
+      This is equivalent to ``mod.get(className)``. See :proc:`Value.get`.
     */
     proc init(mod: borrowed Value, in fnName: string) {
       super.init(mod.interpreter,
@@ -1747,7 +1771,7 @@ module Python {
       this.fnName = fnName;
     }
     /*
-      Takes ownership of an existing Python object, pointed to by ``obj``
+      Takes ownership of an existing Python object, pointed to by ``obj``.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg fnName: The name of the function.
@@ -1768,6 +1792,8 @@ module Python {
       .. code-block:: python
 
          new Function(interpreter, "lambda x, y,: x + y")
+
+      See also :proc:`Interpreter.compileLambda`.
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg lambdaFn: The lambda function to create.
@@ -1795,7 +1821,9 @@ module Python {
     var className: string;
 
     /*
-      Get a handle to a class in a :class:`Module` by name.
+      Get a handle to a class in a :class:`Value` by name.
+
+      This is equivalent to ``mod.get(className)``. See :proc:`Value.get`.
 
       :arg mod: The module to get the class from.
       :arg className: The name of the class.
