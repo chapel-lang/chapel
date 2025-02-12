@@ -40,6 +40,10 @@ set(CHPL_MINOR_VERSION 4)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
+set(CHPL_PREV_MAJOR_VERSION 2)
+set(CHPL_PREV_MINOR_VERSION 3)
+set(CHPL_PREV_PATCH_VERSION 0)
+
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
 set(CHPL_OFFICIAL_RELEASE false)
@@ -394,3 +398,51 @@ else()
   install(TARGETS chpldoc OPTIONAL
           RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()
+
+set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+if (${CHPL_OFFICIAL_RELEASE})
+  set(RELEASE_FLAG "--official-release")
+else()
+  set(RELEASE_FLAG "")
+endif()
+
+# Gather files that are sensitive to version number changes and update them.
+# Check if they exist here because in the release tarball, some of these
+# files will not be present.
+set(VERSION_FILES "")
+list(APPEND VERSION_FILES
+  "${SRC_DIR}/doc/rst/conf.py"
+  "${SRC_DIR}/doc/rst/language/archivedSpecs.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/chplenv.rst"
+  "${SRC_DIR}/man/confchpl.rst"
+  "${SRC_DIR}/man/confchpldoc.rst"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh"
+  "${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart"
+)
+
+set(EXISTING_VERSION_FILES "")
+foreach(FILE ${VERSION_FILES})
+  if(EXISTS ${FILE})
+    list(APPEND EXISTING_VERSION_FILES ${FILE})
+  endif()
+endforeach()
+
+add_custom_target(update-release-and-version-info ALL
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/util/config/update-release-and-version-info
+          ${CHPL_MAJOR_VERSION}
+          ${CHPL_MINOR_VERSION}
+          ${CHPL_PATCH_VERSION}
+          ${CHPL_PREV_MAJOR_VERSION}
+          ${CHPL_PREV_MINOR_VERSION}
+          ${CHPL_PREV_PATCH_VERSION}
+          "--files"
+          ${EXISTING_VERSION_FILES}
+          ${RELEASE_FLAG}
+  COMMENT "checking sensitive files for version changes..."
+  VERBATIM)
+add_dependencies(chpl update-release-and-version-info)
+add_dependencies(chpldoc update-release-and-version-info)
+add_dependencies(ChplFrontend-obj update-release-and-version-info)
