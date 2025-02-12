@@ -9,5 +9,5 @@ source $UTIL_CRON_DIR/common.bash
 export CHPL_TASKS=fifo
 export CHPL_TARGET_COMPILER=mpi-gnu
 
-# setup mpich 3.3.1
-source /hpcdc/project/chapel/setup_mpich331.bash
+# setup mpich 
+source /hpcdc/project/chapel/setup_mpi.bash
