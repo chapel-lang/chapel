@@ -3,7 +3,7 @@ import optparse
 import sys
 
 import chpl_platform, overrides
-from utils import error, memoize, warning
+from utils import error, memoize, warning, check_valid_var
 
 @memoize
 def get(flag='host'):
@@ -37,6 +37,10 @@ def get(flag='host'):
             mem_val = 'jemalloc'
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
+
+    var_name = 'CHPL_{0}_MEM'.format(flag.upper())
+    var_name = 'CHPL_MEM' if chpl_target_mem is None else var_name
+    check_valid_var(var_name, mem_val, ["cstdlib", "jemalloc"])
     return mem_val
 
 
