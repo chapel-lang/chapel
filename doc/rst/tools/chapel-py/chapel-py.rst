@@ -69,12 +69,19 @@ Make sure that you have a from-source build of Chapel available in your
 in your path. The build script also requires that the development package of
 Python be installed (for many package managers this is called
 ``python3-devel``). With those constraints met, you can just run ``make
-chapel-py-venv``:
-
-This will allow you to use the Python bindings from a Python script run with
+chapel-py-venv``. This will allow you to use the Python bindings from a
+Python script run with
 ``$CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash python3``,
-instead of just ``python3``. If you wish to install the Python bindings in your
-system Python, run ``python3 -m pip install $CHPL_HOME/tools/chapel-py``.
+instead of just ``python3``.
+
+If you wish to install the Python bindings in your system python, you must manually build the dependencies first and then install the Chapel Python bindings.
+
+.. code-block:: bash
+
+   cd $CHPL_HOME
+   make frontend-shared
+   python3 -m pip install $CHPL_HOME/tools/chapel-py
+
 
 Usage
 -----
