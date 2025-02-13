@@ -9721,13 +9721,13 @@ pragma "fn exempt instantiation limit"
 inline proc fileWriter.write(const args ...?k, sep: string = "") throws {
   if chpl_warnUnstable then
     compilerWarning("specifying 'sep' is an unstable feature");
-  this.writeHelper(args, none, sep);
+  this.writeHelper(none, sep, (...args));
 }
 
 pragma "fn exempt instantiation limit"
 @chpldoc.nodoc
 inline proc fileWriter.write(const args ...?k) throws {
-  this.writeHelper(args, none, none);
+  this.writeHelper(none, none, (...args));
 }
 
 
@@ -9762,16 +9762,16 @@ pragma "last resort"
 proc fileWriter.writeln(const args ...?k, sep:string="") throws {
   if chpl_warnUnstable then
     compilerWarning("specifying 'sep' is an unstable feature");
-  this.writeHelper(args, new chpl_ioNewline(), sep);
+  this.writeHelper(new chpl_ioNewline(), sep, (...args));
 }
 
 @chpldoc.nodoc
 proc fileWriter.writeln(const args ...?k) throws {
-  this.writeHelper(args, new chpl_ioNewline(), none);
+  this.writeHelper(new chpl_ioNewline(), none, (...args));
 }
 
 @chpldoc.nodoc
-proc fileWriter.writeHelper(const args, endl: ?endlType, sep: ?sepType) throws {
+inline proc fileWriter.writeHelper(endl: ?endlType, sep: ?sepType, const args...) throws {
   const origLocale = this.getLocaleOfIoRequest();
   on this._home {
     try this.lock(); defer { this.unlock(); }

@@ -780,7 +780,7 @@ module ChapelIO {
   proc write(const args ...?n, sep: string = "") {
     if chpl_warnUnstable then
       compilerWarning("specifying 'sep' is an unstable feature");
-    try! stdout.writeHelper(args, none, sep);
+    try! stdout.writeHelper(none, sep, (...args));
   }
   @chpldoc.nodoc
   proc write(const args ...?n) {
@@ -791,11 +791,11 @@ module ChapelIO {
   proc writeln(const args ...?n, sep: string = "") {
     if chpl_warnUnstable then
       compilerWarning("specifying 'sep' is an unstable feature");
-    try! stdout.writeHelper(args, new chpl_ioNewline(), sep);
+    try! stdout.writeHelper(new chpl_ioNewline(), sep, (...args));
   }
   @chpldoc.nodoc
   proc writeln(const args ...?n) {
-    try! stdout.writeln((...args));
+    try! stdout.writeHelper(new chpl_ioNewline(), none, (...args));
   }
   // documented in the arguments version.
   @chpldoc.nodoc
