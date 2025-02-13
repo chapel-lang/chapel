@@ -858,6 +858,8 @@ module Python {
         return toDict(val);
       } else if isSubtype(t, List.list) {
         return toList(val);
+      } else if isSubtype(t, Set.set) {
+        return toSet(val);
       } else if isSubtype(t, Value) {
         Py_INCREF(val.getPyObject());
         return val.getPyObject();
@@ -942,6 +944,8 @@ module Python {
         }
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
+      } else if isSubtype(t, Set.set) {
+        return fromSet(t, obj);
       } else if isSubtype(t, Function?) {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
@@ -997,7 +1001,7 @@ module Python {
       if (PySequence_Check(obj) == 0) then
         throw new ChapelException("Can only convert a sequence with a known size to an array");
 
-      // if its a sequence with a known size, we can just iterate over it
+      // if it's a sequence with a known size, we can just iterate over it
       var res: T;
       if PySequence_Size(obj) != res.size.safeCast(Py_ssize_t) {
         throw new ChapelException("Size mismatch");
@@ -1050,20 +1054,74 @@ module Python {
     /*
       Converts an array to a python set
     */
-    // proc toSet(arr): PyObjectPtr throws {
-    // TODO
-    // }
+    proc toSet(arr): PyObjectPtr throws
+      where isArrayType(arr.type) &&
+            arr.rank == 1 && arr.isDefaultRectangular() {
+      var pySet = PySet_New(nil);
+      this.checkException();
+      for i in 0..<arr.size {
+        const idx = arr.domain.orderToIndex(i);
+        PySet_Add(pySet, toPython(arr[idx]));
+        this.checkException();
+      }
+      return pySet;
+    }
 
-    // TODO: convert chapel set to python set
+    /*
+      Convert a chapel set to a python set. Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toSet(s: Set.set(?)): PyObjectPtr throws {
+      var pySet = PySet_New(nil);
+      this.checkException();
+      for i in s {
+        PySet_Add(pySet, toPython(i));
+        this.checkException();
+      }
+      return pySet;
+    }
 
     /*
       Converts a python set to an array
     */
-    // proc fromSet(type T, obj: PyObjectPtr): T throws {
-    // TODO
-    // }
+    proc fromSet(type T, obj: PyObjectPtr): T throws
+      where isArrayType(T) {
 
-    // TODO: convert python set to chapel set
+      if (PySequence_Check(obj) == 0) then
+        throw new ChapelException("Can only convert a sequence with a known size to an array");
+
+      // if it's a sequence with a known size, we can just iterate over it
+      var res: T;
+      if PySet_Size(obj) != res.size.safeCast(Py_ssize_t) {
+        throw new ChapelException("Size mismatch");
+      }
+      var it = PyObject_GetIter(obj);
+      for i in 0..<res.size {
+        const idx = res.domain.orderToIndex(i);
+        var elm = PyIter_Next(it);
+        this.checkException();
+        res[idx] = fromPython(res.eltType, elm);
+        this.checkException();
+      }
+      Py_DECREF(obj);
+      return res;
+    }
+
+    /*
+      Convert a python set to a Chapel set. Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromSet(type T, obj: PyObjectPtr): T throws where isSubtype(T, Set.set) {
+      var it = PyObject_GetIter(obj);
+      var res = new T();
+      for 0..<PySequence_Size(obj) {
+        var elem = PyIter_Next(it);
+        this.checkException();
+        res.add(fromPython(T.eltType, elem));
+      }
+      Py_DECREF(obj);
+      return res;
+    }
 
 
     /*
@@ -2560,6 +2618,7 @@ module Python {
     /*
       Iterators
     */
+    extern proc PyObject_GetIter(obj: PyObjectPtr): PyObjectPtr;
     extern "chpl_PyList_Check" proc PyIter_Check(obj: PyObjectPtr): c_int;
     extern "chpl_PyGen_Check" proc PyGen_Check(obj: PyObjectPtr): c_int;
     extern proc PyIter_Next(obj: PyObjectPtr): PyObjectPtr;
@@ -2582,7 +2641,7 @@ module Python {
     /*
       Sets
     */
-    extern proc PySet_New(): PyObjectPtr;
+    extern proc PySet_New(set: PyObjectPtr): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
     extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
     extern proc PySet_Contains(set: PyObjectPtr, item: PyObjectPtr): c_int;

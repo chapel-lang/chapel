@@ -1,6 +1,7 @@
 use Python;
 import Reflection;
 import List;
+import Set;
 
 config const print = false;
 
@@ -32,6 +33,11 @@ proc roundTripFunction(func: borrowed) {
   testType(arr.type, arr);
   var l = new List.list(arr);
   testType(l.type, l);
+  var s = new Set.set(int);
+  for i in arr {
+    s.add(i);
+  }
+  testType(s.type, s);
 
 }
 proc roundTripClass(clsType: borrowed) {
@@ -76,6 +82,11 @@ proc roundTripClass(clsType: borrowed) {
   testType(arr.type, arr, otherArr);
   var l = new List.list(arr);
   testType(l.type, l, new List.list([arr.domain] 2));
+  var s = new Set.set(int);
+  for i in arr {
+    s.add(i);
+  }
+  testType(s.type, s, new Set.set(int));
 
 }
 
