@@ -1,22 +1,22 @@
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: In method 'serializeValue':
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: warning: Serialization of ranges with non-default Serializer is unstable, and may change in the future
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as jsonSerializer.serializeValue(writer: fileWriter(false,jsonSerializer), val: range(int(64),both,one)) from method '_serializeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: range(int(64),both,one), loc: locale) from method 'write'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).write(args(0): range(int(64),both,one), args(1): chpl_ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: range(int(64),both,one), loc: locale) from method 'writeHelper'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).writeHelper(args: 1*range(int(64),both,one), endl: chpl_ioNewline, sep: nothing) from method 'writeln'
   unstableWriting.chpl:7: called as (fileWriter(true,jsonSerializer)).writeln(args(0): range(int(64),both,one)) from function 'helper'
   unstableWriting.chpl:11: called as helper(thing: range(int(64),both,one))
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: In method 'serializeValue':
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: warning: Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as jsonSerializer.serializeValue(writer: fileWriter(false,jsonSerializer), val: domain(1,int(64),one)) from method '_serializeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: domain(1,int(64),one), loc: locale) from method 'write'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).write(args(0): domain(1,int(64),one), args(1): chpl_ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: domain(1,int(64),one), loc: locale) from method 'writeHelper'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).writeHelper(args: 1*domain(1,int(64),one), endl: chpl_ioNewline, sep: nothing) from method 'writeln'
   unstableWriting.chpl:7: called as (fileWriter(true,jsonSerializer)).writeln(args(0): domain(1,int(64),one)) from function 'helper'
   unstableWriting.chpl:12: called as helper(thing: domain(1,int(64),one))
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: In method 'serializeValue':
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: warning: Serialization of iterators with non-default Serializer is unstable, and may change in the future
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as jsonSerializer.serializeValue(writer: fileWriter(false,jsonSerializer), val: iterator) from method '_serializeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: iterator, loc: locale) from method 'write'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).write(args(0): iterator, args(1): chpl_ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: iterator, loc: locale) from method 'writeHelper'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).writeHelper(args: 1*iterator, endl: chpl_ioNewline, sep: nothing) from method 'writeln'
   unstableWriting.chpl:7: called as (fileWriter(true,jsonSerializer)).writeln(args(0): iterator) from function 'helper'
   unstableWriting.chpl:13: called as helper(thing: iterator)
 "1..10"
