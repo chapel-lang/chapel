@@ -1932,11 +1932,21 @@ module Python {
       :arg idx: The index of the item to get.
       :returns: The item at the given index.
     */
-    proc getItem(type T, idx: int): T throws {
-      var item = PySequence_GetItem(this.get(), idx.safeCast(Py_ssize_t));
+    pragma "docs only"
+    proc get(type T = owned Value, idx: int): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, idx: int): T throws {
+      var item = PySequence_GetItem(this.getPyObject(),
+                                    idx.safeCast(Py_ssize_t));
       this.check();
       return interpreter.fromPython(T, item);
     }
+
+    @chpldoc.nodoc
+    proc get(idx: int): owned Value throws do
+      return this.get(owned Value, idx);
 
     /*
       Set an item in the set. Equivalent to calling ``obj[idx] = item`` in
@@ -1945,8 +1955,8 @@ module Python {
       :arg idx: The index of the item to set.
       :arg item: The item to set.
     */
-    proc setItem(idx: int, item: ?) throws {
-      PySequence_SetItem(this.get(),
+    proc set(idx: int, item: ?) throws {
+      PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
       this.check();
