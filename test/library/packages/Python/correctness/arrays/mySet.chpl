@@ -22,7 +22,11 @@ proc main() {
   writeln("contains 'b' ", s.contains("b"));
   writeln("contains 'c' ", s.contains("c"));
   writeln("contains 'd' ", s.contains("d"));
+
   s.discard('b');
   writeln("size after discarding 'b' ", s.size);
   writeln("contains 'b' ", s.contains("b"));
+
+  s.clear();
+  writeln("size after clear ", s.size);
 }

@@ -1959,6 +1959,29 @@ module Python {
       PySet_Discard(this.getPyObject(), interpreter.toPython(item));
       this.check();
     }
+
+    // TODO: how to handle pop?  Since Python sets can contain any type, I'm not
+    // sure what type to pass to `fromPython`
+    /*
+      Pop an arbitrary element from the set and return it.  Equivalent to
+      calling ``obj.pop()`` in Python.
+    */
+    /*
+    proc pop() throws {
+      var popped = PySet_Pop(this.getPyObject());
+      this.check();
+      return interpreter.fromPython(???, popped); // What to put here?
+    }
+    */
+
+    /*
+      Remove all elements from the set.  Equivalent to calling ``obj.clear()``
+      in Python
+    */
+    proc clear() throws {
+      PySet_Clear(this.getPyObject());
+      this.check();
+    }
   }
 
   private proc checkFormatWithEltType(format: c_ptr(c_char),
