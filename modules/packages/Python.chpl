@@ -1920,7 +1920,7 @@ module Python {
       :returns: The size of the set.
     */
     proc size: int throws {
-      var size = PySequence_Size(this.get());
+      var size = PySequence_Size(this.getPyObject());
       this.check();
       return size;
     }
@@ -2287,6 +2287,7 @@ module Python {
   Module implements writeSerializable;
   Class implements writeSerializable;
   PyList implements writeSerializable;
+  PySet implements writeSerializable;
   Array implements writeSerializable;
   NoneType implements writeSerializable;
 
@@ -2308,6 +2309,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PySet.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
