@@ -1,0 +1,8 @@
+size 3
+size after add 4
+contains 'a' true
+contains 'b' true
+contains 'c' true
+contains 'd' true
+size after discarding 'b' 3
+contains 'b' false
