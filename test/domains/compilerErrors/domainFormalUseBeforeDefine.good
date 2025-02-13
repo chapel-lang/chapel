@@ -1,0 +1,10 @@
+domainFormalUseBeforeDefine.chpl:1: In function 'domainArgsInRange':
+domainFormalUseBeforeDefine.chpl:1: error: statement references variable 'D1' before it is defined
+domainFormalUseBeforeDefine.chpl:1: note: the variable 'D1' is defined here
+domainFormalUseBeforeDefine.chpl:1: error: statement references variable 'D2' before it is defined
+domainFormalUseBeforeDefine.chpl:1: note: the variable 'D2' is defined here
+domainFormalUseBeforeDefine.chpl:5: In function 'domainArg':
+domainFormalUseBeforeDefine.chpl:5: error: statement references variable 'dom1' before it is defined
+domainFormalUseBeforeDefine.chpl:5: note: the variable 'dom1' is defined here
+domainFormalUseBeforeDefine.chpl:5: error: statement references variable 'dom1' before it is defined
+domainFormalUseBeforeDefine.chpl:5: note: the variable 'dom1' is defined here

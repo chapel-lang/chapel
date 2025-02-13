@@ -46,7 +46,7 @@ proc parallelPythonApplySubInterp(interp: borrowed, type t, arr, l) {
     proc init(parent: borrowed, s) {
       init this;
       interp = try! (new SubInterpreter(parent));
-      func = try! (new Function(interp!, s));
+      func = try! (interp!.compileLambda(s));
     }
     inline proc this(type t, a) throws {
       return func!(t, a);

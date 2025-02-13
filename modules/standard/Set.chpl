@@ -563,7 +563,6 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
-      var space = 0..#_htb.tableSize;
       for followThis in _htb._evenSlots(tag) {
         yield followThis;
       }

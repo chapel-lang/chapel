@@ -350,7 +350,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
-         || asttags::isSync(tag);
+         || asttags::isSync(tag)
+         || asttags::isLet(tag);
 }
 
 static const bool&

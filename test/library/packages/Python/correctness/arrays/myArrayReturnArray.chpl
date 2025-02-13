@@ -11,8 +11,8 @@ proc main() {
   var interp = new Interpreter();
 
   var pyArr = new Array(interp, arr);
-  var pyCode = new Module(interp, '__empty__', pythonCode);
-  var func = new Function(pyCode, 'returnSelf');
+  var pyCode = interp.importModule('__empty__', pythonCode);
+  var func = pyCode.get('returnSelf');
   var newArr = func(owned Array, pyArr);
   writeln("from chapel: ", newArr);
 }

@@ -20,15 +20,15 @@ const html =
 proc main() {
 
   var interp = new Interpreter();
-  var mod = new Module(interp, "bs4");
+  var mod = interp.importModule("bs4");
 
-  var cls = new Class(mod, "BeautifulSoup");
+  var cls = mod.get("BeautifulSoup");
   var soup = cls(html, 'html.parser');
 
   var res: list(owned Value?);
   res = soup.call(res.type, "find_all", "a");
   for c in res {
-    var linkText = c!.getAttr(string, "text");
+    var linkText = c!.get(string, "text");
     var linkUrl = c!.call(string, "__getitem__", "href");
     writeln(linkText, ": ", linkUrl);
   }

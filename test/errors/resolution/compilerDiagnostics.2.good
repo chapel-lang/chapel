@@ -1,0 +1,24 @@
+─── warning in compilerDiagnostics.chpl:15 [UserDiagnosticEmitWarning] ───
+  1-argument version of foo called with type: real(64)
+       |
+    15 | foo(3.4);
+       |
+
+─── warning in compilerDiagnostics.chpl:16 [UserDiagnosticEmitWarning] ───
+  1-argument version of foo called with type: string
+       |
+    16 | foo("hi");
+       |
+
+─── error in compilerDiagnostics.chpl:20 [UserDiagnosticEmitError] ───
+  Foo() called with non-matching types: int(64) != real(64)
+       |
+    20 | foo(1, 2.3);
+       |
+
+─── error in compilerDiagnostics.chpl:21 [UserDiagnosticEmitError] ───
+  Foo() called with non-matching types: string != real(64)
+       |
+    21 | foo("hi", 2.3);
+       |
+

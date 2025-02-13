@@ -167,10 +167,17 @@ sub writeEmail {
     print $SF endMailHeader();
         print $SF "--- New Errors -------------------------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- Resolved Errors --------------------------\n";
         print $SF `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
+        print $SF "\n";
+
+        print $SF "--- Unresolved Errors ------------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- New Passing Future tests------------------\n";
@@ -189,25 +196,10 @@ sub writeEmail {
         print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
         print $SF "\n";
 
-        print $SF "--- Unresolved Errors ------------------------\n";
-        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-        print $SF "\n";
-
         print $SF "--- New Failing Future tests -----------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
 
-        print $SF "--- New Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
-
-        print $SF "--- Unresolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
-
-        print $SF "--- Resolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
     print $SF;
     print $SF endMailChplenv();
     close($SF);

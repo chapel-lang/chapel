@@ -1977,8 +1977,10 @@ void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
                                   const uast::AstNode* astForErr) {
   if (diagnostic.isError()) {
     CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
+    noteErrorMessage(context, diagnostic.message());
   } else if (diagnostic.isWarning()) {
     CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
+    noteWarningMessage(context, diagnostic.message());
   }
 }
 
@@ -2488,31 +2490,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   resolveTupleUnpackDecl(td, useT);
 }
 
-static bool addExistingSubstitutionsAsActuals(Context* context,
-                                              const Type* type,
-                                              std::vector<CallInfoActual>& outActuals,
-                                              std::vector<const AstNode*>& outActualAsts) {
-  bool addedSubs = false;
-  while (auto ct = type->getCompositeType()) {
-    if (!ct->instantiatedFromCompositeType()) break;
-
-    for (auto& [id, qt] : ct->substitutions()) {
-      auto fieldName = parsing::fieldIdToName(context, id);
-      addedSubs = true;
-      outActuals.emplace_back(qt, fieldName);
-      outActualAsts.push_back(nullptr);
-    }
-
-    if (auto clt = ct->toBasicClassType()) {
-      type = clt->parentClassType();
-    } else {
-      break;
-    }
-  }
-
-  return addedSubs;
-}
-
 static void findMismatchedInstantiations(Context* context,
                                          const CompositeType* originalCT,
                                          const CompositeType* finalCT,
@@ -2916,15 +2893,9 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       // Copy the result of resolving 'domain' as the called identifier.
       r.setType(rCalledExp.type());
     } else {
-      // Get type by resolving the type of corresponding '_domain' init call
-      // TODO: prohibit associative domain with idxType 'domain'
+      // Get type by resolving the type of corresponding domain builder call
       const AstNode* questionArg = nullptr;
       std::vector<CallInfoActual> actuals;
-      // Set up receiver
-      auto receiverType =
-          QualifiedType(QualifiedType::INIT_RECEIVER, rCalledExp.type().type());
-      auto receiverArg = CallInfoActual(receiverType, USTR("this"));
-      actuals.push_back(std::move(receiverArg));
       // Set up distribution arg
       auto defaultDistArg = CallInfoActual(
           DomainType::getDefaultDistType(context), UniqueString());
@@ -2934,9 +2905,9 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       CHPL_ASSERT(!questionArg);
 
       auto ci =
-          CallInfo(USTR("init"),
-                   /* calledType */ receiverType,
-                   /* isMethodCall */ true,
+          CallInfo(UniqueString::get(context, "chpl__buildDomainRuntimeType"),
+                   /* calledType */ QualifiedType(),
+                   /* isMethodCall */ false,
                    /* hasQuestionArg */ false,
                    /* isParenless */ false,
                    actuals);
@@ -2946,25 +2917,35 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         return resolveGeneratedCall(call, &ci, &inScopes);
       });
+      auto& crr = runResult.result().result;
 
-      // Use the init call's receiver type as the resulting TYPE
-      QualifiedType receiverTy;
-      if (runResult.ranWithoutErrors()) {
-        auto& c = runResult.result();
-        if (auto initMsc = c.result.mostSpecific().only()) {
-          c.noteResult(&r, {{AssociatedAction::RUNTIME_TYPE, fnCall->id()}});
-          receiverTy = initMsc.fn()->formalType(0);
-        }
-      }
-      if (!receiverTy.type()) {
+      // Note: this issues errors from compilerError in the body of the
+      // domain builder.
+      optional<ActionAndId> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
+      bool needsErrors =
+        runResult.result().noteResultWithoutError(&r, std::move(action));
+
+      const Type* domainTy;
+      if (runResult.ranWithoutErrors() &&
+          !crr.exprType().isUnknownOrErroneous()) {
+        domainTy = crr.exprType().type();
+      } else if (crr.mostSpecific().numBest() >= 1) {
+        // Errors were issued, but we found a candidate. This means the errors
+        // came from resolving the body of the domain builder, which
+        // are probably more specific than "InvalidDomainCall". Do not issue
+        // more errors.
+        CHPL_ASSERT(needsErrors);
+        runResult.result().issueBasicError();
+        domainTy = ErroneousType::get(context);
+      } else {
         std::vector<QualifiedType> actualTypesForErr;
-        for (auto it = actuals.begin() + 2; it != actuals.end(); ++it) {
+        for (auto it = actuals.begin() + 1; it != actuals.end(); ++it) {
           actualTypesForErr.push_back(it->type());
         }
-        receiverTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
-                                     actualTypesForErr);
+        domainTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
+                                   actualTypesForErr).type();
       }
-      r.setType(QualifiedType(QualifiedType::TYPE, receiverTy.type()));
+      r.setType(QualifiedType(QualifiedType::TYPE, domainTy));
     }
     return true;
   }
@@ -5275,7 +5256,7 @@ void Resolver::exit(const Dot* dot) {
     if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
-      receiverType = ErroneousType::get(context);
+      receiverType = UnknownType::get(context);
     }
 
     if (!receiver.type().isType()) {
@@ -5432,6 +5413,13 @@ getDecoratedClassForNew(Context* context, const New* node,
 
   switch (node->management()) {
     case New::DEFAULT_MANAGEMENT:
+      // Management might've been provided for us already; otherwise
+      // fall back to the default: 'owned'.
+      if (!classType->decorator().isUnknownManagement())
+        break;
+
+      // Fall through to 'owned' management.
+
     case New::OWNED:
       decorator = ClassTypeDecorator(ClassTypeDecorator::MANAGED);
       manager = AnyOwnedType::get(context);
@@ -6812,6 +6800,24 @@ bool Resolver::enter(const uast::Zip* zip) {
   return true;
 }
 void Resolver::exit(const uast::Zip* zip) {}
+
+bool Resolver::enter(const uast::Let* node) {
+  enterScope(node);
+  return true;
+}
+
+void Resolver::exit(const uast::Let* node) {
+  // The type of a let-expression is the type of its expression.
+  auto& otherR = byPostorder.byAst(node->expression());
+  auto& thisR = byPostorder.byAst(node);
+
+  auto& resultQt = otherR.type();
+  if (resultQt.type() && resultQt.type()->isVoidType()) {
+    context->error(node, "invalid use of 'void' value as expression");
+  }
+  thisR.setType(resultQt);
+  exitScope(node);
+}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);

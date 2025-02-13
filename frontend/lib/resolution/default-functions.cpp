@@ -38,6 +38,9 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static bool isDeSerializeMethod(UniqueString name) {
+  return name == USTR("serialize") || name == USTR("deserialize");
+}
 
 /**
   Return true if 'name' is the name of a compiler generated method.
@@ -50,7 +53,7 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
     return true;
   }
 
-  if (name == USTR("serialize") || name == USTR("deserialize")) {
+  if (isDeSerializeMethod(name)) {
     return true;
   }
 
@@ -80,6 +83,21 @@ areOverloadsPresentInDefiningScope(Context* context,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
                                name, config);
+
+  // this ought to be solved by interfaces, but today it isn't. As a workaround
+  // for some standard types having their (de)serialize methods defined in
+  // ChapelIO, search that module too.
+  if (ids.numIds() == 0 && isDeSerializeMethod(name)) {
+    auto chapelIo =
+      parsing::getToplevelModule(context,
+                                 UniqueString::get(context, "ChapelIO"));
+    if (!chapelIo) return false;
+
+    ids = lookupNameInScope(context, scopeForModule(context, chapelIo->id()),
+                            /* methodLookupHelper */ nullptr,
+                            /* receiverScopeHelper */ nullptr,
+                            name, config);
+  }
 
   // nothing found
   if (ids.numIds() == 0) return false;
@@ -946,17 +964,21 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
 
 static const TypedFnSignature*
 generateRecordAssignment(Context* context, const CompositeType* lhsType) {
+  // rhs used to be 'maybe const' but now 'const' is default.
+  //
+  // TODO: it's possible that we need to compute the dyno equivalent of
+  //       FLAG_COPY_MUTATES to get the right constness here.
   return generateRecordBinaryOperator(context, USTR("="), lhsType,
-                                      /*this*/ QualifiedType::CONST_REF,
-                                      /*lhs*/  QualifiedType::CONST_REF,
-                                      /*rhs*/  QualifiedType::CONST_REF);
+                                      /*this*/ QualifiedType::TYPE,
+                                      /*lhs*/  QualifiedType::REF,
+                                      /*rhs*/  QualifiedType::CONST_REF );
 }
 
 static const TypedFnSignature*
 generateRecordComparison(Context* context, const CompositeType* lhsType) {
   return generateRecordBinaryOperator(context, USTR("=="), lhsType,
-                                      /*this*/ QualifiedType::REF,
-                                      /*lhs*/  QualifiedType::REF,
+                                      /*this*/ QualifiedType::TYPE,
+                                      /*lhs*/  QualifiedType::CONST_REF,
                                       /*rhs*/  QualifiedType::CONST_REF);
 }
 

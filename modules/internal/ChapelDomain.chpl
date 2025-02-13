@@ -1112,7 +1112,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc init(d,
               type idxType,
-              param parSafe: bool = true,
+              param parSafe: bool = false,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }

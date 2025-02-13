@@ -22,6 +22,7 @@
 
 /* A helper file of utilities for Mason */
 private use CTypes;
+private use ChplConfig;
 public use FileSystem;
 private use List;
 private use Map;
@@ -170,6 +171,41 @@ proc SPACK_ROOT : string {
 
   return spackRoot;
 }
+
+/*
+  Returns the current CHPL_HOME. Tries the following in order:
+  1. The CHPL_HOME environment variable
+  2. Using the `chpl` in PATH to print CHPL_HOME
+  3. The CHPL_HOME of the chpl that built this mason (`ChplConfig.CHPL_HOME`)
+*/
+proc CHPL_HOME : string {
+
+  proc CHPL_HOME_inner() : string {
+    proc getChplHomeFromChpl(): string {
+      var chplHome = "";
+      try {
+        var process = spawn(["chpl", "--print-chpl-home"],
+                             stdout=pipeStyle.pipe);
+        for line in process.stdout.lines() {
+          chplHome = line.strip();
+        }
+      } catch {
+        chplHome = "";
+      }
+      return chplHome;
+    }
+
+    const env = getEnv("CHPL_HOME");
+    const chplHome = if !env.isEmpty() then env else getChplHomeFromChpl();
+    return if !chplHome.isEmpty() then chplHome else ChplConfig.CHPL_HOME;
+  }
+
+  @functionStatic
+  ref chplHome = CHPL_HOME_inner();
+  return chplHome;
+}
+
+
 /*
 This fetches the mason-installed spack registry only.
 Users that define SPACK_ROOT to their own spack installation will use
