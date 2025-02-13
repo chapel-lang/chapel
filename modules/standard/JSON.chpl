@@ -1185,6 +1185,14 @@ module JSON {
   proc fromJson(jsonString: string, type loadAs): loadAs throws {
     var fileReader = openStringReader(jsonString,
                                       deserializer=new jsonDeserializer());
+    return fileReader.read(loadAs);
+  }
+
+  @chpldoc.nodoc
+  proc fromJson(jsonString: string, type loadAs): loadAs throws
+      where isDefaultInitializable(loadAs) {
+    var fileReader = openStringReader(jsonString,
+                                      deserializer=new jsonDeserializer());
     // we want `return fileReader.read(loadAs)`. But that ends up using a
     // non-throwing compiler-generated initializer. That prevents the user to
     // catch errors that are due to malformed jsonString.
