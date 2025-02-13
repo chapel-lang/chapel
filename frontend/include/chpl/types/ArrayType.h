@@ -77,6 +77,8 @@ class ArrayType final : public CompositeType {
                                              const ArrayType* arrayType,
                                              const RuntimeType* runtimeType);
 
+  const RuntimeType* getDomainRuntimeType() const;
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getArrayTypeQuery(context,

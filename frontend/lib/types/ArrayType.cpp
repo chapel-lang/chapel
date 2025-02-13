@@ -133,6 +133,19 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
                            instantiatedFrom, subs).get();
 }
 
+const RuntimeType* ArrayType::getDomainRuntimeType() const {
+  const auto runtimeType = this->runtimeType().type();
+  CHPL_ASSERT(runtimeType);
+
+  static const int domFormalIdx = 0;
+  const auto sig = runtimeType->toRuntimeType()->initializer();
+  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
+  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
+
+  const auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
+  const auto domainRuntimeTy = domainTy->runtimeType().type()->toRuntimeType();
+  return domainRuntimeTy;
+}
 
 } // end namespace types
 } // end namespace chpl

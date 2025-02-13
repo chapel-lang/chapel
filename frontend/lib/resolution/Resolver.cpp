@@ -5270,6 +5270,8 @@ void Resolver::exit(const Dot* dot) {
   // to _dom.
   if (receiver.type().type() && receiver.type().type()->isArrayType() &&
       dot->field() == USTR("domain")) {
+    const auto arrayType = receiver.type().type()->toArrayType();
+
     std::vector<CallInfoActual> actuals;
     actuals.emplace_back(receiver.type(), USTR("this"));
     auto name = UniqueString::get(context, "_dom");
@@ -5282,7 +5284,12 @@ void Resolver::exit(const Dot* dot) {
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
     auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
 
-    rr.noteResult(&r);
+    // Fill in RTT, as the domain returned here has lost its RTT info.
+    auto baseDomainType = rr.result.exprType().type()->toDomainType();
+    auto domainType = DomainType::getWithRuntimeType(
+        context, baseDomainType, arrayType->getDomainRuntimeType());
+
+    r.setType(QualifiedType(QualifiedType::CONST_VAR, domainType));
     return;
   }
 
