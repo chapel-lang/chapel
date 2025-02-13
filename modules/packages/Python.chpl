@@ -1926,39 +1926,37 @@ module Python {
     }
 
     /*
-      Get an item from the set. Equivalent to calling ``obj[idx]`` in Python.
-
-      :arg T: The Chapel type of the item to return.
-      :arg idx: The index of the item to get.
-      :returns: The item at the given index.
-    */
-    pragma "docs only"
-    proc get(type T = owned Value, idx: int): T throws do
-      compilerError("docs only");
-
-    @chpldoc.nodoc
-    proc get(type T, idx: int): T throws {
-      var item = PySequence_GetItem(this.getPyObject(),
-                                    idx.safeCast(Py_ssize_t));
-      this.check();
-      return interpreter.fromPython(T, item);
-    }
-
-    @chpldoc.nodoc
-    proc get(idx: int): owned Value throws do
-      return this.get(owned Value, idx);
-
-    /*
-      Set an item in the set. Equivalent to calling ``obj[idx] = item`` in
+      Add an item to the set.  Equivalent to calling ``obj.add(item)`` in
       Python.
 
-      :arg idx: The index of the item to set.
-      :arg item: The item to set.
+      :arg item: The item to add to the set.
+     */
+    proc add(item: ?) throws {
+      PySet_Add(this.getPyObject(), interpreter.toPython(item));
+      this.check();
+    }
+
+    /*
+      Check if an item is in the set.  Equivalent to calling ``item in obj`` in
+      Python.
+
+      :arg item: The item to check for membership in the set.
     */
-    proc set(idx: int, item: ?) throws {
-      PySequence_SetItem(this.getPyObject(),
-                     idx.safeCast(Py_ssize_t),
-                     interpreter.toPython(item));
+    proc contains(item: ?): bool throws {
+      var result = PySet_Contains(this.getPyObject(),
+                                  interpreter.toPython(item));
+      this.check();
+      return result: bool;
+    }
+
+    /*
+      Discard a specific item from the set.  Equivalent to calling
+      ``obj.discard(item)`` in Python.
+
+      :arg item: The item to discard from the set.
+    */
+    proc discard(item: ?) throws {
+      PySet_Discard(this.getPyObject(), interpreter.toPython(item));
       this.check();
     }
   }
@@ -2564,7 +2562,6 @@ module Python {
     extern proc PySet_New(): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
     extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
-    // Lydia TODO: do I need these?
     extern proc PySet_Contains(set: PyObjectPtr, item: PyObjectPtr): c_int;
     extern proc PySet_Discard(set: PyObjectPtr, item: PyObjectPtr): c_int;
     extern proc PySet_Pop(set: PyObjectPtr): PyObjectPtr;
