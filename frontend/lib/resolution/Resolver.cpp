@@ -6283,17 +6283,14 @@ static bool handleArrayTypeExpr(Resolver& rv,
   } else {
     // We have an instantiated domain, so get array type via call to its
     // array builder function.
-    const char* arrayBuilderProc = "buildArray";
+    const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
     std::vector<CallInfoActual> actuals;
-    actuals.emplace_back(domainType, USTR("this"));
+    actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
     actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
-    // TODO: Implement noinit (allowing initElts to be false)
-    actuals.emplace_back(QualifiedType::makeParamBool(rv.context, true),
-                         UniqueString::get(rv.context, "initElts"));
     auto ci = CallInfo(
         /* name */ UniqueString::get(rv.context, arrayBuilderProc),
-        /* calledType */ domainType,
-        /* isMethodCall */ true,
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ false,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
         actuals);

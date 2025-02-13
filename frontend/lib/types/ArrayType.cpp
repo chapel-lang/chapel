@@ -113,6 +113,16 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
   auto subs = arrayType->substitutions();
   subs.emplace(runtimeTypeId, rttQt);
 
+  // Insert RTT info into the domain substitution, since
+  // chpl__buildArrayRuntimeType returns us an array whose domain has no RTT.
+  const auto sig = runtimeType->initializer();
+  const int domFormalIdx = 0;
+  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
+  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
+  auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
+  CHPL_ASSERT(domainTy);
+  subs[domainId] = QualifiedType(QualifiedType::TYPE, domainTy);
+
   const ArrayType* instantiatedFrom = nullptr;
   if (auto sourceInstFrom = arrayType->instantiatedFromCompositeType()) {
     CHPL_ASSERT(sourceInstFrom->isArrayType());

@@ -32,7 +32,6 @@ namespace types {
 class ArrayType final : public CompositeType {
  private:
   // TODO:
-  // - create 'RuntimeType'
   // - Slicing
   // - Array literals
 
