@@ -4,3 +4,4 @@
 # chapel programs run nicer side by side)
 
 export CHPL_RT_OVERSUBSCRIBED=yes
+export CHPL_RT_MASTERIP=127.0.0.1
