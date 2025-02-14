@@ -1054,19 +1054,21 @@ module Python {
     /*
       Converts an array to a python set
     */
+    /* Not currently used, so commented out.  I think this is what we would
+       write if we did want it.
     @chpldoc.nodoc
     proc toSet(arr): PyObjectPtr throws
       where isArrayType(arr.type) &&
             arr.rank == 1 && arr.isDefaultRectangular() {
       var pySet = PySet_New(nil);
       this.checkException();
-      for i in 0..<arr.size {
-        const idx = arr.domain.orderToIndex(i);
-        PySet_Add(pySet, toPython(arr[idx]));
+      for a in arr {
+        PySet_Add(pySet, toPython(a));
         this.checkException();
       }
       return pySet;
     }
+    */
 
     /*
       Convert a chapel set to a python set. Returns a new reference
@@ -1085,12 +1087,14 @@ module Python {
     /*
       Converts a python set to an array
     */
+    /* Not currently used, so commented out.  I think this is what we would
+       write if we did want it.
     @chpldoc.nodoc
     proc fromSet(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
 
-      if (PySequence_Check(obj) == 0) then
-        throw new ChapelException("Can only convert a sequence with a known size to an array");
+      if (PySet_Check(obj) == 0) then
+        throw new ChapelException("Can only convert a set to an array");
 
       // if it's a sequence with a known size, we can just iterate over it
       var res: T;
@@ -1098,6 +1102,7 @@ module Python {
         throw new ChapelException("Size mismatch");
       }
       var it = PyObject_GetIter(obj);
+      this.checkException();
       for i in 0..<res.size {
         const idx = res.domain.orderToIndex(i);
         var elm = PyIter_Next(it);
@@ -1108,6 +1113,7 @@ module Python {
       Py_DECREF(obj);
       return res;
     }
+    */
 
     /*
       Convert a python set to a Chapel set. Steals a reference to obj.
@@ -1115,6 +1121,7 @@ module Python {
     @chpldoc.nodoc
     proc fromSet(type T, obj: PyObjectPtr): T throws where isSubtype(T, Set.set) {
       var it = PyObject_GetIter(obj);
+      this.checkException();
       var res = new T();
       for 0..<PySequence_Size(obj) {
         var elem = PyIter_Next(it);
@@ -2020,19 +2027,21 @@ module Python {
       this.check();
     }
 
-    // TODO: how to handle pop?  Since Python sets can contain any type, I'm not
-    // sure what type to pass to `fromPython`
     /*
       Pop an arbitrary element from the set and return it.  Equivalent to
       calling ``obj.pop()`` in Python.
+
+      :arg T: The expected type of the element popped.  Defaults to
+              :type:`Value`.  If the Python set contains only elements of a
+              single type, that type can be specified using this argument.
+              Otherwise, `Value` is the most appropriate type, as we do not
+              control which element `pop` will return.
     */
-    /*
-    proc pop() throws {
+    proc pop(type T = owned Value): T throws {
       var popped = PySet_Pop(this.getPyObject());
       this.check();
-      return interpreter.fromPython(???, popped); // What to put here?
+      return interpreter.fromPython(T, popped);
     }
-    */
 
     /*
       Remove all elements from the set.  Equivalent to calling ``obj.clear()``
@@ -2643,6 +2652,7 @@ module Python {
     /*
       Sets
     */
+    extern proc PySet_Check(set: PyObjectPtr): c_int;
     extern proc PySet_New(set: PyObjectPtr): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
     extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;

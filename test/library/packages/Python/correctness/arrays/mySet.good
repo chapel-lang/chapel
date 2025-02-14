@@ -6,4 +6,8 @@ contains 'c' true
 contains 'd' true
 size after discarding 'b' 3
 contains 'b' false
+contains popped value false
+size after pop 2
+contains popped value false
+size after pop 1
 size after clear 0

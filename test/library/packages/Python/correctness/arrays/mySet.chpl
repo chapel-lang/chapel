@@ -27,6 +27,14 @@ proc main() {
   writeln("size after discarding 'b' ", s.size);
   writeln("contains 'b' ", s.contains("b"));
 
+  var poppedVal = s.pop();
+  writeln("contains popped value ", s.contains(poppedVal));
+  writeln("size after pop ", s.size);
+
+  var poppedVal2 = s.pop(string);
+  writeln("contains popped value ", s.contains(poppedVal2));
+  writeln("size after pop ", s.size);
+
   s.clear();
   writeln("size after clear ", s.size);
 }
