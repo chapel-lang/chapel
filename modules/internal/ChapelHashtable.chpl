@@ -652,7 +652,7 @@ module ChapelHashtable {
     }
 
 
-    iter _evenSlots(followThis, param tag) const ref
+    iter _evenSlots(followThis, param tag) ref
       where tag == iterKind.follower {
 
       var space = followThis(0);
@@ -663,7 +663,7 @@ module ChapelHashtable {
         if this.isSlotFull(i) {
           if (curNumFull >= space.low) {
             if (curNumFull <= space.high) {
-              yield this.table[i].key;
+              yield this.table[i];
             } else {
               break;
             }

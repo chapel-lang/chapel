@@ -572,7 +572,7 @@ module Set {
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
       foreach val in _htb._evenSlots(followThis, tag) {
-        yield val;
+        yield val.key;
       }
     }
 
