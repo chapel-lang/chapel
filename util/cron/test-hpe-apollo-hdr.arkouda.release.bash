@@ -13,7 +13,7 @@ export ARKOUDA_SKIP_CHECK_DEPS=true
 export CHPL_TEST_ARKOUDA_PERF=false
 export ARKOUDA_QUICK_COMPILE=true
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-apollo-hdr.arkouda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-apollo-hdr.arkouda.release"
 
 module list
 
