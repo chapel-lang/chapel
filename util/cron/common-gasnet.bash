@@ -13,6 +13,7 @@ export GASNET_SPAWNFN=L
 export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-gasnet
+export CHPL_RT_MASTERIP=127.0.0.1
 
 # Bump the timeout slightly just because we're oversubscribed
 export CHPL_TEST_TIMEOUT=500
