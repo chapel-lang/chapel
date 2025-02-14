@@ -105,6 +105,21 @@ ArrayType::getArrayType(Context* context,
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
 
+static const RuntimeType* getDomainRttFromArrayRtt(
+    const RuntimeType* arrayRtt) {
+  CHPL_ASSERT(arrayRtt);
+
+  static const int domFormalIdx = 0;
+  const auto sig = arrayRtt->toRuntimeType()->initializer();
+  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
+  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
+
+  const auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
+  const auto domainRuntimeTy = domainTy->runtimeType().type()->toRuntimeType();
+  CHPL_ASSERT(domainRuntimeTy);
+  return domainRuntimeTy;
+}
+
 const ArrayType* ArrayType::getWithRuntimeType(Context* context,
                                                const ArrayType* arrayType,
                                                const RuntimeType* runtimeType) {
@@ -115,13 +130,11 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
 
   // Insert RTT info into the domain substitution, since
   // chpl__buildArrayRuntimeType returns us an array whose domain has no RTT.
-  const auto sig = runtimeType->initializer();
-  const int domFormalIdx = 0;
-  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
-  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
-  auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
-  CHPL_ASSERT(domainTy);
-  subs[domainId] = QualifiedType(QualifiedType::TYPE, domainTy);
+  auto baseDomainType = arrayType->domainType().type()->toDomainType();
+  auto domainRtt = getDomainRttFromArrayRtt(runtimeType);
+  subs[domainId] = QualifiedType(
+      QualifiedType::TYPE,
+      DomainType::getWithRuntimeType(context, baseDomainType, domainRtt));
 
   const ArrayType* instantiatedFrom = nullptr;
   if (auto sourceInstFrom = arrayType->instantiatedFromCompositeType()) {
@@ -134,17 +147,9 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
 }
 
 const RuntimeType* ArrayType::getDomainRuntimeType() const {
+  CHPL_ASSERT(hasRuntimeType());
   const auto runtimeType = this->runtimeType().type();
-  CHPL_ASSERT(runtimeType);
-
-  static const int domFormalIdx = 0;
-  const auto sig = runtimeType->toRuntimeType()->initializer();
-  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
-  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
-
-  const auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
-  const auto domainRuntimeTy = domainTy->runtimeType().type()->toRuntimeType();
-  return domainRuntimeTy;
+  return getDomainRttFromArrayRtt(runtimeType->toRuntimeType());
 }
 
 } // end namespace types
