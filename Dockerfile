@@ -6,33 +6,33 @@ FROM debian:latest AS chapel-base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
-    clang \
-    cmake \
     curl \
+    wget \
     file \
-    gcc \
-    git \
-    g++ \
-    libclang-dev \
-    libclang-cpp-dev \
-    libedit-dev \
-    libgmp10 \
-    libgmp-dev \
-    llvm-dev \
-    llvm \
     locales \
-    make \
+    libedit-dev \
+    git \
     mawk \
+    make \
+    cmake \
     m4 \
     perl \
     pkg-config \
+    gcc \
+    g++ \
+    clang \
+    libclang-dev \
+    libclang-cpp-dev \
+    llvm \
+    llvm-dev \
+    libgmp10 \
+    libgmp-dev \
     protobuf-compiler \
-    python3-setuptools \
     python3 \
+    python3-dev \
+    python3-setuptools \
     python3-pip \
     python3-venv \
-    python3-dev \
-    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # configure locale
