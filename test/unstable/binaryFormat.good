@@ -1,11 +1,11 @@
 binaryFormat.chpl:4: warning: The ObjectSerialization module is unstable. The module's name, its types, and serialization format are subject to change.
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'writeHelper':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(false,binarySerializer)).writeHelper(args: 1*owned C, endl: nothing, sep: nothing) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(false,binarySerializer)).writeHelper(endl: nothing, sep: nothing, args(0): owned C) from method 'write'
   binaryFormat.chpl:16: called as (fileWriter(false,binarySerializer)).write(args(0): owned C)
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'writeHelper':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(false,binarySerializer)).writeHelper(args: 1*string, endl: nothing, sep: nothing) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(false,binarySerializer)).writeHelper(endl: nothing, sep: nothing, args(0): string) from method 'write'
   binaryFormat.chpl:17: called as (fileWriter(false,binarySerializer)).write(args(0): string)
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'read':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
