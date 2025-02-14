@@ -1,26 +1,25 @@
 # Common stage: install dependencies, set up the Debian image
 # ===========================================================
 
-FROM debian:11 AS chapel-base
+FROM debian:latest AS chapel-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
-    clang-11 \
+    clang \
     cmake \
     curl \
     file \
     gcc \
     git \
     g++ \
-    libclang-11-dev \
-    libclang-cpp11-dev \
+    libclang-dev \
+    libclang-cpp-dev \
     libedit-dev \
     libgmp10 \
     libgmp-dev \
-    llvm-11-dev \
-    llvm-11 \
-    llvm-11-tools \
+    llvm-dev \
+    llvm \
     locales \
     make \
     mawk \
@@ -28,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     perl \
     pkg-config \
     protobuf-compiler \
-    python-setuptools \
+    python3-setuptools \
     python3 \
     python3-pip \
     python3-venv \
