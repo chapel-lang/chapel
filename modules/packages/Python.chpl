@@ -1054,6 +1054,7 @@ module Python {
     /*
       Converts an array to a python set
     */
+    @chpldoc.nodoc
     proc toSet(arr): PyObjectPtr throws
       where isArrayType(arr.type) &&
             arr.rank == 1 && arr.isDefaultRectangular() {
@@ -1084,6 +1085,7 @@ module Python {
     /*
       Converts a python set to an array
     */
+    @chpldoc.nodoc
     proc fromSet(type T, obj: PyObjectPtr): T throws
       where isArrayType(T) {
 
