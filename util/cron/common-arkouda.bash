@@ -43,6 +43,11 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
+SETUP_PYTHON=$COMMON_DIR/setup_python_arkouda.bash
+if [ -f "$SETUP_PYTHON" ]; then
+  source $SETUP_PYTHON
+fi
+
 export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.3.0"
 
 function partial_checkout_release() {
