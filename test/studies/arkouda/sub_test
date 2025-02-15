@@ -30,7 +30,7 @@ export ARKOUDA_HOME=$CWD/arkouda
 if [ -z "${CHPL_TEST_ARKOUDA_SKIP_RM_CLONE}" ] ; then
   rm -rf ${ARKOUDA_HOME}
 
-   Clone Arkouda 
+  # Clone Arkouda 
   log "cloning Arkouda (URL=$ARKOUDA_URL, branch=$ARKOUDA_BRANCH"
   if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
     log_fatal_error "cloning Arkouda"
@@ -54,8 +54,6 @@ else
 fi
 
 export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
-
-#export CHPL_TEST_ARKOUDA_DISABLE_MODULES=ArgSortMsg:ArraySetopsMsg:AryUtil:BroadcastMsg:CastMsg:CommDiagnosticsMsg:ConcatenateMsg:CSVMsg:DataFrameIndexingMsg:EfuncMsg:EncodingMsg:FlattenMsg:HashMsg:HDF5Msg:HistogramMsg:In1dMsg:IndexingMsg:JoinEqWithDTMsg:KExtremeMsg:LinalgMsg:LogMsg:ManipulationMsg:OperatorMsg:RandMsg:ReductionMsg:ReductionMsgFunctions:RegistrationMsg:SegmentedMsg:SequenceMsg:SetMsg:SortMsg:SparseMatrixMsg:StatsMsg:TimeClassMsg:TransferMsg:UniqueMsg:UtilMsg
 
 # CHPL_TEST_ARKOUDA_DISABLE_MODULES is a colon separated list of modules to
 # disable.  Disable these modules by commenting them out in ServerModules.cfg

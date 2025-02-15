@@ -43,9 +43,13 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-SETUP_PYTHON=$COMMON_DIR/setup_python_arkouda.bash
+SETUP_PYTHON=$COMMON_DIR/setup_python39.bash
 if [ -f "$SETUP_PYTHON" ]; then
+  echo "Setting up Python using $SETUP_PYTHON"
   source $SETUP_PYTHON
+  echo "Using Python $(which python3)"
+else
+  echo "Can't find Python setup script $SETUP_PYTHON"
 fi
 
 export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.3.0"
