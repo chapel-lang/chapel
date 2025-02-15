@@ -42,5 +42,5 @@ export GASNET_PHYSMEM_MAX="9/10"
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_release
+test_release_performance
 sync_graphs

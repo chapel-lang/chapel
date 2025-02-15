@@ -23,5 +23,5 @@ module list
 export GASNET_PHYSMEM_MAX="9/10"
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_nightly
+test_nightly_performance
 sync_graphs

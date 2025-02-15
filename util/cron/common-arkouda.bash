@@ -27,7 +27,7 @@ export CHPL_TEST_ARKOUDA=true
 
 # HPCDC doesn't seem to be accessible to compute nodes at the moment
 # so we made a mirror on lustre where compute nodes can access
-ARKOUDA_DEP_DIR=/lus/scratch/chapelu/arkouda-deps
+ARKOUDA_DEP_DIR=${ARKOUDA_DEP_DIR:-/lus/scratch/chapelu/arkouda-deps}
 if [ ! -d "$ARKOUDA_DEP_DIR" ]; then
   ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 fi
@@ -43,11 +43,18 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
+SETUP_PYTHON=$COMMON_DIR/setup_python39.bash
+if [ -f "$SETUP_PYTHON" ]; then
+  echo "Setting up Python using $SETUP_PYTHON"
+  source $SETUP_PYTHON
+  echo "Using Python $(which python3)"
+else
+  echo "Can't find Python setup script $SETUP_PYTHON"
+fi
+
 export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.3.0"
-# test against Chapel release (checking out current test/cron directories)
-function test_release() {
-  export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+
+function partial_checkout_release() {
   currentSha=`git rev-parse HEAD`
   git checkout $CHPL_WHICH_RELEASE_FOR_ARKOUDA
   git checkout $currentSha -- $CHPL_HOME/test/
@@ -55,19 +62,32 @@ function test_release() {
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
   git checkout $currentSha -- $CHPL_HOME/util/test/computePerfStats
   git checkout $currentSha -- $CHPL_HOME/third-party/chpl-venv/test-requirements.txt
+}
+
+# test against Chapel release (checking out current test/cron directories)
+function test_release_performance() {
+  export CHPL_TEST_PERF_DESCRIPTION=release
+  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+  partial_checkout_release
   $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
 # test against Chapel nightly
-function test_nightly() {
+function test_nightly_performance() {
   export CHPL_TEST_PERF_DESCRIPTION=nightly
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
   $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
-function test_correctness() {
+function test_release_correctness() {
+  partial_checkout_release
   $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
+
+function test_nightly_correctness() {
+  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
+}
+
 
 function sync_graphs() {
   $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME

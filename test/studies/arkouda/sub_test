@@ -16,28 +16,43 @@ subtest_start
 DFLT_TIMEOUT=${CHPL_TEST_TIMEOUT:-300}
 export ARKOUDA_CLIENT_TIMEOUT=${ARKOUDA_CLIENT_TIMEOUT:-$DFLT_TIMEOUT}
 
+if [ -n "${CHPL_TEST_LAUNCHCMD}" ] ; then
+  export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_CLIENT_TIMEOUT" | envsubst)
+fi
+
 # Arkouda needs chpl in PATH
 bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
 export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
 chpl --version
 
 export ARKOUDA_HOME=$CWD/arkouda
-rm -rf ${ARKOUDA_HOME}
 
-# Clone Arkouda 
-if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
-  log_fatal_error "cloning Arkouda"
-fi
-cd ${ARKOUDA_HOME}
+if [ -z "${CHPL_TEST_ARKOUDA_SKIP_RM_CLONE}" ] ; then
+  rm -rf ${ARKOUDA_HOME}
 
-# Install dependencies if needed
-if make check-deps 2>/dev/null ; then
-  export ARKOUDA_SKIP_CHECK_DEPS=true
-else
-  if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
-    log_fatal_error "installing dependencies"
+  # Clone Arkouda 
+  log "cloning Arkouda (URL=$ARKOUDA_URL, branch=$ARKOUDA_BRANCH"
+  if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
+    log_fatal_error "cloning Arkouda"
   fi
 fi
+
+cd ${ARKOUDA_HOME}
+
+if [ -z "${ARKOUDA_SKIP_CHECK_DEPS}" ] ; then
+  # Install dependencies if needed
+  if make check-deps ; then
+    export ARKOUDA_SKIP_CHECK_DEPS=true
+  else
+    if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
+      log_fatal_error "installing dependencies"
+    fi
+  fi
+else
+  log "Skipping dependency checks"
+  log "Dependency dir: $ARKOUDA_DEP_DIR"
+fi
+
 export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
 
 # CHPL_TEST_ARKOUDA_DISABLE_MODULES is a colon separated list of modules to
@@ -52,7 +67,9 @@ if [ -n "${CHPL_TEST_ARKOUDA_DISABLE_MODULES}" ] ; then
 fi
 
 # install frontend python bindings
-(cd $CHPL_HOME && make chapel-py-venv)
+if [ -z "${CHPL_TEST_ARKOUDA_SKIP_CHAPEL_PY}" ] ; then
+  (cd $CHPL_HOME && make chapel-py-venv)
+fi
 
 # Compile Arkouda
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
@@ -62,17 +79,21 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   export ARKOUDA_EMITTED_CODE_SIZE_FILE="$PERF_SUB_DIR/emitted-code-size"
   export CHPL_DEBUG_FLAGS="${CHPL_DEBUG_FLAGS} --print-emitted-code-size"
 
-  make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
-  if [ ${PIPESTATUS[0]} -ne "0" ] ; then
-    log_fatal_error "compiling arkouda"
-  fi
-  if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
-    grep "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp > $ARKOUDA_EMITTED_CODE_SIZE_FILE
-    rm -f $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+  if [ -z "${CHPL_TEST_ARKOUDA_SKIP_BUILD}" ] ; then
+    make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+    if [ ${PIPESTATUS[0]} -ne "0" ] ; then
+      log_fatal_error "compiling arkouda"
+    fi
+    if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
+      grep "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp > $ARKOUDA_EMITTED_CODE_SIZE_FILE
+      rm -f $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+    fi
   fi
 else
-  if ! make ; then
-    log_fatal_error "compiling arkouda"
+  if [ -z "${CHPL_TEST_ARKOUDA_SKIP_BUILD}" ] ; then
+    if ! make ; then
+      log_fatal_error "compiling arkouda"
+    fi
   fi
 fi
 
@@ -81,27 +102,32 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
   export PYTHONUSERBASE=$ARKOUDA_HOME/python-deps
   # If Arkouda deps use any of our test deps, try to use the versions we want
   AK_PIP_CONTRAINTS="--constraint $CHPL_HOME/third-party/chpl-venv/test-requirements.txt"
+  log "Installing Arkouda using python3 at: $(which python3)"
   if ! python3 -m pip install --force-reinstall --timeout 60 $AK_PIP_CONTRAINTS -e .[dev] --user ; then
     log_fatal_error "installing arkouda"
   fi
 
   # Check installation
-  test_start "make check"
-  if make check ; then
-    log_success "make check output"
-  else
-    log_fatal_error "running make check"
+  if [ -z "${CHPL_TEST_ARKOUDA_SKIP_MAKE_CHECK}" ] ; then
+    test_start "make check"
+    if make check ; then
+      log_success "make check output"
+    else
+      log_fatal_error "running make check"
+    fi
+    test_end
   fi
-  test_end
 
   # Run Python unit tests
-  test_start "make test-python"
-  if make test-python ; then
-    log_success "make test-python output"
-  else
-    log_error "running make test-python"
+  if [ -z "${CHPL_TEST_ARKOUDA_SKIP_UNIT_TESTS}" ] ; then
+    test_start "make test-python"
+    if make test-python ; then
+      log_success "make test-python output"
+    else
+      log_error "running make test-python"
+    fi
+    test_end
   fi
-  test_end
 
   # Run benchmarks
   if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then

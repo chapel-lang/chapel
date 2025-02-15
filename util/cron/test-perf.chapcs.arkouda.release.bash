@@ -36,5 +36,5 @@ fi
 
 nightly_args="${nightly_args} -no-warnings"
 
-test_release
+test_release_performance
 sync_graphs
