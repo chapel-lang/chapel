@@ -4974,9 +4974,21 @@ findMostSpecificAndCheck(ResolutionContext* rc,
                          const PoiScope* inPoiScope,
                          PoiInfo& poiInfo) {
 
+  // When checking visibility distance, we need to choose either the callScope
+  // or the poiScope. Currently the poiScope is favored if both are available.
+  //
+  // If the poiScope is passed, but was not used to find candidates, then
+  // visibility distance could be wrong if candidates are equally visible from
+  // the poiScope, but not equally visible from the callScope.
+  //
+  // If there were no POI candidates found, then the poiScope should not be
+  // used. See 'testDistance' in 'testDisambiguation'.
+  auto poiScopeToUse = firstPoiCandidate >= candidates.size() ? nullptr :
+                       inPoiScope;
+
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
+      findMostSpecificCandidates(rc, candidates, ci, inScope, poiScopeToUse);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
