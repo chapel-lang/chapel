@@ -10,14 +10,14 @@
 
   .. code-block:: text
 
-    chpl testFFTW.chpl
+    chpl FFTWlib.chpl
 
   Otherwise, use the following (where ``$FFTW_DIR`` points to your
   FFTW installation):
 
   .. code-block:: text
 
-    chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
+    chpl FFTWlib.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
 
   The :mod:`FFTW` module uses the FFTW3 API and currently just implements the
   basic, double-precision interface.  We will assume that the reader
