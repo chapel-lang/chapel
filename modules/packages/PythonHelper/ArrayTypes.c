@@ -223,6 +223,12 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
 chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
 #undef chpl_MAKE_GET_BUFFER
 
+#if PY_VERSION_HEX >= 0x030a0000 /* Python 3.10 */
+#define chpl_Py_TPFLAGS_SEQUENCE Py_TPFLAGS_SEQUENCE
+#else
+#define chpl_Py_TPFLAGS_SEQUENCE 0
+#endif
+
 
 #define chpl_MAKE_TYPE(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static chpl_bool createArray##NAMESUFFIX##Type(void) { \
@@ -256,7 +262,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
       /*name*/ "Array"#NAMESUFFIX, \
       /*basicsize*/ sizeof(Array##NAMESUFFIX##Object), \
       /*itemsize*/ 0, \
-      /*flags*/ Py_TPFLAGS_DEFAULT | Py_TPFLAGS_SEQUENCE, \
+      /*flags*/ Py_TPFLAGS_DEFAULT | chpl_Py_TPFLAGS_SEQUENCE, \
       /*slots*/ slots \
     }; \
     Array##NAMESUFFIX##Type = (PyTypeObject*)PyType_FromSpec(&spec); \

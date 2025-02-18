@@ -68,6 +68,11 @@ static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
 
 
+static inline PyObject* chpl_Py_CompileString(const char* str,
+                                              const char* filename, int start) {
+  return Py_CompileString(str, filename, start);
+}
+
 static inline PyStatus chpl_Py_NewIsolatedInterpreter(PyThreadState** tstate) {
 #if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
   PyInterpreterConfig config = {
