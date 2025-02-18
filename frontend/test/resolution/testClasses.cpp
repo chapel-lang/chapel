@@ -359,7 +359,7 @@ static void test7() {
 }
 
 static void test8() {
-  printf("test7\n");
+  printf("test8\n");
 
   std::string program = R"""(
     class Parent {
