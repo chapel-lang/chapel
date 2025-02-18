@@ -2,7 +2,7 @@
 
 # Check a command, $1, to see if its a valid executable
 # if it is, print it and exit, otherwise do nothing
-function check_python {
+check_python() {
   if command -v $1 > /dev/null 2>&1
   then
     if $1 --version > /dev/null 2>&1
