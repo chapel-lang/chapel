@@ -1256,7 +1256,7 @@ bool canInstantiateSubstitutions(Context* context,
         // instantiation and same-type passing are allowed here
         //
         // canPass doesn't check param values for equivalence to allow handling
-        // coerciions and narrowing, so explicitly check them here.
+        // coercions and narrowing, so explicitly check them here.
         if (pSubType.isParam()) {
           bool compatible = pSubType.param() == nullptr ||
                             mySubType.param() == pSubType.param();
