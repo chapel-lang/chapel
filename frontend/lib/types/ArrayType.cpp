@@ -105,6 +105,9 @@ ArrayType::getArrayType(Context* context,
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
 
+// TODO: We need to change how we represent runtime types, and keep them tied
+// to domain types at any `new _domain` call, rather than retrieving them
+// after the fact in cases that call this.
 static const RuntimeType* getDomainRttFromArrayRtt(
     const RuntimeType* arrayRtt) {
   CHPL_ASSERT(arrayRtt);
