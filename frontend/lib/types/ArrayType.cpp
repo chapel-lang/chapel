@@ -115,6 +115,7 @@ static const RuntimeType* getDomainRttFromArrayRtt(
   CHPL_ASSERT(sig->formalType(domFormalIdx).type());
 
   const auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
+  CHPL_ASSERT(domainTy->hasRuntimeType());
   const auto domainRuntimeTy = domainTy->runtimeType().type()->toRuntimeType();
   CHPL_ASSERT(domainRuntimeTy);
   return domainRuntimeTy;

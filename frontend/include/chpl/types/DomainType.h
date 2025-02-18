@@ -159,13 +159,13 @@ class DomainType final : public CompositeType {
     return subs_.at(parSafeId);
   }
 
-  QualifiedType runtimeType() const {
-    auto it = subs_.find(runtimeTypeId);
-    if (it != subs_.end()) {
-      return it->second;
-    } else {
-      return QualifiedType();
-    }
+  bool hasRuntimeType() const {
+    return subs_.count(runtimeTypeId);
+  }
+
+  const QualifiedType& runtimeType() const {
+    CHPL_ASSERT(hasRuntimeType());
+    return subs_.at(runtimeTypeId);
   }
 
   ~DomainType() = default;
