@@ -2491,35 +2491,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   resolveTupleUnpackDecl(td, useT);
 }
 
-static void findMismatchedInstantiations(Context* context,
-                                         const CompositeType* originalCT,
-                                         const CompositeType* finalCT,
-                                         std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>>& out) {
-  while (originalCT) {
-    CHPL_ASSERT(finalCT);
-    if (!originalCT->instantiatedFromCompositeType()) break;
-
-    for (auto& [id, qt] : originalCT->substitutions()) {
-      auto finalSub = finalCT->substitutions().find(id);
-      if (finalSub == finalCT->substitutions().end()) {
-        out.emplace_back(id, parsing::fieldIdToName(context, id), qt, QualifiedType());
-      } else {
-        auto& finalQt = finalSub->second;
-        if (qt != finalQt) {
-          out.emplace_back(id, parsing::fieldIdToName(context, id), qt, finalQt);
-        }
-      }
-    }
-
-    if (auto clt = originalCT->toBasicClassType()) {
-      originalCT = clt->parentClassType();
-      finalCT = finalCT->toBasicClassType()->parentClassType();
-    } else {
-      break;
-    }
-  }
-}
-
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
       !call->calledExpression()->isNew()) {
@@ -2577,8 +2548,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // to the constructor. However, the constructor can do something entirely
   // different, and override the subs we passed in. This is an error, which
   // we should check for if we added named actuals.
-  bool validateFinalType =
-    addExistingSubstitutionsAsActuals(context, qtNewExpr.type(), actuals, actualAsts);
+  addExistingSubstitutionsAsActuals(context, qtNewExpr.type(), actuals, actualAsts);
 
   // Remaining actuals.
   prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
@@ -2623,19 +2593,6 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
     auto qt = QualifiedType(QualifiedType::VAR, type);
     re.setType(qt);
-
-    if (validateFinalType) {
-      auto originalCT = initReceiverType->getCompositeType();
-      auto finalCT = type->getCompositeType();
-      CHPL_ASSERT(originalCT);
-      CHPL_ASSERT(finalCT);
-
-      if (!finalCT->isInstantiationOf(context, originalCT)) {
-        std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>> mismatches;
-        findMismatchedInstantiations(context, originalCT, finalCT, mismatches);
-        CHPL_REPORT(context, MismatchedInitializerResult, call, originalCT, finalCT, std::move(mismatches));
-      }
-    }
   }
 
   return true;

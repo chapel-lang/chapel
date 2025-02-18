@@ -1131,6 +1131,113 @@ static void testInitEqOther(void) {
   assert(ss.str() == "R(real(64))");
 }
 
+static void testInitEqOtherIncomplete(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {}
+    var x:R(int) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  // There should be an error, since we never initialized the field T in
+  // the init= call.
+  assert(guard.realizeErrors() == 1);
+}
+
+static void testInitEqOtherChangeType(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {
+      this.T = (other.type, other.type);
+      this.field = (other, other);
+    }
+    var x:R(?) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R((int(64), int(64)))");
+}
+
+static void testInitEqOtherChangeTypeBad(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {
+      this.T = (other.type, other.type);
+      this.field = (other, other);
+    }
+    var x:R(int) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R((int(64), int(64)))");
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::MismatchedInitializerResult);
+  guard.realizeErrors();
+}
+
+static void testInitEqOtherThisType(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: this.type.T) {
+      this.T = other.type;
+      this.field = other;
+    }
+    var x: R(int) = 4;
+    var y: R(int) = 4.0;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  auto yt = results["y"];
+  assert(yt.type()->isErroneousType());
+
+  assert(guard.realizeErrors());
+}
+
 static void testInheritance() {
   std::string parentChild = R"""(
     class Parent {
@@ -2205,6 +2312,10 @@ int main() {
   testUseAfterInit();
 
   testInitEqOther();
+  testInitEqOtherIncomplete();
+  testInitEqOtherChangeType();
+  testInitEqOtherChangeTypeBad();
+  testInitEqOtherThisType();
 
   testInheritance();
 
