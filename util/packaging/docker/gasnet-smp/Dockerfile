@@ -1,8 +1,8 @@
 FROM chapel/chapel:latest
 
-ENV CHPL_COMM gasnet
-ENV CHPL_COMM_SUBSTRATE smp
-ENV CHPL_RT_OVERSUBSCRIBED yes
+ENV CHPL_COMM=gasnet
+ENV CHPL_COMM_SUBSTRATE=smp
+ENV CHPL_RT_OVERSUBSCRIBED=yes
 
 # By default GASNet will use POSIX shared memory, whose memory allocations
 # reside in /dev/shm. The default /dev/shm size for docker is only 64MB, which
