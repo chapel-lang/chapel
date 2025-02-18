@@ -675,7 +675,7 @@ module Python {
     @chpldoc.nodoc
     proc compileModule(s: string, modname: string): PyObjectPtr throws
     {
-      var code = Py_CompileString(s.c_str(), "<string>", Py_file_input);
+      var code = chpl_Py_CompileString(s.c_str(), "<string>", Py_file_input);
       this.checkException();
       defer Py_DECREF(code);
 
@@ -2396,9 +2396,9 @@ module Python {
     extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int,
                              globals: PyObjectPtr,
                              locals: PyObjectPtr): PyObjectPtr;
-    extern proc Py_CompileString(code: c_ptrConst(c_char),
-                                 filename: c_ptrConst(c_char),
-                                 start: c_int): PyObjectPtr;
+    extern proc chpl_Py_CompileString(code: c_ptrConst(c_char),
+                                      filename: c_ptrConst(c_char),
+                                      start: c_int): PyObjectPtr;
     extern proc PyImport_ExecCodeModule(name: c_ptrConst(c_char),
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
