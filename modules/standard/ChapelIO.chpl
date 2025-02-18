@@ -776,14 +776,27 @@ module ChapelIO {
   Error implements writeSerializable;
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */
+  pragma "last resort"
+  proc write(const args ...?n, sep: string = "") {
+    if chpl_warnUnstable then
+      compilerWarning("specifying 'sep' is an unstable feature");
+    try! stdout.writeHelper(none, sep, (...args));
+  }
+  @chpldoc.nodoc
   proc write(const args ...?n) {
     try! stdout.write((...args));
   }
   /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.fileWriter.writeln` */
-  proc writeln(const args ...?n) {
-    try! stdout.writeln((...args));
+  pragma "last resort"
+  proc writeln(const args ...?n, sep: string = "") {
+    if chpl_warnUnstable then
+      compilerWarning("specifying 'sep' is an unstable feature");
+    try! stdout.writeHelper(new chpl_ioNewline(), sep, (...args));
   }
-
+  @chpldoc.nodoc
+  proc writeln(const args ...?n) {
+    try! stdout.writeHelper(new chpl_ioNewline(), none, (...args));
+  }
   // documented in the arguments version.
   @chpldoc.nodoc
   proc writeln() {

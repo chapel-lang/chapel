@@ -1,0 +1,14 @@
+writelnSep.chpl:9: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:10: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:13: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:14: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:24: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:25: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:28: warning: specifying 'sep' is an unstable feature
+writelnSep.chpl:29: warning: specifying 'sep' is an unstable feature
+Hello world
+Hello world
+H e l l o  w o r l d
+Hello world
+Hello world
+H e l l o  w o r l d
