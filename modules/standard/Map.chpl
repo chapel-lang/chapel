@@ -514,9 +514,30 @@ module Map {
       :yields: A reference to one of the keys contained in this map.
     */
     iter keys() const ref {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].key;
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) const ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind, followThis) const ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.key;
       }
     }
 
@@ -550,11 +571,31 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref
-    {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].val;
+    iter values() ref {
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.val;
       }
     }
 

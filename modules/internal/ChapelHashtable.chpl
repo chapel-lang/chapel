@@ -304,7 +304,7 @@ module ChapelHashtable {
     }
 
     iter allSlots() {
-      for slot in _allSlots(tableSize) {
+      foreach slot in _allSlots(tableSize) {
         yield slot;
       }
     }
@@ -312,7 +312,7 @@ module ChapelHashtable {
     iter allSlots(param tag: iterKind)
       where tag == iterKind.standalone {
 
-      for slot in _allSlots(tableSize, tag=tag) {
+      foreach slot in _allSlots(tableSize, tag=tag) {
         yield slot;
       }
     }
@@ -320,7 +320,7 @@ module ChapelHashtable {
     iter allSlots(param tag: iterKind)
       where tag == iterKind.leader {
 
-      for followThis in _allSlots(tableSize, tag=tag) {
+      foreach followThis in _allSlots(tableSize, tag=tag) {
         yield followThis;
       }
     }
@@ -328,7 +328,7 @@ module ChapelHashtable {
     iter allSlots(followThis, param tag: iterKind)
       where tag == iterKind.follower {
 
-      for i in _allSlots(tableSize, followThis, tag=tag) {
+      foreach i in _allSlots(tableSize, followThis, tag=tag) {
         yield i;
       }
     }
@@ -652,7 +652,7 @@ module ChapelHashtable {
     }
 
 
-    iter _evenSlots(followThis, param tag) const ref
+    iter _evenSlots(followThis, param tag) ref
       where tag == iterKind.follower {
 
       var space = followThis(0);
@@ -663,7 +663,7 @@ module ChapelHashtable {
         if this.isSlotFull(i) {
           if (curNumFull >= space.low) {
             if (curNumFull <= space.high) {
-              yield this.table[i].key;
+              yield this.table[i];
             } else {
               break;
             }
