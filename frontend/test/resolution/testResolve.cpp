@@ -1899,6 +1899,21 @@ static void testExplicitlyGenericFormal() {
   }
 }
 
+static void testGlobalMultiDecl() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto xQt = resolveTypeOfXInit(context,
+    R"""(
+      var a, b: int;
+      proc foo() do return a;
+      var x = foo();
+    )""");
+
+  assert(xQt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -1938,6 +1953,8 @@ int main() {
   testGetLocalePrim();
 
   testExplicitlyGenericFormal();
+
+  testGlobalMultiDecl();
 
   return 0;
 }

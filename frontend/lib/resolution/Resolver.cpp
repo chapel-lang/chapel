@@ -654,7 +654,8 @@ isOuterVariable(Resolver& rv, const Identifier* ident, const ID& target) {
       }
     */
     // Return 'false' if the module is not the most immediate parent AST.
-    auto targetParentAstId = parsing::idToParentId(context, target);
+    auto enclosingMutliDecl = parsing::idToContainingMultiDeclId(context, target);
+    auto targetParentAstId = parsing::idToParentId(context, enclosingMutliDecl);
     return targetParentSymbolId != targetParentAstId;
   }
 
@@ -2791,6 +2792,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
       // always skip if there is an ErroneousType
       skip = ERRONEOUS_ACT;
     } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.isUnknown() &&
                qt.kind() != QualifiedType::PARAM &&
                qt.kind() != QualifiedType::TYPE &&
                qt.isRef() == false) {

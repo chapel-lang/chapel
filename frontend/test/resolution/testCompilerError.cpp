@@ -204,6 +204,29 @@ static void testRunAndTrackErrors() {
   ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 
+static void testInfiniteRecursion() {
+  // in nested functions, 'isQueryRunning' is not sufficient to avoid infinite
+  // recursion while gathering diagnostics. Regression test for
+  // https://github.com/Cray/chapel-private/issues/7096.
+  //
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  std::string program =
+    R"""(
+    proc foo() {
+      proc bar(x: int): int {
+        return bar(x);
+      }
+      return bar(1);
+    }
+    var x = foo();
+    )""";
+
+  auto x = resolveTypeOfX(ctx, program);
+  assert(x->isIntType());
+}
+
 int main() {
   testDirect();
   testDirectWarn();
@@ -213,4 +236,5 @@ int main() {
   testVarArgs();
   testTwoErrors();
   testRunAndTrackErrors();
+  testInfiniteRecursion();
 }

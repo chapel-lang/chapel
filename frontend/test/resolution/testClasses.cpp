@@ -358,7 +358,37 @@ static void test7() {
   assert(t->basicClassType()->name() == "Parent");
 }
 
+static void test8() {
+  printf("test8\n");
 
+  std::string program = R"""(
+    class Parent {
+    }
+
+    class Child : Parent {
+    }
+
+    proc test(type T: Parent?) {
+      var ret = new unmanaged T();
+      return ret;
+    }
+
+    var x = test(Child);
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "test8.chpl");
+  setFileText(context, filename, program);
+  auto m = parse(context, filename, UniqueString())[0];
+  auto r = resolveModule(context, m->id());
+
+  auto x = findVariable(m, "x");
+  auto& xres = r.byAst(x->initExpression());
+
+  assert(xres.mostSpecific().only());
+  assert(!xres.mostSpecific().only().fn()->needsInstantiation());
+}
 
 int main() {
   test1();
@@ -368,6 +398,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }
