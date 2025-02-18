@@ -607,6 +607,7 @@ struct Resolver {
   void validateAndSetToId(ResolvedExpression& r,
                           const uast::AstNode* exr,
                           const ID& id);
+  void setToBuiltin(ResolvedExpression& r, UniqueString name);
 
   void validateAndSetMostSpecific(ResolvedExpression& r,
                                   const uast::AstNode* exr,
@@ -698,6 +699,8 @@ struct Resolver {
 
   void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                                const uast::Identifier* ident);
+
+  ResolvedExpression resolveNameInModule(const UniqueString name);
 
   void resolveIdentifier(const uast::Identifier* ident);
 

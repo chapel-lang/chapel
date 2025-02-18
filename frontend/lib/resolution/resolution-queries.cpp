@@ -189,6 +189,22 @@ static const std::map<ID, std::vector<const ImplementationPoint*>>&
 collectImplementationPointsInModule(Context* context,
                                     const Module* mod);
 
+
+const ResolvedExpression& resolveNameInModule(Context* context,
+                                              ID modId,
+                                              UniqueString name) {
+  QUERY_BEGIN(resolveNameInModule, context, modId, name);
+
+  ResolutionResultByPostorderID ignored;
+  ResolutionContext rcval(context);
+  const AstNode* ast = parsing::idToAst(context, modId);
+  CHPL_ASSERT(ast != nullptr && ast->isModule());
+  auto res = Resolver::createForModuleStmt(&rcval, ast->toModule(), ast, ignored);
+  auto result = res.resolveNameInModule(name);
+
+  return QUERY_END(result);
+}
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
