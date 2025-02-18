@@ -16,15 +16,18 @@ fi
 
 # try and import the first package, if it fails, try and install the packages
 if ! $chpl_python -c "import $PACKAGE" &>/dev/null; then
-
+  echo "[Attempting to install $PACKAGE]"
   MY_LIB_DIR=$INSTALL_DIR/python_libs
   $chpl_python -m pip install $PACKAGE $OTHER_PACKAGES --target=$MY_LIB_DIR 2>&1
   export PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH
   if ! $chpl_python -c "import $PACKAGE" &>/dev/null; then
+    echo "[Failed to install $PACKAGE]"
     echo "True"
   else
+    echo "[Successfully installed $PACKAGE]"
     echo "False"
   fi
 else
+  echo "[Skipping installing $PACKAGE, already installed]"
   echo "False"
 fi

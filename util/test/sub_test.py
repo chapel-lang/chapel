@@ -1379,6 +1379,8 @@ def main():
             elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                    (os.getenv('CHPL_TEST_SINGLES')=='0'))):
                 testskipiffile=True
+                sys.stdout.write('[Checking skipif: %s.skipif]\n'%(test_filename))
+                sys.stdout.flush()
                 try:
                     skipme=False
                     skiptest=runSkipIf(f)
@@ -1398,6 +1400,9 @@ def main():
                     break
 
             elif ((suffix=='.suppressif' or name == 'SUPPRESSIF') and (os.access(f, os.R_OK))):
+                logname = "SUPPRESSIF" if name == "SUPPRESSIF" else "%s.suppressif" % (test_filename)
+                sys.stdout.write('[Checking suppressif: %s]\n'%(logname))
+                sys.stdout.flush()
                 try:
                     suppressme=False
                     suppresstest=runSkipIf(f)
