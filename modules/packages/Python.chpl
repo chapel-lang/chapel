@@ -347,6 +347,7 @@ module Python {
   private use CTypes;
   private import List;
   private import Map;
+  private import Set;
 
   private use CPythonInterface except PyObject;
   private import this.ArrayTypes;
@@ -857,6 +858,8 @@ module Python {
         return toDict(val);
       } else if isSubtype(t, List.list) {
         return toList(val);
+      } else if isSubtype(t, Set.set) {
+        return toSet(val);
       } else if isSubtype(t, Value) {
         Py_INCREF(val.getPyObject());
         return val.getPyObject();
@@ -941,6 +944,8 @@ module Python {
         }
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
+      } else if isSubtype(t, Set.set) {
+        return fromSet(t, obj);
       } else if isSubtype(t, Function?) {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
@@ -996,7 +1001,7 @@ module Python {
       if (PySequence_Check(obj) == 0) then
         throw new ChapelException("Can only convert a sequence with a known size to an array");
 
-      // if its a sequence with a known size, we can just iterate over it
+      // if it's a sequence with a known size, we can just iterate over it
       var res: T;
       if PySequence_Size(obj) != res.size.safeCast(Py_ssize_t) {
         throw new ChapelException("Size mismatch");
@@ -1049,20 +1054,83 @@ module Python {
     /*
       Converts an array to a python set
     */
-    // proc toSet(arr): PyObjectPtr throws {
-    // TODO
-    // }
+    /* Not currently used, so commented out.  I think this is what we would
+       write if we did want it.
+    @chpldoc.nodoc
+    proc toSet(arr): PyObjectPtr throws
+      where isArrayType(arr.type) &&
+            arr.rank == 1 && arr.isDefaultRectangular() {
+      var pySet = PySet_New(nil);
+      this.checkException();
+      for a in arr {
+        PySet_Add(pySet, toPython(a));
+        this.checkException();
+      }
+      return pySet;
+    }
+    */
 
-    // TODO: convert chapel set to python set
+    /*
+      Convert a chapel set to a python set. Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toSet(s: Set.set(?)): PyObjectPtr throws {
+      var pySet = PySet_New(nil);
+      this.checkException();
+      for i in s {
+        PySet_Add(pySet, toPython(i));
+        this.checkException();
+      }
+      return pySet;
+    }
 
     /*
       Converts a python set to an array
     */
-    // proc fromSet(type T, obj: PyObjectPtr): T throws {
-    // TODO
-    // }
+    /* Not currently used, so commented out.  I think this is what we would
+       write if we did want it.
+    @chpldoc.nodoc
+    proc fromSet(type T, obj: PyObjectPtr): T throws
+      where isArrayType(T) {
 
-    // TODO: convert python set to chapel set
+      if (PySet_Check(obj) == 0) then
+        throw new ChapelException("Can only convert a set to an array");
+
+      // if it's a sequence with a known size, we can just iterate over it
+      var res: T;
+      if PySet_Size(obj) != res.size.safeCast(Py_ssize_t) {
+        throw new ChapelException("Size mismatch");
+      }
+      var it = PyObject_GetIter(obj);
+      this.checkException();
+      for i in 0..<res.size {
+        const idx = res.domain.orderToIndex(i);
+        var elm = PyIter_Next(it);
+        this.checkException();
+        res[idx] = fromPython(res.eltType, elm);
+        this.checkException();
+      }
+      Py_DECREF(obj);
+      return res;
+    }
+    */
+
+    /*
+      Convert a python set to a Chapel set. Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromSet(type T, obj: PyObjectPtr): T throws where isSubtype(T, Set.set) {
+      var it = PyObject_GetIter(obj);
+      this.checkException();
+      var res = new T();
+      for 0..<PySequence_Size(obj) {
+        var elem = PyIter_Next(it);
+        this.checkException();
+        res.add(fromPython(T.eltType, elem));
+      }
+      Py_DECREF(obj);
+      return res;
+    }
 
 
     /*
@@ -1843,7 +1911,7 @@ module Python {
   }
 
 
-  // TODO: create adapters for other common Python types like Set, Dict, Tuple
+  // TODO: create adapters for other common Python types like Dict, Tuple
   /*
     Represents a Python list. This provides a Chapel interface to Python lists,
     where the Python interpreter owns the list.
@@ -1898,6 +1966,89 @@ module Python {
       PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPython(item));
+      this.check();
+    }
+  }
+
+  /*
+    Represents a Python set. This provides a Chapel interface to Python sets,
+    where the Python interpreter owns the set.
+  */
+  class PySet: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the set. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the set.
+    */
+    proc size: int throws {
+      var size = PySequence_Size(this.getPyObject());
+      this.check();
+      return size;
+    }
+
+    /*
+      Add an item to the set.  Equivalent to calling ``obj.add(item)`` in
+      Python.
+
+      :arg item: The item to add to the set.
+     */
+    proc add(item: ?) throws {
+      PySet_Add(this.getPyObject(), interpreter.toPython(item));
+      this.check();
+    }
+
+    /*
+      Check if an item is in the set.  Equivalent to calling ``item in obj`` in
+      Python.
+
+      :arg item: The item to check for membership in the set.
+    */
+    proc contains(item: ?): bool throws {
+      var result = PySet_Contains(this.getPyObject(),
+                                  interpreter.toPython(item));
+      this.check();
+      return result: bool;
+    }
+
+    /*
+      Discard a specific item from the set.  Equivalent to calling
+      ``obj.discard(item)`` in Python.
+
+      :arg item: The item to discard from the set.
+    */
+    proc discard(item: ?) throws {
+      PySet_Discard(this.getPyObject(), interpreter.toPython(item));
+      this.check();
+    }
+
+    /*
+      Pop an arbitrary element from the set and return it.  Equivalent to
+      calling ``obj.pop()`` in Python.
+
+      :arg T: The expected type of the element popped.  Defaults to
+              :type:`Value`.  If the Python set contains only elements of a
+              single type, that type can be specified using this argument.
+              Otherwise, `Value` is the most appropriate type, as we do not
+              control which element `pop` will return.
+    */
+    proc pop(type T = owned Value): T throws {
+      var popped = PySet_Pop(this.getPyObject());
+      this.check();
+      return interpreter.fromPython(T, popped);
+    }
+
+    /*
+      Remove all elements from the set.  Equivalent to calling ``obj.clear()``
+      in Python
+    */
+    proc clear() throws {
+      PySet_Clear(this.getPyObject());
       this.check();
     }
   }
@@ -2226,6 +2377,7 @@ module Python {
   Module implements writeSerializable;
   Class implements writeSerializable;
   PyList implements writeSerializable;
+  PySet implements writeSerializable;
   Array implements writeSerializable;
   NoneType implements writeSerializable;
 
@@ -2247,6 +2399,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PySet.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -2473,6 +2629,7 @@ module Python {
     /*
       Iterators
     */
+    extern proc PyObject_GetIter(obj: PyObjectPtr): PyObjectPtr;
     extern "chpl_PyList_Check" proc PyIter_Check(obj: PyObjectPtr): c_int;
     extern "chpl_PyGen_Check" proc PyGen_Check(obj: PyObjectPtr): c_int;
     extern proc PyIter_Next(obj: PyObjectPtr): PyObjectPtr;
@@ -2495,9 +2652,14 @@ module Python {
     /*
       Sets
     */
-    extern proc PySet_New(): PyObjectPtr;
+    extern proc PySet_Check(set: PyObjectPtr): c_int;
+    extern proc PySet_New(set: PyObjectPtr): PyObjectPtr;
     extern proc PySet_Add(set: PyObjectPtr, item: PyObjectPtr);
     extern proc PySet_Size(set: PyObjectPtr): Py_ssize_t;
+    extern proc PySet_Contains(set: PyObjectPtr, item: PyObjectPtr): c_int;
+    extern proc PySet_Discard(set: PyObjectPtr, item: PyObjectPtr): c_int;
+    extern proc PySet_Pop(set: PyObjectPtr): PyObjectPtr;
+    extern proc PySet_Clear(set: PyObjectPtr): c_int;
 
 
     /*
