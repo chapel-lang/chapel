@@ -6266,7 +6266,8 @@ static bool handleArrayTypeExpr(Resolver& rv,
         /* calledType */ QualifiedType(),
         /* isMethodCall */ false,
         /* hasQuestionArg */ false,
-        /* isParenless */ false, actuals);
+        /* isParenless */ false,
+        std::move(actuals));
     auto scope = rv.scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
