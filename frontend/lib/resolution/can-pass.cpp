@@ -571,7 +571,7 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         // From the previous conditional, we know the formal isn't another
         // 'any' class, so this actual cannot be passed.
         pass = false;
-      } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+      } else if (actualBct->isSubtypeOf(context, formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation
@@ -1254,6 +1254,16 @@ bool canInstantiateSubstitutions(Context* context,
       auto r = canPass(context, mySubType, pSubType);
       if (r.passes() && !r.promotes() && !r.converts()) {
         // instantiation and same-type passing are allowed here
+        //
+        // canPass doesn't check param values for equivalence to allow handling
+        // coercions and narrowing, so explicitly check them here.
+        if (pSubType.isParam()) {
+          bool compatible = pSubType.param() == nullptr ||
+                            mySubType.param() == pSubType.param();
+          if (!compatible) {
+            return false;
+          }
+        }
       } else {
         // it was not an instantiation
         return false;
