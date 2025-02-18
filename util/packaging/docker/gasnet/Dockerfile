@@ -8,4 +8,4 @@ RUN CHPL_TARGET_COMPILER=llvm make -C $CHPL_HOME \
     && make -C $CHPL_HOME chpldoc test-venv mason \
     && make -C $CHPL_HOME cleanall
 
-ENV GASNET_SPAWNFN L
+ENV GASNET_SPAWNFN=L
