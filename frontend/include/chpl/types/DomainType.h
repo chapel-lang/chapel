@@ -159,7 +159,12 @@ class DomainType final : public CompositeType {
     return subs_.at(parSafeId);
   }
 
+  bool hasRuntimeType() const {
+    return subs_.count(runtimeTypeId);
+  }
+
   const QualifiedType& runtimeType() const {
+    CHPL_ASSERT(hasRuntimeType());
     return subs_.at(runtimeTypeId);
   }
 

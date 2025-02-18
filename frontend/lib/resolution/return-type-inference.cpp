@@ -1202,17 +1202,6 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       result = QualifiedType(QualifiedType::REF, ft.type());
     }
     return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-    auto at = sig->formalType(0).type()->toArrayType();
-    
-    if (untyped->name() == "domain") {
-      result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-    } else if (untyped->name() == "eltType") {
-      result = at->eltType();
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated array method");
-    }
-      return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isPtrType() &&
              untyped->name() == "eltType") {
     auto pt = sig->formalType(0).type()->toPtrType();

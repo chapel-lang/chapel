@@ -80,7 +80,10 @@ ArrayType::getArrayType(Context* context,
   auto genericArray = getGenericArrayType(context);
 
   SubstitutionsMap subs;
+  CHPL_ASSERT(domainType.isType() && domainType.type() &&
+              domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
+  CHPL_ASSERT((eltType.isType() || eltType.isTypeQuery()) && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
 
   // Add substitution for _instance field
@@ -94,19 +97,31 @@ ArrayType::getArrayType(Context* context,
       break;
     }
   }
+  subs.emplace(instanceFieldId, instance);
 
-  // TODO: resolver currently doesn't bother to set up the array instance type.
-  //       as a result, this is sometimes unknown, which leads to problems
-  //       when doing canInstantiate (which uses canPass). So, don't include
-  //       the unknown sub to avoid those issues. Remove this when
-  //       resolver handles _instance.
-  if (!instance.isUnknown()) {
-    subs.emplace(instanceFieldId, instance);
-  }
   auto id = getArrayID(context);
   auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
+}
+
+// TODO: We need to change how we represent runtime types, and keep them tied
+// to domain types at any `new _domain` call, rather than retrieving them
+// after the fact in cases that call this.
+static const RuntimeType* getDomainRttFromArrayRtt(
+    const RuntimeType* arrayRtt) {
+  CHPL_ASSERT(arrayRtt);
+
+  static const int domFormalIdx = 0;
+  const auto sig = arrayRtt->toRuntimeType()->initializer();
+  CHPL_ASSERT(sig->untyped()->formalName(domFormalIdx) == "dom");
+  CHPL_ASSERT(sig->formalType(domFormalIdx).type());
+
+  const auto domainTy = sig->formalType(domFormalIdx).type()->toDomainType();
+  CHPL_ASSERT(domainTy->hasRuntimeType());
+  const auto domainRuntimeTy = domainTy->runtimeType().type()->toRuntimeType();
+  CHPL_ASSERT(domainRuntimeTy);
+  return domainRuntimeTy;
 }
 
 const ArrayType* ArrayType::getWithRuntimeType(Context* context,
@@ -116,6 +131,14 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
   auto rttQt = QualifiedType(QualifiedType::TYPE, runtimeType);
   auto subs = arrayType->substitutions();
   subs.emplace(runtimeTypeId, rttQt);
+
+  // Insert RTT info into the domain substitution, since
+  // chpl__buildArrayRuntimeType returns us an array whose domain has no RTT.
+  auto baseDomainType = arrayType->domainType().type()->toDomainType();
+  auto domainRtt = getDomainRttFromArrayRtt(runtimeType);
+  subs[domainId] = QualifiedType(
+      QualifiedType::TYPE,
+      DomainType::getWithRuntimeType(context, baseDomainType, domainRtt));
 
   const ArrayType* instantiatedFrom = nullptr;
   if (auto sourceInstFrom = arrayType->instantiatedFromCompositeType()) {
@@ -127,6 +150,11 @@ const ArrayType* ArrayType::getWithRuntimeType(Context* context,
                            instantiatedFrom, subs).get();
 }
 
+const RuntimeType* ArrayType::getDomainRuntimeType() const {
+  CHPL_ASSERT(hasRuntimeType());
+  const auto runtimeType = this->runtimeType().type();
+  return getDomainRttFromArrayRtt(runtimeType->toRuntimeType());
+}
 
 } // end namespace types
 } // end namespace chpl

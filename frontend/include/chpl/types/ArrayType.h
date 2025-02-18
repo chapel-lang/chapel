@@ -32,7 +32,6 @@ namespace types {
 class ArrayType final : public CompositeType {
  private:
   // TODO:
-  // - create 'RuntimeType'
   // - Slicing
   // - Array literals
 
@@ -78,6 +77,8 @@ class ArrayType final : public CompositeType {
                                              const ArrayType* arrayType,
                                              const RuntimeType* runtimeType);
 
+  const RuntimeType* getDomainRuntimeType() const;
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getArrayTypeQuery(context,
@@ -104,13 +105,13 @@ class ArrayType final : public CompositeType {
     }
   }
 
-  QualifiedType runtimeType() const {
-    auto it = subs_.find(runtimeTypeId);
-    if (it != subs_.end()) {
-      return it->second;
-    } else {
-      return QualifiedType();
-    }
+  bool hasRuntimeType() const {
+    return subs_.count(runtimeTypeId);
+  }
+
+  const QualifiedType& runtimeType() const {
+    CHPL_ASSERT(hasRuntimeType());
+    return subs_.at(runtimeTypeId);
   }
 
   ~ArrayType() = default;

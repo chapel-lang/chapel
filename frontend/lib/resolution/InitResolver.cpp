@@ -342,6 +342,7 @@ static auto helpExtractFields(Context* context, const BasicClassType* bct, std::
                                DefaultsPolicy::IGNORE_DEFAULTS);
   CHPL_ASSERT(rf.numFields() >= 0 && (size_t) rf.numFields() >= sizeof...(names));
 
+  // TODO: error if any requested fields are not found
   typename ImplCreateNTuple<Is...>::type ret;
   for (int i = 0; i < rf.numFields(); i++) {
     ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 0) : 0), ...);
@@ -410,25 +411,41 @@ static const ArrayType* arrayTypeFromSubsHelper(
   if (!instanceBct || !baseArr) return genericArray;
 
   if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
-    // TODO: the ArrayType predates our '_instance-aware' code (developed
-    //       by Anna and currently at work in Domains). For now, just use the
-    //       "old" style containing a domain type and element type to instantiate
-    //       the array.
-    //
-    //       Anna is planning on tackling this in future work.
-
     auto baseArrRect = baseArr->parentClassType();
-    CHPL_ASSERT(baseArrRect && baseArrRect->id().symbolPath() == "ChapelDistribution.BaseArrOverRectangularDom");
+    CHPL_ASSERT(baseArrRect &&
+                baseArrRect->id().symbolPath() ==
+                    "ChapelDistribution.BaseArrOverRectangularDom");
 
-    auto [rank, idxType, strides] = extractRectangularInfo(context, baseArrRect);
-    auto [eltType] = extractFields(context, baseArr, "eltType");
-
-    auto domain = DomainType::getRectangularType(context, instanceQt, rank,
+    auto [rank, idxType, strides] =
+        extractRectangularInfo(context, baseArrRect);
+    auto [domInstanceQt] = extractFields(context, instanceBct, "dom");
+    auto domain = DomainType::getRectangularType(context, domInstanceQt, rank,
                                                  idxType, strides);
-    return ArrayType::getArrayType(context,
-                                   instanceQt,
+
+    auto [eltType] = extractFields(context, baseArr, "eltType");
+    return ArrayType::getArrayType(context, instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
+  } else if (instanceBct->id().symbolPath() ==
+             "DefaultAssociative.DefaultAssociativeArr") {
+    auto [idxType, parSafe, domInstanceQt] =
+        extractFields(context, instanceBct, "idxType", "parSafeDom", "dom");
+    auto domain = DomainType::getAssociativeType(context, domInstanceQt,
+                                                 idxType, parSafe);
+
+    CHPL_ASSERT(baseArr &&
+                baseArr->id().symbolPath() == "ChapelDistribution.AbsBaseArr");
+    auto [eltType] = extractFields(context, baseArr, "eltType");
+
+    return ArrayType::getArrayType(context, instanceQt,
+                                   QualifiedType(QualifiedType::TYPE, domain),
+                                   eltType);
+  } else if (instanceBct->id().symbolPath() ==
+             "ChapelDistribution.BaseSparseArr") {
+    // TODO: support sparse arrays
+    CHPL_UNIMPL("sparse arrays");
+  } else {
+    CHPL_UNIMPL("unknown kind of array class");
   }
 
   // If we reach here, we weren't able to resolve the array type
