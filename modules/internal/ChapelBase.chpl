@@ -3406,6 +3406,7 @@ module ChapelBase {
 
   proc chpl_field_lt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
@@ -3414,6 +3415,7 @@ module ChapelBase {
 
   proc chpl_field_gt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
