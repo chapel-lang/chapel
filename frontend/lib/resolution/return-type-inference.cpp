@@ -1479,29 +1479,6 @@ void computeReturnType(Resolver& resolver) {
       v.process(fn->body(), resolver.byPostorder);
       resolver.returnType = v.returnedType();
     }
-
-    if (auto ag = fn->attributeGroup()) {
-      if (ag->hasPragma(uast::pragmatags::PRAGMA_RUNTIME_TYPE_INIT_FN)) {
-        // This function creates a runtime type, which notionally associates
-        // with the function's return type a record that contains
-        // all of the functions' arguments. Do that now.
-        auto rtt = RuntimeType::get(resolver.context, resolver.typedSignature);
-        const Type* newType = resolver.returnType.type();
-        if (resolver.returnType.isUnknownOrErroneous()) {
-          // Inference fail, nothing to embed with the runtime type.
-        } else if (auto dt = newType->toDomainType()) {
-          newType = DomainType::getWithRuntimeType(resolver.context, dt, rtt);
-        } else if (auto at = newType->toArrayType()) {
-          newType = ArrayType::getWithRuntimeType(resolver.context, at, rtt);
-        } else {
-          resolver.context->error(fn, "unsupported return type for runtime type constructor");
-          newType = ErroneousType::get(resolver.context);
-        }
-
-        resolver.returnType =
-          QualifiedType(resolver.returnType.kind(), newType, resolver.returnType.param());
-      }
-    }
   }
 }
 

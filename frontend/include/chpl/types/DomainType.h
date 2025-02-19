@@ -90,7 +90,6 @@ class DomainType final : public CompositeType {
   static const ID nonRectangularIdxTypeId;
   static const ID stridesId;
   static const ID parSafeId;
-  static const ID runtimeTypeId;
 
  public:
 
@@ -109,11 +108,6 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& instance,
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
-
-  /** embellishes the domain type with a runtime type. */
-  static const DomainType* getWithRuntimeType(Context* context,
-                                              const DomainType* domainType,
-                                              const RuntimeType* runtimeType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -159,14 +153,7 @@ class DomainType final : public CompositeType {
     return subs_.at(parSafeId);
   }
 
-  bool hasRuntimeType() const {
-    return subs_.count(runtimeTypeId);
-  }
-
-  const QualifiedType& runtimeType() const {
-    CHPL_ASSERT(hasRuntimeType());
-    return subs_.at(runtimeTypeId);
-  }
+  const RuntimeType* runtimeType(Context* context) const;
 
   ~DomainType() = default;
 

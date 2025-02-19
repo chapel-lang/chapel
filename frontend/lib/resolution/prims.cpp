@@ -498,15 +498,15 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
 
   const RuntimeType* rtt = nullptr;
   if (auto dt = compositeType->toDomainType()) {
-    if (auto domainRtt = dt->runtimeType().type()) {
-      CHPL_ASSERT(domainRtt->isRuntimeType());
-      rtt = domainRtt->toRuntimeType();
-    }
+    auto domainRtt = dt->runtimeType(context);
+    CHPL_ASSERT(domainRtt);
+    CHPL_ASSERT(domainRtt->isRuntimeType());
+    rtt = domainRtt->toRuntimeType();
   } else if (auto at = compositeType->toArrayType()) {
-    if (auto arrayRtt = at->runtimeType().type()) {
-      CHPL_ASSERT(arrayRtt->isRuntimeType());
-      rtt = arrayRtt->toRuntimeType();
-    }
+    auto arrayRtt = at->runtimeType(context);
+    CHPL_ASSERT(arrayRtt);
+    CHPL_ASSERT(arrayRtt->isRuntimeType());
+    rtt = arrayRtt->toRuntimeType();
   }
 
   if (!rtt) return QualifiedType();

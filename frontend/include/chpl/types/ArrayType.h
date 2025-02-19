@@ -61,7 +61,6 @@ class ArrayType final : public CompositeType {
 
   static const ID domainId;
   static const ID eltTypeId;
-  static const ID runtimeTypeId;
 
  public:
 
@@ -72,10 +71,6 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& instance,
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
-
-  static const ArrayType* getWithRuntimeType(Context* context,
-                                             const ArrayType* arrayType,
-                                             const RuntimeType* runtimeType);
 
   const RuntimeType* getDomainRuntimeType() const;
 
@@ -105,14 +100,7 @@ class ArrayType final : public CompositeType {
     }
   }
 
-  bool hasRuntimeType() const {
-    return subs_.count(runtimeTypeId);
-  }
-
-  const QualifiedType& runtimeType() const {
-    CHPL_ASSERT(hasRuntimeType());
-    return subs_.at(runtimeTypeId);
-  }
+  const RuntimeType* runtimeType(Context* context) const;
 
   ~ArrayType() = default;
 

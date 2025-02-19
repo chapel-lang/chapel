@@ -7258,6 +7258,52 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   return QUERY_END(ret);
 }
 
+static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, const types::CompositeType* ct) {
+  QUERY_BEGIN(getRuntimeTypeQuery, context, ct);
+
+  CHPL_ASSERT(ct->isArrayType() || ct->isDomainType());
+
+  auto ci = CallInfo(UniqueString::get(context, "chpl__convertValueToRuntimeType"),
+    QualifiedType(),
+    /* isMethodCall */ false,
+    /* hasQuestionArg */ false,
+    /* isParenless */ false,
+    /* actuals */ { CallInfoActual(QualifiedType(QualifiedType::VAR, ct), UniqueString()) });
+
+  auto ctAst = parsing::idToAst(context, ct->id());
+  auto scopes = CallScopeInfo::forNormalCall(scopeForId(context, ct->id()), nullptr);
+  auto c = resolveGeneratedCall(context, ctAst, ci, scopes);
+
+  const RuntimeType* ret = nullptr;
+  if (!c.exprType().isUnknownOrErroneous() && c.mostSpecific().numBest() == 1) {
+    // the conversion function's body should just be one 'return', which
+    // is the builder. We could be smarter about it (handling control flow,
+    // param conditionals, etc.), but why?
+
+    auto fn = parsing::idToAst(context, c.mostSpecific().only().fn()->id())->toFunction();
+    CHPL_ASSERT(fn);
+    auto body = fn->stmt(0);
+    CHPL_ASSERT(body && body->isReturn() && body->toReturn()->value());
+
+    ResolutionContext rcval(context);
+    auto rFn = resolveFunction(&rcval, c.mostSpecific().only().fn(), c.poiInfo().poiScope());
+    if (rFn) {
+      auto returnedRE = rFn->resolutionById().byAstOrNull(body->toReturn()->value());
+      if (returnedRE && returnedRE->mostSpecific().only()) {
+        auto calledBuilder = returnedRE->mostSpecific().only().fn();
+        ret = RuntimeType::get(context, calledBuilder);
+      }
+    }
+  }
+  CHPL_ASSERT(ret);
+
+  return QUERY_END(ret);
+}
+
+const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct) {
+  return getRuntimeTypeQuery(context, ct);
+}
+
 Access accessForQualifier(Qualifier q) {
   if (q == Qualifier::REF ||
       q == Qualifier::OUT ||
