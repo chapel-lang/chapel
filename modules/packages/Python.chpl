@@ -1251,6 +1251,8 @@ module Python {
       Py_DECREF(exc);
       if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
         return new ImportError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_KeyError) != 0 {
+        return new KeyError(str);
       } else {
         throw new PythonException(str);
       }
@@ -1270,6 +1272,15 @@ module Python {
     Represents a BufferError in the Python code
   */
   class BufferError: PythonException {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+
+  /*
+    Represents a KeyError in the Python code
+  */
+  class KeyError: PythonException {
     proc init(in message: string) {
       super.init(message);
     }
@@ -1971,6 +1982,95 @@ module Python {
   }
 
   /*
+    Represents a Python dict. This provides a Chapel interface to Python dicts,
+    where the Python interpreter owns the dict.
+  */
+  class PyDict: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the dict. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the dict.
+    */
+    proc size: int throws {
+      var size = PyDict_Size(this.getPyObject());
+      this.check();
+      return size;
+    }
+
+    /*
+      Get an item from the dict. Equivalent to calling ``obj[key]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg key: The key of the item to get.
+      :returns: The item at the given key.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, key: ?): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, key: ?): T throws {
+      var item = PyDict_GetItem(this.getPyObject(), interpreter.toPython(key));
+      this.check();
+      return interpreter.fromPython(T, item);
+    }
+    @chpldoc.nodoc
+    proc get(key: ?): owned Value throws do
+      return this.get(owned Value, key);
+
+    /*
+      Set an item in the dict. Equivalent to calling ``obj[key] = item`` in
+      Python.
+
+      :arg key: The key of the item to set.
+      :arg item: The item to set.
+    */
+    proc set(key: ?, item: ?) throws {
+      PyDict_SetItem(this.getPyObject(), interpreter.toPython(key),
+                     interpreter.toPython(item));
+      this.check();
+    }
+
+    /*
+      Delete an item from the dict.  Equivalent to calling ``del obj[key]`` in
+      Python.
+
+      :arg key: The key of the item to delete.
+
+      :throws KeyError: If the key did not exist in the dict.
+    */
+    proc del(key: ?) throws {
+      PyDict_DelItem(this.getPyObject(), interpreter.toPython(key));
+      this.check();
+    }
+
+    /*
+      Remove all elements from the dict.  Equivalent to calling ``obj.clear()``
+      in Python.
+    */
+    proc clear() throws {
+      PyDict_Clear(this.getPyObject());
+      this.check();
+    }
+
+    /*
+      Perform a shallow copy into a new dict.  Equivalent to calling
+      ``obj.copy()`` in Python.
+    */
+    proc copy(): PyDict throws {
+      var c = PyDict_Copy(this.getPyObject());
+      this.check();
+      return new PyDict(this.interpreter, c);
+    }
+  }
+
+  /*
     Represents a Python set. This provides a Chapel interface to Python sets,
     where the Python interpreter owns the set.
   */
@@ -2377,6 +2477,7 @@ module Python {
   Module implements writeSerializable;
   Class implements writeSerializable;
   PyList implements writeSerializable;
+  PyDict implements writeSerializable;
   PySet implements writeSerializable;
   Array implements writeSerializable;
   NoneType implements writeSerializable;
@@ -2399,6 +2500,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyDict.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -2580,6 +2685,7 @@ module Python {
     extern proc PyErr_GivenExceptionMatches(given: PyObjectPtr,
                                             exc: PyObjectPtr): c_int;
     extern const PyExc_ImportError: PyObjectPtr;
+    extern const PyExc_KeyError: PyObjectPtr;
 
     /*
       Values
@@ -2676,7 +2782,11 @@ module Python {
                                key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyDict_DelItem(dict: PyObjectPtr,
+                               key: PyObjectPtr);
     extern proc PyDict_Size(dict: PyObjectPtr): Py_ssize_t;
+    extern proc PyDict_Clear(dict: PyObjectPtr);
+    extern proc PyDict_Copy(dict: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
