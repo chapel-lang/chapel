@@ -1616,6 +1616,11 @@ bool SimpleMethodLookupHelper::isReceiverApplicable(Context* context,
   return methodReceiverId == receiverTypeId_;
 }
 
+
+bool SimpleMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  return false; // no type information, so no clever tertiary method searching
+}
+
 void SimpleMethodLookupHelper::stringify(std::ostream& ss,
                                          chpl::StringifyKind stringKind) const {
   ss << "SimpleMethodLookupHelper ";
@@ -1672,6 +1677,31 @@ bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
     return p.passes();
   }
 
+  return false;
+}
+
+static std::vector<QualifiedType> const& importedTypesInVisibilitySymbols(Context* context, const VisibilitySymbols* symbols) {
+  QUERY_BEGIN(importedTypesInVisibilitySymbols, context, symbols);
+  std::vector<QualifiedType> result;
+
+  if (symbols->kind() == VisibilitySymbols::ONLY_CONTENTS &&
+      symbols->scope()->tag() == uast::asttags::Module) {
+    for (auto& rename : symbols->names()) {
+      auto& nameRE = resolveNameInModule(context, symbols->scope()->id(), rename.first);
+
+      if (!nameRE.type().isUnknownOrErroneous()) result.push_back(nameRE.type());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool TypedMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  auto receiverTypeAsType = QualifiedType(QualifiedType::TYPE, receiverType_.type());
+  for (auto& namedType : importedTypesInVisibilitySymbols(context, toCheck)) {
+    auto p = canPassScalar(context, receiverTypeAsType, namedType);
+    if (p.passes()) return true;
+  }
   return false;
 }
 
