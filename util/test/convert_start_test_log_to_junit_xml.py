@@ -50,7 +50,9 @@ def _create_junit_report(test_cases, junit_file):
     :arg junit_file: filename to write the jUnit XML report
     """
     logging.debug('Creating jUnit XML report at: {0}'.format(junit_file))
-    test_suite = XML.Element('testsuite')
+    test_suites = XML.Element('testsuites')
+    test_suite = XML.SubElement(test_suites, 'testsuite')
+    num_errors = 0
 
     for test_case in test_cases:
         case_elem = XML.SubElement(test_suite, 'testcase')
@@ -66,12 +68,18 @@ def _create_junit_report(test_cases, junit_file):
             error_elem = XML.SubElement(case_elem, 'error')
             error_elem.set('message', test_error['message'])
             error_elem.text = test_error['content']
+            num_errors += 1
 
         system_out = XML.SubElement(case_elem, 'system-out')
         system_out.text = test_case['system-out']
 
+    test_suite.set('errors', str(num_errors))
+    test_suite.set('failures', str(num_errors))
+    test_suite.set('tests', str(len(test_cases)))
+    test_suite.set('name', 'start_test results')
+
     encoding = "unicode" if sys.version_info[0] >= 3 else "us-ascii"
-    xml_content = XML.tostring(test_suite, encoding=encoding)
+    xml_content = XML.tostring(test_suites, encoding=encoding)
     xml_content = _clean_xml(xml_content)
     with open(junit_file, 'w') as fp:
         fp.write(xml_content)

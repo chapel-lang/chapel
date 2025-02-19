@@ -797,9 +797,12 @@ if ($runtests == 0) {
         $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", $ignoreErrors);
     }
 
-
     $endtime = localtime;
 
+    # Incorporate test results from the language server into the JUnit XML report
+    if ($junit_xml == 1 and $chplLanguageServer == 1) {
+        mysystem("cd $chplhomedir && ./util/test/merge_junit_xmls chapel-tests.xml tools/chpl-language-server/test-chpl-language-server-report.xml", "incorporating CLS JUnit results", $ignoreErrors);
+    }
 #
 # Sync performance graphs to dreamhost.
 #
