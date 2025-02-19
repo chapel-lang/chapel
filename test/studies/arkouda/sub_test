@@ -110,7 +110,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     log "Creating a new virtual environment for Arkouda using '$(which python3)'"
     ARKOUDA_TEST_VENV=.arkouda-nightly-test-venv
     python3 -m venv $ARKOUDA_TEST_VENV
-    source .venv/bin/activate
+    source $ARKOUDA_TEST_VENV/bin/activate
   fi
 
   log "Installing Arkouda in the virtual environment using '$(which python3)'"
