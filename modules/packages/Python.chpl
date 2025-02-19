@@ -2068,6 +2068,19 @@ module Python {
       this.check();
       return new PyDict(this.interpreter, c);
     }
+
+    /*
+      Check if an item is in the dict.  Equivalent to calling ``item in obj`` in
+      Python.
+
+      :arg key: The key to check for membership in the dict.
+    */
+    proc contains(key: ?): bool throws {
+      var result = PyDict_Contains(this.getPyObject(),
+                                   interpreter.toPython(key));
+      this.check();
+      return result: bool;
+    }
   }
 
   /*
@@ -2772,6 +2785,7 @@ module Python {
       Dictionaries
     */
     extern proc PyDict_New(): PyObjectPtr;
+    extern proc PyDict_Contains(dict: PyObjectPtr, key: PyObjectPtr): c_int;
     extern proc PyDict_SetItem(dict: PyObjectPtr,
                                key: PyObjectPtr,
                                value: PyObjectPtr);

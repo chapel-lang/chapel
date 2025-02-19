@@ -3,6 +3,10 @@ size 3
 get one 1
 get two 2
 get three 3
+contains one true
+contains two true
+contains three true
+contains four false
 get four after set four 4
 d2 size 4
 size after delete of three 3

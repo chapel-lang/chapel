@@ -19,6 +19,10 @@ proc main() {
   writeln("get one ", d.get("one"));
   writeln("get two ", d.get(int, "two"));
   writeln("get three ", d.get("three"));
+  writeln("contains one ", d.contains("one"));
+  writeln("contains two ", d.contains("two"));
+  writeln("contains three ", d.contains("three"));
+  writeln("contains four ", d.contains("four"));
 
   d.set("four", 4);
   writeln("get four after set four ", d.get("four"));
