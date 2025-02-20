@@ -52,7 +52,10 @@ proc getSysPathSpawn(const ref env: map(string, string) =
     }
   }
   // add '.' to paths
-  paths.pushBack(cleanPath("."));
+  var dot = cleanPath(".");
+  if dot != "" && !paths.contains(dot) {
+    paths.pushBack(dot);
+  }
   return paths;
 }
 proc getSysPathInterpreter(const ref env: map(string, string) =
