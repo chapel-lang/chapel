@@ -53,9 +53,7 @@ proc testCounters(id: int)
     // We want it to be aligned to a multiple of pageSize so that
     // there is no instability in the test.
     const locPtr = allocate(int, numElems, alignment=alignment, clear=true);
-    // Except use _ddata as a standin for the array to remove
-    const A = locPtr : _ddata(int);
-    //var A = makeArrayFromPtr(locPtr, numElems);
+    var A = makeArrayFromPtr(locPtr, numElems);
 
     //#########################################################################
     //
