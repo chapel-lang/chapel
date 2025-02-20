@@ -60,8 +60,7 @@ __build_packages() {
   # Whether we pulled successfully or not, use the image SHA256 digest to
   # identify the copy of it we have locally, so build can proceed with an old
   # version.
-  local docker_image_sha=docker image ls --digests $docker_image_base | grep $(docker image ls -q $docker_image_base) | cut -w -f3
-  export DOCKER_IMAGE_NAME_FULL="$docker_image_base@$docker_image_sha"
+  export DOCKER_IMAGE_NAME_FULL="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
