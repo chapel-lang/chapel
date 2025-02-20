@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
 
+# numba (really numpy) doesn't like valgrind due to 80 bit float precision issues
+#  - https://github.com/numpy/numpy/issues/12930
+#  - https://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+# skip valgrind testing: if CHPL_TEST_VGRND_EXE is set and 'on'
+if [ -n "$CHPL_TEST_VGRND_EXE" ] && [ "$CHPL_TEST_VGRND_EXE" == "on" ]; then
+  echo "True"
+  exit 0
+fi
+
 FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 $FILE_DIR/../../skipIfAndInstallPackage.sh $FILE_DIR numba
