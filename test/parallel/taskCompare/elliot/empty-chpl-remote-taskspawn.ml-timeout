@@ -1,1 +1,7 @@
-100
+#!/bin/bash
+
+if [[ $CHPL_TARGET_PLATFORM == hpe-apollo ]]; then
+    echo 100
+else
+    echo 300
+fi
