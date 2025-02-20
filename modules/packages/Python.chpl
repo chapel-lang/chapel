@@ -860,6 +860,8 @@ module Python {
         return toList(val);
       } else if isSubtype(t, Set.set) {
         return toSet(val);
+      } else if isSubtype(t, Map.map) {
+        return toDict(val);
       } else if isSubtype(t, Value) {
         Py_INCREF(val.getPyObject());
         return val.getPyObject();
@@ -946,6 +948,8 @@ module Python {
         return fromList(t, obj);
       } else if isSubtype(t, Set.set) {
         return fromSet(t, obj);
+      } else if isSubtype(t, Map.map) {
+        return fromDict(t, obj);
       } else if isSubtype(t, Function?) {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
@@ -1151,7 +1155,21 @@ module Python {
       return pyDict;
     }
 
-    // TODO: convert chapel map to python dict
+    /*
+      Convert a chapel map to a python dict.  Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toDict(m: Map.map(?)): PyObjectPtr throws {
+      var pyDict = PyDict_New();
+      this.checkException();
+      for key in m.keys() {
+        var pyKey = toPython(key);
+        var pyValue = toPython(m[key]);
+        PyDict_SetItem(pyDict, pyKey, pyValue);
+        this.checkException();
+      }
+      return pyDict;
+    }
 
     /*
       Converts a python dictionary to an associative array.
@@ -1186,7 +1204,32 @@ module Python {
       return arr;
     }
 
-    // TODO: convert python dict to chapel map
+    /*
+      Converts a python dictionary to a chapel map.  Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromDict(type T, obj: PyObjectPtr): T throws
+      where isSubtype(T, Map.map) {
+      var m = new T();
+      type keyType = m.keyType;
+      type valType = m.valType;
+
+      var keys = PyDict_Keys(obj);
+      defer Py_DECREF(keys);
+      this.checkException();
+      for i in 0..<PyList_Size(keys) {
+        var key = PyList_GetItem(keys, i);
+        this.checkException();
+        var val = PyDict_GetItem(obj, key);
+        this.checkException();
+
+        var keyVal = this.fromPython(keyType, key);
+        m.add(keyVal, this.fromPython(valType, val));
+      }
+
+      Py_DECREF(obj);
+      return m;
+    }
 
   }
 
