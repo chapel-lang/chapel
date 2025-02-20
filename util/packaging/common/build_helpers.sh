@@ -55,8 +55,8 @@ __build_packages() {
 
   pushd ${package_dir}
 
-  # Try to pull the latest version of this image.
-  docker pull $docker_image_base
+  # Try to pull the latest version of this image, as a best effort.
+  docker pull $docker_image_base || true
   # Whether we pulled successfully or not, use the image SHA256 digest to
   # identify the copy of it we have locally, so build can proceed with an old
   # version.
