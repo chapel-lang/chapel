@@ -1166,6 +1166,7 @@ module Python {
         var pyKey = toPython(key);
         var pyValue = toPython(m[key]);
         PyDict_SetItem(pyDict, pyKey, pyValue);
+        Py_DECREF(pyValue);
         this.checkException();
       }
       return pyDict;
@@ -1223,7 +1224,9 @@ module Python {
         var val = PyDict_GetItem(obj, key);
         this.checkException();
 
+        Py_INCREF(key);
         var keyVal = this.fromPython(keyType, key);
+        Py_INCREF(val);
         m.add(keyVal, this.fromPython(valType, val));
       }
 
@@ -2061,6 +2064,7 @@ module Python {
     proc get(type T, key: ?): T throws {
       var item = PyDict_GetItem(this.getPyObject(), interpreter.toPython(key));
       this.check();
+      Py_INCREF(item);
       return interpreter.fromPython(T, item);
     }
     @chpldoc.nodoc
@@ -2075,8 +2079,10 @@ module Python {
       :arg item: The item to set.
     */
     proc set(key: ?, item: ?) throws {
+      var val = interpreter.toPython(item);
       PyDict_SetItem(this.getPyObject(), interpreter.toPython(key),
-                     interpreter.toPython(item));
+                     val);
+      Py_DECREF(val);
       this.check();
     }
 
