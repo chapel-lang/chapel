@@ -1,4 +1,4 @@
-FROM amazonlinux:2023 as build
+FROM @@{IMAGE_NAME} as build
 
 @@{ARGUMENTS}
 

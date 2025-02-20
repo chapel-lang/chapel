@@ -1,4 +1,4 @@
-FROM fedora:41 AS build
+FROM @@{IMAGE_NAME} AS build
 
 @@{ARGUMENTS}
 

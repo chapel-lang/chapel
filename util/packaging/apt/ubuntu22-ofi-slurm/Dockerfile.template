@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS build
+FROM @@{IMAGE_NAME} AS build
 
 @@{ARGUMENTS}
 ARG DEBIAN_FRONTEND=noninteractive
