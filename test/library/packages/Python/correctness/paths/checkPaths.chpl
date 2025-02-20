@@ -138,7 +138,7 @@ proc testDriver(name, func) {
   }
 
   if !comparePaths(pathsSpawn, pathsInterpreter) {
-    writeln("Paths do not match");
+    writeln("Paths do not match for ", name);
   }
 }
 
