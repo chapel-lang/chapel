@@ -1,5 +1,5 @@
 $CHPL_HOME/modules/standard/Sort.chpl:nnnn: In function 'insertionSortMoveElts':
-$CHPL_HOME/modules/standard/Sort.chpl:nnnn: error: The defaultComparator does not support sorting r elements
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: error: The defaultComparator does not support sorting elements of type 'r'
   $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as insertionSortMoveElts(Data: [domain(1,int(64),one)] r, comparator: defaultComparator, lo: int(64), hi: int(64)) from function 'quickSortImpl'
   $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as quickSortImpl(Data: [domain(1,int(64),one)] r, minlen: int(64), comparator: defaultComparator, start: int(64), end: int(64)) from function 'quickSort'
   $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as quickSort(Data: [domain(1,int(64),one)] r, minlen: int(64), comparator: defaultComparator, region: range(int(64),both,one)) from function 'unstableSort'
