@@ -1,4 +1,4 @@
-FROM @@{IMAGE_NAME} AS build
+@@{FROM}
 
 @@{ARGUMENTS}
 

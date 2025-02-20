@@ -61,6 +61,7 @@ __build_packages() {
   # identify the copy of it we have locally, so build can proceed with an old
   # version.
   export DOCKER_IMAGE_NAME_FULL="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
+  echo "Using image digest ${DOCKER_IMAGE_NAME_FULL} for $docker_image_base"
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
