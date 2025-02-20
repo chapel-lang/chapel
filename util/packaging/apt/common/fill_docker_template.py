@@ -9,6 +9,11 @@ class MyTemplate(Template):
 
 
 substitutions = dict()
+
+substitutions[
+    "IMAGE_NAME"
+] = "$DOCKER_IMAGE_NAME_FULL"
+
 substitutions[
     "ARGUMENTS"
 ] = """
@@ -17,6 +22,7 @@ ARG CHAPEL_VERSION=2.0.0
 ARG PACKAGE_VERSION=1
 ARG OS_NAME
 ARG DOCKER_DIR_NAME
+ARG DOCKER_IMAGE_NAME
 ARG PARALLEL=1
 ARG TARGETARCH
 """
