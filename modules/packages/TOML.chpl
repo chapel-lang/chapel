@@ -326,13 +326,11 @@ module TomlParser {
           skipNext(source);
           var array: list(shared Toml);
           while top(source) != ']' {
-            if comma.match(top(source)) {
+            if comment.match(top(source)) {
               skipNext(source);
-            }
-            else if comment.match(top(source)) {
+            } else if comma.match(top(source)) {
               skipNext(source);
-            }
-            else {
+            } else {
               var toParse = parseValue();
               array.pushBack(toParse);
             }
