@@ -22,7 +22,7 @@ if [ -z "$OS" ]; then echo "OS must be set."; exit 1; fi
 if [ -z "$PACKAGE_NAME" ]; then echo "PACKAGE_NAME must be set."; exit 1; fi
 if [ -z "$PACKAGE_VERSION" ]; then echo "PACKAGE_VERSION must be set."; exit 1; fi
 if [ -z "$DOCKER_DIR_NAME" ]; then echo "DOCKER_DIR_NAME must be set."; exit 1; fi
-if [ -z "$DOCKER_IMAGE_BASE" ]; then echo "DOCKER_IMAGE_NAME must be set."; exit 1; fi
+if [ -z "$DOCKER_IMAGE_BASE" ]; then echo "DOCKER_IMAGE_BASE must be set."; exit 1; fi
 PARALLEL=${PARALLEL:-1}
 
 
