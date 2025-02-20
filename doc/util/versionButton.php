@@ -1,1 +1,1 @@
-../versionButton.php
+../../chapel-static/docs/versionButton.php
