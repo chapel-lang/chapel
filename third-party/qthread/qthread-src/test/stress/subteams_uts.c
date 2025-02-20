@@ -4,12 +4,7 @@
  *     http://sourceforge.net/projects/uts-benchmark  *
  ******************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <limits.h> /* for INT_MAX */
 #include <math.h>   /* for floor, log, sin */
 #include <qthread/qthread.h>
@@ -275,7 +270,7 @@ int main(int argc, char *argv[]) {
   DBLARG(subteam_prob, "UTS_SUBTEAM_PROB");
   NUMARG(root_context, "UTS_ROOT_CONTEXT");
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
 #ifdef PRINT_STATS
   print_stats();
