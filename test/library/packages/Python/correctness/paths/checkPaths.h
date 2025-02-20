@@ -1,0 +1,1 @@
+char** getEnvironment(void);
