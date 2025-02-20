@@ -11,6 +11,7 @@
 use CommDiagnostics;
 use IO;
 use CTypes;
+use Time;
 
 // This is a wrapper around the function that we currently use to
 // issue a prefetch. Prefetches via this function are what the CommDiagnostics
@@ -26,12 +27,20 @@ extern proc chpl_cache_invalidate(node:c_int, raddr:c_ptr(void),
                                   size: c_size_t);
 
 // Constants for the tests
-config const numElems = 4096;   // number of elements in the test array
-const numBusyElems = 8*numElems;// number of elements in the busy work array
+config const numElems= 128*1024;// number of elements in the test array
 const elemSize = 8;             // always assuming 8-byte elements in the array
+assert(elemSize == c_sizeof(int));
 const pageSize = 1024;          // cache page size assumed to be 1024 bytes
+const alignment = 1024*pageSize;  // align to this amount
 const elemsPerPage = pageSize/elemSize; // how many elements in the array would
                                         // fall into a cache page
+config const numPrefetches = 32;
+const prefetchStride = 3*pageSize/elemSize; // prefetch stride (in elements)
+// make sure there is room for doing a prefetch, a few unused pages,
+// and then a prefetch
+assert((numPrefetches+1)*prefetchStride < numElems);
+
+config const numBusyElems = 16; //32*1024; // number of elements in the busy work array
 
 // Main procedure called to perform the test. Different IDs (1, 2, etc.) are
 // passed in to run a specific test case
@@ -39,16 +48,14 @@ proc testCounters(id: int)
 {
     // The array that is allocated on locale 0. We'll use this as the target of
     // the prefetches that are issued from locale 1.
-    var A : [0..#numElems] int;
 
-    // Another array used for remote accesses in some tests. Their purpose is to
-    // do "busy work" to ensure the prefetches we issued are complete. This is
-    // done in the cases where we want to ensure that there are no waited-on
-    // prefetches.
-    var B : [0..#numBusyElems] int;
-
-    // temp we use in some cases
-    var temp = 0;
+    // Allocate an array where the initial element is aligned to 'alignment'.
+    // We want it to be aligned to a multiple of pageSize so that
+    // there is no instability in the test.
+    const locPtr = allocate(int, numElems, alignment=alignment, clear=true);
+    // Except use _ddata as a standin for the array to remove
+    const A = locPtr : _ddata(int);
+    //var A = makeArrayFromPtr(locPtr, numElems);
 
     //#########################################################################
     //
@@ -61,32 +68,48 @@ proc testCounters(id: int)
     // so that the prefetches complete. That ensures that the waited counter is
     // 0.
     //
+    // Because the comms layer might not be able to know if a request
+    // is done until some requests are waited for, wait for an unrelated
+    // store (PUT). That way, the counting for the prefetches will indicate
+    // that nothing was waited for.
+    // TODO: update the "waited for" logic to include a timer & don't
+    // count it as "waiting" if the time is sufficiently short.
+    //
     //#########################################################################
     if id == 1 {
         // ensure prefetches are 1024 bytes apart (i.e., a cache page).
-        const numPrefetches = (numElems*elemSize) / pageSize;
         resetCommDiagnostics();
+        //startVerboseComm();
         startCommDiagnostics();
         on Locales[1] {
-            for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+            // do one store that we can wait for
+            A[0] = 0;
+
+            for i in 1..#numPrefetches {
+                const idx = i*prefetchStride;
+                assert(0 <= idx && idx < numElems);
                 prefetch(A[idx], 1);
             }
-            // kill some time so the prefetches above will complete.
-            // This ensures that the waited counter will be 0.
-            for i in 0..#numBusyElems {
-                temp += B[i];
-            }
+
+            // pause to allow prefetches to complete
+            sleep(1);
+
+            // wait for the one store
+            // (otherwise, we will end up waiting for a prefetch
+            //  when evicting, which throws off the counts)
+            atomicFence(memoryOrder.release);
+
             // force evictions of the pages we prefetched. Since we didn't
             // access any, this ensures the unused counter is equal to the
             // number of prefetches we did earlier.
-            for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+            for i in 1..#numPrefetches {
+                const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }
         }
         stopCommDiagnostics();
+        //stopVerboseComm();
         var res = getCommDiagnostics();
         var cache_num_prefetches = res[1].cache_num_prefetches;
         var cache_prefetch_unused = res[1].cache_prefetch_unused;
@@ -109,31 +132,39 @@ proc testCounters(id: int)
     //
     //#########################################################################
     if id == 2 {
-        A = 1;
+        for i in 0..<numElems do A[i] = 1;
         var numAccessed = 0;
-        const numPrefetches = (numElems*elemSize) / pageSize;
         resetCommDiagnostics();
         startCommDiagnostics();
         on Locales[1] {
-            for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+            // do one store that we can wait for
+            A[0] = 0;
+
+            var temp = 0;
+            for i in 1..#numPrefetches {
+                const idx = i*prefetchStride;
                 prefetch(A[idx], 1);
             }
-            // kill time so prefetches complete
-            for i in 0..#numBusyElems {
-                temp += B[i];
-            }
+
+            // pause to allow prefetches to complete
+            sleep(1);
+
+            // wait for the one store
+            // (otherwise, we will end up waiting for a prefetch
+            //  when evicting, which throws off the counts)
+            atomicFence(memoryOrder.release);
+
             // access "even" prefetches
-            for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+            for i in 1..#numPrefetches {
+                const idx = i*prefetchStride;
                 if i % 2 == 0 {
                     temp += A[idx];
                     numAccessed += 1;
                 }
             }
             // force evictions of the pages we prefetched
-            for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+            for i in 1..#numPrefetches {
+                const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }   
@@ -160,18 +191,18 @@ proc testCounters(id: int)
     //
     //#########################################################################
     if id == 3 { 
-        const numPrefetches = (numElems*elemSize) / pageSize;
         resetCommDiagnostics();
         startCommDiagnostics();
         on Locales[1] {
+            var temp = 0;
             for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+                const idx = i*prefetchStride;
                 prefetch(A[idx], 1);
                 temp += A[idx];
             }
             // force evictions of the pages
             for i in 0..#numPrefetches {
-                const idx = i*elemsPerPage;
+                const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }
