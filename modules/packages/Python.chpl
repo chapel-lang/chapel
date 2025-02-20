@@ -2421,7 +2421,7 @@ module Python {
 
   @chpldoc.nodoc
   module CWChar {
-    require "wchar.h";
+    require "PythonHelper/chpl_wchar.h";
     extern "wchar_t" type c_wchar;
     private use CTypes;
 
