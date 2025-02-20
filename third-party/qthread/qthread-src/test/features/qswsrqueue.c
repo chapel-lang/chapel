@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qswsrqueue.h>
 #include <qthread/qthread.h>
 #include <qthread/sinc.h>
@@ -36,7 +35,7 @@ int main(int argc, char *argv[]) {
   qswsrqueue_t *q;
   size_t i;
 
-  assert(qthread_init(2) == 0);
+  test_check(qthread_init(2) == 0);
   NUMARG(threadcount, "THREAD_COUNT");
   NUMARG(elementcount, "ELEMENT_COUNT");
   CHECK_VERBOSE();
@@ -77,9 +76,9 @@ int main(int argc, char *argv[]) {
   iprintf("ordering test succeeded\n");
 
   aligned_t ret;
-  assert(qthread_fork(dequeuer, q, &ret) == QTHREAD_SUCCESS);
+  test_check(qthread_fork(dequeuer, q, &ret) == QTHREAD_SUCCESS);
   iprintf("dequeuer forked\n");
-  assert(qthread_fork(queuer, q, NULL) == QTHREAD_SUCCESS);
+  test_check(qthread_fork(queuer, q, NULL) == QTHREAD_SUCCESS);
   iprintf("queuer forked\n");
   qthread_readFF(NULL, &ret);
   iprintf("dequeuer returned\n");

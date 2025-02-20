@@ -15,11 +15,10 @@
 #include "argparsing.h"
 
 // Configuration constants
-/*{{{*/
+
 #define NUM_NEIGHBORS 5
 #define NUM_STAGES 2
 #define BOUNDARY 42
-/*}}}*/
 
 static int num_timesteps;
 
@@ -37,7 +36,7 @@ static syncvar_t const internal_value = SYNCVAR_STATIC_INITIALIZE_TO(10);
 #define EDGE_POINT_FULL SYNCVAR_INITIALIZER
 
 // Stencil and partition and position data structures
-/*{{{*/
+
 typedef enum position {
   NW = 0,
   NORTH,
@@ -94,8 +93,6 @@ typedef struct stencil_s {
   partition_t **parts; // The stencil partitions
 } stencil_t;
 
-/*}}}*/
-
 #ifdef DEBUG
 static qt_barrier_t *debug_barrier;
 #endif
@@ -104,7 +101,7 @@ static qt_barrier_t *debug_barrier;
 // Helpers
 
 // Position-related helper stuff
-/*{{{*/
+
 #define NORTH_OF(stage, i, j) stage[i + 1][j]
 #define WEST_OF(stage, i, j) stage[i][j - 1]
 #define EAST_OF(stage, i, j) stage[i][j + 1]
@@ -131,14 +128,13 @@ static qt_barrier_t *debug_barrier;
   (CENTER == pos || WEST == pos || SW == pos || SOUTH == pos)
 #define HAS_SE_CORNER(pos)                                                     \
   (CENTER == pos || NW == pos || NORTH == pos || WEST == pos)
-/*}}}*/
 
 // Syncvar-related stuff
 #define SYNCVAR_EVAL(x) INT60TOINT64(x.u.s.data)
 #define SYNCVAR_BIND(x, v) x.u.s.data = INT64TOINT60(v)
 #define SYNCVAR_COPY(dest, src) dest.u.s.data = src.u.s.data;
 
-static inline void print_stencil(stencil_t *stencil, size_t step) { /*{{{*/
+static inline void print_stencil(stencil_t *stencil, size_t step) {
   fprintf(stderr, "Stencil:\n");
   fprintf(stderr, "\tpoints:     %lu x %lu\n", stencil->nrows, stencil->ncols);
   fprintf(stderr, "\tpartitions: %lu x %lu\n", stencil->prows, stencil->pcols);
@@ -167,9 +163,9 @@ static inline void print_stencil(stencil_t *stencil, size_t step) { /*{{{*/
       fprintf(stderr, "\n");
     }
   }
-} /*}}}*/
+}
 
-static inline void print_status(stencil_t *stencil, size_t step) { /*{{{*/
+static inline void print_status(stencil_t *stencil, size_t step) {
   fprintf(stderr, "Stencil:\n");
   fprintf(stderr, "\tpoints:     %lu x %lu\n", stencil->nrows, stencil->ncols);
   fprintf(stderr, "\tpartitions: %lu x %lu\n", stencil->prows, stencil->pcols);
@@ -196,18 +192,18 @@ static inline void print_status(stencil_t *stencil, size_t step) { /*{{{*/
       fprintf(stderr, "\n");
     }
   }
-} /*}}}*/
+}
 
-static inline size_t prev_stage(size_t stage) { /*{{{*/
+static inline size_t prev_stage(size_t stage) {
   return (stage == 0) ? NUM_STAGES - 1 : stage - 1;
-} /*}}}*/
+}
 
-static inline size_t next_stage(size_t stage) { /*{{{*/
+static inline size_t next_stage(size_t stage) {
   return (stage == NUM_STAGES - 1) ? 0 : stage + 1;
-} /*}}}*/
+}
 
 // Find the position of the partition in the partition matrix
-static inline void get_position(stencil_t *points, partition_t *part) { /*{{{*/
+static inline void get_position(stencil_t *points, partition_t *part) {
   size_t const i = part->row;
   size_t const j = part->col;
   size_t const prows = points->prows;
@@ -236,18 +232,17 @@ static inline void get_position(stencil_t *points, partition_t *part) { /*{{{*/
   } else {
     part->pos = NWES;
   }
-} /*}}}*/
+}
 
 // Logical-to-physical mapping assumes point (0,0) is in bottom left corner.
-static inline void
-get_pid(size_t lid, size_t ncols, size_t *row, size_t *col) { /*{{{*/
+static inline void get_pid(size_t lid, size_t ncols, size_t *row, size_t *col) {
   *row = lid / ncols;
   *col = lid - (*row * ncols);
-} /*}}}*/
+}
 
-static inline size_t get_lid(size_t row, size_t col, size_t ncols) { /*{{{*/
+static inline size_t get_lid(size_t row, size_t col, size_t ncols) {
   return (row * ncols) + col;
-} /*}}}*/
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Stencil point update code
@@ -900,7 +895,7 @@ static aligned_t send_updates(void *arg_) {
 /*
  *  -   Starts off local processing for a partition
  */
-static void begin(size_t const start, size_t const stop, void *arg_) { /*{{{*/
+static void begin(size_t const start, size_t const stop, void *arg_) {
   stencil_t *arg = (stencil_t *)arg_;
 
   size_t const part_lid = start;
@@ -982,8 +977,7 @@ static void begin(size_t const start, size_t const stop, void *arg_) { /*{{{*/
     print_status(arg, 1 % 2);
   }
 #endif
-
-} /*}}}*/
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Stencil setup and tear down
@@ -994,8 +988,7 @@ typedef struct ss_args_s {
   size_t *col_splits;
 } ss_args_t;
 
-static void
-setup_stencil(size_t const start, size_t const stop, void *arg_) { /*{{{*/
+static void setup_stencil(size_t const start, size_t const stop, void *arg_) {
   ss_args_t *arg = (ss_args_t *)arg_;
   stencil_t *points = arg->points;
   size_t *row_splits = arg->row_splits;
@@ -1125,9 +1118,9 @@ setup_stencil(size_t const start, size_t const stop, void *arg_) { /*{{{*/
       }
     }
   }
-} /*}}}*/
+}
 
-static inline void destroy_stencil(stencil_t *points) { /*{{{*/
+static inline void destroy_stencil(stencil_t *points) {
   size_t const num_parts = points->prows * points->pcols;
   for (int i = 0; i < num_parts; i++) {
     partition_t *part = points->parts[i];
@@ -1141,9 +1134,9 @@ static inline void destroy_stencil(stencil_t *points) { /*{{{*/
     free(part);
   }
   free(points->parts);
-} /*}}}*/
+}
 
-int main(int argc, char *argv[]) { /*{{{*/
+int main(int argc, char *argv[]) {
   int nrows = 12;
   int ncols = 12;
   int prows = 2;
@@ -1235,6 +1228,6 @@ int main(int argc, char *argv[]) { /*{{{*/
   destroy_stencil(&points);
 
   return 0;
-} /*}}}*/
+}
 
 /* vim:set expandtab */

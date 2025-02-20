@@ -24,8 +24,8 @@ static aligned_t use_default_space(void *arg) {
   qthread_yield();
   local_int_arr = (int *)qthread_get_tasklocal(size);
   iprintf("use_default_space(): local_int_arr at %p\n", local_int_arr);
-  for (int i = 0; i < 64; ++i) { assert(local_int_arr[i] == i); }
-  iprintf("use_default_space(): all assertions passed!\n");
+  for (int i = 0; i < 64; ++i) { test_check(local_int_arr[i] == i); }
+  iprintf("use_default_space(): all test_checkions passed!\n");
 
   return 0;
 }
@@ -49,8 +49,8 @@ static aligned_t use_allocated_space(void *arg) {
   qthread_yield();
   local_int_arr = (int *)qthread_get_tasklocal(size);
   iprintf("use_allocated_space(): local_int_arr at %p\n", local_int_arr);
-  for (int i = 0; i < 2048; ++i) { assert(local_int_arr[i] == 2048 - i); }
-  iprintf("use_allocated_space(): all assertions passed!\n");
+  for (int i = 0; i < 2048; ++i) { test_check(local_int_arr[i] == 2048 - i); }
+  iprintf("use_allocated_space(): all test_checkions passed!\n");
 
   return 0;
 }
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     iprintf("set tasklocal data to '42'\n");
     local_int_ptr = NULL;
     local_int_ptr = (int *)qthread_get_tasklocal(size);
-    assert(42 == *local_int_ptr);
+    test_check(42 == *local_int_ptr);
     iprintf("main(): retrieved tasklocal data successfully (42 == %d)\n",
             *local_int_ptr);
     local_int_ptr = NULL;
@@ -99,10 +99,10 @@ int main(int argc, char *argv[]) {
     iprintf("main(): set local_int_arr[42] = %d\n", local_int_arr[42]);
     local_int_arr = NULL;
     local_int_arr = (int *)qthread_get_tasklocal(size);
-    assert(42 == local_int_arr[0]);
+    test_check(42 == local_int_arr[0]);
     iprintf("main(): retrieved copied tasklocal data successfully (42 == %d)\n",
             local_int_arr[42]);
-    assert(42 == local_int_arr[42]);
+    test_check(42 == local_int_arr[42]);
     iprintf("main(): retrieved tasklocal data successfully (42 == %d)\n",
             local_int_arr[42]);
     local_int_arr = NULL;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     iprintf("main(): size_tasklocal() is %d\n", qthread_size_tasklocal());
     iprintf("main(): local_int_arr at %p\n", local_int_arr);
     local_int_arr = (int *)qthread_get_tasklocal(size);
-    assert(42 == local_int_arr[42]);
+    test_check(42 == local_int_arr[42]);
     iprintf("main(): retrieved tasklocal data successfully (42 == %d)\n",
             local_int_arr[42]);
     local_int_arr = NULL;
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
     iprintf("main(): size_tasklocal() is %d\n", qthread_size_tasklocal());
     iprintf("main(): local_int_arr at %p\n", local_int_arr);
     local_int_arr = (int *)qthread_get_tasklocal(size);
-    assert(42 == local_int_arr[42]);
+    test_check(42 == local_int_arr[42]);
     iprintf("main(): retrieved tasklocal data successfully (42 == %d)\n",
             local_int_arr[42]);
     local_int_arr = NULL;

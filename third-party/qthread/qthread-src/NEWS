@@ -1,3 +1,15 @@
+--- 1.22 ---
+Improvements:
+- Support for building and testing using CMake
+- Fix old assertion errors so debug builds work again
+- Support for building with the nvc compiler
+- Support for building/running with the LLVM address and memory sanitizer enabled
+- Fix a longstanding deadlock in the IO worker pool when running with the sherwood threadqueue
+- Clear away various additional sections of dead code
+Removals:
+- Removed support for building using Autotools
+- Drop regular testing for clang 11-13
+
 --- 1.21 ---
 Improvements:
 - Support and testing for clang 19 and gcc 14

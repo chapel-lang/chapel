@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <pthread.h>
 #include <stdatomic.h>
@@ -33,32 +29,34 @@
 int num_spins_before_condwait;
 #define DEFAULT_SPINCOUNT 300000
 
+typedef struct qt_threadqueue_node_s qt_threadqueue_node_t;
+
 /* Data Structures */
-struct _qt_threadqueue_node {
-  struct _qt_threadqueue_node *_Atomic next;
+struct qt_threadqueue_node_s {
+  struct qt_threadqueue_node_s *_Atomic next;
   qthread_t *thread;
 };
 
 typedef struct {
   /* The First Cacheline */
   void *_Atomic head;
-  uint8_t pad1[CACHELINE_WIDTH - sizeof(void*)];
+  uint8_t pad1[CACHELINE_WIDTH - sizeof(void *)];
   /* The Second Cacheline */
   void *_Atomic tail;
-  uint8_t pad2[CACHELINE_WIDTH - sizeof(void*)];
+  uint8_t pad2[CACHELINE_WIDTH - sizeof(void *)];
   /* The Third Cacheline */
   void *shadow_head;
   /* the following is for estimating a queue's "busy" level, and is not
    * guaranteed accurate (that would be a race condition) */
   saligned_t nemesis_advisory_queuelen;
-  uint8_t pad3[CACHELINE_WIDTH - sizeof(void*) - sizeof(saligned_t)];
+  uint8_t pad3[CACHELINE_WIDTH - sizeof(void *) - sizeof(saligned_t)];
 } NEMESIS_queue;
 
 struct _qt_threadqueue {
   alignas(CACHELINE_WIDTH) NEMESIS_queue q;
   /* the following is for estimating a queue's "busy" level, and is not
    * guaranteed accurate (that would be a race condition) */
-  saligned_t advisory_queuelen;
+  _Atomic saligned_t advisory_queuelen;
 #ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE
   uint32_t frustration;
   QTHREAD_COND_DECL(trigger);
@@ -74,13 +72,12 @@ qt_threadqueue_pools_t generic_threadqueue_pools = {NULL, NULL};
   (qt_threadqueue_node_t *)qt_mpool_alloc(generic_threadqueue_pools.nodes)
 #define FREE_TQNODE(t) qt_mpool_free(generic_threadqueue_pools.nodes, t)
 
-static void qt_threadqueue_subsystem_shutdown(void) { /*{{{*/
+static void qt_threadqueue_subsystem_shutdown(void) {
   qt_mpool_destroy(generic_threadqueue_pools.queues);
   qt_mpool_destroy(generic_threadqueue_pools.nodes);
-} /*}}}*/
+}
 
-void INTERNAL qt_threadqueue_subsystem_init(void) { /*{{{*/
-
+void INTERNAL qt_threadqueue_subsystem_init(void) {
   num_spins_before_condwait =
     qt_internal_get_env_num("SPINCOUNT", DEFAULT_SPINCOUNT, 0);
 
@@ -89,11 +86,11 @@ void INTERNAL qt_threadqueue_subsystem_init(void) { /*{{{*/
   generic_threadqueue_pools.nodes =
     qt_mpool_create_aligned(sizeof(qt_threadqueue_node_t), 8);
   qthread_internal_cleanup(qt_threadqueue_subsystem_shutdown);
-} /*}}}*/
+}
 
 /* Thankfully, NEMESIS does not suffer from the ABA problem. */
 
-qt_threadqueue_t INTERNAL *qt_threadqueue_new(void) { /*{{{ */
+qt_threadqueue_t INTERNAL *qt_threadqueue_new(void) {
   qt_threadqueue_t *q = ALLOC_THREADQUEUE();
 
   qassert_ret(q != NULL, NULL);
@@ -109,10 +106,10 @@ qt_threadqueue_t INTERNAL *qt_threadqueue_new(void) { /*{{{ */
 #endif /* ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE */
 
   return q;
-} /*}}} */
+}
 
 static inline qt_threadqueue_node_t *
-qt_internal_NEMESIS_dequeue(NEMESIS_queue *q) { /*{{{ */
+qt_internal_NEMESIS_dequeue(NEMESIS_queue *q) {
   if (!q->shadow_head) {
     void *head = atomic_load_explicit(&q->head, memory_order_relaxed);
     if (!head) { return NULL; }
@@ -121,10 +118,10 @@ qt_internal_NEMESIS_dequeue(NEMESIS_queue *q) { /*{{{ */
     atomic_store_explicit(&q->head, NULL, memory_order_relaxed);
   }
 
-  qt_threadqueue_node_t *const retval = (void *volatile)(q->shadow_head);
+  qt_threadqueue_node_t *const retval = (void *)(q->shadow_head);
 
   if ((retval != NULL) && (retval != (void *)1)) {
-    struct _qt_threadqueue_node *next_loc =
+    struct qt_threadqueue_node_s *next_loc =
       atomic_load_explicit(&retval->next, memory_order_acquire);
     if (next_loc != NULL) {
       q->shadow_head = next_loc;
@@ -144,10 +141,10 @@ qt_internal_NEMESIS_dequeue(NEMESIS_queue *q) { /*{{{ */
     }
   }
   return retval;
-} /*}}} */
+}
 
 static inline qt_threadqueue_node_t *
-qt_internal_NEMESIS_dequeue_st(NEMESIS_queue *q) { /*{{{ */
+qt_internal_NEMESIS_dequeue_st(NEMESIS_queue *q) {
   if (!q->shadow_head) {
     void *head = atomic_load_explicit(&q->head, memory_order_relaxed);
     if (!head) { return NULL; }
@@ -155,7 +152,7 @@ qt_internal_NEMESIS_dequeue_st(NEMESIS_queue *q) { /*{{{ */
     atomic_store_explicit(&q->head, NULL, memory_order_relaxed);
   }
 
-  qt_threadqueue_node_t *const retval = (void *volatile)(q->shadow_head);
+  qt_threadqueue_node_t *const retval = (void *)(q->shadow_head);
 
   if ((retval != NULL) && (retval != (void *)1)) {
     void *retval_next_tmp =
@@ -171,16 +168,17 @@ qt_internal_NEMESIS_dequeue_st(NEMESIS_queue *q) { /*{{{ */
     }
   }
   return retval;
-} /*}}} */
+}
 
-void INTERNAL qt_threadqueue_free(qt_threadqueue_t *q) { /*{{{ */
+void INTERNAL qt_threadqueue_free(qt_threadqueue_t *q) {
   assert(q);
   while (1) {
     qt_threadqueue_node_t *node = qt_internal_NEMESIS_dequeue_st(&q->q);
     if (node) {
       qthread_t *retval = node->thread;
       assert(atomic_load_explicit(&node->next, memory_order_relaxed) == NULL);
-      (void)qthread_incr(&(q->advisory_queuelen), -1);
+      atomic_fetch_add_explicit(
+        &q->advisory_queuelen, (aligned_t)-1, memory_order_relaxed);
       FREE_TQNODE(node);
       qthread_thread_free(retval);
     } else {
@@ -191,52 +189,11 @@ void INTERNAL qt_threadqueue_free(qt_threadqueue_t *q) { /*{{{ */
   QTHREAD_COND_DESTROY(q->trigger);
 #endif
   FREE_THREADQUEUE(q);
-} /*}}} */
+}
 
 void INTERNAL qthread_steal_enable(void) {}
 
 void INTERNAL qthread_steal_disable(void) {}
-
-#ifdef QTHREAD_PARANOIA
-static void sanity_check_tq(NEMESIS_queue *q) { /*{{{*/
-  qt_threadqueue_node_t *curs;
-
-  assert(q);
-  /*if (q->head != NULL) {
-   *  assert(q->tail != NULL);
-   * }*/
-  if (q->shadow_head) { assert(q->head != q->shadow_head); }
-  if (atomic_load_explicit(&q->tail, memory_order_relaxed) != NULL) {
-    if (atomic_load_explicit(&q->head, memory_order_relaxed) == NULL) {
-      assert(q->shadow_head != NULL);
-    }
-  }
-  if ((atomic_load_explicit(&q->head, memory_order_relaxed) != NULL) ||
-      (atomic_load_explicit(&q->tail, memory_order_relaxed) != NULL)) {
-    if (q->shadow_head) {
-      curs = q->shadow_head;
-      assert(curs->thread);
-      assert(curs->thread != (void *)0x7777777777777777);
-      while (atomic_load_explicit(&curs->next, memory_order_relaxed)) {
-        curs = atomic_load_explicit(&curs->next, memory_order_relaxed);
-        assert(curs->thread);
-        assert(curs->thread != (void *)0x7777777777777777);
-      }
-    }
-    if (q->head) {
-      curs = q->head;
-      assert(curs->thread);
-      assert(curs->thread != (void *)0x7777777777777777);
-      while (atomic_load_explicit(&curs->next, memory_order_relaxed)) {
-        curs = atomic_load_explicit(&curs->next, memory_order_relaxed);
-        assert(curs->thread);
-        assert(curs->thread != (void *)0x7777777777777777);
-      }
-    }
-  }
-} /*}}}*/
-
-#endif /* ifdef QTHREAD_PARANOIA */
 
 qthread_shepherd_id_t INTERNAL
 qt_threadqueue_choose_dest(qthread_shepherd_t *curr_shep) {
@@ -254,13 +211,11 @@ qt_threadqueue_choose_dest(qthread_shepherd_t *curr_shep) {
 }
 
 void INTERNAL qt_threadqueue_enqueue(qt_threadqueue_t *restrict q,
-                                     qthread_t *restrict t) { /*{{{ */
+                                     qthread_t *restrict t) {
   qt_threadqueue_node_t *node, *prev;
 
   assert(q);
   assert(t);
-
-  PARANOIA(sanity_check_tq(&q->q));
 
   node = ALLOC_TQNODE();
   assert(node != NULL);
@@ -274,8 +229,7 @@ void INTERNAL qt_threadqueue_enqueue(qt_threadqueue_t *restrict q,
   } else {
     atomic_store_explicit(&prev->next, node, memory_order_relaxed);
   }
-  PARANOIA(sanity_check_tq(&q->q));
-  (void)qthread_incr(&(q->advisory_queuelen), 1);
+  atomic_fetch_add_explicit(&q->advisory_queuelen, 1, memory_order_relaxed);
 #ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE
   /* awake waiter */
   /* Yes, this needs to be here, to prevent reading frustration being hoisted
@@ -290,31 +244,27 @@ void INTERNAL qt_threadqueue_enqueue(qt_threadqueue_t *restrict q,
     QTHREAD_COND_UNLOCK(q->trigger);
   }
 #endif /* ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE */
-} /*}}} */
+}
 
 void INTERNAL qt_threadqueue_enqueue_yielded(qt_threadqueue_t *restrict q,
-                                             qthread_t *restrict t) { /*{{{ */
+                                             qthread_t *restrict t) {
   qt_threadqueue_enqueue(q, t);
-} /*}}} */
+}
 
-ssize_t INTERNAL
-qt_threadqueue_advisory_queuelen(qt_threadqueue_t *q) { /*{{{ */
+ssize_t INTERNAL qt_threadqueue_advisory_queuelen(qt_threadqueue_t *q) {
   assert(q);
-  return q->advisory_queuelen;
-} /*}}} */
+  return atomic_load_explicit(&q->advisory_queuelen, memory_order_relaxed);
+}
 
-qthread_t INTERNAL *
-qt_scheduler_get_thread(qt_threadqueue_t *q,
-                        qt_threadqueue_private_t *Q_UNUSED(qc),
-                        uint_fast8_t Q_UNUSED(active)) { /*{{{ */
+qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t *q,
+                                            uint_fast8_t Q_UNUSED(active)) {
 #ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE
   int i;
 #endif /* QTHREAD_CONDWAIT_BLOCKING_QUEUE */
-  PARANOIA(sanity_check_tq(&q->q));
+
   qt_threadqueue_node_t *node = qt_internal_NEMESIS_dequeue(&q->q);
   qthread_t *retval;
 
-  PARANOIA(sanity_check_tq(&q->q));
   if (node == NULL) {
 #ifdef QTHREAD_CONDWAIT_BLOCKING_QUEUE
     i = num_spins_before_condwait;
@@ -342,16 +292,16 @@ qt_scheduler_get_thread(qt_threadqueue_t *q,
   }
   assert(node);
   assert(atomic_load_explicit(&node->next, memory_order_relaxed) == NULL);
-  (void)qthread_incr(&(q->advisory_queuelen), -1);
+  atomic_fetch_add_explicit(
+    &q->advisory_queuelen, (aligned_t)-1, memory_order_relaxed);
   retval = node->thread;
   FREE_TQNODE(node);
-  PARANOIA(sanity_check_tq(&q->q));
   return retval;
-} /*}}} */
+}
 
 /* walk queue removing all tasks matching this description */
 void INTERNAL qt_threadqueue_filter(qt_threadqueue_t *q,
-                                    qt_threadqueue_filter_f f) { /*{{{*/
+                                    qt_threadqueue_filter_f f) {
   NEMESIS_queue tmp;
   qt_threadqueue_node_t *curs, *prev;
 
@@ -361,11 +311,8 @@ void INTERNAL qt_threadqueue_filter(qt_threadqueue_t *q,
   atomic_init(&tmp.tail, NULL);
   tmp.shadow_head = NULL;
   tmp.nemesis_advisory_queuelen = 0;
-  PARANOIA(sanity_check_tq(&q->q));
   while ((curs = qt_internal_NEMESIS_dequeue_st(&q->q))) {
     qthread_t *t = curs->thread;
-    PARANOIA(sanity_check_tq(&tmp));
-    PARANOIA(sanity_check_tq(&q->q));
     switch (f(t)) {
       case IGNORE_AND_CONTINUE: // ignore, move on
         prev = qt_internal_atomic_swap_ptr((void **)&(tmp.tail), curs);
@@ -395,7 +342,6 @@ void INTERNAL qt_threadqueue_filter(qt_threadqueue_t *q,
   }
 pushback:
   /* dequeue the rest of the queue */
-  PARANOIA(sanity_check_tq(&tmp));
   if (atomic_load_explicit(&q->q.head, memory_order_relaxed)) {
     prev = qt_internal_atomic_swap_ptr((void **)&(tmp.tail), q->q.head);
     if (prev == NULL) {
@@ -423,8 +369,7 @@ pushback:
                         memory_order_relaxed);
   q->q.shadow_head = NULL;
   q->advisory_queuelen = tmp.nemesis_advisory_queuelen;
-  PARANOIA(sanity_check_tq(&q->q));
-} /*}}}*/
+}
 
 /* some place-holder functions */
 void INTERNAL qthread_steal_stat(void) {}

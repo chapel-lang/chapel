@@ -35,8 +35,7 @@ static aligned_t dequeuer(void *arg) {
   return 0;
 }
 
-static void
-loop_queuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+static void loop_queuer(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qdqueue_t *q = (qdqueue_t *)arg;
   void *me = (void *)(uintptr_t)qthread_id();
@@ -47,10 +46,10 @@ loop_queuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
       exit(-2);
     }
   }
-} /*}}} */
+}
 
 static void
-loop_dequeuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+loop_dequeuer(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qdqueue_t *q = (qdqueue_t *)arg;
 
@@ -60,7 +59,7 @@ loop_dequeuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
       exit(-2);
     }
   }
-} /*}}} */
+}
 
 int main(int argc, char *argv[]) {
   qdqueue_t *q;

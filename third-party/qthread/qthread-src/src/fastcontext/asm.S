@@ -2,11 +2,6 @@
 /* Portions of this file are Copyright (c) 2005-2006 Russ Cox, MIT; see COPYRIGHT */
 /* Portions of this file are Copyright Sandia National Laboratories */
 #endif
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#else
-# error no config.h
-#endif
 #include "qthread/common.h"
 
 #define _(x)

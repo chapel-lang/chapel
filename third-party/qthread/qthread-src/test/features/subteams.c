@@ -1,8 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
-#include <assert.h>
 #include <stdio.h>
 
 #include "argparsing.h"
@@ -98,7 +93,7 @@ static aligned_t test_async(void *args_) {
     }
   }
 
-  qthread_incr(&donecount, -1);
+  qthread_incr(&donecount, (aligned_t)-1);
 
   return 0;
 }
@@ -210,7 +205,7 @@ int main(int argc, char *argv[]) {
 
   iprintf("=== Test Subteams ===\n");
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   timer = qtimer_create();
 

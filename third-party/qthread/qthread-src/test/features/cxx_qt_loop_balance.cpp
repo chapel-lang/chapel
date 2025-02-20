@@ -41,7 +41,7 @@ void test_func() {
 }
 
 int main(int argc, char **argv) {
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
 

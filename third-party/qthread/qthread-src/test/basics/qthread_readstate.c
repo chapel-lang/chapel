@@ -1,9 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,11 +11,12 @@
             (v opr val) ? "GOOD" : " BAD",                                     \
             v,                                                                 \
             val);                                                              \
-    assert(v opr val);                                                         \
+    test_check(v opr val);                                                     \
   } while (0)
 
 static aligned_t spinner(void *arg) {
-  while (*(aligned_t *)arg == 0);
+  while (atomic_load_explicit((_Atomic aligned_t *)arg, memory_order_relaxed) ==
+         0);
   return 1;
 }
 
@@ -30,18 +26,19 @@ int main(int argc, char *argv[]) {
   CHECK_VERBOSE(); // part of the testing harness; toggles iprintf() output
 
   status = qthread_initialize();
-  assert(status == QTHREAD_SUCCESS);
+  test_check(status == QTHREAD_SUCCESS);
 
   iprintf("%i shepherds...\n", qthread_num_shepherds());
   iprintf("  %i threads total\n", qthread_num_workers());
 
   TEST_OPTION(STACK_SIZE, >=, 2048);
   {
-    aligned_t r = 0;
+    _Atomic aligned_t r;
+    atomic_store_explicit(&r, 0u, memory_order_relaxed);
     TEST_OPTION(BUSYNESS, ==, 1); // Just this thread
     TEST_OPTION(NODE_BUSYNESS, ==, 1);
     TEST_OPTION(WORKER_OCCUPATION, ==, 1);
-    qthread_fork(spinner, &r, &r);
+    qthread_fork(spinner, (void *)&r, (aligned_t *)&r);
     qthread_flushsc();
     TEST_OPTION(BUSYNESS, >=, 1);
     TEST_OPTION(BUSYNESS, <=, 2);
@@ -50,14 +47,14 @@ int main(int argc, char *argv[]) {
     TEST_OPTION(NODE_BUSYNESS, <=, 2);
     TEST_OPTION(WORKER_OCCUPATION, >=, 1);
     TEST_OPTION(WORKER_OCCUPATION, <=, 2);
-    r = 1;
-    qthread_readFF(NULL, &r);
+    atomic_store_explicit(&r, 1u, memory_order_relaxed);
+    qthread_readFF(NULL, (aligned_t *)&r);
   }
   {
     size_t sheps;
     TEST_OPTION(TOTAL_SHEPHERDS, >=, 1);
     sheps = qthread_readstate(TOTAL_SHEPHERDS);
-    assert(sheps >= 1);
+    test_check(sheps >= 1);
     TEST_OPTION(ACTIVE_SHEPHERDS, >=, 1);
     TEST_OPTION(ACTIVE_SHEPHERDS, <=, sheps);
   }
@@ -65,7 +62,7 @@ int main(int argc, char *argv[]) {
     size_t wkrs;
     TEST_OPTION(TOTAL_WORKERS, >=, 1);
     wkrs = qthread_readstate(TOTAL_WORKERS);
-    assert(wkrs >= 1);
+    test_check(wkrs >= 1);
     TEST_OPTION(ACTIVE_WORKERS, >=, 1);
     TEST_OPTION(ACTIVE_WORKERS, <=, wkrs);
   }

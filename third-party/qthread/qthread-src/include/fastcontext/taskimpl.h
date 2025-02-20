@@ -1,10 +1,6 @@
 #ifndef TASKIMPL_H
 #define TASKIMPL_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "qthread/common.h"
 
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32)
@@ -22,16 +18,12 @@
 #define NEEDSWAPCONTEXT
 #include "power-ucontext.h"
 #elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM)
-#ifdef HAVE_STDARG_H
 #include <stdarg.h>
-#endif
 #define NEEDARMMAKECONTEXT
 #define NEEDSWAPCONTEXT
 #include "arm-ucontext.h"
 #elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
-#ifdef HAVE_STDARG_H
 #include <stdarg.h>
-#endif
 #define NEEDARMA64MAKECONTEXT
 #define NEEDSWAPCONTEXT
 #include "arm-ucontext.h"

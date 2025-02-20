@@ -3,8 +3,6 @@
 
 #include "argparsing.h"
 
-#include <assert.h>
-
 static double ret = 0.0;
 
 static void
@@ -43,7 +41,7 @@ int main(int argc, char *argv[]) {
   NUMARG(ITER, "ITERATIONS");
 
   t = qarray_create_tight(ITER, sizeof(int));
-  assert(t);
+  test_check(t);
   qarray_iter_loop(t, 0, ITER, assigni, NULL);
   for (i = 1; i < ITER; i++) { int_calc += i; }
   /* ******************************
@@ -53,7 +51,7 @@ int main(int argc, char *argv[]) {
     t, 0, ITER, permute, NULL, &ret, sizeof(double), qt_dbl_add_acc);
   iprintf("int = %lu\n", (long unsigned)int_calc);
   iprintf("ret = %f\n", ret);
-  assert(int_calc == ret);
+  test_check(int_calc == ret);
   ret = 0.0;
   /* ******************************
    * Example 2
@@ -61,7 +59,7 @@ int main(int argc, char *argv[]) {
   qarray_iter(t, 0, ITER, onesum);
   iprintf("int = %lu\n", (long unsigned)int_calc);
   iprintf("ret = %f\n", ret);
-  assert(int_calc == ret);
+  test_check(int_calc == ret);
   qarray_destroy(t);
   return 0;
 }

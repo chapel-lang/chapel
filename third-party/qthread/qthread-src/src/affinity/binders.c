@@ -2,6 +2,10 @@
 
 #include <hwloc.h>
 
+#if (HWLOC_API_VERSION < 0x00020000)
+#error HWLOC version unrecognized
+#endif
+
 #include "qt_affinity.h"
 #include "qt_alloc.h"
 #include "qt_envariables.h"
@@ -83,10 +87,6 @@ static int qt_affinity_compact(int num_workers, hwloc_obj_t obj) {
 void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t *nbworkers,
                                size_t *hw_par) {
-#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
-  extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
-  topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
-#endif
   // Note: the lack of a teardown routine will cause topology initialization
   // to be skipped if qthreads is re-initialized
   if (topology == NULL) {
@@ -100,7 +100,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       qt_internal_get_env_num("NUM_WORKERS_PER_SHEPHERD", 0, 0);
     size_t num_workers = qt_internal_get_env_num("HWPAR", 0, 0);
     char const *affinity = qt_internal_get_env_str("LAYOUT", "NOT_SET");
-    hwloc_const_bitmap_t allowed =
+    hwloc_bitmap_t allowed =
       hwloc_bitmap_dup(hwloc_topology_get_allowed_cpuset(topology));
     if (!allowed) {
       printf("hwloc detection of allowed cpus failed\n");
@@ -125,11 +125,11 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
 
     workers.binds = qt_malloc(sizeof(hwloc_cpuset_t) * workers.num);
     for (int i = 0; i < workers.num; i++) {
-      workers.binds[i] = hwloc_bitmap_alloc();
       workers.binds[i] = hwloc_bitmap_dup(allowed);
     }
     hwloc_obj_t obj =
       hwloc_get_obj_inside_cpuset_by_depth(topology, allowed, 0, 0);
+    hwloc_bitmap_free(allowed);
     if (affinity && strcmp("COMPACT", affinity) == 0) {
       qt_affinity_compact(workers.num, obj);
     }
@@ -186,6 +186,15 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
     printf("error: non-uniform number of workers per shepherd\n");
     exit(-1);
   }
+}
+
+void INTERNAL qt_affinity_deinit(void) {
+  if (sheps.binds) {
+    for (int i = 0; i < sheps.num; i++) { hwloc_bitmap_free(sheps.binds[i]); }
+    qt_free(sheps.binds);
+  }
+  for (int i = 0; i < workers.num; i++) { hwloc_bitmap_free(workers.binds[i]); }
+  qt_free(workers.binds);
 }
 
 void INTERNAL qt_affinity_set(qthread_worker_t *me,

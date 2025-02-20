@@ -1,22 +1,22 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 char const cfilename[] = "test_qthread_read.XXXXXXXXXXXXX";
+#define BUFFER_SIZE 32u // strlen(cfilename) + 1
 
 static aligned_t reader(void *arg) {
   int ret;
-  char buf[strlen(cfilename) + 1];
+  char buf[BUFFER_SIZE];
 
-  memset(buf, 0, strlen(cfilename) + 1);
+  memset(buf, 0, BUFFER_SIZE);
   iprintf("in reader function\n");
   ret = read((int)(intptr_t)arg, buf, 5);
   iprintf("read '%s'\n", buf);
   iprintf("ret = %i\n", ret);
-  assert(ret == 5);
+  test_check(ret == 5);
   if (strncmp(buf, cfilename, 5)) {
     buf[5] = 0;
     fprintf(stderr, "Corrupt Read! '%s' != '%s'!\n", buf, cfilename);
@@ -29,12 +29,12 @@ static aligned_t reader(void *arg) {
 int main(int argc, char *argv[]) {
   aligned_t t;
   int fd;
-  char filename[strlen(cfilename) + 1];
+  char filename[BUFFER_SIZE];
   ssize_t ret;
 
   CHECK_VERBOSE();
 
-  snprintf(filename, strlen(cfilename) + 1, "%s", cfilename);
+  snprintf(filename, BUFFER_SIZE, "%s", cfilename);
   iprintf("filename = '%s'\n", filename);
 
   /* First, set up a temporary file */
@@ -42,20 +42,20 @@ int main(int argc, char *argv[]) {
   iprintf("filename = '%s'\n", filename);
   iprintf("fd = %i\n", fd);
   if (fd < 0) { perror("mkstemp failed"); }
-  assert(fd >= 0);
+  test_check(fd >= 0);
 
-  ret = write(fd, cfilename, strlen(cfilename));
-  assert(ret == strlen(cfilename));
+  ret = write(fd, cfilename, BUFFER_SIZE - 1u);
+  test_check(ret == BUFFER_SIZE - 1u);
 
   ret = (ssize_t)lseek(fd, 0, SEEK_SET);
-  assert(ret == 0);
+  test_check(ret == 0);
 
   reader((void *)(intptr_t)fd);
 
   ret = (ssize_t)lseek(fd, 0, SEEK_SET);
-  assert(ret == 0);
+  test_check(ret == 0);
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
 

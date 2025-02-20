@@ -1,9 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +17,7 @@ int main(int argc, char *argv[]) {
   long spawn = 0;
   aligned_t *rets = NULL;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   spawn = qthread_num_workers() * 2;
@@ -32,16 +27,16 @@ int main(int argc, char *argv[]) {
   iprintf("  %i threads total\n", qthread_num_workers());
 
   rets = malloc(sizeof(aligned_t) * spawn);
-  assert(rets != NULL);
+  test_check(rets != NULL);
 
   for (long i = 0; i < spawn; i++) {
     int ret = qthread_fork(greeter, NULL, rets + i);
-    assert(ret == QTHREAD_SUCCESS);
+    test_check(ret == QTHREAD_SUCCESS);
   }
 
   for (long i = 0; i < spawn; i++) {
     int ret = qthread_readFF(NULL, rets + i);
-    assert(ret == QTHREAD_SUCCESS);
+    test_check(ret == QTHREAD_SUCCESS);
   }
 
   free(rets);

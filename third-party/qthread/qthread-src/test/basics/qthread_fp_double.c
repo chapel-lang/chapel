@@ -1,12 +1,10 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <assert.h>
 #include <math.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "argparsing.h"
 
 // https://www.geeksforgeeks.org/comparison-float-value-c/
 // https://dotnettutorials.net/lesson/taylor-series-using-recursion-in-c/
@@ -39,7 +37,7 @@ static void startQthread(struct parts *teParts) {
   qthread_empty(&teParts->cond);
 
   int ret = qthread_fork(taylor_exponential, teParts, &teParts->cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 }
 
 static aligned_t checkDoubleAsQthreads(void) {
@@ -52,27 +50,27 @@ static aligned_t checkDoubleAsQthreads(void) {
   startQthread(&teParts3);
 
   int ret = qthread_readFF(NULL, &teParts1.cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   ret = qthread_readFF(NULL, &teParts2.cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   ret = qthread_readFF(NULL, &teParts3.cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   double threshold = 1E-15;
 
   double expected_1 = 8103.0839275753824;
   double rel_error_1 = fabs(expected_1 - teParts1.ans) / fabs(expected_1);
-  assert(rel_error_1 < threshold);
+  test_check(rel_error_1 < threshold);
 
   double expected_2 = 20.085536923187668;
   double rel_error_2 = fabs(expected_2 - teParts2.ans) / fabs(expected_2);
-  assert(rel_error_2 < threshold);
+  test_check(rel_error_2 < threshold);
 
   double expected_3 = 59874.141715197809;
   double rel_error_3 = fabs(expected_3 - teParts3.ans) / fabs(expected_3);
-  assert(rel_error_3 < threshold);
+  test_check(rel_error_3 < threshold);
 
   return 0;
 }
@@ -83,28 +81,28 @@ static void checkDoubleAsQthread(void) {
   qthread_empty(&teParts.cond);
 
   ret = qthread_fork(taylor_exponential, &teParts, &teParts.cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   ret = qthread_readFF(NULL, &teParts.cond);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   double expected = 8103.0839275753824;
   double rel_error = fabs(expected - teParts.ans) / fabs(expected);
-  assert(rel_error < 1E-15);
+  test_check(rel_error < 1E-15);
 }
 
 static void checkDouble(void) {
   double ans = taylor_exponential_core(250, 9.0, 0);
   double expected = 8103.0839275753824;
   double rel_error = fabs(expected - ans) / fabs(expected);
-  assert(rel_error < 1E-15);
+  test_check(rel_error < 1E-15);
 }
 
 int main(void) {
   checkDouble();
 
   int status = qthread_initialize();
-  assert(status == QTHREAD_SUCCESS);
+  test_check(status == QTHREAD_SUCCESS);
 
   checkDoubleAsQthread();
   checkDoubleAsQthreads();
