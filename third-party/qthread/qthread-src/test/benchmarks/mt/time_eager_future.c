@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
 #include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>

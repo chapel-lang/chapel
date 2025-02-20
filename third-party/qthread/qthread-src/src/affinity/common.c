@@ -83,3 +83,5 @@ void INTERNAL qt_topology_init(qthread_shepherd_id_t *nshepherds,
   *nworkerspershep = num_wps;
   *hw_par = num_workers;
 }
+
+void INTERNAL qt_topology_deinit(void) { qt_affinity_deinit(); }

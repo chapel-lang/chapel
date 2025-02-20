@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qpool.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -31,7 +30,7 @@ int main(int argc, char *argv[]) {
   aligned_t *rets;
   aligned_t **allthat;
 
-  assert(qthread_initialize() == QTHREAD_SUCCESS);
+  test_check(qthread_initialize() == QTHREAD_SUCCESS);
   CHECK_VERBOSE();
   NUMARG(ELEMENT_COUNT, "ELEMENT_COUNT");
   NUMARG(THREAD_COUNT, "THREAD_COUNT");
@@ -45,7 +44,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "qpool_alloc() failed!\n");
     exit(-1);
   }
-  iprintf("allocated: %p (%lu)\n", (void *)rets, (unsigned long)*rets);
+  iprintf("allocated: %p\n", (void *)rets);
   *rets = 1;
   if (*rets != 1) {
     fprintf(stderr, "assigning a value to the allocated memory failed!\n");
@@ -55,7 +54,7 @@ int main(int argc, char *argv[]) {
   qpool_free(qp, rets);
 
   allthat = (aligned_t **)malloc(sizeof(aligned_t *) * ELEMENT_COUNT);
-  assert(allthat != NULL);
+  test_check(allthat != NULL);
   for (i = 0; i < ELEMENT_COUNT; i++) {
     if ((allthat[i] = (aligned_t *)qpool_alloc(qp)) == NULL) {
       fprintf(stderr, "qpool_alloc() failed!\n");
@@ -66,12 +65,12 @@ int main(int argc, char *argv[]) {
   free(allthat);
 
   rets = (aligned_t *)malloc(sizeof(aligned_t) * THREAD_COUNT);
-  assert(rets != NULL);
+  test_check(rets != NULL);
   for (i = 0; i < THREAD_COUNT; i++) {
-    assert(qthread_fork(allocator, qp, &(rets[i])) == QTHREAD_SUCCESS);
+    test_check(qthread_fork(allocator, qp, &(rets[i])) == QTHREAD_SUCCESS);
   }
   for (i = 0; i < THREAD_COUNT; i++) {
-    assert(qthread_readFF(NULL, &(rets[i])) == QTHREAD_SUCCESS);
+    test_check(qthread_readFF(NULL, &(rets[i])) == QTHREAD_SUCCESS);
   }
   free(rets);
 

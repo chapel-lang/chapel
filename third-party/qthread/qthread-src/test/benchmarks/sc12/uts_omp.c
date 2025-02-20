@@ -4,10 +4,6 @@
  *     http://sourceforge.net/projects/uts-benchmark  *
  ******************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
 #include <assert.h>
 #include <limits.h> /* for INT_MAX */
 #include <math.h>   /* for floor, log, sin */

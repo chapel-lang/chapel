@@ -1,12 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <limits.h>
-
-#ifdef HAVE_SYS_LGRP_USER_H
-#include <sys/lgrp_user.h>
-#endif
 
 #include <qthread/qdqueue.h>
 #include <qthread/qlfqueue.h>
@@ -55,8 +47,7 @@ struct qdqueue_s {
 
 static qthread_shepherd_id_t maxsheps = 0;
 
-static qdqueue_adstruct_t
-qdqueue_adheap_pop(struct qdqueue_adheap_s *heap) { /*{{{ */
+static qdqueue_adstruct_t qdqueue_adheap_pop(struct qdqueue_adheap_s *heap) {
   qdqueue_adstruct_t ret;
 
   if (heap->first != NULL) {
@@ -78,7 +69,7 @@ qdqueue_adheap_pop(struct qdqueue_adheap_s *heap) { /*{{{ */
     ret.generation = 0;
   }
   return ret;
-} /*}}} */
+}
 
 /* only push if there are waiters...
  * this function is only used if we can *block* for waiting (not implemented
@@ -89,9 +80,8 @@ qdqueue_adheap_pop(struct qdqueue_adheap_s *heap) { /*{{{ */
  *  printf("pushcond\n");
  * }*/
 
-static void qdqueue_adheap_push(struct qdqueue_adheap_s *heap,
-                                void *shep,
-                                aligned_t gen) { /*{{{ */
+static void
+qdqueue_adheap_push(struct qdqueue_adheap_s *heap, void *shep, aligned_t gen) {
   size_t i;
 
   /* search through the heap for a ptr matching shep */
@@ -138,24 +128,24 @@ static void qdqueue_adheap_push(struct qdqueue_adheap_s *heap,
   }
 done_pushing:
   qthread_unlock(&(heap->gateway_lock));
-} /*}}} */
+}
 
-static int qdqueue_adheap_empty(struct qdqueue_adheap_s *heap) { /*{{{ */
+static int qdqueue_adheap_empty(struct qdqueue_adheap_s *heap) {
   return (heap->first == NULL);
-} /*}}} */
+}
 
-static void qdqueue_internal_gensheparray(int **a) { /*{{{ */
+static void qdqueue_internal_gensheparray(int **a) {
   qthread_shepherd_id_t i, j;
 
   for (i = 0; i < maxsheps; i++) {
     for (j = 0; j < maxsheps; j++) { a[i][j] = qthread_distance(i, j); }
   }
-} /*}}} */
+}
 
 static void qdqueue_internal_sortedsheps(qthread_shepherd_id_t shep,
                                          struct qdsubqueue_s **all,
                                          struct qdsubqueue_s *Qs,
-                                         int const *distances) { /*{{{ */
+                                         int const *distances) {
   qthread_shepherd_id_t i;
   int lastdist = INT_MIN, maxdist = 0;
   assert(distances);
@@ -202,14 +192,13 @@ static void qdqueue_internal_sortedsheps(qthread_shepherd_id_t shep,
     }
     FREE(thisdist, count * sizeof(qthread_shepherd_id_t));
   }
-} /*}}} */
+}
 
 static struct qdsubqueue_s **
 qdqueue_internal_getneighbors(qthread_shepherd_id_t shep,
                               struct qdsubqueue_s *Qs,
                               size_t *restrict numNeighbors,
-                              int const *restrict const distances) /*{{{ */
-{
+                              int const *restrict const distances) {
   struct qdsubqueue_s **ret;
   size_t i;
   /* we define a "neighbor" in terms of distance, because that's all we've
@@ -218,11 +207,7 @@ qdqueue_internal_getneighbors(qthread_shepherd_id_t shep,
   qthread_shepherd_id_t *temp;
   size_t j, numN = 0;
 
-#ifdef HAVE_SYS_LGRP_USER_H
-#define NONME_DIST 5
-#else
 #define NONME_DIST 10
-#endif
 
   /* find the smallest non-me distance */
   int mindist = INT_MAX;
@@ -261,10 +246,10 @@ qdqueue_internal_getneighbors(qthread_shepherd_id_t shep,
   FREE(temp, numN * sizeof(qthread_shepherd_id_t));
   *numNeighbors = numN;
   return ret;
-} /*}}} */
+}
 
 /* Create a new qdqueue */
-qdqueue_t *qdqueue_create(void) { /*{{{ */
+API_FUNC qdqueue_t *qdqueue_create(void) {
   qdqueue_t *ret;
   qthread_shepherd_id_t curshep;
   int **sheparray;
@@ -325,10 +310,10 @@ qdqueue_t *qdqueue_create(void) { /*{{{ */
     FREE(ret, sizeof(struct qdqueue_s));
   }
   return NULL;
-} /*}}} */
+}
 
 /* destroy that queue */
-int qdqueue_destroy(qdqueue_t *q) { /*{{{ */
+API_FUNC int qdqueue_destroy(qdqueue_t *q) {
   qthread_shepherd_id_t i;
 
   qassert_ret((q != NULL), QTHREAD_BADARGS);
@@ -348,10 +333,10 @@ int qdqueue_destroy(qdqueue_t *q) { /*{{{ */
   FREE(q->Qs, maxsheps * sizeof(struct qdsubqueue_s));
   FREE(q, sizeof(struct qdqueue_s));
   return QTHREAD_SUCCESS;
-} /*}}} */
+}
 
 /* enqueue something in the queue */
-int qdqueue_enqueue(qdqueue_t *q, void *elem) { /*{{{ */
+API_FUNC int qdqueue_enqueue(qdqueue_t *q, void *elem) {
   int stat;
   struct qdsubqueue_s *myq;
 
@@ -382,12 +367,12 @@ int qdqueue_enqueue(qdqueue_t *q, void *elem) { /*{{{ */
   }
 
   return QTHREAD_SUCCESS;
-} /*}}} */
+}
 
 /* enqueue something in the queue at a given location */
 int qdqueue_enqueue_there(qdqueue_t *q,
                           void *elem,
-                          qthread_shepherd_id_t there) { /*{{{ */
+                          qthread_shepherd_id_t there) {
   int stat;
   struct qdsubqueue_s *myq;
 
@@ -419,10 +404,10 @@ int qdqueue_enqueue_there(qdqueue_t *q,
   }
 
   return QTHREAD_SUCCESS;
-} /*}}} */
+}
 
 /* dequeue something from the queue (returns NULL for an empty queue) */
-void *qdqueue_dequeue(qdqueue_t *q) { /*{{{ */
+API_FUNC void *qdqueue_dequeue(qdqueue_t *q) {
   struct qdsubqueue_s *myq;
   void *ret;
 
@@ -485,10 +470,10 @@ void *qdqueue_dequeue(qdqueue_t *q) { /*{{{ */
     }
     return NULL;
   }
-} /*}}} */
+}
 
 /* returns 1 if the queue is empty, 0 otherwise */
-int qdqueue_empty(qdqueue_t *q) { /*{{{ */
+API_FUNC int qdqueue_empty(qdqueue_t *q) {
   struct qdsubqueue_s *myq;
 
   qassert_ret(q, 0);
@@ -509,6 +494,6 @@ int qdqueue_empty(qdqueue_t *q) { /*{{{ */
     }
     return 1; /* we searched everywhere, and every queue was empty */
   }
-} /*}}} */
+}
 
 /* vim:set expandtab: */

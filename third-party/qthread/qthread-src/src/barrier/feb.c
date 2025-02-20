@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <stdint.h>
 #include <stdio.h>
@@ -91,7 +87,7 @@ void API_FUNC qt_barrier_enter(qt_barrier_t *b) {
     qthread_readFF(NULL, &b->out_gate);
   }
   /* I'm on the way out, so decrement the blocker count */
-  waiters = qthread_incr(&b->blockers, -1) - 1;
+  waiters = qthread_incr(&b->blockers, (aligned_t)-1) - 1u;
   if (waiters == 0) {
     /* last guy out of the barrier, close the out_gate, open the in_gate */
     qthread_empty(&b->out_gate);
@@ -119,7 +115,7 @@ void qt_global_barrier(void) {
 
 void qt_global_barrier_init(size_t size, int debug) {
   if (global_barrier == NULL) {
-    global_barrier = qt_barrier_create(size, 0);
+    global_barrier = qt_barrier_create(size, REGION_BARRIER);
     assert(global_barrier);
   }
 }

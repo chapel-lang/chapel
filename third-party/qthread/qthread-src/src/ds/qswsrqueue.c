@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* API */
 #include <qthread/qswsrqueue.h>
 #include <qthread/qthread.h>
@@ -21,7 +17,7 @@ struct qswsrqueue_s { /* typedef'd to qswsrqueue_t */
   void *elements[];
 };
 
-qswsrqueue_t *qswsrqueue_create(size_t elements) { /*{{{ */
+API_FUNC qswsrqueue_t *qswsrqueue_create(size_t elements) {
   qswsrqueue_t *q;
 
   if ((elements * sizeof(void *)) < CACHELINE_WIDTH) {
@@ -40,16 +36,16 @@ qswsrqueue_t *qswsrqueue_create(size_t elements) { /*{{{ */
     q->size2 = elements;
   }
   return q;
-} /*}}} */
+}
 
-int qswsrqueue_destroy(qswsrqueue_t *q) { /*{{{ */
+API_FUNC int qswsrqueue_destroy(qswsrqueue_t *q) {
   qassert_ret((q != NULL), QTHREAD_BADARGS);
   qt_internal_aligned_free(
     q, sizeof(struct qswsrqueue_s) + (q->size * sizeof(void *)));
   return QTHREAD_SUCCESS;
-} /*}}} */
+}
 
-int qswsrqueue_enqueue(qswsrqueue_t *q, void *elem) { /*{{{ */
+API_FUNC int qswsrqueue_enqueue(qswsrqueue_t *q, void *elem) {
   uint32_t cur_tail = q->tail;
   uint32_t next_tail = (cur_tail + 1) % q->size;
   MACHINE_FENCE;
@@ -61,9 +57,9 @@ int qswsrqueue_enqueue(qswsrqueue_t *q, void *elem) { /*{{{ */
   } else {
     return QTHREAD_OPFAIL;
   }
-} /*}}} */
+}
 
-int qswsrqueue_enqueue_blocking(qswsrqueue_t *q, void *elem) { /*{{{ */
+int qswsrqueue_enqueue_blocking(qswsrqueue_t *q, void *elem) {
   uint32_t cur_tail = q->tail;
   uint32_t next_tail = (cur_tail + 1) % q->size2;
   do {
@@ -76,9 +72,9 @@ int qswsrqueue_enqueue_blocking(qswsrqueue_t *q, void *elem) { /*{{{ */
       return QTHREAD_SUCCESS;
     }
   } while (1);
-} /*}}} */
+}
 
-void *qswsrqueue_dequeue(qswsrqueue_t *q) { /*{{{ */
+API_FUNC void *qswsrqueue_dequeue(qswsrqueue_t *q) {
   void *item;
   uint32_t cur_head = q->head;
   MACHINE_FENCE;
@@ -87,9 +83,9 @@ void *qswsrqueue_dequeue(qswsrqueue_t *q) { /*{{{ */
   MACHINE_FENCE; // MIGHT need to be a MACHINE_FENCE, but I don't think so
   q->head = (cur_head + 1) % q->size;
   return item;
-} /*}}} */
+}
 
-void *qswsrqueue_dequeue_blocking(qswsrqueue_t *q) { /*{{{ */
+void *qswsrqueue_dequeue_blocking(qswsrqueue_t *q) {
   void *item;
   uint32_t cur_head = q->head;
   uint32_t next_head = (cur_head + 1) % q->size;
@@ -103,11 +99,9 @@ void *qswsrqueue_dequeue_blocking(qswsrqueue_t *q) { /*{{{ */
       return item;
     }
   } while (1);
-} /*}}} */
+}
 
 /* returns 1 if the queue is empty, 0 otherwise */
-int qswsrqueue_empty(qswsrqueue_t *q) { /*{{{ */
-  return (q->head == q->tail);
-} /*}}} */
+API_FUNC int qswsrqueue_empty(qswsrqueue_t *q) { return (q->head == q->tail); }
 
 /* vim:set expandtab: */

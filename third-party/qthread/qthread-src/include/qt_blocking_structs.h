@@ -62,16 +62,16 @@ extern qt_mpool generic_addrstat_pool;
 
 extern qt_mpool generic_addrres_pool;
 
-static inline qthread_addrres_t *ALLOC_ADDRRES(void) { /*{{{ */
+static inline qthread_addrres_t *ALLOC_ADDRRES(void) {
   qthread_addrres_t *tmp =
     (qthread_addrres_t *)qt_mpool_alloc(generic_addrres_pool);
 
   return tmp;
-} /*}}} */
+}
 
-static inline void FREE_ADDRRES(qthread_addrres_t *t) { /*{{{ */
+static inline void FREE_ADDRRES(qthread_addrres_t *t) {
   qt_mpool_free(generic_addrres_pool, t);
-} /*}}} */
+}
 
 #endif // ifndef QT_BLOCKING_STRUCTS_H
 /* vim:set expandtab: */

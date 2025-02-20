@@ -1,6 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "argparsing.h"
 #include <assert.h>
 #include <pthread.h>
@@ -20,9 +17,8 @@ size_t **allthat;
 void **ptr = NULL;
 pthread_mutex_t *ptr_lock;
 
-static void mutexpool_allocator(size_t const startat,
-                                size_t const stopat,
-                                void *arg) { /*{{{ */
+static void
+mutexpool_allocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
 
@@ -37,11 +33,10 @@ static void mutexpool_allocator(size_t const startat,
     pthread_mutex_unlock(ptr_lock + shep);
     allthat[i][0] = i;
   }
-} /*}}} */
+}
 
-static void mutexpool_deallocator(size_t const startat,
-                                  size_t const stopat,
-                                  void *arg) { /*{{{ */
+static void
+mutexpool_deallocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
 
@@ -51,10 +46,10 @@ static void mutexpool_deallocator(size_t const startat,
     ptr[shep] = allthat[i];
     pthread_mutex_unlock(ptr_lock + shep);
   }
-} /*}}} */
+}
 
 static void
-pool_allocator(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+pool_allocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qpool *p = (qpool *)arg;
 
@@ -65,20 +60,18 @@ pool_allocator(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
     }
     allthat[i][0] = i;
   }
-} /*}}} */
+}
 
-static void pool_deallocator(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+pool_deallocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qpool *p = (qpool *)arg;
 
   for (i = startat; i < stopat; i++) { qpool_free(p, allthat[i]); }
-} /*}}} */
+}
 
-static void malloc_allocator(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+malloc_allocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
@@ -88,15 +81,14 @@ static void malloc_allocator(size_t const startat,
     }
     allthat[i][0] = i;
   }
-} /*}}} */
+}
 
-static void malloc_deallocator(size_t const startat,
-                               size_t const stopat,
-                               void *arg) { /*{{{ */
+static void
+malloc_deallocator(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) { free(allthat[i]); }
-} /*}}} */
+}
 
 int main(int argc, char *argv[]) {
   size_t i;

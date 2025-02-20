@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 // a logrithmic self-cleaning barrier -- requires the size to be known
 // Follows a strategy that the MTA used - so might work better if it used the
 // full/empty implementation, but orginal developement predated it's inclusion
@@ -54,25 +50,24 @@ qt_barrier_t *MBar = NULL;
 
 void INTERNAL qt_barrier_internal_init(void) {}
 
-void API_FUNC qt_barrier_resize(qt_barrier_t *b, size_t size) { /*{{{ */
+void API_FUNC qt_barrier_resize(qt_barrier_t *b, size_t size) {
   assert(qthread_library_initialized);
   printf("resize not implemented\n");
   abort();
   /*qt_barrier_destroy(MBar);
   MBar = NULL;
   qt_global_barrier_init(size, 0);*/
-} /*}}} */
+}
 
-void API_FUNC qt_barrier_destroy(qt_barrier_t *b) { /*{{{ */
+void API_FUNC qt_barrier_destroy(qt_barrier_t *b) {
   assert(qthread_library_initialized);
   assert(b);
   if (b->upLock) { qt_free((void *)(b->upLock)); }
   if (b->downLock) { qt_free((void *)(b->downLock)); }
   qt_free(b);
-} /*}}} */
+}
 
-qt_barrier_t API_FUNC *qt_barrier_create(size_t size,
-                                         qt_barrier_btype type) { /*{{{ */
+qt_barrier_t API_FUNC *qt_barrier_create(size_t size, qt_barrier_btype type) {
   qt_barrier_t *b = qt_calloc(1, sizeof(qt_barrier_t));
 
   assert(b);
@@ -84,18 +79,16 @@ qt_barrier_t API_FUNC *qt_barrier_create(size_t size,
     }
   }
   return b;
-} /*}}} */
+}
 
-static void qtb_internal_initialize_variable(qt_barrier_t *b,
-                                             size_t size,
-                                             int debug) { /*{{{ */
+static void
+qtb_internal_initialize_variable(qt_barrier_t *b, size_t size, int debug) {
   assert(0);
   printf("Loop barrier not implemented yet\n");
-} /*}}} */
+}
 
-static void qtb_internal_initialize_fixed(qt_barrier_t *b,
-                                          size_t size,
-                                          int debug) { /*{{{ */
+static void
+qtb_internal_initialize_fixed(qt_barrier_t *b, size_t size, int debug) {
   int depth = 1;
   int temp = size - 1;
 
@@ -126,10 +119,10 @@ static void qtb_internal_initialize_fixed(qt_barrier_t *b,
     b->upLock[i] = SYNCVAR_EMPTY_INITIALIZER;
     b->downLock[i] = SYNCVAR_EMPTY_INITIALIZER;
   }
-} /*}}} */
+}
 
 // dump function for debugging -  print barrier array contents
-void qt_barrier_dump(qt_barrier_t *b, qt_barrier_dtype dt) { /*{{{ */
+void qt_barrier_dump(qt_barrier_t *b, qt_barrier_dtype dt) {
   size_t i, j;
   size_t const activeSize = b->activeSize;
 
@@ -151,13 +144,13 @@ void qt_barrier_dump(qt_barrier_t *b, qt_barrier_dtype dt) { /*{{{ */
       printf("\n");
     }
   }
-} /*}}} */
+}
 
 // walk down the barrier -- releases all locks in subtree below myLock
 //    level -- how high in the tree is this node
 uint64_t dummy = 0;
 
-static void qtb_internal_down(qt_barrier_t *b, int myLock, int level) { /*{{{ */
+static void qtb_internal_down(qt_barrier_t *b, int myLock, int level) {
   assert(b->activeSize > 1);
   for (int i = level; i >= 0; i--) {
     int mask = 1 << i;
@@ -172,7 +165,7 @@ static void qtb_internal_down(qt_barrier_t *b, int myLock, int level) { /*{{{ */
     } else { // out of range -- continue
     }
   }
-} /*}}} */
+}
 
 // walk up the barrier -- waits for neighbor lock at each level of the tree
 //   when both arrive the lower thread number climbs up the tree and the
@@ -181,7 +174,7 @@ static void qtb_internal_down(qt_barrier_t *b, int myLock, int level) { /*{{{ */
 //   for loop implementation).  Any node that is waiting release at a level
 //   other than the leaves, releases its subtree
 static void
-qtb_internal_up(qt_barrier_t *b, int myLock, int64_t val, int level) { /*{{{ */
+qtb_internal_up(qt_barrier_t *b, int myLock, int64_t val, int level) {
   // compute neighbor node at this level
   int mask = 1 << level;
   int pairedLock = myLock ^ mask;
@@ -255,15 +248,15 @@ qtb_internal_up(qt_barrier_t *b, int myLock, int64_t val, int level) { /*{{{ */
     if (debug) { printf("\t start down lock %d level %d \n", myLock, level); }
     qtb_internal_down(b, myLock, level); // everyone is here
   }
-} /*}}} */
+}
 
 // actual barrier entry point
 
-void API_FUNC qt_barrier_enter(qt_barrier_t *b) { /*{{{ */
+void API_FUNC qt_barrier_enter(qt_barrier_t *b) {
   qt_barrier_enter_id(b, qthread_worker(NULL));
-} /*}}} */
+}
 
-void API_FUNC qt_barrier_enter_id(qt_barrier_t *b, size_t id) { /*{{{ */
+void API_FUNC qt_barrier_enter_id(qt_barrier_t *b, size_t id) {
   // should be dual versions  1) all active threads barrier
   //                          2) all active streams
 
@@ -274,36 +267,34 @@ void API_FUNC qt_barrier_enter_id(qt_barrier_t *b, size_t id) { /*{{{ */
 
   if (b->activeSize <= 1) { return; }
   qtb_internal_up(b, id, val, 0);
-} /*}}} */
+}
 
 // used indirectly by omp barrier calls (initially - others I hope)
 // akp 7/24/09
 #define QT_GLOBAL_LOGBARRIER
 #ifdef QT_GLOBAL_LOGBARRIER
-void INTERNAL qt_global_barrier(void) { /*{{{ */
-  qt_barrier_enter(MBar);
-} /*}}} */
+void INTERNAL qt_global_barrier(void) { qt_barrier_enter(MBar); }
 
 // allow barrer initization from C
-void INTERNAL qt_global_barrier_init(size_t size, int debug) { /*{{{ */
+void INTERNAL qt_global_barrier_init(size_t size, int debug) {
   if (MBar == NULL) {
     MBar = qt_barrier_create(size, REGION_BARRIER);
     assert(MBar);
   }
-} /*}}} */
+}
 
-void INTERNAL qt_global_barrier_destroy(void) { /*{{{ */
+void INTERNAL qt_global_barrier_destroy(void) {
   if (MBar) {
     qt_barrier_destroy(MBar);
     MBar = NULL;
   }
-} /*}}} */
+}
 
-void qt_global_barrier_resize(size_t size) { /*{{{ */
+void qt_global_barrier_resize(size_t size) {
   qt_barrier_destroy(MBar);
   MBar = NULL;
   qt_global_barrier_init(size, 0);
-} /*}}} */
+}
 
 #endif /* ifdef QT_GLOBAL_LOGBARRIER */
 /* vim:set expandtab: */

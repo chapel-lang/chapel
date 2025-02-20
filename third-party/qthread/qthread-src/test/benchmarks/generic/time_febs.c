@@ -13,63 +13,61 @@ aligned_t incrementme = 0;
 aligned_t *increments = NULL;
 
 static void
-balanced_readFF(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+balanced_readFF(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) { qthread_readFF(NULL, (aligned_t *)arg); }
-} /*}}} */
+}
 
-static void balanced_syncvar_readFF(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+balanced_syncvar_readFF(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
     qthread_syncvar_readFF(NULL, (syncvar_t *)arg);
   }
-} /*}}} */
+}
 
 static void balanced_falseshare_syncreadFF(size_t const startat,
                                            size_t const stopat,
-                                           void *arg) { /*{{{ */
+                                           void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
   syncvar_t *myloc = ((syncvar_t *)arg) + shep;
 
   for (i = startat; i < stopat; i++) { qthread_syncvar_readFF(NULL, myloc); }
-} /*}}} */
+}
 
 static void balanced_falseshare_readFF(size_t const startat,
                                        size_t const stopat,
-                                       void *arg) { /*{{{ */
+                                       void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
   aligned_t *myloc = ((aligned_t *)arg) + shep;
 
   for (i = startat; i < stopat; i++) { qthread_readFF(NULL, myloc); }
-} /*}}} */
+}
 
 static void balanced_noncomp_syncreadFF(size_t const startat,
                                         size_t const stopat,
-                                        void *arg) { /*{{{ */
+                                        void *arg) {
   size_t i;
   syncvar_t myinc = SYNCVAR_STATIC_INITIALIZER;
 
   for (i = startat; i < stopat; i++) { qthread_syncvar_readFF(NULL, &myinc); }
-} /*}}} */
+}
 
-static void balanced_noncomp_readFF(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+balanced_noncomp_readFF(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   aligned_t myinc = 0;
 
   for (i = startat; i < stopat; i++) { qthread_readFF(NULL, &myinc); }
-} /*}}} */
+}
 
-static aligned_t justreturn(void *arg) { /*{{{*/ return 7; } /*}}}*/
+static aligned_t justreturn(void *arg) { return 7; }
 
-static char *human_readable_rate(double rate) { /*{{{*/
+static char *human_readable_rate(double rate) {
   static char readable_string[100] = {0};
   double const GB = 1024 * 1024 * 1024;
   double const MB = 1024 * 1024;
@@ -85,7 +83,7 @@ static char *human_readable_rate(double rate) { /*{{{*/
     memset(readable_string, 0, 100 * sizeof(char));
   }
   return readable_string;
-} /*}}}*/
+}
 
 int main(int argc, char *argv[]) {
   qtimer_t timer = qtimer_create();
