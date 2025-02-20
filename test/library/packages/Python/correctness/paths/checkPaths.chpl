@@ -65,7 +65,7 @@ proc getSysPathInterpreter(const ref env: map(string, string) =
   var oldEnv = new map(string, c_ptrConst(c_char));
   for k in env.keys() {
     var old = getenv(k.c_str()):c_ptrConst(c_char);
-    if old != nil then oldEnv[k] = old;
+    oldEnv[k] = old;
     if env[k] != "" {
       setenv(k.c_str(), env[k].c_str(), 1);
     } else {
@@ -86,7 +86,12 @@ proc getSysPathInterpreter(const ref env: map(string, string) =
   }
 
   for k in oldEnv.keys() {
-    setenv(k.c_str(), oldEnv[k], 1);
+    var old = oldEnv[k];
+    if old == nil {
+      setenv(k.c_str(), 0:c_ptrConst(c_char), 1);
+    } else {
+      setenv(k.c_str(), old, 1);
+    }
   }
 
   return paths;
