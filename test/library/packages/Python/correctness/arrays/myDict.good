@@ -12,4 +12,4 @@ d2 size 4
 size after delete of three 3
 size after clear 0
 d2 size after d1 clear 4
-Caught exception: KeyError: 'five'
+Caught exception

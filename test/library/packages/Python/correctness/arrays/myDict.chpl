@@ -40,7 +40,10 @@ proc main() {
   try {
     d.del("five"); // Try deleting something not in the dict
   } catch e: PythonException {
-    writeln("Caught exception: ", e);
+    // The exception actually caught depends on the version of Python, so don't
+    // print it out.  With Python 3.10, it's a general PythonException.  With
+    // Python 3.12, it's the more specific KeyError.
+    writeln("Caught exception");
   } catch e {
     writeln("Caught unknown exception: ", e);
   }
