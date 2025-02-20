@@ -453,7 +453,13 @@ module Python {
       // init
       var config_: PyConfig;
       var cfgPtr = c_ptrTo(config_);
+      // we want an isolated config for things like LC_ALL, but we still want
+      // to use things like PYTHONPATH
       PyConfig_InitIsolatedConfig(cfgPtr);
+      config_.isolated = 0;
+      config_.use_environment = 1;
+      config_.user_site_directory = 1;
+      config_.site_import = 1;
       defer PyConfig_Clear(cfgPtr);
 
       // check VIRTUAL_ENV, if its set, make it the executable
@@ -2468,14 +2474,14 @@ module Python {
     */
     extern record PyConfig {
       var isolated: c_int;
-      var user_site_directory: c_int;
-      var site_import: c_int;
-      var module_search_paths: PyWideStringList;
-      var module_search_paths_set: c_int;
-      var home: c_ptr(c_wchar);
       var use_environment: c_int;
       var filesystem_encoding: c_ptr(c_wchar);
+      var site_import: c_int;
+      var user_site_directory: c_int;
       var program_name: c_ptr(c_wchar);
+      var home: c_ptr(c_wchar);
+      var module_search_paths_set: c_int;
+      var module_search_paths: PyWideStringList;
       var executable: c_ptr(c_wchar);
     }
     extern proc PyConfig_Clear(config_: c_ptr(PyConfig));
