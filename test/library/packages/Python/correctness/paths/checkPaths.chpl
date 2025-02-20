@@ -62,11 +62,15 @@ proc getSysPathInterpreter(const ref env: map(string, string) =
                             new map(string, string)) {
   use Python;
 
-  var oldEnv = new map(string, c_ptr(c_char));
+  var oldEnv = new map(string, c_ptrConst(c_char));
   for k in env.keys() {
-    var old = getenv(k.c_str());
+    var old = getenv(k.c_str()):c_ptrConst(c_char);
     if old != nil then oldEnv[k] = old;
-    setenv(k.c_str(), env[k].c_str(), 1);
+    if env[k] != "" {
+      setenv(k.c_str(), env[k].c_str(), 1);
+    } else {
+      setenv(k.c_str(), 0:c_ptrConst(c_char), 1);
+    }
   }
 
   var paths = new list(string);
@@ -96,6 +100,8 @@ proc comparePaths(paths1, paths2) {
   if sortedPaths1.size != sortedPaths2.size {
     writeln("Mismatch in path sizes:", sortedPaths1.size, "vs",
             sortedPaths2.size, sep=" ");
+    writeln("A: ", sortedPaths1);
+    writeln("B: ", sortedPaths2);
     return false;
   }
 
@@ -141,6 +147,7 @@ proc parentUserBase() {
   // add the parent directory of this file as the user base
   var env = new map(string, string);
   env["PYTHONUSERBASE"] = joinPath(try! here.cwd(), "..");
+  env["PYTHONPATH"] = "";
 
   var pathsSpawn = getSysPathSpawn(env);
   var pathsInterpreter = getSysPathInterpreter(env);
