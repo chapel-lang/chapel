@@ -11,7 +11,6 @@
 use CommDiagnostics;
 use IO;
 use CTypes;
-use Time;
 
 // This is a wrapper around the function that we currently use to
 // issue a prefetch. Prefetches via this function are what the CommDiagnostics
@@ -46,6 +45,8 @@ config const numBusyElems = 16; //32*1024; // number of elements in the busy wor
 // passed in to run a specific test case
 proc testCounters(id: int)
 {
+    writef("Running test %i numPrefetches=%i\n", id, numPrefetches);
+
     // The array that is allocated on locale 0. We'll use this as the target of
     // the prefetches that are issued from locale 1.
 
@@ -54,6 +55,8 @@ proc testCounters(id: int)
     // there is no instability in the test.
     const locPtr = allocate(int, numElems, alignment=alignment, clear=true);
     var A = makeArrayFromPtr(locPtr, numElems);
+
+    var StoreVar: int = 0;
 
     //#########################################################################
     //
@@ -66,12 +69,10 @@ proc testCounters(id: int)
     // so that the prefetches complete. That ensures that the waited counter is
     // 0.
     //
-    // Because the comms layer might not be able to know if a request
+    // Because the comms layer might not be able to know if a prefetch request
     // is done until some requests are waited for, wait for an unrelated
     // store (PUT). That way, the counting for the prefetches will indicate
     // that nothing was waited for.
-    // TODO: update the "waited for" logic to include a timer & don't
-    // count it as "waiting" if the time is sufficiently short.
     //
     //#########################################################################
     if id == 1 {
@@ -80,26 +81,20 @@ proc testCounters(id: int)
         //startVerboseComm();
         startCommDiagnostics();
         on Locales[1] {
-            // do one store that we can wait for
-            A[0] = 0;
-
             for i in 1..#numPrefetches {
                 const idx = i*prefetchStride;
                 assert(0 <= idx && idx < numElems);
                 prefetch(A[idx], 1);
             }
 
-            // pause to allow prefetches to complete
-            sleep(1);
+            // do a unrelated store and wait for it
+            // (both to give time for the prefetches to complete
+            //  and to allow the runtime to realize that they are complete)
+            StoreVar = 1;
+            atomicFence(memoryOrder.release); // wait for the store
 
-            // wait for the one store
-            // (otherwise, we will end up waiting for a prefetch
-            //  when evicting, which throws off the counts)
-            atomicFence(memoryOrder.release);
-
-            // force evictions of the pages we prefetched. Since we didn't
-            // access any, this ensures the unused counter is equal to the
-            // number of prefetches we did earlier.
+            // force evictions of the pages we prefetched to
+            // ensure that the prefetch counts are updated.
             for i in 1..#numPrefetches {
                 const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
@@ -112,9 +107,6 @@ proc testCounters(id: int)
         var cache_num_prefetches = res[1].cache_num_prefetches;
         var cache_prefetch_unused = res[1].cache_prefetch_unused;
         var cache_prefetch_waited = res[1].cache_prefetch_waited;
-        //assert(cache_num_prefetches == numPrefetches);
-        //assert(cache_prefetch_unused == numPrefetches);
-        //assert(cache_prefetch_waited == 0);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
         writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
         writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);
@@ -135,24 +127,19 @@ proc testCounters(id: int)
         resetCommDiagnostics();
         startCommDiagnostics();
         on Locales[1] {
-            // do one store that we can wait for
-            A[0] = 0;
-
-            var temp = 0;
             for i in 1..#numPrefetches {
                 const idx = i*prefetchStride;
                 prefetch(A[idx], 1);
             }
 
-            // pause to allow prefetches to complete
-            sleep(1);
-
-            // wait for the one store
-            // (otherwise, we will end up waiting for a prefetch
-            //  when evicting, which throws off the counts)
-            atomicFence(memoryOrder.release);
+            // do a unrelated store and wait for it
+            // (both to give time for the prefetches to complete
+            //  and to allow the runtime to realize that they are complete)
+            StoreVar = 1;
+            atomicFence(memoryOrder.release); // wait for the store
 
             // access "even" prefetches
+            var temp = 0;
             for i in 1..#numPrefetches {
                 const idx = i*prefetchStride;
                 if i % 2 == 0 {
@@ -160,7 +147,8 @@ proc testCounters(id: int)
                     numAccessed += 1;
                 }
             }
-            // force evictions of the pages we prefetched
+            // force evictions of the pages we prefetched to
+            // ensure that the prefetch counts are updated.
             for i in 1..#numPrefetches {
                 const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
@@ -172,9 +160,6 @@ proc testCounters(id: int)
         var cache_num_prefetches = res[1].cache_num_prefetches;
         var cache_prefetch_unused = res[1].cache_prefetch_unused;
         var cache_prefetch_waited = res[1].cache_prefetch_waited;
-        //assert(cache_num_prefetches == numPrefetches);
-        //assert(cache_prefetch_unused == numPrefetches-numAccessed);
-        //assert(cache_prefetch_waited == 0);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
         writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
         writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);          
@@ -198,7 +183,8 @@ proc testCounters(id: int)
                 prefetch(A[idx], 1);
                 temp += A[idx];
             }
-            // force evictions of the pages
+            // force evictions of the pages we prefetched to
+            // ensure that the prefetch counts are updated.
             for i in 0..#numPrefetches {
                 const idx = i*prefetchStride;
                 const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
@@ -210,9 +196,6 @@ proc testCounters(id: int)
         var cache_num_prefetches = res[1].cache_num_prefetches;
         var cache_prefetch_unused = res[1].cache_prefetch_unused;
         var cache_prefetch_waited = res[1].cache_prefetch_waited;
-        //assert(cache_num_prefetches == numPrefetches);
-        //assert(cache_prefetch_unused == 0);
-        //assert(cache_prefetch_waited == numPrefetches);
         writef("\tcache_num_prefetches: %i\n", cache_num_prefetches);
         writef("\tcache_prefetch_unused: %i\n", cache_prefetch_unused);
         writef("\tcache_prefetch_waited: %i\n", cache_prefetch_waited);
@@ -221,7 +204,6 @@ proc testCounters(id: int)
 
 proc main()
 {
-    writef("Running test 1\n");
     testCounters(1);
 
     writef("Running test 2\n");
