@@ -42,7 +42,6 @@ class InitResolver {
     types::QualifiedType qt;
     UniqueString name;
     bool isInitialized;
-    FieldInitState() = default;
   };
 
   enum Phase {
