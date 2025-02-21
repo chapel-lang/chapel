@@ -13,7 +13,7 @@ RUN apt-get update && \
 COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
 
 USER root
-RUN apt-get install -y ./@@{PACKAGE_NAME}
+RUN apt-get update && apt-get install -y ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user
 
