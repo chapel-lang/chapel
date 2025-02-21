@@ -23,6 +23,21 @@ import chpl_platform
 
 DEBUG = False
 
+SKIP_MARKERS = (
+    "[Skipping directory",
+    "[Skipping test",
+    "[Skipping noperf test",
+    "[Skipping notest test",
+    "[Skipping future test",
+    "[Skipping non-future test",
+    "[Skipping future test without a skipif",
+    "[Skipping c test",
+    "[Skipping c++ test",
+    "[Skipping multilocale-only c test",
+    "[Skipping multilocale-only c++ test",
+    "[Skipping interpretation of",
+)
+
 
 def main():
     """Parse cli arguments and convert a start_test log file to jUnit xml
@@ -124,7 +139,7 @@ def _parse_start_test_log(start_test_log):
             test_start_skip, test_end_skip = _get_block(
                 sub_test_lines,
                 '[test: ',
-                '[Skipping')
+                SKIP_MARKERS)
 
             test_skipped = False
             if test_end_skip != -1 and (test_end == -1 or test_end_skip < test_end):
