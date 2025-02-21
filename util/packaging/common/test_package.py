@@ -68,7 +68,7 @@ def add_digest_to_image(docker_os):
         "--format='{{index .RepoDigests 0}}'",
         docker_os
     ]
-    return run_command(cmd)
+    return run_command(cmd).decode("utf-8").strip()
 
 def infer_env_vars(package):
     if "gasnet-udp" in package:
