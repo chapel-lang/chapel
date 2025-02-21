@@ -105,6 +105,14 @@ __build_image() {
 
   pushd ${package_dir}
 
+  # Try to pull the latest version of this image, as a best effort.
+  docker pull $docker_image_base || true
+  # Whether we pulled successfully or not, use the image SHA256 digest to
+  # identify the copy of it we have locally, so build can proceed with an old
+  # version.
+  export DOCKER_IMAGE_NAME_FULL="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
+  echo "Using image digest ${DOCKER_IMAGE_NAME_FULL} for $docker_image_base"
+
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
     ${fill_script} Dockerfile.template
@@ -118,6 +126,7 @@ __build_image() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
+    --build-arg "DOCKER_IMAGE_NAME_FULL=$DOCKER_IMAGE_NAME_FULL" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
