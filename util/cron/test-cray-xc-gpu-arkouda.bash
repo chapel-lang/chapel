@@ -40,4 +40,4 @@ export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD="true"
 module list
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_nightly_correctness
+test_nightly

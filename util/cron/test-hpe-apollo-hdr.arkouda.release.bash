@@ -33,4 +33,4 @@ nightly_args="${nightly_args} -no-buildcheck"
 
 module list
 
-test_release_correctness
+test_release
