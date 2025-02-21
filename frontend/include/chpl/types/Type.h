@@ -356,12 +356,12 @@ class Type {
   struct Dispatcher {
     static ReturnType doDispatch(const Type* t, Visitor& v) {
       switch (t->tag()) {
-        #define CONVERT(NAME) \
+        #define DISPATCH(NAME) \
           case chpl::types::typetags::NAME: { \
             return v.visit((const chpl::types::NAME*) t); \
           }
-        #define TYPE_NODE(NAME) CONVERT(NAME)
-        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) CONVERT(NAME)
+        #define TYPE_NODE(NAME) DISPATCH(NAME)
+        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) DISPATCH(NAME)
         // Do nothing, visitor should provide overloads for parent classes.
         #define TYPE_BEGIN_SUBCLASSES(NAME)
         #define TYPE_END_SUBCLASSES(NAME)
@@ -372,7 +372,7 @@ class Type {
         #undef BUILTIN_TYPE_NODE
         #undef TYPE_BEGIN_SUBCLASSES
         #undef TYPE_END_SUBCLASSES
-        #undef CONVERT
+        #undef DISPATCH
         default: break;
       }
 
@@ -384,13 +384,13 @@ class Type {
   struct Dispatcher<void, Visitor> {
     static void doDispatch(const Type* t, Visitor& v) {
       switch (t->tag()) {
-        #define CONVERT(NAME) \
+        #define DISPATCH(NAME) \
           case chpl::types::typetags::NAME: { \
             v.visit((const chpl::types::NAME*) t); \
             return; \
           }
-        #define TYPE_NODE(NAME) CONVERT(NAME)
-        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) CONVERT(NAME)
+        #define TYPE_NODE(NAME) DISPATCH(NAME)
+        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) DISPATCH(NAME)
         // Do nothing, visitor should provide overloads for parent classes.
         #define TYPE_BEGIN_SUBCLASSES(NAME)
         #define TYPE_END_SUBCLASSES(NAME)
@@ -401,7 +401,7 @@ class Type {
         #undef BUILTIN_TYPE_NODE
         #undef TYPE_BEGIN_SUBCLASSES
         #undef TYPE_END_SUBCLASSES
-        #undef CONVERT
+        #undef DISPATCH
         default: break;
       }
 

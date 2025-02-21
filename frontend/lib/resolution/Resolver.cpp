@@ -380,7 +380,16 @@ Resolver::createForFunction(ResolutionContext* rc,
     decl->traverse(ret);
   }
 
-  // Set the formal types again since the TFS has the final say.
+  // Set the formal types again since we already know what they are
+  // from the 'TypedFnSignature', and they may have changed when
+  // they were resolved again (the real process of resolving formals
+  // in e.g., 'instantiateSignature' is much more complex and one
+  // traversal will not produce the same results).
+  //
+  // TODO: Ideally we preserve the types of formal sub-expressions by
+  // some other means or make it so that re-resolving them in this
+  // manner does not emit errors (perhaps we set a bool flag in the
+  // Resolver to indicate as such).
   setFormalTypesUsingSignature(ret);
 
   if (typedFnSignature->isMethod()) {

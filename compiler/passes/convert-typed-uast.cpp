@@ -80,10 +80,10 @@ using namespace uast;
 
 //
 // The 'typed converter' uses the fully resolved uAST provided by the 'dyno'
-// frontend in order to generate typed legacy AST that is equivalent to the
-// AST produced at the end of the 'callDestructors' pass (with a few
-// deliberate exceptions). It uses recursive functions to perform the
-// conversion.
+// frontend in order to generate typed AST used by the rest of the compiler
+// that is equivalent to the AST produced at the end of the 'callDestructors'
+// pass (with a few deliberate exceptions). It uses recursive functions to
+// perform the conversion.
 //
 // One of the goals of this pass is to (for the functions generated here)
 // completely sidestep the use of the legacy normalizer and resolver.
@@ -93,8 +93,6 @@ using namespace uast;
 // Right now this pass operates on a function-by-function basis. The untyped
 // converter will be invoked on functions in standard/internal modules
 // that are not explicitly represented in the call graph.
-//
-// See private issue #6907 for a meta issue documenting this effort.
 //
 struct TConverter final : UastConverter {
 
@@ -188,31 +186,32 @@ struct TConverter final : UastConverter {
   // convert different functions.
   struct ConvertedSymbolState {
 
-    // The function or module that we are currently converting.
+    // The uAST function or module that we are currently converting.
     const AstNode* symbol = nullptr;
 
-    // When converting functions, this is the 'FnSymbol*'.
+    // When converting functions, this is the AST for the 'FnSymbol*'.
     FnSymbol* fnSymbol = nullptr;
 
-    // The module containing the symbol we are converting.
+    // The AST for the module containing the symbol we are converting.
     ModuleSymbol* moduleSymbol = nullptr;
 
-    // In functions, this is the return variable (if it exists).
+    // In functions, this AST is for the return variable (if it exists).
     Symbol* retVar = nullptr;
 
-    // In functions, this is the epilogue jump label (if it exists).
+    // In functions, this AST is for the epilogue jump label (if it exists).
     LabelSymbol* epilogueLabel = nullptr;
 
-    // When converting functions, this is the 'ResolvedFunction*'.
+    // When converting a uAST function, this is the 'ResolvedFunction*'.
     const ResolvedFunction* resolvedFunction = nullptr;
 
-    // This will be set only when converting default arguments for formals.
+    // This will only be set when converting a call that has default values.
     ActualConverter* actualConverter = nullptr;
 
     // Set to 'true' if this module was loaded from a library file.
     bool moduleFromLibraryFile = false;
 
     // A mapping from 'dyno' symbols to old AST symbols for local variables.
+    // TODO: This won't work for variables declared within a 'param' loop!
     std::unordered_map<ID, Symbol*> localSyms;
 
     // The current insertion point for expressions.
@@ -222,10 +221,8 @@ struct TConverter final : UastConverter {
     ModTag topLevelModTag = MOD_USER;
   };
 
-  // This state is used to drive conversion of call actuals. To support
-  // default arguments, we may need to suspend/resume conversion of the
-  // called function at the same time (in order to convert default values
-  // for formals), kind of like a coroutine.
+  // When a formal has a default-argument value that is used, this type
+  // will help to construct the value and pass it in at the callsite.
   class ActualConverter {
    public:
     // The first component is the converted expression. The second is
@@ -257,10 +254,10 @@ struct TConverter final : UastConverter {
     // State for actuals. Not all slots may be used.
     std::vector<ActualInfo> actualState_;
 
-    // The AST representing the call's location.
+    // The uAST representing the call's location.
     const AstNode* astForCall_ = nullptr;
 
-    // Collected actual ASTs. Do not have to be children of 'astForCall'.
+    // Collected actual uASTs. Do not have to be children of 'astForCall'.
     const std::vector<const AstNode*> actualAsts_;
 
     // The map driving conversion of the call actuals.
@@ -340,7 +337,7 @@ struct TConverter final : UastConverter {
   BlockStmt* scratchSpaceBlock = nullptr;
 
   // TODO: Can we just use 'scratchSpaceBlock' for this?
-  AList* globalInsertionPoint = &theProgram->block->body;
+  AList* globalInsertionPoint = nullptr;
 
   //
   // to keep track of symbols that have been converted & fixups needed
@@ -376,6 +373,7 @@ struct TConverter final : UastConverter {
   TConverter(Context* context) : context(context) {
     SET_LINENO(rootModule);
     scratchSpaceBlock = new BlockStmt();
+    globalInsertionPoint = &theProgram->block->body;
     cur.AList = &scratchSpaceBlock->body;
     untypedConverter = createUntypedConverter(context);
 
@@ -1655,6 +1653,25 @@ VarSymbol* TConverter::findOrCreateVar(const Variable* node) {
   return ret;
 }
 
+//
+// For the following call where 'x', 'y', and 'z' are passed to a single
+// varargs formal 'a'...
+//
+// proc foo(a: ...?n) {}
+// var x, y, z: int;
+// foo(x, y, z);
+//
+// (...The compiler generates the following signature for 'foo'...)
+//
+// proc foo(_e0: int, _e1: int, _e2: int) {}
+//
+// When the original varargs formal 'x' is used in certain ways that require
+// tuple semantics, this function will create a "hidden" temporary tuple out
+// of the formals '_e0'..'_e2' that represents 'x'.
+//
+// This helper function should be called when the "hidden" varargs tuple is
+// required, as the first call will create and initialize the temporary.
+//
 VarSymbol*
 TConverter::findOrCreateHiddenVarArg(const VarArgFormal* node, RV& rv) {
   if (Symbol* sym = findConvertedSym(node->id())) return toVarSymbol(sym);
@@ -1791,79 +1808,6 @@ Type* TConverter::findConvertedType(const types::Type* t) {
 
   return nullptr;
 }
-
-/*
-AggregateType*
-TConverter::findOrCreateClass(const types::BasicClassType* bct) {
-  AggregateType* ret = toAggregateType(findConvertedType(bct));
-  if (ret != nullptr) {
-    return ret;
-  }
-  return ret;
-}
-*/
-/*
-AggregateType*
-TConverter::findOrCreateRecord(const types::RecordType* rt) {
-  AggregateType* ret = toAggregateType(findConvertedType(rt));
-  if (ret != nullptr) {
-    return ret;
-  }
-
-  if (AggregateType* dt = shouldWireWellKnownType(rt->name().c_str())) {
-    return dt;
-  }
-
-  ret = new AggregateType(AGGREGATE_RECORD);
-  convertedTypes[rt] = ret;
-  return ret;
-}
-*/
-/*
-AggregateType*
-TConverter::findOrCreateUnion(const types::UnionType* ut) {
-  AggregateType* ret = toAggregateType(findConvertedType(ut));
-  if (ret != nullptr) {
-    return ret;
-  }
-
-  ret = new AggregateType(AGGREGATE_UNION);
-  convertedTypes[ut] = ret;
-  return ret;
-}
-*/
-
-/*
-// Creates a type but if it's an AggregateType doesn't try to fill
-// in the fields. That will be done later on convertType for that type.
-// This strategy allows for recursion.
-Type* TConverter::findOrCreateType(const types::Type* t) {
-  Type* ret = findConvertedType(t);
-  if (ret != nullptr) {
-    return ret;
-  }
-
-  // Short circuit if we have the name of a wellknown aggregate type.
-  if (auto ct = t->getCompositeType()) { 
-    auto& name = ct->name();
-    if (AggregateType* at = shouldWireWellKnownType(name.c_str())) {
-      return at;
-    }
-  }
-
-
-
-  if (at) {
-    convertedTypes[t] = at;
-  }
-
-  // assumption: all recursion will be through the cases handled above
-
-  ret = helpConvertType(t);
-  convertedTypes[t] = ret;
-  return ret;
-}
-*/
 
 static IF1_complex_type getComplexSize(const types::ComplexType* t) {
   if (t->isDefaultWidth())
@@ -2446,8 +2390,8 @@ struct ConvertDefaultValueHelper {
 
   Expr* visit(const types::ClassType* t) {
     // Note that we use 'nil' regardless of whether or not the class is
-    // non-nilable or not, because we need to produce some sort of
-    // expression in order to maintain the correct AST shape.
+    // non-nilable or not, because non-nilable classes set to 'nil' or
+    // default-initialized should have been caught earlier in compilation.
     return new SymExpr(gNil);
   }
 };
@@ -2900,6 +2844,9 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
 
   // For 'new unmanaged C(...)' it should generate a call to a '_new'
   // function. The actuals are passed along to it down below.
+  //
+  // TODO: Handle management appropriately here (e.g., 'owned').
+  //
   FnSymbol* calledFn = findOrConvertNewWrapper(rf);
   CallExpr* ret = new CallExpr(calledFn);
 
@@ -3246,7 +3193,7 @@ TConverter::ActualConverter::ActualConverter(
   // Use the arity provided by 'fam' since it has already accounted for
   // variable-arity formals such as varargs when computing alignment.
   INT_ASSERT(fam_.isValid());
-  actualState_.resize(fam_.numSlots());
+  actualState_.resize(fam_.numFormalsMapped());
 
   // Determine if the call requires any defaults at all.
   for (auto& fa : fam_.byFormals()) {

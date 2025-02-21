@@ -425,6 +425,7 @@ bool Type::needsInitDeinitCall(const Type* t) {
     // OK, can default-initialize enums to first element
     return false;
   /*
+  // TODO: Wire this up when we reintroduce the FunctionType.
   } else if (t->isFunctionType()) {
     return false;
   */
