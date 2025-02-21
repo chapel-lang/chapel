@@ -1,7 +1,7 @@
 `docker` or `podman` should both work:
 
 ```
-docker build -f util/dockerfiles/github-ci/Dockerfile -t chapel-lang/chapel-github-ci:latest
+docker build -f util/packaging/docker/github-ci/Dockerfile -t chapel-lang/chapel-github-ci:latest util/packaging/docker/github-ci
 # -w working directory
 # -v volume mount
 # -it interactive with tty
