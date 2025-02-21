@@ -26,16 +26,17 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=1
+SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
 fi
 
-GITHUB_USER=bradcray
-GITHUB_BRANCH=enable-localize-domain-opt
-SHORT_NAME=localize-domain
-START_DATE=07/15/24
+# Test performance with the latest qthreads release.
+GITHUB_USER=insertinterestingnamehere
+GITHUB_BRANCH=qthread
+SHORT_NAME=qthread122_apollo
+START_DATE=02/21/2025
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
