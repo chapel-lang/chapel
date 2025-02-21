@@ -77,7 +77,7 @@ fi
 echo "contents of $CHAMPS_HOME"
 ls $CHAMPS_HOME
 
-if [ $CHPL_TARGET_COMPILER == "gnu" ]; then
+if [ "${CHPL_TARGET_COMPILER}" == "gnu" ] ; then
   echo "[Warning: CHPL_TARGET_COMPILER is gnu, some compilations may time out. Prefer CHPL_TARGET_COMPILER=clang]"
 fi
 
