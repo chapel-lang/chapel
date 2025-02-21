@@ -1,4 +1,4 @@
-@@{FROM}
+FROM @@{OS_BASE_IMAGE}
 
 @@{INJECT_BEFORE_DEPS}
 
