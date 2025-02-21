@@ -42,7 +42,7 @@ chpl-language-server: chpl-language-server-venv
 
 test-chpl-language-server: chpl-language-server chpl-language-server-test-venv
 	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		$(CHPL_MAKE_PYTHON) -m pytest test/*.py
+		$(CHPL_MAKE_PYTHON) -m pytest test/*.py --junit-xml=test-chpl-language-server-report.xml
 
 clean: clean-link clean-link-shim clean-pycache
 
