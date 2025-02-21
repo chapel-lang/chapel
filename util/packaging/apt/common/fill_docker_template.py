@@ -13,7 +13,7 @@ substitutions = dict()
 substitutions[
     "FROM"
 ] = """
-ARG DOCKER_IMAGE_NAME_FULL
+ARG DOCKER_IMAGE_NAME_FULL=scratch
 FROM $DOCKER_IMAGE_NAME_FULL AS build
 """
 
