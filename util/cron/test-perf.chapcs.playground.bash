@@ -25,10 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=chapel
-SHORT_NAME=main
-START_DATE=04/04/24
+# Test performance with the latest qthreads release.
+GITHUB_USER=insertinterestingnamehere
+GITHUB_BRANCH=qthread
+SHORT_NAME=qthread122
+START_DATE=02/21/25
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
