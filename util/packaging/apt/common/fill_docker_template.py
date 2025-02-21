@@ -14,7 +14,7 @@ substitutions[
     "FROM"
 ] = """
 ARG DOCKER_IMAGE_NAME_FULL
-FROM $DOCKER_IMAGE_NAME_FULL as build
+FROM $DOCKER_IMAGE_NAME_FULL AS build
 """
 
 substitutions[
