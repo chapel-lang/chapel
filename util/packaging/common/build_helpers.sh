@@ -58,8 +58,12 @@ __build_packages() {
   # Try to pull the latest version of this image, as a best effort.
   docker pull $docker_image_base || true
   # Whether we pulled successfully or not, use the image SHA256 digest to
-  # identify the copy of it we have locally, so build can proceed with an old
-  # version.
+  # identify the copy of it we have locally (if present), so build can proceed
+  # with that version.
+  if [ -z "$(docker image ls -q $docker_image_base)" ]; then
+    echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
+    exit 1
+  fi
   export DOCKER_IMAGE_NAME_FULL="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
   echo "Using image digest ${DOCKER_IMAGE_NAME_FULL} for $docker_image_base"
 
