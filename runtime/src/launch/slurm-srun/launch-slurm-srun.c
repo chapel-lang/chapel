@@ -360,14 +360,24 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // if were running a batch job
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
-    slurmFilename = (char*)chpl_mem_allocMany(
-        (strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1),
-        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+
+    const int filename_size = strlen(baseSBATCHFilename) +
+                              snprintf(NULL, 0, "%d", (int)mypid) + 1;
+
+    if (filename_size <= 0) {
+      chpl_internal_error("An unexpected error occured while computing \
+                          sbatch filename size");
+    }
+
+    slurmFilename = (char*)chpl_mem_allocMany(filename_size, sizeof(char),
+                                              CHPL_RT_MD_FILENAME, -1, 0);
+
     // set the sbatch filename
-    snprintf(slurmFilename, strlen(slurmFilename), "%s%d", baseSBATCHFilename,
-             (int)mypid);
+    const int ret = snprintf(slurmFilename, filename_size, "%s%d",
+                             baseSBATCHFilename, (int)mypid);
 
     // open the batch file and create the header
+
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
 
