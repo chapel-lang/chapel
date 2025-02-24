@@ -64,8 +64,8 @@ __build_packages() {
     echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
     exit 1
   fi
-  export DOCKER_IMAGE_NAME_FULL="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
-  echo "Using image digest ${DOCKER_IMAGE_NAME_FULL} for $docker_image_base"
+  local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
+  echo "Using image digest ${docker_image_name_full} for $docker_image_base"
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
@@ -82,7 +82,7 @@ __build_packages() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
-    --build-arg "DOCKER_IMAGE_NAME_FULL=$DOCKER_IMAGE_NAME_FULL" \
+    --build-arg "DOCKER_IMAGE_NAME_FULL=$docker_image_name_full" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
