@@ -413,11 +413,24 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
             canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
   } else {
-    // never reached, chpl_check_comparator will catch this
-    compilerError(
-      "The comparator ", comparator.type:string,
-      " must implement either 'keyComparator', 'keyPartComparator', or ",
-      "'relativeComparator' for ", t:string);
+    proc baseComparatorType(type c) type {
+      if c == defaultComparator then
+        return c;
+      else if isSubtype(c, reverseComparator) then
+        return baseComparatorType(c.comparator);
+      else
+        return c;
+    }
+    if baseComparatorType(comparator.type) == defaultComparator {
+      compilerError(
+        "The defaultComparator does not support sorting elements of type '",
+        t:string, "'");
+    } else {
+      compilerError(
+        "The comparator ", comparator.type:string,
+        " must implement either 'keyComparator', 'keyPartComparator', or ",
+        "'relativeComparator' for ", t:string);
+    }
   }
 }
 
