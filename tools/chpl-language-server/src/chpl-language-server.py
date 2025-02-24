@@ -180,7 +180,7 @@ class ChplcheckProxy:
 
         chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
         # Add chplcheck to the path, but load via importlib
-        sys.path.append(chplcheck_path)
+        sys.path.insert(0, chplcheck_path)
 
         def load_module(module_name: str) -> Optional[ModuleType]:
             file_path = os.path.join(chplcheck_path, module_name + ".py")
