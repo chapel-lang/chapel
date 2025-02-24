@@ -110,6 +110,7 @@ sub ensureSummaryExists {
 }
 
 sub ensureMysystemlogExists {
+    my $mysystemlog = $_[0];
     if (! -r $mysystemlog) {
         print "Creating $mysystemlog\n";
         `touch $mysystemlog`
