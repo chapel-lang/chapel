@@ -209,6 +209,8 @@ endif
 #
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
+# also squash it for the runtime build to avoid a problem with mpicc
+WARN_CFLAGS += -Wno-error=stringop-overflow
 endif
 
 #
