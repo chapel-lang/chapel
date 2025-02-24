@@ -54,6 +54,11 @@ proc testCounters(id: int)
     // We want it to be aligned to a multiple of pageSize so that
     // there is no instability in the test.
     const locPtr = allocate(int, numElems, alignment=alignment, clear=true);
+    defer {
+      // deallocate the buffer when exiting this function
+      deallocate(locPtr);
+    }
+    // note: the array created in this way does not free the buffer
     var A = makeArrayFromPtr(locPtr, numElems);
 
     var StoreVar: int = 0;
