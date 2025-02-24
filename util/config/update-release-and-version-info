@@ -3,6 +3,7 @@ from enum import Enum
 
 
 # Represents a file or maybe a group of similar files that are updated the same way
+# If you add a new FileUpdater subclass, you should also add it to the updaters map
 class FileUpdater:
 
     class VersionType(Enum):
@@ -277,7 +278,7 @@ def main():
     )
     parser.add_argument(
         "prev_patch_version", type=int, help="The previous patch version of Chapel"
-    )    
+    )
     parser.add_argument(
         "--official-release",
         dest="release",
@@ -286,6 +287,7 @@ def main():
     )
 
     args = parser.parse_args()
+    # MAINTENANCE: Add entries for any new files that need updating
     updaters = {
         "conf.py": ConfPyUpdater,
         "confchpl.rst": ManConfUpdater,
