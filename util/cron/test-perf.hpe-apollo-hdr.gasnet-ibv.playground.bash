@@ -36,7 +36,7 @@ fi
 GITHUB_USER=insertinterestingnamehere
 GITHUB_BRANCH=qthread
 SHORT_NAME=qthread122_apollo
-START_DATE=02/21/2025
+START_DATE=02/21/25
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
