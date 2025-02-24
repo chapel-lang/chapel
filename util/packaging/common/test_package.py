@@ -45,8 +45,8 @@ def infer_docker_os(package):
         "amzn2023": "amazonlinux:2023",
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
-        "debian11": "debian:bullseye",
-        "debian12": "debian:bookworm",
+        "debian11": "debian:11",
+        "debian12": "debian:12",
     }
     for tag, docker in os_tag_to_docker.items():
         if ".{}.".format(tag) in package:
