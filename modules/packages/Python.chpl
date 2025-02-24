@@ -866,6 +866,8 @@ module Python {
         return toList(val);
       } else if isSubtype(t, Set.set) {
         return toSet(val);
+      } else if isSubtype(t, Map.map) {
+        return toDict(val);
       } else if isSubtype(t, Value) {
         Py_INCREF(val.getPyObject());
         return val.getPyObject();
@@ -952,6 +954,8 @@ module Python {
         return fromList(t, obj);
       } else if isSubtype(t, Set.set) {
         return fromSet(t, obj);
+      } else if isSubtype(t, Map.map) {
+        return fromDict(t, obj);
       } else if isSubtype(t, Function?) {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
@@ -1157,7 +1161,22 @@ module Python {
       return pyDict;
     }
 
-    // TODO: convert chapel map to python dict
+    /*
+      Convert a chapel map to a python dict.  Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toDict(m: Map.map(?)): PyObjectPtr throws {
+      var pyDict = PyDict_New();
+      this.checkException();
+      for key in m.keys() {
+        var pyKey = toPython(key);
+        var pyValue = toPython(m[key]);
+        PyDict_SetItem(pyDict, pyKey, pyValue);
+        Py_DECREF(pyValue);
+        this.checkException();
+      }
+      return pyDict;
+    }
 
     /*
       Converts a python dictionary to an associative array.
@@ -1192,7 +1211,34 @@ module Python {
       return arr;
     }
 
-    // TODO: convert python dict to chapel map
+    /*
+      Converts a python dictionary to a chapel map.  Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromDict(type T, obj: PyObjectPtr): T throws
+      where isSubtype(T, Map.map) {
+      var m = new T();
+      type keyType = m.keyType;
+      type valType = m.valType;
+
+      var keys = PyDict_Keys(obj);
+      defer Py_DECREF(keys);
+      this.checkException();
+      for i in 0..<PyList_Size(keys) {
+        var key = PyList_GetItem(keys, i);
+        this.checkException();
+        var val = PyDict_GetItem(obj, key);
+        this.checkException();
+
+        Py_INCREF(key);
+        var keyVal = this.fromPython(keyType, key);
+        Py_INCREF(val);
+        m.add(keyVal, this.fromPython(valType, val));
+      }
+
+      Py_DECREF(obj);
+      return m;
+    }
 
   }
 
@@ -1257,6 +1303,8 @@ module Python {
       Py_DECREF(exc);
       if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
         return new ImportError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_KeyError) != 0 {
+        return new KeyError(str);
       } else {
         throw new PythonException(str);
       }
@@ -1276,6 +1324,15 @@ module Python {
     Represents a BufferError in the Python code
   */
   class BufferError: PythonException {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+
+  /*
+    Represents a KeyError in the Python code
+  */
+  class KeyError: PythonException {
     proc init(in message: string) {
       super.init(message);
     }
@@ -1977,6 +2034,111 @@ module Python {
   }
 
   /*
+    Represents a Python dict. This provides a Chapel interface to Python dicts,
+    where the Python interpreter owns the dict.
+  */
+  class PyDict: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+
+    /*
+      Get the size of the dict. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the dict.
+    */
+    proc size: int throws {
+      var size = PyDict_Size(this.getPyObject());
+      this.check();
+      return size;
+    }
+
+    /*
+      Get an item from the dict. Equivalent to calling ``obj[key]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg key: The key of the item to get.
+      :returns: The item at the given key.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, key: ?): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, key: ?): T throws {
+      var item = PyDict_GetItem(this.getPyObject(), interpreter.toPython(key));
+      this.check();
+      Py_INCREF(item);
+      return interpreter.fromPython(T, item);
+    }
+    @chpldoc.nodoc
+    proc get(key: ?): owned Value throws do
+      return this.get(owned Value, key);
+
+    /*
+      Set an item in the dict. Equivalent to calling ``obj[key] = item`` in
+      Python.
+
+      :arg key: The key of the item to set.
+      :arg item: The item to set.
+    */
+    proc set(key: ?, item: ?) throws {
+      var val = interpreter.toPython(item);
+      PyDict_SetItem(this.getPyObject(), interpreter.toPython(key),
+                     val);
+      Py_DECREF(val);
+      this.check();
+    }
+
+    /*
+      Delete an item from the dict.  Equivalent to calling ``del obj[key]`` in
+      Python.
+
+      :arg key: The key of the item to delete.
+
+      :throws KeyError: If the key did not exist in the dict.
+    */
+    proc del(key: ?) throws {
+      PyDict_DelItem(this.getPyObject(), interpreter.toPython(key));
+      this.check();
+    }
+
+    /*
+      Remove all elements from the dict.  Equivalent to calling ``obj.clear()``
+      in Python.
+    */
+    proc clear() throws {
+      PyDict_Clear(this.getPyObject());
+      this.check();
+    }
+
+    /*
+      Perform a shallow copy into a new dict.  Equivalent to calling
+      ``obj.copy()`` in Python.
+    */
+    proc copy(): PyDict throws {
+      var c = PyDict_Copy(this.getPyObject());
+      this.check();
+      return new PyDict(this.interpreter, c);
+    }
+
+    /*
+      Check if an item is in the dict.  Equivalent to calling ``item in obj`` in
+      Python.
+
+      :arg key: The key to check for membership in the dict.
+    */
+    proc contains(key: ?): bool throws {
+      var result = PyDict_Contains(this.getPyObject(),
+                                   interpreter.toPython(key));
+      this.check();
+      return result: bool;
+    }
+  }
+
+  /*
     Represents a Python set. This provides a Chapel interface to Python sets,
     where the Python interpreter owns the set.
   */
@@ -2383,6 +2545,7 @@ module Python {
   Module implements writeSerializable;
   Class implements writeSerializable;
   PyList implements writeSerializable;
+  PyDict implements writeSerializable;
   PySet implements writeSerializable;
   Array implements writeSerializable;
   NoneType implements writeSerializable;
@@ -2405,6 +2568,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc PyList.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyDict.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -2586,6 +2753,7 @@ module Python {
     extern proc PyErr_GivenExceptionMatches(given: PyObjectPtr,
                                             exc: PyObjectPtr): c_int;
     extern const PyExc_ImportError: PyObjectPtr;
+    extern const PyExc_KeyError: PyObjectPtr;
 
     /*
       Values
@@ -2672,6 +2840,7 @@ module Python {
       Dictionaries
     */
     extern proc PyDict_New(): PyObjectPtr;
+    extern proc PyDict_Contains(dict: PyObjectPtr, key: PyObjectPtr): c_int;
     extern proc PyDict_SetItem(dict: PyObjectPtr,
                                key: PyObjectPtr,
                                value: PyObjectPtr);
@@ -2682,7 +2851,11 @@ module Python {
                                key: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_GetItemString(dict: PyObjectPtr,
                                      key: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyDict_DelItem(dict: PyObjectPtr,
+                               key: PyObjectPtr);
     extern proc PyDict_Size(dict: PyObjectPtr): Py_ssize_t;
+    extern proc PyDict_Clear(dict: PyObjectPtr);
+    extern proc PyDict_Copy(dict: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,

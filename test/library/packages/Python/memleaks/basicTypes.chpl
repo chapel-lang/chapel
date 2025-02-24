@@ -1,4 +1,4 @@
-use Python, List;
+use Python, List, Map;
 
 config const print = false;
 var interp = new Interpreter();
@@ -69,6 +69,15 @@ proc main() {
   { // assoc arrays
     var assoc = ["foo" => "bar", "baz" => "qux"];
     testType(assoc.type, assoc);
+  }
+
+  { // maps
+    var m = new map(string, int);
+    m.add("one", 1);
+    m.add("two", 2);
+    m.add("three", 3);
+
+    testType(m.type, m);
   }
 
 }

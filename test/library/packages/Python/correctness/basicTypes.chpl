@@ -2,6 +2,7 @@ use Python;
 import Reflection;
 import List;
 import Set;
+import Map;
 
 config const print = false;
 
@@ -38,6 +39,11 @@ proc roundTripFunction(func: borrowed) {
     s.add(i);
   }
   testType(s.type, s);
+  var m = new Map.map(int, int);
+  for i in arr {
+    m.add(i, i*2);
+  }
+  testType(m.type, m);
 
 }
 proc roundTripClass(clsType: borrowed) {
@@ -88,6 +94,11 @@ proc roundTripClass(clsType: borrowed) {
   }
   testType(s.type, s, new Set.set(int));
 
+  var m = new Map.map(int, int);
+  for i in arr {
+    m.add(i, i*2);
+  }
+  testType(m.type, m, new Map.map(int, int));
 }
 
 proc main() {
