@@ -118,7 +118,7 @@ def _parse_start_test_log(start_test_log):
     logging.debug('Read {0} lines from "{1}".'.format(
         len(start_test_lines), start_test_log))
 
-    # I order to catch all test results we can despite sub_test failures,
+    # In order to catch all test results we can despite sub_test failures,
     # the code below deliberately accepts empty or non-empty "Error running sub_test"
     # blocks. But they are reported again in the summary. To avoid duplicates,
     # we keep track of the sub_test failures we have seen.
