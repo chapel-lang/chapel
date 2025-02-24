@@ -1242,7 +1242,7 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   struct cache_entry_s* next;
 
   DEBUG_PRINT(("%d: Removing %p element %p\n", chpl_nodeID,
-               (void*) element->raddr, element));
+               (void*) element->base.raddr, element));
 
   raddr = element->base.raddr;
   node = element->base.node;
@@ -1395,9 +1395,11 @@ void ain_evict(struct rdcache_s* cache,
 
     // "lock"ed entry y
 
+    INFO_PRINT(("%i ain_evict %p\n", (int) chpl_nodeID, (void*) y->base.raddr));
+
 #ifdef DEBUG
-    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
-    cache_entry_print( y, " ain evict ", 1);
+    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->base.raddr));
+    cache_entry_print( cache, y, " ain evict ", 1);
     rdcache_print(cache);
 #endif
     // If the entry in Ain has any pending/dirty requests, we must
@@ -1948,6 +1950,10 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       // (this could cause a different task body to run)
       chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
 
+      // TODO: set 'waited=true' only if the time elapsed is sufficiently
+      // long. The comms layer might need wait_nb_some to be called in order
+      // to realize anything is completed, even though the network part is
+      // already done.
       waited = true;
 
       if (EXTRA_YIELDS) {
@@ -2106,7 +2112,7 @@ void flush_entry(struct rdcache_s* cache,
           start = got_skip;
           // Start a put for len bytes starting at page + start
           DEBUG_PRINT(("chpl_comm_start_put(%p, %i, %p, %i)\n",
-                 page+start, entry->base.node, (void*) (entry->raddr+start),
+                 page+start, entry->base.node, (void*) (entry->base.raddr+start),
                  (int) got_len));
 
           // Note: chpl_comm_put_nb, pending_push can yield
@@ -2681,11 +2687,11 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
 
   if( len == 0 ) return;
 
-  INFO_PRINT(("%i trigger readahead(%i, %p, %p, %i, %i, %i, %i)\n",
+  INFO_PRINT(("%i trigger readahead(%i, %p, %p, %i, %i, %i)\n",
               (int) chpl_nodeID, (int) node,
               (void*) page_raddr, (void*) request_raddr,
               (int) request_size,
-              (int) skip, (int) len, (int) last_acquire));
+              (int) skip, (int) len));
 
   // If we are accessing a page that has a readahead condition,
   // trigger that readahead.
@@ -3056,7 +3062,8 @@ int cache_get_in_page(struct rdcache_s* cache,
   // Now we need to start a get into page.
   // We'll get within ra_page from ra_line to ra_line_end.
   INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
-               (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+               (int) chpl_nodeID,
+               entry->page+(ra_line-ra_page), node, (void*) ra_line,
                (int) (ra_line_end - ra_line)));
 
   // Note: chpl_comm_get_nb could cause a different task body to run.
@@ -3134,7 +3141,7 @@ int cache_get_in_page(struct rdcache_s* cache,
   if( ENABLE_READAHEAD && readahead_len ) {
 
     INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
-                 (int) chpl_nodeID, (int) node, (void*) entry->raddr,
+                 (int) chpl_nodeID, (int) node, (void*) entry->base.raddr,
                  (int) readahead_skip, (int) readahead_len));
 
     entry->readahead_skip = readahead_skip;
@@ -3330,8 +3337,8 @@ int mock_get(struct rdcache_s* cache,
 #endif
   int all_in_cache;
 
-  INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
-               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+  INFO_PRINT(("%i mock_get from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
   if (chpl_nodeID == node)
     return 1;
@@ -3558,7 +3565,7 @@ void cache_invalidate(struct rdcache_s* cache,
   raddr_t requested_start, requested_end, requested_size;
 
   DEBUG_PRINT(("invalidate from %i:%p len %i\n",
-               (int) node, raddr, (int) size));
+               (int) node, (void*) raddr, (int) size));
 
   if (chpl_nodeID == node) {
     // Do nothing if we're on the same node.
@@ -3759,7 +3766,8 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 
   if( acquire == 0 && release == 0 ) return;
 
-  INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
+  INFO_PRINT(("%i fence acquire %i release %i %s:%i\n",
+              chpl_nodeID, acquire, release, chpl_lookupFilename(fn), ln));
 
   TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
                      " on cache %p from %s:%d\n",
