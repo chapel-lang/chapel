@@ -2,4 +2,4 @@
 
 from ctypes.util import find_library
 
-print (find_library('hdfs') is None)
+print ((find_library('hdfs') is None) or (find_library('jvm') is None))
