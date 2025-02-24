@@ -43,7 +43,7 @@ sub nightly_email_file{
     # Nothing sorts the system log for us; do that now, so that 'comm' is
     # given a lexically sorted input as it expects.
     $sortedmysystemlog = $mysystemlog . ".sorted";
-    `LC_ALL=C sort $mysystemlog > $sortedmysystemlog`;
+    `LC_ALL=C sort $mysystemlog | grep -v '^\\s*\$' > $sortedmysystemlog`;
 
     # Ensure the "previous" summary exists, e.g. if this is the first run of the
     # configuration they won't.

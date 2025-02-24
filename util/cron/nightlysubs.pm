@@ -26,6 +26,19 @@ sub mysystem {
     $onerror = $_[2];
     $showcommand = $_[3];
 
+    my $shouldExitOnError = $onerror eq $exitOnError;
+    my $shouldIgnoreErrors = $onerror eq $ignoreErrors;
+    my $shouldWriteToFile = !$shouldExitOnError && !$shouldIgnoreErrors;
+
+    # Save the command into a file if we're emailing about it, so that
+    # we have a clean list of commands that were run.
+    # We can then compare it against the list of errors and generate a report.
+    if ($shouldWriteToFile) {
+        open(my $SF, '>>', "$onerror.clean") or die "Could not open file '$onerror.clean' $!";
+        print $SF "Running $errorname: $command\n";
+        close($SF);
+    }
+
     if ($showcommand) { print "Executing $command\n"; }
     my $status = system($command);
     if ($status != 0) {
@@ -38,11 +51,17 @@ sub mysystem {
             exit 1;
         } elsif ($onerror eq $ignoreErrors) {
             # Do nothing
-        } else {
-            open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";
-            print $SF "Error $errorname: $status\n";
-            close($SF);
         }
+    }
+
+    if ($shouldWriteToFile) {
+        my $toWrite = "\n";
+        if ($status != 0) {
+            $toWrite = "Error when running $errorname (code $status)\n";
+        }
+        open(my $SF, '>>', "$onerror") or die "Could not open file '$onerror' $!";
+        print $SF $toWrite;
+        close($SF);
     }
     $status;
 }
@@ -91,7 +110,6 @@ sub ensureSummaryExists {
 }
 
 sub ensureMysystemlogExists {
-    $mysystemlog = $_[0];
     if (! -r $mysystemlog) {
         print "Creating $mysystemlog\n";
         `touch $mysystemlog`

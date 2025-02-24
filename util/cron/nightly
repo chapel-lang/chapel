@@ -457,7 +457,9 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 $mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
+unlink("$mysystemlog.clean"); # the file gets appended to, so clear it first.
 ensureMysystemlogExists($mysystemlog); # empty (vs nonexistent) file is easier to compare against
+ensureMysystemlogExists("$mysystemlog.clean"); # also create a 'clean' file which lists all the commands so that we can generate JUnit report.
 $prevmysystemlog = "$cronlogdir/last-mysystemerrs-$config_name.txt";
 
 
@@ -799,10 +801,13 @@ if ($runtests == 0) {
 
     $endtime = localtime;
 
-    # Incorporate test results from the language server into the JUnit XML report
+#
+# Incorporate test results from the language server into the JUnit XML report
+#
     if ($junit_xml == 1 and $chplLanguageServer == 1) {
         mysystem("cd $chplhomedir && ./util/test/merge_junit_xmls chapel-tests.xml tools/chpl-language-server/test-chpl-language-server-report.xml", "incorporating CLS JUnit results", $ignoreErrors);
     }
+
 #
 # Sync performance graphs to dreamhost.
 #
@@ -883,6 +888,15 @@ if ($runtests == 0) {
             mysystem($rsyncCommand, $rsyncMessage , $emailOnError, 1);
         }
     }
+
+#
+# Generate a new JUnit XML report for any failures that occurred in the
+# $mysystemlog (and thus should be emailed about). This way, we can make the
+# job status "unstable".
+#
+
+    mysystem("cd $chplhomedir && ./util/test/convert_nightly_system_command_log_to_junit_xml.py $mysystemlog.clean $mysystemlog mysystemlog.xml", "generating JUnit results from system commands", $ignoreErrors);
+    mysystem("cd $chplhomedir && ./util/test/merge_junit_xmls chapel-tests.xml mysystemlog.xml", "incorporating JUnit results from system commands", $ignoreErrors);
 
 # FIXME: Pass correct args here!
      # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
