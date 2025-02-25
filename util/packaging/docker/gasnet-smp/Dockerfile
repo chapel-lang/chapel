@@ -1,13 +1,13 @@
 FROM chapel/chapel:latest
 
-ENV CHPL_COMM gasnet
-ENV CHPL_COMM_SUBSTRATE smp
-ENV CHPL_RT_OVERSUBSCRIBED yes
+ENV CHPL_COMM=gasnet
+ENV CHPL_COMM_SUBSTRATE=smp
+ENV CHPL_RT_OVERSUBSCRIBED=yes
 
 # By default GASNet will use POSIX shared memory, whose memory allocations
 # reside in /dev/shm. The default /dev/shm size for docker is only 64MB, which
 # is far too small for us, so use the SystemV implementation instead.
-ENV CHPL_GASNET_MORE_CFG_OPTIONS "--disable-pshm-posix --enable-pshm-sysv"
+ENV CHPL_GASNET_MORE_CFG_OPTIONS="--disable-pshm-posix --enable-pshm-sysv"
 
 RUN CHPL_TARGET_COMPILER=llvm make -C $CHPL_HOME \
     && CHPL_TARGET_COMPILER=gnu make -C $CHPL_HOME \
