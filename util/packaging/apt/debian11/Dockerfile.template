@@ -1,4 +1,4 @@
-FROM debian:bullseye AS build
+@@{FROM}
 
 @@{ARGUMENTS}
 
