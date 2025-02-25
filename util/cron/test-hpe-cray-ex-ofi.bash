@@ -14,6 +14,6 @@ export CHPL_RT_MAX_HEAP_SIZE=16g
 
 # test a small subset of all tests due to limited resources
 # ideally, we should run the whole suite
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/ runtime/configMatters/ test/multilocale"
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/ runtime/configMatters/ multilocale/"
 
 $UTIL_CRON_DIR/nightly -cron -blog ${nightly_args}
