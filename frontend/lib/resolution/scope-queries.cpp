@@ -1424,7 +1424,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
   // fetch the receiver's scope now, and push it into the list.
   const MethodLookupHelper* rcvScopes = nullptr;
   if (scope->isMethodScope() && receiverScopeHelper != nullptr) {
-    auto rcvScopes =
+    rcvScopes =
       receiverScopeHelper->methodLookupForMethodId(context, scope->id());
 
     if (rcvScopes && receiversForTertiaryLookup) {
