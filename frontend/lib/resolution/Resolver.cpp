@@ -3146,20 +3146,6 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
 }
 
-const types::CompositeType*
-Resolver::checkIfReceiverIsManagerRecord(Context* context,
-                                         const types::ClassType* ct,
-                                         ID& parentId) {
-  if (ct) {
-    if (auto mr = ct->managerRecordType(context)) {
-      if (mr->id() == parentId) {
-        return mr;
-      }
-    }
-  }
-  return nullptr;
-}
-
 void Resolver::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(scopeForId(context, ast->id()));
@@ -3920,6 +3906,53 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
   return result;
 }
 
+static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
+                                                const QualifiedType& type,
+                                                const ID& id,
+                                                const Identifier* ident) {
+  // now, for a type that is generic with defaults,
+  // compute the default version when needed. e.g.
+  //   record R { type t = int; }
+  //   var x: R; // should refer to R(int)
+  bool computeDefaults = true;
+  bool resolvingCalledIdent = rv.nearestCalledExpression() == ident;
+
+  // For calls like
+  //
+  //   type myType = anotherType(int)
+  //
+  // Use the generic version of anotherType to feed as receiver.
+  if (resolvingCalledIdent) {
+    computeDefaults = false;
+  }
+
+  // If we're referring to variable-ish thing, don't instantiate
+  // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
+  // Peformance: finding the parent tag is pretty expensive. Can we fold
+  // the knowledge into IdAndFlags?
+  if (id && asttags::isVarLikeDecl(parsing::idToTag(rv.context, id))) {
+    computeDefaults = false;
+  }
+
+  // Other special exceptions like 'r' in:
+  //
+  //  proc r.init() { ... }
+  //
+  if (!rv.genericReceiverOverrideStack.empty()) {
+    auto& topEntry = rv.genericReceiverOverrideStack.back();
+    if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
+        topEntry.second == parsing::parentAst(rv.context, ident)) {
+      computeDefaults = false;
+    }
+  }
+
+  if (computeDefaults) {
+    return computeTypeDefaults(rv, type);
+  }
+
+  return type;
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
@@ -4057,6 +4090,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     } else if (id.isEmpty()) {
       setToBuiltin(result, ident->name());
+      result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
       return;
     }
 
@@ -4082,45 +4116,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     maybeEmitWarningsForId(this, type, ident, id);
 
     if (type.kind() == QualifiedType::TYPE) {
-      // now, for a type that is generic with defaults,
-      // compute the default version when needed. e.g.
-      //   record R { type t = int; }
-      //   var x: R; // should refer to R(int)
-      bool computeDefaults = true;
-      bool resolvingCalledIdent = nearestCalledExpression() == ident;
-
-      // For calls like
-      //
-      //   type myType = anotherType(int)
-      //
-      // Use the generic version of anotherType to feed as receiver.
-      if (resolvingCalledIdent) {
-        computeDefaults = false;
-      }
-
-      // If we're referring to variable-ish thing, don't instantiate
-      // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
-      // Peformance: finding the parent tag is pretty expensive. Can we fold
-      // the knowledge into IdAndFlags?
-      if (asttags::isVarLikeDecl(parsing::idToTag(context, id))) {
-        computeDefaults = false;
-      }
-
-      // Other special exceptions like 'r' in:
-      //
-      //  proc r.init() { ... }
-      //
-      if (!genericReceiverOverrideStack.empty()) {
-        auto& topEntry = genericReceiverOverrideStack.back();
-        if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
-            topEntry.second == parsing::parentAst(context, ident)) {
-          computeDefaults = false;
-        }
-      }
-
-      if (computeDefaults) {
-        type = computeTypeDefaults(*this, type);
-      }
+      type = computeDefaultsIfNecessary(*this, type, id, ident);
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
       CHPL_ASSERT(scopeResolveOnly && "resolution of parenless functions should've happened above");
