@@ -27,7 +27,7 @@ def main():
     launchcmd = os.path.join(chpl_home, "util", "test", "chpl_launchcmd.py")
     outfile = os.path.join(d, "hello.exec.tmp")
     with open(outfile, "w") as f:
-        ret = sp.call([launchcmd, "./hello", "-nl2"], stdout=f, stderr=sp.STDOUT)
+        ret = sp.call([launchcmd, "./hello", "-nl", "2"], stdout=f, stderr=sp.STDOUT)
     if ret != 0:
         print("[Error running hello.chpl]")
         sys.exit(1)
