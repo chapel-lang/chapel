@@ -1,0 +1,3 @@
+# for slurm launchers, use sbatch
+# otherwise, setting this environment variable should do nothing
+CHPL_LAUNCHER_USE_SBATCH=1
