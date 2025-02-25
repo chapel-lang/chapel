@@ -11,12 +11,15 @@ def main():
     if chpl_home is None:
         print("[Error: CHPL_HOME not set]")
         sys.exit(1)
+    
+    bin_subdir=sp.check_output([os.path.join(chpl_home, "util", "chplenv", "chpl_bin_subdir.py")], encoding='utf-8').strip()
+    chpl = os.path.join(chpl_home, "bin", bin_subdir, "chpl")
 
     # force this test to use sbatch
     os.environ["CHPL_LAUNCHER_USE_SBATCH"] = "true"
 
     # compile hello.chpl and run it using chpl_launchcmd
-    ret = sp.call(["chpl", "-o", "hello", "hello.chpl"])
+    ret = sp.call([chpl, "-o", "hello", "hello.chpl"])
     if ret != 0:
         print("[Error compiling hello.chpl]")
         sys.exit(1)
