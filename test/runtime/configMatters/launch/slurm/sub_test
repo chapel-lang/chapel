@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess as sp
+import sys
+
+def main():
+    print("[Starting subtest]")
+    d = os.path.dirname(os.path.abspath(__file__))
+    chpl_home = os.getenv("CHPL_HOME")
+    if chpl_home is None:
+        print("[Error: CHPL_HOME not set]")
+        sys.exit(1)
+
+    # force this test to use sbatch
+    os.environ["CHPL_LAUNCHER_USE_SBATCH"] = "true"
+
+    # compile hello.chpl and run it using chpl_launchcmd
+    ret = sp.call(["chpl", "-o", "hello", "hello.chpl"])
+    if ret != 0:
+        print("[Error compiling hello.chpl]")
+        sys.exit(1)
+    
+    launchcmd = os.path.join(chpl_home, "util", "test", "chpl_launchcmd.py")
+    outfile = os.path.join(d, "hello.exec.tmp")
+    with open(outfile, "w") as f:
+        ret = sp.call([launchcmd, "./hello", "-nl2"], stdout=f, stderr=sp.STDOUT)
+    if ret != 0:
+        print("[Error running hello.chpl]")
+        sys.exit(1)
+
+    # check that the output is as expected
+    goodfile = os.path.join(d, "hello.good")
+    ret = sp.call(["diff", goodfile, outfile])
+    if ret != 0:
+        print("[Error matching good file]")
+        sys.exit(1)
+    
+    print("[Success matching hello.chpl output]")
+
+    print("[Finished subtest {}]".format(d))
+
+def cleanup(ret):
+    def rm(file):
+        try:
+            os.unlink(file)
+        except:
+            pass
+    
+    rm("hello")
+    # only delete good file on success
+    if ret == 0:
+        rm("hello.exec.tmp")
+
+if __name__ == "__main__":
+    ret = main()
+    cleanup(ret)
+
+    sys.exit(ret)
