@@ -260,6 +260,11 @@ struct ParserContext {
   AstList consumeList(ParserExprList* lst);
   AstList consume(AstNode* e);
 
+  ParserNDArrayList* makeNDArrayList();
+  ParserNDArrayList* appendNDArrayList(ParserNDArrayList* dst,
+                                       NDArrayElement e);
+  Array* buildNDArray(YYLTYPE location, ParserNDArrayList* lst);
+
   void consumeNamedActuals(MaybeNamedActualList* lst,
                            AstList& actualsOut,
                            std::vector<UniqueString>& namesOut);

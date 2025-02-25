@@ -758,6 +758,57 @@ AstList ParserContext::consume(AstNode* e) {
   return ret;
 }
 
+ParserNDArrayList* ParserContext::makeNDArrayList() {
+  return new ParserNDArrayList();
+}
+ParserNDArrayList* ParserContext::appendNDArrayList(ParserNDArrayList* dst,
+                                                    NDArrayElement e) {
+  dst->push_back(e);
+  return dst;
+}
+
+static inline AstList buildArrayRows(ParserContext* context, ParserNDArrayList* lst,
+                                     Location location, int start, int stop) {
+  CHPL_ASSERT(start <= stop);
+  if (start == stop) {
+    // there is a single row, so just return it
+    return context->consumeList((*lst)[start].exprs);
+  }
+
+  // find the largest number of consecutive sep
+  int maxSep = 0;
+  for (int i = start; i <= stop; i++) {
+    maxSep = std::max(maxSep, (*lst)[i].nSeparator);
+  }
+  CHPL_ASSERT(maxSep > 0);
+
+  // iterate through the list from start to stop, each time we find a maxSep
+  // recurse on the sublist from the last maxSep to the current element
+  AstList ret;
+  int start_ = start;
+  for (int i = start_; i <= stop; i++) {
+    if ((*lst)[i].nSeparator == maxSep) {
+      auto newRows = buildArrayRows(context, lst, location, start_, i-1);
+      ret.push_back(ArrayRow::build(context->builder, location, std::move(newRows)));
+      start_ = i+1;
+    }
+  }
+  // add the last row
+  auto newRows = buildArrayRows(context, lst, location, start_, stop);
+  ret.push_back(ArrayRow::build(context->builder, location, std::move(newRows)));
+
+  return ret;
+}
+Array* ParserContext::buildNDArray(YYLTYPE location, ParserNDArrayList* lst) {
+  CHPL_ASSERT(lst->size() > 0);
+  auto loc = convertLocation(location);
+
+  AstList rows = buildArrayRows(this, lst, loc, 0, lst->size()-1);
+  return Array::build(builder, loc, std::move(rows)).release();
+}
+
+
+
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
                                         AstList& actualsOut,
                                         std::vector<UniqueString>& namesOut) {
