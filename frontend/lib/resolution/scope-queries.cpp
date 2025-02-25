@@ -854,7 +854,7 @@ LookupResult LookupHelper::doLookupInImportsAndUses(
           || is.kind() == VisibilitySymbols::ALL_CONTENTS
           || is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         searchScope = true;
-      } if (receiversForTertiaryLookup) {
+      } else if (receiversForTertiaryLookup) {
         for (auto receiver : *receiversForTertiaryLookup) {
           if (receiver->shouldCheckForTertiaryMethods(context, &is)) {
             searchScope = true;

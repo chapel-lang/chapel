@@ -199,7 +199,8 @@ const ResolvedExpression& resolveNameInModule(Context* context,
   ResolutionContext rcval(context);
   const AstNode* ast = parsing::idToAst(context, modId);
   CHPL_ASSERT(ast != nullptr && ast->isModule());
-  auto res = Resolver::createForModuleStmt(&rcval, ast->toModule(), ast, ignored);
+  auto res = Resolver::createForModuleStmt(&rcval, ast->toModule(), /* modStmt */ nullptr, ignored);
+  res.allowLocalSearch = false;
   auto result = res.resolveNameInModule(name);
 
   return QUERY_END(result);

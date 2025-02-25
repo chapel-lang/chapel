@@ -90,6 +90,7 @@ struct Resolver {
   const uast::Decl* ignoreSubstitutionFor = nullptr;
   bool skipTypeQueries = false;
   bool usePlaceholders = false;
+  bool allowLocalSearch = true;
 
   // internal variables
   ResolutionContext emptyResolutionContext;

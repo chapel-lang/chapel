@@ -2983,8 +2983,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
   }
 
-  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
-                         !id.isSymbolDefiningScope());
+  bool useLocalResult = allowLocalSearch &&
+                        (id.symbolPath() == symbol->id().symbolPath() &&
+                        !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
       // OK, proceed using local result
