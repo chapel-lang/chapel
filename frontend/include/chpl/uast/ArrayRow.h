@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ARRAY_H
-#define CHPL_UAST_ARRAY_H
+#ifndef CHPL_UAST_ARRAY_ROW_H
+#define CHPL_UAST_ARRAY_ROW_H
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
@@ -27,66 +27,38 @@ namespace chpl {
 namespace uast {
 
 
-/**
-  This class represents an array expression. For example:
-
-  \rst
-  .. code-block:: chapel
-
-      // Example 1:
-      var a = [ 1, 2, 3 ];
-
-  \endrst
-
-  An array expression will never contain comments.
- */
-class Array final : public AstNode {
+class ArrayRow final : public AstNode {
  friend class AstNode;
 
  private:
-  bool trailingComma_,
-       associative_;
 
-  Array(AstList children, bool trailingComma, bool associative)
-    : AstNode(asttags::Array, std::move(children)),
-      trailingComma_(trailingComma),
-      associative_(associative) {
+  ArrayRow(AstList children)
+    : AstNode(asttags::ArrayRow, std::move(children)) {
   }
 
   void serializeInner(Serializer& ser) const override {
-    ser.write(trailingComma_);
-    ser.write(associative_);
   }
 
-  explicit Array(Deserializer& des)
-    : AstNode(asttags::Array, des) {
-    trailingComma_ = des.read<bool>();
-    associative_ = des.read<bool>();
+  explicit ArrayRow(Deserializer& des)
+    : AstNode(asttags::ArrayRow, des) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const Array* rhs = other->toArray();
-    return this->trailingComma_ == rhs->trailingComma_ &&
-           this->associative_ == rhs->associative_;
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  void dumpInner(const DumpSettings& s) const;
+  // void dumpInner(const DumpSettings& s) const;
 
  public:
-  ~Array() override = default;
+  ~ArrayRow() override = default;
 
   /**
-   Create and return an Array expression.
+   Create and return an ArrayRow expression.
    */
-  static owned<Array> build(Builder* builder, Location loc,
-                            AstList exprs, bool trailingComma=false,
-                            bool associative=false);
-
-  bool hasTrailingComma() const { return this->trailingComma_; }
-  bool isAssociative() const { return this->associative_; }
+  static owned<ArrayRow> build(Builder* builder, Location loc, AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this array.

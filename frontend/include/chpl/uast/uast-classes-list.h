@@ -46,6 +46,7 @@
   AST_NODE(AnonFormal)                 //
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
+  AST_NODE(ArrayRow)                   //
   AST_NODE(Attribute)                  //
   AST_NODE(AttributeGroup)             //
   //AST_NODE(AssociativeArray)         //

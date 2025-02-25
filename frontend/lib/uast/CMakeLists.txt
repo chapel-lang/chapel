@@ -21,6 +21,7 @@ target_sources(ChplFrontend-obj
                AggregateDecl.cpp
                AnonFormal.cpp
                Array.cpp
+               ArrayRow.cpp
                AstList.cpp
                AstNode.cpp
                AstTag.cpp

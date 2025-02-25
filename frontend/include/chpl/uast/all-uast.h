@@ -20,6 +20,7 @@
 #include "chpl/uast/AnonFormal.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Array.h"
+#include "chpl/uast/ArrayRow.h"
 #include "chpl/uast/As.h"
 #include "chpl/uast/Attribute.h"
 #include "chpl/uast/AttributeGroup.h"
