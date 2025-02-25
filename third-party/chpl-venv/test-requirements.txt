@@ -2,3 +2,4 @@ PyYAML==6.0.2
 filelock==3.16.1
 argcomplete==3.5.1
 setuptools==75.1.0
+junitparser==3.2.0
