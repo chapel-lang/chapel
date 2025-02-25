@@ -304,6 +304,60 @@ module ChapelArray {
     return arr;
   }
 
+
+  pragma "ignore transfer errors"
+  proc chpl__buildNDArrayExpr(shape, pragma "no auto destroy" in elems ...?k ) {
+
+    if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
+      compilerWarning("Encountered an array literal with range element(s).",
+                      " Did you mean a domain literal here?",
+                      " If so, use {...} instead of [...].");
+    }
+
+    param homog = isHomogeneousTuple(elems);
+
+    // elements of string literals are assumed to be of type string
+    type eltType = if homog then elems(0).type
+                            else chpl_computeUnifiedType(elems);
+
+    var ranges: shape.size * range(int);
+    for param i in 0..<shape.size {
+      ranges(i) = arrayLiteralLowBound..#shape(i);
+    }
+    var dom = chpl__buildDomainExpr((...ranges), true);
+    var arr = dom.buildArray(eltType, initElts=false);
+
+    if homog {
+      for i in 0..<k {
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
+        ref src = elems(i);
+        __primitive("=", dst, src);
+      }
+
+    } else {
+      for param i in 0..k-1 {
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
+        ref src = elems(i);
+        type currType = src.type;
+
+        if (currType == eltType ||
+            Reflection.canResolve("=", dst, src)) {
+          __primitive("=", dst, src);
+        } else {
+          compilerError( "Array literal element " + i:string +
+                         " expected to be of type " + eltType:string +
+                         " but is of type " + currType:string );
+        }
+      }
+    }
+
+    arr.dsiElementInitializationComplete();
+
+    return arr;
+  }
+
   // For a given tuple, compute whether it has a potential unified
   // type by leaning on return type unification via the following
   // helper routine.  Ultimately, it should be the compiler doing this
