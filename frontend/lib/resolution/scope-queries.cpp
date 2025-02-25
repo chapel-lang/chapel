@@ -856,7 +856,6 @@ LookupResult LookupHelper::doLookupInImportsAndUses(
         searchScope = true;
       } if (receiversForTertiaryLookup) {
         for (auto receiver : *receiversForTertiaryLookup) {
-          if (name == "foo") debuggerBreakHere();
           if (receiver->shouldCheckForTertiaryMethods(context, &is)) {
             searchScope = true;
             break;
