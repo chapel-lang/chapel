@@ -49,8 +49,6 @@ sub mysystem {
         print "Error $errorname: $status\n";
         if ($onerror eq $exitOnError) {
             exit 1;
-        } elsif ($onerror eq $ignoreErrors) {
-            # Do nothing
         }
     }
 
