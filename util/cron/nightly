@@ -754,8 +754,8 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
 
 if ($chplLanguageServer == 1) {
     $ENV{'CHPL_HOME'} = $chplhomedir;
-    $testclscommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make -j$num_procs test-chpl-language-server";
-    mysystem($testclscommand, "running `make test-chpl-language-server`", $emailOnError, 1);
+    $testclscommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make -j$num_procs test-chpl-language-server-junit";
+    mysystem($testclscommand, "running `make test-chpl-language-server-junit`", $emailOnError, 1);
 }
 
 if ($runtests == 0) {

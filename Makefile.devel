@@ -76,6 +76,10 @@ test-cls test-chpl-language-server: FORCE
 	@$(MAKE) chpl-language-server
 	@cd tools/chpl-language-server && $(MAKE) test-chpl-language-server
 
+test-cls-junit test-chpl-language-server-junit: FORCE
+	@$(MAKE) chpl-language-server
+	@cd tools/chpl-language-server && $(MAKE) test-chpl-language-server-junit
+
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
