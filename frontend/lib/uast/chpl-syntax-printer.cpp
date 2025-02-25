@@ -465,6 +465,11 @@ struct ChplSyntaxVisitor {
     interpose(node->children(), ", ", "[", "]");
   }
 
+  void visit(const ArrayRow* node) {
+    // TODO: implement better pretty printer
+    interpose(node->children(), ", ", "", ";");
+  }
+
   void visit(const As* node) {
     printAst(node->symbol());
     ss_ << " as ";
