@@ -261,6 +261,48 @@ static void test6() {
   assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
 }
 
+// test that type-based imports works with parenless type-producing methods
+static void test7() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        module Lib {
+          record R {}
+          record S {}
+        }
+        module LibUsingLib {
+          use Lib;
+
+          // mimick some kind of conditional type declaration
+          proc someTypeR type do return if true then R else void;
+          proc someTypeS type do return if true then S else void;
+
+          proc someTypeR.foo() { return 0; }
+          proc someTypeS.foo() { return 0.0; }
+        }
+        module MainMod {
+          use Lib;
+          use LibUsingLib only someTypeR, someTypeS;
+
+          var x = (new someTypeR()).foo();
+          var y = (new someTypeS()).foo();
+
+          proc foo() {
+            return ((new someTypeR()).foo(), (new someTypeS()).foo());
+          }
+
+          var (z, w) = foo();
+        }
+      )""", {"x", "y", "z", "w"});
+
+  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -268,6 +310,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
   return 0;
 }
 
