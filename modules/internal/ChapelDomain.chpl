@@ -1623,7 +1623,7 @@ module ChapelDomain {
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
       proc help() {
-        _value.add_arr(x);
+        this._value.add_arr(x);
       }
       help();
 
