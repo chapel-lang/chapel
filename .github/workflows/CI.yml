@@ -214,6 +214,6 @@ jobs:
           rm -f py-modindex.html
           # Remove all hidden files except .htaccess
           find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
-          rsync -avz --cvs-exclude --delete --relative --dry-run . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+          rsync -avz --cvs-exclude --delete --relative --exclude="versionButton.php" --dry-run . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
           rm ~/.ssh/id_rsa
           rm ~/.ssh/known_hosts
