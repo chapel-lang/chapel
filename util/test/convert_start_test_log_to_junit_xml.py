@@ -142,8 +142,7 @@ def _parse_start_test_log(start_test_log):
         subtest_error = None
         subtest_file = None
         if sub_test_lines[-1].startswith('[Error running sub_test'):
-            subtest_re = re.compile(r'\[Error running sub_test \(code [\d]+\) (?:in|for) (.*)\]')
-            match = subtest_re.match(sub_test_lines[-1])
+            match = re.match(r'\[Error running sub_test \(code [\d]+\) (?:in|for) (.*)\]', sub_test_lines[-1])
             if match and match.group(1) not in seen_sub_test_failures:
                 subtest_error = sub_test_lines[-1]
                 subtest_file = match.group(1)
