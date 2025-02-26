@@ -3720,6 +3720,20 @@ literal_expr:
     $$ = context->buildNDArray(@$, $3);
     context->popLoopAttributeGroup();
   }
+| no_loop_attributes TLSBR expr_ls TSEMI TRSBR
+  {
+    AstList lst;
+    lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
+    $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
+    context->popLoopAttributeGroup();
+  }
+| no_loop_attributes TLSBR expr_ls TCOMMA TSEMI TRSBR
+  {
+    AstList lst;
+    lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
+    $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
+    context->popLoopAttributeGroup();
+  }
 | no_loop_attributes TLSBR assoc_expr_ls TRSBR
   {
     $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3), false, true).release();
