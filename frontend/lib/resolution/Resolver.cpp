@@ -191,10 +191,10 @@ struct GatherFieldsOrFormals {
 
     bool isFieldOrFormal = isField || decl->isFormal();
 
-    if (isFieldOrFormal)
+    if (isFieldOrFormal && decl->name() != USTR("this"))
       fieldOrFormals.insert(decl->id());
 
-    return false;
+    return decl->isAggregateDecl() || decl->isFunction();
   }
   void exit(const NamedDecl* decl) { }
 
@@ -939,6 +939,13 @@ bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType)
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
+  if (signatureOnly && substitutions) {
+    // We're computing a final instantiated signature. We'll be incrementally
+    // traversing formals and accumulating type information. As a result,
+    // we should use (partial, generic) types and not unknowns.
+    return false;
+  }
+
   // make sure the set of IDs for fields and formals is computed
   if (!fieldOrFormalsComputed) {
     auto visitor = GatherFieldsOrFormals();
@@ -1557,8 +1564,10 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         typePtr = tryFindTypeViaCopyFn(*this, declForErr, typeForErr, initForErr,
                                        declaredType, initExprType);
       }
-    } else if (!got.instantiates()) {
-      // use the declared type since no conversion/promotion was needed
+    } else if (!got.instantiates() || declaredType.type()->isUnknownType()) {
+      // use the declared type since no conversion/promotion was needed.
+      // alternatively, if declared type is present but unknown, we don't
+      // know what was intended in the declaratiom, so we leave it as unknown.
       typePtr = declaredType.type();
     } else {
       // instantiation is needed
@@ -1777,10 +1786,13 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     // for a primary method, there's no type expression, but we should
     // act as if there was one.
     if (!foundSubstitution || ignoreSubstitutionFor == decl) {
+      bool usedTypeExpressionOrSimilar = false;
+
       if (typeExpr) {
         // get the type we should have already computed postorder
         ResolvedExpression& r = byPostorder.byAst(typeExpr);
         typeExprT = r.type();
+        usedTypeExpressionOrSimilar = true;
         // otherwise, typeExprT can be empty/null
       } else if (isFormalThis) {
         // We're a primary method `this` formal (which do not have type
@@ -1791,6 +1803,15 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         auto aggregateId = parsing::idToParentId(context, functionId);
         auto parentType = typeForId(aggregateId, /* localGenericToUnknown */ true);
         typeExprT = parentType;
+        usedTypeExpressionOrSimilar = true;
+      }
+
+
+      // As a workaround for getTypeForDecl (see body of that function),
+      // if there's a type expression, make sure type ptr is set even if
+      // to UnknownType.
+      if (usedTypeExpressionOrSimilar && typeExprT.type() == nullptr) {
+        typeExprT = QualifiedType(typeExprT.kind(), UnknownType::get(context), typeExprT.param());
       }
 
       // for 'this' formals of class type, adjust them to be borrowed, so
@@ -2830,7 +2851,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     }
 
     // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
       skip = NONE;
     }
 
@@ -5445,11 +5466,11 @@ void Resolver::exit(const Dot* dot) {
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
-    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
     return;
   }
   if (receiver.type().type()->isErroneousType()) {
-    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    r.setType(QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context)));
     return;
   }
 

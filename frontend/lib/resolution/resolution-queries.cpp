@@ -2249,6 +2249,15 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         varArgType = r.byAst(formal).type();
       }
       formalType = getVarArgTupleElemType(varArgType);
+
+      // We allow UnknownType elements (e.g., didn't have enough information
+      // to invoke the type constructor in a vararg type expression). However,
+      // in such cases, their intent will be UNKNOWN, which makes code below
+      // think we know less than we do. So, reset the intent to the var arg
+      // declaration's intent.
+      if (formalType.kind() == QualifiedType::UNKNOWN) {
+        formalType = QualifiedType(entry.formalType().kind(), formalType.type(), formalType.param());
+      }
     } else if (formal) {
       formal->traverse(visitor);
       formalType = getProperFormalType(r, entry, ad, formal);
