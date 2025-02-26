@@ -5,6 +5,9 @@
 # memory. Until there is a better way for applications to determine how
 # much memory they should use, scale the memory fraction by the number
 # of co-locales.
+#
+# This should be revisited when
+# https://github.com/chapel-lang/chapel/issues/26786 has been resolved.
 
 import os
 
