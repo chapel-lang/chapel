@@ -358,7 +358,7 @@ def rules(driver: LintDriver):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
-        return BasicRuleResult(node)
+        return BasicRuleResult(node.condition(), data=node)
 
     # TODO: at some point, we should support a fixit that removes the
     # conditions and the braces, but the way locations work right now makes
@@ -371,7 +371,7 @@ def rules(driver: LintDriver):
         """
         Remove the unused branch of a conditional statement, keeping the braces.
         """
-        node = result.node
+        node = result.data
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
