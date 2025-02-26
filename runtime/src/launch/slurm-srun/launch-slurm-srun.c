@@ -376,6 +376,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     const int ret = snprintf(slurmFilename, filename_size, "%s%d",
                              baseSBATCHFilename, (int)mypid);
 
+    if (ret <= 0) {
+      chpl_internal_error("An unexpected error occured while generating \
+                          sbatch filename");
+    }
+
     // open the batch file and create the header
 
     slurmFile = fopen(slurmFilename, "w");
