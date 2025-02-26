@@ -32,5 +32,8 @@ export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_release_performance
+export CHPL_TEST_PERF_DESCRIPTION=release
+export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+
+test_release
 sync_graphs

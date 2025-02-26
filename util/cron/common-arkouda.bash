@@ -43,7 +43,6 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-
 export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.3.0"
 
 function partial_checkout_release() {
@@ -57,29 +56,15 @@ function partial_checkout_release() {
 }
 
 # test against Chapel release (checking out current test/cron directories)
-function test_release_performance() {
-  export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+function test_release() {
   partial_checkout_release
   $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
 
 # test against Chapel nightly
-function test_nightly_performance() {
-  export CHPL_TEST_PERF_DESCRIPTION=nightly
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+function test_nightly() {
   $UTIL_CRON_DIR/nightly -cron ${nightly_args}
 }
-
-function test_release_correctness() {
-  partial_checkout_release
-  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
-}
-
-function test_nightly_correctness() {
-  $UTIL_CRON_DIR/nightly -cron ${nightly_args}
-}
-
 
 function sync_graphs() {
   $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME

@@ -36,5 +36,8 @@ fi
 
 nightly_args="${nightly_args} -no-warnings"
 
-test_release_performance
+export CHPL_TEST_PERF_DESCRIPTION=release
+export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+
+test_release
 sync_graphs
