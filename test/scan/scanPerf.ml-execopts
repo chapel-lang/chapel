@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# This test can run out of memory if there are co-locales because the amount
+# of available shared memory may be less than the amount of physical
+# memory. Until there is a better way for applications to determine how
+# much memory they should use, scale the memory fraction by the number
+# of co-locales.
+
 import os
 
 colocales = int(os.getenv('CHPL_RT_LOCALES_PER_NODE', "1"))
