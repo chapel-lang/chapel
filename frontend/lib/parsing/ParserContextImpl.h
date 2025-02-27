@@ -774,8 +774,7 @@ static inline std::pair<AstList, chpl::Location>
                  int previousNumSep, YYLTYPE previousMaxSepLoc) {
   CHPL_ASSERT(start <= stop);
   if (start == stop) {
-    if (previousNumSep != -1 && previousNumSep != -1) {
-      // TODO: how to avoid giving this error when we give a separator consistency error?
+    if (previousNumSep != -1 && previousNumSep != 1) {
       // TODO: this will have duplicate errors, can we avoid that?
       YYLTYPE loc = (*lst)[start].location;
       if (start > 0 && (*lst)[start-1].nSeparator == previousNumSep) {
@@ -784,7 +783,7 @@ static inline std::pair<AstList, chpl::Location>
                  (*lst)[start+1].nSeparator == previousNumSep) {
         loc = (*lst)[start+1].location;
       }
-      context->error(loc,
+      context->syntax(loc,
                      "the final dimension of an array must use a single separator");
     }
     // there is a single row, so just return it
@@ -804,9 +803,9 @@ static inline std::pair<AstList, chpl::Location>
     }
   }
   CHPL_ASSERT(maxSep > 0);
-  if (previousNumSep != -1 && maxSep != previousNumSep-1) {
+  if (previousNumSep != -1 && maxSep+1 != previousNumSep) {
     // TODO: this will have duplicate errors, can we avoid that?
-    context->error(previousMaxSepLoc,
+    context->syntax(previousMaxSepLoc,
                    "inconsistent number of multi-dimensional array separators");
   }
 
