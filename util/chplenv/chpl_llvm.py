@@ -929,6 +929,11 @@ def _determine_gcc_flag_to_use():
 
     return flag_to_use
 
+@memoize
+def _get_clang_cfg_args(clang_command):
+    clang_cfg = get_clang_cfg_file(clang_command)
+    return parse_clang_cfg_file(clang_cfg)
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -942,11 +947,17 @@ def _determine_gcc_flag_to_use():
 def get_clang_basic_args(clang_command):
     clang_args = [ ]
 
+    # Check that the clang configure file doesn't already supply
+    # info about the sysroot or gcc install so we don't end up overriding it.
+    clang_cfg_args = _get_clang_cfg_args(clang_command)
+    if (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
+        any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
+        any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
+        return clang_args
+
     @memoize
     def _get_gcc_prefix_dir():
         # read the args that clang will use by default from the config file
-        clang_cfg = get_clang_cfg_file(clang_command)
-        clang_cfg_args = parse_clang_cfg_file(clang_cfg)
         return get_gcc_prefix_dir(clang_cfg_args)
 
     gcc_prefix_flags = {
