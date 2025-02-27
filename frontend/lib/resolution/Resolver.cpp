@@ -2983,8 +2983,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
   }
 
-  bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
-                         !id.isSymbolDefiningScope());
+  bool useLocalResult = allowLocalSearch &&
+                        (id.symbolPath() == symbol->id().symbolPath() &&
+                        !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
       // OK, proceed using local result
@@ -3614,6 +3615,26 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   if (error) r.setToId(ID());
 }
 
+void Resolver::setToBuiltin(ResolvedExpression& r, UniqueString name) {
+  QualifiedType type = typeForBuiltin(context, name);
+  r.setIsBuiltin(true);
+
+  // Some builtin types have a more useful ID than an empty ID
+  ID builtinId = ID();
+  if (type.hasTypePtr()) {
+    if (auto cl = type.type()->toClassType()) {
+      if (auto basic = cl->basicClassType()) {
+        builtinId = basic->id();
+      }
+    } else if (auto ct = type.type()->toCompositeType()) {
+      builtinId = ct->id();
+    }
+  }
+  r.setToId(builtinId); // note: circumvents validateAndSetToId since it should
+                        //       not be triggered by builtns.
+  r.setType(type);
+}
+
 void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
                                           const uast::AstNode* expr,
                                           const MostSpecificCandidates& mostSpecific) {
@@ -3813,6 +3834,66 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
   return true;
 }
 
+
+ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
+  ResolvedExpression result;
+
+  CHPL_ASSERT(symbol->isModule());
+  enterScope(symbol);
+
+  auto parenlessInfo = ParenlessOverloadInfo();
+
+  LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
+  auto fHelper = getFieldDeclarationLookupHelper();
+  auto helper = getMethodReceiverScopeHelper();
+  auto ids = lookupNameInScope(context, scopeStack.back(),
+                               /* methodLookupHelper */ fHelper,
+                               /* receiverScopeHelper */ helper,
+                               name, config);
+
+  if (!ids.isEmpty()) {
+    // see comment on lookupIdentifier.
+    parenlessInfo = ParenlessOverloadInfo::fromMatchingIds(context, ids);
+  }
+
+  if (parenlessInfo.areCandidatesOnlyParenlessProcs() &&
+      parenlessInfo.hasNonMethodCandidates()) {
+    // See also resolveIdentifier. Ambiguous, but we might be able to disambiguate
+    // using 'where' clauses.
+    auto inScope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    std::vector<CallInfoActual> actuals;
+    auto ci = CallInfo (/* name */ name,
+                        /* calledType */ QualifiedType(),
+                        /* isMethodCall */ false,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ true,
+                        actuals);
+
+    // as above, but don't consider method scopes
+    auto c = resolveGeneratedCall(symbol, &ci, &inScopes);
+    c.noteResultWithoutError(&result);
+    return result;
+  }
+
+  if (ids.numIds() > 1) return result;
+
+  // One ID, not a parenless fn. Try to resolve its type "normally".
+  auto id = ids.firstId();
+
+  if (id.isEmpty()) {
+    setToBuiltin(result, name);
+    return result;
+  }
+
+  auto type = typeForId(id, /* localGenericToUnknown */ false);
+
+  // Note: not computing defaults for generic-with-defaults since use/import
+  // statements don't support `bla(?)`.
+  result.setType(type);
+  return result;
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
@@ -3949,23 +4030,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       result.setType(getSuperType(context, type, ident));
       return;
     } else if (id.isEmpty()) {
-      type = typeForBuiltin(context, ident->name());
-      result.setIsBuiltin(true);
-
-      // Some builtin types have a more useful ID than an empty ID
-      ID builtinId = id;
-      if (type.hasTypePtr()) {
-        if (auto cl = type.type()->toClassType()) {
-          if (auto basic = cl->basicClassType()) {
-            builtinId = basic->id();
-          }
-        } else if (auto ct = type.type()->toCompositeType()) {
-          builtinId = ct->id();
-        }
-      }
-      validateAndSetToId(result, ident, builtinId);
-
-      result.setType(type);
+      setToBuiltin(result, ident->name());
       return;
     }
 

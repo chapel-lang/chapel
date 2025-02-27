@@ -43,6 +43,13 @@ const ImplementationPoint* resolveImplementsStmt(Context* rc,
                                                  ID id);
 
 /**
+  Determine the type etc. that 'name' would have at the module level.
+ */
+const ResolvedExpression& resolveNameInModule(Context* context,
+                                              ID modId,
+                                              UniqueString name);
+
+/**
   Resolve the contents of a Module
  */
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);

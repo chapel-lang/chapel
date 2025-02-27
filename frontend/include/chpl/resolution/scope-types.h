@@ -1436,6 +1436,9 @@ class MethodLookupHelper {
       with a receiver that is applicable */
   virtual bool isReceiverApplicable(Context* context,
                                     const ID& methodId) const = 0;
+  /** Returns 'true' if, based on the current receiver type, we should
+      search a VisibilitySymbols clause for tertiary methods */
+  virtual bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const = 0;
 };
 
 /** This type helps lookupNameInScope and related functions.

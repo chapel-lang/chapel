@@ -3111,6 +3111,7 @@ class SimpleMethodLookupHelper final : public MethodLookupHelper {
   }
   llvm::ArrayRef<const Scope*> receiverScopes() const override;
   bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const override;
 
   bool operator==(const SimpleMethodLookupHelper &other) const {
     return receiverTypeId_ == other.receiverTypeId_ &&
@@ -3174,6 +3175,7 @@ class TypedMethodLookupHelper final : public MethodLookupHelper {
 
   llvm::ArrayRef<const Scope*> receiverScopes() const override;
   bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const override;
 
   bool operator==(const TypedMethodLookupHelper &other) const {
     return receiverType_ == other.receiverType_ &&
