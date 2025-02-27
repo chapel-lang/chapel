@@ -112,7 +112,9 @@ struct Visitor {
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
-  void checkDimension(const ArrayRow* node, const std::vector<int>& shape, int index);
+  void checkDimension(const ArrayRow* node,
+                      const std::vector<int>& shape,
+                      size_t index);
   void checkShapeOfArray(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
@@ -474,13 +476,13 @@ void Visitor::checkForArraysOfRanges(const Array* node) {
 }
 
 void Visitor::checkDimension(const ArrayRow* row,
-                             const std::vector<int>& shape, int index) {
+                             const std::vector<int>& shape, size_t index) {
   if (row->numExprs() != shape[index]) {
     error(row, "expected %d elements in this row, but found %d",
           shape[index], row->numExprs());
   }
   if (index + 1 < shape.size()) {
-    for (int i = 0; i < row->numExprs(); i++) {
+    for (size_t i = 0; i < row->numExprs(); i++) {
       if (!row->expr(i)->isArrayRow()) {
         error(row->expr(i), "missing a row of elements");
         return;
@@ -512,7 +514,7 @@ void Visitor::checkShapeOfArray(const Array* node) {
 
   // check the dimensions of the array
   // no need to check the first dimension, we assume it to be correct
-  for (int i = 0; i < node->numExprs(); i++) {
+  for (size_t i = 0; i < node->numExprs(); i++) {
     if (!node->expr(i)->isArrayRow()) {
       error(node->expr(i), "missing a row of elements");
       return;
