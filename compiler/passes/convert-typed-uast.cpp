@@ -215,7 +215,7 @@ struct TConverter final : UastConverter {
     std::unordered_map<ID, Symbol*> localSyms;
 
     // The current insertion point for expressions.
-    AList* AList = nullptr;
+    AList* aList = nullptr;
 
     // Used to determine if we are in a USER context or not.
     ModTag topLevelModTag = MOD_USER;
@@ -374,7 +374,7 @@ struct TConverter final : UastConverter {
     SET_LINENO(rootModule);
     scratchSpaceBlock = new BlockStmt();
     globalInsertionPoint = &theProgram->block->body;
-    cur.AList = &scratchSpaceBlock->body;
+    cur.aList = &scratchSpaceBlock->body;
     untypedConverter = createUntypedConverter(context);
 
     setupEssentialModuleGlobalVars();
@@ -543,7 +543,7 @@ struct TConverter final : UastConverter {
 
   Symbol* convertParam(const types::QualifiedType& qt);
 
-  // note: the relevant calls and DefExpr are added to cur.AList;
+  // note: the relevant calls and DefExpr are added to cur.aList;
   // this function returns the VarSymbol*
   VarSymbol* convertVariable(const uast::Variable* node,
                              RV& rv,
@@ -556,7 +556,7 @@ struct TConverter final : UastConverter {
 
   void pushAList(AList* lst, Expr* expr) {
     aListStack.push_back({lst, expr});
-    cur.AList = lst;
+    cur.aList = lst;
   }
 
   Expr* popAList() {
@@ -566,7 +566,7 @@ struct TConverter final : UastConverter {
     ret = aListStack.back().second;
 
     aListStack.pop_back();
-    cur.AList = aListStack.size() ? aListStack.back().first
+    cur.aList = aListStack.size() ? aListStack.back().first
                                   : &scratchSpaceBlock->body;
     return ret;
   }
@@ -850,10 +850,10 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
                               types::QualifiedType* outQt) {
   astlocMarker markAstLoc(node->id());
 
-  // traverse to add it to cur.AList
+  // traverse to add it to cur.aList
   node->traverse(rv);
 
-  CHPL_ASSERT(!cur.AList->empty());
+  CHPL_ASSERT(!cur.aList->empty());
 
   // Set the expression's type if it was requested.
   if (outQt) {
@@ -861,7 +861,7 @@ Expr* TConverter::convertExpr(const AstNode* node, RV& rv,
   }
 
   // remove the last thing from the current AList and return that
-  auto ret = cur.AList->last()->remove();
+  auto ret = cur.aList->last()->remove();
   return ret;
 }
 
@@ -2418,8 +2418,8 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
 
   // otherwise, store the value in a temp
   auto t = makeNewTemp(qt);
-  cur.AList->insertAtTail(new DefExpr(t));
-  cur.AList->insertAtTail(new CallExpr(PRIM_MOVE, t, e));
+  cur.aList->insertAtTail(new DefExpr(t));
+  cur.aList->insertAtTail(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
 }
 
@@ -2636,7 +2636,7 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
   } else {
     def = new DefExpr(varSym);
     if (!moduleScopeVar) {
-      cur.AList->insertAtTail(def);
+      cur.aList->insertAtTail(def);
     } else {
       // module variables need to be stored outside of module init fn
       INT_ASSERT(cur.moduleSymbol);
@@ -2661,15 +2661,15 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
 
       move = new CallExpr(PRIM_MOVE, varSym, initExpr);
     }
-    cur.AList->insertAtTail(move);
+    cur.aList->insertAtTail(move);
   }
 
   auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
   if (!loopFlags.empty()) {
     TC_UNIMPL("loop attribute info");
-    // cur.AList->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
+    // cur.aList->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
     //if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
-    //  cur.AList->insertAtTail(primBlock);
+    //  cur.aList->insertAtTail(primBlock);
     //}
   }
   // If the init expression of this variable is a domain and this
@@ -3187,7 +3187,7 @@ TConverter::ActualConverter::ActualConverter(
       actualAsts_(actualAsts),
       fam_(fam),
       rv_(rv),
-      tempInsertionPoint_(tc->cur.AList) {
+      tempInsertionPoint_(tc->cur.aList) {
   INT_ASSERT(tempInsertionPoint_);
 
   // Use the arity provided by 'fam' since it has already accounted for
@@ -3248,7 +3248,7 @@ void TConverter::ActualConverter::prepareFormalConversionState() {
     .actualConverter        = this,
     .moduleFromLibraryFile  = moduleSymbol->hasFlag(FLAG_PRECOMPILED),
     .localSyms              = {},
-    .AList                  = nullptr,
+    .aList                  = nullptr,
     .topLevelModTag         = moduleSymbol->modTag
   };
 }
@@ -3263,7 +3263,7 @@ TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   INT_ASSERT(fa.hasDefault() || fa.hasActual());
 
   int idxSlot = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
-  INT_ASSERT(0 <= idxSlot && idxSlot < actualState_.size());
+  INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
   auto& slot = actualState_[idxSlot];
 
   if (!fa.hasDefault()) {
@@ -3271,7 +3271,7 @@ TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
     // If there is no default argument then an actual is present.
     int idxActual = fa.actualIdx();
-    INT_ASSERT(0 <= idxActual && idxActual < actualAsts_.size());
+    INT_ASSERT(0 <= idxActual && idxActual < ((int) actualAsts_.size()));
 
     // And there should be AST there.
     auto astActual = fa.hasActual() ? actualAsts_[idxActual] : nullptr;
@@ -3331,7 +3331,7 @@ TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
 void
 TConverter::ActualConverter::convertAndInsertActuals(CallExpr* call) {
-  auto aList = tc_->cur.AList;
+  auto aList = tc_->cur.aList;
 
   tc_->enterCallActuals(call);
 
@@ -3343,7 +3343,7 @@ TConverter::ActualConverter::convertAndInsertActuals(CallExpr* call) {
   tc_->exitCallActuals();
 
   // Ensure the 'current AST list' matches - converter may swap contexts.
-  INT_ASSERT(aList == tc_->cur.AList);
+  INT_ASSERT(aList == tc_->cur.aList);
 
   // Then insert their ASTs into the call.
   for (auto& slot : actualState_) {
@@ -3543,7 +3543,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
   CHPL_ASSERT(cur.resolvedFunction != nullptr);
 
   FnSymbol* fn = new FnSymbol(astr(node->name()));
-  cur.AList->insertAtTail(new DefExpr(fn));
+  cur.aList->insertAtTail(new DefExpr(fn));
   cur.fnSymbol = fn; // for setting child node's parentSymbol
 
   // note the correspondence between the ResolvedFunction & what it converts to
@@ -3806,7 +3806,7 @@ bool TConverter::enter(const Variable* node, RV& rv) {
   VarSymbol* varSym = convertVariable(node, rv, true);
   INT_ASSERT(varSym);
   // note: convertVariable should have added the DefExpr and any associated
-  // stuff to cur.AList.
+  // stuff to cur.aList.
 
   // Special handling for extern type variables.
   const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -3839,7 +3839,7 @@ bool TConverter::enter(const Literal* node, RV& rv) {
 
 
   Expr* se = convertAstUntyped(node);
-  cur.AList->insertAtTail(se);
+  cur.aList->insertAtTail(se);
 
   return false;
 }
@@ -3888,20 +3888,20 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
 
   // Cases for constants:
   if (node->name() == USTR("nil")) {
-    cur.AList->insertAtTail(new SymExpr(gNil));
+    cur.aList->insertAtTail(new SymExpr(gNil));
     return false;
   }
 
   // Cases requiring inspection of resolution results:
   if (auto re = rv.byAstOrNull(node)) {
     if (Expr* got = convertParenlessCallOrNull(node, rv)) {
-      cur.AList->insertAtTail(got);
+      cur.aList->insertAtTail(got);
       return false;
 
     } else if (auto id = re->toId()) {
       Symbol* sym = findOrCreateSym(id, rv);
       SymExpr* se = new SymExpr(sym);
-      cur.AList->insertAtTail(se);
+      cur.aList->insertAtTail(se);
       return false;
 
     } else if (node->name() == USTR("super")) {
@@ -3918,7 +3918,7 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
                                   new SymExpr(fn->_this),
                                   new SymExpr(field));
           auto se = storeInTempIfNeeded(get, {});
-          cur.AList->insertAtTail(se);
+          cur.aList->insertAtTail(se);
           return false;
         }
       }
@@ -3938,7 +3938,7 @@ bool TConverter::enter(const Return* node, RV& rv) {
   TC_DEBUGF(this, "enter return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   CallExpr* ret = new CallExpr(PRIM_RETURN);
 
-  cur.AList->insertAtTail(ret);
+  cur.aList->insertAtTail(ret);
   enterCallActuals(ret);
 
   return true;
@@ -3983,10 +3983,10 @@ bool TConverter::enter(const Call* node, RV& rv) {
   }
 
   if (expr) {
-    cur.AList->insertAtTail(expr);
+    cur.aList->insertAtTail(expr);
   } else {
     // Insert a dummy value just to keep the converter happy.
-    cur.AList->insertAtTail(new SymExpr(gFalse));
+    cur.aList->insertAtTail(new SymExpr(gFalse));
   }
 
   return false;
@@ -4005,14 +4005,14 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     auto block = pushNewBlock();
     node->thenBlock()->traverse(rv);
     popBlock();
-    cur.AList->insertAtTail(block);
+    cur.aList->insertAtTail(block);
     return false;
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = node->elseBlock()) {
       auto block = pushNewBlock();
       elseBlock->traverse(rv);
       popBlock();
-      cur.AList->insertAtTail(block);
+      cur.aList->insertAtTail(block);
     }
     return false;
   }
@@ -4029,7 +4029,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     // Temp stores the result of the if expression.
     // auto temp = makeNewTemp(rv.byAst(node).type());
     auto temp = newTemp();
-    cur.AList->insertAtTail(new DefExpr(temp));
+    cur.aList->insertAtTail(new DefExpr(temp));
 
     // TODO: Insert conversion if necessary?
     auto thenExpr = convertExpr(node->thenBlock()->stmt(0), rv);
@@ -4043,10 +4043,10 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 
     // After normalize the 'IfExpr' is lowered to a 'CondStmt'.
     auto branch = new CondStmt(cond, thenBlock, elseBlock);
-    cur.AList->insertAtTail(branch);
+    cur.aList->insertAtTail(branch);
 
     // The result of the 'if-expr' will be stored in 'temp'.
-    cur.AList->insertAtTail(new SymExpr(temp));
+    cur.aList->insertAtTail(new SymExpr(temp));
   } else {
     astlocMarker markAstLoc(node->id());
 
@@ -4086,7 +4086,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       // Generate the 'chpl_checkBorrowIfVar' call.
       auto checkCall = new CallExpr(checkFn, initSymExpr, new SymExpr(gFalse));
 
-      // The borrow will be inserted into 'cur.AList'. It is the condition.
+      // The borrow will be inserted into 'cur.aList'. It is the condition.
       cond = storeInTempIfNeeded(checkCall, {});
 
       // Now generate the 'if var' itself. Use 'findOrCreateVar' to ensure
@@ -4162,7 +4162,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     }
 
     auto ret = new CondStmt(cond, thenBlock, elseBlock);
-    cur.AList->insertAtTail(ret);
+    cur.aList->insertAtTail(ret);
   }
 
   return false;
