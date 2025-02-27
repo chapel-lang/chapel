@@ -2955,6 +2955,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
     resolveSpecialKeywordCallAsNormalCall<ErrorInvalidSparseSubdomainCall>(
         *this, fnCall, fnCall->actual(0)->toFnCall(),
         UniqueString::get(context, "chpl__buildSparseDomainRuntimeTypeForParentDomain"), r);
+    return true;
   } else if (fnName == "domain") {
     auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
     CHPL_ASSERT(rCalledExp.type().hasTypePtr());
