@@ -388,8 +388,12 @@ static const DomainType* domainTypeFromSubsHelper(
     auto [idxType, parSafe] = extractAssociativeInfo(context, instanceBct);
     return DomainType::getAssociativeType(context, instanceQt, idxType,
                                           parSafe);
-  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
-    // TODO: support sparse domains
+  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDomImpl") {
+    auto superclass = baseDom->parentClassType();
+    CHPL_ASSERT(superclass->id().symbolPath() == "ChapelDistribution.BaseSparseDom");
+
+    auto [parentDom] = extractFields(context, superclass, "parentDom");
+    return DomainType::getSparseType(context, instanceQt, parentDom);
   } else {
     // not a recognized domain type
     return genericDomain;
