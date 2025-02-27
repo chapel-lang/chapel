@@ -70,7 +70,7 @@
     */
     proc oddTimeSeed(): int(64) {
       use Time;
-      const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+      const seed = timeSinceEpoch().totalMicroseconds();
       const oddseed = if seed % 2 == 0 then seed + 1 else seed;
       return oddseed;
     }
