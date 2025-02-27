@@ -22,11 +22,9 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/uast/Decl.h"
 
 namespace chpl {
-namespace uast {
-  class Decl;
-}
 namespace types {
 
 
@@ -162,6 +160,9 @@ class CompositeType : public Type {
 
   /** Returns the name of the uAST associated with this CompositeType */
   UniqueString name() const { return name_; }
+
+  /** Returns the linkage of the underlying uAST for this composite. */
+  uast::Decl::Linkage linkage(Context* context) const;
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

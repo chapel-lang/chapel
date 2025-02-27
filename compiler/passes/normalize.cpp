@@ -288,6 +288,8 @@ void normalize() {
 
   // perform some checks on destructors
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldSkipNormalizing(fn)) continue;
+
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length           <  2 ||
           fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {

@@ -92,7 +92,37 @@ using namespace uast;
 //
 // Right now this pass operates on a function-by-function basis. The untyped
 // converter will be invoked on functions in standard/internal modules
-// that are not explicitly represented in the call graph.
+// that are not explicitly represented in the call graph. Additionally, the
+// functions and types that are generated here are always fully instantiated,
+// and generated functions will not participate in legacy resolution.
+//
+// See private issue #6907 for a meta issue documenting this effort.
+//
+// A NOTE ABOUT 'FLAG_RESOLVED_EARLY'
+//
+// Note that the symbols produced by this pass will be marked with the flag
+// 'FLAG_RESOLVED_EARLY'. What impact this has on the rest of the compiler
+// depends on the symbol that is marked:
+//
+// -- Generally, for all symbols, it means that the symbol will _NOT_ be
+//    normalized, as this pass does its best to ensure a normal form (based
+//    on AST shape after the 'callDestructors' pass).
+//
+// -- Generally, for 'FnSymbol', this means that the symbol will not be
+//    considered as a candidate by the old resolver when performing e.g.,
+//    call resolution.
+//
+// -- Generally, for 'TypeSymbol' and 'Type', this means that the type will
+//    be interpreted differently by the rest of the compiler. The types
+//    that are generated here are considered to be concrete and
+//    fully resolved, so the old compiler must be made aware of that when
+//    inspecting them. In terms of number of adjustments we need to make to
+//    the old compiler, types may end up being the most invasive.
+//
+// -- Generally, for default functions, we continue to let the old compiler
+//    generate all of them eagerly. Technically, the frontend enables us to
+//    lazily generate only the functions that are needed, but we cannot take
+//    advantage of that until this pass generates all old AST.
 //
 struct TConverter final : UastConverter {
 
@@ -287,7 +317,7 @@ struct TConverter final : UastConverter {
                     RV& rv);
 
     // Insert converted actuals into the given 'CallExpr'.
-    void convertAndInsertActuals(CallExpr* call);
+    void convertAndInsertActuals(CallExpr* call, int fromMappingIdx=0);
 
     // When converting a default argument, this is called to replace a
     // reference to a formal with a reference to an actual if needed.
@@ -541,19 +571,14 @@ struct TConverter final : UastConverter {
 
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
 
-  // a helper to convert the fields contained in composite types
-  void helpConvertFields(const types::CompositeType* ct,
-                         const ResolvedFields& rf,
-                         AggregateType* at);
-
   Symbol* convertParam(const types::QualifiedType& qt);
 
   // note: the relevant calls and DefExpr are added to cur.aList;
   // this function returns the VarSymbol*
-  VarSymbol* convertVariable(const uast::Variable* node,
-                             RV& rv,
-                             bool useLinkageName,
-                             MultiDeclState* multiState = nullptr);
+  Symbol* convertVariable(const uast::Variable* node,
+                          RV& rv,
+                          bool useLinkageName,
+                          MultiDeclState* multiState = nullptr);
 
   /// ------------------ ///
   /// aListStack helpers ///
@@ -634,20 +659,23 @@ struct TConverter final : UastConverter {
 
   // Helper that constructs AST to produce the default value for a type.
   //
-  // NOTE: If the type cannot construct a default value then this helper
-  //       will produce a potentially bogus expression.
-  //
-  // The argument 'pin' is an AST node used to ground any generated calls
+  // The argument 'pin' is an uAST node used to ground any generated calls
   // needed to resolve and construct the default value. If it is 'nullptr',
-  // then the currently converted symbol will be used instead.
-  Expr* defaultValueForType(const types::Type* t, const AstNode* pin);
+  // then the currently converted symbol will be used instead. In addition
+  // to providing context about the default value, 'pin' is also used to
+  // retrieve information such as the POI for any necessary calls.
+  //
+  // The argument 'rv' is the 'ResolvedVisitor' used to convert the current
+  // symbol in the typed converter. It must be provided and must make sense
+  // for the uAST 'pin' (if that was provided).
+  Expr* defaultValueForType(const types::Type* t, const AstNode* pin, RV& rv);
 
   // Create a new temporary. The type used for it must be supplied.
   Symbol* makeNewTemp(const types::QualifiedType& qt);
 
-  // Store 'e' in a temporary if it does not already refer to one.
-  // The type for the temporary must be provided and cannot easily
-  // be retrieved from the converted expression.
+  // Store 'e' in a temporary if it does not already refer to one. The type
+  // for the temporary must be provided and cannot easily be retrieved from
+  // the converted expression.
   //
   // TODO: Can we provide a custom function to retrieve 'e->qualType()'
   // without performing legacy resolution? Then we can remove the 'qt'
@@ -736,7 +764,7 @@ struct TConverter final : UastConverter {
                              const PoiScope* poiScope,
                              const ResolvedFunction** outRf=nullptr);
 
-  // Convert using a simple pattern that does not handle pass-by-name.
+  // Loop over actuals and convert them. Does not handle pass-by-name.
   template <typename Iterable>
   void convertAndInsertPrimCallActuals(CallExpr* call,
                                        const Iterable& actuals,
@@ -751,11 +779,11 @@ struct TConverter final : UastConverter {
   // The vector 'actualAsts' should contain the ASTs that are apparent in
   // the call. Implicit receivers are handled by considering the signature
   // 'tfs' and may rely on the currently converted symbol being set (e.g.,
-  // `cur.fnSymbol`).
+  // 'cur.fnSymbol').
   //
-  // Actual conversion handles generation of default-argument-values, but
-  // this is only possible if a 'TypedFnSignature' for the called function
-  // is supplied.
+  // Actual conversion handles generation of default-argument values, but
+  // this is only possible if a 'TypedFnSignature' 'tfs' is supplied for
+  // the function being called.
   void convertAndInsertActuals(CallExpr* c,
                                const AstNode* node,
                                const std::vector<const AstNode*>& actualAsts,
@@ -1305,7 +1333,8 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    if (formal != initFn->_this && formal->type != dtMethodToken) {
+    INT_ASSERT(formal->type != dtMethodToken);
+    if (formal != initFn->_this) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -1940,32 +1969,62 @@ static IF1_int_type getUintSize(const types::UintType* t) {
   return INT_SIZE_DEFAULT;
 }
 
-void TConverter::helpConvertFields(const types::CompositeType* ct,
-                                   const ResolvedFields& rf,
-                                   AggregateType* at) {
-  int nFields = rf.numFields();
-  for (int i = 0; i < nFields; i++) {
-    types::QualifiedType qt = rf.fieldType(i);
-    if (qt.isType() && !typeExistsAtRuntime(qt.type())) {
-      // a 'type' field can be left out at this point
-      continue;
-    } else if (qt.isParam()) {
-      // a 'param' field can be left out at this point
-      continue;
-    }
-    Type* ft = convertType(qt.type());
-    UniqueString name = rf.fieldName(i);
-    VarSymbol* v = new VarSymbol(astr(name), ft);
-    v->qual = convertQualifier(qt.kind());
-    v->makeField();
-    at->fields.insertAtTail(new DefExpr(v));
-  }
-}
-
 struct ConvertTypeHelper {
-  TConverter* tc_;
+  TConverter* tc_ = nullptr;
 
   Context* context() { return tc_->context; }
+
+  void helpConvertFields(const types::CompositeType* ct,
+                         const ResolvedFields& rf,
+                         AggregateType* at) {
+    int nFields = rf.numFields();
+    for (int i = 0; i < nFields; i++) {
+      types::QualifiedType qt = rf.fieldType(i);
+      if (qt.isType() && !tc_->typeExistsAtRuntime(qt.type())) {
+        // a 'type' field can be left out at this point
+        continue;
+      } else if (qt.isParam()) {
+        // a 'param' field can be left out at this point
+        continue;
+      }
+      Type* ft = tc_->convertType(qt.type());
+      UniqueString name = rf.fieldName(i);
+      VarSymbol* v = new VarSymbol(astr(name), ft);
+      v->qual = tc_->convertQualifier(qt.kind());
+      v->makeField();
+      at->fields.insertAtTail(new DefExpr(v));
+    }
+  }
+
+  void helpConvertCompositeType(const types::CompositeType* ct,
+                                const ResolvedFields& rf,
+                                AggregateType* at) {
+    // First convert the fields in a regular manner.
+    helpConvertFields(ct, rf, at);
+
+    auto ts = at->symbol;
+    INT_ASSERT(ts);
+
+    if (auto& id = ct->id()) {
+      if (auto ast = parsing::idToAst(context(), id)) {
+        bool isFromLibrary = tc_->cur.moduleFromLibraryFile;
+        auto decl = ast->toDecl();
+        INT_ASSERT(decl);
+
+        // Attach pragmas and attributes.
+        attachSymbolAttributes(context(), decl, ts, isFromLibrary);
+
+        // And attach a linkage flag as well.
+        auto linkageFlag = convertFlagForDeclLinkage(decl);
+        if (linkageFlag != FLAG_UNKNOWN) {
+          ts->addFlag(linkageFlag);
+        }
+      }
+    }
+
+    ts->addFlag(FLAG_RESOLVED_EARLY);
+    at->resolveStatus = RESOLVED;
+  }
 
   DefExpr* insertTypeIntoModule(ID idToInsertAt, Type* converted) {
     if (auto def = converted->symbol->defPoint) return def;
@@ -2054,6 +2113,35 @@ struct ConvertTypeHelper {
   Type* visit(const types::AnyUninstantiatedType* t) { return dtUninstantiated; }
   Type* visit(const types::AnyUnionType* t) { return dtUnknown; } // a lie
 
+  Type* visit(const types::ExternType* t) {
+    // Taken from the builder function 'convertTypesToExtern'...
+    //
+    // Note that unfortunately (as an artifact of parsing) flags are attached
+    // to the type variable (e.g., extern type 'a'...') rather than the type
+    // itself (this 'types::ExternType*'). Some of those flags are important
+    // such as 'FLAG_C_MEMORY_ORDER_TYPE'. They will get attached to this type
+    // when the 'VarSymbol*' for the type variable is visited.
+    //
+
+    // Chapel considers extern types without info to be "primitive types",
+    // and this also applies to things like default-initialization (where
+    // we zero-initialize the memory), or assignment (where we bitcopy).
+    auto ret = new PrimitiveType(nullptr);
+
+    INT_ASSERT(!t->linkageName().isEmpty());
+    auto name = astr(t->linkageName());
+
+    auto ts = new TypeSymbol(name, ret);
+    INT_ASSERT(ts->name == ts->cname);
+
+    ts->addFlag(FLAG_EXTERN);
+
+    auto def = insertTypeIntoModule(t->id(), ret);
+    INT_ASSERT(def);
+
+    return ret;
+  }
+
   // declared types
 
   Type* visit(const types::ClassType* t) {
@@ -2123,8 +2211,7 @@ struct ConvertTypeHelper {
       at->fields.insertAtTail(new DefExpr(v));
     }
 
-    // convert the fields
-    tc_->helpConvertFields(bct, rfds, at);
+    helpConvertCompositeType(bct, rfds, at);
 
     return at;
   }
@@ -2143,8 +2230,7 @@ struct ConvertTypeHelper {
     auto def = insertTypeIntoModule(t->id(), at);
     INT_ASSERT(def);
 
-    // convert the fields
-    tc_->helpConvertFields(t, rfds, at);
+    helpConvertCompositeType(t, rfds, at);
 
     return at;
   }
@@ -2163,8 +2249,7 @@ struct ConvertTypeHelper {
     auto def = insertTypeIntoModule(t->id(), at);
     INT_ASSERT(def);
 
-    // convert the fields
-    tc_->helpConvertFields(t, rf, at);
+    helpConvertCompositeType(t, rf, at);
 
     return at;
   }
@@ -2434,6 +2519,9 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
 struct ConvertDefaultValueHelper {
   TConverter* tc_ = nullptr;
   const AstNode* node_ = nullptr;
+  TConverter::RV& rv_;
+
+  Context* context() { return tc_->context; }
 
   Expr* visit(const types::Type* t) {
     std::string msg;
@@ -2442,6 +2530,15 @@ struct ConvertDefaultValueHelper {
     msg += "'";
     TC_UNIMPL(msg.c_str());
     return tc_->placeholder();
+  }
+
+  Expr* visit(const types::ExternType* t) {
+    // Taken from 'functionResolution.cpp:14000~'. Make a temp and zero it.
+    types::QualifiedType qt = { types::QualifiedType::VAR, t };
+    auto temp = tc_->makeNewTemp(qt);
+    tc_->cur.aList->insertAtTail(new DefExpr(temp));
+    auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
+    return ret;
   }
 
   Expr* visit(const types::BoolType* t) {
@@ -2465,31 +2562,53 @@ struct ConvertDefaultValueHelper {
   }
 
   Expr* visit(const types::RecordType* t) {
-    // Construct a 'CallInfo' representing 't.init()'...
     types::QualifiedType qt = { types::QualifiedType::VAR, t };
+
+    // For extern records, just zero-initialize a temporary.
+    if (t->linkage(context()) == uast::Decl::EXTERN) {
+      auto temp = tc_->makeNewTemp(qt);
+      tc_->cur.aList->insertAtTail(new DefExpr(temp));
+      auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
+      return ret;
+    }
+
+    // Otherwise, construct a 'CallInfo' representing 't.init()'...
     auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"));
     auto ci2 = resolution::CallInfo::createWithReceiver(ci1, qt);
 
     // Search for 'init()' using the generated call.
-    auto fn = tc_->convertFunctionForGeneratedCall(ci2, node_);
-    Expr* ret = nullptr;
+    const ResolvedFunction* rf = nullptr;
+    auto fn = tc_->convertFunctionForGeneratedCall(ci2, node_, &rf);
 
-    if (fn) {
-      // Found it, so invoke it on a temp.
-      auto temp = tc_->makeNewTemp(qt);
-      tc_->cur.aList->insertAtTail(new DefExpr(temp));
-      ret = new CallExpr(fn, temp);
-    } else {
-      ret = tc_->placeholder();
-    }
+    if (!fn) return tc_->placeholder();
+
+    // Found it, so invoke the default-initializer on a temp.
+    auto temp = tc_->makeNewTemp(qt);
+    tc_->cur.aList->insertAtTail(new DefExpr(temp));
+    auto ret = new CallExpr(fn, temp);
+
+    std::vector<const AstNode*> actualAsts;
+    auto tfs = rf->signature();
+    FormalActualMap fam(rf->signature(), ci2);
+    INT_ASSERT(fam.isValid());
+
+    // Use an 'ActualConverter' to handle potential default-arguments.
+    TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
+
+    // But the actual converter should skip over the receiver.
+    const int fromMappingIdx = 1;
+
+    ac.convertAndInsertActuals(ret, fromMappingIdx);
 
     return ret;
   }
 };
 
 Expr*
-TConverter::defaultValueForType(const types::Type* t, const AstNode* node) {
-  ConvertDefaultValueHelper visitor = { this, node };
+TConverter::defaultValueForType(const types::Type* t,
+                                const AstNode* node,
+                                RV& rv) {
+  ConvertDefaultValueHelper visitor = { this, node, rv };
   auto ret = t->dispatch<Expr*>(visitor);
   return ret;
 }
@@ -2632,10 +2751,10 @@ Expr* TConverter::convertRuntimeTypeExpression(const AstNode* node, RV& rv) {
   return nullptr;
 }
 
-VarSymbol* TConverter::convertVariable(const uast::Variable* node,
-                                       RV& rv,
-                                       bool useLinkageName,
-                                       MultiDeclState* multiState) {
+Symbol* TConverter::convertVariable(const uast::Variable* node,
+                                    RV& rv,
+                                    bool useLinkageName,
+                                    MultiDeclState* multiState) {
   astlocMarker markAstLoc(node->id());
 
   bool isStatic = false;
@@ -2650,12 +2769,45 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
 
   bool isRemote = node->destination() != nullptr ||
                   (multiState != nullptr && multiState->localeTemp != nullptr);
+  bool isTypeVar = node->kind() == uast::Variable::TYPE;
+  bool isExtern = node->linkage() == uast::Decl::EXTERN;
+  auto inModule = cur.symbol->toModule();
+  bool moduleScopeVar = false;
+
+  // Special handling for extern type variables. In this case, we will point
+  // the definition of the "variable" towards the 'TypeSymbol' of the
+  // converted 'types::ExternType*'. We will not generate a 'VarSymbol*' to
+  // represent the variable.
+  if (isTypeVar && isExtern) {
+    auto re = rv.byAstOrNull(node);
+    INT_ASSERT(re);
+
+    // Only bother if we have an 'ExternType' and there wasn't an error.
+    auto& qt = re->type();
+    if (qt.type() && qt.type()->isExternType()) {
+      auto t = convertType(qt.type());
+      INT_ASSERT(t);
+      auto ret = t->symbol;
+      INT_ASSERT(node->name() == ret->name);
+      INT_ASSERT(ret->hasFlag(FLAG_EXTERN));
+
+      attachSymbolAttributes(context, node, ret, cur.moduleFromLibraryFile);
+      attachSymbolVisibility(node, ret);
+
+      // Remove the 'DefExpr' for the converted 'ExternType' and place it
+      // at the declaration point of the variable. It's OK if this might
+      // happen multiple times, because if it does then it means the
+      // program is ill-formed.
+      INT_ASSERT(ret->defPoint && ret->defPoint->inTree());
+      auto def = ret->defPoint->remove();
+      cur.aList->insertAtTail(def);
+
+      // Exit since we are not actually creating a "variable".
+      return ret;
+    }
+  }
 
   auto varSym = findOrCreateVar(node);
-  const bool isTypeVar = node->kind() == uast::Variable::TYPE;
-  bool moduleScopeVar = false;
-  const uast::Module* inModule = cur.symbol->toModule();
-
   if (inModule != nullptr) {
     moduleScopeVar = parsing::idIsModuleScopeVar(context, node->id());
   }
@@ -2704,8 +2856,10 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
   }
   //Expr* destinationExpr = convertExprOrNull(node->destination(), rv);
   Expr* typeExpr = convertRuntimeTypeExpression(node->typeExpression(), rv);
-  Expr* initExpr = nullptr;
 
+
+
+  Expr* initExpr = nullptr;
   if (const uast::AstNode* ie = node->initExpression()) {
     const uast::BracketLoop* bkt = ie->toBracketLoop();
     if (bkt && isTypeVar) {
@@ -2747,8 +2901,10 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
         // compute the default value for this type
         if (const resolution::ResolvedExpression* re = rv.byAstOrNull(node)) {
           types::QualifiedType qt = re->type();
-          if (!qt.isUnknown()) {
-            initExpr = defaultValueForType(qt.type(), node);
+          if (!qt.isUnknownOrErroneous()) {
+            if (!node->hasPragma(context, uast::PRAGMA_NO_INIT)) {
+              initExpr = defaultValueForType(qt.type(), node, rv);
+            }
           }
         }
         INT_ASSERT(initExpr);
@@ -2774,9 +2930,6 @@ VarSymbol* TConverter::convertVariable(const uast::Variable* node,
 
   // Fix up the AST based on the type, if it should be known
   setVariableType(node, varSym, rv);
-
-  // Note the variable is converted so we can wire up SymExprs later
-  noteConvertedSym(node, varSym);
 
   return varSym;
 }
@@ -3657,8 +3810,9 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     TC_UNIMPL("Unhandled formal when unpacking init expression!");
   }
 
-  // Something went wrong and we failed to get the init expression.
-  if (!initExpr) {
+  // If there is no uAST for an init-expression and the function is not
+  // compiler-generated, then there is nothing we can do, so exit early.
+  if (!initExpr && !decl->id().isFabricatedId()) {
     std::get<Expr*>(slot) = tc_->placeholder();
     return;
   }
@@ -3683,24 +3837,46 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   std::swap(calledFnState_, tc_->cur);
   tc_->pushBlock(tc_->cur.moduleSymbol->block);
 
-  // Convert the init expression for the formal of interest.
+
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rvCalledFn(&rcval, fn, *tc_, rr);
-  std::get<Expr*>(slot) = tc_->convertExpr(initExpr, rvCalledFn);
+
+  // Convert the init-expression for the formal of interest, or generate a
+  // default-value for the type if function is compiler-generated.
+  Expr* expr = nullptr;
+  if (tfs_->untyped()->isCompilerGenerated()) {
+    // The formal is part of a compiler-generated function, so we can just
+    // construct a default-value for the type as uAST will not be supplied.
+    INT_ASSERT(!decl || decl->id().isFabricatedId());
+    auto t = fa.formalType().type();
+    expr = tc_->defaultValueForType(t, decl, rvCalledFn);
+
+  } else {
+    // Otherwise, invoke the typed converter using the new visitor.
+    expr = tc_->convertExpr(initExpr, rvCalledFn);
+  }
+
+  // TODO: Handle conversions as needed!
+  INT_ASSERT(expr);
+  std::get<Expr*>(slot) = expr;
 
   // Swap off the called function state.
   tc_->popBlock();
   std::swap(calledFnState_, tc_->cur);
 }
 
-void
-TConverter::ActualConverter::convertAndInsertActuals(CallExpr* call) {
+void TConverter::ActualConverter::
+convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
   auto aList = tc_->cur.aList;
 
   tc_->enterCallActuals(call);
 
-  // Convert each actual.
+  INT_ASSERT(0 <= fromMappingIdx && fromMappingIdx < actualState_.size());
+
+  // Convert each formal/actual mapping starting from the one requested.
+  int i = 0;
   for (const FormalActual& fa : fam_.byFormals()) {
+    if (i++ < fromMappingIdx) continue;
     this->convertActual(fa);
   }
 
@@ -3889,32 +4065,20 @@ TConverter::shouldElideFormal(const TypedFnSignature* tfs, int formalIdx) {
   return ret;
 }
 
-bool TConverter::enter(const Function* node, RV& rv) {
-  TC_DEBUGF(this, "enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
-
-
-  if (node != cur.symbol) {
-    // It's a function, but not the one we are working on.
-    // Stop the traversal. This Function will be handled when
-    // convertFunction is called.
-    return false;
-  }
-
-  TC_DEBUGF(this, "Really converting Function %s\n", node->name().c_str());
-
-  astlocMarker markAstLoc(node->id());
-
-  CHPL_ASSERT(cur.resolvedFunction != nullptr);
-
-  FnSymbol* fn = new FnSymbol(astr(node->name()));
-  cur.aList->insertAtTail(new DefExpr(fn));
-  cur.fnSymbol = fn; // for setting child node's parentSymbol
-
-  // note the correspondence between the ResolvedFunction & what it converts to
-  // (for calls & done here to support recursive calls)
-  fns[cur.resolvedFunction] = fn;
-
-  fn->userString = constructUserString(node);
+// This helper function performs the process of translating useful information
+// about the 'dyno' function and attaching it to the converted function in the
+// form of flags (this is how the old compiler conveys the majority of its
+// information about symbols).
+//
+// Since there are quite a few potential flags, it makes sense to separate out
+// this process to avoid bloating the rest of the process of converting a
+// function.
+static void attachFunctionFlags(TConverter* tc, const Function* node,
+                                FnSymbol* fn) {
+  Context* context = tc->context;
+  auto& cur = tc->cur;
+  const ResolvedFunction* rf = cur.resolvedFunction;
+  INT_ASSERT(rf);
 
   attachSymbolAttributes(context, node, fn, cur.moduleFromLibraryFile);
   attachSymbolVisibility(node, fn);
@@ -3947,10 +4111,74 @@ bool TConverter::enter(const Function* node, RV& rv) {
     fn->addFlag(FLAG_INVISIBLE_FN);
   }
 
-  IntentTag thisTag = INTENT_BLANK;
-  ArgSymbol* convertedReceiver = nullptr;
+  if (auto tfs = cur.resolvedFunction->signature()) {
+    auto ufs = tfs->untyped();
+    if (ufs->isCompilerGenerated()) {
+      // Mark the function as being compiler-generated if appropriate.
+      fn->addFlag(FLAG_COMPILER_GENERATED);
+    }
+  }
 
-  // Convert the formals
+  if (fn->name == astrDeinit) {
+    fn->addFlag(FLAG_DESTRUCTOR);
+  }
+
+  if (isAssignOp(node->name())) {
+    fn->addFlag(FLAG_ASSIGNOP);
+  }
+
+  if (node->kind() == uast::Function::ITER) {
+    fn->addFlag(FLAG_ITERATOR_FN);
+
+  } else if (node->kind() == uast::Function::OPERATOR) {
+    fn->addFlag(FLAG_OPERATOR);
+
+  } else if (node->isAnonymous()) {
+    fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+    fn->addFlag(FLAG_ANONYMOUS_FN);
+    if (node->kind() == uast::Function::LAMBDA) {
+      fn->addFlag(FLAG_LEGACY_LAMBDA);
+    }
+  }
+
+  if (auto t = rf->returnType().type()) {
+    if (t->isVoidType()) {
+      fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+    }
+  }
+}
+
+bool TConverter::enter(const Function* node, RV& rv) {
+  TC_DEBUGF(this, "enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+
+  if (node != cur.symbol) {
+    // It's a function, but not the one we are working on.
+    // Stop the traversal. This Function will be handled when
+    // convertFunction is called.
+    return false;
+  }
+
+  TC_DEBUGF(this, "Really converting Function %s\n", node->name().c_str());
+
+  astlocMarker markAstLoc(node->id());
+
+  CHPL_ASSERT(cur.resolvedFunction != nullptr);
+
+  FnSymbol* fn = new FnSymbol(astr(node->name()));
+  cur.aList->insertAtTail(new DefExpr(fn));
+  cur.fnSymbol = fn; // for setting child node's parentSymbol
+
+  // note the correspondence between the ResolvedFunction & what it converts to
+  // (for calls & done here to support recursive calls)
+  fns[cur.resolvedFunction] = fn;
+
+  fn->userString = constructUserString(node);
+
+  attachFunctionFlags(this, node, fn);
+
+  //
+  // Begin by looping over and converting the formals.
+  //
 
   if (node->numFormals() > 0) {
     // create the formals first & put them in a map
@@ -3972,9 +4200,8 @@ bool TConverter::enter(const Function* node, RV& rv) {
         auto arg = convertFormal(fml, rv);
 
         if (arg->hasFlag(FLAG_ARG_THIS)) {
-          INT_ASSERT(!convertedReceiver);
-          convertedReceiver = arg;
-          thisTag = arg->intent;
+          fn->thisTag = arg->intent;
+          fn->_this = arg;
         }
 
         auto def = new DefExpr(arg);
@@ -4022,39 +4249,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     fn->cname = astr(node->id().symbolPath());
   }
 
-  if (convertedReceiver) {
-    fn->thisTag = thisTag;
-    fn->_this = convertedReceiver;
-    fn->setMethod(true);
-    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
-    fn->insertFormalAtHead(new DefExpr(mt));
-    if (node->isPrimaryMethod()) {
-      fn->addFlag(FLAG_METHOD_PRIMARY);
-    }
-  }
-
-  if (fn->name == astrDeinit)
-    fn->addFlag(FLAG_DESTRUCTOR);
-
-  if (isAssignOp(node->name())) {
-    fn->addFlag(FLAG_ASSIGNOP);
-  }
-
   RetTag retTag = convertRetTag(node->returnIntent());
-
-  if (node->kind() == uast::Function::ITER) {
-    fn->addFlag(FLAG_ITERATOR_FN);
-
-  } else if (node->kind() == uast::Function::OPERATOR) {
-    fn->addFlag(FLAG_OPERATOR);
-
-  } else if (node->isAnonymous()) {
-    fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-    fn->addFlag(FLAG_ANONYMOUS_FN);
-    if (node->kind() == uast::Function::LAMBDA) {
-      fn->addFlag(FLAG_LEGACY_LAMBDA);
-    }
-  }
   Expr* retType = convertRuntimeTypeExpression(node->returnType(), rv);
   Expr* whereClause = nullptr;
 
@@ -4099,10 +4294,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
   const bool convertRefType = true;
   fn->retType = convertType(cur.resolvedFunction->returnType().type(),
                             convertRefType);
-
-  if (fn->retType == dtVoid) {
-    fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
-  }
 
   // visit the body to convert
   if (node->body()) {
@@ -4160,6 +4351,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 
   return false;
 }
+
 void TConverter::exit(const Function* node, RV& rv) {
   TC_DEBUGF(this, "exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
@@ -4167,33 +4359,15 @@ void TConverter::exit(const Function* node, RV& rv) {
 bool TConverter::enter(const Variable* node, RV& rv) {
   TC_DEBUGF(this, "enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  VarSymbol* varSym = convertVariable(node, rv, true);
-  INT_ASSERT(varSym);
-  // note: convertVariable should have added the DefExpr and any associated
-  // stuff to cur.aList.
+  auto sym = convertVariable(node, rv, true);
+  INT_ASSERT(sym);
 
-  // Special handling for extern type variables.
-  const bool isTypeVar = node->kind() == uast::Variable::TYPE;
-  if (isTypeVar) {
-    if (node->linkage() == uast::Decl::EXTERN) {
-      TC_UNIMPL("extern type vars");
-      /* TODO
-      INT_ASSERT(!node->isConfig());
-      INT_ASSERT(info.variableDef->sym && isVarSymbol(info.variableDef->sym));
-      auto varSym = toVarSymbol(info.variableDef->sym);
-      auto linkageName = node->linkageName() ? varSym->cname : nullptr;
-      stmts = convertTypesToExtern(stmts, linkageName);
-
-      // fix up convertedSyms since convertTypesToExtern
-      // replaced the DefExpr/Symbol
-      INT_ASSERT(stmts->body.last() && isDefExpr(stmts->body.last()));
-      auto newDef = toDefExpr(stmts->body.last());
-      noteConvertedSym(node, newDef->sym);*/
-    }
-  }
+  // Add the variable to the ID/symbol map since conversion does not.
+  noteConvertedSym(node, sym);
 
   return false;
 }
+
 void TConverter::exit(const Variable* node, RV& rv) {
   TC_DEBUGF(this, "exit variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
