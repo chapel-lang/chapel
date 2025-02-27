@@ -5290,6 +5290,12 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
+  if (dot->field() == USTR("locale")) {
+    r.setType(QualifiedType(QualifiedType::CONST_VAR,
+                            CompositeType::getLocaleType(context)));
+    return;
+  }
+
   // Handle .domain on an array (which doesn't exist in module code) as a call
   // to _dom.
   if (receiver.type().type() && receiver.type().type()->isArrayType() &&
