@@ -483,7 +483,7 @@ void Visitor::checkDimension(const ArrayRow* row,
           shape[index], row->numExprs());
   }
   if (index + 1 < shape.size()) {
-    for (size_t i = 0; i < row->numExprs(); i++) {
+    for (size_t i = 0; i < (size_t)row->numExprs(); i++) {
       if (!row->expr(i)->isArrayRow()) {
         error(row->expr(i), "missing a row of elements");
         return;
