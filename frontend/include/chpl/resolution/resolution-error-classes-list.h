@@ -68,6 +68,8 @@ ERROR_CLASS(InvalidImplementsActual, const uast::Implements*, const uast::AstNod
 ERROR_CLASS(InvalidImplementsArity, const uast::Implements*, const types::InterfaceType*, std::vector<types::QualifiedType>)
 ERROR_CLASS(InvalidImplementsInterface, const uast::Implements*, types::QualifiedType)
 ERROR_CLASS(InvalidIndexCall, const uast::FnCall*, types::QualifiedType)
+ERROR_CLASS(InvalidSubdomainCall, const uast::FnCall*, types::QualifiedType)
+ERROR_CLASS(InvalidSparseSubdomainCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
 ERROR_CLASS(InvalidParamCast, const uast::AstNode*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
