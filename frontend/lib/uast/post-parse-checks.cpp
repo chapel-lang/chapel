@@ -515,7 +515,7 @@ void Visitor::checkShapeOfArray(const Array* node) {
 
   // check the dimensions of the array
   // no need to check the first dimension, we assume it to be correct
-  for (size_t i = 0; i < node->numExprs(); i++) {
+  for (size_t i = 0; i < (size_t)node->numExprs(); i++) {
     if (!node->expr(i)->isArrayRow()) {
       error(node->expr(i), "missing a row of elements");
       return;
