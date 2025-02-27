@@ -116,6 +116,7 @@ struct Visitor {
                       const std::vector<int>& shape,
                       size_t index);
   void checkShapeOfArray(const Array* node);
+  void checkUnstableNDArray(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -522,6 +523,16 @@ void Visitor::checkShapeOfArray(const Array* node) {
     checkDimension(node->expr(i)->toArrayRow(), shape, 1);
   }
 
+}
+
+void Visitor::checkUnstableNDArray(const Array* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    // all we need to check is if the array has an ArrayRow
+    if (node->numExprs() > 0 && node->expr(0)->isArrayRow()) {
+      warn(node, "multi-dimensional array literals are unstable"
+                 " while the syntax is finalized");
+    }
+  }
 }
 
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
@@ -1600,6 +1611,7 @@ void Visitor::visit(const AggregateDecl* node) {
 void Visitor::visit(const Array* node) {
   checkForArraysOfRanges(node);
   checkShapeOfArray(node);
+  checkUnstableNDArray(node);
 }
 
 void Visitor::visit(const BracketLoop* node) {
