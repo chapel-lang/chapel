@@ -590,8 +590,14 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      bool forMoveInit,
                                      RV& rv) {
   if (!Type::needsInitDeinitCall(lhsType.type())) {
-    // TODO: we could resolve it anyway
-    return;
+    if (lhsType.type() && lhsType.type()->isArrayType()) {
+      // Array init is not resolved normally (via init), but copy init
+      // should still occur. Note that setupCallForCopyOrMove will decide
+      // what function should be called (likely chpl__coerceCopy).
+    } else {
+      // TODO: we could resolve it anyway
+      return;
+    }
   }
 
   std::vector<const AstNode*> actualAsts;
