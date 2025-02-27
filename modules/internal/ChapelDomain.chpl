@@ -1623,6 +1623,8 @@ module ChapelDomain {
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
       proc help() {
+        // Workaround: added 'this.' qualification as Dyno can't resolve method
+        // call in nested method atm. Anna 2025-02-27
         this._value.add_arr(x);
       }
       help();
