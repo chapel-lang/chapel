@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <utility>
 
 using chpl::types::Param;
 using chpl::owned;
@@ -767,20 +768,47 @@ ParserNDArrayList* ParserContext::appendNDArrayList(ParserNDArrayList* dst,
   return dst;
 }
 
-static inline AstList buildArrayRows(ParserContext* context, ParserNDArrayList* lst,
-                                     Location location, int start, int stop) {
+static inline std::pair<AstList, chpl::Location>
+  buildArrayRows(ParserContext* context, ParserNDArrayList* lst,
+                 Location arrayLoc, int start, int stop,
+                 int previousNumSep, YYLTYPE previousMaxSepLoc) {
   CHPL_ASSERT(start <= stop);
   if (start == stop) {
+    if (previousNumSep != -1 && previousNumSep != -1) {
+      // TODO: how to avoid giving this error when we give a separator consistency error?
+      // TODO: this will have duplicate errors, can we avoid that?
+      YYLTYPE loc = (*lst)[start].location;
+      if (start > 0 && (*lst)[start-1].nSeparator == previousNumSep) {
+        loc = (*lst)[start-1].location;
+      } else if (start < (int)lst->size()-1 &&
+                 (*lst)[start+1].nSeparator == previousNumSep) {
+        loc = (*lst)[start+1].location;
+      }
+      context->error(loc,
+                     "the final dimension of an array must use a single separator");
+    }
     // there is a single row, so just return it
-    return context->consumeList((*lst)[start].exprs);
+    return std::make_pair(
+      context->consumeList((*lst)[start].exprs),
+      context->convertLocation((*lst)[start].location)
+    );
   }
 
   // find the largest number of consecutive sep
   int maxSep = 0;
+  YYLTYPE maxSepLoc;
   for (int i = start; i <= stop; i++) {
-    maxSep = std::max(maxSep, (*lst)[i].nSeparator);
+    if ((*lst)[i].nSeparator > maxSep) {
+      maxSep = (*lst)[i].nSeparator;
+      maxSepLoc = (*lst)[i].location;
+    }
   }
   CHPL_ASSERT(maxSep > 0);
+  if (previousNumSep != -1 && maxSep != previousNumSep-1) {
+    // TODO: this will have duplicate errors, can we avoid that?
+    context->error(previousMaxSepLoc,
+                   "inconsistent number of multi-dimensional array separators");
+  }
 
   // iterate through the list from start to stop, each time we find a maxSep
   // recurse on the sublist from the last maxSep to the current element
@@ -788,22 +816,26 @@ static inline AstList buildArrayRows(ParserContext* context, ParserNDArrayList* 
   int start_ = start;
   for (int i = start_; i <= stop; i++) {
     if ((*lst)[i].nSeparator == maxSep) {
-      auto newRows = buildArrayRows(context, lst, location, start_, i-1);
-      ret.push_back(ArrayRow::build(context->builder, location, std::move(newRows)));
+      auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                           start_, i-1, maxSep, maxSepLoc);
+      ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
       start_ = i+1;
     }
   }
   // add the last row
-  auto newRows = buildArrayRows(context, lst, location, start_, stop);
-  ret.push_back(ArrayRow::build(context->builder, location, std::move(newRows)));
+  auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                       start_, stop, maxSep, maxSepLoc);
+  ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
 
-  return ret;
+  return std::make_pair(std::move(ret), arrayLoc);
 }
 Array* ParserContext::buildNDArray(YYLTYPE location, ParserNDArrayList* lst) {
   CHPL_ASSERT(lst->size() > 0);
   auto loc = convertLocation(location);
 
-  AstList rows = buildArrayRows(this, lst, loc, 0, lst->size()-1);
+  auto [rows, _] = buildArrayRows(this, lst, loc,
+                        /*start*/0, /*end*/lst->size()-1,
+                        /*previousNumSep*/-1, /*previousMaxSepLoc*/location);
   return Array::build(builder, loc, std::move(rows)).release();
 }
 

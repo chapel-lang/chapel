@@ -134,15 +134,16 @@
   struct NDArrayElement {
     ParserExprList* exprs;
     int nSeparator;
+    TextLocation location;
   };
   static inline
-  NDArrayElement makeNDArrayElement(ParserExprList* exprs) {
-    NDArrayElement ret = {exprs, 0};
+  NDArrayElement makeNDArrayElement(ParserExprList* exprs, TextLocation loc) {
+    NDArrayElement ret = {exprs, 0, loc};
     return ret;
   }
   static inline
-  NDArrayElement makeNDArrayElementSep(int nSeparator) {
-    NDArrayElement ret = {nullptr, nSeparator};
+  NDArrayElement makeNDArrayElementSep(int nSeparator, TextLocation loc) {
+    NDArrayElement ret = {nullptr, nSeparator, loc};
     return ret;
   }
   using ParserNDArrayList = std::vector<NDArrayElement>;
@@ -3072,27 +3073,27 @@ expr_ls:
 expr_ls_end_semi:
   expr_ls semicolon_list {
     $$ = context->makeNDArrayList();
-    $$ = context->appendNDArrayList($$, makeNDArrayElement($1));
-    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2));
+    $$ = context->appendNDArrayList($$, makeNDArrayElement($1, @1));
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2, @2));
   }
 | expr_ls TCOMMA semicolon_list {
     $$ = context->makeNDArrayList();
-    $$ = context->appendNDArrayList($$, makeNDArrayElement($1));
-    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($3));
+    $$ = context->appendNDArrayList($$, makeNDArrayElement($1, @1));
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($3, @3));
   }
 | expr_ls_semi semicolon_list
   {
     $$ = $1;
-    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2));
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2, @2));
   }
 ;
 
 expr_ls_semi:
   expr_ls_end_semi expr_ls {
-    $$ = context->appendNDArrayList($1, makeNDArrayElement($2));
+    $$ = context->appendNDArrayList($1, makeNDArrayElement($2, @2));
   }
 | expr_ls_end_semi expr_ls TCOMMA {
-    $$ = context->appendNDArrayList($1, makeNDArrayElement($2));
+    $$ = context->appendNDArrayList($1, makeNDArrayElement($2, @2));
   }
 ;
 
@@ -3715,20 +3716,29 @@ literal_expr:
     $$ = context->buildNDArray(@$, $3);
     context->popLoopAttributeGroup();
   }
-| no_loop_attributes TLSBR expr_ls_semi TSEMI TRSBR
+| no_loop_attributes TLSBR expr_ls_semi semicolon_list TRSBR
   {
+    if ($4 > 1) {
+      context->syntax(@4, "multiple trailing semicolons in array literal");
+    }
     $$ = context->buildNDArray(@$, $3);
     context->popLoopAttributeGroup();
   }
-| no_loop_attributes TLSBR expr_ls TSEMI TRSBR
+| no_loop_attributes TLSBR expr_ls semicolon_list TRSBR
   {
+    if ($4 > 1) {
+      context->syntax(@4, "multiple trailing semicolons in array literal");
+    }
     AstList lst;
     lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
     $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
     context->popLoopAttributeGroup();
   }
-| no_loop_attributes TLSBR expr_ls TCOMMA TSEMI TRSBR
+| no_loop_attributes TLSBR expr_ls TCOMMA semicolon_list TRSBR
   {
+    if ($5 > 1) {
+      context->syntax(@5, "multiple trailing semicolons in array literal");
+    }
     AstList lst;
     lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
     $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
