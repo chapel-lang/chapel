@@ -33,10 +33,10 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
 fi
 
 # Test performance with the latest qthreads release.
-GITHUB_USER=insertinterestingnamehere
-GITHUB_BRANCH=qthread
-SHORT_NAME=qthread122_apollo
-START_DATE=02/21/25
+GITHUB_USER=jhh67
+GITHUB_BRANCH=gasnet
+SHORT_NAME=gasnet-snapshot
+START_DATE=02/27/25
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
