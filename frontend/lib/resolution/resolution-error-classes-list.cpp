@@ -1067,24 +1067,52 @@ void ErrorInvalidImplementsInterface::write(ErrorWriterBase& wr) const {
   wr.message("The statement attempts to implement ", qt, ", which is not an interface.");
 }
 
+static void printErrorInvalidDomainKeywordCall(ErrorWriterBase& wr,
+                                               ErrorBase::Kind kind,
+                                               ErrorType errType,
+                                               const char* keyword,
+                                               const uast::FnCall* fnCallLocation,
+                                               const uast::FnCall* fnCallActuals,
+                                               const types::QualifiedType& type) {
+  wr.heading(kind, errType, fnCallLocation,
+             "invalid use of the '", keyword, "' keyword.");
+  wr.codeForLocation(fnCallLocation);
+  wr.message("The '", keyword, "' keyword should be used with a domain: '", keyword, "(D)'.");
+
+  if (fnCallActuals->numActuals() == 0) {
+    wr.message("However, '", keyword, "' here did not have any actuals.");
+  } else if (fnCallActuals->numActuals() > 1) {
+    wr.message("However, '", keyword, "' here had more than one actual.");
+    wr.code(fnCallLocation, { fnCallActuals->actual(1) });
+  } else if (type.type() && !type.type()->isDomainType()) {
+    wr.message("However, '", keyword, "' here is not called with a domain argument, but with ", decayToValue(type), ".");
+    wr.code(fnCallLocation, { fnCallActuals->actual(0) });
+  }
+
+}
+
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
 
-  wr.heading(kind_, type_, fnCall,
-             "invalid use of the 'index' keyword.");
-  wr.codeForLocation(fnCall);
-  wr.message("The 'index' keyword should be used with a domain: 'index(D)'.");
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "index", fnCall, fnCall, type);
+}
 
-  if (fnCall->numActuals() == 0) {
-    wr.message("However, 'index' here did not have any actuals.");
-  } else if (fnCall->numActuals() > 1) {
-    wr.message("However, 'index' here had more than one actual.");
-    wr.code(fnCall, { fnCall->actual(1) });
-  } else if (type.type() && !type.type()->isDomainType()) {
-    wr.message("However, 'index' here is not called with a domain argument, but with ", decayToValue(type), ".");
-    wr.code(fnCall, { fnCall->actual(0) });
-  }
+void ErrorInvalidSubdomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "subdomain", fnCall, fnCall, type);
+}
+
+void ErrorInvalidSparseSubdomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCallLocation = std::get<const uast::FnCall*>(info_);
+  CHPL_ASSERT(fnCallLocation->numActuals() == 1);
+  auto fnCallActuals = fnCallLocation->actual(0)->toFnCall();
+  CHPL_ASSERT(fnCallActuals);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "sparse subdomain", fnCallLocation, fnCallActuals, type);
 }
 
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
