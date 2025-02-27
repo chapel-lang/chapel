@@ -1078,6 +1078,15 @@ class Context {
     size_t depth = 0;
     bool enableQueryTimingTrace = false;
 
+    explicit ReportOnExit(Context *ctx = nullptr,
+                          querydetail::QueryMapBase *base_ = nullptr,
+                          const std::tuple<ArgTs...> *tup = nullptr,
+                          bool enableQueryTiming_ = false, size_t dep = 0,
+                          bool enableQueryTimingTrace_ = false)
+        : context(ctx), base(base_), tupleOfArgs(tup),
+          enableQueryTiming(enableQueryTiming_), depth(dep),
+          enableQueryTimingTrace(enableQueryTimingTrace_) {}
+
     ReportOnExit(const ReportOnExit& rhs) = delete;
     ReportOnExit(ReportOnExit&& rhs) = default;
     ReportOnExit& operator=(const ReportOnExit& rhs) = delete;
