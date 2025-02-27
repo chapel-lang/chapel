@@ -1251,12 +1251,14 @@ int gasnete_tm_p2p_send_data(gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
                              gex_Flags_t flags GASNETI_THREAD_FARG) {
   struct gasnete_tm_p2p_send_struct *status = (struct gasnete_tm_p2p_send_struct *)p2p->data;
   if (p2p->state[offset] == 1) {
+    gasneti_sync_reads();
     size_t sent = status[offset].sent;
     gasneti_assert_uint(nbytes ,>=, sent);
     size_t count = nbytes - sent;
     if_pt (count) {
       void *tmp = (void *)((uintptr_t)src + sent);
       void *addr = status[offset].addr;
+      gasneti_assert(addr != NULL);
       const size_t limit = gex_AM_LUBRequestMedium();
       const int more = (count > limit);
       if (more) count = limit;

@@ -228,6 +228,9 @@ static void _test_makeErrMsg(const char *format, ...)) {
 #define alignup_ptr(a,b) ((void *)(((((uintptr_t)(a))+(b)-1)/(b))*(b)))
 #define aligndown(a,b) (((a)/(b))*(b))
 
+#define TEST_HIWORD(arg)     ((uint32_t)(((uint64_t)(arg)) >> 32))
+#define TEST_LOWORD(arg)     ((uint32_t)((uint64_t)(arg)))
+
 // Two 64-bit PRNGs are available
 //  + "LCG64" uses 64-bit Linear Congruential Generator
 //  + "RANDn" uses multiple calls to rand().
@@ -238,14 +241,15 @@ static void _test_makeErrMsg(const char *format, ...)) {
   #define _TEST_USE_LCG64 1
 #endif
 
+static int _test_rand_is_init = 0;
 #if _TEST_USE_LCG64
   // NOTE: this state and seed operation are per compilation unit.
   // TODO: If/when we write tests spanning multiple source files we may
   // need to move the PRNG state into its own object file.
   static uint64_t _test_rand_val = 5551212;
-  #define TEST_SRAND(seed)  ((void)(_test_rand_val = (seed)))
+  #define TEST_SRAND(seed)  (_test_rand_is_init=1,(void)(_test_rand_val = (seed)))
 #else
-  #define TEST_SRAND(seed)  srand(seed)
+  #define TEST_SRAND(seed)  (_test_rand_is_init=1,srand(seed))
 #endif
 
 // Some platforms are missing these from stdint.h by default in C++ mode (without __STDC_LIMIT_MACROS)
@@ -262,6 +266,7 @@ static void _test_makeErrMsg(const char *format, ...)) {
 
 // NOTE: (high - low + 1) must be <= INT64_MAX to avoid undefined behavior
 static int64_t _test_rand(int64_t low, int64_t high) {
+  assert(_test_rand_is_init);
   assert(low <= high);
   assert(low <= high+1); /* We will overflow otherwise */
   // conservatively avoid the use of the high bit to avoid any chance of overflow
@@ -282,7 +287,8 @@ static int64_t _test_rand(int64_t low, int64_t high) {
   //     http://www.sprng.org/sprng.html
   _test_rand_val *= 2862933555777941757ull;
   _test_rand_val += 3037000493ull;
-  uint64_t val = _test_rand_val;
+  // "mix" bits to compensate for lower randomness of least-signficant bits
+  uint64_t val = _test_rand_val ^ TEST_HIWORD(_test_rand_val);
 #else
   // The "RANDn" generator accumulates 8 random bits at a time using
   // multiple calls to libc's rand(), making only as many calls as
@@ -302,9 +308,6 @@ static int64_t _test_rand(int64_t low, int64_t high) {
 #define TEST_RAND(low,high) _test_rand((low), (high))
 #define TEST_RAND_PICK(a,b) (TEST_RAND(0,1)==1?(a):(b))
 #define TEST_RAND_ONEIN(p)  (TEST_RAND(1,p) == 1)
-
-#define TEST_HIWORD(arg)     ((uint32_t)(((uint64_t)(arg)) >> 32))
-#define TEST_LOWORD(arg)     ((uint32_t)((uint64_t)(arg)))
 
 #define check_zeroret(op) do {                                       \
   int _retval = (op);                                                \

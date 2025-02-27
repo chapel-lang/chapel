@@ -1,10 +1,26 @@
 ## Process this file with automake to produce Makefile.in       -*- makefile -*-
-# Description: Makefile for GASNet aries-conduit spawner
-# Terms of use are as specified in aries-conduit/license.txt
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/smp-conduit/contrib/Makefile.am $
+# Description: Makefile for GASNet SMP spawner
+# Terms of use are as specified in license.txt
 
 AUTOMAKE_OPTIONS = foreign 1.4
 
-target = gasnetrun_aries
+# Use of the MPI/PMI spawning support is optional
+if HAVE_BOOTSTRAP_MPI
+mpi_target_pl = gasnetrun_smp-mpi.pl
+$(mpi_target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
+	cp -f "$?" $@
+else
+if HAVE_BOOTSTRAP_PMI
+mpi_target_pl = gasnetrun_smp-mpi.pl
+$(mpi_target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
+	cp -f "$?" $@
+else
+mpi_target_pl =
+endif
+endif
+
+target = gasnetrun_smp
 target_pl = $(target).pl
 
 # Need a bin_DATA rule, but automake disallows that.  So, fake it.
@@ -17,16 +33,17 @@ $(top_builddir)/other/perlstart: $(top_srcdir)/other/perlstart.in
 $(top_builddir)/other/mpirun_common: $(top_srcdir)/other/mpirun_common.in
 	@cd $(top_builddir)/other && $(MAKE) mpirun_common
 $(target): $(top_builddir)/other/perlstart $(top_builddir)/other/mpirun_common
-$(target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
-	cp -f "$<" $@
-all-local: $(target) $(target_pl)
+all-local: $(target_pl) $(target) $(mpi_target_pl)
 
-DISTCLEANFILES = $(target) $(target_pl)
+$(target_pl): $(top_srcdir)/other/spawner/gasnetrun.pl
+	cp -f "$<" $@
+
+DISTCLEANFILES = $(target) $(target_pl) $(mpi_target_pl)
 
 # Conditionally install the .pl and its wrapper
-if USE_ARIES_CONDUIT
+if USE_SMP_CONDUIT
 scripts = $(target)
-data = $(target_pl)
+data = $(target_pl) $(mpi_target_pl)
 else
 scripts =
 data =

@@ -95,11 +95,25 @@ GASNETI_END_EXTERNC
   // HIP platform was determined at GASNet-EX configure time.
   // If these conflict with client code, then this is not the right GASNet-EX build
   #if GASNETI_HIP_PLATFORM_NVIDIA
+    #if defined(__HIP_PLATFORM_AMD__) || defined(__HIP_PLATFORM_HCC__)
+    #error Conflicting HIP platform at GASNet configure vs gasnet_mk.h compile
+    #endif
+    #ifndef __HIP_PLATFORM_NVCC__
     #define __HIP_PLATFORM_NVCC__ // legacy
+    #endif
+    #ifndef __HIP_PLATFORM_NVIDIA__
     #define __HIP_PLATFORM_NVIDIA__
+    #endif
   #else
+    #if defined(__HIP_PLATFORM_NVIDIA__) || defined(__HIP_PLATFORM_NVCC__)
+    #error Conflicting HIP platform at GASNet configure vs gasnet_mk.h compile
+    #endif
+    #ifndef __HIP_PLATFORM_HCC__
     #define __HIP_PLATFORM_HCC__ // legacy
+    #endif
+    #ifndef __HIP_PLATFORM_AMD__
     #define __HIP_PLATFORM_AMD__
+    #endif
   #endif
 #endif
 

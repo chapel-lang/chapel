@@ -497,6 +497,32 @@ DEFN_TOKEN_MAX_FN(Reply,Long)
 //          that is only fruitful with a conduit which can provide asynchronous
 //          local completion other than by copying the payload.
 
+// Conduits can enable build (possibly name-shifted?) of the four pieces of the
+// reference implementation by defining GASNETC_BUILD_NP_{REQ,REP}_{MEDIUM,LONG}
+// to '1'; or they may disable them by defining to '0'.
+// Otherwise, these default to following !GASNET_NATIVE_NP_ALLOC_*.
+//
+#ifdef GASNETC_BUILD_NP_REQ_MEDIUM
+  // Keep conduit's definition
+#elif !GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
+  #define GASNETC_BUILD_NP_REQ_MEDIUM 1
+#endif
+#ifdef GASNETC_BUILD_NP_REP_MEDIUM
+  // Keep conduit's definition
+#elif !GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
+  #define GASNETC_BUILD_NP_REP_MEDIUM 1
+#endif
+#ifdef GASNETC_BUILD_NP_REQ_LONG
+  // Keep conduit's definition
+#elif !GASNET_NATIVE_NP_ALLOC_REQ_LONG
+  #define GASNETC_BUILD_NP_REQ_LONG 1
+#endif
+#ifdef GASNETC_BUILD_NP_REP_LONG
+  // Keep conduit's definition
+#elif !GASNET_NATIVE_NP_ALLOC_REP_LONG
+  #define GASNETC_BUILD_NP_REP_LONG 1
+#endif
+
 #ifndef _GEX_AM_SRCDESC_T
 #ifndef gasneti_import_srcdesc
 gasneti_AM_SrcDesc_t gasneti_import_srcdesc(gex_AM_SrcDesc_t _srcdesc) {
@@ -554,10 +580,24 @@ void gasneti_checknpam(int for_reply GASNETI_THREAD_FARG) {
     }
   }
 }
-#endif
+
+// Conduits can call this from gasnet_exit() to disarm gasneti_checknpam() to
+// enable use of AM for exit coordination even if exiting between a Prepare
+// and the following Commit.
+//
+// TODO: Opt-in use of gex_AM_Cancel*() when available and safe.
+void gasneti_checknpam_disarm(void) {
+  GASNET_BEGIN_FUNCTION(); // OK - not a critical-path
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  if (mythread->sd_is_init) {
+    GASNETI_INIT_MAGIC(&mythread->request_sd, GASNETI_AM_SRCDESC_BAD_MAGIC);
+    GASNETI_INIT_MAGIC(&mythread->reply_sd,   GASNETI_AM_SRCDESC_BAD_MAGIC);
+  }
+}
+#endif // GASNET_DEBUG
 #endif // _GEX_AM_SRCDESC_T
 
-#if !defined(GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM) || GASNET_CONDUIT_SMP
+#if GASNETC_BUILD_NP_REQ_MEDIUM
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
                        gex_TM_t           tm,
                        gex_Rank_t         rank,
@@ -602,9 +642,9 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
     GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
+#endif // GASNETC_BUILD_NP_REQ_MEDIUM
 
-#if !defined(GASNET_NATIVE_NP_ALLOC_REP_MEDIUM) || GASNET_CONDUIT_SMP
+#if GASNETC_BUILD_NP_REP_MEDIUM
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
                        gex_Token_t        token,
                        const void        *client_buf,
@@ -640,9 +680,9 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
     GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
+#endif // GASNETC_BUILD_NP_REP_MEDIUM
 
-#ifndef GASNET_NATIVE_NP_ALLOC_REQ_LONG
+#if GASNETC_BUILD_NP_REQ_LONG
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
                        gex_TM_t           tm,
                        gex_Rank_t         rank,
@@ -688,9 +728,9 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
     GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REQ_LONG
+#endif // GASNETC_BUILD_NP_REQ_LONG
 
-#ifndef GASNET_NATIVE_NP_ALLOC_REP_LONG
+#if GASNETC_BUILD_NP_REP_LONG
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
                        gex_Token_t        token,
                        const void        *client_buf,
@@ -728,9 +768,9 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
     GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REP_LONG
+#endif // GASNETC_BUILD_NP_REP_LONG
 
-#if !defined(GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM) || GASNET_CONDUIT_SMP
+#if GASNETC_BUILD_NP_REQ_MEDIUM
 void gasnetc_AM_CommitRequestMediumM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes
@@ -769,9 +809,9 @@ void gasnetc_AM_CommitRequestMediumM(
     }
     va_end(argptr);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
+#endif // GASNETC_BUILD_NP_REQ_MEDIUM
 
-#if !defined(GASNET_NATIVE_NP_ALLOC_REP_MEDIUM) || GASNET_CONDUIT_SMP
+#if GASNETC_BUILD_NP_REP_MEDIUM
 void gasnetc_AM_CommitReplyMediumM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -808,9 +848,9 @@ void gasnetc_AM_CommitReplyMediumM(
     }
     va_end(argptr);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
+#endif // GASNETC_BUILD_NP_REP_MEDIUM
 
-#ifndef GASNET_NATIVE_NP_ALLOC_REQ_LONG
+#if GASNETC_BUILD_NP_REQ_LONG
 void gasnetc_AM_CommitRequestLongM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -850,9 +890,9 @@ void gasnetc_AM_CommitRequestLongM(
     }
     va_end(argptr);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REQ_LONG
+#endif // GASNETC_BUILD_NP_REQ_LONG
 
-#ifndef GASNET_NATIVE_NP_ALLOC_REP_LONG
+#if GASNETC_BUILD_NP_REP_LONG
 void gasnetc_AM_CommitReplyLongM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -890,7 +930,7 @@ void gasnetc_AM_CommitReplyLongM(
     }
     va_end(argptr);
 }
-#endif // GASNET_NATIVE_NP_ALLOC_REP_LONG
+#endif // GASNETC_BUILD_NP_REP_LONG
 
 /* ------------------------------------------------------------------------------------ */
 

@@ -28,25 +28,22 @@ typedef enum {
   GASNETC_UCX_FAILED
 } gasnetc_ucx_req_status_t;
 
-#if GASNET_DEBUG
-#define GASNETC_HDR_MAGIC 0x11223344
-#endif
-
 typedef struct {
-#if GASNET_DEBUG
-  int magic;
-#endif
-  gex_Rank_t            dst;
   gex_Rank_t            src;
-  gex_AM_Index_t        handler;
-  gasnetc_ucx_am_type_t am_type;
+  gex_AM_Index_t        handler; // 8 bits
+  uint8_t               am_type  : 2;
   uint8_t               is_req   : 1;
-  uint8_t               is_packed: 1;
   uint8_t               numargs  : 5;
+#if !GASNETC_PIN_SEGMENT
+  // Used for Long AM only, but "free" since fills padding ahead of `size`
+  uint8_t               is_packed;
+#endif
   uint32_t              size;
+// END OF SHORT
   uint32_t              payload_size;
-  /* for Long AM only */
+// END OF MEDUIM
   void                 *dst_addr;
+// END OF LONG
 } gasnetc_sreq_hdr_t;
 
 typedef struct {
@@ -76,8 +73,6 @@ typedef struct {
     gasnetc_ucx_req_status_t  status;
     gasnetc_am_req_t         *am_req;
     gasnetc_buffer_t          buffer;
-    uint8_t                   is_sync;
-    int                       is_packed;
     void                     *result_p;
     struct {
       gasnetc_cbfunc_t        cbfunc;

@@ -835,7 +835,7 @@ void doall(gex_TM_t tm) {
       neighbor = gex_TM_TranslateJobrankToRank(tm, nbrhdinfo[(nbrhdrank + r) % nbrhdsize].gex_jobrank);
       if (neighbor != GEX_RANK_INVALID) break;
     }
-    gasneti_assert(neighbor != GEX_RANK_INVALID);
+    assert(neighbor != GEX_RANK_INVALID);
   }
 
   doit(tm, GEX_DT_U32);

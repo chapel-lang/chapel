@@ -248,6 +248,9 @@
 /* has sched_yield() */
 #undef HAVE_SCHED_YIELD
 
+/* has sigaction() and a definition of the SA_RESTART flag */
+#undef GASNETI_HAVE_SA_RESTART
+
 /* have sysctl machdep.tsc_freq */
 #undef GASNETI_HAVE_SYSCTL_MACHDEP_TSC_FREQ
 
@@ -469,13 +472,9 @@
 #undef GASNETI_DISABLE_ALIGNED_SEGMENTS
 
 /* GASNet smp-conduit */
+#undef GASNETC_SMP_SPAWNER_CONF
 #undef GASNETC_HAVE_O_ASYNC
 #undef GASNETC_USE_SOCKETPAIR
-
-/* GASNet aries-conduit settings */
-#undef GASNETC_GNI_MAX_MEDIUM_DFLT
-#undef GASNETC_GNI_MULTI_DOMAIN
-#undef GASNETC_GNI_UDREG
 
 /* GASNet ofi-conduit settings */
 #undef GASNETC_OFI_SPAWNER_CONF
@@ -589,15 +588,6 @@
 
 /* Define to 1 if you have the `getrlimit64' function. */
 #undef HAVE_GETRLIMIT64
-
-/* Define to 1 if you have the <gni_pub.h> header file. */
-#undef HAVE_GNI_PUB_H
-
-/* Define to 1 if you have the <hugetlbfs.h> header file. */
-#undef HAVE_HUGETLBFS_H
-
-/* Define to 1 if you have the `hugetlbfs_unlinked_fd' function. */
-#undef HAVE_HUGETLBFS_UNLINKED_FD
 
 /* Define to 1 if you have the `ibv_cmd_open_xrcd' function. */
 #undef HAVE_IBV_CMD_OPEN_XRCD
@@ -733,9 +723,6 @@
 
 /* Define to 1 if you have the <ucontext.h> header file. */
 #undef HAVE_UCONTEXT_H
-
-/* Define to 1 if you have the <udreg_pub.h> header file. */
-#undef HAVE_UDREG_PUB_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H

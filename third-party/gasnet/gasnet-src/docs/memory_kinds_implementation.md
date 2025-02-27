@@ -431,15 +431,36 @@ However, when using the kernel provided with SLES 15.3, all calls to
 `gex_EP_BindSegment()` with ZE device memory segments fail.  
 We encourage reports of success or failure with other kernel versions.
 
-### Known Issues with the ZE Memory Kind
-
-As of the time of writing, testing has shown 32KiB to be the largest device
-memory segment size which can successfully be used with the ZE kind and the
-ofi-conduit `cxi` provider.  Larger sizes fail in `gex_EP_BindSegment()`,
-with a verbose message indicating that the problem appears to be this known
-issue.  We encourage reports of success with larger device segments.
+Our testing has shown that prior to the 2.1.2 release of HPE's Slingshot Host
+Software, 32KiB was the largest device memory segment size which could
+successfully be used with the ZE kind and the ofi-conduit `cxi` provider.
+Consequently, we strongly recommend the 2.1.2 release of HPE's Slingshot Host
+Software as a minimum version when using the `cxi` provider.  
 For the most up-to-date information on this issue see
 [bug 4679](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4679)
+
+### Known Issues with the ZE Memory Kind
+
+As documented (see `man fi_cxi` on an HPE Cray EX), the libfabric cxi provider
+can only support native memory kinds on Intel GPUs when "implicit scaling" is
+disabled.  The following two environment variables should be set to accomplish
+that:
+```
+    EnableImplicitScaling=0
+    NEOReadDebugKeys=1
+```
+Otherwise, all calls to `gex_EP_BindSegment()` with ZE device memory segments
+fail with a "Function not implemented" error message.
+
+As of the time of writing, testing has shown 2GiB to be the largest device
+memory segment size which can reliably be used with the ZE kind and the
+ofi-conduit `cxi` provider.  Sizes above 2GiB are unreliable (we see random
+communication errors), and 16GiB and above fail in `gex_EP_BindSegment()` with
+a "Function not implemented" or "No such device or address" error message.
+We encourage reports of success with device segments larger than 2GiB.
+
+See [bug 4679](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4679) for
+more information on the topic of limited device segment sizes.
 
 # Implementation Status Summary
 
