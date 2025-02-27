@@ -365,17 +365,10 @@ extractAssociativeInfo(Context* context, const BasicClassType* bct) {
   return extractFields(context, bct, "idxType", "parSafe");
 }
 
-// Extract domain type information from _instance substitution
-static const DomainType* domainTypeFromSubsHelper(
-    Context* context, const CompositeType::SubstitutionsMap& subs) {
-  auto genericDomain = DomainType::getGenericDomainType(context);
-
-  // Expect one substitution for _instance
-  if (subs.size() != 1) return genericDomain;
-
-  const QualifiedType instanceQt = subs.begin()->second;
+static const DomainType* domainTypeFromInstance(
+    Context* context, const QualifiedType& instanceQt) {
   auto [instanceBct, baseDom] = extractBasicSubclassFromInstance(instanceQt);
-  if (!instanceBct || !baseDom) return genericDomain;
+  if (!instanceBct || !baseDom) return nullptr;
 
   if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
     auto [rank, idxType, strides] = extractRectangularInfo(context, baseDom);
@@ -396,11 +389,24 @@ static const DomainType* domainTypeFromSubsHelper(
     return DomainType::getSparseType(context, instanceQt, parentDom);
   } else {
     // not a recognized domain type
-    return genericDomain;
+    return nullptr;
   }
 
   // If we reach here, we weren't able to resolve the domain type
-  return genericDomain;
+  return nullptr;
+}
+
+// Extract domain type information from _instance substitution
+static const DomainType* domainTypeFromSubsHelper(
+    Context* context, const CompositeType::SubstitutionsMap& subs) {
+  auto genericDomain = DomainType::getGenericDomainType(context);
+
+  // Expect one substitution for _instance
+  if (subs.size() != 1) return genericDomain;
+
+  const QualifiedType instanceQt = subs.begin()->second;
+  auto domain = domainTypeFromInstance(context, instanceQt);
+  return domain != nullptr ? domain : genericDomain;
 }
 
 static const ArrayType* arrayTypeFromSubsHelper(
@@ -415,16 +421,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
   if (!instanceBct || !baseArr) return genericArray;
 
   if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
-    auto baseArrRect = baseArr->parentClassType();
-    CHPL_ASSERT(baseArrRect &&
-                baseArrRect->id().symbolPath() ==
-                    "ChapelDistribution.BaseArrOverRectangularDom");
-
-    auto [rank, idxType, strides] =
-        extractRectangularInfo(context, baseArrRect);
     auto [domInstanceQt] = extractFields(context, instanceBct, "dom");
-    auto domain = DomainType::getRectangularType(context, domInstanceQt, rank,
-                                                 idxType, strides);
+    auto domain = domainTypeFromInstance(context, domInstanceQt);
+    CHPL_ASSERT(domain);
 
     auto [eltType] = extractFields(context, baseArr, "eltType");
     return ArrayType::getArrayType(context, instanceQt,
@@ -432,10 +431,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    eltType);
   } else if (instanceBct->id().symbolPath() ==
              "DefaultAssociative.DefaultAssociativeArr") {
-    auto [idxType, parSafe, domInstanceQt] =
-        extractFields(context, instanceBct, "idxType", "parSafeDom", "dom");
-    auto domain = DomainType::getAssociativeType(context, domInstanceQt,
-                                                 idxType, parSafe);
+    auto [domInstanceQt] = extractFields(context, instanceBct, "dom");
+    auto domain = domainTypeFromInstance(context, domInstanceQt);
+    CHPL_ASSERT(domain);
 
     CHPL_ASSERT(baseArr &&
                 baseArr->id().symbolPath() == "ChapelDistribution.AbsBaseArr");
@@ -444,10 +442,26 @@ static const ArrayType* arrayTypeFromSubsHelper(
     return ArrayType::getArrayType(context, instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
-  } else if (instanceBct->id().symbolPath() ==
-             "ChapelDistribution.BaseSparseArr") {
-    // TODO: support sparse arrays
-    CHPL_UNIMPL("sparse arrays");
+  } else if (baseArr->id().symbolPath() ==
+             "ChapelDistribution.BaseSparseArrImpl") {
+    // The Impl doesn't have the data, the parent class does.
+    auto baseArrSparse = baseArr->parentClassType();
+    CHPL_ASSERT(baseArrSparse &&
+                baseArrSparse->id().symbolPath() ==
+                    "ChapelDistribution.BaseSparseArr");
+    auto absBaseArr = baseArrSparse->parentClassType();
+    CHPL_ASSERT(absBaseArr &&
+                absBaseArr->id().symbolPath() ==
+                    "ChapelDistribution.AbsBaseArr");
+
+    auto [domInstanceQt] = extractFields(context, baseArrSparse,"dom");
+    auto [eltType] = extractFields(context, absBaseArr, "eltType");
+    auto domain = domainTypeFromInstance(context, domInstanceQt);
+    CHPL_ASSERT(domain);
+
+    return ArrayType::getArrayType(context, instanceQt,
+                                   QualifiedType(QualifiedType::TYPE, domain),
+                                   eltType);
   } else {
     CHPL_UNIMPL("unknown kind of array class");
   }
