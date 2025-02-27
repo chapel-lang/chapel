@@ -107,15 +107,16 @@ extern int yychpl_debug;
   struct NDArrayElement {
     ParserExprList* exprs;
     int nSeparator;
+    TextLocation location;
   };
   static inline
-  NDArrayElement makeNDArrayElement(ParserExprList* exprs) {
-    NDArrayElement ret = {exprs, 0};
+  NDArrayElement makeNDArrayElement(ParserExprList* exprs, TextLocation loc) {
+    NDArrayElement ret = {exprs, 0, loc};
     return ret;
   }
   static inline
-  NDArrayElement makeNDArrayElementSep(int nSeparator) {
-    NDArrayElement ret = {nullptr, nSeparator};
+  NDArrayElement makeNDArrayElementSep(int nSeparator, TextLocation loc) {
+    NDArrayElement ret = {nullptr, nSeparator, loc};
     return ret;
   }
   using ParserNDArrayList = std::vector<NDArrayElement>;
@@ -313,12 +314,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 349 "chpl.ypp"
+#line 350 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 322 "bison-chpl-lib.h"
+#line 323 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -544,14 +545,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 357 "chpl.ypp"
+#line 358 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 365 "chpl.ypp"
+#line 366 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -560,6 +561,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 564 "bison-chpl-lib.h"
+#line 565 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */
