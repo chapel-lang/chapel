@@ -1,4 +1,9 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "argparsing.h"
+#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +84,7 @@ int setenv(char const *name, char const *value, int overwrite);
 #endif
 
 int main(int argc, char *argv[]) {
-  test_check(qthread_init(2) == 0);
+  assert(qthread_init(2) == 0);
 
   CHECK_VERBOSE();
 
@@ -168,7 +173,7 @@ int main(int argc, char *argv[]) {
 
   iprintf("\n***** Test migration: MC/SP with C on 1 and S on 0 *****\n");
   {
-    test_check(qthread_num_shepherds() == 2);
+    assert(qthread_num_shepherds() == 2);
 
     aligned_t rets[NUM_CONSUMERS + 1];
 
@@ -193,7 +198,7 @@ int main(int argc, char *argv[]) {
 
   iprintf("\n***** Test migration: SC/MP with C on 1 and S on 0 *****\n");
   {
-    test_check(qthread_num_shepherds() == 2);
+    assert(qthread_num_shepherds() == 2);
 
     aligned_t ret;
 
@@ -226,7 +231,7 @@ int main(int argc, char *argv[]) {
   iprintf(
     "\n***** Test migration: SC/MP with C on 1 and S on 0 (array) *****\n");
   {
-    test_check(qthread_num_shepherds() == 2);
+    assert(qthread_num_shepherds() == 2);
 
     aligned_t ret;
 

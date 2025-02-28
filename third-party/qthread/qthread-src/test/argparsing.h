@@ -17,17 +17,6 @@ using std::memory_order_relaxed;
 #include <stdlib.h>
 #include <string.h> /* for strncmp() */
 
-#define test_check(condition)                                                  \
-  do {                                                                         \
-    if (!(condition)) {                                                        \
-      printf("Test failure at line %d of function %s in file %s\n",            \
-             __LINE__,                                                         \
-             __FILE__,                                                         \
-             __func__);                                                        \
-      abort();                                                                 \
-    }                                                                          \
-  } while (0)
-
 #define CHECK_VERBOSE()                                                        \
   do {                                                                         \
     const char *v = getenv("VERBOSE");                                         \
@@ -113,7 +102,7 @@ static ARGP_Atomic(int) verbose;
 #warning Silencing iprintf() output.
 #define iprintf(...)
 #else
-inline static void iprintf(char const *restrict format, ...) {
+static void iprintf(char const *restrict format, ...) {
   if (atomic_load_explicit(&verbose, memory_order_relaxed)) {
     va_list ap;
 

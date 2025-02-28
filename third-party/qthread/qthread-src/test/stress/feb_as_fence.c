@@ -1,8 +1,7 @@
+#include <assert.h>
 #include <stdint.h>
 
 #include "qthread/qthread.h"
-
-#include "argparsing.h"
 
 #define NUM_CACHE_LINES 2048
 #define CACHE_LINE_SIZE 64
@@ -20,7 +19,7 @@ static aligned_t worker(void *unused) {
   for (size_t i = 0ull; i < BUFFER_SIZE; i++) {
     idx += JUMP;
     idx %= BUFFER_SIZE;
-    test_check(buffer[idx] == 1);
+    assert(buffer[idx] == 1);
     buffer[idx] = 2;
   }
   aligned_t out = 1ull;
@@ -30,21 +29,21 @@ static aligned_t worker(void *unused) {
 
 int main(int argc, char *argv[]) {
   int status = qthread_initialize();
-  test_check(!status);
+  assert(!status);
   status = qthread_empty(&flag1);
-  test_check(!status);
+  assert(!status);
   qthread_empty(&flag2);
   status = qthread_empty(&flag2);
-  test_check(!status);
+  assert(!status);
   qthread_fork(worker, NULL, NULL);
   for (size_t i = 0ull; i < BUFFER_SIZE; i++) {
-    test_check(buffer[i] == 0);
+    assert(buffer[i] == 0);
     buffer[i] = 1;
   }
   aligned_t out = 1ull;
   qthread_writeEF(&flag1, &out);
   qthread_readFE(NULL, &flag2);
-  for (size_t i = 0ull; i < BUFFER_SIZE; i++) { test_check(buffer[i] == 2); }
+  for (size_t i = 0ull; i < BUFFER_SIZE; i++) { assert(buffer[i] == 2); }
   return 0;
 }
 

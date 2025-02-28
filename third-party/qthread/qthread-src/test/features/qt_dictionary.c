@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -41,69 +42,69 @@ int main(int argc, char **argv) {
 
   ret_code = qt_dictionary_put(dict, mykey1, myval1);
   iprintf(" 1. Put exited with code %p\n", ret_code);
-  test_check(ret_code != NULL);
+  assert(ret_code != NULL);
 
   void *retrieved = qt_dictionary_get(dict, "k1");
   iprintf(" 2. v1=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v1", (char *)retrieved));
+  assert(my_key_equals("v1", (char *)retrieved));
 
   ret_code = qt_dictionary_put(dict, mykey2, myval2);
   iprintf(" 3. Put exited with code %p(%s)\n", ret_code, (char *)ret_code);
-  test_check(ret_code != NULL);
+  assert(ret_code != NULL);
 
   retrieved = qt_dictionary_get(dict, "k1");
   iprintf(" 4. v1=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v1", (char *)retrieved));
+  assert(my_key_equals("v1", (char *)retrieved));
 
   retrieved = qt_dictionary_get(dict, "k2");
-  test_check(retrieved);
+  assert(retrieved);
   iprintf(" 5. v2=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v2", (char *)retrieved));
+  assert(my_key_equals("v2", (char *)retrieved));
 
   retrieved = qt_dictionary_get(dict, "k3");
   iprintf(" 6. null=%s\n", (char *)retrieved);
-  test_check(retrieved == NULL);
+  assert(retrieved == NULL);
 
   retrieved = qt_dictionary_get(dict, "k2");
   iprintf(" 7. v2=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v2", (char *)retrieved));
+  assert(my_key_equals("v2", (char *)retrieved));
 
   void *ret_code2 = qt_dictionary_put(dict, mykey2, "newv2");
   iprintf(" 8. Put exited with code %p\n", ret_code2);
-  test_check(ret_code2 != NULL);
+  assert(ret_code2 != NULL);
 
   retrieved = qt_dictionary_get(dict, "k2");
   iprintf(" 9. newv2=%s\n", (char *)retrieved);
-  test_check(my_key_equals("newv2", (char *)retrieved));
+  assert(my_key_equals("newv2", (char *)retrieved));
 
   ret_code = qt_dictionary_put_if_absent(dict, mykey2, "updatev2");
   iprintf("10. Put exited with code %p\n", ret_code);
-  test_check(ret_code == ret_code2);
+  assert(ret_code == ret_code2);
 
   retrieved = qt_dictionary_get(dict, "k2");
   iprintf("11. newv2=%s\n", (char *)retrieved);
-  test_check(my_key_equals("newv2", (char *)retrieved));
+  assert(my_key_equals("newv2", (char *)retrieved));
 
   ret_code = qt_dictionary_put_if_absent(dict, mykey3, myval3);
   iprintf("12. Put exited with code %p\n", ret_code);
-  test_check(ret_code != NULL);
+  assert(ret_code != NULL);
 
   retrieved = qt_dictionary_get(dict, "k3");
   iprintf("13. v3=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v3", (char *)retrieved));
+  assert(my_key_equals("v3", (char *)retrieved));
 
   // tests for another bucket:
   ret_code = qt_dictionary_put(dict, "c1", myval1);
   iprintf("14. Put exited with code %p\n", ret_code);
-  test_check(ret_code != NULL);
+  assert(ret_code != NULL);
 
   retrieved = qt_dictionary_get(dict, "c1");
   iprintf("15. v1=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v1", (char *)retrieved));
+  assert(my_key_equals("v1", (char *)retrieved));
 
   retrieved = qt_dictionary_get(dict, "k1");
   iprintf("16. v1=%s\n", (char *)retrieved);
-  test_check(my_key_equals("v1", (char *)retrieved));
+  assert(my_key_equals("v1", (char *)retrieved));
 
   // test iterator behavior
   int no_entries = 0;
@@ -111,38 +112,38 @@ int main(int argc, char **argv) {
   while (NULL != qt_dictionary_iterator_next(it)) {
     list_entry *le = qt_dictionary_iterator_get(it);
     no_entries++;
-    test_check(le != NULL);
+    assert(le != NULL);
     iprintf("17. Pair:(%s,%s)\n", (char *)le->key, (char *)le->value);
   }
   iprintf("Found %d entries\n", no_entries);
-  test_check(no_entries == EXPECTED_ENTRIES);
+  assert(no_entries == EXPECTED_ENTRIES);
   qt_dictionary_iterator_destroy(it);
 
   // test iterator equality function
   qt_dictionary_iterator *it1 = qt_dictionary_iterator_create(dict);
   qt_dictionary_iterator *it2 = qt_dictionary_iterator_create(dict);
-  test_check(qt_dictionary_iterator_equals(it1, it2));
+  assert(qt_dictionary_iterator_equals(it1, it2));
   qt_dictionary_iterator_next(it1);
   qt_dictionary_iterator_next(it2);
-  test_check(qt_dictionary_iterator_equals(it1, it2));
+  assert(qt_dictionary_iterator_equals(it1, it2));
   qt_dictionary_iterator_next(it2);
-  test_check(!qt_dictionary_iterator_equals(it1, it2));
+  assert(!qt_dictionary_iterator_equals(it1, it2));
 
   ret_code2 = qt_dictionary_get(dict, mykey2);
   iprintf("18. Get exited with code %p (%s)\n", ret_code2, ret_code2);
-  test_check(ret_code2 != NULL);
+  assert(ret_code2 != NULL);
 
   void *val = qt_dictionary_delete(dict, mykey2);
-  test_check(val != NULL);
-  test_check(my_key_equals("newv2", (char *)val));
+  assert(val != NULL);
+  assert(my_key_equals("newv2", (char *)val));
 
   ret_code2 = qt_dictionary_get(dict, mykey2);
   iprintf("19. Get exited with code %p\n", ret_code2);
-  test_check(ret_code2 == NULL);
+  assert(ret_code2 == NULL);
 
   val = qt_dictionary_delete(dict, mykey2);
   iprintf("20. Delete exited with code %p\n", val);
-  test_check(val == NULL);
+  assert(val == NULL);
 
   qt_dictionary_iterator_destroy(it1);
   qt_dictionary_iterator_destroy(it2);

@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h" /* for _GNU_SOURCE */
+#endif
+#include <assert.h>
 #include <float.h>  /* for DBL_EPSILON (according to C89) */
 #include <limits.h> /* for INT_MIN & friends (according to C89) */
 #include <math.h>   /* for fabs() */
@@ -48,16 +52,16 @@ static aligned_t qmain(void *junk) {
   }
   iprintf("ui_array generated, calculating sum in parallel..\n");
   ui_out = qutil_uint_sum(ui_array, ui_len, 0);
-  test_check(ui_out == ui_sum_authoritative);
+  assert(ui_out == ui_sum_authoritative);
   iprintf(" - qutil_uint_sum is correct\n");
   ui_out = qutil_uint_mult(ui_array, ui_len, 0);
-  test_check(ui_out == ui_mult_authoritative);
+  assert(ui_out == ui_mult_authoritative);
   iprintf(" - qutil_uint_mult is correct\n");
   ui_out = qutil_uint_max(ui_array, ui_len, 0);
-  test_check(ui_out == ui_max_authoritative);
+  assert(ui_out == ui_max_authoritative);
   iprintf(" - qutil_uint_max is correct\n");
   ui_out = qutil_uint_min(ui_array, ui_len, 0);
-  test_check(ui_out == ui_min_authoritative);
+  assert(ui_out == ui_min_authoritative);
   iprintf(" - qutil_uint_min is correct\n");
   gettimeofday(&start, NULL);
   qutil_aligned_qsort(ui_array, ui_len);
@@ -105,21 +109,21 @@ static aligned_t qmain(void *junk) {
   }
   iprintf("i_array generated...\n");
   i_out = qutil_int_sum(i_array, i_len, 0);
-  test_check(i_out == i_sum_authoritative);
+  assert(i_out == i_sum_authoritative);
   iprintf(" - qutil_int_sum is correct\n");
   i_out = qutil_int_mult(i_array, i_len, 0);
-  test_check(i_out == i_mult_authoritative);
+  assert(i_out == i_mult_authoritative);
   iprintf(" - qutil_int_mult is correct\n");
   i_out = qutil_int_max(i_array, i_len, 0);
-  test_check(i_out == i_max_authoritative);
+  assert(i_out == i_max_authoritative);
   iprintf(" - qutil_int_max is correct\n");
   i_out = qutil_int_min(i_array, i_len, 0);
-  test_check(i_out == i_min_authoritative);
+  assert(i_out == i_min_authoritative);
   free(i_array);
   iprintf(" - qutil_int_min is correct\n");
 
   d_array = (double *)calloc(d_len, sizeof(double));
-  test_check(d_array != NULL);
+  assert(d_array != NULL);
   for (i = 0; i < d_len; i++) {
     d_array[i] = random() / (double)RAND_MAX * 10;
 
@@ -155,7 +159,7 @@ static aligned_t qmain(void *junk) {
   }
   iprintf(" - qutil_double_max is correct\n");
   d_out = qutil_double_min(d_array, d_len, 0);
-  test_check(d_out == d_min_authoritative);
+  assert(d_out == d_min_authoritative);
   iprintf(" - qutil_double_min is correct\n");
   /*qutil_mergesort(d_array, d_len, 0);
    * for (i = 0; i < d_len-1; i++) {
@@ -203,14 +207,14 @@ static aligned_t qmain(void *junk) {
 int main(int argc, char *argv[]) {
   aligned_t ret;
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   NUMARG(d_len, "TEST_LEN");
   NUMARG(i_len, "TEST_LEN");
   NUMARG(ui_len, "TEST_LEN");
 
-  test_check(qthread_fork(qmain, NULL, &ret) == 0);
+  assert(qthread_fork(qmain, NULL, &ret) == 0);
   qthread_readFF(NULL, &ret);
   return 0;
 }

@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* System Headers */
 #include <stdatomic.h>
 #include <stdlib.h> /* for malloc/free/etc */
@@ -100,7 +104,7 @@ static void initialize_bucket(qt_hash h, size_t bucket);
 
 static int qt_lf_list_insert(_Atomic marked_ptr_t *head,
                              hash_entry *node,
-                             marked_ptr_t *ocur) {
+                             marked_ptr_t *ocur) { /*{{{*/
   so_key_t key = atomic_load_explicit(&node->key, memory_order_relaxed);
 
   while (1) {
@@ -120,9 +124,9 @@ static int qt_lf_list_insert(_Atomic marked_ptr_t *head,
       return 1;
     }
   }
-}
+} /*}}}*/
 
-static int qt_lf_list_delete(_Atomic marked_ptr_t *head, so_key_t key) {
+static int qt_lf_list_delete(_Atomic marked_ptr_t *head, so_key_t key) { /*{{{*/
   while (1) {
     _Atomic marked_ptr_t *lprev;
     marked_ptr_t lcur;
@@ -144,13 +148,13 @@ static int qt_lf_list_delete(_Atomic marked_ptr_t *head, so_key_t key) {
     }
     return 1;
   }
-}
+} /*}}}*/
 
 static void *qt_lf_list_find(_Atomic marked_ptr_t *head,
                              so_key_t key,
                              _Atomic marked_ptr_t **oprev,
                              marked_ptr_t *ocur,
-                             marked_ptr_t *onext) {
+                             marked_ptr_t *onext) { /*{{{*/
   so_key_t ckey;
   void *cval;
   _Atomic marked_ptr_t *prev = NULL;
@@ -196,7 +200,7 @@ static void *qt_lf_list_find(_Atomic marked_ptr_t *head,
       cur = next;
     }
   }
-}
+} /*}}}*/
 
 static inline so_key_t so_regularkey(lkey_t const key) {
   return REVERSE(key | MSB);

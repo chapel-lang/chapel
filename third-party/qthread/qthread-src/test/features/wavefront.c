@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <qthread/qthread.h>
 #include <qthread/wavefront.h>
 #include <stdio.h>
@@ -23,7 +24,7 @@ assignrand(size_t const startat, size_t const stopat, qarray *a, void *arg) {
   double *ptr = (double *)qarray_elem_nomigrate(a, startat);
   size_t const max = stopat - startat;
 
-  test_check(a->unit_size == sizeof(double));
+  assert(a->unit_size == sizeof(double));
 
   for (size_t i = 0; i < max; i++) {
     /*long r = random();
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
   qarray *v, *h;
   qt_wavefront_lattice *L;
 
-  test_check(qthread_initialize() == QTHREAD_SUCCESS);
+  assert(qthread_initialize() == QTHREAD_SUCCESS);
   CHECK_VERBOSE();
   NUMARG(ASIZE, "TEST_ASIZE");
   iprintf("ASIZE: %i\n", (int)ASIZE);

@@ -4,6 +4,10 @@
 #define QTHREAD_ASSERTS_H
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h> /* for assert() */
 
 #ifdef qassert
@@ -33,10 +37,14 @@
  * and sending a signal to itself)
  */
 
-#ifdef NDEBUG
+#ifdef QTHREAD_NO_ASSERTS
 #define ASSERT_ONLY(x)
 #define qassert(op, val) op
 #define qassertnot(op, val) op
+#ifdef assert
+#undef assert
+#endif
+#define assert(foo)
 #define qassert_ret(assertion, retval)                                         \
   do {                                                                         \
     if (!(assertion)) { return retval; }                                       \
@@ -53,7 +61,7 @@
 #define qgoto(tag)                                                             \
   tag:
 #define tassert(foo)
-#else // ifdef NDEBUG
+#else // ifdef QTHREAD_NO_ASSERTS
 #define ASSERT_ONLY(x) x
 #define qassert(op, val) assert((op) == (val))
 #define qassertnot(op, val) assert(op != val)
@@ -70,6 +78,12 @@
   do {                                                                         \
     if (!(foo)) { QTHREAD_TRAP(); }                                            \
   } while (0)
-#endif // ifdef NDEBUG
+#endif // ifdef QTHREAD_NO_ASSERTS
+
+#ifdef QTHREAD_PARANOIA
+#define PARANOIA(x) x
+#else
+#define PARANOIA(x)
+#endif
 
 /* vim:set expandtab: */
