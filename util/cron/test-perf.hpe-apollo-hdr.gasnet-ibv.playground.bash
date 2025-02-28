@@ -40,7 +40,7 @@ START_DATE=02/27/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
-set +x
+set +e
 
 nightly_args="${nightly_args} -no-buildcheck"
 # don't use `perf_hpe_apollo_args`, the settings are overwritten here

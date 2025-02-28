@@ -34,7 +34,7 @@ START_DATE=02/21/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
-set +x
+set +e
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
