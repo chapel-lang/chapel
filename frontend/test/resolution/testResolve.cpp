@@ -1874,6 +1874,25 @@ static void testGetLocalePrim() {
   assert(guard.realizeErrors() == 0);
 }
 
+// Test the '.locale' query.
+static void testDotLocale() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto loc = resolveTypeOfXInit(context,
+    R"""(
+      var myVar : int;
+      var x = myVar.locale;
+    )""");
+
+  assert(loc.kind() == QualifiedType::CONST_VAR);
+  assert(loc.type());
+  assert(loc.type() == CompositeType::getLocaleType(context));
+
+  assert(guard.realizeErrors() == 0);
+}
+
 // even if a formal's type has defaults, if it's explicitly made generic
 // with (?) it should not be concrete.
 static void testExplicitlyGenericFormal() {
@@ -1951,6 +1970,8 @@ int main() {
 
   testPromotionPrim();
   testGetLocalePrim();
+
+  testDotLocale();
 
   testExplicitlyGenericFormal();
 
