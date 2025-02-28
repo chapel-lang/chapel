@@ -3837,7 +3837,6 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   std::swap(calledFnState_, tc_->cur);
   tc_->pushBlock(tc_->cur.moduleSymbol->block);
 
-
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rvCalledFn(&rcval, fn, *tc_, rr);
 
@@ -3871,8 +3870,10 @@ convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
 
   tc_->enterCallActuals(call);
 
-  INT_ASSERT(0 <= fromMappingIdx && fromMappingIdx < actualState_.size());
-
+  if (!actualState_.empty()) {
+    const int hi = (int) actualState_.size();
+    INT_ASSERT(0 <= fromMappingIdx && fromMappingIdx < hi);
+  }
   // Convert each formal/actual mapping starting from the one requested.
   int i = 0;
   for (const FormalActual& fa : fam_.byFormals()) {
