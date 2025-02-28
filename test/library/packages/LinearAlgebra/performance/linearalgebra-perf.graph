@@ -16,6 +16,12 @@ graphkeys: native
 graphtitle: LU factorization - 1000x1000
 ylabel: Time
 
+perfkeys: LinearAlgebra.solve_tril:, LinearAlgebra.solve_triu:
+files: solve-triangular-m1000.dat
+graphkeys: native
+graphtitle: Solve Triangular - 1000x1000
+ylabel: Time
+
 perfkeys: time (s) : , time (s) : , time (s) : , time (s) : 
 files: csrmatmat-1e-9-big.dat, csrmatmat-1e-7-big.dat, spa-1e-9-big.dat, spa-1e-7-big.dat
 graphkeys: SMMP (sparsity=1e-7%), SMMP (sparsity=1e-5%), SPA (sparsity=1e-7%), SPA (sparsity=1e-5%)
