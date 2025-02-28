@@ -751,11 +751,15 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
 
 void Visitor::checkSparseDomainArgCount(const FnCall* node) {
   if (isCallWithName(node, USTR("sparse"))) {
-    if (node->numActuals() == 1)
-      if (auto childCall = node->actual(0)->toFnCall())
-        if (isCallWithName(childCall, USTR("subdomain")))
-          if (childCall->numActuals() != 1)
-            error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
+    // At the time of writing, the grammar only allows this nesting structure.
+    // Do not do anything else.
+
+    CHPL_ASSERT(node->numActuals() == 1);
+    auto childCall = node->actual(0)->toFnCall();
+    CHPL_ASSERT(childCall);
+    CHPL_ASSERT(isCallWithName(childCall, USTR("subdomain")));
+    if (childCall->numActuals() != 1)
+      error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
   }
 }
 

@@ -390,6 +390,54 @@ static void test8() {
   assert(!xres.mostSpecific().only().fn()->needsInstantiation());
 }
 
+// We treat 'owned C' and the underlying '_owned(C)' pretty much interchangeably.
+// However, when performing instantiation, we don't want to naively instantiate
+// _owned with owned. Rather, we should convert owned to _owned, and instantiate
+// it that way.
+static void testInstantiateManagerRecord() {
+  printf("testInstantiateOwned\n");
+
+  std::string program = R"""(
+    class C {}
+
+    proc _owned.foo() {
+      return this;
+    }
+
+    proc _shared.foo() {
+      return this;
+    }
+
+
+    var x = (new owned C()).foo();
+    var y = (new shared C()).foo();
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+
+  auto checkChplT = [context](const QualifiedType qt) {
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRecordType());
+
+    auto fields = fieldsForTypeDecl(context, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    bool foundField = false;
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) == "chpl_t") {
+        foundField = true;
+        assert(fields.fieldType(i).type()->isClassType());
+        assert(fields.fieldType(i).type()->toClassType()->basicClassType());
+        assert(fields.fieldType(i).type()->toClassType()->basicClassType()->name() == "C");
+        break;
+      }
+    }
+    assert(foundField);
+  };
+  checkChplT(vars.at("x"));
+  checkChplT(vars.at("y"));
+}
+
 int main() {
   test1();
   test2();
@@ -399,6 +447,8 @@ int main() {
   test6();
   test7();
   test8();
+
+  testInstantiateManagerRecord();
 
   return 0;
 }

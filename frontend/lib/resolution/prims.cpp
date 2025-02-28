@@ -498,6 +498,8 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
 
   const RuntimeType* rtt = nullptr;
   if (auto dt = compositeType->toDomainType()) {
+    while (dt->isSubdomain()) dt = dt->parentDomain();
+
     auto domainRtt = dt->runtimeType(context);
     CHPL_ASSERT(domainRtt);
     CHPL_ASSERT(domainRtt->isRuntimeType());

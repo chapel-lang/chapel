@@ -185,6 +185,21 @@ class CanPassResult {
 };
 
 /**
+  Helper function that handles the automatic coalescing of e.g. the `_owned`
+  record implementing managed types and the `owned C` type used in user code.
+  Only does this if mightBeManagerRecord is a `_owned`-like record type,
+  and mightBeClass is a class type. In other words, only does something if
+  the coalescing is necessary.
+
+  Sets mightBeClass to its record equivalent if the conversion is possible,
+  and returns true. Otherwise returns false.
+ */
+bool
+tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
+                                             const types::Type* const & mightBeManagerRecord,
+                                             const types::Type*& mightBeClass);
+
+/**
   Given an argument with QualifiedType actualType,
   can that argument be passed to a formal with QualifiedType formalType?
 

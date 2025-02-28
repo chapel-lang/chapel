@@ -177,8 +177,6 @@ const TupleType*
 TupleType::getStarTuple(Context* context,
                         QualifiedType paramSize,
                         QualifiedType varArgEltType) {
-  CHPL_ASSERT(!varArgEltType.isUnknownKindOrType());
-
   if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
