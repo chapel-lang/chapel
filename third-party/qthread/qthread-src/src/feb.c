@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 /* The API */
 #include "qthread/qthread.h"
 
@@ -148,7 +151,7 @@ static inline void qt_feb_schedule(qthread_t *waiter,
 
 /* functions to implement FEB locking/unlocking */
 
-static aligned_t qthread_feb_blocker_thread(void *arg) {
+static aligned_t qthread_feb_blocker_thread(void *arg) { /*{{{ */
   qthread_feb_blocker_t *restrict const a = (qthread_feb_blocker_t *)arg;
 
   switch (a->type) {
@@ -169,9 +172,10 @@ static aligned_t qthread_feb_blocker_thread(void *arg) {
   pthread_cond_signal(&a->condition);
   pthread_mutex_unlock(&a->lock);
   return 0;
-}
+} /*}}} */
 
-static int qthread_feb_blocker_func(void *dest, void *src, blocker_type t) {
+static int
+qthread_feb_blocker_func(void *dest, void *src, blocker_type t) { /*{{{*/
   qthread_feb_blocker_t args = {PTHREAD_MUTEX_INITIALIZER,
                                 PTHREAD_COND_INITIALIZER,
                                 0u,
@@ -187,7 +191,7 @@ static int qthread_feb_blocker_func(void *dest, void *src, blocker_type t) {
   pthread_cond_destroy(&args.condition);
   pthread_mutex_destroy(&args.lock);
   return args.retval;
-}
+} /*}}}*/
 
 #define QTHREAD_CHOOSE_STRIPE2(addr)                                           \
   (qt_hash64((uint64_t)(uintptr_t)addr) & (QTHREAD_LOCKING_STRIPES - 1))
@@ -200,7 +204,7 @@ static int qthread_feb_blocker_func(void *dest, void *src, blocker_type t) {
  */
 
 /* This is just a little function that should help in debugging */
-int API_FUNC qthread_feb_status(aligned_t const *addr) {
+int API_FUNC qthread_feb_status(aligned_t const *addr) { /*{{{ */
   aligned_t const *alignedaddr;
 
   if (qlib == NULL) { return 1; }
@@ -240,11 +244,11 @@ int API_FUNC qthread_feb_status(aligned_t const *addr) {
   qt_hash_unlock(FEBs[lockbin]);
 #endif /* ifdef LOCK_FREE_FEBS */
   return status;
-}
+} /*}}} */
 
 /* this function removes the FEB data structure for the address maddr from the
  * hash table */
-static inline void qthread_FEB_remove(void *maddr) {
+static inline void qthread_FEB_remove(void *maddr) { /*{{{ */
   qthread_addrstat_t *m;
   int const lockbin = QTHREAD_CHOOSE_STRIPE2(maddr);
 
@@ -300,10 +304,11 @@ static inline void qthread_FEB_remove(void *maddr) {
     qthread_addrstat_delete(m);
 #endif
   }
-}
+} /*}}} */
 
-static inline void qthread_precond_launch(qthread_shepherd_t *shep,
-                                          qthread_addrres_t *precond_tasks) {
+static inline void
+qthread_precond_launch(qthread_shepherd_t *shep,
+                       qthread_addrres_t *precond_tasks) { /*{{{*/
   qthread_addrres_t *precond_tail =
     ((qthread_addrres_t *)(precond_tasks->waiter));
 
@@ -328,14 +333,14 @@ static inline void qthread_precond_launch(qthread_shepherd_t *shep,
   } else {
     FREE_ADDRRES(precond_tasks);
   }
-}
+} /*}}}*/
 
 static inline void
 qthread_gotlock_empty_inner(qthread_shepherd_t *shep,
                             qthread_addrstat_t *m,
                             void *maddr,
                             uint_fast8_t const recursive,
-                            qthread_addrres_t **precond_tasks) {
+                            qthread_addrres_t **precond_tasks) { /*{{{ */
   qthread_addrres_t *X = NULL;
   int removeable;
 
@@ -365,7 +370,7 @@ qthread_gotlock_empty_inner(qthread_shepherd_t *shep,
     if (*precond_tasks) { qthread_precond_launch(shep, *precond_tasks); }
     if (removeable) { qthread_FEB_remove(maddr); }
   }
-}
+} /*}}} */
 
 static inline void qthread_gotlock_empty(qthread_shepherd_t *shep,
                                          qthread_addrstat_t *m,
@@ -380,7 +385,7 @@ qthread_gotlock_fill_inner(qthread_shepherd_t *shep,
                            qthread_addrstat_t *m,
                            void *maddr,
                            uint_fast8_t const recursive,
-                           qthread_addrres_t **precond_tasks) {
+                           qthread_addrres_t **precond_tasks) { /*{{{ */
   qthread_addrres_t *X = NULL;
 
   assert(m);
@@ -478,7 +483,7 @@ qthread_gotlock_fill_inner(qthread_shepherd_t *shep,
     /* now, remove it if it needs to be removed */
     if (removeable) { qthread_FEB_remove(maddr); }
   }
-}
+} /*}}} */
 
 static inline void qthread_gotlock_fill(qthread_shepherd_t *shep,
                                         qthread_addrstat_t *m,
@@ -488,7 +493,7 @@ static inline void qthread_gotlock_fill(qthread_shepherd_t *shep,
   qthread_gotlock_fill_inner(shep, m, maddr, 0, &tmp);
 }
 
-int API_FUNC qthread_empty(aligned_t const *dest) {
+int API_FUNC qthread_empty(aligned_t const *dest) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -560,9 +565,9 @@ int API_FUNC qthread_empty(aligned_t const *dest) {
 #endif /* ifdef LOCK_FREE_FEBS */
   if (m) { qthread_gotlock_empty(shep, m, (void *)alignedaddr); }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_fill(aligned_t const *dest) {
+int API_FUNC qthread_fill(aligned_t const *dest) { /*{{{ */
   aligned_t const *alignedaddr;
 
   if (qlib == NULL) { return QTHREAD_SUCCESS; }
@@ -608,14 +613,14 @@ int API_FUNC qthread_fill(aligned_t const *dest) {
     qthread_gotlock_fill(shep, m, (void *)alignedaddr);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - data is copies from src to destination
  * 2 - the destination's FEB state gets changed from empty to full
  */
 
-int API_FUNC qthread_writeF(aligned_t *dest, aligned_t const *src) {
+int API_FUNC qthread_writeF(aligned_t *dest, aligned_t const *src) { /*{{{ */
   aligned_t *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -662,11 +667,11 @@ int API_FUNC qthread_writeF(aligned_t *dest, aligned_t const *src) {
   MACHINE_FENCE;
   if (m) { qthread_gotlock_fill(shep, m, alignedaddr); }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_writeF_const(aligned_t *dest, aligned_t src) {
+int API_FUNC qthread_writeF_const(aligned_t *dest, aligned_t src) { /*{{{ */
   return qthread_writeF(dest, &src);
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - data is copies from src to destination
@@ -674,7 +679,7 @@ int API_FUNC qthread_writeF_const(aligned_t *dest, aligned_t src) {
  */
 
 int API_FUNC qthread_purge_to(aligned_t *restrict dest,
-                              aligned_t const *restrict src) {
+                              aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -748,15 +753,15 @@ int API_FUNC qthread_purge_to(aligned_t *restrict dest,
   if (dest && (dest != src)) { *(aligned_t *)dest = *(aligned_t *)src; }
   if (m) { qthread_gotlock_empty(shep, m, (void *)alignedaddr); }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_purge_to_const(aligned_t *dest, aligned_t src) {
+int API_FUNC qthread_purge_to_const(aligned_t *dest, aligned_t src) { /*{{{ */
   return qthread_purge_to(dest, &src);
-}
+} /*}}} */
 
-int API_FUNC qthread_purge(aligned_t *dest) {
+int API_FUNC qthread_purge(aligned_t *dest) { /*{{{ */
   return qthread_purge_to_const(dest, 0);
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - destination's FEB state must be "empty"
@@ -765,7 +770,7 @@ int API_FUNC qthread_purge(aligned_t *dest) {
  */
 
 int API_FUNC qthread_writeEF(aligned_t *restrict dest,
-                             aligned_t const *restrict src) {
+                             aligned_t const *restrict src) { /*{{{ */
   aligned_t *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -856,14 +861,14 @@ int API_FUNC qthread_writeEF(aligned_t *restrict dest,
     qthread_gotlock_fill(me->rdata->shepherd_ptr, m, alignedaddr);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_writeEF_const(aligned_t *dest, aligned_t src) {
+int API_FUNC qthread_writeEF_const(aligned_t *dest, aligned_t src) { /*{{{ */
   return qthread_writeEF(dest, &src);
-}
+} /*}}} */
 
 int API_FUNC qthread_writeEF_nb(aligned_t *restrict dest,
-                                aligned_t const *restrict src) {
+                                aligned_t const *restrict src) { /*{{{ */
   aligned_t *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -908,18 +913,18 @@ int API_FUNC qthread_writeEF_nb(aligned_t *restrict dest,
     qthread_gotlock_fill(me->rdata->shepherd_ptr, m, alignedaddr);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_writeEF_const_nb(aligned_t *dest, aligned_t src) {
+int API_FUNC qthread_writeEF_const_nb(aligned_t *dest, aligned_t src) { /*{{{ */
   return qthread_writeEF_nb(dest, &src);
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - destination's FEB state must be "full"
  * 2 - data is copied from src to destination
  */
 int API_FUNC qthread_writeFF(aligned_t *restrict dest,
-                             aligned_t const *restrict src) {
+                             aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m = NULL;
@@ -982,11 +987,11 @@ int API_FUNC qthread_writeFF(aligned_t *restrict dest,
     QTHREAD_FASTLOCK_UNLOCK(&m->lock);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
-int API_FUNC qthread_writeFF_const(aligned_t *dest, aligned_t src) {
+int API_FUNC qthread_writeFF_const(aligned_t *dest, aligned_t src) { /*{{{ */
   return qthread_writeFF(dest, &src);
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - src's FEB state must be "full"
@@ -994,7 +999,7 @@ int API_FUNC qthread_writeFF_const(aligned_t *dest, aligned_t src) {
  */
 
 int API_FUNC qthread_readFF(aligned_t *restrict dest,
-                            aligned_t const *restrict src) {
+                            aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m = NULL;
@@ -1057,10 +1062,10 @@ int API_FUNC qthread_readFF(aligned_t *restrict dest,
     QTHREAD_FASTLOCK_UNLOCK(&m->lock);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 int API_FUNC qthread_readFF_nb(aligned_t *restrict dest,
-                               aligned_t const *restrict src) {
+                               aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m = NULL;
@@ -1111,7 +1116,7 @@ int API_FUNC qthread_readFF_nb(aligned_t *restrict dest,
     QTHREAD_FASTLOCK_UNLOCK(&m->lock);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - src's FEB state must be "full"
@@ -1120,7 +1125,7 @@ int API_FUNC qthread_readFF_nb(aligned_t *restrict dest,
  */
 
 int API_FUNC qthread_readFE(aligned_t *restrict dest,
-                            aligned_t const *restrict src) {
+                            aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -1208,7 +1213,7 @@ int API_FUNC qthread_readFE(aligned_t *restrict dest,
     qthread_gotlock_empty(me->rdata->shepherd_ptr, m, (void *)alignedaddr);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 /* the way this works is that:
  * 1 - src's FEB state is ignored
@@ -1216,15 +1221,16 @@ int API_FUNC qthread_readFE(aligned_t *restrict dest,
  */
 
 int API_FUNC qthread_readXX(aligned_t *restrict dest,
-                            aligned_t const *restrict src) {
+                            aligned_t const *restrict src) { /*{{{ */
+
   MACHINE_FENCE;
   if (dest && (dest != src)) { *(aligned_t *)dest = *(aligned_t *)src; }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 /* This is the non-blocking version of the previous one */
 int API_FUNC qthread_readFE_nb(aligned_t *restrict dest,
-                               aligned_t const *restrict src) {
+                               aligned_t const *restrict src) { /*{{{ */
   aligned_t const *alignedaddr;
 
   qthread_addrstat_t *m;
@@ -1287,7 +1293,7 @@ int API_FUNC qthread_readFE_nb(aligned_t *restrict dest,
     qthread_gotlock_empty(me->rdata->shepherd_ptr, m, (void *)alignedaddr);
   }
   return QTHREAD_SUCCESS;
-}
+} /*}}} */
 
 #ifdef QTHREAD_COUNT_THREADS
 extern aligned_t threadcount;
@@ -1308,7 +1314,7 @@ extern QTHREAD_FASTLOCK_TYPE effconcurrentthreads_lock;
  * This is a modified readFF() that does not suspend the calling thread, but
  * simply enqueues the specified qthread in the FFQ associated with the target.
  */
-int INTERNAL qthread_check_feb_preconds(qthread_t *t) {
+int INTERNAL qthread_check_feb_preconds(qthread_t *t) { /*{{{*/
   aligned_t **these_preconds = (aligned_t **)t->preconds;
 
   assert(qthread_library_initialized);
@@ -1391,11 +1397,11 @@ int INTERNAL qthread_check_feb_preconds(qthread_t *t) {
 #endif /* ifdef QTHREAD_COUNT_THREADS */
 
   return 0;
-}
+} /*}}}*/
 
 static filter_code qt_feb_tf_call_cb(qt_key_t const addr,
                                      qthread_t *restrict const waiter,
-                                     void *restrict tf_arg) {
+                                     void *restrict tf_arg) { /*{{{*/
   qt_feb_callback_f f = (qt_feb_callback_f)((void **)tf_arg)[0];
   void *f_arg = ((void **)tf_arg)[1];
   void *tls;
@@ -1423,10 +1429,10 @@ static filter_code qt_feb_tf_call_cb(qt_key_t const addr,
     tls,
     f_arg);
   return IGNORE_AND_CONTINUE;
-}
+} /*}}}*/
 
 static void
-qt_feb_call_tf(qt_key_t const addr, qthread_addrstat_t *m, void *arg) {
+qt_feb_call_tf(qt_key_t const addr, qthread_addrstat_t *m, void *arg) { /*{{{*/
   qt_feb_taskfilter_f tf = (qt_feb_taskfilter_f)((void **)arg)[0];
   void *const f_arg = ((void **)arg)[1];
   uintptr_t const sync = (uintptr_t)(((void **)arg)[2]);
@@ -1469,28 +1475,30 @@ qt_feb_call_tf(qt_key_t const addr, qthread_addrstat_t *m, void *arg) {
     }
   }
   if (sync) { QTHREAD_FASTLOCK_UNLOCK(&m->lock); }
-}
+} /*}}}*/
 
-void INTERNAL qthread_feb_taskfilter_serial(qt_feb_taskfilter_f tf, void *arg) {
+void INTERNAL qthread_feb_taskfilter_serial(qt_feb_taskfilter_f tf,
+                                            void *arg) { /*{{{*/
   void *pass[3] = {tf, arg, NULL};
 
   for (unsigned int i = 0; i < QTHREAD_LOCKING_STRIPES; i++) {
     qt_hash_callback(FEBs[i], (qt_hash_callback_fn)qt_feb_call_tf, pass);
   }
-}
+} /*}}}*/
 
-void INTERNAL qthread_feb_taskfilter(qt_feb_taskfilter_f tf, void *arg) {
+void INTERNAL qthread_feb_taskfilter(qt_feb_taskfilter_f tf,
+                                     void *arg) { /*{{{*/
   void *pass[3] = {tf, arg, (void *)(uintptr_t)1};
 
   for (unsigned int i = 0; i < QTHREAD_LOCKING_STRIPES; i++) {
     qt_hash_callback(FEBs[i], (qt_hash_callback_fn)qt_feb_call_tf, pass);
   }
-}
+} /*}}}*/
 
-void API_FUNC qthread_feb_callback(qt_feb_callback_f cb, void *arg) {
+void API_FUNC qthread_feb_callback(qt_feb_callback_f cb, void *arg) { /*{{{*/
   void *pass[2] = {cb, arg};
 
   qthread_feb_taskfilter(qt_feb_tf_call_cb, pass);
-}
+} /*}}}*/
 
 /* vim:set expandtab: */

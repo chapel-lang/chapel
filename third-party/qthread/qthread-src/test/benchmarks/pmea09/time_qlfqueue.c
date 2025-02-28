@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,7 +74,7 @@ static aligned_t dequeuer(void *arg) {
 
 #ifdef HAVE_CPROPS
 static void
-loop_cpqueuer(size_t const startat, size_t const stopat, void *arg) {
+loop_cpqueuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
   size_t i;
   cp_list *q = (cp_list *)arg;
 
@@ -83,10 +86,10 @@ loop_cpqueuer(size_t const startat, size_t const stopat, void *arg) {
       exit(-2);
     }
   }
-}
+} /*}}} */
 
 static void
-loop_cpdequeuer(size_t const startat, size_t const stopat, void *arg) {
+loop_cpdequeuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
   size_t i;
   cp_list *q = (cp_list *)arg;
 
@@ -98,11 +101,12 @@ loop_cpdequeuer(size_t const startat, size_t const stopat, void *arg) {
       exit(-2);
     }
   }
-}
+} /*}}} */
 
 #endif /* ifdef HAVE_CPROPS */
 
-static void loop_queuer(size_t const startat, size_t const stopat, void *arg) {
+static void
+loop_queuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
   size_t i;
   qlfqueue_t *q = (qlfqueue_t *)arg;
   void *me = (void *)(uintptr_t)qthread_id();
@@ -113,10 +117,10 @@ static void loop_queuer(size_t const startat, size_t const stopat, void *arg) {
       exit(-2);
     }
   }
-}
+} /*}}} */
 
 static void
-loop_dequeuer(size_t const startat, size_t const stopat, void *arg) {
+loop_dequeuer(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
   size_t i;
   qlfqueue_t *q = (qlfqueue_t *)arg;
 
@@ -126,7 +130,7 @@ loop_dequeuer(size_t const startat, size_t const stopat, void *arg) {
       exit(-2);
     }
   }
-}
+} /*}}} */
 
 int main(int argc, char *argv[]) {
   qlfqueue_t *q;

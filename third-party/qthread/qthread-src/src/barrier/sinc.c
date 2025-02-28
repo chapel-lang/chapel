@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* System Headers */
 #include <stdint.h>
 #include <stdio.h>

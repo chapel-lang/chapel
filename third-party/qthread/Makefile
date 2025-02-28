@@ -5,8 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CMAKE ?= cmake
-
 export CHPL_MAKE_LOCALE_MODEL
 
 #
@@ -17,18 +15,33 @@ QTHREAD_INSTALL_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_INSTALL_SUBDIR)
 QTHREAD_BUILD_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_BUILD_SUBDIR)
 QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 
+#
+# Cray builds are cross-compilations
+#
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
+else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
+endif
+
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
   TOPOLOGY=binders
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
     CFLAGS_NEEDS_RT_INCLUDES = y
-    CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_HWLOC_GET_TOPOLOGY_FUNCTION="chpl_topo_getHwlocTopology()"
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
-    CHPL_QTHREAD_CFG_OPTIONS += -DHWLOC_INSTALL_DIR=$(HWLOC_INSTALL_DIR)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
+    ifdef CHPL_HWLOC_PREFIX
+      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
+    endif
+    # don't bother checking if we can link against hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   else ifeq ($(CHPL_MAKE_HWLOC),system)
-    CHPL_QTHREAD_CFG_OPTIONS += -DHWLOC_INSTALL_DIR=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 
@@ -37,7 +50,7 @@ TOPOLOGY = $(CHPL_QTHREAD_TOPOLOGY)
 endif
 
 ifneq (, $(TOPOLOGY))
-CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_TOPOLOGY=$(TOPOLOGY)
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
 # Used to create qthread-chapel.h
@@ -49,7 +62,7 @@ endif
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
-  CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_ALLOC=chapel
+  CHPL_QTHREAD_CFG_OPTIONS += --with-alloc=chapel
   CFLAGS_NEEDS_RT_INCLUDES = y
 endif
 
@@ -107,12 +120,16 @@ endif
 HAVE_GUARD_PAGES = 0
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_GUARD_PAGES)))
 HAVE_GUARD_PAGES = 1
-CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_GUARD_PAGES=ON
+CHPL_QTHREAD_CFG_OPTIONS += --enable-guard-pages
 endif
 
+# optionally enable printing compilation commands, etc. (to help diagnose
+# build problems)
 ifneq (, $(CHPL_QTHREAD_LOUD_RULES))
-CHPL_QTHREAD_CFG_OPTIONS += -DCMAKE_VERBOSE_MAKEFILE=ON
+CHPL_QTHREAD_CFG_OPTIONS += --disable-silent-rules
 endif
+
+CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
 # determine which scheduler to use based on locale model.  Override with a user
 # provided option if they requested one.
@@ -127,17 +144,33 @@ endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
-CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_SCHEDULER=$(SCHEDULER)
+CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
 # only do this on M1+ Macs
 ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
-  CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CACHELINE_SIZE_ESTIMATE=128
+  CHPL_QTHREAD_CFG_OPTIONS += --with-cacheline-width=128
 endif
 endif
 
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
-CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CONDWAIT_QUEUE=ON
+CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
+
+# pgi doesn't support the proper atomic intrinsics that are required for
+# spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
+ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
+CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
+# Address sanitizer doesn't work with asm context switching so try
+# makecontext/swapcontext (which may have false-positives, but doesn't
+# immediately fail)
+ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
+  CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
+  ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
+    CFLAGS += -D_XOPEN_SOURCE
+  endif
+endif
 
 ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
@@ -160,28 +193,35 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+	@test -z "$(FAILBUILD)" || ( echo 'compileline failed!' && false )
+
+#
+# These first few lines touch a bunch of autoconf-oriented files in a
+# certain order to prevent autoconf from running again; otherwise, we
+# ran into issues if a user's autoconf environment was not as far
+# ahead in version numbers as that which was used when packaging the
+# Qthreads release
+#
+	cd $(QTHREAD_SUBDIR) && touch -c configure.ac
+	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch
+	sleep 1
+	cd $(QTHREAD_SUBDIR) && touch -c aclocal.m4
+	sleep 1
+	cd $(QTHREAD_SUBDIR) && touch configure
+	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
+
+#
+# Then configure
+#
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	$(CMAKE) -B $(QTHREAD_BUILD_DIR) -S $(QTHREAD_SUBDIR) \
-	$(CHPL_QTHREAD_CFG_OPTIONS) \
-	-DQTHREADS_BUILD_TESTS=OFF \
-	-DCMAKE_INSTALL_PREFIX='$(QTHREAD_INSTALL_DIR)' \
-	-DCMAKE_INSTALL_LIBDIR='$(QTHREAD_LIB_DIR)' \
-	-DBUILD_SHARED_LIBS=OFF \
-	-DCMAKE_C_COMPILER='$(CC)' \
-	-DCMAKE_C_FLAGS='$(CFLAGS)' \
-	-DCMAKE_CXX_COMPILER='$(CXX)' \
-	-DCMAKE_CXX_FLAGS='$(CXXFLAGS)' \
-	-DCMAKE_MAKE_PROGRAM='$(MAKE)'
+	cd $(QTHREAD_BUILD_DIR) \
+	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
+	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' LDFLAGS='$(RUNTIME_LFLAGS) $(LDFLAGS)' \
+	       --prefix=$(QTHREAD_INSTALL_DIR) $(CHPL_QTHREAD_CFG_OPTIONS)
 
 qthread-build: FORCE
-	if [ -f $(QTHREAD_BUILD_DIR)/Makefile ]; then cd $(QTHREAD_BUILD_DIR) && $(MAKE); else $(CMAKE) --build $(QTHREAD_BUILD_DIR); fi
-
-qthread-install: FORCE
-	if [ -f $(QTHREAD_BUILD_DIR)/Makefile ]; then cd $(QTHREAD_BUILD_DIR) && $(MAKE) install; else $(CMAKE) --install $(QTHREAD_BUILD_DIR); fi
-
-FORCE:
-
-.NOTPARALLEL:
+	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
+	cd $(QTHREAD_BUILD_DIR) && $(MAKE) install
 
 #
 # The two variables here answer different questions even though they're
@@ -218,7 +258,10 @@ qthread-chapel-h: FORCE
 	     $(USE_TOPOLOGY_BINDERS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
-qthread: qthread-config qthread-build qthread-install qthread-chapel-h
+qthread: qthread-config qthread-build qthread-chapel-h
+
+qthread-reconfig:
+	cd $(QTHREAD_SUBDIR) && autoreconf -f -i
 
 FORCE:
 

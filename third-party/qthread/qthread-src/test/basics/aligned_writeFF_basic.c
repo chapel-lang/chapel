@@ -1,4 +1,9 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "argparsing.h"
+#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,15 +21,15 @@ static void testBasicWriteFF(void) {
   aligned_t x, val;
 
   x = 45, val = 55;
-  test_check(qthread_feb_status(&x) == 1);
+  assert(qthread_feb_status(&x) == 1);
 
   iprintf("Before x=%d, val=%d, x_full=%d\n", x, val, qthread_feb_status(&x));
   qthread_writeFF(&x, &val);
   iprintf("After  x=%d, val=%d, x_full=%d\n", x, val, qthread_feb_status(&x));
 
-  test_check(qthread_feb_status(&x) == 1);
-  test_check(x == 55);
-  test_check(val == 55);
+  assert(qthread_feb_status(&x) == 1);
+  assert(x == 55);
+  assert(val == 55);
 }
 
 #define ALL_ONES ~0u
@@ -63,14 +68,14 @@ static void testConcurrentWriteFF(void) {
   }
 
   iprintf("concurrent_t=%x\n", concurrent_t);
-  test_check((concurrent_t == ALL_ZEROS) || (concurrent_t == ALL_ONES));
-  test_check(qthread_feb_status(&concurrent_t) == 1);
+  assert((concurrent_t == ALL_ZEROS) || (concurrent_t == ALL_ONES));
+  assert(qthread_feb_status(&concurrent_t) == 1);
 }
 #endif
 
 int main(int argc, char *argv[]) {
   CHECK_VERBOSE();
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
   iprintf("%i shepherds...\n", qthread_num_shepherds());
   iprintf("  %i threads total\n", qthread_num_workers());
 

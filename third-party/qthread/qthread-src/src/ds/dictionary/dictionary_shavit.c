@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* System Headers */
 #include <stdio.h>  /* for printf() */
 #include <stdlib.h> /* for malloc/free/etc */
@@ -336,12 +340,11 @@ qt_hash_put(qt_hash h, qt_key_t key, void *value, int put_choice) {
   return ret->value;
 }
 
-API_FUNC void *qt_dictionary_put(qt_dictionary *dict, void *key, void *value) {
+void *qt_dictionary_put(qt_dictionary *dict, void *key, void *value) {
   return qt_hash_put(dict, key, value, PUT_ALWAYS);
 }
 
-API_FUNC void *
-qt_dictionary_put_if_absent(qt_dictionary *dict, void *key, void *value) {
+void *qt_dictionary_put_if_absent(qt_dictionary *dict, void *key, void *value) {
   return qt_hash_put(dict, key, value, PUT_IF_ABSENT);
 }
 
@@ -363,7 +366,7 @@ static inline void *qt_hash_get(qt_hash h, qt_key_t const key) {
     &(h->B[bucket]), so_regularkey(lkey), key, NULL, NULL, NULL, h->op_equals);
 }
 
-API_FUNC void *qt_dictionary_get(qt_dictionary *dict, void *key) {
+void *qt_dictionary_get(qt_dictionary *dict, void *key) {
   return qt_hash_get(dict, key);
 }
 
@@ -383,11 +386,11 @@ static inline int qt_hash_remove(qt_hash h, qt_key_t const key) {
                          h->op_cleanup)) {
     return 0;
   }
-  qthread_incr(&h->count, (aligned_t)-1);
+  qthread_incr(&h->count, -1);
   return 1;
 }
 
-API_FUNC void *qt_dictionary_delete(qt_dictionary *dict, void *key) {
+void *qt_dictionary_delete(qt_dictionary *dict, void *key) {
   void *val = qt_hash_get(dict, key); // TODO : this is inefficient!
   int ret = qt_hash_remove(dict, key);
 
@@ -467,9 +470,9 @@ static inline qt_hash qt_hash_create(qt_dict_key_equals_f eq,
   return tmp;
 }
 
-API_FUNC qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
-                                             qt_dict_hash_f hash,
-                                             qt_dict_cleanup_f cleanup) {
+qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
+                                    qt_dict_hash_f hash,
+                                    qt_dict_cleanup_f cleanup) {
   return qt_hash_create(eq, hash, cleanup);
 }
 
@@ -494,7 +497,7 @@ static inline void qt_hash_destroy(qt_hash h) {
   FREE(h, sizeof(qt_hash));
 }
 
-API_FUNC void qt_dictionary_destroy(qt_dictionary *d) { qt_hash_destroy(d); }
+void qt_dictionary_destroy(qt_dictionary *d) { qt_hash_destroy(d); }
 
 /*
  * void qt_hash_destroy_deallocate(qt_hash                h,
@@ -552,8 +555,7 @@ struct qt_dictionary_iterator {
   int bkt;         // = -1 if iterator is newly created; =1 otherwise.
 };
 
-API_FUNC qt_dictionary_iterator *
-qt_dictionary_iterator_create(qt_dictionary *dict) {
+qt_dictionary_iterator *qt_dictionary_iterator_create(qt_dictionary *dict) {
   if (dict == NULL) { return ERROR; }
   qt_dictionary_iterator *it =
     (qt_dictionary_iterator *)MALLOC(sizeof(qt_dictionary_iterator));
@@ -563,7 +565,7 @@ qt_dictionary_iterator_create(qt_dictionary *dict) {
   return it;
 }
 
-API_FUNC void qt_dictionary_iterator_destroy(qt_dictionary_iterator *it) {
+void qt_dictionary_iterator_destroy(qt_dictionary_iterator *it) {
   if (it == NULL) { return; }
   FREE(it, sizeof(qt_dictionary_iterator));
 }
@@ -590,7 +592,7 @@ qt_dictionary_iterator_next_element(qt_dictionary_iterator *it) {
   return it->crt;
 }
 
-API_FUNC list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
+list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
   list_entry *ret = qt_dictionary_iterator_next_element(it);
 
   while (ret != ERROR && ret != NULL && ret->key == NULL) {
@@ -599,29 +601,27 @@ API_FUNC list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
   return ret;
 }
 
-API_FUNC list_entry *
-qt_dictionary_iterator_get(qt_dictionary_iterator const *it) {
+list_entry *qt_dictionary_iterator_get(qt_dictionary_iterator const *it) {
   if ((it == NULL) || (it->dict == NULL)) { return ERROR; }
   qt_dictionary *h = it->dict;
   if ((h->count == 0) || (it->crt == UNINITIALIZED)) { return NULL; }
   return it->crt;
 }
 
-API_FUNC qt_dictionary_iterator *qt_dictionary_end(qt_dictionary *dict) {
+qt_dictionary_iterator *qt_dictionary_end(qt_dictionary *dict) {
   qt_dictionary_iterator *ret = qt_dictionary_iterator_create(dict);
 
   ret->bkt = 1;
   return ret;
 }
 
-API_FUNC int qt_dictionary_iterator_equals(qt_dictionary_iterator *a,
-                                           qt_dictionary_iterator *b) {
+int qt_dictionary_iterator_equals(qt_dictionary_iterator *a,
+                                  qt_dictionary_iterator *b) {
   if ((a == NULL) || (b == NULL)) { return a == b; }
   return (a->crt == b->crt) && (a->dict == b->dict) && (a->bkt == b->bkt);
 }
 
-API_FUNC qt_dictionary_iterator *
-qt_dictionary_iterator_copy(qt_dictionary_iterator *b) {
+qt_dictionary_iterator *qt_dictionary_iterator_copy(qt_dictionary_iterator *b) {
   if (b == NULL) { return NULL; }
   qt_dictionary_iterator *ret = qt_dictionary_iterator_create(b->dict);
   if ((ret == NULL) || (ret == ERROR)) { return NULL; }

@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <math.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -33,7 +34,7 @@ static aligned_t producer(void *arg) {
     qthread_writeEF_const(&buff[buffInd], i);
     iprintf("producer wrote value #%u\n", i);
   }
-  qthread_writeEF_const(&buff[numItems % bufferSize], (aligned_t)-1);
+  qthread_writeEF_const(&buff[numItems % bufferSize], -1);
   iprintf("producer wrote terminus value #%" PRIu64 "\n", -1);
 
   return 0;
@@ -73,7 +74,7 @@ static aligned_t consumer(void *arg) {
 int main(int argc, char *argv[]) {
   aligned_t t[2];
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   NUMARG(bufferSize, "BUFFERSIZE");

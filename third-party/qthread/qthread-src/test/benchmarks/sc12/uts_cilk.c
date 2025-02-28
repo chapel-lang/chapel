@@ -4,6 +4,10 @@
  *     http://sourceforge.net/projects/uts-benchmark  *
  ******************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h" /* for _GNU_SOURCE */
+#endif
+
 #include <assert.h>
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>

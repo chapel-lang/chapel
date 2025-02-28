@@ -32,12 +32,8 @@ public:
 
   uint64_t readFF(void) {
     uint64_t ret = 0;
-#ifndef NDEBUG
     int status = readFF(&ret);
     assert(status == QTHREAD_SUCCESS);
-#else
-    readFF(&ret);
-#endif
     return ret;
   }
 
@@ -47,12 +43,8 @@ public:
 
   uint64_t readFE(void) {
     uint64_t ret = 0;
-#ifndef NDEBUG
     int status = readFE(&ret);
     assert(status == QTHREAD_SUCCESS);
-#else
-    readFE(&ret);
-#endif
     return ret;
   }
 

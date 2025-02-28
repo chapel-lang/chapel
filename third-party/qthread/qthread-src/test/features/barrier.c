@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <float.h> /* for DBL_MAX, per C89 */
 #include <math.h>
 #include <qthread/barrier.h>
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
   double max_time = 0.0;
   double min_time = DBL_MAX;
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
   t = qtimer_create();
 
   CHECK_VERBOSE();
@@ -39,15 +40,15 @@ int main(int argc, char *argv[]) {
   NUMARG(iterations, "ITERATIONS");
 
   initme = (aligned_t *)calloc(threads, sizeof(aligned_t));
-  test_check(initme);
+  assert(initme);
 
   rets = (aligned_t *)malloc(threads * sizeof(aligned_t));
-  test_check(rets);
+  assert(rets);
 
   iprintf("creating the barrier for %zu threads\n", threads);
   wait_on_me =
     qt_barrier_create(threads, REGION_BARRIER); // all my spawnees plus me
-  test_check(wait_on_me);
+  assert(wait_on_me);
 
   for (iter = 0; iter <= iterations; ++iter) {
     // iprintf("%i: forking the threads\n", iter);
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
       if (min_time > tmp) { min_time = tmp; }
     }
 
-    test_check(initme_idx == threads);
+    assert(initme_idx == threads);
     initme_idx = 1;
 
     for (i = 1; i < threads; ++i) {
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]) {
         iprintf(
           "initme[%i] = %i (should be %i)\n", (int)i, (int)initme[i], iter + 1);
       }
-      test_check(initme[i] == iter + 1);
+      assert(initme[i] == iter + 1);
     }
   }
 

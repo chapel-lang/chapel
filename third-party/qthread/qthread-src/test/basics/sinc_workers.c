@@ -1,7 +1,6 @@
+#include <assert.h>
 #include <qthread/qthread.h>
 #include <qthread/sinc.h>
-
-#include "argparsing.h"
 
 int expected[31] = {0,     1,     1,      2,      3,      5,      8,     13,
                     21,    34,    55,     89,     144,    233,    377,   610,
@@ -18,7 +17,7 @@ static aligned_t fib(void *args_) {
   args_t *args = (args_t *)args_;
   if (args->i <= 2) {
     *args->ret = 1;
-    test_check(*args->ret == expected[args->i]);
+    assert(*args->ret == expected[args->i]);
     qt_sinc_submit(args->s, NULL);
     return 0;
   }
@@ -34,13 +33,13 @@ static aligned_t fib(void *args_) {
 
   qt_sinc_wait(&sinc, NULL);
   *args->ret = x + y;
-  test_check(*args->ret == expected[args->i]);
+  assert(*args->ret == expected[args->i]);
   qt_sinc_submit(args->s, NULL);
   return 0;
 }
 
 int main(void) {
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
   qt_sinc_t sinc;
   qt_sinc_init(&sinc, 0, NULL, NULL, 1);
   int ret;
@@ -48,6 +47,6 @@ int main(void) {
   args_t args = {depth, &sinc, &ret};
   qthread_fork_copyargs(fib, &args, sizeof(args_t), NULL);
   qt_sinc_wait(&sinc, NULL);
-  test_check(ret == expected[depth]);
+  assert(ret == expected[depth]);
 }
 

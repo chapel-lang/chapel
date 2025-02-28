@@ -1,4 +1,7 @@
-#include "qthread/common.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
 #define NEEDARMA64CONTEXT
 #endif

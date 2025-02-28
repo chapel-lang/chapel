@@ -1,4 +1,10 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h> /* for the qt_makectxt prototype */
+#endif
 #include <stddef.h> /* for size_t, per C89 */
 #include <stdint.h>
 

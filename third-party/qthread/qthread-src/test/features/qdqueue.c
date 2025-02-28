@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <qthread/qdqueue.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -35,7 +36,7 @@ static aligned_t dequeuer(void *arg) {
 
 static aligned_t spawn_dequeuers(void *arg) {
   for (size_t i = 0; i < THREAD_COUNT; i++) {
-    test_check(qthread_fork(dequeuer, arg, NULL) == QTHREAD_SUCCESS);
+    assert(qthread_fork(dequeuer, arg, NULL) == QTHREAD_SUCCESS);
   }
   return 0;
 }
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
   qdqueue_t *q;
   size_t i;
 
-  test_check(qthread_initialize() == QTHREAD_SUCCESS);
+  assert(qthread_initialize() == QTHREAD_SUCCESS);
   CHECK_VERBOSE();
   NUMARG(ELEMENT_COUNT, "ELEMENT_COUNT");
   NUMARG(THREAD_COUNT, "THREAD_COUNT");
@@ -87,14 +88,13 @@ int main(int argc, char *argv[]) {
   iprintf("ordering test succeeded\n");
 
   aligned_t ret;
-  test_check(qthread_fork_new_team(spawn_dequeuers, q, &ret) ==
-             QTHREAD_SUCCESS);
+  assert(qthread_fork_new_team(spawn_dequeuers, q, &ret) == QTHREAD_SUCCESS);
   iprintf("dequeuers forked\n");
   for (i = 0; i < THREAD_COUNT; i++) {
-    test_check(qthread_fork_to(queuer, q, NULL, i % qthread_num_shepherds()) ==
-               QTHREAD_SUCCESS);
+    assert(qthread_fork_to(queuer, q, NULL, i % qthread_num_shepherds()) ==
+           QTHREAD_SUCCESS);
   }
-  test_check(qthread_readFF(NULL, &ret) == QTHREAD_SUCCESS);
+  assert(qthread_readFF(NULL, &ret) == QTHREAD_SUCCESS);
   if (!qdqueue_empty(q)) {
     fprintf(stderr, "qdqueue not empty after threaded test!\n");
     exit(-2);

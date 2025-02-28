@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* System Headers */
 #include <assert.h>
 #include <stdio.h>
@@ -44,7 +48,7 @@ void qt_sinc_init(qt_sinc_t *restrict sinc_,
                   size_t sizeof_value,
                   void const *restrict initial_value,
                   qt_sinc_op_f op,
-                  size_t expect) {
+                  size_t expect) { /*{{{*/
   assert(sinc_);
   assert((0 == sizeof_value && NULL == initial_value) ||
          (0 != sizeof_value && NULL != initial_value));
@@ -98,12 +102,12 @@ void qt_sinc_init(qt_sinc_t *restrict sinc_,
   } else {
     qthread_fill(&sinc->ready);
   }
-}
+} /*}}}*/
 
 qt_sinc_t *qt_sinc_create(size_t const sizeof_value,
                           void const *initial_value,
                           qt_sinc_op_f op,
-                          size_t const will_spawn) {
+                          size_t const will_spawn) { /*{{{*/
   qt_sinc_t *restrict const sinc = MALLOC(sizeof(qt_sinc_t));
 
   assert(sinc);
@@ -111,9 +115,9 @@ qt_sinc_t *qt_sinc_create(size_t const sizeof_value,
   qt_sinc_init(sinc, sizeof_value, initial_value, op, will_spawn);
 
   return sinc;
-}
+} /*}}}*/
 
-void qt_sinc_reset(qt_sinc_t *sinc_, size_t const will_spawn) {
+void qt_sinc_reset(qt_sinc_t *sinc_, size_t const will_spawn) { /*{{{*/
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   qt_sinc_reduction_t *rdata = sinc->rdata;
 
@@ -139,9 +143,9 @@ void qt_sinc_reset(qt_sinc_t *sinc_, size_t const will_spawn) {
   } else {
     qthread_fill(&sinc->ready);
   }
-}
+} /*}}}*/
 
-void qt_sinc_fini(qt_sinc_t *sinc_) {
+void qt_sinc_fini(qt_sinc_t *sinc_) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   if (sinc->rdata) {
@@ -152,18 +156,18 @@ void qt_sinc_fini(qt_sinc_t *sinc_) {
     assert(rdata->values);
     qt_internal_aligned_free(rdata->values, cacheline);
   }
-}
+} /*}}}*/
 
-void qt_sinc_destroy(qt_sinc_t *sinc_) {
+void qt_sinc_destroy(qt_sinc_t *sinc_) { /*{{{*/
   qt_sinc_fini(sinc_);
   FREE(sinc_, sizeof(qt_sinc_t));
-}
+} /*}}}*/
 
 /* Adds a new participant to the sinc.
  * Pre:  sinc was created
  * Post: aggregate count is positive
  */
-void qt_sinc_expect(qt_sinc_t *sinc_, size_t count) {
+void qt_sinc_expect(qt_sinc_t *sinc_, size_t count) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
 
@@ -171,9 +175,9 @@ void qt_sinc_expect(qt_sinc_t *sinc_, size_t count) {
   while ((newc = qthread_cas(&sinc->counter, oldc, oldc + count)) != oldc)
     oldc = newc;
   if (oldc == 0) { qthread_empty(&sinc->ready); }
-}
+} /*}}}*/
 
-void *qt_sinc_tmpdata(qt_sinc_t *sinc_) {
+void *qt_sinc_tmpdata(qt_sinc_t *sinc_) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   if (NULL != sinc->rdata) {
@@ -185,9 +189,9 @@ void *qt_sinc_tmpdata(qt_sinc_t *sinc_) {
   } else {
     return NULL;
   }
-}
+} /*}}}*/
 
-static void qt_sinc_internal_collate(qt_sinc_t *sinc_) {
+static void qt_sinc_internal_collate(qt_sinc_t *sinc_) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   if (sinc->rdata) {
@@ -207,9 +211,10 @@ static void qt_sinc_internal_collate(qt_sinc_t *sinc_) {
   }
   // step 2: release waiters
   qthread_fill(&sinc->ready);
-}
+} /*}}}*/
 
-void qt_sinc_submit(qt_sinc_t *restrict sinc_, void const *restrict value) {
+void qt_sinc_submit(qt_sinc_t *restrict sinc_,
+                    void const *restrict value) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   if (value) {
@@ -241,9 +246,9 @@ void qt_sinc_submit(qt_sinc_t *restrict sinc_, void const *restrict value) {
   if (1 == newc) { // This is the final submit
     qt_sinc_internal_collate(sinc_);
   }
-}
+} /*}}}*/
 
-void qt_sinc_wait(qt_sinc_t *restrict sinc_, void *restrict target) {
+void qt_sinc_wait(qt_sinc_t *restrict sinc_, void *restrict target) { /*{{{*/
   assert(sinc_);
   qt_internal_sinc_t *restrict const sinc = (qt_internal_sinc_t *)sinc_;
   qthread_readFF(NULL, &sinc->ready);
@@ -252,6 +257,6 @@ void qt_sinc_wait(qt_sinc_t *restrict sinc_, void *restrict target) {
     assert(sinc->rdata->sizeof_value > 0);
     memcpy(target, sinc->rdata->result, sinc->rdata->sizeof_value);
   }
-}
+} /*}}}*/
 
 /* vim:set expandtab: */
