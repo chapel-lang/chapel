@@ -1,8 +1,8 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <hwloc.h>
+
+#if (HWLOC_API_VERSION < 0x00020000)
+#error HWLOC version unrecognized
+#endif
 
 #include "qt_affinity.h"
 #include "qt_alloc.h"
@@ -71,7 +71,7 @@ static unsigned int num_usable_by_depth(unsigned int depth) {
   return ret;
 }
 
-static void qt_affinity_internal_hwloc_teardown(void) { /*{{{*/
+static void qt_affinity_internal_hwloc_teardown(void) {
   hwloc_set_cpubind(topology, mccoy_thread_bindings, HWLOC_CPUBIND_THREAD);
   FREEBMAP(mccoy_thread_bindings);
   if (my_topology) {
@@ -80,16 +80,12 @@ static void qt_affinity_internal_hwloc_teardown(void) { /*{{{*/
     my_topology = 0;
   }
   initialized = 0;
-} /*}}}*/
+}
 
 void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t *nbworkers,
-                               size_t *hw_par) { /*{{{ */
+                               size_t *hw_par) {
   if (qthread_cas(&initialized, 0, 1) == 0) {
-#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
-    extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
-    topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
-#endif
     if (topology == NULL) {
       qassert(hwloc_topology_init(&topology), 0);
       qassert(hwloc_topology_load(topology), 0);
@@ -233,13 +229,14 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       /* first, look for an exact match in width and find the proper depth */
       unsigned int maxdepth = hwloc_topology_get_depth(topology);
       unsigned int realdepth;
-      unsigned int fl_depth = -1; // first depth with #objs larger than nbsheps
+      unsigned int fl_depth =
+        (unsigned int)-1; // first depth with #objs larger than nbsheps
       for (realdepth = 0; realdepth < maxdepth && shep_depth == -1;
            ++realdepth) {
         unsigned int num = num_usable_by_depth(realdepth);
         if (num == *nbshepherds) {
           shep_depth = realdepth;
-        } else if ((num > *nbshepherds) && (fl_depth == -1)) {
+        } else if ((num > *nbshepherds) && (fl_depth == (unsigned int)-1)) {
           fl_depth = realdepth;
         }
       }
@@ -247,7 +244,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       /* should we use the last _smaller_, or the first _larger_ ? */
       /* first option means overlapping but we can use all the cores */
       /* second option means no overlapping, but cores will go unused */
-      if ((shep_depth == -1) && (fl_depth != -1)) {
+      if ((shep_depth == -1) && (fl_depth != (unsigned int)-1)) {
         /* first larger then */
         shep_depth = fl_depth;
       }
@@ -262,12 +259,12 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
       if (*nbworkers == 0) { *nbworkers = tmp; }
     }
   }
-} /*}}} */
+}
 
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
-void INTERNAL qt_affinity_mem_tonode(void *addr,
-                                     size_t bytes,
-                                     int node) { /*{{{ */
+void INTERNAL qt_affinity_deinit(void) {}
+
+#ifdef USE_HWLOC_MEM_AFFINITY
+void INTERNAL qt_affinity_mem_tonode(void *addr, size_t bytes, int node) {
   hwloc_nodeset_t nodeset = hwloc_bitmap_alloc();
 
   hwloc_bitmap_set(nodeset, node);
@@ -278,13 +275,13 @@ void INTERNAL qt_affinity_mem_tonode(void *addr,
                          HWLOC_MEMBIND_BIND,
                          HWLOC_MEMBIND_NOCPUBIND);
   hwloc_bitmap_free(nodeset);
-} /*}}} */
+}
 
-void INTERNAL *qt_affinity_alloc(size_t bytes) { /*{{{ */
+void INTERNAL *qt_affinity_alloc(size_t bytes) {
   return hwloc_alloc(topology, bytes);
-} /*}}} */
+}
 
-void INTERNAL *qt_affinity_alloc_onnode(size_t bytes, int node) { /*{{{ */
+void INTERNAL *qt_affinity_alloc_onnode(size_t bytes, int node) {
   void *ret;
   hwloc_nodeset_t nodeset;
 
@@ -294,24 +291,24 @@ void INTERNAL *qt_affinity_alloc_onnode(size_t bytes, int node) { /*{{{ */
     topology, bytes, nodeset, HWLOC_MEMBIND_BIND, HWLOC_MEMBIND_NOCPUBIND);
   hwloc_bitmap_free(nodeset);
   return ret;
-} /*}}} */
+}
 
-void INTERNAL qt_affinity_free(void *ptr, size_t bytes) { /*{{{ */
+void INTERNAL qt_affinity_free(void *ptr, size_t bytes) {
   hwloc_free(topology, ptr, bytes);
-} /*}}} */
+}
 
-#endif /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#endif /* ifdef USE_HWLOC_MEM_AFFINITY */
 
-qthread_shepherd_id_t INTERNAL guess_num_shepherds(void) { /*{{{ */
+qthread_shepherd_id_t INTERNAL guess_num_shepherds(void) {
   qthread_shepherd_id_t ret = 1;
 
   ret = num_usable_by_depth(shep_depth);
   if (ret == 0) { ret = 1; }
   return ret;
-} /*}}} */
+}
 
 qthread_worker_id_t INTERNAL
-guess_num_workers_per_shep(qthread_shepherd_id_t nshepherds) { /*{{{ */
+guess_num_workers_per_shep(qthread_shepherd_id_t nshepherds) {
   qthread_worker_id_t ret = 0;
   size_t total = 0;
 
@@ -412,10 +409,10 @@ guess_num_workers_per_shep(qthread_shepherd_id_t nshepherds) { /*{{{ */
   }
   if (ret == 0) { ret = 1; }
   return ret;
-} /*}}} */
+}
 
 void INTERNAL qt_affinity_set(qthread_worker_t *me,
-                              unsigned int nworkerspershep) { /*{{{ */
+                              unsigned int nworkerspershep) {
   ASSERT_ONLY(hwloc_topology_check(topology));
 
   hwloc_const_cpuset_t const allowed_cpuset =
@@ -464,10 +461,10 @@ void INTERNAL qt_affinity_set(qthread_worker_t *me,
             i);
     FREE(str, strlen(str));
   }
-} /*}}} */
+}
 
 int INTERNAL qt_affinity_gendists(qthread_shepherd_t *sheps,
-                                  qthread_shepherd_id_t nshepherds) { /*{{{ */
+                                  qthread_shepherd_id_t nshepherds) {
   hwloc_const_cpuset_t allowed_cpuset =
     hwloc_topology_get_allowed_cpuset(topology); // where am I allowed to run?
   size_t num_extant_objs;
@@ -482,37 +479,10 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t *sheps,
       qt_calloc(nshepherds - 1, sizeof(qthread_shepherd_id_t));
     sheps[i].shep_dists = qt_calloc(nshepherds, sizeof(unsigned int));
   }
-#ifdef QTHREAD_HAVE_HWLOC_DISTS
-  const struct hwloc_distances_s *matrix =
-    hwloc_get_whole_distance_matrix_by_type(topology, HWLOC_OBJ_NODE);
-  if (matrix) { assert(matrix->latency); }
-  size_t node_to_NUMAnode[num_extant_objs];
-  for (size_t i = 0; i < num_extant_objs; ++i) {
-    hwloc_obj_t node_obj = hwloc_get_obj_inside_cpuset_by_depth(
-      topology, allowed_cpuset, shep_depth, i);
-    while (node_obj->type > HWLOC_OBJ_NODE) {
-      node_obj = node_obj->parent;
-      assert(node_obj);
-    }
-    node_to_NUMAnode[i] = node_obj->logical_index;
-  }
-#endif /* ifdef QTHREAD_HAVE_HWLOC_DISTS */
   for (size_t i = 0; i < nshepherds; ++i) {
     for (size_t j = 0, k = 0; j < nshepherds; ++j) {
       if (j != i) {
-#ifdef QTHREAD_HAVE_HWLOC_DISTS
-        if (matrix) {
-          sheps[i].shep_dists[j] =
-            matrix->latency[node_to_NUMAnode[sheps[i].node] +
-                            matrix->nbobjs * node_to_NUMAnode[sheps[j].node]] *
-            10;
-        } else {
-          // handle what is fundamentally a bug in old versions of hwloc
-          sheps[i].shep_dists[j] = 10;
-        }
-#else  /* ifdef QTHREAD_HAVE_HWLOC_DISTS */
         sheps[i].shep_dists[j] = 10;
-#endif /* ifdef QTHREAD_HAVE_HWLOC_DISTS */
         sheps[i].sorted_sheplist[k++] = j;
       }
     }
@@ -522,6 +492,6 @@ int INTERNAL qt_affinity_gendists(qthread_shepherd_t *sheps,
   }
   /* there does not seem to be a way to extract distances... <sigh> */
   return QTHREAD_SUCCESS;
-} /*}}} */
+}
 
 /* vim:set expandtab: */

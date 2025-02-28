@@ -8,17 +8,17 @@
 static aligned_t checkres(void *arg) {
   qthread_shepherd_id_t myshep = qthread_shep();
 
-  assert(myshep == 1 || myshep == 0 || myshep == 2);
+  test_check(myshep == 1 || myshep == 0 || myshep == 2);
 
   if ((intptr_t)arg >= 0) {
     iprintf(
       "checkres: myshep = %i, should be %i\n", myshep, (int)(intptr_t)arg);
-    assert(myshep == (qthread_shepherd_id_t)(intptr_t)arg);
+    test_check(myshep == (qthread_shepherd_id_t)(intptr_t)arg);
   } else {
     iprintf("checkres: myshep = %i, should NOT be %i\n",
             myshep,
             -1 * (int)(intptr_t)arg);
-    assert(myshep != (qthread_shepherd_id_t)(-1 * (intptr_t)arg));
+    test_check(myshep != (qthread_shepherd_id_t)(-1 * (intptr_t)arg));
   }
 
   return 0;
@@ -27,20 +27,20 @@ static aligned_t checkres(void *arg) {
 static aligned_t migrant(void *arg) {
   int myshep = qthread_shep();
 
-  assert(myshep == 1 || myshep == 0);
+  test_check(myshep == 1 || myshep == 0);
 
   if (myshep == 1) {
     qthread_migrate_to(0);
-    assert(qthread_shep() == 0);
+    test_check(qthread_shep() == 0);
   } else {
     qthread_migrate_to(1);
     iprintf("migrant starting on %i, aimed at 1, ended up on %i\n",
             myshep,
             qthread_shep());
     if (arg == (void *)2) {
-      assert(qthread_shep() != 1);
+      test_check(qthread_shep() != 1);
     } else {
-      assert(qthread_shep() == 1);
+      test_check(qthread_shep() == 1);
     }
   }
 
@@ -60,11 +60,11 @@ int main(int argc, char *argv[]) {
 
   CHECK_VERBOSE();
 
-  assert(qthread_readstate(TOTAL_SHEPHERDS) == 3);
-  assert(qthread_readstate(ACTIVE_SHEPHERDS) == 2);
+  test_check(qthread_readstate(TOTAL_SHEPHERDS) == 3);
+  test_check(qthread_readstate(ACTIVE_SHEPHERDS) == 2);
   iprintf("now to fork to shepherd 0...\n");
   qret = qthread_fork_to(checkres, (void *)0, &ret, 0);
-  assert(qret == QTHREAD_SUCCESS);
+  test_check(qret == QTHREAD_SUCCESS);
   qthread_readFF(&ret, &ret);
   iprintf("\tsuccess in forking to shepherd 0!\n");
   iprintf("now to fork to shepherd 1...\n");
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
   iprintf("\tsuccessfully failed to fork to shepherd 1!\n");
   iprintf("now to fork to shepherd 2...\n");
   qret = qthread_fork_to(checkres, (void *)2, &ret, 2);
-  assert(qret == QTHREAD_SUCCESS);
+  test_check(qret == QTHREAD_SUCCESS);
   qthread_readFF(&ret, &ret);
   iprintf("\tsuccess in forking to shepherd 2!\n");
   iprintf("now to fork the migrant...\n");

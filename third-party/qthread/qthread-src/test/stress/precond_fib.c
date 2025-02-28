@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,8 +72,8 @@ static aligned_t fib_result(void *arg) {
             &((fr_arg_t *)arg)->fargs[0].result,
             (unsigned)validation[((fr_arg_t *)arg)->fargs[0].n]);
     fflush(stdout);
-    assert(validation[((fr_arg_t *)arg)->fargs[0].n] ==
-           ((fr_arg_t *)arg)->fargs[0].result);
+    test_check(validation[((fr_arg_t *)arg)->fargs[0].n] ==
+               ((fr_arg_t *)arg)->fargs[0].result);
   }
   if (validation[((fr_arg_t *)arg)->fargs[1].n] !=
       ((fr_arg_t *)arg)->fargs[1].result) {
@@ -85,8 +84,8 @@ static aligned_t fib_result(void *arg) {
             &((fr_arg_t *)arg)->fargs[1].result,
             (unsigned)validation[((fr_arg_t *)arg)->fargs[1].n]);
     fflush(stdout);
-    assert(validation[((fr_arg_t *)arg)->fargs[1].n] ==
-           ((fr_arg_t *)arg)->fargs[1].result);
+    test_check(validation[((fr_arg_t *)arg)->fargs[1].n] ==
+               ((fr_arg_t *)arg)->fargs[1].result);
   }
 
   qthread_writeEF(target, &r0);
@@ -140,7 +139,7 @@ int main(int argc, char *argv[]) {
   aligned_t n = 20;
   aligned_t r = 0;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
   CHECK_VERBOSE();
   NUMARG(n, "FIB_INPUT");
 
@@ -148,7 +147,7 @@ int main(int argc, char *argv[]) {
   iprintf("fib(%3lu) =            %lu\n", (unsigned long)n, (unsigned long)r);
   if (n < (sizeof(validation) / sizeof(aligned_t))) {
     iprintf("known correct answer: %lu\n", validation[n]);
-    assert(r == validation[n]);
+    test_check(r == validation[n]);
   }
 
   return 0;

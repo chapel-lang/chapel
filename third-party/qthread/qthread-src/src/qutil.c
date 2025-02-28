@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <stdlib.h>
 #include <string.h>
@@ -393,7 +389,7 @@ static void drf_qsort(void *const  array,
 
 #endif /* if 0 */
 
-static void drf_qsort_dbl(double *const arr, size_t const elements) { /*{{{*/
+static void drf_qsort_dbl(double *const arr, size_t const elements) {
   ssize_t const MAX = QT_INT_LOG(elements) + 5;
   ssize_t beg[MAX], end[MAX], i = 0, L, R, swap;
   double piv;
@@ -428,10 +424,9 @@ static void drf_qsort_dbl(double *const arr, size_t const elements) { /*{{{*/
       i--;
     }
   }
-} /*}}}*/
+}
 
-static void drf_qsort_algt(aligned_t *const arr,
-                           size_t const elements) { /*{{{*/
+static void drf_qsort_algt(aligned_t *const arr, size_t const elements) {
   ssize_t const MAX = QT_INT_LOG(elements) + 5;
   ssize_t beg[MAX], end[MAX], i = 0, L, R, swap;
   aligned_t piv;
@@ -466,7 +461,7 @@ static void drf_qsort_algt(aligned_t *const arr,
       i--;
     }
   }
-} /*}}}*/
+}
 
 struct qutil_mergesort_args {
   double *array;
@@ -474,15 +469,13 @@ struct qutil_mergesort_args {
   size_t second_start, second_stop;
 };
 
-static aligned_t
-qutil_mergesort_presort(struct qutil_mergesort_args *args) { /*{{{*/
+static aligned_t qutil_mergesort_presort(struct qutil_mergesort_args *args) {
   drf_qsort_dbl(args->array + args->first_start,
                 args->first_stop - args->first_start + 1);
   return 0;
-} /*}}}*/
+}
 
-static aligned_t
-qutil_mergesort_inner(struct qutil_mergesort_args *args) { /*{{{*/
+static aligned_t qutil_mergesort_inner(struct qutil_mergesort_args *args) {
   double *array = args->array;
 
   while ((args->first_start <= args->first_stop) &&
@@ -508,9 +501,9 @@ qutil_mergesort_inner(struct qutil_mergesort_args *args) { /*{{{*/
     }
   }
   return 0;
-} /*}}}*/
+}
 
-void API_FUNC qutil_mergesort(double *array, size_t length) { /*{{{*/
+void API_FUNC qutil_mergesort(double *array, size_t length) {
   /* first, decide how much of the array each thread gets */
   size_t chunksize = MT_LOOP_CHUNK;
 
@@ -571,7 +564,7 @@ void API_FUNC qutil_mergesort(double *array, size_t length) { /*{{{*/
     FREE(rets, sizeof(aligned_t) * numthreads);
     FREE(args, sizeof(struct qutil_mergesort_args) * numthreads);
   }
-} /*}}}*/
+}
 
 #define SWAP(t, a, m, n)                                                       \
   do {                                                                         \
@@ -588,7 +581,7 @@ struct qutil_qsort_args {
   aligned_t *furthest_leftwall, *furthest_rightwall;
 };
 
-static inline aligned_t qutil_qsort_partition(void *args_void) { /*{{{*/
+static inline aligned_t qutil_qsort_partition(void *args_void) {
   struct qutil_qsort_args *args = (struct qutil_qsort_args *)args_void;
   double *a = args->array;
   double const pivot = args->pivot;
@@ -662,7 +655,7 @@ quickexit: {
   }
 
   return 0;
-} /*}}}*/
+}
 
 struct qutil_qsort_iargs {
   double *array;
@@ -674,7 +667,7 @@ typedef struct qutil_qsort_iprets {
 } qutil_qsort_iprets_t;
 
 static inline qutil_qsort_iprets_t qutil_qsort_inner_partitioner(
-  double *array, size_t const length, double const pivot) { /*{{{*/
+  double *array, size_t const length, double const pivot) {
   /* choose the number of threads to use */
   size_t const numthreads =
     length / MT_LOOP_CHUNK + ((length % MT_LOOP_CHUNK) ? 1 : 0);
@@ -718,9 +711,9 @@ static inline qutil_qsort_iprets_t qutil_qsort_inner_partitioner(
   FREE(rets, sizeof(aligned_t) * numthreads);
 
   return retval;
-} /*}}}*/
+}
 
-static inline aligned_t qutil_qsort_inner(void *a_void) { /*{{{*/
+static inline aligned_t qutil_qsort_inner(void *a_void) {
   struct qutil_qsort_iargs *a = (struct qutil_qsort_iargs *)a_void;
   double *array = a->array, pivot;
   qutil_qsort_iprets_t furthest;
@@ -798,9 +791,9 @@ static inline aligned_t qutil_qsort_inner(void *a_void) { /*{{{*/
     }
   }
   return 0;
-} /*}}}*/
+}
 
-void API_FUNC qutil_qsort(double *array, size_t const length) { /*{{{*/
+void API_FUNC qutil_qsort(double *array, size_t const length) {
   assert(qthread_library_initialized);
   struct qutil_qsort_iargs arg;
 
@@ -808,7 +801,7 @@ void API_FUNC qutil_qsort(double *array, size_t const length) { /*{{{*/
   arg.length = length;
 
   qutil_qsort_inner(&arg);
-} /*}}}*/
+}
 
 struct qutil_aligned_qsort_args {
   aligned_t *array;
@@ -817,7 +810,7 @@ struct qutil_aligned_qsort_args {
   aligned_t *furthest_leftwall, *furthest_rightwall;
 };
 
-static inline aligned_t qutil_aligned_qsort_partition(void *args_void) { /*{{{*/
+static inline aligned_t qutil_aligned_qsort_partition(void *args_void) {
   struct qutil_aligned_qsort_args *args =
     (struct qutil_aligned_qsort_args *)args_void;
   aligned_t *a = args->array;
@@ -891,7 +884,7 @@ quickexit: {
     }
   }
   return 0;
-} /*}}}*/
+}
 
 typedef struct qutil_aligned_qsort_iargs {
   aligned_t *array;
@@ -899,7 +892,7 @@ typedef struct qutil_aligned_qsort_iargs {
 } qutil_aligned_qsort_iargs_t;
 
 static inline qutil_qsort_iprets_t qutil_aligned_qsort_inner_partitioner(
-  aligned_t *array, size_t const length, aligned_t const pivot) { /*{{{*/
+  aligned_t *array, size_t const length, aligned_t const pivot) {
   /* choose the number of threads to use */
   size_t const numthreads =
     length / MT_LOOP_CHUNK + ((length % MT_LOOP_CHUNK) ? 1 : 0);
@@ -944,9 +937,9 @@ static inline qutil_qsort_iprets_t qutil_aligned_qsort_inner_partitioner(
   FREE(rets, numthreads * sizeof(syncvar_t));
 
   return retval;
-} /*}}}*/
+}
 
-static inline aligned_t qutil_aligned_qsort_inner(void *a_void) { /*{{{*/
+static inline aligned_t qutil_aligned_qsort_inner(void *a_void) {
   struct qutil_aligned_qsort_iargs *a =
     (struct qutil_aligned_qsort_iargs *)a_void;
   aligned_t *array = a->array, pivot;
@@ -1025,10 +1018,9 @@ static inline aligned_t qutil_aligned_qsort_inner(void *a_void) { /*{{{*/
     }
   }
   return 0;
-} /*}}}*/
+}
 
-void API_FUNC qutil_aligned_qsort(aligned_t *array,
-                                  size_t const length) { /*{{{*/
+void API_FUNC qutil_aligned_qsort(aligned_t *array, size_t const length) {
   assert(qthread_library_initialized);
   qutil_aligned_qsort_iargs_t arg;
 
@@ -1036,6 +1028,6 @@ void API_FUNC qutil_aligned_qsort(aligned_t *array,
   arg.length = length;
 
   qutil_aligned_qsort_inner(&arg);
-} /*}}}*/
+}
 
 /* vim:set expandtab: */

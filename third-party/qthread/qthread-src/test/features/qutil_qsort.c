@@ -1,8 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
-#include <assert.h>
 #include <float.h>  /* for DBL_EPSILON (according to C89) */
 #include <limits.h> /* for INT_MIN & friends (according to C89) */
 #include <math.h>   /* for fabs() */
@@ -22,7 +17,7 @@ int main(int argc, char *argv[]) {
   double *d_array;
   size_t len = 1000000, i;
 
-  assert(qthread_initialize() == QTHREAD_SUCCESS);
+  test_check(qthread_initialize() == QTHREAD_SUCCESS);
 
   CHECK_VERBOSE();
   NUMARG(len, "TEST_LEN");

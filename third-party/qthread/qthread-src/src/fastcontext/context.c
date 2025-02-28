@@ -2,10 +2,6 @@
  */
 /* Portions of this file are Copyright (c) 2006-2011 Sandia National
  * Laboratories */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +12,7 @@
 #include "qthread/common.h"
 
 #include "qt_asserts.h"
+#include "qt_macros.h"
 #include "qt_prefetch.h"
 #include "qt_visibility.h"
 
@@ -27,7 +24,11 @@ void INTERNAL qt_makectxt(uctxt_t *ucp, void (*func)(void), int argc, ...) {
   tos = (unsigned long *)ucp->uc_stack.ss_sp +
         ucp->uc_stack.ss_size / sizeof(unsigned long);
   sp = tos - 16;
+#if defined __BIG_ENDIAN__ || defined _BIG_ENDIAN
+  ucp->mc.pc = *(long *)func;
+#else
   ucp->mc.pc = (long)func;
+#endif
   ucp->mc.sp = (long)sp;
   va_start(arg, argc);
   ucp->mc.r3 = va_arg(arg, long);
@@ -145,7 +146,9 @@ QT_SKIP_THREAD_SANITIZER int INTERNAL qt_swapctxt(uctxt_t *oucp, uctxt_t *ucp) {
   if (getcontext(oucp) == 0) {
 #if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) ||                                \
      (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64))
+#ifndef QTHREAD_MSAN
     Q_PREFETCH((void *)ucp->mc.mc_esp, 1, 3);
+#endif
 #endif
     setcontext(ucp);
   }

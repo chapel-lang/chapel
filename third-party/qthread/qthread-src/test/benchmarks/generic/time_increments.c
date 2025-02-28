@@ -57,105 +57,102 @@ static aligned_t int_fetch_inc(void) {
 }
 
 static void
-balanced_incr(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+balanced_incr(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) { qthread_incr((aligned_t *)arg, 1); }
-} /*}}} */
+}
 
 static void
-diffract_incr(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+diffract_incr(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   aligned_t sum = 0;
 
   for (i = startat; i < stopat; ++i) { sum = int_fetch_inc(); }
   ((aligned_t *)arg)[qthread_id()] = sum + 1;
-} /*}}} */
+}
 
-static void balanced_falseshare(size_t const startat,
-                                size_t const stopat,
-                                void *arg) { /*{{{ */
+static void
+balanced_falseshare(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
   aligned_t *volatile myinc = increments + shep;
 
   for (i = startat; i < stopat; i++) { qthread_incr(myinc, 1); }
-} /*}}} */
+}
 
-static void balanced_noncomp(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+balanced_noncomp(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
   qthread_shepherd_id_t shep = qthread_shep();
   aligned_t myinc;
 
   assert(shep != NO_SHEPHERD);
   for (i = startat; i < stopat; i++) { qthread_incr(&myinc, 1); }
-} /*}}} */
+}
 
-static aligned_t incrloop(void *arg) { /*{{{ */
+static aligned_t incrloop(void *arg) {
   unsigned int i;
 
   for (i = 0; i < ITERATIONS; i++) { qthread_incr(&incrementme, 1); }
   return 0;
-} /*}}} */
+}
 
-static aligned_t incrloop_falseshare(void *arg) { /*{{{ */
+static aligned_t incrloop_falseshare(void *arg) {
   unsigned int offset = (unsigned int)(intptr_t)arg;
   unsigned int i;
   aligned_t *volatile myinc = increments + offset;
 
   for (i = 0; i < ITERATIONS; i++) { qthread_incr(myinc, 1); }
   return 0;
-} /*}}} */
+}
 
-static aligned_t incrloop_nocompete(void *arg) { /*{{{ */
+static aligned_t incrloop_nocompete(void *arg) {
   unsigned int i;
   aligned_t myinc;
 
   for (i = 0; i < ITERATIONS; i++) { qthread_incr(&myinc, 1); }
   return 0;
-} /*}}} */
+}
 
-static aligned_t incrstream(void *arg) { /*{{{ */
+static aligned_t incrstream(void *arg) {
   unsigned int i;
   aligned_t *const myinc = (aligned_t *)arg;
 
   for (i = 0; i < ITERATIONS; i++) { qthread_incr(myinc + i, 1); }
   return 0;
-} /*}}} */
+}
 
-static aligned_t addloop_falseshare(void *arg) { /*{{{ */
+static aligned_t addloop_falseshare(void *arg) {
   unsigned int offset = (unsigned int)(intptr_t)arg;
   unsigned int i;
   aligned_t *volatile myinc = increments + offset;
 
   for (i = 0; i < ITERATIONS; i++) { (*myinc)++; }
   return *myinc;
-} /*}}} */
+}
 
-static aligned_t addloop_nocompete(void *arg) { /*{{{ */
+static aligned_t addloop_nocompete(void *arg) {
   unsigned int i;
   aligned_t myinc = 0;
 
   for (i = 0; i < ITERATIONS; i++) { myinc++; }
   return myinc;
-} /*}}} */
+}
 
 static void
-streaming_incr(size_t const startat, size_t const stopat, void *arg) { /*{{{ */
+streaming_incr(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) { qthread_incr(increments + i, 1); }
-} /*}}} */
+}
 
-static void streaming_naincr(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+streaming_naincr(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) { increments[i]++; }
-} /*}}} */
+}
 
 static char *human_readable_rate(double rate) {
   static char readable_string[100] = {0};

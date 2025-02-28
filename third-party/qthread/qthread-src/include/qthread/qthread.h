@@ -79,7 +79,7 @@ using std::memory_order_relaxed;
  * digit for EXT, and 2 digits for EXT_NUMBER.  For example, 1.17.1rc1 is
  * converted to the numeric version 011701201.
  */
-#define QTHREAD_NUMVERSION 012100000
+#define QTHREAD_NUMVERSION 012200201
 
 #define QTHREADS_GET_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH)              \
   (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) +           \
@@ -178,8 +178,6 @@ typedef unsigned short qthread_worker_id_t;
 
 /* for convenient arguments to qthread_fork */
 typedef aligned_t (*qthread_f)(void *arg);
-typedef void (*qthread_agg_f)(
-  int count, qthread_f *f, void **arg, void **ret, uint16_t flags);
 
 /* use this function to initialize the qthreads environment before spawning any
  * qthreads. The argument to this function used to specify the number of
@@ -189,12 +187,6 @@ typedef void (*qthread_agg_f)(
  * environment variable QTHREAD_NUM_SHEPHERDS. */
 int qthread_init(qthread_shepherd_id_t nshepherds);
 int qthread_initialize(void);
-int qthread_initialize_agg(int (*agg_cost)(int count, qthread_f *f, void **arg),
-                           qthread_agg_f agg_f,
-                           int max_cost);
-int qthread_default_agg_cost(int count, qthread_f *f, void **arg);
-void qthread_default_agg_f(
-  int count, qthread_f *f, void **arg, void **ret, uint16_t flags);
 void qthread_call_method(qthread_f f, void *arg, void *ret, uint16_t flags);
 
 /* use this function to clean up the qthreads environment after execution of
@@ -296,7 +288,6 @@ enum _qthread_features {
   SPAWN_RET_SINC,
   SPAWN_RET_SINC_VOID,
   SPAWN_PC_SYNCVAR_T,
-  SPAWN_AGGREGABLE,
   SPAWN_COUNT,
   SPAWN_LOCAL_PRIORITY,
   SPAWN_NETWORK
@@ -310,7 +301,6 @@ enum _qthread_features {
 #define QTHREAD_SPAWN_RET_SINC (1 << SPAWN_RET_SINC)
 #define QTHREAD_SPAWN_RET_SINC_VOID (1 << SPAWN_RET_SINC_VOID)
 #define QTHREAD_SPAWN_PC_SYNCVAR_T (1 << SPAWN_PC_SYNCVAR_T)
-#define QTHREAD_SPAWN_AGGREGABLE (1 << SPAWN_AGGREGABLE)
 #define QTHREAD_SPAWN_LOCAL_PRIORITY (1 << SPAWN_LOCAL_PRIORITY)
 #define QTHREAD_SPAWN_NETWORK (1 << SPAWN_NETWORK)
 
@@ -472,8 +462,8 @@ typedef union qt_spin_trylock_s {
   aligned_t u;
 
   struct {
-    haligned_t ticket;
-    haligned_t users;
+    QT_Atomic(haligned_t) ticket;
+    QT_Atomic(haligned_t) users;
   } s;
 } qt_spin_trylock_t;
 
@@ -634,8 +624,7 @@ int qthread_lock_destroy(aligned_t *a);
  * All of these functions return the value of the contents of the operand
  * *after* incrementing.
  */
-static inline float qthread_fincr(float *operand, float incr) { /*{{{ */
-
+static inline float qthread_fincr(float *operand, float incr) {
   union {
     float f;
     uint32_t i;
@@ -649,10 +638,9 @@ static inline float qthread_fincr(float *operand, float incr) { /*{{{ */
       __sync_val_compare_and_swap((uint32_t *)operand, oldval.i, newval.i);
   } while (res.i != oldval.i); /* if res!=old, the calc is out of date */
   return oldval.f;
-} /*}}} */
+}
 
-static inline double qthread_dincr(double *operand, double incr) { /*{{{ */
-
+static inline double qthread_dincr(double *operand, double incr) {
   union {
     uint64_t i;
     double d;
@@ -666,20 +654,17 @@ static inline double qthread_dincr(double *operand, double incr) { /*{{{ */
       __sync_val_compare_and_swap((uint64_t *)operand, oldval.i, newval.i);
   } while (res.i != oldval.i); /* if res!=old, the calc is out of date */
   return oldval.d;
-} /*}}} */
+}
 
-static inline uint32_t qthread_incr32(uint32_t *operand,
-                                      uint32_t incr) { /*{{{ */
+static inline uint32_t qthread_incr32(uint32_t *operand, uint32_t incr) {
   return __sync_fetch_and_add(operand, incr);
-} /*}}} */
+}
 
-static inline uint64_t qthread_incr64(uint64_t *operand,
-                                      uint64_t incr) { /*{{{ */
+static inline uint64_t qthread_incr64(uint64_t *operand, uint64_t incr) {
   return __sync_fetch_and_add(operand, incr);
-} /*}}} */
+}
 
-static inline int64_t
-qthread_incr_xx(void *addr, int64_t incr, size_t length) { /*{{{ */
+static inline int64_t qthread_incr_xx(void *addr, int64_t incr, size_t length) {
   switch (length) {
     case 4: return qthread_incr32((uint32_t *)addr, incr);
 
@@ -688,7 +673,7 @@ qthread_incr_xx(void *addr, int64_t incr, size_t length) { /*{{{ */
     default: QTHREAD_TRAP();
   }
   return 0; /* compiler check */
-} /*}}} */
+}
 
 uint64_t qthread_syncvar_incrF(syncvar_t *restrict operand, uint64_t inc);
 
@@ -709,7 +694,7 @@ uint64_t qthread_syncvar_incrF(syncvar_t *restrict operand, uint64_t inc);
 
 Q_ENDCXX /* */
 
-#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
+#ifndef __cplusplus
 
 #define qthread_incr(ADDR, INCVAL) __sync_fetch_and_add(ADDR, INCVAL)
 

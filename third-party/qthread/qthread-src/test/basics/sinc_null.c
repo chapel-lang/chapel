@@ -1,9 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <qthread/sinc.h>
 #include <stdio.h>
@@ -62,7 +57,7 @@ static aligned_t visit(void *arg_) {
 int main(int argc, char *argv[]) {
   size_t depth = 3;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   NUMARG(depth, "TEST_DEPTH");
