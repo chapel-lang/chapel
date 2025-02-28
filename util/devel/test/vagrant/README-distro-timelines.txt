@@ -95,7 +95,9 @@ x 37 EOL Nov 2023
 x 38 EOL May 2024
 x 39 EOL Nov 2024
   40 EOL May 2025
-  41 release Oct 2024
+  41 EOL Nov 2025
+  42 release Apr 2025
+  43 release Nov 2025
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
