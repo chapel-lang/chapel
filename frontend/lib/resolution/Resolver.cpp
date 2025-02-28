@@ -325,27 +325,31 @@ Resolver::createForInstantiatedSignature(Context* context,
   return ret;
 }
 
+static void setFormalTypeUsingSignature(Resolver& rv, const TypedFnSignature* sig, int i) {
+  const UntypedFnSignature* uSig = sig->untyped();
+  const Decl* decl = uSig->formalDecl(i);
+  const auto& qt = sig->formalType(i);
+
+  ResolvedExpression& re = rv.byPostorder.byAst(decl);
+  re.setType(qt);
+
+  // TODO: Aren't these results already computed when we traverse formals
+  // in resolution-queries?
+  if (auto formal = decl->toFormal())
+    rv.resolveTypeQueriesFromFormalType(formal, qt);
+  if (auto formal = decl->toVarArgFormal())
+    rv.resolveTypeQueriesFromFormalType(formal, qt);
+  if (auto td = decl->toTupleDecl())
+    rv.resolveTupleUnpackDecl(td, qt);
+}
+
 static void setFormalTypesUsingSignature(Resolver& rv) {
   // set the resolution results for the formals according to
   // the typedFnSignature
   const TypedFnSignature* sig = rv.typedSignature;
-  const UntypedFnSignature* uSig = sig->untyped();
   int nFormals = rv.typedSignature->numFormals();
   for (int i = 0; i < nFormals; i++) {
-    const Decl* decl = uSig->formalDecl(i);
-    const auto& qt = sig->formalType(i);
-
-    ResolvedExpression& re = rv.byPostorder.byAst(decl);
-    re.setType(qt);
-
-    // TODO: Aren't these results already computed when we traverse formals
-    // in resolution-queries?
-    if (auto formal = decl->toFormal())
-      rv.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto formal = decl->toVarArgFormal())
-      rv.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto td = decl->toTupleDecl())
-      rv.resolveTupleUnpackDecl(td, qt);
+    setFormalTypeUsingSignature(rv, sig, i);
   }
 }
 
@@ -379,19 +383,22 @@ Resolver::createForFunction(ResolutionContext* rc,
     const Decl* decl = ret.typedSignature->untyped()->formalDecl(i);
     CHPL_ASSERT(decl);
     decl->traverse(ret);
-  }
 
-  // Set the formal types again since we already know what they are
-  // from the 'TypedFnSignature', and they may have changed when
-  // they were resolved again (the real process of resolving formals
-  // in e.g., 'instantiateSignature' is much more complex and one
-  // traversal will not produce the same results).
-  //
-  // TODO: Ideally we preserve the types of formal sub-expressions by
-  // some other means or make it so that re-resolving them in this
-  // manner does not emit errors (perhaps we set a bool flag in the
-  // Resolver to indicate as such).
-  setFormalTypesUsingSignature(ret);
+    // Set the formal types again since we already know what they are
+    // from the 'TypedFnSignature', and they may have changed when
+    // they were resolved again (the real process of resolving formals
+    // in e.g., 'instantiateSignature' is much more complex and one
+    // traversal will not produce the same results).
+    //
+    // Do this incrementally so that full formal type info is available to
+    // subsequent formals.
+    //
+    // TODO: Ideally we preserve the types of formal sub-expressions by
+    // some other means or make it so that re-resolving them in this
+    // manner does not emit errors (perhaps we set a bool flag in the
+    // Resolver to indicate as such).
+    setFormalTypeUsingSignature(ret, ret.typedSignature, i);
+  }
 
   if (typedFnSignature->isMethod()) {
     // allow computing the receiver scope from the typedSignature.
