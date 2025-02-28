@@ -622,7 +622,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       byFormalIdx_.resize(numEntries);
 
       QualifiedType starQT;
-      if (formalQT.type() != nullptr) {
+      if (!formalQT.isUnknownOrErroneous()) {
         const TupleType* tup = formalQT.type()->toTupleType();
         CHPL_ASSERT(tup);
         if (tup->isStarTuple()) {
@@ -636,7 +636,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         QualifiedType qt;
         if (starQT.type() != nullptr) {
           qt = starQT;
-        } else if (formalQT.type() != nullptr) {
+        } else if (!formalQT.isUnknownOrErroneous()) {
           // try to pull the type out of the formalQT if it
           // is after instantiation.
           const TupleType* tup = formalQT.type()->toTupleType();

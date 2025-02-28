@@ -1045,6 +1045,7 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
       continue;
     }
     auto fn = candidate.initialForErr();
+    // TODO: this can assert if the fn was resolved but had erroneous type formals
     resolution::FormalActualMap fa(fn, *result.ci);
     auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
@@ -1600,9 +1601,9 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
 }
 
 static bool isValidVarArgCount(QualifiedType paramSize) {
-  if (paramSize.type() == nullptr ||
-      paramSize.type()->isErroneousType()) {
-    return false;
+  // Allow unknown param sizes in case they depend on preceding formals' info
+  if (paramSize.isUnknownOrErroneous()) {
+    return true;
   } else if (paramSize.isParam() == false) {
     return false;
   } else {
@@ -1652,7 +1653,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
     }
 
     if (invalid) {
-      typePtr = ErroneousType::get(context);
+      typePtr = UnknownType::get(context);
     } else {
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
