@@ -144,6 +144,15 @@ void buildDefaultFunctions() {
     // Here we build default functions that are always generated (even when
     // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
     if (AggregateType* ct = toAggregateType(type->type)) {
+
+      if (ct->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        if (ct->symbol->hasFlag(FLAG_REF)) {
+          // The frontend will generate '_ref' types early. These types
+          // really shouldn't have 'init=' (etc) generated for them...
+          continue;
+        }
+      }
+
       buildFieldAccessorFunctions(ct);
 
       if (ct->wantsDefaultInitializer()) {

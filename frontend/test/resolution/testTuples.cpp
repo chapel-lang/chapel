@@ -32,7 +32,7 @@
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static void test1() {
-  printf("test1\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -57,7 +57,7 @@ static void test1() {
 }
 
 static void test2() {
-  printf("test2\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -78,7 +78,7 @@ static void test2() {
 
 
 static void test3() {
-  printf("test3\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -108,7 +108,7 @@ static void test3() {
 }
 
 static void test4() {
-  printf("test4\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -133,7 +133,7 @@ static void test4() {
 }
 
 static void test5() {
-  printf("test5\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
@@ -159,7 +159,7 @@ static void test5() {
 }
 
 static void test6() {
-  printf("test6\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -184,7 +184,7 @@ static void test6() {
 }
 
 static void test7() {
-  printf("test7\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -208,7 +208,7 @@ static void test7() {
 }
 
 static void test8() {
-  printf("test8\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -231,7 +231,7 @@ static void test8() {
 }
 
 static void test9() {
-  printf("test9\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto M = parseModule(context,
@@ -264,7 +264,7 @@ static void test9() {
 }
 
 static void test9b() {
-  printf("test9b\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   {
@@ -331,7 +331,7 @@ static void test9b() {
 }
 
 static void test10() {
-  printf("test10\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto M = parseModule(context,
@@ -364,7 +364,7 @@ static void test10() {
 }
 
 static void test11() {
-  printf("test11\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -385,7 +385,7 @@ static void test11() {
 }
 
 static void test11b() {
-  printf("test11b\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
@@ -417,7 +417,7 @@ static void test11b() {
 }
 
 static void test12() {
-  printf("test12\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -446,7 +446,7 @@ static void test12() {
 }
 
 static void test13() {
-  printf("test13\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -478,7 +478,7 @@ static void test13() {
 
 // TupleDecl formals
 static void test14() {
-  printf("test14\n");
+  printf("%s\n", __FUNCTION__);
 
   {
     auto context = buildStdContext();
@@ -620,7 +620,7 @@ static void test14() {
 }
 
 static void test15() {
-  printf("test15\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
@@ -641,7 +641,7 @@ static void test15() {
 }
 
 static void test16() {
-  printf("test16\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
@@ -656,7 +656,7 @@ static void test16() {
 }
 
 static void test17() {
-  printf("test17\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
@@ -718,7 +718,7 @@ static void argHelper(std::string formal, std::string actual,
 }
 
 static void test18() {
-  printf("test18\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto program = R""""(
@@ -743,7 +743,7 @@ static void test18() {
 
 // Test "get svec member[ value]" primitives
 static void test19() {
-  printf("test19\n");
+  printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto program = R""""(
@@ -785,7 +785,7 @@ static void test19() {
 
 
 static void testTupleGeneric() {
-  printf("testTupleGeneric\n");
+  printf("%s\n", __FUNCTION__);
 
   // Basic all-generic cases
   argHelper("(?,)", "(5,)", true);
@@ -832,7 +832,7 @@ static const TypedFnSignature* test20Helper(Context* context, std::string progra
   return sig;
 }
 static void test20() {
-  printf("test20\n");
+  printf("%s\n", __FUNCTION__);
   {
     auto context = buildStdContext();
     auto program = R"""(
@@ -939,6 +939,8 @@ static void test20() {
 }
 
 static void test21() {
+  printf("%s\n", __FUNCTION__);
+
   // Ensure that (type int, type int) tuples in type expression are properly
   // handled when they are specifying the type of var or const variable.
 
@@ -964,6 +966,8 @@ static void test21() {
 }
 
 static void test22() {
+  printf("%s\n", __FUNCTION__);
+
   // Ensure that homogeneous tuple addition works
 
   auto context = buildStdContext();
@@ -980,6 +984,19 @@ static void test22() {
   ensureParamBool(vars["match"], true);
 }
 
+static void test23() {
+  printf("%s\n", __FUNCTION__);
+
+  // Ensure that 'tuple.size' resolves.
+  auto context = buildStdContext();
+  auto program = R"""(
+    var y: (int, int);
+    param x = y.size;
+  )""";
+
+  auto qt = resolveQualifiedTypeOfX(context, program);
+  ensureParamInt(qt, 2);
+}
 
 int main() {
   test1();
@@ -1009,5 +1026,7 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
+
   return 0;
 }

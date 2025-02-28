@@ -343,7 +343,17 @@ class UntypedFnSignature {
     return isMethod_;
   }
 
-  /** Returns true if this is an iterator */
+  /** Returns true if this is a procedure. */
+  bool isProcedure() const {
+    return kind_ == uast::Function::PROC;
+  }
+
+  /** Returns true if this is an operator. */
+  bool isOperator() const {
+    return kind_ == uast::Function::OPERATOR;
+  }
+
+  /** Returns true if this is an iterator. */
   bool isIterator() const {
     return kind_ == uast::Function::ITER;
   }
@@ -367,6 +377,11 @@ class UntypedFnSignature {
   bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].defaultKind != DK_NO_DEFAULT;
+  }
+
+  DefaultKind formalDefaultKind(int i) const {
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].defaultKind;
   }
 
   /** Returns the Decl for the i'th formal / field.
@@ -1120,6 +1135,10 @@ class TypedFnSignature {
     return formalTypes_[i];
   }
 
+  bool isOperator() const {
+    return untypedSignature_->isOperator();
+  }
+
   bool isIterator() const {
     return untypedSignature_->isIterator();
   }
@@ -1597,6 +1616,13 @@ class FormalActualMap {
     CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
     byFormalIdx_[0].formalType_ = initializer->formalType(0);
   }
+
+  /** Return the number of formals in this mapping. The number of actuals
+      may be more (e.g., for a 'varargs') or less (e.g., default-argument
+      values) than the number of formals, but there will always be as many
+      entries in this mapping as are needed to invoke the given call. This
+      quantity may be useful for consumers of this 'FormalActualMap'. */
+  int numFormalsMapped() const { return byFormalIdx_.size(); }
 
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,

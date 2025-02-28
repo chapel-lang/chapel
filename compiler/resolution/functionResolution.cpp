@@ -5387,6 +5387,14 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
+      // If the function was created as a part of dyno typed conversion,
+      // then do not consider it as a candidate. This means that the old
+      // AST resolver may do some redundant work re-instantiating and
+      // re-resolving functions that dyno has already handled, but that
+      // is OK - eventually the new frontend will resolve _everything_
+      // and we can remove the old resolver.
+      if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
       if ((fn->isInitializer()) || (isDeinit && fn->isMethod()) || fn->isCopyInit()) {
         actual = call->get(2);
         formal = fn->_this;
@@ -12641,7 +12649,9 @@ static const char* autoCopyFnForType(AggregateType* at);
 static void resolveAutoCopies() {
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
-        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)  &&
+        ! ts->hasFlag(FLAG_REF)                     &&
+        ! ts->hasFlag(FLAG_RESOLVED_EARLY)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record

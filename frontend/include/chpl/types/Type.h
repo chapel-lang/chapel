@@ -274,7 +274,7 @@ class Type {
 
   bool isRecordLike() const;
 
-  /** Returns true if the this type has the pragma 'p' attached to it. */
+  /** Returns true if this type has the pragma 'p' attached to it. */
   bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
   /** If 'this' is a CompositeType, return it.
@@ -350,6 +350,90 @@ class Type {
   static bool isDefaultInitializable(Context* context, const Type* t);
 
   static bool needsInitDeinitCall(const Type* t);
+
+  // Define a struct to do tag-driven dynamic dispatch over types.
+  template <typename ReturnType, typename Visitor>
+  struct Dispatcher {
+    static ReturnType doDispatch(const Type* t, Visitor& v) {
+      switch (t->tag()) {
+        #define DISPATCH(NAME) \
+          case chpl::types::typetags::NAME: { \
+            return v.visit((const chpl::types::NAME*) t); \
+          }
+        #define TYPE_NODE(NAME) DISPATCH(NAME)
+        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) DISPATCH(NAME)
+        // Do nothing, visitor should provide overloads for parent classes.
+        #define TYPE_BEGIN_SUBCLASSES(NAME)
+        #define TYPE_END_SUBCLASSES(NAME)
+        // Apply the above macros to type-classes-list.h
+        #include "chpl/types/type-classes-list.h"
+        // clear the macros
+        #undef TYPE_NODE
+        #undef BUILTIN_TYPE_NODE
+        #undef TYPE_BEGIN_SUBCLASSES
+        #undef TYPE_END_SUBCLASSES
+        #undef DISPATCH
+        default: break;
+      }
+
+      CHPL_ASSERT(false && "this code should never be run");
+      return ReturnType();
+    }
+  };
+  template <typename Visitor>
+  struct Dispatcher<void, Visitor> {
+    static void doDispatch(const Type* t, Visitor& v) {
+      switch (t->tag()) {
+        #define DISPATCH(NAME) \
+          case chpl::types::typetags::NAME: { \
+            v.visit((const chpl::types::NAME*) t); \
+            return; \
+          }
+        #define TYPE_NODE(NAME) DISPATCH(NAME)
+        #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) DISPATCH(NAME)
+        // Do nothing, visitor should provide overloads for parent classes.
+        #define TYPE_BEGIN_SUBCLASSES(NAME)
+        #define TYPE_END_SUBCLASSES(NAME)
+        // Apply the above macros to type-classes-list.h
+        #include "chpl/types/type-classes-list.h"
+        // clear the macros
+        #undef TYPE_NODE
+        #undef BUILTIN_TYPE_NODE
+        #undef TYPE_BEGIN_SUBCLASSES
+        #undef TYPE_END_SUBCLASSES
+        #undef DISPATCH
+        default: break;
+      }
+
+      CHPL_ASSERT(false && "this code should never be run");
+    }
+  };
+
+ public:
+
+  /**
+     The dispatch function supports calling a method according to the tag
+     (aka runtime type) of a type node.
+
+     It is a template and the Visitor argument should provide functions
+     like
+
+        MyReturnType MyVisitor::visit(const types::Type* t);
+        MyReturnType MyVisitor::visit(const types::BoolType* t);
+
+     and these will be invoked according to C++ overload resolution
+     (where in particular an exact match will be preferred).
+
+     It is generally necessary to specify the ReturnType when calling it, e.g.
+
+       t->dispatch<MyReturnType>(myVisitor);
+
+     The return type currently needs to be default constructable.
+   */
+  template <typename ReturnType, typename Visitor>
+  ReturnType dispatch(Visitor& v) const {
+    return Dispatcher<ReturnType, Visitor>::doDispatch(this, v);
+  }
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;

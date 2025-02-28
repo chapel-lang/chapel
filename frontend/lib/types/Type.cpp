@@ -424,8 +424,11 @@ bool Type::needsInitDeinitCall(const Type* t) {
   } else if (t->isEnumType()) {
     // OK, can default-initialize enums to first element
     return false;
+  /*
+  // TODO: Wire this up when we reintroduce the FunctionType.
   } else if (t->isFunctionType()) {
     return false;
+  */
   }
 
   return t->isRecordLike();
