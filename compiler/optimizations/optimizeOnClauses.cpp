@@ -141,6 +141,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ADDR_OF:
   case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
+  case PRIM_IS_LOCAL:
 
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:

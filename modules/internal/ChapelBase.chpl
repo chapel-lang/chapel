@@ -3423,13 +3423,7 @@ module ChapelBase {
   }
 
   // check if both arguments are local without `.locale` or `here`
-  proc chpl__bothLocal(const ref a, const ref b) {
-    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
-
-    const aLoc = __primitive("_wide_get_locale", a._value);
-    const bLoc = __primitive("_wide_get_locale", b._value);
-
-    return chpl_equals_localeID(aLoc, bLoc) &&
-           chpl_equals_localeID(aLoc, here_id);
+  inline proc chpl__bothLocal(const ref a, const ref b) {
+    return __primitive("is_local", a) && __primitive("is_local", b);
   }
 }

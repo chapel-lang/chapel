@@ -265,6 +265,22 @@ static inline
 chpl_bool chpl_is_node_local(c_nodeid_t node)
 { return node == chpl_nodeID; }
 
+#ifdef HAS_GPU_LOCALE
+static inline
+chpl_bool chpl_is_local(c_localeid_t loc)
+{
+  return loc.node == chpl_nodeID &&
+         loc.subloc == chpl_task_getRequestedSubloc();
+}
+#else
+static inline
+chpl_bool chpl_is_local(c_localeid_t loc)
+{
+  return loc == chpl_nodeID;
+}
+
+#endif
+
 // Assert that the given node ID matches that of the currently-running image
 // If not, format the given error message with the given filename and line number
 // and then halt the current task.  (The exact behavior is dictated by

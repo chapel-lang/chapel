@@ -148,6 +148,7 @@ PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
 
 PRIMITIVE_G(LOCAL_CHECK, "local_check")
+PRIMITIVE_G(IS_LOCAL, "is_local")
 
 PRIMITIVE_R(GET_END_COUNT, "get end count")
 PRIMITIVE_R(SET_END_COUNT, "set end count")
