@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <float.h> /* for DBL_MAX, per C89 */
 #include <math.h>
 #include <qthread/barrier.h>
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
   // TODO(npe) how does qthreads handle signals?
   sigaction(SIGBUS, &sa, NULL);
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   NUMARG(threads, "THREADS");
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
 
   stack_size = atoi(getenv("QT_STACK_SIZE"));
   rets = (aligned_t *)malloc(threads * sizeof(aligned_t));
-  test_check(rets);
+  assert(rets);
 
   for (iter = 0; iter <= iterations; ++iter) {
     for (i = 1; i < threads; ++i) {
@@ -75,7 +76,7 @@ int main(int argc, char *argv[]) {
       iprintf(
         "initme[%i] = %i (should be %i)\n", (int)i, (int)initme[i], iter + 1);
     }
-    test_check(initme[i] == iter + 1);
+    assert(initme[i] == iter + 1);
   }
 
   free(rets);

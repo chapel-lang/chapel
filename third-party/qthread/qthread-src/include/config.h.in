@@ -1,0 +1,200 @@
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* The cacheline width */
+#undef CACHELINE_WIDTH
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define to 1 if you have the `fstat64' function. */
+#undef HAVE_FSTAT64
+
+/* Define to 1 if you have the `getcontext' function. */
+#undef HAVE_GETCONTEXT
+
+/* Define to 1 if you have the <hwloc.h> header file. */
+#undef HAVE_HWLOC_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `lseek64' function. */
+#undef HAVE_LSEEK64
+
+/* Define to 1 if you have the <mach/mach_time.h> header file. */
+#undef HAVE_MACH_MACH_TIME_H
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
+
+/* Define to 1 if you have the `memalign' function. */
+#undef HAVE_MEMALIGN
+
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
+
+/* Define to 1 if you have the `memmove' function. */
+#undef HAVE_MEMMOVE
+
+/* The system provides functional native make/swap/get-context functions */
+#undef HAVE_NATIVE_MAKECONTEXT
+
+/* Define to 1 if you have the `pthread_yield' function. */
+#undef HAVE_PTHREAD_YIELD
+
+/* Define to 1 if you have the <sched.h> header file. */
+#undef HAVE_SCHED_H
+
+/* Define to 1 if you have the `sched_yield' function. */
+#undef HAVE_SCHED_YIELD
+
+/* Define if _SC_CLK_TCK is available. */
+#undef HAVE_SC_CLK_TCK
+
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
+
+/* Define to 1 if you have the <stdarg.h> header file. */
+#undef HAVE_STDARG_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `sysconf' function. */
+#undef HAVE_SYSCONF
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/syscall.h> header file. */
+#undef HAVE_SYS_SYSCALL_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#undef HAVE_SYS_SYSCTL_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/ucontext.h> header file. */
+#undef HAVE_SYS_UCONTEXT_H
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
+#undef HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the <ucontext.h> header file. */
+#undef HAVE_UCONTEXT_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <valgrind/memcheck.h> header file. */
+#undef HAVE_VALGRIND_MEMCHECK_H
+
+/* Define to specify function that returns hwloc topology */
+#undef HWLOC_GET_TOPOLOGY_FUNCTION
+
+/* Define to use a lock-free hash table for FEB metadata. */
+#undef LOCK_FREE_FEBS
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Support HPCToolkit stack unwinding */
+#undef QTHREAD_ALLOW_HPCTOOLKIT_STACK_UNWINDING
+
+/* use pthread-based condwait for lf queue */
+#undef QTHREAD_CONDWAIT_BLOCKING_QUEUE
+
+/* keeps track of the number of threads */
+#undef QTHREAD_COUNT_THREADS
+
+/* What size stacks to use by default */
+#undef QTHREAD_DEFAULT_STACK_SIZE
+
+/* Use guard pages to detect stack overruns */
+#undef QTHREAD_GUARD_PAGES
+
+/* if I can use the hwloc topology interface */
+#undef QTHREAD_HAVE_HWLOC
+
+/* hwloc has distances */
+#undef QTHREAD_HAVE_HWLOC_DISTS
+
+/* makecontext()passes args as int-size, not long-size */
+#undef QTHREAD_MAKECONTEXT_SPLIT
+
+/* removes sanity checks from most qthread functions */
+#undef QTHREAD_NO_ASSERTS
+
+/* Enable experimental OpenMP affinity extensions. Under development */
+#undef QTHREAD_OMP_AFFINITY
+
+/* expensive sanity checks */
+#undef QTHREAD_PARANOIA
+
+/* Precache guard pages in pooled stacks */
+#undef QTHREAD_PRECACHE_GUARD_PAGES
+
+/* use a shift-based gcd algorithm */
+#undef QTHREAD_SHIFT_GCD
+
+/* the uc_stack structure in ucontext_t has an ss_flags structure that needs
+   to be initialized */
+#undef QTHREAD_UCSTACK_HAS_SSFLAGS
+
+/* Use Valgrind Macros */
+#undef QTHREAD_USE_VALGRIND
+
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
+#undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. This
+   macro is obsolete. */
+#undef TIME_WITH_SYS_TIME

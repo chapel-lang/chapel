@@ -1,4 +1,5 @@
 #include "argparsing.h"
+#include <assert.h>
 #include <math.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
 
   uint64_t pairs;
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
   pairs = qthread_num_shepherds() * 6;
 
   CHECK_VERBOSE();
@@ -75,15 +76,15 @@ int main(int argc, char *argv[]) {
   {
     uint64_t tmp = 0;
     qthread_readFF(&tmp, &id);
-    test_check(tmp == 1);
+    assert(tmp == 1);
   }
   iprintf("x's status is: %s (want full (and nowait))\n",
           qthread_feb_status(&x) ? "full" : "empty");
-  test_check(qthread_feb_status(&x) == 1);
+  assert(qthread_feb_status(&x) == 1);
   qthread_readFE(NULL, &x);
   iprintf("x's status became: %s (want empty (and nowait))\n",
           qthread_feb_status(&x) ? "full" : "empty");
-  test_check(qthread_feb_status(&x) == 0);
+  assert(qthread_feb_status(&x) == 0);
   for (unsigned int i = 0; i < pairs; ++i) {
     qthread_fork(consumer, (void *)(uintptr_t)i, &(t[0][i]));
   }
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
   iprintf("shouldn't be blocking on x (current status: %s)\n",
           qthread_feb_status(&x) ? "full" : "empty");
   qthread_readFF(&x_value, &x);
-  test_check(qthread_feb_status(&x) == 1);
+  assert(qthread_feb_status(&x) == 1);
 
   free(t[0]);
   free(t[1]);

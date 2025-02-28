@@ -38,25 +38,23 @@ Windows is not currently supported.
 
 ## Building Qthreads
 
-CMake 3.23 or later is required for building from source.
+Qthreads currently relies on autotools, so automake, autoconf, and libtool are required for building from source.
 Hwloc is also highly recommended.
 
 The following compilers are supported and tested regularly:
 - gcc 9 or later
-- clang 14 or later
+- clang 11 or later
 - icc (last supported release)
-- icx 2024 or later
+- icx 2023 or later
 - aocc 4.2 or later
-- acfl 24.10
-- Apple clang 15 or later
-- nvc 24.9
+- acfl 24.04
+- Apple clang 15.4 or later
 
 To configure and build from source you can run (in the source directory):
 
 ```
-mkdir build
-cd build
-cmake ..
+./autogen.sh # not necessary if you're building from a release tarball instead of directly form the github repository
+./configure
 make -j
 ```
 

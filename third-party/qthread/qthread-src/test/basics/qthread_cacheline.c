@@ -1,4 +1,8 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "argparsing.h"
+#include <assert.h>
 #include <qthread/cacheline.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -12,7 +16,7 @@ int main(int argc, char *argv[]) {
   cacheline = qthread_cacheline();
   CHECK_VERBOSE();
   iprintf("%i bytes\n", cacheline);
-  test_check(cacheline > 0);
+  assert(cacheline > 0);
   return 0;
 }
 

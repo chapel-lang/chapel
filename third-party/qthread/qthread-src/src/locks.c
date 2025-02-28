@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <assert.h>
 #include <stdbool.h>
 
@@ -45,11 +49,9 @@ static int lock_hashmap_put(aligned_t const *key, qthread_spinlock_t *val) {
 
 static int lock_hashmap_remove(aligned_t const *key) {
   if (!qthread_spinlock_buckets) return QTHREAD_OPFAIL;
-  void *val = NULL;
-  if (qt_hash_pop(&val, qthread_spinlock_buckets[LOCKBIN(key)], key)) {
-    if (val) qt_free(val);
+
+  if (qt_hash_remove(qthread_spinlock_buckets[LOCKBIN(key)], key))
     return QTHREAD_SUCCESS;
-  }
 
   return QTHREAD_OPFAIL;
 }
@@ -259,50 +261,51 @@ static int spinlock_unlock(qthread_spinlock_t *a) {
 
 /* Functions to implement FEB-ish locking/unlocking*/
 
-int API_FUNC qthread_lock_init(aligned_t const *a, bool const is_recursive) {
+int API_FUNC qthread_lock_init(aligned_t const *a,
+                               bool const is_recursive) { /*{{{ */
   return spinlock_init_hashed(a, is_recursive);
-}
+} /*}}} */
 
-int API_FUNC qthread_lock_destroy(aligned_t *a) {
+int API_FUNC qthread_lock_destroy(aligned_t *a) { /*{{{ */
   if (!is_spin_lock_hashed(a)) { return QTHREAD_SUCCESS; }
   return spinlock_destroy_hashed(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_lock(aligned_t const *a) {
+int API_FUNC qthread_lock(aligned_t const *a) { /*{{{ */
   if (!is_spin_lock_hashed(a)) { return qthread_readFE(NULL, a); }
   return spinlock_lock_hashed(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_trylock(aligned_t const *a) {
+int API_FUNC qthread_trylock(aligned_t const *a) { /*{{{ */
   if (!is_spin_lock_hashed(a)) { return qthread_readFE_nb(NULL, a); }
   return spinlock_trylock_hashed(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_unlock(aligned_t const *a) {
+int API_FUNC qthread_unlock(aligned_t const *a) { /*{{{ */
   if (!is_spin_lock_hashed(a)) { return qthread_fill(a); }
   return spinlock_unlock_hashed(a);
-}
+} /*}}} */
 
 int API_FUNC qthread_spinlock_init(qthread_spinlock_t *a,
-                                   bool const is_recursive) {
+                                   bool const is_recursive) { /*{{{ */
   return spinlock_init(a, is_recursive);
-}
+} /*}}} */
 
-int API_FUNC qthread_spinlock_destroy(qthread_spinlock_t *a) {
+int API_FUNC qthread_spinlock_destroy(qthread_spinlock_t *a) { /*{{{ */
   return spinlock_destroy(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_spinlock_lock(qthread_spinlock_t *a) {
+int API_FUNC qthread_spinlock_lock(qthread_spinlock_t *a) { /*{{{ */
   return spinlock_lock(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_spinlock_trylock(qthread_spinlock_t *a) {
+int API_FUNC qthread_spinlock_trylock(qthread_spinlock_t *a) { /*{{{ */
   return spinlock_trylock(a);
-}
+} /*}}} */
 
-int API_FUNC qthread_spinlock_unlock(qthread_spinlock_t *a) {
+int API_FUNC qthread_spinlock_unlock(qthread_spinlock_t *a) { /*{{{ */
   return spinlock_unlock(a);
-}
+} /*}}} */
 
 #undef qt_hash_t
 

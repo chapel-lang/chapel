@@ -1,4 +1,8 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h" /* for _GNU_SOURCE */
+#endif
 #include "argparsing.h"
+#include <assert.h>
 #include <float.h>  /* for DBL_MIN & friends (according to C89) */
 #include <limits.h> /* for INT_MIN & friends (according to C89) */
 #include <qthread/qloop.h>
@@ -15,7 +19,7 @@ int main(int argc, char *argv[]) {
   size_t i;
   struct timeval start, stop;
 
-  test_check(qthread_initialize() == QTHREAD_SUCCESS);
+  assert(qthread_initialize() == QTHREAD_SUCCESS);
   CHECK_VERBOSE();
   NUMARG(BIGLEN, "BIGLEN");
 
@@ -23,7 +27,7 @@ int main(int argc, char *argv[]) {
     aligned_t *uia, uitmp, uisum = 0, uiprod = 1, uimax = 0, uimin = UINT_MAX;
 
     uia = (aligned_t *)malloc(sizeof(aligned_t) * BIGLEN);
-    test_check(uia);
+    assert(uia);
     for (i = 0; i < BIGLEN; i++) { uia[i] = random(); }
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++) uisum += uia[i];
@@ -39,7 +43,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(uitmp == uisum);
+    assert(uitmp == uisum);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++) uiprod *= uia[i];
@@ -55,7 +59,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(uitmp == uiprod);
+    assert(uitmp == uiprod);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
@@ -72,7 +76,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(uimax == uitmp);
+    assert(uimax == uitmp);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
@@ -89,7 +93,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(uitmp == uimin);
+    assert(uitmp == uimin);
     free(uia);
   }
 
@@ -97,7 +101,7 @@ int main(int argc, char *argv[]) {
     saligned_t *ia, itmp, isum = 0, iprod = 1, imax = INT_MIN, imin = INT_MAX;
 
     ia = (saligned_t *)malloc(sizeof(saligned_t) * BIGLEN);
-    test_check(ia);
+    assert(ia);
     for (i = 0; i < BIGLEN; i++) {
       // Pick most of them to be 1 with a few 2s mixed in.
       // Make the 2s unlikely enough that it's nearly impossible
@@ -122,7 +126,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(itmp == isum);
+    assert(itmp == isum);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++) iprod *= ia[i];
@@ -138,7 +142,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(itmp == iprod);
+    assert(itmp == iprod);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
@@ -155,7 +159,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(imax == itmp);
+    assert(imax == itmp);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
@@ -172,7 +176,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(itmp == imin);
+    assert(itmp == imin);
     free(ia);
   }
 
@@ -180,7 +184,7 @@ int main(int argc, char *argv[]) {
     double *da, dtmp, dsum = 0.0, dprod = 1.0, dmin = DBL_MAX, dmax = DBL_MIN;
 
     da = (double *)malloc(sizeof(double) * BIGLEN);
-    test_check(da);
+    assert(da);
     srandom(0xdeadbeef);
     for (i = 0; i < BIGLEN; i++) { da[i] = random() / (double)RAND_MAX * 10.0; }
     gettimeofday(&start, NULL);
@@ -190,7 +194,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dsum > 0);
+    assert(dsum > 0);
     gettimeofday(&start, NULL);
     dtmp = qt_double_sum(da, BIGLEN, 0);
     gettimeofday(&stop, NULL);
@@ -198,7 +202,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dtmp > 0);
+    assert(dtmp > 0);
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++) dprod *= da[i];
     gettimeofday(&stop, NULL);
@@ -206,7 +210,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dprod > 0);
+    assert(dprod > 0);
     gettimeofday(&start, NULL);
     dtmp = qt_double_prod(da, BIGLEN, 0);
     gettimeofday(&stop, NULL);
@@ -214,7 +218,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dtmp > 0);
+    assert(dtmp > 0);
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
       if (da[i] > dmax) { dmax = da[i]; }
@@ -230,7 +234,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dmax == dtmp);
+    assert(dmax == dtmp);
 
     gettimeofday(&start, NULL);
     for (i = 0; i < BIGLEN; i++)
@@ -247,7 +251,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             (stop.tv_sec + (stop.tv_usec * 1.0e-6)) -
               (start.tv_sec + (start.tv_usec * 1.0e-6)));
-    test_check(dtmp == dmin);
+    assert(dtmp == dmin);
     free(da);
   }
 

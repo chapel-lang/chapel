@@ -1,5 +1,6 @@
 #include "argparsing.h"
 #include "qthread/qthread.h"
+#include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@ static void *external_thread(void *junk) {
 int main(int argc, char *argv[]) {
   pthread_t external;
 
-  test_check(qthread_initialize() == 0);
+  assert(qthread_initialize() == 0);
 
   x = 0;
   CHECK_VERBOSE();

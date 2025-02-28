@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* System Includes */
 #include <pthread.h>
 
@@ -103,22 +107,23 @@ void INTERNAL qt_mpool_subsystem_init(void) {
 
 /* local funcs */
 static inline void *qt_mpool_internal_aligned_alloc(size_t alloc_size,
-                                                    size_t alignment) {
+                                                    size_t alignment) { /*{{{ */
   void *ret = qt_internal_aligned_alloc(alloc_size, alignment);
 
   VALGRIND_MAKE_MEM_NOACCESS(ret, alloc_size);
   return ret;
-}
+} /*}}} */
 
 static inline void qt_mpool_internal_aligned_free(void *freeme,
-                                                  size_t alignment) {
+                                                  size_t alignment) { /*{{{ */
   qt_internal_aligned_free(freeme, alignment);
-}
+} /*}}} */
 
 // sync means lock-protected
 // item_size is how many bytes to return
 // ...memory is always allocated in multiples of getpagesize()
-qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size, size_t alignment) {
+qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
+                                          size_t alignment) { /*{{{ */
   qt_mpool pool = (qt_mpool)MALLOC(sizeof(struct qt_mpool_s));
 
   size_t alloc_size = 0;
@@ -206,7 +211,7 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size, size_t alignment) {
   qgoto(errexit);
   if (pool) { FREE(pool, sizeof(struct qt_mpool_s)); }
   return NULL;
-}
+} /*}}} */
 
 static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool) {
   qt_mpool_threadlocal_cache_t *tc;
@@ -216,7 +221,7 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool) {
   {
     uintptr_t count_caches = (uintptr_t)TLS_GET(pool_cache_count);
     if (count_caches < pool->offset) {
-#if !defined(NDEBUG)
+#if !defined(QTHREAD_NO_ASSERTS)
       qthread_worker_id_t wkr = qthread_readstate(CURRENT_UNIQUE_WORKER);
       /* I don't fully understand why this is necessary. I *suspect* that
        * on thread 0, the initialization routine isn't happening
@@ -244,7 +249,7 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool) {
       count_caches = pool->offset;
       TLS_SET(pool_cache_count, count_caches);
     } else if (tc == NULL) {
-#if !defined(NDEBUG)
+#if !defined(QTHREAD_NO_ASSERTS)
       qthread_worker_id_t wkr = qthread_readstate(CURRENT_UNIQUE_WORKER);
       /* I don't fully understand why this is necessary. I *suspect* that
        * on thread 0, the initialization routine isn't happening
@@ -284,7 +289,7 @@ static qt_mpool_threadlocal_cache_t *qt_mpool_internal_getcache(qt_mpool pool) {
   return tc;
 }
 
-void INTERNAL *qt_mpool_alloc(qt_mpool pool) {
+void INTERNAL *qt_mpool_alloc(qt_mpool pool) { /*{{{*/
   qt_mpool_threadlocal_cache_t *tc;
   size_t cnt;
 
@@ -358,9 +363,9 @@ void INTERNAL *qt_mpool_alloc(qt_mpool pool) {
       return cache;
     }
   }
-}
+} /*}}}*/
 
-void INTERNAL qt_mpool_free(qt_mpool pool, void *mem) {
+void INTERNAL qt_mpool_free(qt_mpool pool, void *mem) { /*{{{*/
   qt_mpool_threadlocal_cache_t *tc;
   qt_mpool_cache_t *cache = NULL;
   qt_mpool_cache_t *n = (qt_mpool_cache_t *)mem;
@@ -414,9 +419,9 @@ void INTERNAL qt_mpool_free(qt_mpool pool, void *mem) {
   tc->cache = n;
   tc->count = cnt;
   VALGRIND_MEMPOOL_FREE(pool, mem);
-}
+} /*}}}*/
 
-void INTERNAL qt_mpool_destroy(qt_mpool pool) {
+void INTERNAL qt_mpool_destroy(qt_mpool pool) { /*{{{ */
   qassert_retvoid((pool != NULL));
   while (pool->alloc_list) {
     unsigned int i = 0;
@@ -447,6 +452,6 @@ void INTERNAL qt_mpool_destroy(qt_mpool pool) {
   QTHREAD_FASTLOCK_DESTROY(pool->reuse_lock);
   VALGRIND_DESTROY_MEMPOOL(pool);
   FREE(pool, sizeof(struct qt_mpool_s));
-}
+} /*}}} */
 
 /* vim:set expandtab: */
