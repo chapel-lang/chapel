@@ -147,6 +147,7 @@ class DomainType final : public CompositeType {
     CHPL_ASSERT(isSubdomain());
     auto parentDom = subs_.at(parentDomainId);
     CHPL_ASSERT(!parentDom.isUnknownOrErroneous());
+    CHPL_ASSERT(parentDom.type()->isDomainType());
     return parentDom.type()->toDomainType();
   }
 
