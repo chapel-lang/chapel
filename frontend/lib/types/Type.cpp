@@ -428,10 +428,7 @@ bool Type::needsInitDeinitCall(const Type* t) {
     // OK, can default-initialize enums to first element
     return false;
   /*
-<<<<<<< HEAD
   // TODO: Wire this up when we reintroduce the FunctionType.
-=======
->>>>>>> d95396529b (First chunk of progress towards getting 'proc main() {}' to compile)
   } else if (t->isFunctionType()) {
     return false;
   */
