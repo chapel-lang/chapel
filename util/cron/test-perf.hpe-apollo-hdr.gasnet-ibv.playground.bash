@@ -38,9 +38,9 @@ GITHUB_BRANCH=gasnet
 SHORT_NAME=gasnet-snapshot
 START_DATE=02/27/25
 
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+set -e
+checkout_branch $GITHUB_USER $GITHUB_BRANCH
+set +x
 
 nightly_args="${nightly_args} -no-buildcheck"
 # don't use `perf_hpe_apollo_args`, the settings are overwritten here

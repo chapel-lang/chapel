@@ -14,6 +14,7 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $UTIL_CRON_DIR/common-perf.bash
+source $UTIL_CRON_DIR/common-playground.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -31,9 +32,9 @@ GITHUB_BRANCH=qthread
 SHORT_NAME=qthread122
 START_DATE=02/21/25
 
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+set -e
+checkout_branch $GITHUB_USER $GITHUB_BRANCH
+set +x
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
