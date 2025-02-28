@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_set>
 
 using chpl::types::Param;
 using chpl::owned;
@@ -768,73 +769,100 @@ ParserNDArrayList* ParserContext::appendNDArrayList(ParserNDArrayList* dst,
   return dst;
 }
 
-static inline std::pair<AstList, chpl::Location>
-  buildArrayRows(ParserContext* context, ParserNDArrayList* lst,
-                 Location arrayLoc, int start, int stop,
-                 int previousNumSep, YYLTYPE previousMaxSepLoc) {
-  CHPL_ASSERT(start <= stop);
-  if (start == stop) {
-    if (previousNumSep != -1 && previousNumSep != 1) {
-      // TODO: this will have duplicate errors, can we avoid that?
-      YYLTYPE loc = (*lst)[start].location;
-      if (start > 0 && (*lst)[start-1].nSeparator == previousNumSep) {
-        loc = (*lst)[start-1].location;
-      } else if (start < (int)lst->size()-1 &&
-                 (*lst)[start+1].nSeparator == previousNumSep) {
-        loc = (*lst)[start+1].location;
+struct BuildArrayRowsContext {
+  std::unordered_set<int> errorInconsistentSeparatorIdx;
+  std::unordered_set<int> errorSingleSeparatorIdx;
+
+  void realizeErrors(ParserContext* context, ParserNDArrayList* lst) {
+    if (!errorInconsistentSeparatorIdx.empty()) {
+      for (auto i : errorInconsistentSeparatorIdx) {
+        context->error(
+          (*lst)[i].location,
+          "inconsistent number of multi-dimensional array separators");
       }
-      context->syntax(loc,
-                     "the final dimension of an array must use a single separator");
     }
-    // there is a single row, so just return it
-    return std::make_pair(
-      context->consumeList((*lst)[start].exprs),
-      context->convertLocation((*lst)[start].location)
-    );
-  }
-
-  // find the largest number of consecutive sep
-  int maxSep = 0;
-  YYLTYPE maxSepLoc;
-  for (int i = start; i <= stop; i++) {
-    if ((*lst)[i].nSeparator > maxSep) {
-      maxSep = (*lst)[i].nSeparator;
-      maxSepLoc = (*lst)[i].location;
+    if (!errorSingleSeparatorIdx.empty()) {
+      // inconsistent number of multi-dimensional array separators
+      for (auto i : errorSingleSeparatorIdx) {
+        context->error(
+          (*lst)[i].location,
+          "the final dimension of an array must use a single separator");
+      }
     }
   }
-  CHPL_ASSERT(maxSep > 0);
-  if (previousNumSep != -1 && maxSep+1 != previousNumSep) {
-    // TODO: this will have duplicate errors, can we avoid that?
-    context->syntax(previousMaxSepLoc,
-                   "inconsistent number of multi-dimensional array separators");
-  }
 
-  // iterate through the list from start to stop, each time we find a maxSep
-  // recurse on the sublist from the last maxSep to the current element
-  AstList ret;
-  int start_ = start;
-  for (int i = start_; i <= stop; i++) {
-    if ((*lst)[i].nSeparator == maxSep) {
-      auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
-                                           start_, i-1, maxSep, maxSepLoc);
-      ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
-      start_ = i+1;
+  std::pair<AstList, chpl::Location> buildArrayRows(
+    ParserContext* context, ParserNDArrayList* lst,
+    Location arrayLoc, int start, int stop,
+    int previousNumSep = -1, std::unordered_set<int> previousMaxSepIdx = {}
+  ) {
+    CHPL_ASSERT(start <= stop);
+    if (start == stop) {
+      if (previousNumSep != -1 && previousNumSep != 1) {
+        auto errIdx = start;
+        if (start > 0 && (*lst)[start-1].nSeparator == previousNumSep) {
+          errIdx = start-1;
+        } else if (start < (int)lst->size()-1 &&
+                   (*lst)[start+1].nSeparator == previousNumSep) {
+          errIdx = start+1;
+        }
+        errorSingleSeparatorIdx.insert(errIdx);
+      }
+      // there is a single row, so just return it
+      return std::make_pair(
+        context->consumeList((*lst)[start].exprs),
+        context->convertLocation((*lst)[start].location)
+      );
     }
-  }
-  // add the last row
-  auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
-                                       start_, stop, maxSep, maxSepLoc);
-  ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
 
-  return std::make_pair(std::move(ret), arrayLoc);
-}
+    // find the largest number of consecutive sep
+    int maxSep = 0;
+    std::unordered_set<int> maxSeps;
+    for (int i = start; i <= stop; i++) {
+      if ((*lst)[i].nSeparator > maxSep) {
+        maxSep = (*lst)[i].nSeparator;
+        maxSeps.clear();
+        maxSeps.insert(i);
+      } else if ((*lst)[i].nSeparator == maxSep) {
+        maxSeps.insert(i);
+      }
+    }
+    CHPL_ASSERT(maxSep > 0);
+    if (previousNumSep != -1 && maxSep+1 != previousNumSep) {
+      errorInconsistentSeparatorIdx = previousMaxSepIdx;
+    }
+
+
+    // iterate through the list from start to stop, each time we find a maxSep
+    // recurse on the sublist from the last maxSep to the current element
+    AstList ret;
+    int start_ = start;
+    for (int i = start_; i <= stop; i++) {
+      if ((*lst)[i].nSeparator == maxSep) {
+        auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                            start_, i-1, maxSep, maxSeps);
+        ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
+        start_ = i+1;
+      }
+    }
+    // add the last row
+    auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                        start_, stop, maxSep, maxSeps);
+    ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
+
+    return std::make_pair(std::move(ret), arrayLoc);
+  }
+};
+
 Array* ParserContext::buildNDArray(YYLTYPE location, ParserNDArrayList* lst) {
   CHPL_ASSERT(lst->size() > 0);
   auto loc = convertLocation(location);
 
-  auto [rows, _] = buildArrayRows(this, lst, loc,
-                        /*start*/0, /*end*/lst->size()-1,
-                        /*previousNumSep*/-1, /*previousMaxSepLoc*/location);
+  BuildArrayRowsContext barc;
+  auto [rows, _] = barc.buildArrayRows(this, lst, loc,
+                        /*start*/0, /*end*/lst->size()-1);
+  barc.realizeErrors(this, lst);
+  delete lst;
   return Array::build(builder, loc, std::move(rows)).release();
 }
 
