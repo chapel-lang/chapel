@@ -5471,6 +5471,24 @@ DEFINE_PRIM(LOCAL_CHECK) {
                   error);
     }
 }
+DEFINE_PRIM(IS_LOCAL) {
+    // arguments are (wide ptr, error string, line, function/file)
+    GenRet lhs = call->get(1);
+    Symbol* lhsType = lhs.chplType->symbol;
+
+    if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
+      GenRet lhs = call->get(1);
+      if (call->get(1)->isRef()) {
+        lhs = codegenDeref(lhs);
+      }
+
+      ret = codegenCallExpr("chpl_is_local",
+                            codegenRlocale(lhs));
+    }
+    else {
+      ret = gTrue->codegen();
+    }
+}
 
 DEFINE_PRIM(GET_SERIAL) {
     ret = codegenCallExpr("chpl_task_getSerial");
