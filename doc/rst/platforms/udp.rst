@@ -182,4 +182,9 @@ the local machine, use:
   export CHPL_RT_MASTERIP=127.0.0.1
   export CHPL_RT_WORKERIP=127.0.0.0  # may be optional
 
+I get ``worker failed DNSLookup on master host name`` error messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+When running in a local, oversubscribed setting, this error can often
+be resolved by setting ``CHPL_RT_MASTER_IP`` as described in the
+previous section.
