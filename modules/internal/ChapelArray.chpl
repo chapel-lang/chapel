@@ -1948,6 +1948,8 @@ module ChapelArray {
     // but we don't support type queries on array types (yet)
     // (see https://github.com/chapel-lang/chapel/issues/8543)
     var a: t;
+    if arr.rank != a.rank then
+      compilerError("Casts between arrays are only supported for matching ranks");
     a = [elem in arr] elem:a.eltType;
     return a;
   }
