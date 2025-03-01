@@ -5,9 +5,6 @@
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export ARKOUDA_URL=https://github.com/e-kayrakli/arkouda.git
-export ARKOUDA_BRANCH=server-util-pbs
-
 export ARKOUDA_DEP_DIR=/hpelustre/chapelu/arkouda-deps
 export ARKOUDA_SKIP_CHECK_DEPS=true
 
