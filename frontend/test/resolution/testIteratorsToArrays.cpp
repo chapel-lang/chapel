@@ -24,47 +24,6 @@
 using namespace chpl;
 using namespace resolution;
 
-static void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
-  std::string wholeString = std::string(prelude) + "\n\n" + "var A = " + iterable + ";\n";
-  printf("=== Resolving program: ===\n");
-  printf("%s\n", wholeString.c_str());
-
-  ErrorGuard guard(context);
-
-  static int inputIndex = 0;
-
-  auto filename = UniqueString::get(context, std::string("input") + std::to_string(inputIndex++) + ".chpl");
-  setFileText(context, filename, wholeString);
-  auto mods = parse(context, filename, UniqueString());
-  assert(mods.size() == 1);
-  auto& byPostorder = resolveModule(context, mods[0]->id());
-  auto var = findVariable(mods[0], "A");
-  assert(var);
-  auto& rr = byPostorder.byAst(var);
-
-  assert(!rr.type().isUnknownOrErroneous());
-  assert(rr.type().type()->isArrayType());
-  auto arrT = rr.type().type()->toArrayType();
-  auto domain = arrT->domainType();
-  assert(!domain.isUnknownOrErroneous());
-  assert(domain.type()->isDomainType());
-  auto domT = domain.type()->toDomainType();
-  ensureParamInt(domT->rank(), expectedRank);
-  ensureParamEnumStr(domT->strides(), expectedStride);
-  assert(!domT->idxType().isUnknownOrErroneous());
-  assert(domT->idxType().type()->isIntType());
-
-  bool foundCopyInit = false;
-  for (auto& aa : rr.associatedActions()) {
-    if (aa.action() == AssociatedAction::CUSTOM_COPY_INIT) {
-      foundCopyInit = true;
-      assert(aa.fn()->id().symbolPath() == expectedCopyInitFn);
-    }
-  }
-  assert(foundCopyInit);
-  assert(!guard.realizeErrors());
-}
-
 static void testIterFn(Context* context) {
   testArrayMaterialize(context,
                        "iter foo() do yield 1;",
@@ -186,63 +145,6 @@ static void testForOverDomain(Context* context) {
                        2, "positive", "ChapelArray.chpl__initCopy#4");
 }
 
-static void testPromotionRange(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(1..10)",
-                       1, "one", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionStridedRange(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(1..10 by 2)",
-                       1, "positive", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionReverseRange(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(10..1 by -1)",
-                       1, "negOne", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionReverseStridedRange(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(10..1 by -2)",
-                       1, "negative", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionOverPromotion(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(foo(1..10))",
-                       1, "one", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionOverStridedPromotion(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo(foo(1..10 by 2))",
-                       1, "positive", "ChapelArray.chpl__initCopy#5");
-}
-
-static void testPromotionOverDomain(Context* context) {
-  testArrayMaterialize(context,
-                       "proc foo(x) do return x : real;",
-                       "foo({1..10})",
-                       1, "one", "ChapelArray.chpl__initCopy#4");
-  testArrayMaterialize(context,
-                       "proc foo((x, y)) do return (x : real, y : real);",
-                       "foo({1..10, 1..10})",
-                       2, "one", "ChapelArray.chpl__initCopy#4");
-  testArrayMaterialize(context,
-                       "proc foo((x, y)) do return (x : real, y : real);",
-                       "foo({1..10 by 2, 1..10})",
-                       2, "positive", "ChapelArray.chpl__initCopy#4");
-}
-
 int main() {
   auto context = buildStdContext();
   testIterFn(context);
@@ -260,11 +162,4 @@ int main() {
   testForOverFor(context);
   testForOverStridedFor(context);
   testForOverDomain(context);
-  testPromotionRange(context);
-  testPromotionStridedRange(context);
-  testPromotionReverseRange(context);
-  testPromotionReverseStridedRange(context);
-  testPromotionOverPromotion(context);
-  testPromotionOverStridedPromotion(context);
-  testPromotionOverDomain(context);
 }
