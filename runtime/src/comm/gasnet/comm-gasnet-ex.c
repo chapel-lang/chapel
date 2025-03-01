@@ -1050,6 +1050,11 @@ void chpl_comm_post_task_init(void) {
     }
   }
   if (verbosity >= 2) { // print segment size information for each locale
+  #if GASNET_SEGMENT_EVERYTHING
+    if (!chpl_nodeID) {
+      printf("GASNet segment everything.\n");
+    }
+  #else
     char size_str[80], request_str[80];
     uintptr_t size = gex_Segment_QuerySize(mysegment);
     gasnett_format_number(size, size_str, sizeof(size_str), 1);
@@ -1061,6 +1066,7 @@ void chpl_comm_post_task_init(void) {
       strcat(request_str, ")");
     } else request_str[0] = '\0';
     printf("%i: GASNet segment size: %s%s\n", chpl_nodeID, size_str, request_str);
+  #endif
   }
 }
 
