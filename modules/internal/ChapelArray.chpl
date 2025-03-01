@@ -1942,7 +1942,17 @@ module ChapelArray {
     }
   }
 
-  // The same as the built-in _cast, except accepts a param arg.
+  operator :(arr: [], type t: []) {
+    // Would like to write:
+    //   var a: t = [elem in arr] elem:t.eltType;
+    // but we don't support type queries on array types (yet)
+    // (see https://github.com/chapel-lang/chapel/issues/8543)
+    var a: t;
+    a = [elem in arr] elem:a.eltType;
+    return a;
+  }
+
+// The same as the built-in _cast, except accepts a param arg.
   @chpldoc.nodoc
   operator :(param arg, type t:_array) {
     var result: t;
