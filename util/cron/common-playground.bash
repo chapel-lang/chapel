@@ -6,5 +6,5 @@ function checkout_branch()
   local branch=$2
   git branch -D $user-$branch
   git checkout -b $user-$branch
-  git pull https://github.com/$user/chapel.git $branch
+  git pull --no-rebase https://github.com/$user/chapel.git $branch
 }
