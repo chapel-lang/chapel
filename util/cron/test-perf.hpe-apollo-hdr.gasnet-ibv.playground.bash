@@ -8,6 +8,7 @@ export CHPL_TEST_PERF_SUBDIR="hpe-apollo"
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 
 source $UTIL_CRON_DIR/common-perf.bash
+source $UTIL_CRON_DIR/common-playground.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-ibv.playground"
 
