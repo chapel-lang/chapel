@@ -123,6 +123,7 @@ HDFS Support Types and Functions
 --------------------------------
 
  */
+@deprecated("The 'HDFS' module is being deprecated.  If you are still interested in using this module, please let us know!")
 module HDFS {
 
   use IO, OS.POSIX, OS;
