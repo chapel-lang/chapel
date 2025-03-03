@@ -1933,6 +1933,38 @@ static void testGlobalMultiDecl() {
   assert(xQt.type()->isIntType());
 }
 
+// Ensure that we don't attempt to resolve functions with actuals that are
+// generic but would never be generic during a "real" invocation. This
+// is a quirk of "initial signatures", which do not use instantiation
+// info, and thus occasionally have generic formals where we don't expect.
+static void testGenericTypeInInitialSignature() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerWarning(param msg: string...) {
+        __primitive("warning");
+      }
+
+      proc foo(type t) type {
+        if t == R(?) then compilerWarning("t is generic");
+        return t;
+      }
+
+      proc sig(x: R, y: foo(x.type)) do return x;
+
+      var x = sig(new R(int), new R(int));
+    )""");
+
+
+  // No warnings should have been emitted, because the call to 'foo()' during
+  // resolving the initial signature should've been skipped.
+}
+
 int main() {
   test1();
   test2();
@@ -1976,6 +2008,8 @@ int main() {
   testExplicitlyGenericFormal();
 
   testGlobalMultiDecl();
+
+  testGenericTypeInInitialSignature();
 
   return 0;
 }

@@ -183,6 +183,60 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
+
+std::tuple<CallInfo, CallScopeInfo>
+setupCallForCopyOrMove(Resolver& resolver,
+                       const AstNode* ast,
+                       const AstNode* rhsAst,
+                       const QualifiedType& lhsType,
+                       const QualifiedType& rhsType,
+                       bool forMoveInit,
+                       std::vector<const AstNode*>& outAsts) {
+  std::vector<CallInfoActual> actuals;
+  const Scope* scope = scopeForId(resolver.context, ast->id());
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+
+  if (!lhsType.isUnknown() &&
+      (lhsType.type()->isArrayType() ||
+       lhsType.type()->isDomainType())) {
+    // For things with runtime types, set up a call to chpl__coerceCopy
+    // or chpl__coerceMove.
+    auto freeFn = UniqueString::get(resolver.context,
+                                    forMoveInit ? "chpl__coerceMove"
+                                                : "chpl__coerceCopy");
+    auto typeArg = QualifiedType(QualifiedType::TYPE, lhsType.type(), lhsType.param());
+    actuals.push_back(CallInfoActual(typeArg, UniqueString()));
+    outAsts.push_back(ast);
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    outAsts.push_back(rhsAst);
+    actuals.push_back(CallInfoActual({ QualifiedType::VAR, BoolType::get(resolver.context) },
+                                     UniqueString()));
+    outAsts.push_back(nullptr);
+
+    auto ci = CallInfo (/* name */ freeFn,
+                        /* calledType */ QualifiedType(),
+                        /* isMethodCall */ false,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        std::move(actuals));
+    return { ci, inScopes };
+  } else {
+    // For other types, use `init=`.
+    auto varArg = QualifiedType(QualifiedType::VAR, lhsType.type(), lhsType.param());
+    actuals.push_back(CallInfoActual(varArg, USTR("this")));
+    outAsts.push_back(ast);
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    outAsts.push_back(rhsAst);
+    auto ci = CallInfo (/* name */ USTR("init="),
+                        /* calledType */ varArg,
+                        /* isMethodCall */ true,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        actuals);
+    return { ci, inScopes };
+  }
+}
+
 void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
                                          const AstNode* returnOrYield,
                                          bool& needsCopyOrConv,
@@ -536,26 +590,21 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      bool forMoveInit,
                                      RV& rv) {
   if (!Type::needsInitDeinitCall(lhsType.type())) {
-    // TODO: we could resolve it anyway
-    return;
+    if (lhsType.type() && lhsType.type()->isArrayType()) {
+      // Array init is not resolved normally (via init), but copy init
+      // should still occur. Note that setupCallForCopyOrMove will decide
+      // what function should be called (likely chpl__coerceCopy).
+    } else {
+      // TODO: we could resolve it anyway
+      return;
+    }
   }
 
-  std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-  auto ci = CallInfo (/* name */ USTR("init="),
-                      /* calledType */ lhsType,
-                      /* isMethodCall */ true,
-                      /* hasQuestionArg */ false,
-                      /* isParenless */ false,
-                      actuals);
-  const Scope* scope = scopeForId(context, ast->id());
-  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  std::vector<const AstNode*> actualAsts;
+  auto [ci, inScopes] = setupCallForCopyOrMove(resolver, ast, rhsAst, lhsType, rhsType,
+                                               forMoveInit, actualAsts);
   auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
 
-  std::vector<const AstNode*> actualAsts;
-  actualAsts.push_back(ast);
-  actualAsts.push_back(ast);
   std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
 

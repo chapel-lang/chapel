@@ -840,9 +840,9 @@ static bool classTypeIsManagedAndDecorated(Context* context,
   return false;
 }
 
-static bool
+bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const Type*& mightBeManagerRecord,
+                                             const Type* const & mightBeManagerRecord,
                                              const Type*& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 

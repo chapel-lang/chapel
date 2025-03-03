@@ -498,3 +498,52 @@ module M {
   // 'clear' rather than 'realize' to simplify test output
   guard.clearErrors();
 }
+
+void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn) {
+  std::string wholeString = std::string(prelude) + "\n\n" + "proc main() { var A" + typeExpr + " = " + iterable + "; }\n";
+  printf("=== Resolving program: ===\n");
+  printf("%s\n", wholeString.c_str());
+
+  ErrorGuard guard(context);
+
+  static int inputIndex = 0;
+
+  auto filename = UniqueString::get(context, std::string("input") + std::to_string(inputIndex++) + ".chpl");
+  setFileText(context, filename, wholeString);
+  auto mods = parse(context, filename, UniqueString());
+  assert(mods.size() == 1);
+  auto& byPostorder = resolveConcreteFunction(context, mods[0]->stmt(mods[0]->numStmts()-1)->id())->resolutionById();
+  auto var = findVariable(mods[0], "A");
+  assert(var);
+  auto& rr = byPostorder.byAst(var);
+
+  assert(!rr.type().isUnknownOrErroneous());
+  assert(rr.type().type()->isArrayType());
+  auto arrT = rr.type().type()->toArrayType();
+  auto domain = arrT->domainType();
+  assert(!domain.isUnknownOrErroneous());
+  assert(domain.type()->isDomainType());
+  auto domT = domain.type()->toDomainType();
+  ensureParamInt(domT->rank(), expectedRank);
+  ensureParamEnumStr(domT->strides(), expectedStride);
+  assert(!domT->idxType().isUnknownOrErroneous());
+  assert(domT->idxType().type()->isIntType());
+
+  bool foundCall = false;
+  for (auto& aa : rr.associatedActions()) {
+    if (aa.action() == actionKind) {
+      foundCall = true;
+      assert(aa.fn()->id().symbolPath() == expectedCopyInitFn);
+    }
+  }
+  assert(foundCall);
+  assert(!guard.realizeErrors());
+}
+
+void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
+  testArrayAssign(context, prelude, "", iterable, expectedRank, expectedStride, AssociatedAction::CUSTOM_COPY_INIT, expectedCopyInitFn);
+}
+
+void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
+  testArrayAssign(context, prelude, typeExpr, iterable, expectedRank, expectedStride, AssociatedAction::INIT_OTHER, expectedCopyInitFn);
+}

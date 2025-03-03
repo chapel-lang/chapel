@@ -31,6 +31,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/util/assertions.h"
 #include "chpl/util/hash.h"
 
 #include "Resolver.h"
@@ -2134,6 +2135,22 @@ static bool allowPromotionForSig(const TypedFnSignature* sig,
     untypedSignature->name() != USTR("=");
 }
 
+static bool instantiateAcrossManagerRecordConversion(Context* context,
+                                                     const QualifiedType& formal,
+                                                     const QualifiedType& actual,
+                                                     QualifiedType& outInstType) {
+  auto formalT = formal.type();
+  auto actualT = actual.type();
+  if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT)) {
+    outInstType = QualifiedType(formal.kind(), actualT);
+    return true;
+  } else if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
+    CHPL_UNIMPL("converting manager record into class type");
+    return false;
+  }
+  return false;
+}
+
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
 ApplicabilityResult instantiateSignature(ResolutionContext* rc,
@@ -2232,6 +2249,15 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         varArgType = r.byAst(formal).type();
       }
       formalType = getVarArgTupleElemType(varArgType);
+
+      // We allow UnknownType elements (e.g., didn't have enough information
+      // to invoke the type constructor in a vararg type expression). However,
+      // in such cases, their intent will be UNKNOWN, which makes code below
+      // think we know less than we do. So, reset the intent to the var arg
+      // declaration's intent.
+      if (formalType.kind() == QualifiedType::UNKNOWN) {
+        formalType = QualifiedType(entry.formalType().kind(), formalType.type(), formalType.param());
+      }
     } else if (formal) {
       formal->traverse(visitor);
       formalType = getProperFormalType(r, entry, ad, formal);
@@ -2269,7 +2295,18 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 
       if (got.instantiates() || formalType.isType()) {
         // add a substitution for a valid value
-        if (!got.converts()) {
+        //
+        // if no conversion took place, then we can use the actual type. One
+        // exception is the case when we transparently converted a
+        // 'owned C' into a '_owned(C)'. This does not count as a conversion by
+        // the canPass function (since, notionally these are two representations
+        // of the same type), but we want to instantiate with whatever the
+        // formal type was (e.g., if we're the formal is `_owned(C)`, instantiate
+        // with `_owned(C)`).
+        if (!got.converts() && instantiateAcrossManagerRecordConversion(context, formalType, actualType, useType)) {
+          // useType was set as an out parameter of the call in the condition.
+          addSub = true;
+        } else if (!got.converts()) {
           // use the actual type since no conversion/promotion was needed
           addSub = true;
           useType = scalarType;
@@ -6655,7 +6692,7 @@ const Decl* findFieldByName(Context* context,
     } else if (auto fwd = decl->toForwardingDecl()) {
       if (auto var = fwd->expr()) {
         auto n = var->toNamedDecl();
-        if (n->name() == name) {
+        if (n && n->name() == name) {
           ret = n;
           break;
         }

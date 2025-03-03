@@ -29,6 +29,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/Qualifier.h"
 #include "chpl/uast/all-uast.h"
+#include "call-init-deinit.h"
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
@@ -190,10 +191,10 @@ struct GatherFieldsOrFormals {
 
     bool isFieldOrFormal = isField || decl->isFormal();
 
-    if (isFieldOrFormal)
+    if (isFieldOrFormal && decl->name() != USTR("this"))
       fieldOrFormals.insert(decl->id());
 
-    return false;
+    return decl->isAggregateDecl() || decl->isFunction();
   }
   void exit(const NamedDecl* decl) { }
 
@@ -324,27 +325,31 @@ Resolver::createForInstantiatedSignature(Context* context,
   return ret;
 }
 
+static void setFormalTypeUsingSignature(Resolver& rv, const TypedFnSignature* sig, int i) {
+  const UntypedFnSignature* uSig = sig->untyped();
+  const Decl* decl = uSig->formalDecl(i);
+  const auto& qt = sig->formalType(i);
+
+  ResolvedExpression& re = rv.byPostorder.byAst(decl);
+  re.setType(qt);
+
+  // TODO: Aren't these results already computed when we traverse formals
+  // in resolution-queries?
+  if (auto formal = decl->toFormal())
+    rv.resolveTypeQueriesFromFormalType(formal, qt);
+  if (auto formal = decl->toVarArgFormal())
+    rv.resolveTypeQueriesFromFormalType(formal, qt);
+  if (auto td = decl->toTupleDecl())
+    rv.resolveTupleUnpackDecl(td, qt);
+}
+
 static void setFormalTypesUsingSignature(Resolver& rv) {
   // set the resolution results for the formals according to
   // the typedFnSignature
   const TypedFnSignature* sig = rv.typedSignature;
-  const UntypedFnSignature* uSig = sig->untyped();
   int nFormals = rv.typedSignature->numFormals();
   for (int i = 0; i < nFormals; i++) {
-    const Decl* decl = uSig->formalDecl(i);
-    const auto& qt = sig->formalType(i);
-
-    ResolvedExpression& re = rv.byPostorder.byAst(decl);
-    re.setType(qt);
-
-    // TODO: Aren't these results already computed when we traverse formals
-    // in resolution-queries?
-    if (auto formal = decl->toFormal())
-      rv.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto formal = decl->toVarArgFormal())
-      rv.resolveTypeQueriesFromFormalType(formal, qt);
-    if (auto td = decl->toTupleDecl())
-      rv.resolveTupleUnpackDecl(td, qt);
+    setFormalTypeUsingSignature(rv, sig, i);
   }
 }
 
@@ -378,19 +383,22 @@ Resolver::createForFunction(ResolutionContext* rc,
     const Decl* decl = ret.typedSignature->untyped()->formalDecl(i);
     CHPL_ASSERT(decl);
     decl->traverse(ret);
-  }
 
-  // Set the formal types again since we already know what they are
-  // from the 'TypedFnSignature', and they may have changed when
-  // they were resolved again (the real process of resolving formals
-  // in e.g., 'instantiateSignature' is much more complex and one
-  // traversal will not produce the same results).
-  //
-  // TODO: Ideally we preserve the types of formal sub-expressions by
-  // some other means or make it so that re-resolving them in this
-  // manner does not emit errors (perhaps we set a bool flag in the
-  // Resolver to indicate as such).
-  setFormalTypesUsingSignature(ret);
+    // Set the formal types again since we already know what they are
+    // from the 'TypedFnSignature', and they may have changed when
+    // they were resolved again (the real process of resolving formals
+    // in e.g., 'instantiateSignature' is much more complex and one
+    // traversal will not produce the same results).
+    //
+    // Do this incrementally so that full formal type info is available to
+    // subsequent formals.
+    //
+    // TODO: Ideally we preserve the types of formal sub-expressions by
+    // some other means or make it so that re-resolving them in this
+    // manner does not emit errors (perhaps we set a bool flag in the
+    // Resolver to indicate as such).
+    setFormalTypeUsingSignature(ret, ret.typedSignature, i);
+  }
 
   if (typedFnSignature->isMethod()) {
     // allow computing the receiver scope from the typedSignature.
@@ -938,6 +946,13 @@ bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType)
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
+  if (signatureOnly && substitutions) {
+    // We're computing a final instantiated signature. We'll be incrementally
+    // traversing formals and accumulating type information. As a result,
+    // we should use (partial, generic) types and not unknowns.
+    return false;
+  }
+
   // make sure the set of IDs for fields and formals is computed
   if (!fieldOrFormalsComputed) {
     auto visitor = GatherFieldsOrFormals();
@@ -1422,6 +1437,45 @@ const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
   return nullptr;
 }
 
+static const Type* tryFindTypeViaCopyFn(Resolver& resolver,
+                                        const AstNode* declForErr,
+                                        const AstNode* typeForErr,
+                                        const AstNode* initForErr,
+                                        const QualifiedType& declaredType,
+                                        const QualifiedType& initExprType) {
+  const bool tryResolveCopyInit = (declaredType.type()->isRecordType() ||
+                                   declaredType.type()->isArrayType() ||
+                                   declaredType.type()->isDomainType() ||
+                                   declaredType.type()->isUnionType());
+
+  if (tryResolveCopyInit) {
+    // Note: This code assumes that this init= will be added as an
+    // associated action by ``CallInitDeinit::resolveCopyInit``
+    std::vector<const AstNode*> ignoredAsts;
+    auto [ci, inScopes] = setupCallForCopyOrMove(resolver, declForErr, initForErr,
+                                                 declaredType, initExprType,
+                                                 /* forMoveInit */ false,
+                                                 ignoredAsts);
+    auto c = resolver.resolveGeneratedCall(declForErr, &ci, &inScopes);
+
+    if (c.result.mostSpecific().only()) {
+      // For init=, use the receiver type of the function as the new type.
+      if (ci.name() == USTR("init=")) {
+        return c.result.mostSpecific().only().fn()->formalType(0).type();
+
+      // Otherwise, we resolved some other copy function, use its return type
+      } else if (!c.result.exprType().isUnknownOrErroneous()) {
+        return c.result.exprType().type();
+      }
+    }
+  }
+
+  // No cigar, issue an error and return ErroneousType
+  CHPL_REPORT(resolver.context, IncompatibleTypeAndInit, declForErr, typeForErr,
+              initForErr, declaredType.type(), initExprType.type());
+  return ErroneousType::get(resolver.context);
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -1514,26 +1568,13 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           typePtr = ErroneousType::get(context);
         }
       } else {
-          // For a record/union, check for an init= from the provided type
-        const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
-                                      declaredType.type()->isUnionType());
-        const TypedFnSignature* initEq = nullptr;
-        if (isRecordOrUnion) {
-          // Note: This code assumes that this init= will be added as an
-          // associated action by ``CallInitDeinit::resolveCopyInit``
-          initEq = tryResolveInitEq(context, declForErr, declaredType.type(),
-                                    initExprType.type(), poiScope);
-        }
-        if (initEq == nullptr) {
-          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                      initForErr, declaredType.type(), initExprType.type());
-          typePtr = ErroneousType::get(context);
-        } else {
-          typePtr = initEq->formalType(0).type();
-        }
+        typePtr = tryFindTypeViaCopyFn(*this, declForErr, typeForErr, initForErr,
+                                       declaredType, initExprType);
       }
-    } else if (!got.instantiates()) {
-      // use the declared type since no conversion/promotion was needed
+    } else if (!got.instantiates() || declaredType.type()->isUnknownType()) {
+      // use the declared type since no conversion/promotion was needed.
+      // alternatively, if declared type is present but unknown, we don't
+      // know what was intended in the declaratiom, so we leave it as unknown.
       typePtr = declaredType.type();
     } else {
       // instantiation is needed
@@ -1752,10 +1793,13 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     // for a primary method, there's no type expression, but we should
     // act as if there was one.
     if (!foundSubstitution || ignoreSubstitutionFor == decl) {
+      bool usedTypeExpressionOrSimilar = false;
+
       if (typeExpr) {
         // get the type we should have already computed postorder
         ResolvedExpression& r = byPostorder.byAst(typeExpr);
         typeExprT = r.type();
+        usedTypeExpressionOrSimilar = true;
         // otherwise, typeExprT can be empty/null
       } else if (isFormalThis) {
         // We're a primary method `this` formal (which do not have type
@@ -1766,6 +1810,15 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         auto aggregateId = parsing::idToParentId(context, functionId);
         auto parentType = typeForId(aggregateId, /* localGenericToUnknown */ true);
         typeExprT = parentType;
+        usedTypeExpressionOrSimilar = true;
+      }
+
+
+      // As a workaround for getTypeForDecl (see body of that function),
+      // if there's a type expression, make sure type ptr is set even if
+      // to UnknownType.
+      if (usedTypeExpressionOrSimilar && typeExprT.type() == nullptr) {
+        typeExprT = QualifiedType(typeExprT.kind(), UnknownType::get(context), typeExprT.param());
       }
 
       // for 'this' formals of class type, adjust them to be borrowed, so
@@ -2805,7 +2858,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     }
 
     // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
       skip = NONE;
     }
 
@@ -3144,20 +3197,6 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   CHPL_UNIMPL("not yet handled");
   auto unknownType = UnknownType::get(context);
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
-}
-
-const types::CompositeType*
-Resolver::checkIfReceiverIsManagerRecord(Context* context,
-                                         const types::ClassType* ct,
-                                         ID& parentId) {
-  if (ct) {
-    if (auto mr = ct->managerRecordType(context)) {
-      if (mr->id() == parentId) {
-        return mr;
-      }
-    }
-  }
-  return nullptr;
 }
 
 void Resolver::enterScope(const AstNode* ast) {
@@ -3920,6 +3959,53 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
   return result;
 }
 
+static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
+                                                const QualifiedType& type,
+                                                const ID& id,
+                                                const Identifier* ident) {
+  // now, for a type that is generic with defaults,
+  // compute the default version when needed. e.g.
+  //   record R { type t = int; }
+  //   var x: R; // should refer to R(int)
+  bool computeDefaults = true;
+  bool resolvingCalledIdent = rv.nearestCalledExpression() == ident;
+
+  // For calls like
+  //
+  //   type myType = anotherType(int)
+  //
+  // Use the generic version of anotherType to feed as receiver.
+  if (resolvingCalledIdent) {
+    computeDefaults = false;
+  }
+
+  // If we're referring to variable-ish thing, don't instantiate
+  // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
+  // Peformance: finding the AST is pretty expensive. Can we fold
+  // the knowledge into IdAndFlags?
+  if (id && asttags::isVarLikeDecl(parsing::idToTag(rv.context, id))) {
+    computeDefaults = false;
+  }
+
+  // Other special exceptions like 'r' in:
+  //
+  //  proc r.init() { ... }
+  //
+  if (!rv.genericReceiverOverrideStack.empty()) {
+    auto& topEntry = rv.genericReceiverOverrideStack.back();
+    if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
+        topEntry.second == parsing::parentAst(rv.context, ident)) {
+      computeDefaults = false;
+    }
+  }
+
+  if (computeDefaults) {
+    return computeTypeDefaults(rv, type);
+  }
+
+  return type;
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
@@ -4057,6 +4143,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     } else if (id.isEmpty()) {
       setToBuiltin(result, ident->name());
+      result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
       return;
     }
 
@@ -4082,45 +4169,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     maybeEmitWarningsForId(this, type, ident, id);
 
     if (type.kind() == QualifiedType::TYPE) {
-      // now, for a type that is generic with defaults,
-      // compute the default version when needed. e.g.
-      //   record R { type t = int; }
-      //   var x: R; // should refer to R(int)
-      bool computeDefaults = true;
-      bool resolvingCalledIdent = nearestCalledExpression() == ident;
-
-      // For calls like
-      //
-      //   type myType = anotherType(int)
-      //
-      // Use the generic version of anotherType to feed as receiver.
-      if (resolvingCalledIdent) {
-        computeDefaults = false;
-      }
-
-      // If we're referring to variable-ish thing, don't instantiate
-      // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
-      // Peformance: finding the parent tag is pretty expensive. Can we fold
-      // the knowledge into IdAndFlags?
-      if (asttags::isVarLikeDecl(parsing::idToTag(context, id))) {
-        computeDefaults = false;
-      }
-
-      // Other special exceptions like 'r' in:
-      //
-      //  proc r.init() { ... }
-      //
-      if (!genericReceiverOverrideStack.empty()) {
-        auto& topEntry = genericReceiverOverrideStack.back();
-        if ((topEntry.first.isEmpty() || topEntry.first == ident->name()) &&
-            topEntry.second == parsing::parentAst(context, ident)) {
-          computeDefaults = false;
-        }
-      }
-
-      if (computeDefaults) {
-        type = computeTypeDefaults(*this, type);
-      }
+      type = computeDefaultsIfNecessary(*this, type, id, ident);
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
       CHPL_ASSERT(scopeResolveOnly && "resolution of parenless functions should've happened above");
@@ -5424,11 +5473,11 @@ void Resolver::exit(const Dot* dot) {
   // Handle null, unknown, or erroneous receiver type
   if (receiver.type().type() == nullptr ||
       receiver.type().type()->isUnknownType()) {
-    r.setType(QualifiedType(QualifiedType::VAR, UnknownType::get(context)));
+    r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
     return;
   }
   if (receiver.type().type()->isErroneousType()) {
-    r.setType(QualifiedType(QualifiedType::VAR, ErroneousType::get(context)));
+    r.setType(QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context)));
     return;
   }
 

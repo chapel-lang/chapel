@@ -117,4 +117,12 @@ void testDomainIndex(Context* context, std::string domainType,
 void testDomainBadPass(Context* context, std::string argType,
                        std::string actualType);
 
+/**
+ Test assigning an iterator to an array.
+ */
+
+void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn);
+void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
+void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
+
 #endif
