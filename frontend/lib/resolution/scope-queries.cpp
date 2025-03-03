@@ -1651,13 +1651,16 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
       if (shouldStopLookup(got, onlyInnermost, stopNonFn)) return got;
     }
 
-    if (!goPastModules && (reachedModule || isModule(scope->tag()))) {
+    if (!goPastModules && !onlyMethodsFields &&
+        (reachedModule || isModule(scope->tag()))) {
       // If we reached a module or we already were in a module,
       // check for a match with the containing module's name for e.g.
       //   module M { ...M.xyz... }
       //
       // Don't do this when goPastModules is used, because we will find
       // the enclosing module when visiting its parent.
+      //
+      // Also skip if we're only looking for methods and fields.
       const Scope* modScope = isModule(scope->tag()) ? scope : cur;
       CHPL_ASSERT(modScope && isModule(modScope->tag()));
       if (trace) {
