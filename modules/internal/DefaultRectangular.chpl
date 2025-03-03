@@ -1822,7 +1822,9 @@ module DefaultRectangular {
     else
       f.deserializer.startArray(f);
 
-    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+    // Added extraneous rank formal to work around dyno lack of outer variable
+    // capture in nested procs. Anna, 2025-03-03
+    proc recursiveArrayReaderWriter(param rank, in idx: rank*idxType, dim=0, in last=false) throws {
 
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
@@ -1847,7 +1849,7 @@ module DefaultRectangular {
           var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
-          recursiveArrayReaderWriter(idx, dim=dim+1,
+          recursiveArrayReaderWriter(rank, idx, dim=dim+1,
                                last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
 
         }
@@ -1878,7 +1880,7 @@ module DefaultRectangular {
     } else {
       // Otherwise, recursively read or write the array
       const zeroTup: rank*idxType;
-      recursiveArrayReaderWriter(zeroTup);
+      recursiveArrayReaderWriter(rank, zeroTup);
     }
 
     helper.endArray();
