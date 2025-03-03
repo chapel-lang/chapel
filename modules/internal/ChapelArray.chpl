@@ -1961,7 +1961,6 @@ module ChapelArray {
     return a;
   }
 
-  
   // The same as the built-in _cast, except accepts a param arg.
   @chpldoc.nodoc
   operator :(param arg, type t:_array) {
