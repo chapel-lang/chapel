@@ -658,6 +658,7 @@ void print_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
+// TODO: Take a reference and decay it to avoid copying when debugging.
 template <typename T>
 void nprint_dyno_type(T t) {
   if constexpr(std::is_pointer<T>::value) {
@@ -681,6 +682,10 @@ void nprint_view(const chpl::uast::AstNode* x) {
 }
 
 void nprint_view(const chpl::types::Type* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::types::QualifiedType& x) {
   nprint_dyno_type(x);
 }
 

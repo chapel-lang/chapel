@@ -135,21 +135,7 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 ************************************** | *************************************/
 
 static bool shouldSkipNormalizing(BaseAST* ast) {
-  if (auto sym = toSymbol(ast)) {
-    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-  }
-
-  if (auto t = toType(ast)) {
-    if (t->symbol->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-  }
-
-  // Check to see if the AST is in a dyno-generated symbol.
-  auto mod = ast->getModule();
-  auto fn = ast->getFunction();
-  if (mod && mod->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-  if (fn && fn->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-
-  return false;
+  return ast->shouldNotMutateEarly();
 }
 
 static void handleSharedCArrays() {
