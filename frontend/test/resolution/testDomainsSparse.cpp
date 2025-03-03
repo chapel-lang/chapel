@@ -35,12 +35,15 @@ static void testRectangularSparse(Context* context,
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
+  // TODO: run this code
+  // Currently disabled due to https://github.com/Cray/chapel-private/issues/7196.
   std::string iteration =
 R"""(
   for loopI in d {
     var z = loopI;
   }
 )""";
+  std::ignore = iteration;
 
   std::string program =
 R"""(
