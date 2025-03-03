@@ -1822,10 +1822,9 @@ module DefaultRectangular {
     else
       f.deserializer.startArray(f);
 
-    // Added extraneous rank formal and removed type-part of idx formal to
-    // work around dyno lack of outer variable capture in nested procs.
-    // Anna, 2025-03-03
-    proc recursiveArrayReaderWriter(param rank, in idx, dim=0, in last=false) throws {
+    // Added extraneous rank formal to work around dyno lack of outer variable
+    // capture in nested procs. Anna, 2025-03-03
+    proc recursiveArrayReaderWriter(param rank, in idx: rank*idxType, dim=0, in last=false) throws {
 
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
