@@ -1942,19 +1942,27 @@ module ChapelArray {
     }
   }
 
+  @unstable("array casts are a new feature, seeking feedback and experience")
   operator :(arr: [], type t: []) {
     // Would like to write:
     //   var a: t = [elem in arr] elem:t.eltType;
     // but we don't support type queries on array types (yet)
     // (see https://github.com/chapel-lang/chapel/issues/8543)
     var a: t;
-    if arr.rank != a.rank then
-      compilerError("Casts between arrays are only supported for matching ranks");
-    a = [elem in arr] elem:a.eltType;
+
+    if !arr.isRectangular() || !a.isRectangular() {
+      compilerError("Casts between arrays only support rectangular arrays");
+    } else if arr.rank != a.rank {
+      compilerError("Casts between arrays require matching ranks");
+    } else {
+      a = [elem in arr] elem:a.eltType;
+    }
+
     return a;
   }
 
-// The same as the built-in _cast, except accepts a param arg.
+  
+  // The same as the built-in _cast, except accepts a param arg.
   @chpldoc.nodoc
   operator :(param arg, type t:_array) {
     var result: t;
