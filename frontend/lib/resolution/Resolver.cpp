@@ -3981,7 +3981,7 @@ static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
 
   // If we're referring to variable-ish thing, don't instantiate
   // generics. This way, `type t = someGeneric(?); t` doesn't instantiate.
-  // Peformance: finding the parent tag is pretty expensive. Can we fold
+  // Peformance: finding the AST is pretty expensive. Can we fold
   // the knowledge into IdAndFlags?
   if (id && asttags::isVarLikeDecl(parsing::idToTag(rv.context, id))) {
     computeDefaults = false;
