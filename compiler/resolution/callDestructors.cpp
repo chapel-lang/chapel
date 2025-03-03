@@ -1079,7 +1079,7 @@ static void insertGlobalAutoDestroyCalls() {
 
       inited.clear();
       initedSet.clear();
-      if (mod->initFn != NULL) {
+      if (mod->initFn && !mod->initFn->hasFlag(FLAG_RESOLVED_EARLY)) {
         collectGlobals(mod, mod->initFn->body, inited, initedSet);
       } else {
         // Collect variables from modules without initFn

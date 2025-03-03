@@ -70,6 +70,8 @@ void addAutoDestroyCalls() {
   LastMentionMap lmm;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
     if (fn->hasFlag(FLAG_EXTERN))
       continue; // no need to add auto-destroy in extern fn prototypes
 

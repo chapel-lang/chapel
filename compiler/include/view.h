@@ -70,6 +70,7 @@ void nprint_view_noline(BaseAST* ast);
 // Add overloads for 'dyno' stuff, as needed.
 void nprint_view(const chpl::uast::AstNode* x);
 void nprint_view(const chpl::types::Type* x);
+void nprint_view(const chpl::types::QualifiedType& x);
 void nprint_view(const chpl::resolution::CallInfo& x);
 void nprint_view(const chpl::resolution::ResolvedExpression* x);
 void nprint_view(const chpl::resolution::TypedFnSignature* x);
