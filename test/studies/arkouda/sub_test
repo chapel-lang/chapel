@@ -39,6 +39,12 @@ fi
 
 cd ${ARKOUDA_HOME}
 
+# report the current git hash
+git_hash=$(git rev-parse HEAD)
+# strip .git from the end of ARKOUDA_URL, if it's there
+git_url=$(echo $ARKOUDA_URL | sed 's/\.git$//')
+log "Current Arkouda commit is $git_hash, see $git_url/commit/$git_hash"
+
 if [ -z "${ARKOUDA_SKIP_CHECK_DEPS}" ] ; then
   # Install dependencies if needed
   if make check-deps ; then
