@@ -1,1 +1,3 @@
-The 'HDFS' module is being deprecated.  If you are still interested in using this module, please let us know!
+HDFStest.chpl:6: warning: The 'HDFS' module is being deprecated.  If you are still interested in using this module, please let us know!
+HDFStest.chpl:17: In function 'main':
+HDFStest.chpl:23: warning: The 'HDFS' module is being deprecated.  If you are still interested in using this module, please let us know!
