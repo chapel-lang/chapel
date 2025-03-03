@@ -1747,6 +1747,7 @@ module Time {
   }
 
   /* Return the total number of microseconds represented by this object */
+  @unstable("'timeDelta.totalMicroseconds()' is unstable because it is new")
   proc timeDelta.totalMicroseconds(): int {
     return (days*(24*60*60) + seconds)*1_000_000 + microseconds;
   }
