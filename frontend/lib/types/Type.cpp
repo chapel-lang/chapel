@@ -261,7 +261,7 @@ const CompositeType* Type::getCompositeType() const {
 }
 
 template <typename F>
-static bool checkFieldsWithPredicate(Context* context, const Type* t, F&& pred) {
+static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc, const Type* t, F&& pred) {
   using namespace resolution;
 
   auto ct = t->getCompositeType();
@@ -271,19 +271,19 @@ static bool checkFieldsWithPredicate(Context* context, const Type* t, F&& pred) 
     for (int i = 0; i < tt->numElements(); i++) {
       auto& eltType = tt->elementType(i);
       if (!eltType.type()) return false;
-      if (!pred(context, eltType.type())) return false;
+      if (!pred(rc, eltType.type())) return false;
     }
 
     return true;
   }
 
-  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
   for (int i = 0; i < rf.numFields(); i++) {
     auto qt = rf.fieldType(i);
     if (auto ft = qt.type()) {
       if (qt.kind() == QualifiedType::PARAM ||
           qt.kind() == QualifiedType::TYPE) continue;
-      if (!pred(context, ft)) return false;
+      if (!pred(rc, ft)) return false;
     } else {
       return false;
     }
@@ -293,8 +293,9 @@ static bool checkFieldsWithPredicate(Context* context, const Type* t, F&& pred) 
 }
 
 static bool
-compositeTypeIsPod(Context* context, const Type* t) {
+compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
   using namespace resolution;
+  auto context = rc->context();
 
   if (auto cls = t->toClassType()) {
     return !cls->decorator().isManaged();
@@ -303,7 +304,7 @@ compositeTypeIsPod(Context* context, const Type* t) {
   auto ct = t->getCompositeType();
   if (!ct) return false;
 
-  bool fieldsArePod = checkFieldsWithPredicate(context, t, Type::isPod);
+  bool fieldsArePod = checkFieldsWithPredicate(rc, t, Type::isPod);
   if (!fieldsArePod) return false;
 
   // for tuple, this is enough; for other composite types, see if any user-defined
@@ -327,13 +328,14 @@ compositeTypeIsPod(Context* context, const Type* t) {
 }
 
 static const bool&
-compositeTypeIsPodQuery(Context* context, const Type* t) {
-  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
-  bool ret = compositeTypeIsPod(context, t);
-  return QUERY_END(ret);
+compositeTypeIsPodQuery(resolution::ResolutionContext* rc, const Type* t) {
+  CHPL_RESOLUTION_QUERY_BEGIN(compositeTypeIsPodQuery, rc, t);
+  bool ret = compositeTypeIsPod(rc, t);
+  return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-bool Type::isPod(Context* context, const Type* t) {
+bool Type::isPod(resolution::ResolutionContext* rc, const Type* t) {
+  auto context = rc->context();
   if (t->isUnknownType() || t->isErroneousType() ||
       t->isAnyType()) return false;
   if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
@@ -351,12 +353,13 @@ bool Type::isPod(Context* context, const Type* t) {
   // when given a generic actual.
   auto g = resolution::getTypeGenericity(context, t);
   if (g != Type::CONCRETE) return false;
-  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(rc, t);
   return true;
 }
 
-static bool const& isDefaultInitializableQuery(Context* context, const Type* t) {
-  QUERY_BEGIN(isDefaultInitializableQuery, context, t);
+static bool const& isDefaultInitializableQuery(resolution::ResolutionContext* rc, const Type* t) {
+  CHPL_RESOLUTION_QUERY_BEGIN(isDefaultInitializableQuery, rc, t);
+  auto context = rc->context();
 
   bool result = true;
   if (!t || t->isUnknownType() || t->isErroneousType()) {
@@ -364,7 +367,7 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
   } else if (t->isBuiltinType()) {
     result = t->genericity() == Type::CONCRETE;
   } else if (auto at = t->toArrayType()) {
-    result = isDefaultInitializableQuery(context, at->eltType().type());
+    result = isDefaultInitializableQuery(rc, at->eltType().type());
   } else if (t->isDomainType()) {
     result = true; // production always returns true for domains.
   } else if (t->isExternType()) {
@@ -376,13 +379,13 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
   } else if (auto ct = t->toClassType()) {
     result = ct->decorator().isNilable();
   } else if (t->isTupleType()) {
-    result = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+    result = checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
   } else if (t->isRecordLike()) {
     // If the type doesn't have a user-defined initializer or is a tuple, check
     // its fields.
     auto fieldsDefaultInitializable = true;
     if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
-      fieldsDefaultInitializable = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+      fieldsDefaultInitializable = checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
     }
 
     if (!fieldsDefaultInitializable) {
@@ -403,11 +406,11 @@ static bool const& isDefaultInitializableQuery(Context* context, const Type* t) 
     }
   }
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-bool Type::isDefaultInitializable(Context* context, const Type* t) {
-  return isDefaultInitializableQuery(context, t);
+bool Type::isDefaultInitializable(resolution::ResolutionContext* rc, const Type* t) {
+  return isDefaultInitializableQuery(rc, t);
 }
 
 bool Type::needsInitDeinitCall(const Type* t) {

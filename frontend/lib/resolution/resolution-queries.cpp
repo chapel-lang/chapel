@@ -861,12 +861,13 @@ const Type* initialTypeForInterface(Context* context, ID declId) {
   return initialTypeForInterfaceQuery(context, declId);
 }
 
-const ResolvedFields& resolveFieldDecl(Context* context,
+const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        const CompositeType* ct,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly) {
-  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, defaultsPolicy, syntaxOnly);
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
+  auto context = rc->context();
 
   ResolvedFields result;
   bool isObjectType = false;
@@ -901,7 +902,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 
       if (!syntaxOnly) {
         auto visitor =
-          Resolver::createForInitialFieldStmt(context, ad, fieldAst,
+          Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
                                               ct, r, defaultsPolicy);
 
         // resolve the field types and set them in 'result'
@@ -932,15 +933,16 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 
   if (!syntaxOnly) result.validateFieldGenericity(context, ct);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
 static
-const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
+const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
                                              const CompositeType* ct,
                                              DefaultsPolicy defaultsPolicy,
                                              bool syntaxOnly) {
-  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy, syntaxOnly);
+  CHPL_RESOLUTION_QUERY_BEGIN(fieldsForTypeDeclQuery, rc, ct, defaultsPolicy, syntaxOnly);
+  auto context = rc->context();
 
   QUERY_REGISTER_TRACER(
     auto& id = std::get<0>(args)->id();
@@ -979,7 +981,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
           child->isTupleDecl() ||
           isForwardingField) {
         const ResolvedFields& resolvedFields =
-          resolveFieldDecl(context, ct, child->id(), defaultsPolicy, syntaxOnly);
+          resolveFieldDecl(rc, ct, child->id(), defaultsPolicy, syntaxOnly);
         // Copy resolvedFields into result
         int n = resolvedFields.numFields();
         for (int i = 0; i < n; i++) {
@@ -1001,10 +1003,10 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
     result.finalizeFields(context, syntaxOnly);
   }
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-const ResolvedFields& fieldsForTypeDecl(Context* context,
+const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
                                         const CompositeType* ct,
                                         DefaultsPolicy defaultsPolicy,
                                         bool syntaxOnly) {
@@ -1012,17 +1014,17 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   // isn't, always set defaults policy to IGNORE_DEFAULTS to avoid memoizing
   // the same result multiple times.
   if (syntaxOnly) {
-    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+    return fieldsForTypeDeclQuery(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                   /* syntaxOnly */ true);
   }
 
   if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS){
-    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+    return fieldsForTypeDeclQuery(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                   /* syntaxOnly */ false);
   }
 
   // try first with defaultsPolicy=FOR_OTHER_FIELDS
-  const auto& f = fieldsForTypeDeclQuery(context, ct,
+  const auto& f = fieldsForTypeDeclQuery(rc, ct,
                                          DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS,
                                          /* syntaxOnly */ false);
 
@@ -1037,7 +1039,7 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
     auto finalDefaultsPolicy = f.isGenericWithDefaults() ?
       DefaultsPolicy::USE_DEFAULTS :
       DefaultsPolicy::IGNORE_DEFAULTS;
-    return fieldsForTypeDeclQuery(context, ct, finalDefaultsPolicy,
+    return fieldsForTypeDeclQuery(rc, ct, finalDefaultsPolicy,
                                   /* syntaxOnly */ false);
   }
 
@@ -1047,9 +1049,10 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 
 // Resolve all statements like 'forwarding _value;' in 'ct'
 static
-const ResolvedFields& resolveForwardingExprs(Context* context,
+const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
                                              const CompositeType* ct) {
-  QUERY_BEGIN(resolveForwardingExprs, context, ct);
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveForwardingExprs, rc, ct);
+  auto context = rc->context();
 
   ResolvedFields result;
 
@@ -1075,13 +1078,13 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
       if (child->isForwardingDecl() &&
           !child->toForwardingDecl()->expr()->isDecl()) {
         const ResolvedFields& resolvedFields =
-          resolveFieldDecl(context, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
+          resolveFieldDecl(rc, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
         result.addForwarding(resolvedFields);
       }
     }
   }
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
@@ -1100,10 +1103,11 @@ static bool typeUsesForwarding(Context* context, const Type* receiverType) {
 
 // returns 'true' if a cycle was detected
 static bool
-checkForwardingCycles(Context* context,
+checkForwardingCycles(ResolutionContext* rc,
                       const CompositeType* ct,
                       llvm::SmallPtrSet<const CompositeType*, 8>& visited) {
 
+  auto context = rc->context();
   if (typeUsesForwarding(context, ct)) {
     auto pair = visited.insert(ct);
     if (pair.second == false) {
@@ -1112,7 +1116,7 @@ checkForwardingCycles(Context* context,
       return true;
     }
 
-    const ResolvedFields& r = fieldsForTypeDecl(context, ct,
+    const ResolvedFields& r = fieldsForTypeDecl(rc, ct,
                                                 DefaultsPolicy::USE_DEFAULTS);
 
     // Check for cycles. If a cycle is detected, emit an error
@@ -1122,7 +1126,7 @@ checkForwardingCycles(Context* context,
       auto qt = r.forwardingToType(i);
       if (auto t = qt.type()) {
         if (auto forwardingCt = t->getCompositeType()) {
-          bool cyc = checkForwardingCycles(context, forwardingCt, visited);
+          bool cyc = checkForwardingCycles(rc, forwardingCt, visited);
           if (cyc) {
             return true;
           }
@@ -1137,40 +1141,40 @@ checkForwardingCycles(Context* context,
 // returns a 'true' if there was a cycle and reports an error in that case.
 // otherwise, returns 'false'.
 static const bool&
-forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
-  QUERY_BEGIN(forwardingCycleCheckQuery, context, ct);
+forwardingCycleCheckQuery(ResolutionContext* rc, const CompositeType* ct) {
+  CHPL_RESOLUTION_QUERY_BEGIN(forwardingCycleCheckQuery, rc, ct);
 
   bool result = false;
   llvm::SmallPtrSet<const CompositeType*, 8> visited;
 
-  result = checkForwardingCycles(context, ct, visited);
+  result = checkForwardingCycles(rc, ct, visited);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
 // returns 'true' if a forwarding cycle was detected & error emitted
 static bool
-emitErrorForForwardingCycles(Context* context, const CompositeType* ct) {
+emitErrorForForwardingCycles(ResolutionContext* rc, const CompositeType* ct) {
   bool cycleFound = false;
-  if (typeUsesForwarding(context, ct)) {
+  if (typeUsesForwarding(rc->context(), ct)) {
     // check for cycles
-    cycleFound = forwardingCycleCheckQuery(context, ct);
+    cycleFound = forwardingCycleCheckQuery(rc, ct);
   }
 
   return cycleFound;
 }
 
-static const CompositeType* getTypeWithDefaults(Context* context,
+static const CompositeType* getTypeWithDefaults(ResolutionContext* rc,
                                                 const CompositeType* ct) {
   // resolve the fields with DefaultsPolicy=FOR_OTHER_FIELDS
-  const ResolvedFields& g = fieldsForTypeDecl(context, ct,
+  const ResolvedFields& g = fieldsForTypeDecl(rc, ct,
                                               DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
   if (!g.isGenericWithDefaults()) {
     return ct;
   }
 
   // and with DefaultsPolicy=USE
-  const ResolvedFields& r = fieldsForTypeDecl(context, ct,
+  const ResolvedFields& r = fieldsForTypeDecl(rc, ct,
                                               DefaultsPolicy::USE_DEFAULTS);
 
   // for any field that has a different type in r than in g, add
@@ -1193,6 +1197,7 @@ static const CompositeType* getTypeWithDefaults(Context* context,
     return ct;
   }
 
+  auto context = rc->context();
   auto ast = parsing::idToAst(context, ct->id());
   CHPL_ASSERT(ast && ast->isAggregateDecl());
   auto ad = ast->toAggregateDecl();
@@ -1207,29 +1212,29 @@ static const CompositeType* getTypeWithDefaults(Context* context,
 }
 
 static
-const CompositeType* const& getTypeWithDefaultsQuery(Context* context,
+const CompositeType* const& getTypeWithDefaultsQuery(ResolutionContext* rc,
                                                      const CompositeType* ct) {
-  QUERY_BEGIN(getTypeWithDefaultsQuery, context, ct);
+  CHPL_RESOLUTION_QUERY_BEGIN(getTypeWithDefaultsQuery, rc, ct);
 
-  auto result = getTypeWithDefaults(context, ct);
+  auto result = getTypeWithDefaults(rc, ct);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-const types::QualifiedType typeWithDefaults(Context* context,
+const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
                                             types::QualifiedType t) {
   if (t.type()) {
     if (auto clst = t.type()->toClassType()) {
       if (auto bct = clst->basicClassType()) {
-        auto got = getTypeWithDefaultsQuery(context, bct);
+        auto got = getTypeWithDefaultsQuery(rc, bct);
         CHPL_ASSERT(got->isBasicClassType());
         bct = got->toBasicClassType();
 
-        auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
+        auto r = ClassType::get(rc->context(), bct, clst->manager(), clst->decorator());
         return QualifiedType(t.kind(), r, t.param());
       }
     } else if (auto ct = t.type()->toCompositeType()) {
-      auto got = getTypeWithDefaultsQuery(context, ct);
+      auto got = getTypeWithDefaultsQuery(rc, ct);
       return QualifiedType(t.kind(), got, t.param());
     }
   }
@@ -1306,7 +1311,9 @@ static Type::Genericity getFieldsGenericity(Context* context,
   }
 
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS;
-  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+  // NOTE: Assuming that syntaxOnly means we don't need proper RC from elsewhere
+  ResolutionContext rc(context);
+  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
                                               defaultsPolicy,
                                               /* syntaxOnly */ true);
 
@@ -4643,10 +4650,10 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
-    const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
+    const ResolvedFields& fields = fieldsForTypeDecl(rc, ct,
                                                      useDefaults);
 
-    if (context->isQueryRunning(resolveForwardingExprs, std::make_tuple(ct))) {
+    if (CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(resolveForwardingExprs, rc, ct)) {
       // If we are trying to resolve a method call while collecting forwarding
       // candidates, do not try to use forwarding to resolve that method.
       //
@@ -4662,11 +4669,11 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       //
       // https://github.com/chapel-lang/chapel/issues/24709
     } else {
-      const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+      const ResolvedFields& exprs = resolveForwardingExprs(rc, ct);
       if (fields.numForwards() > 0 ||
           exprs.numForwards() > 0) {
         // and check for cycles
-        bool cycleFound = emitErrorForForwardingCycles(context, ct);
+        bool cycleFound = emitErrorForForwardingCycles(rc, ct);
         if (cycleFound == false) {
           forwards.addForwarding(fields);
           forwards.addForwarding(exprs);
@@ -5507,7 +5514,7 @@ resolveCallInMethod(ResolutionContext* rc,
   }
 }
 
-CallResolutionResult resolveGeneratedCall(Context* context,
+CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
                                           const AstNode* astContext,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
@@ -5515,17 +5522,16 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   QualifiedType tmpRetType;
 
   // see if the call is handled directly by the compiler
-  if (resolveFnCallSpecial(context, astContext, ci, tmpRetType)) {
+  if (resolveFnCallSpecial(rc->context(), astContext, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
   const Call* call = nullptr;
-  ResolutionContext rcval(context);
-  return resolveFnCall(&rcval, astContext, call, ci, inScopes, rejected);
+  return resolveFnCall(rc, astContext, call, ci, inScopes, rejected);
 }
 
 CallResolutionResult
-resolveGeneratedCallInMethod(Context* context,
+resolveGeneratedCallInMethod(ResolutionContext* rc,
                              const AstNode* astContext,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
@@ -5535,14 +5541,14 @@ resolveGeneratedCallInMethod(Context* context,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    auto ret = resolveGeneratedCall(context, astContext, methodCi, inScopes);
+    auto ret = resolveGeneratedCall(rc, astContext, methodCi, inScopes);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
     }
   }
 
   // otherwise, resolve a regular function call
-  return resolveGeneratedCall(context, astContext, ci, inScopes);
+  return resolveGeneratedCall(rc, astContext, ci, inScopes);
 }
 
 const TypedFnSignature* tryResolveInitEq(Context* context,
@@ -5569,7 +5575,8 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
                                 CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
@@ -5623,7 +5630,8 @@ const TypedFnSignature* tryResolveZeroArgInit(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
                                 CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
@@ -5648,7 +5656,8 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
                                 CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
@@ -5777,7 +5786,7 @@ struct InterfaceCheckHelper {
     } else if (failed) {
       // Failed to find a call, not due to ambiguity. Re-run call and gather
       // rejected candidates.
-      resolveGeneratedCall(rc->context(), templateFn, ci, inScopes, &rejected);
+      resolveGeneratedCall(rc, templateFn, ci, inScopes, &rejected);
       CHPL_REPORT(rc->context(), InterfaceMissingFn, ift, implPointId,
                   templateSigWithSubs, ci, std::move(rejected));
       return nullptr;
@@ -6016,7 +6025,7 @@ struct InterfaceCheckHelper {
 
     // TODO: how to note this?
     auto c =
-      resolveGeneratedCall(rc->context(), templateFn, *ci, inScopes);
+      resolveGeneratedCall(rc, templateFn, *ci, inScopes);
 
     if (c.exprType().isUnknownOrErroneous() && templateFn->body()) {
       // template has a default implementation; return it, we're good.
@@ -6059,7 +6068,7 @@ struct InterfaceCheckHelper {
 
     // TODO: how to note this?
     auto c =
-      resolveGeneratedCall(rc->context(), td, ci, inScopes);
+      resolveGeneratedCall(rc, td, ci, inScopes);
 
     std::vector<ApplicabilityResult> rejected;
     bool failed = c.exprType().isUnknownOrErroneous();
@@ -6072,7 +6081,7 @@ struct InterfaceCheckHelper {
                                          FAIL_INTERFACE_NOT_TYPE_INTENT));
       }
     } else {
-      resolveGeneratedCall(rc->context(), td, ci, inScopes, &rejected);
+      resolveGeneratedCall(rc, td, ci, inScopes, &rejected);
     }
 
     if (!failed && !notType) {
@@ -6310,7 +6319,8 @@ tryResolveAssignHelper(Context* context,
                      actuals);
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
-  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci,
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
                                 CallScopeInfo::forNormalCall(scope, /* poiScope */ nullptr));
   return c.mostSpecific().only().fn();
 }
@@ -6421,74 +6431,7 @@ const CompositeType* isNameOfField(Context* context,
   return isNameOfFieldQuery(context, name, ct);
 }
 
-// TODO: This is very early draft and is missing a lot, e.g.,
-//    - No valid default-initializer present
-//    - Instantiated generics must supply type/param arguments when
-//      searching for a default-initializer
-//    - Consideration of 'where' clauses
-//    - Composites with compilerError'd default-initializers
-//    - Mutually recursive class types
-//    - Non-nil 'owned' classes
-static bool
-isTypeDefaultInitializableImpl(Context* context, const Type* t) {
-  const auto g = t->genericity();
-
-  switch (g) {
-    case Type::CONCRETE: return true;
-    case Type::GENERIC: return false;
-
-    // For these, consider the fields.
-    case Type::GENERIC_WITH_DEFAULTS:
-    case Type::MAYBE_GENERIC:
-      break;
-  }
-
-  CHPL_ASSERT(!t->isPrimitiveType());
-
-  if (t->isBuiltinType()) {
-    CHPL_ASSERT(false && "Not handled!");
-  }
-
-  if (auto ct = t->toCompositeType()) {
-    const auto p = DefaultsPolicy::USE_DEFAULTS;
-    auto& rf = fieldsForTypeDecl(context, ct, p);
-
-    if (!rf.isGeneric()) return true;
-
-    // TODO: Do I still need to consider field genericity, here? I.E., if
-    // a field is marked 'GENERIC_WITH_DEFAULTS' is there more to do?
-    // If I can tell the thing is concrete from the ResolvedFields, then
-    // there's probably no need to recurse.
-    if (rf.isGenericWithDefaults()) {
-      for (int i = 0; i < rf.numFields(); i++) {
-        auto ft = rf.fieldType(i).type();
-
-        // TODO: Skipping avoids a recursive query but doesn't handle
-        // mutually recursive classes.
-        if (ft == t) continue;
-
-        if (!isTypeDefaultInitializable(context, ft)) return false;
-      }
-
-      return true;
-    }
-  }
-
-  return false;
-}
-
-static const bool&
-isTypeDefaultInitializableQuery(Context* context, const Type* t) {
-  QUERY_BEGIN(isTypeDefaultInitializableQuery, context, t);
-  bool ret = isTypeDefaultInitializableImpl(context, t);
-  return QUERY_END(ret);
-}
-
-bool isTypeDefaultInitializable(Context* context, const Type* t) {
-  return isTypeDefaultInitializableQuery(context, t);
-}
-
-void getCopyOrAssignableInfo(Context* context, const Type* t,
+void getCopyOrAssignableInfo(ResolutionContext* rc, const Type* t,
                                     bool& fromConst, bool& fromRef,
                                     bool checkCopyable);
 
@@ -6514,8 +6457,9 @@ static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
 
 // Set checkCopyable true for copyable, false for assignable.
 static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
-    Context* context, const CompositeType* ct, bool checkCopyable) {
-  QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
+    ResolutionContext* rc, const CompositeType* ct, bool checkCopyable) {
+  CHPL_RESOLUTION_QUERY_BEGIN(getCopyOrAssignableInfoQuery, rc, ct, checkCopyable);
+  auto context = rc->context();
 
 
   CopyableAssignableInfo result = CopyableAssignableInfo::fromNone();
@@ -6528,7 +6472,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
   } else if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
       // Arrays are copyable/assignable if their elements are
-      result = getCopyOrAssignableInfo(context, eltType, checkCopyable);
+      result = getCopyOrAssignableInfo(rc, eltType, checkCopyable);
     }
   } else if (auto tt = ct->toTupleType()) {
     // Tuples have the minimum copyable/assignable-ness of their elements
@@ -6536,7 +6480,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     // TODO: add iterator for TupleType element types and use a range-based for
     for (int i = 0; i < tt->numElements(); i++) {
       result.intersectWith(getCopyOrAssignableInfo(
-          context, tt->elementType(i).type(), checkCopyable));
+          rc, tt->elementType(i).type(), checkCopyable));
       if (tt->isStarTuple()) break;
     }
   } else {
@@ -6562,7 +6506,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
 
           result = CopyableAssignableInfo::fromConst();
           auto resolvedFields =
-              fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+              fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
           for (int i = 0; i < resolvedFields.numFields(); i++) {
             auto fieldType = resolvedFields.fieldType(i).type();
             if (auto classTy = fieldType->toClassType()) {
@@ -6570,7 +6514,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
             } else if (auto rt = fieldType->toRecordType()) {
               // check record fields recursively
               result.intersectWith(
-                  getCopyOrAssignableInfo(context, rt, checkCopyable));
+                  getCopyOrAssignableInfo(rc, rt, checkCopyable));
             }
           }
         } else {
@@ -6605,16 +6549,16 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     }
   }
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-CopyableAssignableInfo getCopyOrAssignableInfo(Context* context, const Type* t,
+CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc, const Type* t,
                                                bool checkCopyable) {
   CopyableAssignableInfo result;
 
   if (auto ct = t->toCompositeType()) {
     // Use query to cache results only for composite types, others are trivial
-    result = getCopyOrAssignableInfoQuery(context, ct, checkCopyable);
+    result = getCopyOrAssignableInfoQuery(rc, ct, checkCopyable);
   } else if (auto classTy = t->toClassType()) {
     result = getClassTypeCopyOrAssignable(classTy);
   } else {
@@ -6820,7 +6764,7 @@ findTaggedIterator(ResolutionContext* rc,
                      /* isParenless */ false,
                      actuals);
 
-  auto c = resolveGeneratedCall(rc->context(), parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
+  auto c = resolveGeneratedCall(rc, parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
   auto ret = c.mostSpecific().only();
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -6946,7 +6890,8 @@ resolveIteratorShapeComputation(Context* context,
                      /* actuals */ std::move(actuals));
   auto inScopes = callScopeInfoForIterator(context, iter, /* overrideScopes */ nullptr);
 
-  auto c = resolveGeneratedCall(context, /* astForScopeOrErr */ nullptr, ci, inScopes);
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ nullptr, ci, inScopes);
   return QUERY_END(c);
 }
 
@@ -7255,7 +7200,7 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      /* actuals */ std::move(actuals));
-  auto cr = resolveGeneratedCall(rc->context(), astContext, ci, inScopes);
+  auto cr = resolveGeneratedCall(rc, astContext, ci, inScopes);
   return callResolutionResultToTheseResolutionResult(cr, receiverType);
 }
 
@@ -7300,7 +7245,8 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
 
     // only the receiver type in the call info should be used for search
     auto scopes = CallScopeInfo::forNormalCall(nullptr, nullptr);
-    auto c = resolveGeneratedCall(context, astContext, ci, scopes);
+    auto rc = createDummyRC(context);
+    auto c = resolveGeneratedCall(&rc, astContext, ci, scopes);
 
     ret = c.exprType();
 
@@ -7326,7 +7272,8 @@ static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, co
 
   auto ctAst = parsing::idToAst(context, ct->id());
   auto scopes = CallScopeInfo::forNormalCall(scopeForId(context, ct->id()), nullptr);
-  auto c = resolveGeneratedCall(context, ctAst, ci, scopes);
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, ctAst, ci, scopes);
 
   const RuntimeType* ret = nullptr;
   if (!c.exprType().isUnknownOrErroneous() && c.mostSpecific().numBest() == 1) {

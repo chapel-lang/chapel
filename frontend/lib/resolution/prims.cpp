@@ -48,11 +48,11 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
 }
 
 static const ResolvedFields*
-toCompositeTypeActualFields(Context* context,
+toCompositeTypeActualFields(ResolutionContext* rc,
                             const QualifiedType& type,
                             bool shouldBeType = true) {
   if (auto ct = toCompositeTypeActual(type, shouldBeType)) {
-    auto& resolvedFields = fieldsForTypeDecl(context, ct,
+    auto& resolvedFields = fieldsForTypeDecl(rc, ct,
                                              DefaultsPolicy::IGNORE_DEFAULTS);
     return &resolvedFields;
   }
@@ -101,13 +101,13 @@ static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
   return paramStringBytesHelper(type, into, true);
 }
 
-static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
+static QualifiedType primIsBound(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
 
@@ -120,44 +120,44 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       // will only return true if the field's type is concrete.
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
-      type = QualifiedType::makeParamBool(context, isBound);
+      type = QualifiedType::makeParamBool(rc->context(), isBound);
       break;
     }
   }
   return type;
 }
 
-static QualifiedType primNumFields(Context* context, const CallInfo& ci) {
+static QualifiedType primNumFields(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 1) return type;
 
   auto firstActual = ci.actual(0).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     int64_t numFields = fields->numFields();
-    type = QualifiedType::makeParamInt(context, numFields);
+    type = QualifiedType::makeParamInt(rc->context(), numFields);
   }
   return type;
 }
 
-static QualifiedType primFieldNumToName(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     int64_t fieldNum = 0;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
     // Fields in these primitives are 1-indexed.
     if (fieldNum > fields->numFields() || fieldNum < 1) return type;
 
     auto fieldName = fields->fieldName(fieldNum - 1);
-    type = QualifiedType::makeParamString(context, fieldName);
+    type = QualifiedType::makeParamString(rc->context(), fieldName);
   }
   return type;
 }
 
-static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
@@ -165,7 +165,7 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
   auto secondActual = ci.actual(1).type();
   bool foundField = false;
   int field = 0;
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
 
@@ -185,7 +185,7 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
     if (!toParamStringActual(secondActual, fieldName)) return type;
 
     if (fieldName == "_shape_" &&
-        shapeForIterator(context, firstActual.type()->toIteratorType())) {
+        shapeForIterator(rc->context(), firstActual.type()->toIteratorType())) {
       foundField = true;
       // Fields in these primitives are 1-indexed.
       field = 1;
@@ -193,15 +193,15 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
   }
 
   if (!foundField) field = -1;
-  return QualifiedType::makeParamInt(context, field);
+  return QualifiedType::makeParamInt(rc->context(), field);
 }
 
-static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
   if (ci.numActuals() != 2) return QualifiedType();
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  auto fields = toCompositeTypeActualFields(context,
+  auto fields = toCompositeTypeActualFields(rc,
                                             firstActual,
                                             /* shouldBeType */ false);
   if (!fields) return QualifiedType();
@@ -271,7 +271,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
                            /* isParenless */ false,
                            std::move(actuals));
   auto callResult = context->runAndTrackErrors([&](Context* context) {
-    return resolveGeneratedCall(context, call, callInfo,
+    return resolveGeneratedCall(rc, call, callInfo,
                                 inScopes);
   });
   const TypedFnSignature* bestCandidate = nullptr;
@@ -522,19 +522,20 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
   return QualifiedType();
 }
 
-static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
+static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) {
   // Note: this is slightly different semantically from the primitive in
   // production. In production owned(X) is a type of its own (aliasing _owned(X)),
   // so it would have the fields of _owned accessed by the primitive. Meanwhile,
   // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
 
+  auto context = rc->context();
   const CompositeType* compositeType;
   UniqueString fieldName;
   if (!getTypeAndFieldName(context, ci, compositeType, fieldName)) {
     return QualifiedType();
   }
 
-  auto& fields = fieldsForTypeDecl(context, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& fields = fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
   for (int i = 0; fields.numFields(); i++) {
     if (fields.fieldName(i) == fieldName) {
       auto returnType = fields.fieldType(i).type();
@@ -909,7 +910,7 @@ primAbsGetType(Context* context, const CallInfo& ci) {
   return ret;
 }
 
-static QualifiedType primFamilyCopyableAssignable(Context* context,
+static QualifiedType primFamilyCopyableAssignable(ResolutionContext* rc,
                                                   const CallInfo& ci,
                                                   const PrimitiveTag prim) {
   const bool checkCopyable =
@@ -922,7 +923,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   if (ci.numActuals() != 1) return QualifiedType();
   auto t = ci.actual(0).type().type();
 
-  auto info = getCopyOrAssignableInfo(context, t, checkCopyable);
+  auto info = getCopyOrAssignableInfo(rc, t, checkCopyable);
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =
@@ -930,7 +931,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   const bool isCopyableOrAssignable =
       info.isFromConst() || (info.isFromRef() && isFromRefOk);
 
-  return QualifiedType::makeParamBool(context, isCopyableOrAssignable);
+  return QualifiedType::makeParamBool(rc->context(), isCopyableOrAssignable);
 }
 
 // TODO: What should be done for 'MAYBE_GENERIC', if anything?
@@ -970,11 +971,20 @@ static QualifiedType primIsClassType(Context* context, const CallInfo& ci) {
 
 template <typename F>
 static QualifiedType
-actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
+actualTypeHasProperty(ResolutionContext* rc, const CallInfo& ci, F&& f) {
   if (ci.numActuals() < 1) return QualifiedType();
   bool eval = false;
   if (auto t = ci.actual(0).type().type()) eval = f(t);
-  return QualifiedType::makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(rc->context(), eval);
+}
+
+// TODO: This is just intended as a temporary helper since many of these cases
+// below do not support ResolutionContext yet.
+template <typename F>
+static QualifiedType
+actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
+  ResolutionContext rc(context);
+  return actualTypeHasProperty(&rc, ci, f);
 }
 
 static QualifiedType
@@ -1055,21 +1065,21 @@ primIsAbsEnumType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [=](auto t) {
-    return Type::isPod(context, t);
+static QualifiedType primIsPod(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::isPod(rc, t);
   });
 }
 
-static QualifiedType primIsDefaultInitializable(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [=](auto t) {
-    return Type::isDefaultInitializable(context, t);
+static QualifiedType primIsDefaultInitializable(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::isDefaultInitializable(rc, t);
   });
 }
 
-static QualifiedType primNeedsAutoDestroy(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [=](auto t) {
-    return Type::needsInitDeinitCall(t) && !Type::isPod(context, t);
+static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::needsInitDeinitCall(t) && !Type::isPod(rc, t);
   });
 }
 
@@ -1224,7 +1234,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_IS_BOUND:
-      type = primIsBound(context, ci);
+      type = primIsBound(rc, ci);
       break;
 
     case PRIM_IS_COERCIBLE:
@@ -1248,26 +1258,26 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_NUM_FIELDS:
-      type = primNumFields(context, ci);
+      type = primNumFields(rc, ci);
       break;
 
     case PRIM_FIELD_NUM_TO_NAME:
-      type = primFieldNumToName(context, ci);
+      type = primFieldNumToName(rc, ci);
       break;
 
     case PRIM_FIELD_NAME_TO_NUM:
-      type = primFieldNameToNum(context, ci);
+      type = primFieldNameToNum(rc, ci);
       break;
 
     case PRIM_FIELD_BY_NUM:
-      type = primFieldByNum(context, ci);
+      type = primFieldByNum(rc, ci);
       break;
 
     case PRIM_IS_COPYABLE:
     case PRIM_IS_CONST_COPYABLE:
     case PRIM_IS_ASSIGNABLE:
     case PRIM_IS_CONST_ASSIGNABLE:
-      type = primFamilyCopyableAssignable(context, ci, prim);
+      type = primFamilyCopyableAssignable(rc, ci, prim);
       break;
 
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
@@ -1327,15 +1337,15 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_IS_POD:
-      type = primIsPod(context, ci);
+      type = primIsPod(rc, ci);
       break;
 
     case PRIM_HAS_DEFAULT_VALUE:
-      type = primIsDefaultInitializable(context, ci);
+      type = primIsDefaultInitializable(rc, ci);
       break;
 
     case PRIM_NEEDS_AUTO_DESTROY:
-      type = primNeedsAutoDestroy(context, ci);
+      type = primNeedsAutoDestroy(rc, ci);
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -1772,7 +1782,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primPromotionType(context, ci);
       break;
     case PRIM_STATIC_FIELD_TYPE:
-      type = staticFieldType(context, ci);
+      type = staticFieldType(rc, ci);
       break;
     case PRIM_WIDE_GET_NODE: // NodeIdType is defined as int32
       type = QualifiedType(QualifiedType::CONST_VAR,

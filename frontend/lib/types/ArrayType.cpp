@@ -91,7 +91,8 @@ ArrayType::getArrayType(Context* context,
   subs.emplace(ArrayType::eltTypeId, eltType);
 
   // Add substitution for _instance field
-  auto& rf = fieldsForTypeDecl(context, genericArray,
+  resolution::ResolutionContext rc(context);
+  auto& rf = fieldsForTypeDecl(&rc, genericArray,
                                resolution::DefaultsPolicy::IGNORE_DEFAULTS,
                                /* syntaxOnly */ true);
   ID instanceFieldId;

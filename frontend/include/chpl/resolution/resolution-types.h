@@ -2831,67 +2831,74 @@ class ResolvedFunction {
   }
 };
 
+/// \cond DO_NOT_DOCUMENT
+struct FieldDetail {
+  UniqueString name;
+  bool hasDefaultValue = false;
+  ID declId;
+  types::QualifiedType type;
+
+  FieldDetail(UniqueString name,
+              bool hasDefaultValue,
+              ID declId,
+              types::QualifiedType type)
+    : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+  }
+  bool operator==(const FieldDetail& other) const {
+    return name == other.name &&
+           hasDefaultValue == other.hasDefaultValue &&
+           declId == other.declId &&
+           type == other.type;
+  }
+  bool operator!=(const FieldDetail& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    name.mark(context);
+    declId.mark(context);
+    type.mark(context);
+  }
+  size_t hash() const {
+    return chpl::hash(name, hasDefaultValue, declId, type);
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
+
+/// \cond DO_NOT_DOCUMENT
+struct ForwardingDetail {
+  ID forwardingStmt;
+  types::QualifiedType receiverType;
+  ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
+   : forwardingStmt(std::move(forwardingStmt)),
+     receiverType(std::move(receiverType)) {
+  }
+  bool operator==(const ForwardingDetail& other) const {
+    return forwardingStmt == other.forwardingStmt &&
+           receiverType == other.receiverType;
+  }
+  bool operator!=(const ForwardingDetail& other) const {
+    return !(*this == other);
+  }
+  void swap(ForwardingDetail& other) {
+    forwardingStmt.swap(other.forwardingStmt);
+    receiverType.swap(other.receiverType);
+  }
+  void mark(Context* context) const {
+    forwardingStmt.mark(context);
+    receiverType.mark(context);
+  }
+  size_t hash() const {
+    return chpl::hash(forwardingStmt, receiverType);
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
+
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
 
     It also stores the result of computing the types of 'forwarding' statements.
  */
 class ResolvedFields {
-  struct FieldDetail {
-    UniqueString name;
-    bool hasDefaultValue = false;
-    ID declId;
-    types::QualifiedType type;
-
-    FieldDetail(UniqueString name,
-                bool hasDefaultValue,
-                ID declId,
-                types::QualifiedType type)
-      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
-    }
-    bool operator==(const FieldDetail& other) const {
-      return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
-             declId == other.declId &&
-             type == other.type;
-    }
-    bool operator!=(const FieldDetail& other) const {
-      return !(*this == other);
-    }
-    size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, declId, type);
-    }
-
-    void mark(Context* context) const {
-      name.mark(context);
-      declId.mark(context);
-      type.mark(context);
-    }
-  };
-  struct ForwardingDetail {
-    ID forwardingStmt;
-    types::QualifiedType receiverType;
-    ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
-     : forwardingStmt(std::move(forwardingStmt)),
-       receiverType(std::move(receiverType)) {
-    }
-    bool operator==(const ForwardingDetail& other) const {
-      return forwardingStmt == other.forwardingStmt &&
-             receiverType == other.receiverType;
-    }
-    bool operator!=(const ForwardingDetail& other) const {
-      return !(*this == other);
-    }
-    void swap(ForwardingDetail& other) {
-      forwardingStmt.swap(other.forwardingStmt);
-      receiverType.swap(other.receiverType);
-    }
-    void mark(Context* context) const {
-      forwardingStmt.mark(context);
-      receiverType.mark(context);
-    }
-  };
-
   const types::CompositeType* type_ = nullptr;
   std::vector<FieldDetail> fields_;
   std::vector<ForwardingDetail> forwarding_;
@@ -3011,6 +3018,10 @@ class ResolvedFields {
     }
     context->markPointer(type_);
   }
+
+  size_t hash() const {
+    return chpl::hash(type_, fields_, forwarding_, isGeneric_, allGenericFieldsHaveDefaultValues_);
+  }
 };
 
 class ResolvedParamLoop {
@@ -3111,6 +3122,9 @@ struct CopyableAssignableInfo {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
+  }
+  size_t hash() const {
+    return chpl::hash(fromConst_, fromRef_);
   }
 };
 
@@ -3342,6 +3356,10 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
+CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CopyableAssignableInfo, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std

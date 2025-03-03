@@ -25,7 +25,8 @@
 static std::tuple<QualifiedType, std::string, std::string>
 getRangeInfo(Context* context, const RecordType* r) {
   assert(r->name() == "_range");
-  auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto fields = fieldsForTypeDecl(&rc, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
   assert(fields.fieldName(0) == "idxType");
   assert(fields.fieldName(1) == "bounds");

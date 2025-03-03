@@ -501,13 +501,14 @@ Resolver::createForScopeResolvingEnumConstant(Context* context,
 
 // set up Resolver to initially resolve field declaration types
 Resolver
-Resolver::createForInitialFieldStmt(Context* context,
+Resolver::createForInitialFieldStmt(ResolutionContext* rc,
                                     const AggregateDecl* decl,
                                     const AstNode* fieldStmt,
                                     const CompositeType* compositeType,
                                     ResolutionResultByPostorderID& byId,
                                     DefaultsPolicy defaultsPolicy) {
-  auto ret = Resolver(context, decl, byId, nullptr);
+  auto ret = Resolver(rc->context(), decl, byId, nullptr);
+  ret.rc = rc;
   ret.curStmt = fieldStmt;
   ret.inCompositeType = compositeType;
   ret.defaultsPolicy = defaultsPolicy;
@@ -1560,7 +1561,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         // TODO: store an associated action?
         const Scope* scope = scopeStack.back();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-        auto c = resolution::resolveGeneratedCall(context, declForErr, ci, inScopes);
+        auto c = resolution::resolveGeneratedCall(rc, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
@@ -1711,7 +1712,7 @@ static QualifiedType computeTypeDefaults(Resolver& resolver,
       auto g = getTypeGenericity(resolver.context, ct);
       if (g == Type::GENERIC_WITH_DEFAULTS) {
         // fill in the defaults
-        return typeWithDefaults(resolver.context, type);
+        return typeWithDefaults(resolver.rc, type);
       }
     }
   }
@@ -2244,7 +2245,7 @@ bool Resolver::CallResultWrapper::rerunCallAndPrintCandidates() {
   // this time to preserve the list of rejected candidates.
   std::vector<ApplicabilityResult> rejected;
   if (wasGeneratedCall) {
-    std::ignore = resolution::resolveGeneratedCall(parent->context, astForContext, *ci, *inScopes, &rejected);
+    std::ignore = resolution::resolveGeneratedCall(parent->rc, astForContext, *ci, *inScopes, &rejected);
   } else {
     CHPL_ASSERT(astForContext->isCall());
     std::ignore = resolution::resolveCallInMethod(parent->rc, astForContext->toCall(), *ci, *inScopes,
@@ -3053,7 +3054,7 @@ lookupFieldType(Resolver& rv, const CompositeType* ct, const ID& idField) {
   }
   // if it is recursive within the current class/record, we can
   // call resolveField.
-  auto& rf = resolveFieldDecl(rv.context, ct, idField, newDefaultsPolicy);
+  auto& rf = resolveFieldDecl(rv.rc, ct, idField, newDefaultsPolicy);
 
   // find the field that matches
   for (int i = 0; i < rf.numFields(); i++) {
@@ -5200,7 +5201,7 @@ Resolver::resolveGeneratedCall(const uast::AstNode* astForContext,
                                const CallInfo* ci,
                                const CallScopeInfo* inScopes,
                                const char* callName) {
-  auto result = resolution::resolveGeneratedCall(context, astForContext, *ci, *inScopes);
+  auto result = resolution::resolveGeneratedCall(rc, astForContext, *ci, *inScopes);
   return {
     /* parent */ this,
     /* result */ std::move(result),
@@ -5219,7 +5220,7 @@ Resolver::resolveGeneratedCallInMethod(const AstNode* astContext,
                                        const CallInfo* ci,
                                        const CallScopeInfo* inScopes,
                                        QualifiedType implicitReceiver) {
-  auto result = resolution::resolveGeneratedCallInMethod(context, astContext, *ci, *inScopes, implicitReceiver);
+  auto result = resolution::resolveGeneratedCallInMethod(rc, astContext, *ci, *inScopes, implicitReceiver);
   return {
     /* parent */ this,
     /* result */ std::move(result),
@@ -6406,7 +6407,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         std::move(actuals));
     auto scope = rv.scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
       domainType = c.exprType();
     }
@@ -6452,7 +6453,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
     auto scope = rv.scopeStack.back();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-    auto c = resolveGeneratedCall(rv.context, iterandExpr, ci, inScopes);
+    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
       arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
     }
@@ -6820,7 +6821,7 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
 
   // don't use resolver's wrapper of resolveGeneratedCall, since we don't
   // do anything beyond getting the result type.
-  auto c = resolveGeneratedCall(context, reduceOrScan, ci, inScopes);
+  auto c = resolveGeneratedCall(resolver.rc, reduceOrScan, ci, inScopes);
   return c.exprType();
 }
 

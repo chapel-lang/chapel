@@ -635,6 +635,8 @@ class ResolutionContext::Query {
   }
 };
 
+ResolutionContext createDummyRC(Context* context);
+
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
     of a query from being cached in the context query cache if the computed
     result could rely on state taken from the type 'ResolutionContext'.

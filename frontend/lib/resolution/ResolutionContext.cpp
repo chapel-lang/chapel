@@ -160,5 +160,9 @@ void ResolutionContext::popFrame(const ResolvedFunction* rf) {
   frames_.pop_back();
 }
 
+ResolutionContext createDummyRC(Context* context) {
+  return ResolutionContext(context);
+}
+
 } // end namespace resolution
 } // end namespace chpl

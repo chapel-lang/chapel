@@ -102,7 +102,8 @@ static void insertInstanceIntoSubs(Context* context,
                                    const DomainType* genericDomain,
                                    const QualifiedType& instance) {
   // Add substitution for _instance field
-  auto& rf = fieldsForTypeDecl(context, genericDomain,
+  resolution::ResolutionContext rc(context);
+  auto& rf = fieldsForTypeDecl(&rc, genericDomain,
                                resolution::DefaultsPolicy::IGNORE_DEFAULTS,
                                /* syntaxOnly */ true);
   ID instanceFieldId;

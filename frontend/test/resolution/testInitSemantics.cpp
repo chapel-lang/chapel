@@ -794,7 +794,8 @@ static void testInitFromInit(void) {
     assert(recType);
     assert(recType->name() == "pair");
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
     assert(fields.fieldName(0) == "fst");
     assert(fields.fieldName(1) == "snd");
@@ -859,7 +860,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -887,7 +889,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -943,7 +946,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -971,7 +975,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -2043,7 +2048,8 @@ static void testInitInstantiation(void) {
     CHPL_ASSERT(!qt.isUnknownOrErroneous());
     auto ct = qt.type()->getCompositeType();
     CHPL_ASSERT(ct);
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
 
     assert(fields.fieldName(0) == "fst");
     assert(fields.fieldName(1) == "snd");
@@ -2105,12 +2111,13 @@ static void testInitInstantiationInherit() {
   assert(recType);
   assert(recType->name() == "B");
 
-  auto childFields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(childFields.fieldName(0) == "TB");
   assert(childFields.fieldType(0).type()->isIntType());
 
   auto parent = recType->toBasicClassType()->parentClassType();
-  auto parentFields = fieldsForTypeDecl(context, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.fieldName(0) == "TA");
   assert(parentFields.fieldType(0).type()->isRealType());
 }
@@ -2146,12 +2153,13 @@ static void testInitInstantiationInheritWrong() {
   assert(recType);
   assert(recType->name() == "B");
 
-  auto childFields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(childFields.fieldName(0) == "TB");
   assert(childFields.fieldType(0).type()->isRealType());
 
   auto parent = recType->toBasicClassType()->parentClassType();
-  auto parentFields = fieldsForTypeDecl(context, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.fieldName(0) == "TA");
   assert(parentFields.fieldType(0).type()->isRealType());
 

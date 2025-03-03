@@ -246,7 +246,7 @@ struct Resolver {
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
-  createForInitialFieldStmt(Context* context,
+  createForInitialFieldStmt(ResolutionContext* rc,
                             const uast::AggregateDecl* decl,
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
