@@ -48,12 +48,12 @@ jobs:
       # also builds chapel-py so those docs are included
       run: |
         ./util/buildRelease/smokeTest quickstart chapel-py docs
+        tar -cvf docs.tar.gz -C doc/html .
     - name: upload docs
       uses: actions/upload-artifact@v4
       with:
         name: documentation
-        path: doc/html
-        include-hidden-files: true
+        path: docs.tar.gz
 
   make_mason:
     runs-on: ubuntu-latest
@@ -209,11 +209,13 @@ jobs:
 
       - name: push docs
         run: |
+          echo "extract docs"
+          tar -xvf docs.tar.gz
           echo "Publish module docs to web server"
           # py-modindex.html is not needed
           rm -f py-modindex.html
           # Remove all hidden files except .htaccess
           find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
-          rsync -avz --cvs-exclude --delete --relative --exclude="versionButton.php" --dry-run . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+          rsync -avz --cvs-exclude --delete --relative --dry-run . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
           rm ~/.ssh/id_rsa
           rm ~/.ssh/known_hosts
