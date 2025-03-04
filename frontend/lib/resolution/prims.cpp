@@ -1621,6 +1621,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_CHECK_NIL:
     case PRIM_IF_VAR:
     case PRIM_LOCAL_CHECK:
+    case PRIM_IS_LOCAL:
     case PRIM_SET_END_COUNT:
     case PRIM_SET_DYNAMIC_END_COUNT:
     case PRIM_SET_SERIAL:

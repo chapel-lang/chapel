@@ -86,7 +86,7 @@
 // `array_view_elision` flag completely, and replace it with `true` or `false`,
 // after which the conditional statement is constant-folded.
 //
-// If not `fLocal`, we also call `chpl_bothLocal` an replace the flag with the
+// If not `fLocal`, we also call `chpl__bothLocal` an replace the flag with the
 // result of that. Note that this is a dynamic check, meaning that the
 // conditional will not be removed.
 //
