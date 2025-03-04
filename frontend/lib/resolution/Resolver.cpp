@@ -4740,6 +4740,29 @@ void Resolver::exit(const Range* range) {
   }
 }
 
+bool Resolver::enter(const uast::Array* arr) {
+  return true;
+}
+void Resolver::exit(const uast::Array* arr) {
+  auto& re = byPostorder.byAst(arr);
+  std::vector<QualifiedType> eltTypes;
+
+  for (auto elt : arr->exprs()) {
+    eltTypes.push_back(byPostorder.byAst(elt).type());
+  }
+
+  optional<QualifiedType> unifiedType = commonType(context, eltTypes);
+  if (!unifiedType) {
+    // TODO: create and use error class
+    re.setType(typeErr(arr, "array elements have no common type"));
+    return;
+  }
+
+  // TODO: make array type
+  re.setType(QualifiedType(QualifiedType::CONST_VAR,
+                           ArrayType::getGenericArrayType(context)));
+}
+
 bool Resolver::enter(const uast::Domain* decl) {
   return true;
 }
