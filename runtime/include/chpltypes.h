@@ -71,7 +71,7 @@ typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
 typedef size_t c_size_t;
 typedef ssize_t c_ssize_t;
-typedef wchar_t c_wchar;
+typedef wchar_t c_wchar_t;
 
 // C++ does not support c99 bools
 #ifndef __cplusplus

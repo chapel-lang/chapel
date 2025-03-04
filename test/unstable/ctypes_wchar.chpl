@@ -1,3 +1,3 @@
 use CTypes;
-var x: c_wchar = 0;
+var x: c_wchar_t = 0;
 writeln(x);

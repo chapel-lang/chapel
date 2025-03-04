@@ -46,7 +46,7 @@ _types = [
     ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t', False),
     ('SIZE_MAX', 'c_size_t', 'size_t', False),
     ('SSIZE_MAX', 'c_ssize_t', 'ssize_t', False),
-    ('WCHAR_MAX', 'c_wchar', 'wchar_t', True),
+    ('WCHAR_MAX', 'c_wchar_t', 'wchar_t', True),
 ]
 
 # Map of max values to chapel types.
