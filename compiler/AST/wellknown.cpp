@@ -73,6 +73,7 @@ Type* dt_c_uintptr;
 Type* dt_c_ptrdiff;
 Type* dt_ssize_t;
 Type* dt_size_t;
+Type* dt_wchar;
 
 // The well-known functions
 FnSymbol *gChplHereAlloc;
@@ -230,6 +231,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "c_ptrdiff",             &dt_c_ptrdiff   },
   { "c_ssize_t",             &dt_ssize_t     },
   { "c_size_t",              &dt_size_t      },
+  { "c_wchar",               &dt_wchar       },
 };
 
 static void initializeWellKnownTypes() {

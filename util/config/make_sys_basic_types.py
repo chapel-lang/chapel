@@ -28,23 +28,25 @@ import sys
 #  * C macro for maximum value for type
 #  * Name of Chapel type
 #  * Name of C type
+#  * Unstable
 _types = [
-    ('INT_MAX', 'c_int', 'int'),
-    ('UINT_MAX', 'c_uint', 'uint'),
-    ('LONG_MAX', 'c_long', 'long'),
-    ('ULONG_MAX', 'c_ulong', 'unsigned long'),
-    ('LLONG_MAX', 'c_longlong', 'long long'),
-    ('ULLONG_MAX', 'c_ulonglong', 'unsigned long long'),
-    ('CHAR_MAX', 'c_char', 'char'),
-    ('SCHAR_MAX', 'c_schar', 'signed char'),
-    ('UCHAR_MAX', 'c_uchar', 'unsigned char'),
-    ('SHRT_MAX', 'c_short', 'short'),
-    ('USHRT_MAX', 'c_ushort', 'unsigned short'),
-    ('INTPTR_MAX', 'c_intptr', 'intptr_t'),
-    ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t'),
-    ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t'),
-    ('SIZE_MAX', 'c_size_t', 'size_t'),
-    ('SSIZE_MAX', 'c_ssize_t', 'ssize_t'),
+    ('INT_MAX', 'c_int', 'int', False),
+    ('UINT_MAX', 'c_uint', 'uint', False),
+    ('LONG_MAX', 'c_long', 'long', False),
+    ('ULONG_MAX', 'c_ulong', 'unsigned long', False),
+    ('LLONG_MAX', 'c_longlong', 'long long', False),
+    ('ULLONG_MAX', 'c_ulonglong', 'unsigned long long', False),
+    ('CHAR_MAX', 'c_char', 'char', False),
+    ('SCHAR_MAX', 'c_schar', 'signed char', False),
+    ('UCHAR_MAX', 'c_uchar', 'unsigned char', False),
+    ('SHRT_MAX', 'c_short', 'short', False),
+    ('USHRT_MAX', 'c_ushort', 'unsigned short', False),
+    ('INTPTR_MAX', 'c_intptr', 'intptr_t', False),
+    ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t', False),
+    ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t', False),
+    ('SIZE_MAX', 'c_size_t', 'size_t', False),
+    ('SSIZE_MAX', 'c_ssize_t', 'ssize_t', False),
+    ('WCHAR_MAX', 'c_wchar', 'wchar_t', True),
 ]
 
 # Map of max values to chapel types.
@@ -63,6 +65,8 @@ _h_file_header = """
 #include "sys_basic.h"
 #include <limits.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <wchar.h>
 #include <math.h>
 
 FIND_INT_SIZES_START
@@ -114,7 +118,7 @@ def get_sys_c_types(docs=False,minimal=False):
         with open(h_file, 'w') as fp:
             fp.write(_h_file_header)
 
-            for max_macro, _, _ in _types:
+            for max_macro, _, _, _ in _types:
                 fp.write('{0}\n'.format(max_macro))
             logging.debug('Wrote {0} max types to {1}'.format(len(_types), h_file))
 
@@ -180,7 +184,7 @@ def get_sys_c_types(docs=False,minimal=False):
     sys_c_types = []
     handled_c_ptr = False
     for i, max_value in enumerate(max_values):
-        max_macro, chpl_type, c_type = _types[i]
+        max_macro, chpl_type, c_type, is_unstable = _types[i]
         chpl_value = _max_value_to_chpl_type.get(str(max_value))
         if chpl_value is None:
             logging.error('Unknown numeric limit {0} in '
@@ -189,6 +193,8 @@ def get_sys_c_types(docs=False,minimal=False):
 
         sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
                            ' */'.format(**locals()))
+        if is_unstable:
+            sys_c_types.append('@unstable("\'{c_type}\' is not unstable")'.format(**locals()))
         stmt = 'extern type {chpl_type}= '.format(**locals())
         if docs:
             stmt += 'integral'
@@ -213,7 +219,7 @@ def get_sys_c_types(docs=False,minimal=False):
       extern proc sizeof(type t): c_size_t;
     """)
         for i, max_value in enumerate(max_values):
-            _, chpl_type, _ = _types[i]
+            _, chpl_type, _, _ = _types[i]
             if chpl_type.startswith('c_'):
                 chpl_value = _max_value_to_chpl_type.get(str(max_value))
                 sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
