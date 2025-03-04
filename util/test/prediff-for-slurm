@@ -7,36 +7,36 @@ import sys, re
 
 # These match the message blocks we want to remove.
 msgs = (
-"""srun: error: .+: task [0-9]+: Exited with exit code [0-9]+
+b"""srun: error: .+: task [0-9]+: Exited with exit code [0-9]+
 """,
-"""srun: error: .+: task [0-9]+: (Killed|Terminated)
+b"""srun: error: .+: task [0-9]+: (Killed|Terminated)
 """,
-"""srun: error: .+: tasks [0-9]+-[0-9]+: (Killed|Terminated)
+b"""srun: error: .+: tasks [0-9]+-[0-9]+: (Killed|Terminated)
 """,
-"""srun: .*(Force Terminated|Terminating) (job step |StepId=)[0-9.]+
+b"""srun: .*(Force Terminated|Terminating) (job step |StepId=)[0-9.]+
 """,
-"""srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*
+b"""srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*
 """,
-r"""slurmstepd: error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ \*\*\*
+rb"""slurmstepd: error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ \*\*\*
 """,
-r"""slurmstepd: error: .+ \[[0-9]+] .*
+rb"""slurmstepd: error: .+ \[[0-9]+] .*
 """,
-"""srun: error: spank: /opt/cray/.*: Plugin file not found
+b"""srun: error: spank: /opt/cray/.*: Plugin file not found
 """,
-"""cp: cannot create regular file .*/[.]module/PrgEnv-.*: File exists
+b"""cp: cannot create regular file .*/[.]module/PrgEnv-.*: File exists
 """,
-"""cp: failed to close .*/[.]module/PrgEnv-.*: Stale file handle
+b"""cp: failed to close .*/[.]module/PrgEnv-.*: Stale file handle
 """,
-"""diff: .*/[.]module/PrgEnv-.*: No such file or directory
+b"""diff: .*/[.]module/PrgEnv-.*: No such file or directory
 """,
-r"""\*\*\* WARNING \(proc 0\): Running with multiple processes per host without shared-memory communication support \(PSHM\).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
+rb"""\*\*\* WARNING \(proc 0\): Running with multiple processes per host without shared-memory communication support \(PSHM\).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
 """,
 )
 
 outfname = sys.argv[2]
-with open(outfname, "r") as f:
+with open(outfname, "rb") as f:
     outText = f.read()
 for m in msgs:
-    outText = re.sub(m, "", outText, flags = re.MULTILINE)
-with open(outfname, "w") as f:
+    outText = re.sub(m, b"", outText, flags = re.MULTILINE)
+with open(outfname, "wb") as f:
     f.write(outText)
