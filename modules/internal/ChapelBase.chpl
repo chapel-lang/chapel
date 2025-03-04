@@ -3424,6 +3424,15 @@ module ChapelBase {
 
   // check if both arguments are local without `.locale` or `here`
   inline proc chpl__bothLocal(const ref a, const ref b) {
+    // this implementation is a bit tricky. There are two checks that make
+    // different cases work fine. I do not know what the difference between the
+    // two approaches are, but I can reproduce the behavior I can't explain in
+    // isolated cases, too. Probably it has something to do with some
+    // implementation subtlety of these primitives. Following are the tests
+    // where each of these checks help with
+    //
+    // (1) _wide_get_locale: optimizations/arrayViewElision/remoteDr.chpl
+    // (2) is_local: optimizations/arrayViewElision/distributedToLocalNoRvf.chpl
     extern proc chpl_equals_localeID(const ref x, const ref y): bool;
 
     const aLoc = __primitive("_wide_get_locale", a._value);
