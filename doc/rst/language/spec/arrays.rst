@@ -260,7 +260,7 @@ row.
                4, 5, 6;
                ;
                7, 8, 9;
-               10, 10, 11];
+               10, 11, 12];
 
       for idx in A.domain do
         writeln(A[idx]);
@@ -279,6 +279,7 @@ row.
       9
       10
       11
+      12
 
 
 .. index::
