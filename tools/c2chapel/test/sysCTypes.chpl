@@ -24,7 +24,7 @@ extern proc test_const_chars(a : c_ptrConst(c_char), b : c_ptrConst(c_uchar)) : 
 
 extern proc test_shorts(a : c_short, b : c_ushort) : c_short;
 
-extern proc test_wchar(a : c_wchar): c_wchar;
+extern proc test_wchar(a : c_wchar) : c_wchar;
 
 extern proc test_ptrs(a : c_intptr, b : c_uintptr, c : c_ptrdiff, d : c_ssize_t, e : c_size_t) : void;
 
