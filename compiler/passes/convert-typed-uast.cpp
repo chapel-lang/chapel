@@ -964,8 +964,11 @@ void TConverter::convertFunctionsToConvert() {
     convertFunction(pair.first);
   }
 
-  // convert also main and create chpl_gen_main
-  createMainFunctions();
+  // Create 'chpl_gen_main()' as well as an empty 'main()' function if needed.
+  // If the user defined 'main(), then it will have been added to the call
+  // graph and converted in the above loop. If we are just resolving then do
+  // not bother with this step.
+  if (!fDynoResolveOnly) createMainFunctions();
 
   // tell the untyped converter about which functions to ignore
   // this is whatever functions we have converted already here
@@ -1417,10 +1420,7 @@ void TConverter::createMainFunctions() {
   INT_ASSERT(mainModule);
   SET_LINENO(mainModule);
 
-  // if 'proc main' was not provided, generate an empty 'proc main'.
-  //
-  // (if there was a main function there, we would have already converted it,
-  //  since it needed to be included in the call graph).
+  // If this ID is non-empty then it means the user defined 'main()'.
   ID mainFnId = parsing::findProcMainInModule(context, mainModuleId);
 
   FnSymbol* mainFn = nullptr;
@@ -1434,10 +1434,11 @@ void TConverter::createMainFunctions() {
     mainFn->body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     mainModule->block->insertAtTail(new DefExpr(mainFn));
   } else {
-    // otherwise, we should have already converted 'proc main'
-    // (since it was added to the call graph). Get the converted version.
-    auto resolvedMain = resolveConcreteFunction(context, mainFnId);
-    mainFn = toFnSymbol(fns[resolvedMain]);
+    // Otherwise, we already converted 'main()' via traversal of the
+    // call-graph before this point. Get the converted version using
+    // the ID we got above.
+    auto rf = resolveConcreteFunction(context, mainFnId);
+    mainFn = toFnSymbol(fns[rf]);
     INT_ASSERT(mainFn);
   }
 
