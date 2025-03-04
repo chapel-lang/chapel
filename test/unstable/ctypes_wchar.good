@@ -1,2 +1,2 @@
-ctypes_wchar.chpl:2: warning: 'wchar_t' is not unstable
+ctypes_wchar.chpl:2: warning: 'wchar_t' is unstable
 0
