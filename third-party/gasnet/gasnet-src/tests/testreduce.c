@@ -460,16 +460,16 @@ int main(int argc, char **argv)
   TEST_SET_WAITMODE(1 + pollers);
   if (argc > arg || help) test_usage();
 
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  BARRIER();
+
   if (seed == 0) {
     seed = (((unsigned int)TIME()) & 0xFFFF);
-    gex_Event_Wait(gex_Coll_BroadcastNB(myteam, 0, &seed, &seed, sizeof(seed), 0));
+    TEST_BCAST(&seed, 0, &seed, sizeof(seed));
   }
   TEST_SRAND(seed); // SAME seed
 
   MSG0("Running %i iterations of %i-element reduction tests (seed = %u).", iters, Nelem, seed);
-
-  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
-  BARRIER();
 
   int color = gex_TM_QueryRank(myteam) & 1; // odds & evens
   size_t scratch_sz = gex_TM_Split(&subtm, myteam, color, 0, 0, 0, GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED);

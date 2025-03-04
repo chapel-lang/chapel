@@ -15,7 +15,53 @@ smp-conduit is extremely portable and should run anywhere with a POSIX-like
 environment and hardware-shared memory.
 
 smp-conduit jobs can be launched directly in the same manner as normal
-POSIX executables - ie on the command line, no spawner script required.
+POSIX executables - ie on the command line, no spawner script is required.
+However, in order to take advantage of the facilities in modern batch systems
+(such as control over CPU, GPU and memory affinity), the provided
+`gasnetrun_smp` script may also be used, as well as launchers like `mpirun` or
+SLURM's `srun`
+
+Optional configure options:
+--------------------------
+
+* --with-smp-spawner=... controls the default value of the environment variable
+  `GASNET_SMP_SPAWNER`, described under "Recognized environment variables".
+
+See the top-level README for information regarding process-shared memory (PSHM)
+support and the associated family of `--(en|dis)able-pshm*` configure options.
+Without PSHM enabled, smp-conduit provides only a single GASNet process.  With
+PSHM, multiple processes can be used on a single host; these will communicate
+through shared memory.
+
+Job spawning:
+-------------
+
+If using UPC++, Chapel, etc. the language-specific commands should be used to
+launch applications.  Otherwise, applications can be launched using the
+gasnetrun_smp utility:
+  + usage summary:
+    gasnetrun_smp -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run
+      -c <n>                 number of cpus per process (not always supported)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=<name>        force use of a specific spawner ([supported spawners])
+      --                     ends option parsing
+
+There are as many as four possible methods (fork, ssh, mpi and pmi) by which
+`gasnetrun_smp` can launch an smp-conduit application.  For more information,
+see the description of the environment variable `GASNET_SMP_SPAWNER`, below.
+That variable's documentation is also applicable to launch via the same MPI or
+PMI launch utilities which `gasnetrun_smp` uses.
+
+As an alternative to using `gasnetrun_smp`, it is also possible to launch an
+smp-conduit application directly on the command line without any utilities.  For
+information on controlling the number of processes in an smp-conduit job
+launched in this manner, see the description of the environment variable
+`GASNET_PSHM_NODES`, below.
 
 Optional compile-time settings:
 ------------------------------
@@ -25,12 +71,43 @@ Optional compile-time settings:
 Recognized environment variables:
 ---------------------------------
 
+* GASNET_SMP_SPAWNER
+  This environment variable determines what job spawner mechanism the
+  application is expected to interact with.  When using the `gasnetrun_smp`
+  utility (described later in this document) this also controls the default job
+  spawner to be used.  However, when *not* using `gasnetrun_smp` is it necessary
+  to ensure this variable is set to match the spawner in use.  Supported values
+  (case insensitive) include:
+  + "fork" - this is the default unless another has been specified at configure
+    time, and selects a built-in job launch mechanism.  See also
+    "GASNET_PSHM_NODES", below.
+  + "mpi" - this selects job launch via `mpirun`, `mpiexec`, or similar as
+    appropriate to the MPI implementation (if any) detected at configure time.
+    This option is only available if a working MPI implementation was detected
+    by `configure`.  See also the mpi-spawner README.
+  + "pmi" - this selects job launch using the PMI family of protocols, via such
+    utilities as `srun` and some `mpirun` implementations.  This option is only
+    available if a PMI client library was detected by `configure`.  See also the
+    pmi-spawner README.
+  + "ssh" - this selects job launch using GASNet-specific logic provided by the
+    `gasnetrun_smp` utility.  Relative to using `ssh directly` (such as via
+    `ssh [host] env GASNET_PSHM_NODES=[n] ./a.out`) this option can automatically
+    identify an allocated `[host]` with many batch systems, and can (via `-E`)
+    provide some control over environment propagation.  See also the ssh-spawner
+    README.
+  Note that when using `gasnetrun_smp`, the optional `-spawner=...` command line
+  option has precedence over this envirnoment variable.
+
 * GASNET_PSHM_NODES 
-  When process-shared memory (PSHM) support is enabled at configure time, this
-  variable controls the number of GASNet smp-conduit processes to fork at job
-  launch within gasnet_init (ie the degree of process parallelism). These
-  processes will communicate through shared memory using PSHM. For more details
-  on enabling and using PSHM support, see the top-level README.
+  When process-shared memory (PSHM) support is enabled at configure time and
+  the application is launched without use of a job spawner (e.g.
+  `gasnetrun_smp`, `mpirun`, `srun`, etc.), this variable controls the number of
+  GASNet smp-conduit processes to fork at job launch.  These processes will
+  communicate through shared memory using PSHM. For more details PSHM support,
+  see the top-level README.
+  If PSHM is enabled but an explicit job spawner is used (see
+  GASNET_SMP_SPAWNER above), this variable is ignored and the spawner-specific
+  command line controls the number of GASNet smp-conduit processes.
   If PSHM is disabled, this variable is ignored and smp-conduit jobs consist of
   only a single process (but the client may still utilize thread-level
   parallelism within that process, in GASNET_PAR mode).
@@ -46,8 +123,19 @@ Known problems:
 * Bug 3480
   It has been observed on Cray systems running CLE6 that following a call to
   munmap(), there may be a delay before the physical page frames are available
-  for reallocation.  For more details see aries-conduit/README (source), or
-  share/doc/gasnet/README-aries (installed).
+  for reallocation.  At startup GASNet normally tries to determine the largest
+  available mmap() region, which is then unmapped, leading to the possibility
+  that subsequent allocation of a large GASNet segment may fail if timing is
+  "just right".  The configure option --enable-bug3480-workaround will enable
+  retries and an additional barrier to prevent the failure mode described
+  above, at the cost of a small additional delay at startup.
+  In this release, the provided cross-configure-cray-xc-* scripts AUTOMATICALLY
+  enable the work-around if CLE6 is detected.  If you do *not* desire the
+  work-around, then you may pass the option --disable-bug3480-workaround to
+  the cross-configure script.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
+  It is currently unknown if this problem is specific to Cray XC systems.
 
 * Bug 3727
   The smp-conduit support for remote atomics is limited to certain datatypes.

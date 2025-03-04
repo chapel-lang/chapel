@@ -1,6 +1,9 @@
 /* Test program for gasnet_portable_platform.h */
 
 #ifdef CONFIG_HEADER
+#ifndef _FORTIFY_SOURCE
+#define _FORTIFY_SOURCE 0 /* avoid a harmless -Wundef warning */
+#endif
 #include CONFIG_HEADER
 #endif
 
@@ -64,7 +67,7 @@ typedef entry_t *snap_t;
 
 #include <gasnet_portable_platform.h>
 
-// handle conditional subfamily definitions
+/* handle conditional subfamily definitions */
 #ifdef PLATFORM_OS_SUBFAMILYNAME
   #define CAPTURE_OS_SUBFAMILY() \
      CAPTURE_TOK(OS_SUBFAMILYNAME),                                                         \

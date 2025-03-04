@@ -188,9 +188,9 @@ compilers, including which GASNet conduits are supported.
 script in other/contrib/ and link it into your top-level source directory and
 invoke it in place of configure.  Example for the Cray XC with slurm:
      cd <path-to-gasnet-src>
-     ln -s other/contrib/cross-configure-cray-aries-slurm .
+     ln -s other/contrib/cross-configure-cray-xc-slurm .
      cd <your-build-dir>
-     <path-to-gasnet-src>/cross-configure-cray-aries-slurm (configure_options)
+     <path-to-gasnet-src>/cross-configure-cray-xc-slurm (configure_options)
 
   For cross-compilation support on platforms without scripts in other/contrib
 see the instructions in other/cross-configure-help.c.
@@ -447,11 +447,6 @@ ofi-conduit: Open Fabrics Interfaces (most providers)
 Native, high-performance conduits:
 ---------------------------------
 
-aries-conduit:  Cray XC Aries [DEPRECATED]
- The conduit of choice for GASNet on the Aries networks in Cray XC systems.
- This conduit is currently deprecated due to lack of machine access that
- prevents testing. It is slated for removal in a future release.
-
 ibv-conduit: InfiniBand Verbs
  GASNet over the OpenFabrics Verbs API.
  Rigorously tested and supported over InfiniBand hardware on all supported systems (see below).
@@ -489,10 +484,6 @@ mpi-conduit:
  In addition to the documentation for the `mpirun` (or equivalent) specific to
  your MPI implementation, see mpi-conduit/README and other/mpi-spawner/README
  for documentation.
-
-aries-conduit:
- By default, this conduit uses PMI for spawning, though MPI is also an option.
- See aries-conduit/README and other/pmi-spawner/README for documentation.
 
 ibv-conduit, ofi-conduit and ucx-conduit:
  These conduits can use ssh, MPI or PMI for spawning.
@@ -584,8 +575,6 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
 
     * CNL/Cray-XE/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi &
     * CNL/Cray-XK/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi &
-
-    * CNL/Cray-XC/{gcc,Intel,Cray}/64: smp, mpi, aries, ofi
 
     * CNL/HPE-Cray-EX/{gcc,Cray}/64: smp, mpi, ofi
 
@@ -684,15 +673,30 @@ these aliases.
   This is subject to the hard limit established by configure --with-max-pthreads-per-node,
   and pthread limits that may be imposed by specific conduits (see conduit README).
 
-* GASNET_SUPERNODE_MAXSIZE - limit on size of a GASNet "supernode".
- This is the maximum number of processes (GASNet "nodes") that will be grouped
- into a shared-memory "supernode", as reported by gasnet_getNodeInfo() and used
- by shared-memory communication (PSHM).  A value of zero means no limit.
+* GASNET_SUPERNODE_MAXSIZE - limit on size of a GASNet "supernode" (aka "neigborhood").
+ This is the maximum number of processes that will be grouped into a shared-memory
+ "supernode"/"neigborhood" used by shared-memory communication (PSHM).  The size and
+ membership of the local neigborhood are reported by gex_System_QueryNbrhdInfo(), and
+ by the legacy gasnet_getNodeInfo().
+ A value of zero (the default) means no limit.
+
+* GASNET_USE_PSHM_SINGLETON - Boolean to control shared memory use in "singleton"
+ neigborhoods (ones with only a single process).  By default, this setting is "0" and
+ a process in a singleton neigborhood will allocate memory using mmap() with the flag
+ MAP_ANONYMOUS (or similar if that is not supported), instead of allocating
+ sharable memory (such as via POSIX or SysV shared memory).
+ This default behavior *may* reduce pressure on limited shared memory pools to
+ potentially enable use of a larger segment and can result in lower-cost page
+ faults (if any) when accessing the segment.  However, it may also disable use
+ of hugepages (if any) which might have occurred otherwise.
+ This variable can be set to "1" to disable this singleton-specific behavior,
+ ensuring that memory allocation in a singleton neigborhood is performed in exactly
+ the same manner as in any other.
 
 * GASNET_PSHM_BARRIER_HIER - Boolean setting to enable/disable hierarchical
  shared-memory barrier.  When shared-memory communication (PSHM) is enabled,
  the default behavior of most of GASNet's barrier implementations is to use a
- two-stage barrier which coordinates within each supernode before
+ two-stage barrier which coordinates within each supernode/neigborhood before
  communicating across the network.
  This variable can be set to "0" to disable this optimization.
 
@@ -900,7 +904,7 @@ these aliases.
 
 * GASNET_HOST_DETECT
  To implement gex_System_QueryHostInfo() and to construct shared-memory
- "nbrhds", GASNet must map the hosts (compute nodes) in a job.  This requires
+ "neigborhoods", GASNet must map the hosts (compute nodes) in a job.  This requires
  a unique identifier for each host.  This string-valued setting selects the
  identifier used.
  The following are implemented for most conduits:
@@ -961,6 +965,9 @@ these aliases.
  Where a conduit documents a "topology-aware environment variable":
     - Values of '[BASE]_TYPE' are matched using case-insensitive comparisons.
     - If '[BASE]_TYPE' is unset, the default value listed above is used.
+    - If '[BASE]_TYPE' begins with "Auto" then automatic device selection is
+      enabled (if available), as documented in the conduit-specific README
+      (including treatment of the computed-name variables described below).
     - If '[BASE]_TYPE' is set to "None" then it, and the computed-name
       variables described below, are ignored and the conduit will use the value
       of the variable '[BASE]', subject to conduit-specific defaults.
@@ -1079,6 +1086,32 @@ these aliases.
       the most common of which is the choice of batch system.
       Documentation for this topic is beyond the scope of this document.
 
+* OPTIONAL: GASNET_HWLOC_QUERY
+ In connection with the "topology-aware environment variables" described above,
+ conduits may use hwloc to query the CPU binding of the process.  When doing so
+ there are two queries which can be used:
+    - GASNET_HWLOC_QUERY="thread" (uses HWLOC_CPUBIND_THREAD)
+      This query returns the "cpuset" of the calling thread, which in
+      GASNet's current usage is the thread running `gex_Client_Init()` or
+      `gasnet_init()`.
+    - GASNET_HWLOC_QUERY="process" (uses HWLOC_CPUBIND_PROCESS)
+      This query returns the "cpuset" of the entire process, including all
+      threads which are members of the process at the time of the call to
+      `gex_Client_Init()` or `gasnet_init()`.
+  Neither is perfect in all circumstances:
+    - Use of "thread" may report a cpuset which is "too narrow" if the calling
+      thread has been bound to a subset of the CPUs to be used in the actual
+      application run.
+    - Use of "process" may report a cpuset which is "too wide" if libraries or
+      user code start their own threads prior to GASNet initialization, which
+      then manipulate their CPU binding to be anything not fully contained in
+      the original cpuset.  This might happen even before `main()` such as via
+      static initializers in C++.
+    - Neither provides accurate information if the CPU binding is modified
+      after initialization of GASNet.
+   The current default is GASNET_HWLOC_QUERY="thread".
+   When a conduit is using hwloc, one may set GASNET_HWLOC_QUERY to either
+   "thread" or "process" (case insensitive) to force one or the other.
 
 * see conduit-specific documentation in conduit directories for more settings
 

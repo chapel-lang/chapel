@@ -114,7 +114,8 @@ static gex_TM_t myteam;
  */
 extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *testsections,
                                    gex_TM_t myteam_arg, void *myseg_arg,
-                                   gex_Rank_t peer_arg, void *peerseg_arg) {
+                                   gex_Rank_t peer_arg, void *peerseg_arg,
+                                   unsigned int seed_arg) {
   test_errs = 0;
   iters = iter_cnt;
   iters2 = (iters <= INT_MAX/100) ? iters*100 : iters;
@@ -126,6 +127,8 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
   myseg = myseg_arg;
   peer = peer_arg;
   peerseg = peerseg_arg;
+
+  TEST_SRAND(seed_arg);
 
 #if !GASNET_SEGMENT_EVERYTHING
   for (gex_Rank_t rank =0; rank < nnodes; rank++) {
@@ -907,10 +910,6 @@ static void progressfn_tester(int *counter) {
   if (!iamactive) return;
 
   /* do some work that should be legal inside a progress fn */
-#if 0
-  if ((gasneti_weakatomic_read(&progressfn_req_sent,0) -
-       gasneti_weakatomic_read(&progressfn_rep_rcvd,0)) <= 128U)
-#endif
   { static int tmp;
     // The outer context in progressfns_test() is performing RMA operations
     // which reference only the bottom halves of our segment and of the
@@ -937,7 +936,9 @@ static void progressfn_tester(int *counter) {
       }
       pf_events[1] = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_GET);
     }
-    if (gasneti_diag_havehandlers) {
+    if (gasneti_diag_havehandlers &&
+        ((gasneti_weakatomic_read(&progressfn_req_sent,0) -
+          gasneti_weakatomic_read(&progressfn_rep_rcvd,0)) <= 128U)) {
       const size_t max_sz = MIN(gex_AM_MaxRequestMedium(myteam, peer, GEX_EVENT_NOW, 0, 0),
                                 MIN(64*1024,region_len));
       for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
@@ -1346,7 +1347,7 @@ static void * thread_fn(void *arg) {
 
 /* ------------------------------------------------------------------------------------ */
 
-#if HAVE_SSH_SPAWNER || HAVE_MPI_SPAWNER || HAVE_PMI_SPAWNER
+#if HAVE_SSH_SPAWNER || HAVE_MPI_SPAWNER || HAVE_PMI_SPAWNER || GASNET_CONDUIT_SMP
 extern gasneti_spawnerfn_t const *gasneti_spawner;
 static void spawner_test(void) {
   if (!gasneti_spawner) {
@@ -1438,7 +1439,7 @@ static void spawner_test(void) {
 
   gasneti_spawner->Cleanup();
 
-  { // SNodeBroadcast
+  { // NbrhdBroadcast
     // We need a constant number of iterations for this collective call.
     // However, gasneti_nodemap_local_count is not always single-valued.
     // So this could double-test some roots
@@ -1446,19 +1447,46 @@ static void spawner_test(void) {
       gex_Rank_t root = gasneti_nodemap_local[i % gasneti_nodemap_local_count];
       for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
         INIT_DATUM(my_datum, i, gasneti_mynode, sz);
-        gasneti_spawner->SNodeBroadcast(my_datum, sz, other_datum, root);
-        CHECK_DATUM(other_datum, i, root, sz, "SNodeBroadcast");
+        gasneti_spawner->NbrhdBroadcast(my_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "NbrhdBroadcast");
       }
     }
   }
 
-  { // SNodeBroadcast (in-place)
+  { // NbrhdBroadcast (in-place)
     for (int i = 0; i < iters1; ++i) {
       gex_Rank_t root = gasneti_nodemap_local[i % gasneti_nodemap_local_count];
       for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
         INIT_DATUM(other_datum, i, gasneti_mynode, sz);
-        gasneti_spawner->SNodeBroadcast(other_datum, sz, other_datum, root);
-        CHECK_DATUM(other_datum, i, root, sz, "SNodeBroadcast (in-place)");
+        gasneti_spawner->NbrhdBroadcast(other_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "NbrhdBroadcast (in-place)");
+      }
+    }
+  }
+
+  gasneti_spawner->Cleanup();
+
+  { // HostBroadcast
+    // We need a constant number of iterations for this collective call.
+    // However, gasneti_myhost.node_count is not always single-valued.
+    // So this could double-test some roots
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = gasneti_myhost.nodes[i % gasneti_myhost.node_count];
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(my_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->HostBroadcast(my_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "HostBroadcast");
+      }
+    }
+  }
+
+  { // HostBroadcast (in-place)
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = gasneti_myhost.nodes[i % gasneti_myhost.node_count];
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(other_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->HostBroadcast(other_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "HostBroadcast (in-place)");
       }
     }
   }

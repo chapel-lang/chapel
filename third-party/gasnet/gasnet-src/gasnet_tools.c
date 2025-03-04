@@ -76,6 +76,8 @@
   #pragma error_messages(off, E_STATEMENT_NOT_REACHED)
 #endif
 
+int _gasneti_unused_result = -1;
+
 /* ------------------------------------------------------------------------------------ */
 /* generic atomics support */
 #if GASNETI_BUILDING_TOOLS && \
@@ -788,16 +790,6 @@ static void gasneti_output_config(void) {
                           " sys=" GASNETT_SYSTEM_TUPLE);
 }
 
-/* Because some glibc headers annotate nearly all system calls
- * with "__attribute__ ((__warn_unused_result__))", we need to
- * do "something" with return values to avoid gcc warnings.
- * Since here in the backtrace code we are dealing with handling
- * of a (presumed fatal) error case, we can't really deal with
- * most errors in any intelligent way.
- * This is a stupid hack to deal with this.
- */
-static int gasneti_rc_unused;
-
 extern void gasneti_error_abort(void) {
   gasneti_internal_crash = 1;
 
@@ -821,7 +813,7 @@ extern void gasneti_error_abort(void) {
     abort();
 
   static const char err[] = "ERROR: abort() returned!\n";
-  gasneti_rc_unused = write(2 /*stderr*/, err, sizeof(err));
+  gasneti_unused_result( write(2 /*stderr*/, err, sizeof(err)) );
   (void)fsync(2);
 
   // ensure this function never returns, even if abort does
@@ -1662,8 +1654,8 @@ static int gasneti_system_redirected(const char *cmd, int stdout_fd) {
 
 
   /* XXX: what if the following two writes fail? */
-  gasneti_rc_unused = write(stdout_fd, cmd, strlen(cmd));
-  gasneti_rc_unused = write(stdout_fd, "\n", 1);
+  gasneti_unused_result( write(stdout_fd, cmd, strlen(cmd)) );
+  gasneti_unused_result( write(stdout_fd, "\n", 1) );
 
   beginpos = lseek(stdout_fd, 0, SEEK_CUR); /* fetch current position */
 
@@ -1737,7 +1729,7 @@ static int gasneti_system_redirected_coprocess(const char *cmd, int stdout_fd) {
 #endif
       int retval = gasneti_system_redirected(cmd, tmpfd);
       if (retval) { /* system call failed - nuke the output */
-        gasneti_rc_unused = ftruncate(tmpfd, 0);
+        gasneti_unused_result( ftruncate(tmpfd, 0) );
       } 
 #if 0 /* gasneti_filesystem_sync() is currenlty a no-op by default */
       gasneti_filesystem_sync(); /* flush output */
@@ -1975,7 +1967,7 @@ out:
         while (fp && fgets(xlstr, sizeof(xlstr), fp)) ; // slurp
         if (!fp || pclose(fp)) {
           const char *msg = "*** Warning: "ADDR2LINE_PATH" is unavailable to translate symbols\n";
-          gasneti_rc_unused = write(fd, msg, strlen(msg));
+          gasneti_unused_result( write(fd, msg, strlen(msg)) );
           addr2line_path = NULL;
         }
       }
@@ -1984,11 +1976,11 @@ out:
       /* XXX: what if the write()s fail? */
       static char linebuf[16];
       snprintf(linebuf, sizeof(linebuf), "%i: ", i);
-      gasneti_rc_unused = write(fd, linebuf, strlen(linebuf));
+      gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) );
 
       if (fnnames) { // note this usually only gets hex addresses, unless linked w/-rdynamic
-        gasneti_rc_unused = write(fd, fnnames[i], strlen(fnnames[i]));
-        gasneti_rc_unused = write(fd, " ", 1);
+        gasneti_unused_result( write(fd, fnnames[i], strlen(fnnames[i])) );
+        gasneti_unused_result( write(fd, " ", 1) );
       }
 
       #if defined(ADDR2LINE_PATH) && !GASNETI_NO_FORK
@@ -2007,7 +1999,7 @@ out:
             while (fgets(xlstr, sizeof(xlstr), xlate)) {
               size_t len = strlen(xlstr);
               if (xlstr[len-1] == '\n') xlstr[len-1] = ' ';
-              gasneti_rc_unused = write(fd, xlstr, len);
+              gasneti_unused_result( write(fd, xlstr, len) );
             }
             pclose(xlate);
           }
@@ -2015,7 +2007,7 @@ out:
         #undef XLBUF
       #endif
 
-      gasneti_rc_unused = write(fd, "\n", 1);
+      gasneti_unused_result( write(fd, "\n", 1) );
     }
     /* if (fnnames) free(fnnames); */
     return 0;
@@ -2224,7 +2216,7 @@ extern int gasneti_print_backtrace(int fd) {
           gasneti_assume(i < sizeof(gasneti_backtrace_mechanisms)/sizeof(gasneti_backtrace_mechanisms[0]));
           if (!strcmp(gasneti_backtrace_mechanisms[i].name,btsel)) {
             snprintf(linep, linelen, "Invoking %s for backtrace...\n", btsel);
-            gasneti_rc_unused = write(fd, linebuf, strlen(linebuf));
+            gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) );
             retval = (*gasneti_backtrace_mechanisms[i].fnp)(tmpfd);
             break;
           }
@@ -2237,7 +2229,7 @@ extern int gasneti_print_backtrace(int fd) {
 	  rewind(file);
 	  while (fgets(linep, linelen, file)) {
             /* XXX: what if this write() fails? */
-            gasneti_rc_unused = write(fd, linebuf, strlen(linebuf)); /* w/ node prefix */
+            gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) ); /* w/ node prefix */
             GASNETT_TRACE_PRINTF_FORCE("%s",linep);/* w/o node prefix */
 	  }
 	  GASNETT_TRACE_PRINTF_FORCE("========== END BACKTRACE ==========");
@@ -2245,9 +2237,9 @@ extern int gasneti_print_backtrace(int fd) {
           break;
         } else { /* backtrace attempt failed - retry with next mechanism */
           snprintf(linep, linelen, "%s backtrace failed! (0x%08x:%d)\n", btsel, retval, retval);
-          gasneti_rc_unused = write(fd, linebuf, strlen(linebuf));
+          gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) );
 	  rewind(file);
-          gasneti_rc_unused = ftruncate(tmpfd, 0); // in case failed backtrace wrote any output
+          gasneti_unused_result( ftruncate(tmpfd, 0) ); // in case failed backtrace wrote any output
 
           // detect and report system configuration issues that may be responsible for backtrace failure
           #if PLATFORM_OS_LINUX && !defined(YAMA_PTRACE_SCOPE)
@@ -2261,9 +2253,9 @@ extern int gasneti_print_backtrace(int fd) {
                   && scope != '0' // 0 = no restrictions
                   && !(scope == '1' && !gasneti_backtrace_prctl)) { // 1 = restricted, only works if prctl succeeded
                 snprintf(linep, linelen, "WARNING: %s=%c may be preventing debugger attach\n", YAMA_PTRACE_SCOPE, scope);
-                gasneti_rc_unused = write(fd, linebuf, strlen(linebuf));
+                gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) );
               }
-              gasneti_rc_unused = close(ptracefd);
+              gasneti_unused_result( close(ptracefd) );
             }
           }
           #endif
@@ -2274,7 +2266,7 @@ extern int gasneti_print_backtrace(int fd) {
             size_t len = sizeof(ptrace);
             if (!sysctl(mib, sizeof(mib)/sizeof(int), &ptrace, &len, NULL, 0) && ptrace == 0) {
                 snprintf(linep, linelen, "WARNING: sysctl kern.global_ptrace=%i may be preventing debugger attach\n", ptrace);
-                gasneti_rc_unused = write(fd, linebuf, strlen(linebuf));
+                gasneti_unused_result( write(fd, linebuf, strlen(linebuf)) );
             }
           }
           #endif
@@ -2691,7 +2683,8 @@ extern void gasneti_envstr_display(const char *key, const char *val, int is_dflt
     gasneti_verboseenv_t *p;
     char tmpstr[255];
     char *displaystr = tmpstr;
-    int width = MAX(10,55 - strlen(key) - strlen(displayval));
+    int width = 55 - strlen(key) - strlen(displayval);
+    width = MAX(10, width);
     int len = snprintf(tmpstr, sizeof(tmpstr), "ENV parameter: %s = %s%*s\n", key, displayval, width, dflt);
     if (len >= sizeof(tmpstr)) { /* Too long for the static buffer */
       displaystr = malloc(len + 1);

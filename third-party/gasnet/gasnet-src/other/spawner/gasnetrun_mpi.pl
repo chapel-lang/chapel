@@ -9,8 +9,10 @@ use strict;
 # NOTE: The shell wrapper must set values for GASNET_SPAWN_CONDUIT and either
 # MPIRUN_CMD or PMIRUN_CMD (as appropriate).
 
-my $spawner_var = 'GASNET_' . $ENV{'GASNET_SPAWN_CONDUIT'} . '_SPAWNER';
+my $conduit = $ENV{'GASNET_SPAWN_CONDUIT'};
+my $spawner_var = 'GASNET_'.$conduit.'_SPAWNER';
 my $cmd_var = uc($ENV{$spawner_var}) . 'RUN_CMD';
+my $pshm_enabled = $ENV{'GASNET_PSHM_ENABLED'} eq 'yes';
 
 my $orig_spawncmd = $ENV{$cmd_var} || 'mpirun -np %N %P %A';
 $orig_spawncmd = stripouterquotes($orig_spawncmd);
@@ -295,7 +297,7 @@ sub usage
     print "      -N <n>                number of nodes to run on (not supported on all mpiruns)\n";
     print "      -c <n>                number of cpus per process (not supported on all mpiruns)\n";
     print "      -E <VAR1[,VAR2...]>   list of environment vars to propagate\n";
-    print "      -v                    enable verbose output, repeated use increases verbosity\\n";
+    print "      -v                    enable verbose output, repeated use increases verbosity\n";
     print "      -t                    test only, don't execute anything (implies -v)\n";
     print "      -k                    keep any temporary files created (implies -v)\n";
     print "      -(no)encode[-args,-env]   use encoding of args, env or both to help with buggy spawners\n";
@@ -388,9 +390,24 @@ sub expand {
 
     print "gasnetrun: identified spawner as: $spawner_desc\n" if ($verbose);
 
-# Validate -n as needed
-    if (!defined($numproc) && $spawncmd =~ /%N/) {
-	usage "Required option -n was not given\n";
+# Validate/default -n as needed
+    if (($conduit eq 'SMP') && ! $pshm_enabled) {
+        if (!defined $numproc) {
+            $numproc = 1;
+        } elsif ($numproc != 1) {
+            die "gasnetrun: smp-conduit without PSHM only supports '-n 1'\n";
+        }
+    } elsif (!defined $numproc && $spawncmd =~ /%N/) {
+        usage "Required option -n was not given\n"
+    }
+
+# Validate/default -N as needed
+    if ($conduit eq 'SMP') {
+        if (!defined $numnode) {
+            $numnode = 1;
+        } elsif ($numnode != 1) {
+            die "gasnetrun: smp-conduit only supports '-N 1'\n";
+        }
     }
 
 # User's MPIRUN_CMD might request over-quoting explicitly

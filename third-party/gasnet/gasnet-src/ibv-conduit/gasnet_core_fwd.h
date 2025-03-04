@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.15
+#define GASNET_CORE_VERSION      2.16
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -129,11 +129,10 @@
 #define GASNET_SUPPORTS_TI_IS_LONG 1
 
   /* uncomment for each {Request,Reply} X {Medium,Long} pair for which your
-     conduit implements the corresponding gasnetc_AM_{Prepare,Commit}*().
-     If unset, a conduit-independent implementation in terms of the internal
-     functions gasnetc_AM{Request,Reply}{Medium,Long}V() will be used, and
-     your conduit must provide the V-suffixed functions for any of these that
-     are not defined.
+     conduit implements the corresponding gasnetc_AM_{Prepare,Commit}*() in
+     a "native" manner which "can avoid one or more payload copies relative
+     to the corresponding fixed-payload AM call under the right conditions".
+     See also "GASNETC_BUILD_NP_*", immediately below.
    */
 #define GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM 1
 #define GASNET_NATIVE_NP_ALLOC_REP_MEDIUM 1
@@ -142,7 +141,25 @@
 #define GASNET_NATIVE_NP_ALLOC_REP_LONG 1
 #endif
 
-  /* uncomment for each GASNET_NATIVE_NP_ALLOC_* enabled above if the Commit function
+  /* conduits may define to '1' (or '0') for {Request,Reply} X {Medium,Long}
+     pairs to force (or prevent) compilation of the corresponding pieces of
+     the conduit-independent reference implementation.
+     If unset, the default is equivalent to '!GASNET_NATIVE_NP_ALLOC_[foo]'.
+     In other words: by default each reference implementation is built if and
+     only if the conduit is not claiming a "native" implementation.
+     This default is correct for most conduits.
+
+     The conduit-independent implementation works in terms of the internal
+     functions gasnetc_AM{Request,Reply}{Medium,Long}V().  Therefore, your
+     conduit must provide the V-suffixed functions for any case with the
+     corresponding GASNETC_BUILD_NP_* equal to '1' (explicitly or by default).
+   */
+/* #define GASNETC_BUILD_NP_REQ_MEDIUM (###) */
+/* #define GASNETC_BUILD_NP_REP_MEDIUM (###) */
+/* #define GASNETC_BUILD_NP_REQ_LONG (###) */
+/* #define GASNETC_BUILD_NP_REP_LONG (###) */
+
+  /* uncomment for each conduit-provided Commit{Req,Rep}{Medium,Long}() which
      has the numargs argument even in an NDEBUG build (it is always passed in
      DEBUG builds).
    */
@@ -165,7 +182,7 @@
      include a call to gasneti_AMPoll (or equivalent) for progress.
      The preferred implementation is to Poll only in the M-suffixed calls
      and not the V-suffixed calls (and GASNETC_REQUESTV_POLLS undefined).
-     Used if (and only if) any of the GASNET_NATIVE_NP_ALLOC_* values above are unset.
+     Used only by reference implementations (if any) of Prepare/Commit.
    */
 /* #define GASNETC_REQUESTV_POLLS 1 */
 

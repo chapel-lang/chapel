@@ -1,6 +1,6 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-Portions copyright 2018-2024, The Regents of the University of California.
+Portions copyright 2018-2025, The Regents of the University of California.
 
 User Information:
 ----------------
@@ -35,6 +35,7 @@ following networks.
   + Intel or Cornelis Networks Omni-Path fabric, via the "psm2" provider
   + HPE Slingshot-10 (100 Gb/s ConnectX-5 NIC), via the "verbs;ofi_rxm" provider
   + HPE Slingshot-11 (200 Gb/s Cassini NIC), via the "cxi" provider
+  + Cray Aries network, via the experimental "gni" provider
 
 The following providers have been used successfully on networks where other
 GASNet conduits are a more appropriate choice. Therefore we do not recommend
@@ -42,7 +43,6 @@ use of these providers in general.
 
   + TCP, via the "sockets" provider
   + UDP, via the "udp;ofi_rxd" provider
-  + Cray Aries, via the "gni" provider
 
 The following providers have not met our expectations (with respect to
 performance or stability) when tested on the listed networks and therefore are
@@ -94,12 +94,12 @@ Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit
 as an alternative to ofi-conduit with the sockets or udp;ofi_rxd providers, as
 the former may provide more favorable performance.
 
-Users with Cray XC hardware are encouraged to consider the GASNet aries-conduit
-as an alternative to ofi-conduit with the gni provider, since the former may
-provide better performance.  Additionally, while the GASNet maintainers have
-seen good results from preliminary testing of this provider with GASNet's
+Users with Cray XC hardware are advised that while the GASNet maintainers have
+seen good results from preliminary testing of the gni provider with GASNet's
 ofi-conduit, nobody has thoroughly validated it.  Therefore, use of the gni
-provider with ofi-conduit should be considered experimental.
+provider with ofi-conduit should be considered experimental.  Additionally,
+lack of access means this provider has not been tested since the 2023.3.0
+release of GASNet-EX.  However, it is recommended over use of mpi-conduit.
 
 The ofi-conduit includes support for memory kinds (`GEX_MK_CLASS_CUDA_UVA` and
 `GASNET_HAVE_MK_CLASS_HIP`) for certain providers and subject to minimum
@@ -325,12 +325,14 @@ the gasnetrun_ofi utility:
     gasnetrun_ofi -n <n> [options] [--] prog [program args]
     options:
       -n <n>                 number of processes to run (required)
-      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -N <N>                 number of nodes to run on (not always supported)
+      -c <n>                 number of cpus per process (not always supported)
       -E <VAR1[,VAR2...]>    list of environment vars to propagate
       -v                     be verbose about what is happening
       -t                     test only, don't execute anything (implies -v)
       -k                     keep any temporary files created (implies -v)
-      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+      -spawner=<name>        force use of a specific spawner ([supported spawners])
+      --                     ends option parsing
 
 There are as many as three possible methods (ssh, mpi and pmi) by which one
 can launch an ofi-conduit application.  Ssh-based spawning is always
@@ -463,12 +465,28 @@ Recognized environment variables:
   Of course, even on the same system, your mileage may vary.
   By default 'GASNET_OFI_DEVICE_TYPE' is "Socket" and all other variables in
   this family are unset.
+  There is currently no support for GASNET_OFI_DEVICE_TYPE == "Auto".
 
 * GASNET_OFI_LIST_DEVICES
   The value is a boolean: "0" to disable or "1" to enable the reporting of
   all supportable provider/device pairs.  In this context, "supportable"
   may be constrained by such factors as the configured provider or use of
   environment variables which constrain provider enumeration.
+  If libhwloc 2.0 or higher was detected at configure time, then this output
+  includes a distance ranking for each device for which the information can
+  be found.  A ranking of "1" denotes the topologically nearest devices (i.e.
+  "first place").  If present, "2" will denote any device(s) less near than the
+  "1" device(s) but nearer than any "3"s, etc.  Note that ties are possible.
+  This ranking of distance depends on libfabric's ability to provide device
+  names (or PCI addresses) which hwloc can recognize, and thus may vary
+  depending on the versions of hwloc and libfabric and on the provider in use.
+  Currently, the status is as follows:
+  + There are no known dependencies on hwloc version.
+  + The `cxi`, `verbs`, `sockets`, `tcp` and `udp` providers are all believed
+    to support applicable devices with their respective supported libfabric
+    versions.
+  + No version of the `psm2` provider (Omni-Path) supports distance ranking.
+  + The status of the `gni` and `efa` providers are unknown.
   See 'GASNET_OFI_LIST_DEVICES_NODES' for how to limit which nodes report.
   The default is "0" (no report).
 
@@ -600,15 +618,19 @@ Known problems:
   Under certain AM traffic patterns, the cxi provider (for the Slingshot-11
   network on some HPE Cray EX systems) has been observed to fail in various
   ways, including crashes and dropped messages.
-  At the time of this writing, the best known work-around is to set
+  At the time of this writing, we recommend updating the Slingshot Host
+  Software to version 2.1.0 or newer.  If that is not possible, an alternative
+  work-around is to set
     GASNET_OFI_RECEIVE_BUFF_SIZE=recv
-  in your environment.  This setting disables use of the "multi-receive"
-  feature of libfabric, and the default for GASNET_OFI_NUM_RECEIVE_BUFFS is
-  adjusted to compensate.
-  Empirical evidence shows this prevents the failures in applications which
-  exhibit them (which is *not* every application).  However, this measurably
-  increases the latency of small AM operations.  So, this should only be used
-  if it is suspected that bug 4461 is impacting your application.
+  in your environment.
+  Empirical evidence shows both alternatives will prevent crashes in
+  applications which exhibit them (which is *not* every application).  However,
+  the possibility of application hangs due to dropped messages remains.
+  Note that the environment setting disables use of the "multi-receive" feature
+  of libfabric, and the default for GASNET_OFI_NUM_RECEIVE_BUFFS is adjusted to
+  compensate.  This measurably increases the latency of small AM operations.
+  So, it should only be used with older Slingshot releases and only if it is
+  suspected that bug 4461 is impacting your application.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4461
 
@@ -731,6 +753,17 @@ Known problems:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4478
   and
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4480
+
+* Bug 4750
+  GASNet supports RMA and AM Long to/from any valid local address, including
+  addresses within the segment of a shared-memory peer when cross-mapped via
+  PSHM. However, it has been observed that with the cxi provider on an HPE
+  Cray EX system, such cross-mapped accesses do not work together with PSHM
+  over XPMEM (not the default).  While not observed directly, we suspect that
+  other providers which register memory with the NIC (e.g. verbs) may also
+  fail when using PSHM over XPMEM.
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4750
 
 * See docs/memory_kinds_implementation.md in the GASNet-EX sources for current
   information regarding known issues with respect to memory kinds support in
