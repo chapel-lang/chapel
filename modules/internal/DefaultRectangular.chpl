@@ -1711,20 +1711,20 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-    inline proc rwLiteral(lit:string) throws {
+    inline proc rwLiteral(f, lit:string) throws {
       if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
     }
 
-    rwLiteral("{");
+    rwLiteral(f, "{");
     var first = true;
     for i in 0..rank-1 {
-      if !first then rwLiteral(", ");
+      if !first then rwLiteral(f, ", ");
       else first = false;
 
       if f._writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
-    rwLiteral("}");
+    rwLiteral(f, "}");
   }
 
   proc DefaultRectangularDom.dsiSerialWrite(f) throws
@@ -1894,13 +1894,13 @@ module DefaultRectangular {
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    inline proc rwLiteral(lit:string) throws {
+    inline proc rwLiteral(f, lit:string) throws {
       if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
     }
 
     proc rwSpaces(dim:int) throws {
       for i in 1..dim {
-        rwLiteral(" ");
+        rwLiteral(f, " ");
       }
     }
 
@@ -1917,9 +1917,9 @@ module DefaultRectangular {
 
       if isjson || ischpl {
         if dim != rank-1 {
-          rwLiteral("[\n");
+          rwLiteral(f, "[\n");
           rwSpaces(dim+1); // space for the next dimension
-        } else rwLiteral("[");
+        } else rwLiteral(f, "[");
       }
 
       if dim == rank-1 {
@@ -1927,8 +1927,8 @@ module DefaultRectangular {
         if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
-          else if isspace then rwLiteral(" ");
-          else if isjson || ischpl then rwLiteral(", ");
+          else if isspace then rwLiteral(f, " ");
+          else if isjson || ischpl then rwLiteral(f, ", ");
           idx(dim) = j;
           if f._writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
@@ -1943,7 +1943,7 @@ module DefaultRectangular {
 
           if isjson || ischpl {
             if j != lastIdx {
-              rwLiteral(",\n");
+              rwLiteral(f, ",\n");
               rwSpaces(dim+1);
             }
           }
@@ -1952,15 +1952,15 @@ module DefaultRectangular {
 
       if isspace {
         if !last && dim != 0 {
-          rwLiteral("\n");
+          rwLiteral(f, "\n");
         }
       } else if isjson || ischpl {
         if dim != rank-1 {
-          rwLiteral("\n");
+          rwLiteral(f, "\n");
           rwSpaces(dim); // space for this dimension
-          rwLiteral("]");
+          rwLiteral(f, "]");
         }
-        else rwLiteral("]");
+        else rwLiteral(f, "]");
       }
     }
 
