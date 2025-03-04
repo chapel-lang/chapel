@@ -1819,7 +1819,7 @@ module DefaultRectangular {
   // formals as needed, to avoid issues with generic parent procs and variable
   // capture.
   // Anna, 2025-03-04
-  proc recursiveArrayReaderWriter(f, arr, dom, helper, in idx, dim=0, in last=false) throws {
+  private proc recursiveArrayReaderWriter(f, arr, dom, helper, in idx, dim=0, in last=false) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
