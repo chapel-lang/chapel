@@ -1942,7 +1942,7 @@ module ChapelArray {
     }
   }
 
-  @unstable("array casts are a new feature, seeking feedback and experience")
+  @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
   operator :(arr: [], type t: []) {
     // Would like to write:
     //   var a: t = [elem in arr] elem:t.eltType;
