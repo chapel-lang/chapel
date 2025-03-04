@@ -4740,27 +4740,31 @@ void Resolver::exit(const Range* range) {
   }
 }
 
-bool Resolver::enter(const uast::Array* arr) {
+bool Resolver::enter(const uast::Array* decl) {
   return true;
 }
-void Resolver::exit(const uast::Array* arr) {
-  auto& re = byPostorder.byAst(arr);
-  std::vector<QualifiedType> eltTypes;
-
-  for (auto elt : arr->exprs()) {
-    eltTypes.push_back(byPostorder.byAst(elt).type());
+void Resolver::exit(const uast::Array* decl) {
+  // Set up element actuals
+  std::vector<CallInfoActual> actuals;
+  for (auto expr : decl->exprs()) {
+    auto exprType = byPostorder.byAst(expr).type();
+    actuals.emplace_back(exprType, UniqueString());
   }
 
-  optional<QualifiedType> unifiedType = commonType(context, eltTypes);
-  if (!unifiedType) {
-    // TODO: create and use error class
-    re.setType(typeErr(arr, "array elements have no common type"));
-    return;
-  }
+  // Call array builder proc in module code
+  static auto arrayBuilderProc =
+      UniqueString::get(context, "chpl__buildArrayExpr");
+  auto ci = CallInfo(/* name */ arrayBuilderProc,
+                     /* calledType */ QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+  auto scope = scopeStack.back();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
-  // TODO: make array type
-  re.setType(QualifiedType(QualifiedType::CONST_VAR,
-                           ArrayType::getGenericArrayType(context)));
+  ResolvedExpression& r = byPostorder.byAst(decl);
+  c.noteResult(&r);
 }
 
 bool Resolver::enter(const uast::Domain* decl) {
