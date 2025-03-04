@@ -1710,11 +1710,15 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
-    inline proc rwLiteral(f, lit:string) throws {
-      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-    }
+  // Workaround: moved out of DefaultRectangularDom.dsiSerialReadWrite and
+  // chpl_serialReadWriteRectangularHelper and added explicit f formal to
+  // work around Dyno nested proc issues.
+  // Anna, 2025-03-04
+  private inline proc rwLiteral(f, lit:string) throws {
+    if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
+  }
 
+  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     rwLiteral(f, "{");
     var first = true;
     for i in 0..rank-1 {
@@ -1898,10 +1902,6 @@ module DefaultRectangular {
     type eltType = arr.eltType;
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
-
-    inline proc rwLiteral(f, lit:string) throws {
-      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-    }
 
     proc rwSpaces(dim:int) throws {
       for i in 1..dim {
