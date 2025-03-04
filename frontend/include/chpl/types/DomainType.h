@@ -48,8 +48,8 @@ class DomainType final : public CompositeType {
    enum Kind {
      Rectangular,
      Associative,
-     // TODO: Sparse,
-     // TODO: Subdomain,
+     Sparse,
+     Subdomain,
      Unknown
    };
 
@@ -90,6 +90,7 @@ class DomainType final : public CompositeType {
   static const ID nonRectangularIdxTypeId;
   static const ID stridesId;
   static const ID parSafeId;
+  static const ID parentDomainId;
 
  public:
 
@@ -109,6 +110,16 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
 
+  /** Return a subdomain type */
+  static const DomainType* getSubdomainType(Context* context,
+                                            const QualifiedType& instance,
+                                            const QualifiedType& parentDomain);
+
+  /** Return a sparse domain type */
+  static const DomainType* getSparseType(Context* context,
+                                         const QualifiedType& instance,
+                                         const QualifiedType& parentDomain);
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getDomainType(context, id(), name(),
@@ -124,6 +135,22 @@ class DomainType final : public CompositeType {
     return kind_;
   }
 
+  bool isSubdomain() const {
+    return kind_ == Kind::Subdomain || kind_ == Kind::Sparse;
+  }
+
+  bool isSparse() const {
+    return kind_ == Kind::Sparse;
+  }
+
+  const DomainType* parentDomain() const {
+    CHPL_ASSERT(isSubdomain());
+    auto parentDom = subs_.at(parentDomainId);
+    CHPL_ASSERT(!parentDom.isUnknownOrErroneous());
+    CHPL_ASSERT(parentDom.type()->isDomainType());
+    return parentDom.type()->toDomainType();
+  }
+
   // Returns the integer representing the rank of this domain. This is more
   // general than `rank`, because `rank` returns the substitution
   // corresponding to the rank, which only exists for rectangular domains.
@@ -131,11 +158,19 @@ class DomainType final : public CompositeType {
   int rankInt() const;
 
   const QualifiedType& rank() const {
+    if (isSubdomain()) {
+      return parentDomain()->rank();
+    }
+
     CHPL_ASSERT(kind_ == Kind::Rectangular);
     return subs_.at(rankId);
   }
 
   const QualifiedType& idxType() const {
+    if (isSubdomain()) {
+      return parentDomain()->idxType();
+    }
+
     if (kind_ == Kind::Rectangular) {
       return subs_.at(rectangularIdxTypeId);
     } else {
@@ -144,11 +179,19 @@ class DomainType final : public CompositeType {
   }
 
   const QualifiedType& strides() const {
+    if (isSubdomain()) {
+      return parentDomain()->strides();
+    }
+
     CHPL_ASSERT(kind_ == Kind::Rectangular);
     return subs_.at(stridesId);
   }
 
   const QualifiedType& parSafe() const {
+    if (isSubdomain()) {
+      return parentDomain()->parSafe();
+    }
+
     CHPL_ASSERT(kind_ == Kind::Associative);
     return subs_.at(parSafeId);
   }
@@ -179,6 +222,8 @@ template<> struct stringify<chpl::types::DomainType::Kind> {
       SWITCH_KIND(DomainType::Kind::Unknown);
       SWITCH_KIND(DomainType::Kind::Associative);
       SWITCH_KIND(DomainType::Kind::Rectangular);
+      SWITCH_KIND(DomainType::Kind::Sparse);
+      SWITCH_KIND(DomainType::Kind::Subdomain);
     }
   }
 };

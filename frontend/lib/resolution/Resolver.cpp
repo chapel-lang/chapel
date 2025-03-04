@@ -1045,6 +1045,7 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
       continue;
     }
     auto fn = candidate.initialForErr();
+    // TODO: this can assert if the fn was resolved but had erroneous type formals
     resolution::FormalActualMap fa(fn, *result.ci);
     auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
@@ -1600,9 +1601,9 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
 }
 
 static bool isValidVarArgCount(QualifiedType paramSize) {
-  if (paramSize.type() == nullptr ||
-      paramSize.type()->isErroneousType()) {
-    return false;
+  // Allow unknown param sizes in case they depend on preceding formals' info
+  if (paramSize.isUnknownOrErroneous()) {
+    return true;
   } else if (paramSize.isParam() == false) {
     return false;
   } else {
@@ -1652,7 +1653,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
     }
 
     if (invalid) {
-      typePtr = ErroneousType::get(context);
+      typePtr = UnknownType::get(context);
     } else {
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
@@ -2882,6 +2883,42 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   return skip;
 }
 
+template <typename ErrorType>
+static void
+resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
+                                      const FnCall* outerCall,
+                                      const FnCall* innerCall,
+                                      UniqueString name,
+                                      ResolvedExpression& noteInto) {
+  auto runResult = rv.context->runAndTrackErrors([&](Context* ctx) {
+    std::vector<const AstNode*> actualAsts;
+    auto ci = CallInfo::create(rv.context, innerCall, rv.byPostorder,
+                               /* raiseErrors */ true,
+                               /* actualAsts */ &actualAsts,
+                               /* moduleScopeId */ nullptr,
+                               /* rename */ name);
+
+    auto skip = shouldSkipCallResolution(&rv, innerCall, actualAsts, ci);
+    if (skip != NONE) {
+      return CallResolutionResult::getEmpty();
+    }
+
+    auto scope = rv.scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+    auto c = rv.resolveGeneratedCall(innerCall, &ci, &inScopes);
+    c.noteResult(&noteInto);
+    return c.result;
+  });
+
+  if (!runResult.ranWithoutErrors()) {
+    auto firstActual = QualifiedType();
+    if (innerCall->numActuals() > 0) {
+      firstActual = rv.byPostorder.byAst(innerCall->actual(0)).type();
+    }
+    rv.context->report(ErrorType::get(std::make_tuple(outerCall, firstActual)));
+  }
+}
+
 bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   if (!call->isFnCall()) return false;
 
@@ -2892,33 +2929,33 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
   auto fnName = fnCall->calledExpression()->toIdentifier()->name();
   if (fnName == "index") {
-    auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-      std::vector<const AstNode*> actualAsts;
-      auto ci = CallInfo::create(context, call, byPostorder,
-                                 /* raiseErrors */ true,
-                                 /* actualAsts */ &actualAsts,
-                                 /* moduleScopeId */ nullptr,
-                                 /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
-
-      auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
-      if (skip != NONE) {
-        return CallResolutionResult::getEmpty();
+    resolveSpecialKeywordCallAsNormalCall<ErrorInvalidIndexCall>(
+        *this, fnCall, fnCall, UniqueString::get(context, "chpl__buildIndexType"), r);
+    return true;
+  } else if (fnName == "subdomain") {
+    // check if we're inside a 'sparse subdomain' call, in which case we should
+    // do nothing.
+    CHPL_ASSERT(callNodeStack.size() >= 2);
+    CHPL_ASSERT(callNodeStack.back() == fnCall);
+    auto parentCall = callNodeStack[callNodeStack.size() - 2];
+    if (parentCall->numActuals() == 1 && parentCall->actual(0) == fnCall) {
+      if (auto parentFnCall = parentCall->toFnCall()) {
+        if (parentFnCall->calledExpression()->isIdentifier() &&
+            parentFnCall->calledExpression()->toIdentifier()->name() == "sparse") {
+          return true;
+        }
       }
-
-      auto scope = scopeStack.back();
-      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-      auto c = resolveGeneratedCall(call, &ci, &inScopes);
-      c.noteResult(&r);
-      return c.result;
-    });
-
-    if (!runResult.ranWithoutErrors()) {
-      auto firstActual = QualifiedType();
-      if (call->numActuals() > 0) {
-        firstActual = byPostorder.byAst(call->actual(0)).type();
-      }
-      CHPL_REPORT(context, InvalidIndexCall, fnCall, firstActual);
     }
+
+    resolveSpecialKeywordCallAsNormalCall<ErrorInvalidSubdomainCall>(
+        *this, fnCall, fnCall, UniqueString::get(context, "chpl__buildSubDomainType"), r);
+    return true;
+  } else if (fnName == "sparse") {
+    CHPL_ASSERT(fnCall->numActuals() == 1);
+    CHPL_ASSERT(fnCall->actual(0)->isFnCall());
+    resolveSpecialKeywordCallAsNormalCall<ErrorInvalidSparseSubdomainCall>(
+        *this, fnCall, fnCall->actual(0)->toFnCall(),
+        UniqueString::get(context, "chpl__buildSparseDomainRuntimeTypeForParentDomain"), r);
     return true;
   } else if (fnName == "domain") {
     auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
