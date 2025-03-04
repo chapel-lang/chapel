@@ -1811,6 +1811,47 @@ module DefaultRectangular {
     else return f.deserializerType != nothing;
   }
 
+  // Workaround: Moved out of chpl_serialReadWriteRectangularHelper and added
+  // formals as needed, to avoid issues with generic parent procs and variable
+  // capture.
+  // Anna, 2025-03-04
+  proc recursiveArrayReaderWriter(f, arr, dom, helper, in idx, dim=0, in last=false) throws {
+    param rank = arr.rank;
+    type idxType = arr.idxType;
+    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+
+    type strType = idxSignedType;
+    const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
+
+    if f._writing then
+      helper.startDim(dom.dsiDim(dim).size);
+    else
+      helper.startDim();
+
+    // The simple 1D case
+    if dim == rank-1 {
+      for j in dom.dsiDim(dim) by makeStridePositive {
+        idx(dim) = j;
+        if f._writing then
+          helper.writeElement(arr.dsiAccess(idx));
+        else {
+          arr.dsiAccess(idx) = helper.readElement(arr.eltType);
+        }
+      }
+    } else {
+      for j in dom.dsiDim(dim) by makeStridePositive {
+        var lastIdx =  dom.dsiDim(dim).last;
+        idx(dim) = j;
+
+        recursiveArrayReaderWriter(f, arr, dom, helper, idx, dim=dim+1,
+                             last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
+
+      }
+    }
+
+    helper.endDim();
+  }
+
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
   where _supportsSerializers(f) {
     param rank = arr.rank;
@@ -1821,42 +1862,6 @@ module DefaultRectangular {
       f.serializer.startArray(f, dom.dsiNumIndices:int)
     else
       f.deserializer.startArray(f);
-
-    // Added extraneous rank formal to work around dyno lack of outer variable
-    // capture in nested procs. Anna, 2025-03-03
-    proc recursiveArrayReaderWriter(param rank, in idx: rank*idxType, dim=0, in last=false) throws {
-
-      type strType = idxSignedType;
-      const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
-
-      if f._writing then
-        helper.startDim(dom.dsiDim(dim).size);
-      else
-        helper.startDim();
-
-      // The simple 1D case
-      if dim == rank-1 {
-        for j in dom.dsiDim(dim) by makeStridePositive {
-          idx(dim) = j;
-          if f._writing then
-            helper.writeElement(arr.dsiAccess(idx));
-          else {
-            arr.dsiAccess(idx) = helper.readElement(arr.eltType);
-          }
-        }
-      } else {
-        for j in dom.dsiDim(dim) by makeStridePositive {
-          var lastIdx =  dom.dsiDim(dim).last;
-          idx(dim) = j;
-
-          recursiveArrayReaderWriter(rank, idx, dim=dim+1,
-                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
-
-        }
-      }
-
-      helper.endDim();
-    }
 
     use Reflection;
     var dummy : c_ptr(arr.eltType);
@@ -1879,8 +1884,8 @@ module DefaultRectangular {
         helper.readBulkElements(ptr, len);
     } else {
       // Otherwise, recursively read or write the array
-      const zeroTup: rank*idxType;
-      recursiveArrayReaderWriter(rank, zeroTup);
+      const zeroTup: arr.rank*arr.idxType;
+      recursiveArrayReaderWriter(f, arr, dom, helper, zeroTup);
     }
 
     helper.endArray();
@@ -1904,7 +1909,7 @@ module DefaultRectangular {
       }
     }
 
-    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dom: domain, dim=0, in last=false) throws {
 
       var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1938,7 +1943,7 @@ module DefaultRectangular {
           var lastIdx =  dom.dsiDim(dim).last;
           idx(dim) = j;
 
-          recursiveArrayReaderWriter(idx, dim=dim+1,
+          recursiveArrayReaderWriter(idx, dom, dim=dim+1,
                                last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
 
           if isjson || ischpl {
@@ -1995,7 +2000,7 @@ module DefaultRectangular {
       }
     } else {
       const zeroTup: rank*idxType;
-      recursiveArrayReaderWriter(zeroTup);
+      recursiveArrayReaderWriter(zeroTup, dom);
     }
   }
 
