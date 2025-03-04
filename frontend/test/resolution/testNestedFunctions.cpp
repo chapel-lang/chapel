@@ -642,6 +642,34 @@ static void test13(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
+static void test14(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    proc test() {
+      extern type time_t;
+      extern type suseconds_t;
+
+      record timeval {
+        var tv_sec: time_t;
+        var tv_usec: suseconds_t;
+      }
+
+      // TODO: fix initialization of nested types
+      pragma "no init"
+      var tv : timeval;
+      var ret = __primitive("cast", int, tv.tv_sec);
+      return ret;
+    }
+
+    var x = test();
+    )""";
+
+  std::ignore = resolveTypeOfX(ctx, program);
+}
+
 int main() {
   auto context = buildStdContext();
   Context* ctx = turnOnWarnUnstable(context);
@@ -664,6 +692,7 @@ int main() {
   test12(ctx);
   test12b(ctx);
   test13(ctx);
+  test14(ctx);
 
   return 0;
 }
