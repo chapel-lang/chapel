@@ -6519,7 +6519,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
   iterand->traverse(*this);
 
   bool shapedLikeArray = false;
-  if ((shapedLikeArray = isShapedLikeArray(loop))) {
+  if (!scopeResolveOnly && (shapedLikeArray = isShapedLikeArray(loop))) {
     // Array expressions and bracket loops can look very similar.
     // For array type expressions, we do not need to go through the
     // iterator/'these' logic handled below. Resolve the body so we can check
