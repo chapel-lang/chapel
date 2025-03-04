@@ -98,7 +98,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_DEALLOC)
 
 #define chpl_MAKE_REPR(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static PyObject* Array##NAMESUFFIX##Object_repr(Array##NAMESUFFIX##Object* self) { \
-    return PyUnicode_FromFormat("Array(eltType="CHAPELDATATYPE",size=%zd)", self->size); \
+    return PyUnicode_FromFormat("Array(eltType=" CHAPELDATATYPE ",size=%zd)", self->size); \
   }
 chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 #undef chpl_MAKE_REPR
@@ -111,7 +111,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
       return -1; \
     } \
     if (!CHECKTYPE(value)) { \
-      PyErr_SetString(PyExc_TypeError, "can only assign "CHAPELDATATYPE" to this array"); \
+      PyErr_SetString(PyExc_TypeError, "can only assign " CHAPELDATATYPE " to this array"); \
       return -1; \
     } \
     DATATYPE val = ASTYPE(value); \
@@ -133,7 +133,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
       return -1; \
     } \
     if (!CHECKTYPE(value)) { \
-      PyErr_SetString(PyExc_TypeError, "can only assign "CHAPELDATATYPE" to this array"); \
+      PyErr_SetString(PyExc_TypeError, "can only assign " CHAPELDATATYPE " to this array"); \
       return -1; \
     } \
     DATATYPE val = ASTYPE(value); \
