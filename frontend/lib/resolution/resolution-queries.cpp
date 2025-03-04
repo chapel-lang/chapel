@@ -944,7 +944,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(fieldsForTypeDeclQuery, rc, ct, defaultsPolicy, syntaxOnly);
   auto context = rc->context();
 
-  QUERY_REGISTER_TRACER(
+  CHPL_RESOLUTION_QUERY_REGISTER_TRACER(
     auto& id = std::get<0>(args)->id();
     auto typeName = std::get<0>(args)->name();
     auto traceText = std::string("resolving the fields of type '")

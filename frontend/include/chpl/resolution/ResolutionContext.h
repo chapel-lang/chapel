@@ -509,6 +509,11 @@ class ResolutionContext::GlobalQuery {
   bool hasCurrentResult() {
     return context_->hasCurrentResultForQuery(QUERY, ap_);
   }
+
+  template <typename FN>
+  void registerTracer(FN&& fn) {
+    beginMap_->registerTracer(fn);
+  }
 };
 
 template <auto F, typename InvokeArgsTuple>
@@ -633,10 +638,16 @@ class ResolutionContext::Query {
       uc.store(rc_, std::move(x), global_.args());
     }
   }
+
+  template <typename FN>
+  void registerTracer(FN&& fn) {
+    global_.registerTracer(fn);
+  }
 };
 
 ResolutionContext createDummyRC(Context* context);
 
+// TODO: Find a better way to get __rcTUple type for later use in TRACER
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
     of a query from being cached in the context query cache if the computed
     result could rely on state taken from the type 'ResolutionContext'.
@@ -648,6 +659,8 @@ ResolutionContext createDummyRC(Context* context);
     the associated 'ResolutionContext::Frame'.
 */
 #define CHPL_RESOLUTION_QUERY_BEGIN(fn__, rc__, ...) \
+  auto __rcTuple = std::make_tuple(__VA_ARGS__); \
+  std::ignore = __rcTuple; \
   auto rcquery__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
   if (auto ptr__ = rcquery__.begin()) return *ptr__;
 
@@ -670,6 +683,11 @@ ResolutionContext createDummyRC(Context* context);
     auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
     return rcq__.isGlobalQueryRunning(); \
   }())
+
+#define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody) \
+  rcquery__.registerTracer([](const decltype(__rcTuple)& args) { \
+      tracerBody; \
+  });
 
 } // end namespace resolution
 } // end namespace chpl
