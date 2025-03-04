@@ -30,6 +30,7 @@
 #include <stddef.h> // for ptrdiff_t
 #include <string.h>
 #include <sys/time.h> // for struct timeval
+#include <wchar.h> // for wchar_t
 
 #include <complex.h>
 typedef float _Complex        _complex64;
