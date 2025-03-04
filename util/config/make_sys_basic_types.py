@@ -194,7 +194,7 @@ def get_sys_c_types(docs=False,minimal=False):
         sys_c_types.append('/* The Chapel type corresponding to the C \'{c_type}\' type'
                            ' */'.format(**locals()))
         if is_unstable:
-            sys_c_types.append('@unstable("\'{c_type}\' is not unstable")'.format(**locals()))
+            sys_c_types.append('@unstable("\'{c_type}\' is unstable")'.format(**locals()))
         stmt = 'extern type {chpl_type}= '.format(**locals())
         if docs:
             stmt += 'integral'
