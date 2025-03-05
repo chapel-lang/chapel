@@ -1,0 +1,28 @@
+BasedOnStyle: LLVM
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+AttributeMacros: ['Q_UNUSED', 'STACKLEFT_NOINLINE', 'API_FUNC']
+BinPackArguments: false
+BinPackParameters: false
+BreakArrays: false
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+EmptyLineBeforeAccessModifier: Never
+IncludeIsMainRegex: ''
+IndentCaseLabels: true
+InsertNewlineAtEOF: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+KeepEmptyLinesAtEOF: true
+QualifierAlignment: Right
+RemoveSemicolon: true
+SeparateDefinitionBlocks: Always
+SortIncludes: CaseInsensitive
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeRangeBasedForLoopColon: false
+SpacesInContainerLiterals: false
+

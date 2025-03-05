@@ -1,15 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#define QTHREAD_NO_ASSERTS 1
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if (HAVE_MEMALIGN && HAVE_MALLOC_H)
-#include <malloc.h> /* for memalign() */
-#endif
 
 #include "qt_alloc.h"
 #include "qt_asserts.h"

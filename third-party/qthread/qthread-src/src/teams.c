@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* The API */
 #include "qthread/qthread.h"
 
@@ -28,7 +24,7 @@ static qt_mpool generic_team_pool = NULL;
 static void qt_internal_teams_shutdown(void);
 static void qt_internal_teams_destroy(void);
 
-void INTERNAL qt_internal_teams_init(void) { /*{{{*/
+void INTERNAL qt_internal_teams_init(void) {
   qlib->max_team_id = 2; /* team 1 is reserved for the default team */
   qlib->team_count = 0;  /* count of existing teams */
   QTHREAD_FASTLOCK_INIT(qlib->max_team_id_lock);
@@ -36,35 +32,35 @@ void INTERNAL qt_internal_teams_init(void) { /*{{{*/
   generic_team_pool = qt_mpool_create(sizeof(qt_team_t));
   qthread_internal_cleanup(qt_internal_teams_shutdown);
   qthread_internal_cleanup_late(qt_internal_teams_destroy);
-} /*}}}*/
+}
 
 void INTERNAL qt_internal_teams_reclaim(void) {
   // Wait for all team structures to be reclaimed.
   while (qlib->team_count) { qthread_yield(); }
 }
 
-static void qt_internal_teams_shutdown(void) { /*{{{*/ } /*}}}*/
+static void qt_internal_teams_shutdown(void) {}
 
-static void qt_internal_teams_destroy(void) { /*{{{*/
+static void qt_internal_teams_destroy(void) {
   QTHREAD_FASTLOCK_DESTROY(qlib->max_team_id_lock);
   qt_mpool_destroy(generic_team_pool);
   generic_team_pool = NULL;
-} /*}}}*/
+}
 
 /* Returns the team id. If there is no team structure associated with the task,
  * it is considered to be in the default team with id 1. */
-unsigned int API_FUNC qt_team_id(void) { /*{{{*/
+unsigned int API_FUNC qt_team_id(void) {
   assert(qthread_library_initialized);
   qthread_t *t = qthread_internal_self();
 
   return t ? (t->team ? t->team->team_id : QTHREAD_DEFAULT_TEAM_ID)
            : QTHREAD_NON_TEAM_ID;
-} /*}}}*/
+}
 
 /* Returns the parent team id. If there is no team structure associated with
  * the task, it is considered to be in the default team with id, and to have
  * no parent (id 0). */
-unsigned int API_FUNC qt_team_parent_id(void) { /*{{{*/
+unsigned int API_FUNC qt_team_parent_id(void) {
   if (NULL != qlib) {
     qthread_t *self = qthread_internal_self();
 
@@ -76,12 +72,11 @@ unsigned int API_FUNC qt_team_parent_id(void) { /*{{{*/
   } else {
     return 0;
   }
-} /*}}}*/
+}
 
 // This is called in `qthread_wrapper()` immediately after each team task
 // returns.
-void INTERNAL qt_internal_teamfinish(qt_team_t *team,
-                                     uint_fast8_t flags) { /*{{{*/
+void INTERNAL qt_internal_teamfinish(qt_team_t *team, uint_fast8_t flags) {
   assert(team != NULL);
 
   if (QTHREAD_TEAM_LEADER & flags) {
@@ -112,7 +107,8 @@ void INTERNAL qt_internal_teamfinish(qt_team_t *team,
 
       FREE_TEAM(team);
 
-      qthread_internal_incr(&(qlib->team_count), &qlib->team_count_lock, -1);
+      qthread_internal_incr(
+        &(qlib->team_count), &qlib->team_count_lock, (aligned_t)-1);
     } else {
       // 1.2. This task is a subteam leader
       assert(team->sinc);
@@ -178,7 +174,8 @@ void INTERNAL qt_internal_teamfinish(qt_team_t *team,
 
       FREE_TEAM(team);
 
-      qthread_internal_incr(&(qlib->team_count), &qlib->team_count_lock, -1);
+      qthread_internal_incr(
+        &(qlib->team_count), &qlib->team_count_lock, (aligned_t)-1);
     }
 
   } else {
@@ -188,9 +185,9 @@ void INTERNAL qt_internal_teamfinish(qt_team_t *team,
     // Submit to the team sinc
     qt_sinc_submit(team->sinc, NULL);
   }
-} /*}}}*/
+}
 
-static aligned_t qt_team_watcher(void *args_) { /*{{{*/
+static aligned_t qt_team_watcher(void *args_) {
   aligned_t code = 0;
   unsigned int myteam = qt_team_id();
 
@@ -223,12 +220,12 @@ static aligned_t qt_team_watcher(void *args_) { /*{{{*/
   } while (1);
 
   return 0;
-} /*}}}*/
+}
 
 qt_team_t INTERNAL *qt_internal_team_new(void *restrict ret,
                                          unsigned int feature_flag,
                                          qt_team_t *restrict curr_team,
-                                         unsigned int parent_id) { /*{{{*/
+                                         unsigned int parent_id) {
   // Allocate new team structure
   qt_team_t *new_team = ALLOC_TEAM();
   assert(new_team);
@@ -269,12 +266,12 @@ qt_team_t INTERNAL *qt_internal_team_new(void *restrict ret,
   }
 
   return new_team;
-} /*}}}*/
+}
 
-void INTERNAL qt_internal_subteam_leader(qthread_t *t) { /*{{{*/
+void INTERNAL qt_internal_subteam_leader(qthread_t *t) {
   qthread_empty(&t->team->watcher_started);
   qthread_fork(qt_team_watcher, t->team, NULL);
   qthread_readFF(NULL, &t->team->watcher_started);
-} /*}}}*/
+}
 
 /* vim:set expandtab: */
