@@ -225,6 +225,7 @@ struct ClangInfo {
   int charSizeInBits;
   int shortSizeInBits;
   int ptrSizeInBits;
+  int wideCharSizeInBits;
 
   ClangInfo(
     std::string clangCcIn,
@@ -258,7 +259,8 @@ ClangInfo::ClangInfo(
          longLongSizeInBits(0),
          charSizeInBits(0),
          shortSizeInBits(0),
-         ptrSizeInBits(0)
+         ptrSizeInBits(0),
+         wideCharSizeInBits(0)
 {
 }
 
@@ -383,6 +385,7 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     clangInfo->charSizeInBits = Ctx->getTypeSize(Ctx->CharTy.getTypePtr());
     clangInfo->shortSizeInBits = Ctx->getTypeSize(Ctx->ShortTy.getTypePtr());
     clangInfo->ptrSizeInBits = Ctx->getTypeSize(Ctx->VoidPtrTy.getTypePtr());
+    clangInfo->wideCharSizeInBits = Ctx->getTypeSize(Ctx->WideCharTy.getTypePtr());
 
     setupCIntType(dt_c_int, clangInfo->intSizeInBits, false);
     setupCIntType(dt_c_uint, clangInfo->intSizeInBits, true);
@@ -400,6 +403,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     setupCIntType(dt_c_uintptr, clangInfo->ptrSizeInBits, true);
     setupCIntType(dt_ssize_t, clangInfo->ptrSizeInBits, false);
     setupCIntType(dt_size_t, clangInfo->ptrSizeInBits, true);
+    // wchar may/may not be signed, depending on the platform
+    setupCIntType(dt_wchar, clangInfo->wideCharSizeInBits,
+      Ctx->WideCharTy.getTypePtr()->isUnsignedIntegerType());
+
 
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);

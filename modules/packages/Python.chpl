@@ -2588,8 +2588,7 @@ module Python {
 
   @chpldoc.nodoc
   module CWChar {
-    require "PythonHelper/chpl_wchar.h";
-    extern "wchar_t" type c_wchar;
+    require "wchar.h";
     private use CTypes;
 
     /*
@@ -2597,12 +2596,12 @@ module Python {
 
       This allocates a new buffer, the caller is responsible for freeing it.
     */
-    proc string.c_wstr(): c_ptr(c_wchar) {
-      extern proc mbstowcs(dest: c_ptr(c_wchar),
+    proc string.c_wstr(): c_ptr(c_wchar_t) {
+      extern proc mbstowcs(dest: c_ptr(c_wchar_t),
                            src: c_ptrConst(c_char),
                            n: c_size_t): c_size_t;
       var len: c_size_t = this.size.safeCast(c_size_t);
-      var buf = allocate(c_wchar, len + 1, clear=true);
+      var buf = allocate(c_wchar_t, len + 1, clear=true);
       mbstowcs(buf, this.c_str(), len);
       return buf;
     }
@@ -2642,14 +2641,14 @@ module Python {
     extern record PyConfig {
       var isolated: c_int;
       var use_environment: c_int;
-      var filesystem_encoding: c_ptr(c_wchar);
+      var filesystem_encoding: c_ptr(c_wchar_t);
       var site_import: c_int;
       var user_site_directory: c_int;
-      var program_name: c_ptr(c_wchar);
-      var home: c_ptr(c_wchar);
+      var program_name: c_ptr(c_wchar_t);
+      var home: c_ptr(c_wchar_t);
       var module_search_paths_set: c_int;
       var module_search_paths: PyWideStringList;
-      var executable: c_ptr(c_wchar);
+      var executable: c_ptr(c_wchar_t);
     }
     extern proc PyConfig_Clear(config_: c_ptr(PyConfig));
     extern proc PyConfig_Read(config_: c_ptr(PyConfig)): PyStatus;
@@ -2657,18 +2656,18 @@ module Python {
     extern proc PyConfig_InitPythonConfig(config_: c_ptr(PyConfig));
 
     extern proc PyConfig_SetString(config_: c_ptr(PyConfig),
-                                   config_str: c_ptr(c_ptr(c_wchar)),
-                                   str: c_ptr(c_wchar)): PyStatus;
+                                   config_str: c_ptr(c_ptr(c_wchar_t)),
+                                   str: c_ptr(c_wchar_t)): PyStatus;
     extern proc PyConfig_SetBytesString(config_: c_ptr(PyConfig),
-                                        config_str: c_ptr(c_ptr(c_wchar)),
+                                        config_str: c_ptr(c_ptr(c_wchar_t)),
                                         str: c_ptrConst(c_char)): PyStatus;
 
     extern type PyWideStringList;
     extern proc PyWideStringList_Append(list: c_ptr(PyWideStringList),
-                                        str: c_ptr(c_wchar)): PyStatus;
+                                        str: c_ptr(c_wchar_t)): PyStatus;
     extern proc PyWideStringList_Insert(list: c_ptr(PyWideStringList),
                                         idx: c_int,
-                                        str: c_ptr(c_wchar)): PyStatus;
+                                        str: c_ptr(c_wchar_t)): PyStatus;
 
     /*
       PyPreConfig

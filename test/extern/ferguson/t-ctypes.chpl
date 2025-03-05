@@ -16,6 +16,7 @@ var v_c_uintptr: c_uintptr = 0;
 var v_c_ptrdiff: c_ptrdiff = 0;
 var v_c_ssize_t: c_ssize_t = 0;
 var v_c_size_t: c_size_t = 0;
+var v_c_wchar: c_wchar_t = 0;
 
 writeln(v_c_int);
 writeln(v_c_uint);
@@ -33,4 +34,5 @@ writeln(v_c_uintptr);
 writeln(v_c_ptrdiff);
 writeln(v_c_ssize_t);
 writeln(v_c_size_t);
+writeln(v_c_wchar);
 
