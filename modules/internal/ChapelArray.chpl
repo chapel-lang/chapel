@@ -1943,30 +1943,21 @@ module ChapelArray {
   }
 
   @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
-  operator :(arr: [], type t: []) {
-    // Would like to write:
-    //   var a: t = [elem in arr] elem:t.eltType;
-    // but we don't support type queries on array types (yet)
-    // (see https://github.com/chapel-lang/chapel/issues/8543)
-    var a: t;
+  operator :(rhs: [], type t: []) {
+    var res: t;
 
-    if !arr.isRectangular() || !a.isRectangular() {
+    if !rhs.isRectangular() || !res.isRectangular() {
       compilerError("Casts between arrays only support rectangular arrays");
-    } else if arr.rank != a.rank {
+    } else if rhs.rank != res.rank {
       compilerError("Casts between arrays require matching ranks");
     } else {
-      if isArrayType(a.eltType) {
-        compilerWarning("A: " + a.eltType:string);
-        forall (i,j) in zip(a.domain, arr.domain) {
-          a[i] = arr[j]:a[i].type;
-        }
-      } else {
-        compilerWarning("B: " + a.eltType:string);
-        a = [elem in arr] elem:a.eltType;
+      type resType = res.eltType;
+      forall (i,j) in zip(res.domain, rhs.domain) {
+        res[i] = rhs[j]:resType;
       }
     }
 
-    return a;
+    return res;
   }
 
   // The same as the built-in _cast, except accepts a param arg.

@@ -25,9 +25,11 @@ proc check(arr) {
 
 proc checkhelp(arr) {
   if !isArrayType(arr.eltType) then
-    writeln(arr);
-  else
-    for a in arr do
+    write(arr);
+  else {
+    for a in arr {
       checkhelp(a);
-      
+      writeln();
+    }
+  }
 }
