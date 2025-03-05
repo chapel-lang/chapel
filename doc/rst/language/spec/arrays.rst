@@ -190,6 +190,10 @@ row.
      [ expression-list , ; ]
      [ expression-list semicolon-list rectangular-array-literal ]
      [ expression-list semicolon-list rectangular-array-literal ; ]
+   semicolon-list:
+    ;
+    semicolon-list ;
+
 
 ..
 
