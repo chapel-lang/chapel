@@ -645,7 +645,12 @@ class ResolutionContext::Query {
   }
 };
 
+// TODO: This is meant as a temporary placeholder/sentinel for cases where we
+// currently don't have access to a pre-existing ResolutionContext. Eventually
+// uses of this function, and the function itself, should be removed.
+/// \cond DO_NOT_DOCUMENT
 ResolutionContext createDummyRC(Context* context);
+/// \endcond DO_NOT_DOCUMENT
 
 // TODO: Find a better way to get __rcTUple type for later use in TRACER
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
