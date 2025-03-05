@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Copyright 2025-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,8 +50,6 @@ class ArrayRow final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  // void dumpInner(const DumpSettings& s) const;
-
  public:
   ~ArrayRow() override = default;
 
@@ -61,7 +59,7 @@ class ArrayRow final : public AstNode {
   static owned<ArrayRow> build(Builder* builder, Location loc, AstList exprs);
 
   /**
-    Return a way to iterate over the expressions of this array.
+    Return a way to iterate over the expressions of this array row.
   */
   AstListIteratorPair<AstNode> exprs() const {
     return AstListIteratorPair<AstNode>(children_.begin(),
@@ -69,14 +67,14 @@ class ArrayRow final : public AstNode {
   }
 
   /**
-    Return the number of expressions in this array.
+    Return the number of expressions in this array row.
   */
   int numExprs() const {
     return this->numChildren();
   }
 
   /**
-    Return the i'th expression in this array.
+    Return the i'th expression in this array row.
   */
   const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);

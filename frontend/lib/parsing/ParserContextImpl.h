@@ -782,7 +782,6 @@ struct BuildArrayRowsContext {
       }
     }
     if (!errorSingleSeparatorIdx.empty()) {
-      // inconsistent number of multi-dimensional array separators
       for (auto i : errorSingleSeparatorIdx) {
         context->error(
           (*lst)[i].location,
