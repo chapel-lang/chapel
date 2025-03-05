@@ -191,9 +191,9 @@ module ChplFormat {
 
         if _arrayMax >= _arrayDim then
           writer.writeLiteral(";");
-        else 
+        else
           _arrayMax = _arrayDim;
-        
+
       }
       proc ref endDim() throws {
         _arrayDim -= 1;
