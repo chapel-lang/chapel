@@ -365,6 +365,9 @@ Resolver::createForFunction(ResolutionContext* rc,
   ret.fnBody = fn->body();
   ret.rc = rc;
 
+  // TODO: Stop copying these back in.
+  ret.outerVariables = typedFnSignature->outerVariables();
+
   // Push a 'ResolutionContext::Frame' for the function we are resolving.
   ret.rc->pushFrame(&ret, ResolutionContext::Frame::FUNCTION);
   ret.didPushFrame = true;
