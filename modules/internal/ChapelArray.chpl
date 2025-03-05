@@ -2165,7 +2165,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a, b,forSwap=false, forCast=false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap=false, forCast=false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = if isProtoSlice(a) then a.dims()
                                        else a._value.dom.dsiDims();
