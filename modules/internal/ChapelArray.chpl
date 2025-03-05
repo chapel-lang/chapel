@@ -1955,7 +1955,13 @@ module ChapelArray {
     } else if arr.rank != a.rank {
       compilerError("Casts between arrays require matching ranks");
     } else {
-      a = [elem in arr] elem:a.eltType;
+      if isArrayType(a.eltType) {
+        forall (i,j) in zip(a.domain, arr.domain) {
+          a[i] = arr[j]:a[i].eltType;
+        }
+      } else {
+        a = [elem in arr] elem:a.eltType;
+      }
     }
 
     return a;
