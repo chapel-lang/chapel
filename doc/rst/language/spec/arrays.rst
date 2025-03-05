@@ -188,8 +188,12 @@ row.
      [ expression-list , ]
      [ expression-list ; ]
      [ expression-list , ; ]
-     [ expression-list semicolon-list rectangular-array-literal ]
-     [ expression-list semicolon-list rectangular-array-literal ; ]
+     [ multi-dimensional-array-literal-inner ]
+     [ multi-dimensional-array-literal-inner ; ]
+    
+   multi-dimensional-array-literal-inner:
+      expression-list semicolon-list multi-dimensional-array-literal-inner
+
    semicolon-list:
     ;
     semicolon-list ;
