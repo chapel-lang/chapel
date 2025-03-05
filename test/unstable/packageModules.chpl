@@ -19,7 +19,6 @@ import FFTW;
 import FunctionalOperations;
 import Futures;
 import HDF5;
-import HDFS;
 import Image;
 import LAPACK;
 import LinearAlgebra;
