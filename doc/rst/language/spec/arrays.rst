@@ -192,6 +192,7 @@ row.
      [ multi-dimensional-array-literal-inner ; ]
     
    multi-dimensional-array-literal-inner:
+      expression-list
       expression-list semicolon-list multi-dimensional-array-literal-inner
 
    semicolon-list:
