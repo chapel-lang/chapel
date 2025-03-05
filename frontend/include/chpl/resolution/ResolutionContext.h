@@ -512,7 +512,7 @@ class ResolutionContext::GlobalQuery {
   }
 
   void registerTracer(TraceFn&& fn) {
-    beginMap_->registerTracer(fn);
+    beginMap_->registerTracer(std::move(fn));
   }
 };
 
