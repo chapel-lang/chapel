@@ -103,7 +103,7 @@ writeln("Initially, B is:\n", B, "\n");
 // Multidimensional arrays can also be created with array literals. They have
 // the same default domain and type semantics as 1D array literals, but with a
 // slightly different syntax. Multidimensional array literals are specified by
-// using semicolons to separate the rows of the array. For example, the
+// using semicolons to separate the dimensions of the array. For example, the
 // following declaration creates a 3x2x5 array of real values:
 //
 
