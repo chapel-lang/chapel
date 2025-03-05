@@ -267,16 +267,16 @@ chpl_bool chpl_is_node_local(c_nodeid_t node)
 
 #ifdef HAS_GPU_LOCALE
 static inline
-chpl_bool chpl_is_local(c_localeid_t loc)
+chpl_bool chpl_is_local(chpl_localeID_t loc)
 {
   return loc.node == chpl_nodeID &&
          loc.subloc == chpl_task_getRequestedSubloc();
 }
 #else
 static inline
-chpl_bool chpl_is_local(c_localeid_t loc)
+chpl_bool chpl_is_local(chpl_localeID_t loc)
 {
-  return loc == chpl_nodeID;
+  return loc.node == chpl_nodeID;
 }
 
 #endif
