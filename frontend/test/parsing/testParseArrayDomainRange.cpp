@@ -305,8 +305,7 @@ int main() {
   testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7}, false);
   testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7, 9, 11}, false);
   testNDArrayShape(p, "testNDArray4.chpl", std::array{2, 2}, true);
-  // this case is and should be a syntax error, checked later
-  // testNDArrayShape(p, "testNDArray5.chpl", std::array{1, 8}, true);
+  testNDArrayShape(p, "testNDArray5.chpl", std::array{1, 8}, true);
   testNDArrayShape(p, "testNDArray6.chpl", std::array{5, 1}, true);
   testNDArrayShape(p, "testNDArray7.chpl", std::array{3, 5, 7}, true);
   testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7, 9, 11}, true);
