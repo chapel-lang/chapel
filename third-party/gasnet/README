@@ -33,4 +33,5 @@ Chapel modifications to GASNet
 
 The modifications that we have made to the GASNet source are as follows:
 
-None
+* Add GASNET_NO_PSHM_WARNING flag to disable warning that occurs when
+  co-locales are run without PSHM enabled.

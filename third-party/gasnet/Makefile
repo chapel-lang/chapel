@@ -28,6 +28,11 @@ else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif
 
+# Turn off the runtime warning that occurs when there are co-locales and PSHM
+# is disabled. This should be removed once PSHM is enabled by default.
+
+GASNET_CFLAGS += -DGASNET_NO_PSHM_WARNING
+
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
