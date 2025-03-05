@@ -27,6 +27,21 @@ namespace chpl {
 namespace uast {
 
 
+/**
+  This class represents a dimension of a multi-dimensional array. For example,
+  this Chapel code is an array with two array rows:
+
+  \rst
+  .. code-block:: chapel
+
+      // Example 1:
+      var a = [ 1, 2, 3 ; 4, 5, 6 ];
+
+  \endrst
+
+
+  An array row expression will never contain comments.
+ */
 class ArrayRow final : public AstNode {
  friend class AstNode;
 
