@@ -188,6 +188,9 @@ static void testNDArrayShape(Parser* parser,
   test += "]";
   test += ";\n";
 
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
+
   auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
   assert(!guard.realizeErrors());
@@ -236,6 +239,9 @@ static void testNDArrayLiteral(Parser* parser,
   test += literal;
   test += ";\n";
 
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
+
   auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
   assert(!guard.realizeErrors());
@@ -268,6 +274,9 @@ static void testNDArrayError(Parser* parser,
   std::string test = "var a = ";
   test += literal;
   test += ";\n";
+
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
 
   auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
