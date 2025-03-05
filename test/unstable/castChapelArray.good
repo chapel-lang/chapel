@@ -1,0 +1,3 @@
+castChapelArray.chpl:2: warning: casting an array to an array type is unstable due to being a new feature — please share any feedback you might have
+1 2 3: [{0..2}] int(64)
+1 2 3: [{1..3}] int(32)
