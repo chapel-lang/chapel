@@ -658,12 +658,8 @@ struct Resolver {
   bool resolveSpecialCall(const uast::Call* call);
 
   /* What is the type for the symbol with a particular ID?
-     localGenericUnknown, if true, indicates that a use of a
-     field/formal with generic type (that is not substituted)
-     should be resolved to unknown. That is important
-     for initial resolution of such functions/types.
    */
-  types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
+  types::QualifiedType typeForId(const ID& id);
 
   // prepare the CallInfoActuals by inspecting the actuals of a call
   // includes special handling for operators and tuple literals

@@ -1809,7 +1809,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // enclosing record or class.
         auto functionId = parsing::idToParentId(context, decl->id());
         auto aggregateId = parsing::idToParentId(context, functionId);
-        auto parentType = typeForId(aggregateId, /* localGenericToUnknown */ true);
+        auto parentType = typeForId(aggregateId);
         typeExprT = parentType;
         usedTypeExpressionOrSimilar = true;
       }
@@ -3063,7 +3063,7 @@ lookupFieldType(Resolver& rv, const CompositeType* ct, const ID& idField) {
   return {};
 }
 
-QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
+QualifiedType Resolver::typeForId(const ID& id) {
   if (scopeResolveOnly) {
     auto kind = qualifiedTypeKindForId(context, id);
     const Type* type = nullptr;
@@ -3095,7 +3095,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     }
 
     if (!local) {
-      return parentResolver->typeForId(id, localGenericToUnknown);
+      return parentResolver->typeForId(id);
     }
   }
 
@@ -3988,7 +3988,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
     return result;
   }
 
-  auto type = typeForId(id, /* localGenericToUnknown */ false);
+  auto type = typeForId(id);
 
   // Note: not computing defaults for generic-with-defaults since use/import
   // statements don't support `bla(?)`.
@@ -4197,10 +4197,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     // Attempt to lookup an outer variable.
     if (!lookupOuterVariable(type, ident, id)) {
 
-      // Otherwise, use the type established at declaration/initialization,
-      // but for things with generic type, use unknown.
-      bool localGenericToUnknown = true;
-      type = typeForId(id, localGenericToUnknown);
+      // Otherwise, use the type established at declaration/initialization
+      type = typeForId(id);
     }
 
     maybeEmitWarningsForId(this, type, ident, id);
@@ -5467,9 +5465,8 @@ void Resolver::exit(const Dot* dot) {
           // empty IDs from the scope resolution process are builtins
           CHPL_ASSERT(false && "Not handled yet!");
         } else {
-          // use the type established at declaration/initialization,
-          // but for things with generic type, use unknown.
-          type = typeForId(id, /*localGenericToUnknown*/ true);
+          // use the type established at declaration/initialization
+          type = typeForId(id);
         }
         maybeEmitWarningsForId(this, type, dot, id);
         validateAndSetToId(r, dot, id);
@@ -6671,7 +6668,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
       if (resolvedId.isEmpty()) {
         type = typeForBuiltin(resolver.context, intent->name());
       } else {
-        type = resolver.typeForId(resolvedId, /*localGenericToUnknown*/ true);
+        type = resolver.typeForId(resolvedId);
       }
     }
     return true;
