@@ -68,8 +68,6 @@ module ChplFormat {
           val!.serialize(writer=writer, serializer=this);
         }
       } else {
-        if isArray(val) && val.rank > 1 then
-          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.serialize(writer=writer, serializer=this);
       }
     }
@@ -180,20 +178,42 @@ module ChplFormat {
 
     record ArraySerializer {
       var writer;
+      var _arrayDim : int;
+      var _arrayMax : int;
       var _first = true;
+      var _firstDim = true;
 
-      proc startDim(size: int) throws {
+      proc ref startDim(size: int) throws {
+        _arrayDim += 1;
+
+        if _firstDim then
+          _firstDim = false;
+
+        if _arrayMax >= _arrayDim then
+          writer.writeLiteral(";");
+        else 
+          _arrayMax = _arrayDim;
+        
       }
-      proc endDim() throws {
+      proc ref endDim() throws {
+        _arrayDim -= 1;
+        _first = true;
+        _firstDim = true;
       }
 
       proc ref writeElement(const element: ?) throws {
+        if !_firstDim && _first then writer.writeLiteral(" ");
+
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(element);
       }
       proc endArray() throws {
+        // always print a trailing semicolon for nd arrays
+        if _arrayMax > 1 then
+          writer.writeLiteral(";");
+
         writer.writeLiteral("]");
       }
     }
