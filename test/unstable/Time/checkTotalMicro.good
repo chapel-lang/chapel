@@ -1,0 +1,4 @@
+checkTotalMicro.chpl:4: warning: 'timeDelta.totalMicroseconds()' is unstable because it is new
+checkTotalMicro.chpl:7: warning: 'timeDelta.totalMicroseconds()' is unstable because it is new
+10
+123000000
