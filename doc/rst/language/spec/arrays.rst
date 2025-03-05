@@ -173,27 +173,25 @@ procedure with an implicit return type (see
 :ref:`Implicit_Return_Types`).
 
 A multi-dimensional rectangular array literal is specified using
-comma-separated values, with each dimension separated by a semicolon. Multiple
-semicolons are used to denote the next dimension. An array literal of rank
-``n`` uses ``n-1`` semicolons to separate the last dimension. Only
-rectilinear multi-dimensional literals are supported, the number of elements in
-each dimension must be the same. A single trailing semicolon is permitted after
-the final row and a trailing comma is permitted after the final element in each
-row.
+comma-separated values in the innermost dimension and semicolons to separate
+outer dimensions. An array literal of rank ``n`` uses ``n-1`` consecutive
+semicolons to separate the last dimension. For example, a 3D array literal will
+use commas to separate the elements in a row, a semicolon to mark the end of
+each row, and two consecutive semicolons to indicate the end of a plane of
+values.  Only rectilinear multi-dimensional literals are supported, where the
+number of elements in each dimension must be the same. A single trailing
+semicolon is permitted after the final row and a trailing comma is permitted
+after the final element in each row.
 
 .. code-block:: syntax
 
    rectangular-array-literal:
-     [ expression-list ]
-     [ expression-list , ]
-     [ expression-list ; ]
-     [ expression-list , ; ]
-     [ multidim-inner ]
-     [ multidim-inner ; ]
+     [ rectangular-array-literal-inner ]
+     [ rectangular-array-literal-inner ; ]
     
-   multidim-inner:
+   rectangular-array-literal-inner:
      array-row
-     array-row semicolon-list multidim-inner
+     array-row semicolon-list rectangular-array-literal-inner
 
    array-row:
      expression-list
@@ -263,7 +261,7 @@ row.
 
    *Example (adecl-2x2x3-literal.chpl)*.
 
-   The following example declares a 2x2x3 element rectangular array literal
+   The following example declares a 2x2x3-element rectangular array literal
    containing integers, then subsequently prints each integer element to
    the console. 
 
