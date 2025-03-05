@@ -188,12 +188,16 @@ row.
      [ expression-list , ]
      [ expression-list ; ]
      [ expression-list , ; ]
-     [ multi-dimensional-array-literal-inner ]
-     [ multi-dimensional-array-literal-inner ; ]
+     [ multidim-inner ]
+     [ multidim-inner ; ]
     
-   multi-dimensional-array-literal-inner:
-      expression-list
-      expression-list semicolon-list multi-dimensional-array-literal-inner
+   multidim-inner:
+     array-row
+     array-row semicolon-list multidim-inner
+
+   array-row:
+     expression-list
+     expression-list ,
 
    semicolon-list:
     ;
