@@ -395,6 +395,7 @@ class ResolutionContext::GlobalQuery {
   using InvokeArgsTuple = std::tuple<InvokeArgs...>;
   using ArgsByValueTuple = std::tuple<Value<InvokeArgs>...>;
   using Wrapper = GlobalQueryWrapper<F, RetByVal, Value<InvokeArgs>...>;
+  using TraceFn = std::function<TraceElement(const ArgsByValueTuple&)>;
 
   #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
     static constexpr bool STOPWATCH_IS_ACTIVE = true;
@@ -510,8 +511,7 @@ class ResolutionContext::GlobalQuery {
     return context_->hasCurrentResultForQuery(QUERY, ap_);
   }
 
-  template <typename FN>
-  void registerTracer(FN&& fn) {
+  void registerTracer(TraceFn&& fn) {
     beginMap_->registerTracer(fn);
   }
 };
@@ -639,9 +639,8 @@ class ResolutionContext::Query {
     }
   }
 
-  template <typename FN>
-  void registerTracer(FN&& fn) {
-    global_.registerTracer(fn);
+  void registerTracer(typename GlobalQueryT::TraceFn&& fn) {
+    global_.registerTracer(std::move(fn));
   }
 };
 
@@ -652,7 +651,6 @@ class ResolutionContext::Query {
 ResolutionContext createDummyRC(Context* context);
 /// \endcond DO_NOT_DOCUMENT
 
-// TODO: Find a better way to get __rcTUple type for later use in TRACER
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
     of a query from being cached in the context query cache if the computed
     result could rely on state taken from the type 'ResolutionContext'.
@@ -664,8 +662,6 @@ ResolutionContext createDummyRC(Context* context);
     the associated 'ResolutionContext::Frame'.
 */
 #define CHPL_RESOLUTION_QUERY_BEGIN(fn__, rc__, ...) \
-  auto __rcTuple = std::make_tuple(__VA_ARGS__); \
-  std::ignore = __rcTuple; \
   auto rcquery__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
   if (auto ptr__ = rcquery__.begin()) return *ptr__;
 
@@ -690,7 +686,7 @@ ResolutionContext createDummyRC(Context* context);
   }())
 
 #define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody) \
-  rcquery__.registerTracer([](const decltype(__rcTuple)& args) { \
+  rcquery__.registerTracer([](auto& args) { \
       tracerBody; \
   });
 
