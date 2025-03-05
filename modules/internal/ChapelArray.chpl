@@ -1951,6 +1951,11 @@ module ChapelArray {
     } else if rhs.rank != res.rank {
       compilerError("Casts between arrays require matching ranks");
     } else {
+      if boundsChecking then
+        checkArrayShapesUponAssignment(rhs, res, forCast=true);
+
+      // factor this capture of the type out of the loop since it may
+      // involve a runtime type for arrays of arrays
       type resType = res.eltType;
       forall (i,j) in zip(res.domain, rhs.domain) {
         res[i] = rhs[j]:resType;
@@ -2160,7 +2165,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b,forSwap=false, forCast=false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = if isProtoSlice(a) then a.dims()
                                        else a._value.dom.dsiDims();
@@ -2169,7 +2174,9 @@ module ChapelArray {
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
-          halt(if forSwap then "swapping" else "assigning",
+          halt(if forSwap then "swapping"
+                          else if forCast then "casting"
+                          else "assigning",
                " between arrays of different shapes in dimension ",
                i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }

@@ -1,0 +1,6 @@
+--option=1  # castChapelArray-sizemismatch-case1.good
+--option=2  # castChapelArray-sizemismatch-case2.good
+--option=3  # castChapelArray-sizemismatch-case3.good
+--option=4  # castChapelArray-sizemismatch-case4.good
+--option=5  # castChapelArray-sizemismatch-case5.good
+--option=6  # castChapelArray-sizemismatch-case6.good
