@@ -1943,22 +1943,22 @@ module ChapelArray {
   }
 
   @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
-  operator :(rhs: [], type t: []) {
+  operator :(arg: [], type t: []) {
     var res: t;
 
-    if !rhs.isRectangular() || !res.isRectangular() {
+    if !arg.isRectangular() || !res.isRectangular() {
       compilerError("Casts between arrays only support rectangular arrays");
-    } else if rhs.rank != res.rank {
+    } else if arg.rank != res.rank {
       compilerError("Casts between arrays require matching ranks");
     } else {
       if boundsChecking then
-        checkArrayShapesUponAssignment(rhs, res, forCast=true);
+        checkArrayShapesUponAssignment(arg, res, forCast=true);
 
       // factor this capture of the type out of the loop since it may
       // involve a runtime type for arrays of arrays
       type resType = res.eltType;
-      forall (i,j) in zip(res.domain, rhs.domain) {
-        res[i] = rhs[j]:resType;
+      forall (i,j) in zip(res.domain, arg.domain) {
+        res[i] = arg[j]:resType;
       }
     }
 
