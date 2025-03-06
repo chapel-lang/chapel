@@ -29,7 +29,6 @@
 #include "chpl/uast/Variable.h"
 
 // TODO:
-// - this[] access
 // - Slices
 
 static void testArray(std::string domainType,
@@ -56,6 +55,9 @@ module M {
 
   const AD = A.domain;
   const s = A.size;
+
+  var idx : index(A.domain);
+  var x = A[idx];
 
   for loopI in A {
     var z = loopI;
@@ -98,6 +100,8 @@ module M {
   assert(findVarType(m, rr, "AD").type() == dType.type());
 
   assert(findVarType(m, rr, "s").type()->isIntType());
+
+  assert(findVarType(m, rr, "x").type() == eType.type());
 
   assert(findVarType(m, rr, "z").type() == eType.type());
 
