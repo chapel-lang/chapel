@@ -421,7 +421,8 @@ static void testInstantiateManagerRecord() {
     assert(!qt.isUnknownOrErroneous());
     assert(qt.type()->isRecordType());
 
-    auto fields = fieldsForTypeDecl(context, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
     bool foundField = false;
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) == "chpl_t") {

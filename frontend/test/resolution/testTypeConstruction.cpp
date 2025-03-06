@@ -184,7 +184,8 @@ parseTypeAndFieldsOfX(Context* context, const char* program) {
   assert(ct != nullptr);
 
   auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
                                               defaultsPolicy);
 
   return std::make_pair(t, &f);
@@ -236,7 +237,8 @@ static void test5() {
   assert(rt);
   assert(rt->instantiatedFrom());
 
-  auto& initialFields = fieldsForTypeDecl(context,
+  auto rc = createDummyRC(context);
+  auto& initialFields = fieldsForTypeDecl(&rc,
                                           rt->instantiatedFrom(),
                                           DefaultsPolicy::IGNORE_DEFAULTS);
   assert(rt->instantiatedFrom()->instantiatedFrom() == nullptr);
@@ -1111,7 +1113,8 @@ static void test38() {
   assert(pct->parentClassType()->isObjectType());
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
-  auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto& parentFields = fieldsForTypeDecl(&rc, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);
   assert(parentFields.fieldName(0) == "parentField");
   assert(parentFields.fieldHasDefaultValue(0) == false);
@@ -1390,7 +1393,8 @@ static void testRecursiveTypeConstructorMutual() {
   assert(ctB->basicClassType()->instantiatedFrom());
 
   auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& fieldsB = fieldsForTypeDecl(context, ctB->basicClassType(),
+  auto rc = createDummyRC(context);
+  const ResolvedFields& fieldsB = fieldsForTypeDecl(&rc, ctB->basicClassType(),
                                                     defaultsPolicy);
 
   assert(fieldsB.numFields() == 3);

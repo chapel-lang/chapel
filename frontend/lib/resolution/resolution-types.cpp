@@ -801,7 +801,8 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   }
 
   // Compute the fields without types so that we can iterate the fields.
-  auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+  ResolutionContext rc(context);
+  auto& fieldsForOrder = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                            /* syntaxOnly */ true);
   for (int i = 0; i < fieldsForOrder.numFields(); i++) {
     auto ithField = fieldsForOrder.fieldDeclId(i);

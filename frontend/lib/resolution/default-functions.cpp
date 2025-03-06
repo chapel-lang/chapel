@@ -470,7 +470,8 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 
   // attempt to resolve the fields
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& rf = fieldsForTypeDecl(context, ct,
+  ResolutionContext rc(context);
+  const ResolvedFields& rf = fieldsForTypeDecl(&rc, ct,
                                                defaultsPolicy,
                                                /* syntaxOnly */ true);
   for (int i = 0; i < rf.numFields(); i++) {
@@ -1435,7 +1436,8 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
 
   // attempt to resolve the fields
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+  ResolutionContext rc(context);
+  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
                                               defaultsPolicy,
                                               /* syntaxOnly */ true);
 

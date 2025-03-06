@@ -214,7 +214,10 @@ static const RecordType* tryCreateManagerRecord(Context* context,
                                               recordId,
                                               /*bct*/ nullptr);
 
-    auto fields = fieldsForTypeDecl(context,
+    // Note: We know these types aren't nested, and so don't require a proper
+    // ResolutionContext at this time.
+    ResolutionContext rc(context);
+    auto fields = fieldsForTypeDecl(&rc,
                                     instantiatedFrom,
                                     DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {

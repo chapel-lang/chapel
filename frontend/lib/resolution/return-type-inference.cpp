@@ -921,15 +921,16 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
-static QualifiedType computeTypeOfField(Context* context,
+static QualifiedType computeTypeOfField(ResolutionContext* rc,
                                         const Type* t,
                                         ID fieldId) {
+  auto context = rc->context();
   if (const CompositeType* ct = t->getCompositeType()) {
     // Figure out the parent MultiDecl / TupleDecl
     ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
 
     // Resolve the type of that field (or MultiDecl/TupleDecl)
-    const auto& fields = resolveFieldDecl(context, ct, declId,
+    const auto& fields = resolveFieldDecl(rc, ct, declId,
                                           DefaultsPolicy::IGNORE_DEFAULTS);
     int n = fields.numFields();
     for (int i = 0; i < n; i++) {
@@ -1155,11 +1156,12 @@ static bool helpComputeEnumToOrderReturnType(Context* context,
   return true;
 }
 
-static bool helpComputeCompilerGeneratedReturnType(Context* context,
+static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
                                                    const TypedFnSignature* sig,
                                                    const PoiScope* poiScope,
                                                    QualifiedType& result,
                                                    const UntypedFnSignature* untyped) {
+  auto context = rc->context();
   if (untyped->name() == USTR("init") ||
       untyped->name() == USTR("init=") ||
       untyped->name() == USTR("deinit") ||
@@ -1188,7 +1190,7 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
     return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
     // method accessor - compute the type of the field
-    QualifiedType ft = computeTypeOfField(context,
+    QualifiedType ft = computeTypeOfField(rc,
                                           sig->formalType(0).type(),
                                           untyped->id());
     if (ft.isType() || ft.isParam()) {
@@ -1326,7 +1328,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if method call and the receiver points to a composite type definition,
     // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
+    return helpComputeCompilerGeneratedReturnType(rc, sig, poiScope,
                                                   result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");

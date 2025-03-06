@@ -895,7 +895,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-  } else {
+  } else if (ast->attributeGroup() == nullptr ||
+             ast->attributeGroup()->hasPragma(uast::pragmatags::PRAGMA_NO_INIT) == false) {
     // default init it
     // not inited here and not split-inited, so default-initialize it
     resolveDefaultInit(ast, rv);

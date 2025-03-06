@@ -395,6 +395,7 @@ class ResolutionContext::GlobalQuery {
   using InvokeArgsTuple = std::tuple<InvokeArgs...>;
   using ArgsByValueTuple = std::tuple<Value<InvokeArgs>...>;
   using Wrapper = GlobalQueryWrapper<F, RetByVal, Value<InvokeArgs>...>;
+  using TraceFn = std::function<TraceElement(const ArgsByValueTuple&)>;
 
   #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
     static constexpr bool STOPWATCH_IS_ACTIVE = true;
@@ -508,6 +509,10 @@ class ResolutionContext::GlobalQuery {
 
   bool hasCurrentResult() {
     return context_->hasCurrentResultForQuery(QUERY, ap_);
+  }
+
+  void registerTracer(TraceFn&& fn) {
+    beginMap_->registerTracer(std::move(fn));
   }
 };
 
@@ -633,7 +638,18 @@ class ResolutionContext::Query {
       uc.store(rc_, std::move(x), global_.args());
     }
   }
+
+  void registerTracer(typename GlobalQueryT::TraceFn&& fn) {
+    global_.registerTracer(std::move(fn));
+  }
 };
+
+// TODO: This is meant as a temporary placeholder/sentinel for cases where we
+// currently don't have access to a pre-existing ResolutionContext. Eventually
+// uses of this function, and the function itself, should be removed.
+/// \cond DO_NOT_DOCUMENT
+ResolutionContext createDummyRC(Context* context);
+/// \endcond DO_NOT_DOCUMENT
 
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
     of a query from being cached in the context query cache if the computed
@@ -668,6 +684,11 @@ class ResolutionContext::Query {
     auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
     return rcq__.isGlobalQueryRunning(); \
   }())
+
+#define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody) \
+  rcquery__.registerTracer([](auto& args) { \
+      tracerBody; \
+  });
 
 } // end namespace resolution
 } // end namespace chpl

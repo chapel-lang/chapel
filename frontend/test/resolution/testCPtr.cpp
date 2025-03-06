@@ -125,7 +125,8 @@ static void test4() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }
@@ -204,7 +205,8 @@ static void test12() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }
@@ -281,7 +283,8 @@ static void test20() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }

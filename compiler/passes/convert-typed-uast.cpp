@@ -1396,7 +1396,8 @@ TConverter::convertFunctionForGeneratedCall(const resolution::CallInfo& ci,
   auto scope = scopeForId(context, in->id());
   const PoiScope* poiScope = nullptr;
   auto scopeInfo = CallScopeInfo::forNormalCall(scope, poiScope);
-  auto r = resolveGeneratedCall(context, in, ci, scopeInfo);
+  auto rc = createDummyRC(context);
+  auto r = resolveGeneratedCall(&rc, in, ci, scopeInfo);
   const auto& candidate = r.mostSpecific().only();
   const TypedFnSignature* sig = candidate.fn();
   INT_ASSERT(sig);
@@ -2035,8 +2036,9 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
+    auto rc = createDummyRC(context());
     const ResolvedFields& rf =
-      fieldsForTypeDecl(context(), bct, DefaultsPolicy::USE_DEFAULTS);
+      fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(bct));
     INT_ASSERT(at);
@@ -2064,8 +2066,9 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::RecordType* t) {
+    auto rc = createDummyRC(context());
     const ResolvedFields& rf =
-      fieldsForTypeDecl(context(), t, DefaultsPolicy::USE_DEFAULTS);
+      fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
     INT_ASSERT(at);
@@ -2084,7 +2087,8 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::UnionType* t) {
-    auto& rf = fieldsForTypeDecl(context(), t, DefaultsPolicy::USE_DEFAULTS);
+    auto rc = createDummyRC(context());
+    auto& rf = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
     INT_ASSERT(at);

@@ -167,7 +167,7 @@ const types::Type* initialTypeForInterface(Context* context, ID declId);
   If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
-const ResolvedFields& resolveFieldDecl(Context* context,
+const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        const types::CompositeType* ct,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
@@ -192,7 +192,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
   If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
-const ResolvedFields& fieldsForTypeDecl(Context* context,
+const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
                                         const types::CompositeType* ct,
                                         DefaultsPolicy defaultsPolicy,
                                         bool syntaxOnly = false);
@@ -217,7 +217,7 @@ const types::CompositeType* isNameOfField(Context* context,
   Computes the version of a type assuming that defaults for generics
   are needed. So, for 'record R { type t = int; }', this will return R(int).
  */
-const types::QualifiedType typeWithDefaults(Context* context,
+const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
                                             types::QualifiedType t);
 
 /**
@@ -465,7 +465,7 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
  */
-CallResolutionResult resolveGeneratedCall(Context* context,
+CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
                                           const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
@@ -481,7 +481,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   If implicitReceiver.type() == nullptr, it will be ignored.
  */
 CallResolutionResult
-resolveGeneratedCallInMethod(Context* context,
+resolveGeneratedCallInMethod(ResolutionContext* rc,
                              const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
@@ -562,18 +562,11 @@ const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
                                                       bool& foundExisting);
 
 /**
-  Given a type 't', compute whether or not 't' is default initializable.
-  If 't' is a generic type, it is considered non-default-initializable.
-  Considers the fields and substitutions of composite types.
-*/
-bool isTypeDefaultInitializable(Context* context, const types::Type* t);
-
-/**
   Determine whether type 't' is copyable/assignable from const or/and from ref.
   When checkCopyable is true, this checks copyability, and for false checks
   assignability.
 */
-CopyableAssignableInfo getCopyOrAssignableInfo(Context* context,
+CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc,
                                                const types::Type* t,
                                                bool checkCopyable);
 

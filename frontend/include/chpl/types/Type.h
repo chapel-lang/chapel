@@ -31,6 +31,10 @@
 
 namespace chpl {
 
+namespace resolution {
+  class ResolutionContext;
+}
+
 namespace uast {
   class Decl;
 }
@@ -345,9 +349,9 @@ class Type {
 
       All other cases are considered to be POD.
   */
-  static bool isPod(Context* context, const Type* t);
+  static bool isPod(chpl::resolution::ResolutionContext* rc, const Type* t);
 
-  static bool isDefaultInitializable(Context* context, const Type* t);
+  static bool isDefaultInitializable(chpl::resolution::ResolutionContext* rc, const Type* t);
 
   static bool needsInitDeinitCall(const Type* t);
 
