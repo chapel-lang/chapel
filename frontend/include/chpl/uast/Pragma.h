@@ -30,8 +30,10 @@ namespace pragmatags {
 enum PragmaTag {
   PRAGMA_UNKNOWN,
 // Discard everything but the name when building enum values.
+/// \cond DO_NOT_DOCUMENT
 #define PRAGMA(name__, canParse__, parseStr__, desc__) \
   PRAGMA_ ## name__,
+/// \endcond
 #include "chpl/uast/PragmaList.h"
 #undef PRAGMA
   NUM_KNOWN_PRAGMAS

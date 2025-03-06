@@ -100,7 +100,9 @@ const char* tagToString(AstTag tag);
 } // end namespace asttags
 
 // Enable AstTag to be used as chpl::uast::AstTag
+/// \cond DO_NOT_DOCUMENT
 using chpl::uast::asttags::AstTag;
+/// \endcond
 
 } // end namespace uast
 
