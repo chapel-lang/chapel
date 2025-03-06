@@ -120,13 +120,13 @@ module CopyAggregation {
                    else dst = srcVal;
     }
     /* Flushes the aggregator & completes the updates queued up from the
-       ``copy`` calls.
+       :proc:`DstAggregator.copy` calls.
 
        :arg freeBuffers: if ``true``, deallocates buffers used by this
                          aggregator. If ``false``, the buffers will remain
                          allocated after this ``flush`` (to support further
-                         ``copy`` calls) and deallocated when the aggregator
-                         variable is deinitialized.
+                         :proc:`DstAggregator.copy` calls) and deallocated
+                         when the aggregator variable is deinitialized.
      */
     inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
@@ -150,13 +150,13 @@ module CopyAggregation {
                    else dst = src;
     }
     /* Flushes the aggregator & completes the updates queued up from the
-       ``copy`` calls.
+       :proc:`SrcAggregator.copy` calls.
 
        :arg freeBuffers: if ``true``, deallocates buffers used by this
                          aggregator. If ``false``, the buffers will remain
                          allocated after this ``flush`` (to support further
-                         ``copy`` calls) and deallocated when the aggregator
-                         variable is deinitialized.
+                         :proc:`SrcAggregator.copy` calls) and deallocated
+                         when the aggregator variable is deinitialized.
      */
     inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
