@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# sort $2
+
+sort $2 > $2.sorted
+mv $2.sorted $2

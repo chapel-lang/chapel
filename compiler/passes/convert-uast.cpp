@@ -1711,43 +1711,84 @@ struct Converter final : UastConverter {
 
   /// Array, Domain, Range, Tuple ///
 
+  void convertArrayRow(const uast::ArrayRow* node, CallExpr* actualList) {
+    for (auto expr : node->exprs()) {
+      if (expr->isArrayRow()) {
+        convertArrayRow(expr->toArrayRow(), actualList);
+      } else {
+        actualList->insertAtTail(convertAST(expr));
+      }
+    }
+  }
+
   Expr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+    Expr* shapeList = nullptr;
     bool isAssociativeList = false;
 
-    for (auto expr : node->exprs()) {
-      bool hasConvertedThisIter = false;
+    bool isNDArray = node->numExprs() >= 1 && node->expr(0)->isArrayRow();
+    if (!isNDArray) {
+      for (auto expr : node->exprs()) {
+        bool hasConvertedThisIter = false;
 
-      if (auto opCall = expr->toOpCall()) {
-        if (opCall->op() == USTR("=>")) {
-          isAssociativeList = true;
-          INT_ASSERT(opCall->numActuals() == 2);
-          Expr* lhs = convertAST(opCall->actual(0));
-          Expr* rhs = convertAST(opCall->actual(1));
-          actualList->insertAtTail(lhs);
-          actualList->insertAtTail(rhs);
-          hasConvertedThisIter = true;
-        } else {
-          if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
+        if (auto opCall = expr->toOpCall()) {
+          if (opCall->op() == USTR("=>")) {
+            isAssociativeList = true;
+            INT_ASSERT(opCall->numActuals() == 2);
+            Expr* lhs = convertAST(opCall->actual(0));
+            Expr* rhs = convertAST(opCall->actual(1));
+            actualList->insertAtTail(lhs);
+            actualList->insertAtTail(rhs);
+            hasConvertedThisIter = true;
+          } else {
+            if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
+          }
+        }
+
+        if (!hasConvertedThisIter) {
+          actualList->insertAtTail(convertAST(expr));
         }
       }
 
-      if (!hasConvertedThisIter) {
-        actualList->insertAtTail(convertAST(expr));
+    } else {
+      CallExpr* shapeActualList = new CallExpr(PRIM_ACTUALS_LIST);
+      shapeActualList->insertAtTail(
+        new SymExpr(new_IntSymbol(node->numExprs(), INT_SIZE_64)));
+      const uast::AstNode* cur = node->expr(0);
+      while (cur->isArrayRow()) {
+        auto row = cur->toArrayRow();
+        shapeActualList->insertAtTail(
+          new SymExpr(new_IntSymbol(row->numExprs(), INT_SIZE_64)));
+        cur = row->expr(0);
+      }
+      shapeList = new CallExpr("_build_tuple", shapeActualList);
+
+      for (auto expr : node->exprs()) {
+        convertArrayRow(expr->toArrayRow(), actualList);
       }
     }
 
     Expr* ret = nullptr;
-
-    if (isAssociativeList) {
-      ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
+    if (!isNDArray) {
+      INT_ASSERT(shapeList == nullptr);
+      if (isAssociativeList) {
+        ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
+      } else {
+        ret = new CallExpr("chpl__buildArrayExpr", actualList);
+      }
     } else {
-      ret = new CallExpr("chpl__buildArrayExpr", actualList);
+      INT_ASSERT(shapeList != nullptr);
+      ret = new CallExpr("chpl__buildNDArrayExpr", shapeList, actualList);
     }
 
     INT_ASSERT(ret != nullptr);
 
     return ret;
+  }
+
+  Expr* visit(const uast::ArrayRow* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
   }
 
   Expr* visit(const uast::Domain* node) {

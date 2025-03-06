@@ -259,7 +259,13 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
+  proc chpl__buildArrayExpr( in elems ...?k ) {
+    return chpl__buildNDArrayExpr((k,), (...elems));
+  }
+
+
+  pragma "ignore transfer errors"
+  proc chpl__buildNDArrayExpr(shape, pragma "no auto destroy" in elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -273,18 +279,25 @@ module ChapelArray {
     type eltType = if homog then elems(0).type
                             else chpl_computeUnifiedType(elems);
 
-    var dom = {arrayLiteralLowBound..#k};
+    var ranges: shape.size * range(int);
+    for param i in 0..<shape.size {
+      ranges(i) = arrayLiteralLowBound..#shape(i);
+    }
+    var dom = chpl__buildDomainExpr((...ranges), true);
     var arr = dom.buildArray(eltType, initElts=false);
 
     if homog {
       for i in 0..<k {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         __primitive("=", dst, src);
       }
+
     } else {
       for param i in 0..k-1 {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         type currType = src.type;
 

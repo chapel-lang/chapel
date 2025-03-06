@@ -68,8 +68,6 @@ module ChplFormat {
           val!.serialize(writer=writer, serializer=this);
         }
       } else {
-        if isArray(val) && val.rank > 1 then
-          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.serialize(writer=writer, serializer=this);
       }
     }
@@ -180,20 +178,45 @@ module ChplFormat {
 
     record ArraySerializer {
       var writer;
+      var _arrayDim : int;
+      var _arrayMax : int;
       var _first = true;
+      var _firstElm = true;
+      var _firstDim = true;
 
-      proc startDim(size: int) throws {
+      proc ref startDim(size: int) throws {
+        _arrayDim += 1;
+
+        if _firstDim then
+          _firstDim = false;
+
+        if _arrayMax >= _arrayDim then
+          writer.writeLiteral(";");
+        else
+          _arrayMax = _arrayDim;
+
       }
-      proc endDim() throws {
+      proc ref endDim() throws {
+        _arrayDim -= 1;
+        _firstElm = true;
+        _firstDim = true;
       }
 
       proc ref writeElement(const element: ?) throws {
-        if !_first then writer.writeLiteral(", ");
-        else _first = false;
+        if !_firstDim && _firstElm && !_first then writer.writeLiteral(" ");
+
+        if !_firstElm then writer.writeLiteral(", ");
+        else _firstElm = false;
+
+        if _first then _first = false;
 
         writer.write(element);
       }
       proc endArray() throws {
+        // always print a trailing semicolon for nd arrays
+        if _arrayMax > 1 then
+          writer.writeLiteral(";");
+
         writer.writeLiteral("]");
       }
     }
@@ -274,8 +297,6 @@ module ChplFormat {
         return reader.withDeserializer(defaultDeserializer).read(readType);
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {
-        if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
-          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         return readType.deserializeFrom(reader=reader, deserializer=this);
       } else {
         return new readType(reader=reader, deserializer=this);
@@ -290,8 +311,6 @@ module ChplFormat {
       }
 
       if canResolveMethod(val, "deserialize", reader, this) {
-        if isArrayType(readType) && val.rank > 1 then
-          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.deserialize(reader=reader, deserializer=this);
       } else {
         val = deserializeType(reader, readType);
@@ -414,14 +433,48 @@ module ChplFormat {
 
     record ArrayDeserializer {
       var reader;
-      forwarding var _listHelper = new ListDeserializer(reader);
+      var _arrayDim : int;
+      var _arrayMax : int;
+      var _first : bool = true;
 
-      proc startDim() throws {
+      proc ref startDim() throws {
+        _arrayDim += 1;
+
+        if _arrayMax >= _arrayDim {
+          reader.readLiteral(";");
+        } else {
+          _arrayMax = _arrayDim;
+        }
       }
-      proc endDim() throws {
+      proc ref endDim() throws {
+        _arrayDim -= 1;
+        _first = true;
       }
       proc endArray() throws {
-        _listHelper.endList();
+        // always consume a trailing semicolon for nd arrays
+        if _arrayMax > 1 then
+          reader.readLiteral(";");
+        reader.readLiteral("]");
+      }
+
+      proc ref readElement(type eltType) : eltType throws {
+        if !_first then reader.readLiteral(", ");
+        else _first = false;
+
+        return reader.read(eltType);
+      }
+
+      proc ref readElement(ref element) throws {
+        if !_first then reader.readLiteral(", ");
+        else _first = false;
+
+        reader.read(element);
+      }
+
+      proc hasMore() : bool throws {
+        reader.mark();
+        defer reader.revert();
+        return !reader.matchLiteral("]");
       }
     }
 
