@@ -112,10 +112,22 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
+    /* Sets ``dst = srcVal`` in a way that aggregates such updates
+       to improve communication efficiency assuming that ``dst`` is remote
+       and ``srcVal`` is local. */
     inline proc ref copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
+    /* Flushes the aggregator & completes the updates queued up from the
+       ``copy`` calls.
+
+       :arg freeBuffers: if ``true``, deallocates buffers used by this
+                         aggregator. If ``false``, the buffers will remain
+                         allocated after this ``flush`` (to support further
+                         ``copy`` calls) and deallocated when the aggregator
+                         variable is deinitialized.
+     */
     inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
@@ -130,10 +142,22 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
+    /* Sets ``dst = src`` in a way that aggregates such updates
+       to improve communication efficiency assuming that ``dst`` is local
+       and ``src`` is remote. */
     inline proc ref copy(ref dst: elemType, const ref src: elemType) {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
+    /* Flushes the aggregator & completes the updates queued up from the
+       ``copy`` calls.
+
+       :arg freeBuffers: if ``true``, deallocates buffers used by this
+                         aggregator. If ``false``, the buffers will remain
+                         allocated after this ``flush`` (to support further
+                         ``copy`` calls) and deallocated when the aggregator
+                         variable is deinitialized.
+     */
     inline proc ref flush(freeBuffers=false) {
       if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
