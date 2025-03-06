@@ -322,7 +322,7 @@ module Python {
       config_.site_import = 1;
       defer PyConfig_Clear(cfgPtr);
 
-      // check VIRTUAL_ENV, if its set, make it the executable
+      // check VIRTUAL_ENV, if it is set, make it the executable
       var venv = getenv("VIRTUAL_ENV".c_str());
       if venv != nil {
         // ideally this just sets config_.home
@@ -2488,7 +2488,7 @@ module Python {
       :arg arr: The Chapel array to create the object from.
     */
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
-    where isSupportedArrayType(arr) {
+      where isSupportedArrayType(arr) {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.eltType = arr.eltType;
       init this;
@@ -2498,7 +2498,7 @@ module Python {
     }
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
-    where !isSupportedArrayType(arr) {
+      where !isSupportedArrayType(arr) {
       compilerError("Only 1D local rectangular arrays are currently supported");
       this.eltType = nothing;
     }
