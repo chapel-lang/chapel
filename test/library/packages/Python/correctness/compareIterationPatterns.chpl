@@ -27,12 +27,9 @@ proc serialPythonApply(interp: borrowed, type t, arr, l) {
 proc parallelPythonApply(interp: borrowed, type t, arr, l) {
   var lambdaFunc = new Python.Function(interp, l);
   var res: [arr.domain] t;
-  var ts = new threadState();
-  ts.save();
-  forall i in arr.domain with (var gil = new Python.GIL()) {
+  forall i in arr.domain {
     res(i) = lambdaFunc(t, arr(i));
   }
-  ts.restore();
   return res;
 }
 //
