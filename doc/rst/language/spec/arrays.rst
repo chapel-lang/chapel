@@ -175,9 +175,9 @@ procedure with an implicit return type (see
 A multi-dimensional rectangular array literal is specified using
 comma-separated values in the innermost dimension and semicolons to separate
 outer dimensions. An array literal of rank ``n`` uses ``n-1`` consecutive
-semicolons to separate the last dimension. For example, a 3D array literal will
-use commas to separate the elements in a row, a semicolon to mark the end of
-each row, and two consecutive semicolons to indicate the end of a plane of
+semicolons to separate the outermost dimension. For example, a 3D array literal
+will use commas to separate the elements in a row, a semicolon to mark the end
+of each row, and two consecutive semicolons to indicate the end of a plane of
 values.  Only rectilinear multi-dimensional literals are supported, where the
 number of elements in each dimension must be the same. A single trailing
 semicolon is permitted after the final row and a trailing comma is permitted
