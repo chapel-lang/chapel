@@ -1,0 +1,17 @@
+shapeErrors.chpl:14: error: the final dimension of an array must use a single separator
+shapeErrors.chpl:15: error: inconsistent number of multi-dimensional array separators
+shapeErrors.chpl:17: error: the final dimension of an array must use a single separator
+shapeErrors.chpl:18: syntax error: multiple trailing semicolons in array literal
+shapeErrors.chpl:21: error: inconsistent number of multi-dimensional array separators
+shapeErrors.chpl:24: error: inconsistent number of multi-dimensional array separators
+shapeErrors.chpl:33: error: expected 2 elements in this row, but found 1
+shapeErrors.chpl:36: error: expected 1 elements in this row, but found 2
+shapeErrors.chpl:40: error: expected 3 elements in this row, but found 2
+shapeErrors.chpl:46: syntax error: multiple trailing semicolons in array literal
+shapeErrors.chpl:48: syntax error: multiple trailing semicolons in array literal
+shapeErrors.chpl:4: error: the final dimension of an array must use a single separator
+shapeErrors.chpl:50: syntax error: multiple trailing semicolons in array literal
+shapeErrors.chpl:52: syntax error: multiple trailing semicolons in array literal
+shapeErrors.chpl:6: error: the final dimension of an array must use a single separator
+shapeErrors.chpl:6: error: the final dimension of an array must use a single separator
+shapeErrors.chpl:9: error: inconsistent number of multi-dimensional array separators

@@ -2,6 +2,4 @@ hi hi
 hi hi
 hi hi
 ["hi", "hi"]
-uncaught IllegalArgumentError: chplSerializer does not support multidimensional arrays
-  printDifferentRankArrays.chpl:12: thrown here
-  printDifferentRankArrays.chpl:12: uncaught here
+["hi", "hi"; "hi", "hi";]

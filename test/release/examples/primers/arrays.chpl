@@ -99,6 +99,27 @@ forall (i,j) in {1..n, 1..n} do
 
 writeln("Initially, B is:\n", B, "\n");
 
+//
+// Multidimensional arrays can also be created with array literals. They have
+// the same default domain and type semantics as 1D array literals, but with a
+// slightly different syntax. Multidimensional array literals are specified by
+// using semicolons to separate the dimensions of the array. For example, the
+// following declaration creates a 3x2x5 array of real values:
+//
+
+var B2 = [
+  -1.1, -2.2, -3.3, -4.4, -5.5 ;
+  -2.1, -3.2, -4.3, -5.4, -6.5 ;
+  ;
+  -3.1, -4.2, -5.3, -6.4, -7.5 ;
+  -4.1, -5.2, -6.3, -7.4, -8.5 ;
+  ;
+  -5.1, -6.2, -7.3, -8.4, -9.5 ;
+  -6.1, -7.2, -8.3, -9.4, -10.5 ;
+];
+
+writeln("Initially, B2 (shape=", B2.shape ,") is:\n", B2, "\n");
+
 // Loops over Arrays
 // -----------------
 

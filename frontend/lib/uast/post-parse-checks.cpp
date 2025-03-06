@@ -112,6 +112,11 @@ struct Visitor {
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
+  void checkDimension(const ArrayRow* node,
+                      const std::vector<int>& shape,
+                      size_t index);
+  void checkShapeOfArray(const Array* node);
+  void checkUnstableNDArray(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -468,6 +473,65 @@ void Visitor::checkForArraysOfRanges(const Array* node) {
          "that was your intention, add a trailing comma or recompile with "
          "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
          "you may want to use a range instead");
+  }
+}
+
+void Visitor::checkDimension(const ArrayRow* row,
+                             const std::vector<int>& shape, size_t index) {
+  if (row->numExprs() != shape[index]) {
+    error(row, "expected %d elements in this row, but found %d",
+          shape[index], row->numExprs());
+  }
+  if (index + 1 < shape.size()) {
+    for (size_t i = 0; i < (size_t)row->numExprs(); i++) {
+      if (!row->expr(i)->isArrayRow()) {
+        error(row->expr(i), "missing a row of elements");
+        return;
+      }
+      checkDimension(row->expr(i)->toArrayRow(), shape, index + 1);
+    }
+  }
+}
+
+void Visitor::checkShapeOfArray(const Array* node) {
+  if (node->numExprs() == 0) {
+    return;
+  }
+  // if the first child of the array is not an ArrayRow, its just a 1D array
+  if (!node->expr(0)->isArrayRow()) {
+    return;
+  }
+
+  // determine the shape of the array
+  std::vector<int> shape;
+  shape.push_back(node->numExprs()); // first dimension
+
+  const AstNode* cur = node->expr(0);
+  while (cur->isArrayRow()) {
+    auto row = cur->toArrayRow();
+    shape.push_back(row->numExprs());
+    cur = row->expr(0);
+  }
+
+  // check the dimensions of the array
+  // no need to check the first dimension, we assume it to be correct
+  for (size_t i = 0; i < (size_t)node->numExprs(); i++) {
+    if (!node->expr(i)->isArrayRow()) {
+      error(node->expr(i), "missing a row of elements");
+      return;
+    }
+    checkDimension(node->expr(i)->toArrayRow(), shape, 1);
+  }
+
+}
+
+void Visitor::checkUnstableNDArray(const Array* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    // all we need to check is if the array has an ArrayRow
+    if (node->numExprs() > 0 && node->expr(0)->isArrayRow()) {
+      warn(node, "multi-dimensional array literals are unstable"
+                 " while the syntax is finalized");
+    }
   }
 }
 
@@ -1546,6 +1610,8 @@ void Visitor::visit(const AggregateDecl* node) {
 
 void Visitor::visit(const Array* node) {
   checkForArraysOfRanges(node);
+  checkShapeOfArray(node);
+  checkUnstableNDArray(node);
 }
 
 void Visitor::visit(const BracketLoop* node) {
