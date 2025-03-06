@@ -30,9 +30,11 @@ namespace resolution {
 
 
 struct CalledFnOrder {
-  int depth; // depth of call graph at which this one was added
-  int index; // index in the call graph at which this one was added
+  int depth = -1; // depth of call graph at which this one was added
+  int index = -1; // index in the call graph at which this one was added
 };
+
+bool operator ==(const CalledFnOrder& x, const CalledFnOrder& y);
 
 // key: a ResolvedFunction* that was called
 // value: the depth at which that ResolvedFunction was added

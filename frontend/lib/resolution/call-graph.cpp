@@ -34,6 +34,10 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+bool operator==(const CalledFnOrder& x, const CalledFnOrder& y) {
+  return x.depth == y.depth && x.index == y.index;
+}
+
 struct CalledFnCollector {
   using RV = ResolvedVisitor<CalledFnCollector>;
 
