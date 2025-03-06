@@ -460,25 +460,25 @@ module Python {
       return nil;
     }
 
-    // 
+    //
     // grab the GIL and enter a state where we can invoke threads
-    // 
+    //
     var gil = PyGILState_Ensure();
     var ts = PyEval_SaveThread();
 
-    // 
+    //
     // setup is done
-    // 
+    //
     signals.setupDone.deref().signal();
 
-    // 
+    //
     // wait for deinit to be called
-    // 
+    //
     signals.done.deref().wait();
 
-    // 
+    //
     // restore the thread state so we can release the gil and exit
-    // 
+    //
     PyEval_RestoreThread(ts);
     PyGILState_Release(gil);
     Py_Finalize();
@@ -531,21 +531,21 @@ module Python {
       var setupDone = new PThread.pthreadSignal();
       var signals = new signalPair(c_ptrTo(setupDone), c_ptrTo(this.done));
 
-      // 
+      //
       // Do all Python initialization/finalization in a single task.
       // Initialization will be done, then this thread will block on 'done'.
       // When the deinit is called, it will unblock this thread and finalize
       // NOTE: this is done with a manual pthread to work around
       // https://github.com/chapel-lang/chapel/issues/26855
-      // 
+      //
       PThread.pthread_create(c_ptrTo(this.thread),
                              nil,
                              c_ptrTo(interpreterThread),
                              c_ptrTo(signals));
 
-      // 
+      //
       // blocks until setup is done, once setup is done we can return
-      // 
+      //
       setupDone.wait();
 
       // check for an error from the pthread
@@ -640,9 +640,9 @@ module Python {
         Py_DECREF(this.objgraph);
       }
 
-      // 
+      //
       // we are done, the thread keeping the interpreter alive can finish
-      // 
+      //
       this.done.signal();
       PThread.pthread_join(this.thread, nil);
     }
@@ -864,7 +864,7 @@ module Python {
       if Python.checkExceptions {
         var g = PyGILState_Ensure();
         defer PyGILState_Release(g);
-      
+
         var exc = chpl_PyErr_GetRaisedException();
         if exc then throw PythonException.build(this, exc);
       }
@@ -1782,7 +1782,7 @@ module Python {
     proc get(type t, attr: string): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyAttr = PyObject_GetAttrString(this.getPyObject(), attr.c_str());
       interpreter.checkException();
 
@@ -1803,7 +1803,7 @@ module Python {
     proc set(attr: string, value) throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyValue = interpreter.toPythonInner(value);
       defer Py_DECREF(pyValue);
 
@@ -1836,7 +1836,7 @@ module Python {
               where kwargs.isAssociative() {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
 
@@ -1854,7 +1854,7 @@ module Python {
               where kwargs.isAssociative() {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
 
@@ -1871,7 +1871,7 @@ module Python {
     proc call(type retType, method: string, const args...): retType throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
         pyArgs(i) = interpreter.toPythonInner(args(i));
@@ -1918,7 +1918,7 @@ module Python {
               kwargs:?=none): retType throws where kwargs.isAssociative() {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      
+
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
 
