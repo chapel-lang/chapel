@@ -330,10 +330,10 @@ module Python {
         // determine the locale (in the string sense, not the chapel sense)
         const executable = string.createBorrowingBuffer(venv) + "/bin/python";
         const wideExecutable = executable.c_wstr();
+        defer deallocate(wideExecutable);
         checkPyStatus(
           PyConfig_SetString(
             cfgPtr, c_ptrTo(config_.executable), wideExecutable));
-        deallocate(wideExecutable);
       }
 
       // initialize
