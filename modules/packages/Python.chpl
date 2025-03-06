@@ -60,123 +60,19 @@
   Parallel Execution
   ------------------
 
-  Running any Python code in parallel from Chapel requires special care, due
-  to the Global Interpreter Lock (GIL) in the Python interpreter.
-  This module supports two ways of doing this.
+  Running any Python code in parallel from Chapel will likely be no faster than
+  serial execution due to the Global Interpreter Lock (GIL) in the Python
+  interpreter. This module automatically handles the GIL in the public API.
 
   .. note::
 
      Newer Python versions offer a free-threading mode that allows multiple
      threads concurrently. This currently requires a custom build of Python. If
-     you are using a Python like this, you should be able to use this module
-     freely in parallel code.
+     you are using a Python interpreter like this, the GIL handling code in this
+     module will become a no-op.
 
-  Using Multiple Interpreters
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  .. warning::
-
-     Sub-interpreter support in Chapel is highly experimental and currently has
-     undefined behavior.
-
-  The most performant way to run Python code in parallel is to use multiple
-  sub-interpreters. Each sub-interpreter is isolated from the others with its
-  own GIL. This allows multiple threads to run Python code concurrently. Note
-  that communication between sub-interpreters is severely limited and it is
-  strongly recommend to limit the amount of data shared between
-  sub-interpreters.
-
-  .. note::
-
-     This feature is only available in Python 3.12 and later. Attempting to use
-     sub-interpreters with earlier versions of Python will result in a runtime
-     exception.
-
-  The following demonstrates using sub-interpreters in a ``coforall`` loop:
-
-  ..
-     START_TEST
-     FILENAME: CoforallTestSub.chpl
-     NOEXEC
-     START_GOOD
-     END_GOOD
-
-  .. code-block:: chapel
-
-     use Python;
-
-     var code = """
-     import sys
-     def hello():
-       print('Hello from a task')
-       sys.stdout.flush()
-     """;
-
-     proc main() {
-       var interpreter = new Interpreter();
-       coforall 0..#4 {
-         var subInterpreter = new SubInterpreter(interpreter);
-         var m = subInterpreter.importModule('myMod', code);
-         var hello = m.get('hello');
-         hello();
-       }
-     }
-
-  ..
-     END_TEST
-
-  To make use of a sub-interpreter in a ``forall`` loop, the sub-interpreter
-  should be created as a task private variable. It is recommended that users
-  wrap the sub-interpreter in a ``record`` to initialize their Python objects,
-  to prevent duplicated work. For example, the following code creates multiple
-  sub-interpreters in a ``forall`` loop, where each task gets its own copy of
-  the module.
-
-  ..
-     START_TEST
-     FILENAME: TaskPrivateSubInterp.chpl
-     NOEXEC
-     START_GOOD
-     END_GOOD
-
-  .. code-block:: chapel
-
-     use Python;
-
-     record perTaskModule {
-      var i: owned SubInterpreter?;
-      var m: owned Module?;
-      proc init(parent: borrowed Interpreter, code: string) {
-        init this;
-        i = try! (new SubInterpreter(parent));
-        m = try! (i!.importModule("anon", code));
-      }
-     }
-
-     proc main() {
-       var interpreter = new Interpreter();
-       forall i in 1..10
-        with (var mod =
-          new perTaskModule(interpreter, "x = 10")) {
-          writeln(mod.m!.get(int, "x"));
-       }
-     }
-
-  ..
-     END_TEST
-
-  Using A Single Interpreter
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  A single Python interpreter can execute code in parallel, as long as the GIL
-  is properly handled. Before any parallel execution with Python code can occur,
-  the thread state needs to be saved. After the parallel execution, the thread
-  state must to be restored. Then for each thread, the GIL must be acquired and
-  released. This is necessary to prevent segmentation faults and deadlocks in
-  the Python interpreter.
-
-  The following demonstrates this when explicit tasks are introduced with a
-  ``coforall``:
+  The following demonstrates executing multiple Chapel tasks using a `coforall`
+  and a single Python interpreter:
 
   ..
      START_TEST
@@ -194,21 +90,16 @@
      var interp = new Interpreter();
      var func = interp.compileLambda("lambda x,: x * x");
 
-     var ts = new threadState();
-     ts.save(); // save the thread state
      coforall tid in 1..10 {
-       var gil = new GIL(); // acquire the GIL
+       // the call to 'func' automatically acquires and releases the GIL
        Arr[tid] = func(int, tid);
-       // GIL is automatically released at the end of the block
      }
-     ts.restore(); // restore the thread state
      writeln(Arr);
 
   ..
      END_TEST
 
-  When using a data-parallel ``forall``, the GIL should be acquired and released
-  as a task private variable.
+  The code works similarly with a data-parallel ``forall`` loop:
 
   ..
      START_TEST
@@ -226,20 +117,17 @@
      var interp = new Interpreter();
      var func = interp.compileLambda("lambda x,: x * x");
 
-     var ts = new threadState();
-     ts.save(); // save the thread state
-     forall tid in 1..10 with (var gil = new GIL()) {
+     forall tid in 1..10 {
+       // the call to 'func' automatically acquires and releases the GIL
        Arr[tid] = func(int, tid);
      }
-     ts.restore(); // restore the thread state
      writeln(Arr);
 
   ..
      END_TEST
 
-  In the examples above, because the GIL is being acquired and released for the
-  entirety of each task, these examples will be no faster than running the tasks
-  serially.
+  Although these examples use Chapel's task parallelism constructs,
+  they will be no faster than running the tasks serially due to the GIL.
 
   Using Python Modules With Distributed Code
   -------------------------------------------
@@ -272,12 +160,9 @@
           const interp = new Interpreter();
           const func = interp.compileLambda("lambda x,: x + 1");
 
-          var ts = new threadState();
-          ts.save();
           forall i in Arr.localSubdomain() with (var gil = new GIL()) {
             Arr[i] = func(Arr.eltType, Arr[i]);
           }
-          ts.restore();
         }
       }
       writeln(Arr);
@@ -286,7 +171,7 @@
      END_TEST
 
   In this example, ``interp`` and ``func`` only exist for the body of the
-  ``on`` block,Python objects can be made to persist beyond the scope of a
+  ``on`` block, Python objects can be made to persist beyond the scope of a
   given ``on`` block by creating a distributed array of Python objects.
 
   Defining Custom Types
