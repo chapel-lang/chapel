@@ -1,0 +1,4 @@
+# known issues with ROCm https://github.com/chapel-lang/chapel/issues/26669
+# Use a heuristic to check for ROCm 6.
+# Note: This is a substring comparison (check if 6 is a substring of the version string).
+CHPL_GPU_SDK_VERSION <= 6
