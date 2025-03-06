@@ -1726,8 +1726,7 @@ struct Converter final : UastConverter {
     Expr* shapeList = nullptr;
     bool isAssociativeList = false;
 
-    bool isNDArray = node->numExprs() >= 1 && node->expr(0)->isArrayRow();
-    if (!isNDArray) {
+    if (!node->isMultiDim()) {
       for (auto expr : node->exprs()) {
         bool hasConvertedThisIter = false;
 
@@ -1769,7 +1768,7 @@ struct Converter final : UastConverter {
     }
 
     Expr* ret = nullptr;
-    if (!isNDArray) {
+    if (!node->isMultiDim()) {
       INT_ASSERT(shapeList == nullptr);
       if (isAssociativeList) {
         ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
