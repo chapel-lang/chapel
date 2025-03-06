@@ -95,7 +95,9 @@ const char* tagToString(TypeTag tag);
 } // end namespace typetags
 
 // Enable AstTag to be used as chpl::types::TypeTag
+/// \cond DO_NOT_DOCUMENT
 using chpl::types::typetags::TypeTag;
+/// \endcond
 
 } // end namespace types
 } // end namespace chpl

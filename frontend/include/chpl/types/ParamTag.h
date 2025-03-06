@@ -57,7 +57,9 @@ enum ParamTag {
 } // end namespace paramtags
 
 // Enable AstTag to be used as chpl::types::ParamTag
+/// \cond DO_NOT_DOCUMENT
 using chpl::types::paramtags::ParamTag;
+/// \endcond
 
 } // end namespace types
 

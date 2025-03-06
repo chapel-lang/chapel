@@ -371,6 +371,7 @@ class AstNode {
 
  private:
 
+  /// \cond DO_NOT_DOCUMENT
   template <typename ReturnType, typename Visitor>
   struct Dispatcher {
     static ReturnType doDispatch(const AstNode* ast, Visitor& v) {
@@ -449,6 +450,7 @@ class AstNode {
       CHPL_ASSERT(false && "this code should never be run");
     }
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  public:
 

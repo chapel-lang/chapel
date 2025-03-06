@@ -351,6 +351,7 @@ class Type {
 
   static bool needsInitDeinitCall(const Type* t);
 
+  /// \cond DO_NOT_DOCUMENT
   // Define a struct to do tag-driven dynamic dispatch over types.
   template <typename ReturnType, typename Visitor>
   struct Dispatcher {
@@ -408,6 +409,7 @@ class Type {
       CHPL_ASSERT(false && "this code should never be run");
     }
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  public:
 
