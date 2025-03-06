@@ -35,7 +35,7 @@ static void testArray(std::string domainType,
                       std::string eltType) {
   std::string arrayText;
   arrayText += "[" + domainType + "] " + eltType;
-  printf("Testing: %s\n", arrayText.c_str());
+  printf("Testing array type expression: %s\n", arrayText.c_str());
 
   Context* context = buildStdContext();
   ErrorGuard guard(context);
@@ -135,11 +135,53 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
+static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
+                             std::string eltType) {
+  printf("Testing array literal: %s\n", arrayLiteral.c_str());
+
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    module M {
+      var A = )""" + arrayLiteral + R"""(;
+
+      type expectedDomTy = )""" + domainType + R"""(;
+      type expectedEltTy = )""" + eltType + R"""(;
+
+      type actualDomTy = A.domain.type;
+      type actualEltTy = A.eltType;
+
+      param correctDom = expectedDomTy == actualDomTy;
+      param correctElt = expectedEltTy == actualEltTy;
+    }
+    )""",
+    {"A", "correctDom", "correctElt"});
+  auto arrType = vars.at("A");
+  assert(arrType.type());
+  assert(arrType.type()->isArrayType());
+
+  ensureParamBool(vars.at("correctDom"), true);
+  ensureParamBool(vars.at("correctElt"), true);
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   // rectangular
   testArray("domain(1)", "int");
   testArray("domain(1)", "string");
   testArray("domain(2)", "int");
+
+  testArrayLiteral("[1, 2, 3]", "domain(1)", "int");
+  testArrayLiteral("[1, 2, 3,]", "domain(1)", "int");
+  testArrayLiteral("[1]", "domain(1)", "int");
+  testArrayLiteral("[1.0, 2]", "domain(1)", "real");
+  testArrayLiteral("[\"foo\", \"bar\"]", "domain(1)", "string");
+  testArrayLiteral("[1..10]", "domain(1)", "range");
+  testArrayLiteral("[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]", "domain(1)", "[1..5] int");
+  // TODO: test multi-dim rectangular literals
 
   // associative
   testArray("domain(int)", "int");
