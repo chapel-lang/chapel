@@ -177,9 +177,10 @@ static std::string getNDArrayRows(std::array<int, N> shape,
 
 template<size_t N>
 static void testNDArrayShape(Parser* parser,
-                             const char* testName,
                              std::array<int, N> shape,
                              bool trailingCommas) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
 
   ErrorGuard guard(parser->context());
   std::string test = "var a = ";
@@ -191,7 +192,7 @@ static void testNDArrayShape(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(!guard.realizeErrors());
 
@@ -230,9 +231,10 @@ static void testNDArrayShape(Parser* parser,
 }
 
 static void testNDArrayLiteral(Parser* parser,
-                             const char* testName,
-                             const char* literal,
-                             int nArrayRows) {
+                               const char* literal,
+                               int nArrayRows) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
 
   ErrorGuard guard(parser->context());
   std::string test = "var a = ";
@@ -242,7 +244,7 @@ static void testNDArrayLiteral(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(!guard.realizeErrors());
 
@@ -266,9 +268,10 @@ static void testNDArrayLiteral(Parser* parser,
 }
 
 static void testNDArrayError(Parser* parser,
-                             const char* testName,
                              const char* literal,
-                            int numErrors) {
+                             int numErrors) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
 
   ErrorGuard guard(parser->context());
   std::string test = "var a = ";
@@ -278,7 +281,7 @@ static void testNDArrayError(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(guard.realizeErrors() == numErrors);
 }
@@ -308,32 +311,32 @@ int main() {
   testArrayDomain(p, "testDomain2.chpl", false, 8, false);
   testArrayDomain(p, "testDomain3.chpl", false, 8, true);
 
-  testNDArrayShape(p, "testNDArray0.chpl", std::array{2, 2}, false);
-  testNDArrayShape(p, "testNDArray1.chpl", std::array{1, 8}, false);
-  testNDArrayShape(p, "testNDArray2.chpl", std::array{5, 1}, false);
-  testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7}, false);
-  testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7, 9, 11}, false);
-  testNDArrayShape(p, "testNDArray4.chpl", std::array{2, 2}, true);
-  testNDArrayShape(p, "testNDArray5.chpl", std::array{1, 8}, true);
-  testNDArrayShape(p, "testNDArray6.chpl", std::array{5, 1}, true);
-  testNDArrayShape(p, "testNDArray7.chpl", std::array{3, 5, 7}, true);
-  testNDArrayShape(p, "testNDArray3.chpl", std::array{3, 5, 7, 9, 11}, true);
+  testNDArrayShape(p, std::array{2, 2}, false);
+  testNDArrayShape(p, std::array{1, 8}, false);
+  testNDArrayShape(p, std::array{5, 1}, false);
+  testNDArrayShape(p, std::array{3, 5, 7}, false);
+  testNDArrayShape(p, std::array{3, 5, 7, 9, 11}, false);
+  testNDArrayShape(p, std::array{2, 2}, true);
+  testNDArrayShape(p, std::array{1, 8}, true);
+  testNDArrayShape(p, std::array{5, 1}, true);
+  testNDArrayShape(p, std::array{3, 5, 7}, true);
+  testNDArrayShape(p, std::array{3, 5, 7, 9, 11}, true);
 
-  testNDArrayLiteral(p, "testNDArray8.chpl", "[0;]", 1);
-  testNDArrayLiteral(p, "testNDArray9.chpl", "[0,;]", 1);
-  testNDArrayLiteral(p, "testNDArray10.chpl", "[0, 1, 2;]", 1);
-  testNDArrayLiteral(p, "testNDArray11.chpl", "[0, 1, 2,;]", 1);
-  testNDArrayLiteral(p, "testNDArray12.chpl", "[0, 1; 2, 3]", 2);
-  testNDArrayLiteral(p, "testNDArray13.chpl", "[0, 1; 2, 3;]", 2);
-  testNDArrayLiteral(p, "testNDArray14.chpl", "[0; 1; 2; 3]", 4);
-  testNDArrayLiteral(p, "testNDArray15.chpl", "[0,; 1,; 2,; 3,]", 4);
-  testNDArrayLiteral(p, "testNDArray16.chpl", "[0; 1; 2; 3;]", 4);
-  testNDArrayLiteral(p, "testNDArray17.chpl", "[0,; 1,; 2,; 3,;]", 4);
+  testNDArrayLiteral(p, "[0;]", 1);
+  testNDArrayLiteral(p, "[0,;]", 1);
+  testNDArrayLiteral(p, "[0, 1, 2;]", 1);
+  testNDArrayLiteral(p, "[0, 1, 2,;]", 1);
+  testNDArrayLiteral(p, "[0, 1; 2, 3]", 2);
+  testNDArrayLiteral(p, "[0, 1; 2, 3;]", 2);
+  testNDArrayLiteral(p, "[0; 1; 2; 3]", 4);
+  testNDArrayLiteral(p, "[0,; 1,; 2,; 3,]", 4);
+  testNDArrayLiteral(p, "[0; 1; 2; 3;]", 4);
+  testNDArrayLiteral(p, "[0,; 1,; 2,; 3,;]", 4);
 
-  testNDArrayError(p, "testNDArray18.chpl", "[0, 1 ; 2, 3; ;]", 1);
-  testNDArrayError(p, "testNDArray19.chpl", "[0, 1; 2]", 1);
-  testNDArrayError(p, "testNDArray20.chpl", "[0; 2, 2]", 1);
-  testNDArrayError(p, "testNDArray21.chpl", "[0, 1; 2, 3;; 4, ; 6, 7]", 1);
+  testNDArrayError(p, "[0, 1 ; 2, 3; ;]", 1);
+  testNDArrayError(p, "[0, 1; 2]", 1);
+  testNDArrayError(p, "[0; 2, 2]", 1);
+  testNDArrayError(p, "[0, 1; 2, 3;; 4, ; 6, 7]", 1);
 
   return 0;
 }
