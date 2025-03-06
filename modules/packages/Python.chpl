@@ -399,6 +399,9 @@ module Python {
     var objgraph: PyObjectPtr = nil;
     @chpldoc.nodoc
     var isSubInterpreter: bool;
+
+    // the done signal is a field so it has the same lifetime as the
+    // helper thread
     @chpldoc.nodoc
     var done: PThread.pthreadSignal;
     @chpldoc.nodoc
