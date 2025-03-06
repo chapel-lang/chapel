@@ -616,6 +616,8 @@ module Python {
       if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
+        var g = PyGILState_Ensure();
+        defer PyGILState_Release(g);
         // note: try! is used since we can't have a throwing deinit
 
         // run gc.collect() before showing growth
