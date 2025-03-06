@@ -127,7 +127,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         log_info "Building Chapel component: runtime"
 
         compilers=gnu,llvm,intel
-        comms=gasnet,none,ugni
+        comms=none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
         substrates=aries,none
         locale_models=flat
