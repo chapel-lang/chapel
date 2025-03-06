@@ -259,7 +259,7 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
+  proc chpl__buildArrayExpr( in elems ...?k ) {
     return chpl__buildNDArrayExpr((k,), (...elems));
   }
 
