@@ -353,6 +353,7 @@ module Python {
   private import this.ArrayTypes;
   private use CWChar;
   private use OS.POSIX only getenv;
+  private import this.PThread;
 
   /*
     Use 'objgraph' to detect memory leaks in the Python code. Care should be
@@ -406,6 +407,85 @@ module Python {
     throw new ChapelException(message);
   }
 
+  @chpldoc.nodoc
+  record signalPair {
+    var setupDone: c_ptr(PThread.pthreadSignal);
+    var done: c_ptr(PThread.pthreadSignal);
+  }
+  @chpldoc.nodoc
+  var interpreterThreadError: owned Error? = nil;
+  private proc interpreterThread(arg: c_ptr(void)): c_ptr(void) {
+
+    var signals = (arg:c_ptr(signalPair)).deref();
+
+    try {
+      // preinit
+      var preconfig: PyPreConfig;
+      PyPreConfig_InitIsolatedConfig(c_ptrTo(preconfig));
+      preconfig.utf8_mode = 1;
+      checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
+
+      // init
+      var config_: PyConfig;
+      var cfgPtr = c_ptrTo(config_);
+      // we want an isolated config for things like LC_ALL, but we still want
+      // to use things like PYTHONPATH
+      PyConfig_InitIsolatedConfig(cfgPtr);
+      config_.isolated = 0;
+      config_.use_environment = 1;
+      config_.user_site_directory = 1;
+      config_.site_import = 1;
+      defer PyConfig_Clear(cfgPtr);
+
+      // check VIRTUAL_ENV, if its set, make it the executable
+      var venv = getenv("VIRTUAL_ENV".c_str());
+      if venv != nil {
+        // ideally this just sets config_.home
+        // but by setting executable we can reuse the python logic to
+        // determine the locale (in the string sense, not the chapel sense)
+        const executable = string.createBorrowingBuffer(venv) + "/bin/python";
+        const wideExecutable = executable.c_wstr();
+        checkPyStatus(
+          PyConfig_SetString(
+            cfgPtr, c_ptrTo(config_.executable), wideExecutable));
+        deallocate(wideExecutable);
+      }
+
+      // initialize
+      checkPyStatus(Py_InitializeFromConfig(cfgPtr));
+    } catch e {
+      // if any errors occur, signal that setup is done and exit
+      interpreterThreadError = e;
+      signals.setupDone.deref().signal();
+      return nil;
+    }
+
+    // 
+    // grab the GIL and enter a state where we can invoke threads
+    // 
+    var gil = PyGILState_Ensure();
+    var ts = PyEval_SaveThread();
+
+    // 
+    // setup is done
+    // 
+    signals.setupDone.deref().signal();
+
+    // 
+    // wait for deinit to be called
+    // 
+    signals.done.deref().wait();
+
+    // 
+    // restore the thread state so we can release the gil and exit
+    // 
+    PyEval_RestoreThread(ts);
+    PyGILState_Release(gil);
+    Py_Finalize();
+    return nil;
+
+  }
+
   /*
     Represents the python interpreter. All code using the Python module should
     create and maintain a single instance of this class.
@@ -435,7 +515,9 @@ module Python {
     @chpldoc.nodoc
     var isSubInterpreter: bool;
     @chpldoc.nodoc
-    var done: sync bool = false;
+    var done: PThread.pthreadSignal;
+    @chpldoc.nodoc
+    var thread: PThread.pthread_t;
 
     @chpldoc.nodoc
     proc init(isSubInterpreter: bool = false) {
@@ -445,144 +527,92 @@ module Python {
     @chpldoc.nodoc
     proc postinit() throws {
       if this.isSubInterpreter then return;
-      
-      // 
-      // make sure 'done' is empty
-      // 
-      done.readFE();
 
-      // 
-      // make sure 'setupDone' is empty
-      // 
-      var setupDone: sync bool = false;
-      setupDone.readFE();
+      var setupDone = new PThread.pthreadSignal();
+      var signals = new signalPair(c_ptrTo(setupDone), c_ptrTo(this.done));
 
       // 
       // Do all Python initialization/finalization in a single task.
       // Initialization will be done, then this thread will block on 'done'.
       // When the deinit is called, it will unblock this thread and finalize
+      // NOTE: this is done with a manual pthread to work around
+      // https://github.com/chapel-lang/chapel/issues/26855
       // 
-      begin {
-        // preinit
-        var preconfig: PyPreConfig;
-        PyPreConfig_InitIsolatedConfig(c_ptrTo(preconfig));
-        preconfig.utf8_mode = 1;
-        checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
-
-        // init
-        var config_: PyConfig;
-        var cfgPtr = c_ptrTo(config_);
-        // we want an isolated config for things like LC_ALL, but we still want
-        // to use things like PYTHONPATH
-        PyConfig_InitIsolatedConfig(cfgPtr);
-        config_.isolated = 0;
-        config_.use_environment = 1;
-        config_.user_site_directory = 1;
-        config_.site_import = 1;
-        defer PyConfig_Clear(cfgPtr);
-
-        // check VIRTUAL_ENV, if its set, make it the executable
-        var venv = getenv("VIRTUAL_ENV".c_str());
-        if venv != nil {
-          // ideally this just sets config_.home
-          // but by setting executable we can reuse the python logic to
-          // determine the locale (in the string sense, not the chapel sense)
-          const executable = string.createBorrowingBuffer(venv) + "/bin/python";
-          const wideExecutable = executable.c_wstr();
-          checkPyStatus(
-            PyConfig_SetString(
-              cfgPtr, c_ptrTo(config_.executable), wideExecutable));
-          deallocate(wideExecutable);
-        }
-
-        // initialize
-        checkPyStatus(Py_InitializeFromConfig(cfgPtr));
-
-        var sys = PyImport_ImportModule("sys");
-        this.checkException();
-        defer Py_DECREF(sys);
-
-        // setup sys.path
-        {
-          var path = PyObject_GetAttrString(sys, "path");
-          this.checkException();
-          defer Py_DECREF(path);
-
-          // add paths from PYTHONPATH to the front of PATH
-          var pythonPathCstr = getenv("PYTHONPATH".c_str());
-          if pythonPathCstr != nil {
-            const pythonPath = string.createBorrowingBuffer(pythonPathCstr);
-
-            var elms = pythonPath.split(getOsPathSepHelper(this));
-            for elm in elms {
-              if elm.size == 0 then continue;
-              PyList_Append(path, Py_BuildValue("s", elm.c_str()));
-              this.checkException();
-            }
-          }
-
-          // add the current directory to the python path
-          PyList_Insert(path, 0, Py_BuildValue("s", "."));
-          this.checkException();
-        }
-
-        if !ArrayTypes.createArrayTypes() {
-          throwChapelException("Failed to create Python array types for Chapel arrays");
-        }
-        if !ArrayTypes.registerArrayTypeEnum() {
-          throwChapelException("Failed to register Python array types for Chapel arrays");
-        }
-
-        // 
-        // grab the GIL and enter a state where we can invoke threads
-        // 
-        var gil = PyGILState_Ensure();
-        var ts = PyEval_SaveThread();
-
-        if pyMemLeaks {
-          // import objgraph
-          this.objgraph = this.importModuleInternal("objgraph");
-          if this.objgraph == nil {
-            writeln("objgraph not found, memory leak detection disabled. " +
-                    "Install objgraph with 'pip install objgraph'");
-          } else {
-            // objgraph.growth()
-            var growth = PyObject_GetAttrString(this.objgraph, "growth");
-            this.checkException();
-            var res = PyObject_CallFunctionObjArgs(growth, Py_None, nil);
-            this.checkException();
-            Py_DECREF(res);
-            Py_DECREF(growth);
-          }
-        }
-
-        // 
-        // setup is done
-        // 
-        setupDone.writeEF(true);
-
-        // 
-        // wait for deinit to be called
-        // 
-        done.readFE();
-
-        // 
-        // restore the thread state so we can release the gil and exit
-        // 
-        PyEval_RestoreThread(ts);
-        PyGILState_Release(gil);
-        Py_Finalize();
-
-      }
+      PThread.pthread_create(c_ptrTo(this.thread),
+                             nil,
+                             c_ptrTo(interpreterThread),
+                             c_ptrTo(signals));
 
       // 
       // blocks until setup is done, once setup is done we can return
       // 
-      setupDone.readFE();
+      setupDone.wait();
+
+      // check for an error from the pthread
+      if interpreterThreadError != nil {
+        throw interpreterThreadError;
+      }
+
+
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+
+      var sys = PyImport_ImportModule("sys");
+      this.checkException();
+      defer Py_DECREF(sys);
+
+      // setup sys.path
+      {
+        var path = PyObject_GetAttrString(sys, "path");
+        this.checkException();
+        defer Py_DECREF(path);
+
+        // add paths from PYTHONPATH to the front of PATH
+        var pythonPathCstr = getenv("PYTHONPATH".c_str());
+        if pythonPathCstr != nil {
+          const pythonPath = string.createBorrowingBuffer(pythonPathCstr);
+
+          var elms = pythonPath.split(getOsPathSepHelper(this));
+          for elm in elms {
+            if elm.size == 0 then continue;
+            PyList_Append(path, Py_BuildValue("s", elm.c_str()));
+            this.checkException();
+          }
+        }
+
+        // add the current directory to the python path
+        PyList_Insert(path, 0, Py_BuildValue("s", "."));
+        this.checkException();
+      }
+
+      if !ArrayTypes.createArrayTypes() {
+        throwChapelException("Failed to create Python array types for Chapel arrays");
+      }
+      if !ArrayTypes.registerArrayTypeEnum() {
+        throwChapelException("Failed to register Python array types for Chapel arrays");
+      }
+
+      if pyMemLeaks {
+        // import objgraph
+        this.objgraph = this.importModuleInternal("objgraph");
+        if this.objgraph == nil {
+          writeln("objgraph not found, memory leak detection disabled. " +
+                  "Install objgraph with 'pip install objgraph'");
+        } else {
+          // objgraph.growth()
+          var growth = PyObject_GetAttrString(this.objgraph, "growth");
+          this.checkException();
+          var res = PyObject_CallFunctionObjArgs(growth, Py_None, nil);
+          this.checkException();
+          Py_DECREF(res);
+          Py_DECREF(growth);
+        }
+      }
+
     }
     @chpldoc.nodoc
     proc deinit()  {
-      writeln("hello");
       if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
@@ -610,12 +640,11 @@ module Python {
         Py_DECREF(this.objgraph);
       }
 
-      writeln("can i get here");
-
       // 
       // we are done, the thread keeping the interpreter alive can finish
       // 
-      done.writeEF(true);
+      this.done.signal();
+      PThread.pthread_join(this.thread, nil);
     }
 
     /*
@@ -1561,13 +1590,11 @@ module Python {
 
     @chpldoc.nodoc
     proc deinit() {
-      writeln("calling deinit");
       if this.isOwned {
         var g = PyGILState_Ensure();
         defer PyGILState_Release(g);
         Py_DECREF(this.obj);
       }
-      writeln("done calling deinit");
     }
 
     /*
@@ -3219,4 +3246,68 @@ module Python {
 
     }
   }
+
+  /*
+    A small subset of the pthread API
+  */
+  @chpldoc.nodoc
+  module PThread {
+    private use CTypes;
+
+    extern type pthread_t;
+    extern type pthread_attr_t;
+    extern type pthread_mutex_t;
+    extern type pthread_mutexattr_t;
+    extern type pthread_cond_t;
+    extern type pthread_condattr_t;
+    extern proc pthread_create(thread: c_ptr(pthread_t),
+                              attr: c_ptr(pthread_attr_t),
+                              start_routine: c_fn_ptr,
+                              arg: c_ptr(void)): c_int;
+
+    extern proc pthread_join(thread: pthread_t,
+                            retval: c_ptr(c_ptr(void))): c_int;
+    extern proc pthread_mutex_init(mutex: c_ptr(pthread_mutex_t),
+                                  attr: c_ptr(pthread_mutexattr_t)): c_int;
+    extern proc pthread_mutex_destroy(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_mutex_lock(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_mutex_unlock(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_cond_init(cond: c_ptr(pthread_cond_t),
+                                  attr: c_ptr(pthread_condattr_t)): c_int;
+    extern proc pthread_cond_destroy(cond: c_ptr(pthread_cond_t)): c_int;
+    extern proc pthread_cond_wait(cond: c_ptr(pthread_cond_t),
+                                  mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_cond_signal(cond: c_ptr(pthread_cond_t)): c_int;
+
+    record pthreadSignal {
+      var mutex: pthread_mutex_t;
+      var cond: pthread_cond_t;
+      var signaled: bool = false;
+      proc init() {
+        init this;
+        pthread_mutex_init(c_ptrTo(mutex), nil);
+        pthread_cond_init(c_ptrTo(cond), nil);
+      }
+      proc ref deinit() {
+        pthread_mutex_destroy(c_ptrTo(mutex));
+        pthread_cond_destroy(c_ptrTo(cond));
+      }
+      proc ref signal() {
+        pthread_mutex_lock(c_ptrTo(mutex));
+        signaled = true;
+        pthread_cond_signal(c_ptrTo(cond));
+        pthread_mutex_unlock(c_ptrTo(mutex));
+      }
+      proc ref wait() {
+        pthread_mutex_lock(c_ptrTo(mutex));
+        while !signaled {
+          pthread_cond_wait(c_ptrTo(cond), c_ptrTo(mutex));
+        }
+        signaled = false;
+        pthread_mutex_unlock(c_ptrTo(mutex));
+      }
+    }
+
+  }
+
 }
