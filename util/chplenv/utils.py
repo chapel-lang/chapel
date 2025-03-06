@@ -13,6 +13,21 @@ except ImportError:
     # Backport for pre Python 3.2
     from distutils.spawn import find_executable as which
 
+
+_CHPL_DEVELOPER = False
+
+def CHPL_DEVELOPER():
+    global _CHPL_DEVELOPER
+    return _CHPL_DEVELOPER
+
+def init_CHPL_DEVELOPER():
+    global _CHPL_DEVELOPER
+    _CHPL_DEVELOPER = is_true(os.environ.get('CHPL_DEVELOPER', False))
+
+def set_CHPL_DEVELOPER(value):
+    global _CHPL_DEVELOPER
+    _CHPL_DEVELOPER = is_true(value)
+
 # should not need this outside of this class
 _warning_buffer = []
 _buffer_warnings = True
@@ -42,8 +57,7 @@ ignore_errors = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
-    developer = os.environ.get('CHPL_DEVELOPER')
-    if developer and developer != "0" and not ignore_errors:
+    if CHPL_DEVELOPER() and not ignore_errors:
         # before rasing the exception, flush the warnings
         flush_warnings()
         raise exception(msg)
@@ -180,6 +194,11 @@ def is_ver_in_range(versionStr, minimumStr, maximumStr):
             return False
 
     return False
+
+
+def is_true(value):
+    truthy = ('yes', 'Yes', 'YES', 'y', 'Y', 'true', 'True', 'TRUE', 't', 'T', '1', True)
+    return value in truthy
 
 
 class _UtilsTests(unittest.TestCase):
