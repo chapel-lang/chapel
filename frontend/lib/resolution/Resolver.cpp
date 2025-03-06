@@ -4744,27 +4744,30 @@ bool Resolver::enter(const uast::Array* decl) {
   return true;
 }
 void Resolver::exit(const uast::Array* decl) {
-  // Set up element actuals
-  std::vector<CallInfoActual> actuals;
-  for (auto expr : decl->exprs()) {
-    auto exprType = byPostorder.byAst(expr).type();
-    actuals.emplace_back(exprType, UniqueString());
-  }
-
-  // Call array builder proc in module code
-  static auto arrayBuilderProc =
-      UniqueString::get(context, "chpl__buildArrayExpr");
-  auto ci = CallInfo(/* name */ arrayBuilderProc,
-                     /* calledType */ QualifiedType(),
-                     /* isMethodCall */ false,
-                     /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
-  auto scope = scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  auto c = resolveGeneratedCall(decl, &ci, &inScopes);
-
   ResolvedExpression& r = byPostorder.byAst(decl);
-  c.noteResult(&r);
+
+  if (!decl->isMultiDim()) {
+    std::vector<CallInfoActual> actuals;
+    for (auto expr : decl->exprs()) {
+      auto exprType = byPostorder.byAst(expr).type();
+      actuals.emplace_back(exprType, UniqueString());
+    }
+
+    static auto arrayBuilderProc =
+        UniqueString::get(context, "chpl__buildArrayExpr");
+    auto ci = CallInfo(/* name */ arrayBuilderProc,
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false, actuals);
+    auto scope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+    c.noteResult(&r);
+  } else {
+    CHPL_UNIMPL("multidimensional array literals");
+  }
 }
 
 bool Resolver::enter(const uast::Domain* decl) {
