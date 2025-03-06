@@ -166,10 +166,15 @@ def get_sys_c_types(docs=False,minimal=False):
     # Iterate through the max value expressions, evaluate each one, and store
     # it in a list. Python deals with arbitrarily large integers, so there is
     # no fear of overflow.
-    replace_pattern = re.compile(r'[UL]', re.IGNORECASE)
+    replace_patterns = [
+        (re.compile(r'[UL]', re.IGNORECASE), ''),
+        (re.compile(r"'\\0'", re.IGNORECASE), '0'),
+    ]
     max_values = []
     for expr in max_exprs:
-        ex = re.sub(replace_pattern, '', expr)
+        ex = expr
+        for pattern, repl in replace_patterns:
+            ex = pattern.sub(repl, ex)
         value = eval(ex)
         logging.debug('{0} -> {1}'.format(expr, value))
         max_values.append(value)
