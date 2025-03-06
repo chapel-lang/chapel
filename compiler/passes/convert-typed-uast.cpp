@@ -383,10 +383,12 @@ struct TConverter final : UastConverter {
   ~TConverter();
 
   void setupEssentialModuleGlobalVars() {
-    std::vector<std::tuple<ModuleSymbol**, ModuleSymbol**, const char*>> v = {
-      std::tuple { &modChapelBase,  &baseModule,    "ChapelBase"  },
-      std::tuple { &modChapelTuple, nullptr,        "ChapelTuple" },
-      std::tuple { &modIO,          &ioModule,      "IO"          },
+    using Entry = std::tuple<ModuleSymbol**, ModuleSymbol**, const char*>;
+
+    std::vector<Entry> v {
+      Entry { &modChapelBase,  &baseModule,    "ChapelBase"  },
+      Entry { &modChapelTuple, nullptr,        "ChapelTuple" },
+      Entry { &modIO,          &ioModule,      "IO"          },
     };
 
     for (auto [ptr1, ptr2, str] : v) {
