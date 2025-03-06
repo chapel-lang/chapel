@@ -1943,22 +1943,26 @@ module ChapelArray {
   }
 
   @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
-  operator :(arr: [], type t: []) {
-    // Would like to write:
-    //   var a: t = [elem in arr] elem:t.eltType;
-    // but we don't support type queries on array types (yet)
-    // (see https://github.com/chapel-lang/chapel/issues/8543)
-    var a: t;
+  operator :(arg: [], type t: []) {
+    var res: t;
 
-    if !arr.isRectangular() || !a.isRectangular() {
+    if !arg.isRectangular() || !res.isRectangular() {
       compilerError("Casts between arrays only support rectangular arrays");
-    } else if arr.rank != a.rank {
+    } else if arg.rank != res.rank {
       compilerError("Casts between arrays require matching ranks");
     } else {
-      a = [elem in arr] elem:a.eltType;
+      if boundsChecking then
+        checkArrayShapesUponAssignment(arg, res, forCast=true);
+
+      // factor this capture of the type out of the loop since it may
+      // involve a runtime type for arrays of arrays
+      type resType = res.eltType;
+      forall (i,j) in zip(res.domain, arg.domain) {
+        res[i] = arg[j]:resType;
+      }
     }
 
-    return a;
+    return res;
   }
 
   // The same as the built-in _cast, except accepts a param arg.
@@ -2161,7 +2165,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap=false, forCast=false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = if isProtoSlice(a) then a.dims()
                                        else a._value.dom.dsiDims();
@@ -2170,7 +2174,9 @@ module ChapelArray {
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
-          halt(if forSwap then "swapping" else "assigning",
+          halt(if forSwap then "swapping"
+                          else if forCast then "casting"
+                          else "assigning",
                " between arrays of different shapes in dimension ",
                i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }
