@@ -328,6 +328,18 @@ findMostSpecificCandidatesQuery(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(findMostSpecificCandidatesQuery, rc,
               lst, call, callInScope, callInPoiScope);
 
+  if (call.name() == "this") {
+    if (call.actual(0).type().type() && call.actual(0).type().type()->isArrayType() &&
+        call.actual(0)
+            .type().type()
+            ->toArrayType()
+            ->eltType()
+            .type()
+            ->isStringType()) {
+      gdbShouldBreakHere();
+    }
+  }
+
   // Construct the DisambiguationContext
   bool explain = true;
   DisambiguationContext dctx(rc, &call,
@@ -1209,11 +1221,6 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
       numParamNarrowing++;
     }
 
-    if (canPass.passes() && canPass.promotes()) {
-      actualType = getPromotionType(context, fa1->actualType()).type();
-      this->promotedFormals[fa1->formal()->id()] = fa1->actualType();
-    }
-
     if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
       anyNegParamToUnsigned = true;
     }
@@ -1224,7 +1231,8 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     }
 
     if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::ConversionKind::NONE) {
+        canPass.conversionKind() == CanPassResult::ConversionKind::NONE &&
+        !canPass.promotes()) {
       continue;
     }
 
@@ -1252,6 +1260,12 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
         // it is only a change in the tuple ref-ness
         continue;
       }
+    }
+
+    if (canPass.passes() && canPass.promotes()) {
+      actualType = getPromotionType(context, fa1->actualType()).type();
+      gdbShouldBreakHere();
+      this->promotedFormals[fa1->formal()->id()] = fa1->actualType();
     }
 
     nImplicitConversions++;
