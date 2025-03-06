@@ -4,7 +4,10 @@ config const pycPath: string;
 use Python;
 
 var interp = new Interpreter();
+// must manually hold the GIL, since `loadPycFile` is an internal function
+var g = new GIL();
 var modBytes = interp.loadPycFile(pycPath);
+g.release();
 
 var mod = interp.importModule("mod", modBytes);
 // get MyClass and my_function
