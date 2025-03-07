@@ -768,15 +768,16 @@ module CTypes {
     behavior to ``c_addrOf`` on types other than those with special behavior
     listed above.
 
+    Domains and non-local or non-rectangular arrays are not supported, and will
+    cause a compiler error.
+
     .. note::
 
       The existence of the ``c_ptr`` has no impact on the lifetime
       of the object it points to. In many cases the object will be stack
       allocated and could go out of scope even if this ``c_ptr`` remains.
 
-    :arg x:   The by-reference argument to get a pointer to. Domains and
-              non-local or non-rectangular arrays are not supported, and will
-              cause a compiler error.
+    :arg x:   The by-reference argument to get a pointer to.
     :returns: A :type:`c_ptr` to the argument passed by reference, with address
               and element type potentially depending on special behavior for the
               the type as described above.
