@@ -859,7 +859,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     setBlocking(socketFd, true);
     return new file(socketFd):tcpConn;
   }
-  var localSync: sync int = 0;
+  var localSync: sync c_short = 0;
   localSync.readFE();
   var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
@@ -1585,7 +1585,7 @@ pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(di
 
 @chpldoc.nodoc
 proc syncRWTCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
-  var syncVariablePtr = arg: c_ptr(sync int);
+  var syncVariablePtr = arg: c_ptr(sync c_short);
   syncVariablePtr.deref().writeEF(event);
 }
 
