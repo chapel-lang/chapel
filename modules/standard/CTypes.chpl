@@ -774,8 +774,9 @@ module CTypes {
       of the object it points to. In many cases the object will be stack
       allocated and could go out of scope even if this ``c_ptr`` remains.
 
-    :arg x:   The by-reference argument to get a pointer to. Domains are not
-              supported, and will cause a compiler error.
+    :arg x:   The by-reference argument to get a pointer to. Domains and
+              non-local or non-rectangular arrays are not supported, and will
+              cause a compiler error.
     :returns: A :type:`c_ptr` to the argument passed by reference, with address
               and element type potentially depending on special behavior for the
               the type as described above.
