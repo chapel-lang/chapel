@@ -9,6 +9,7 @@ Contributors to the Chapel 2.4 release
 * Shreyas Atre, individual contributor
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
+* R Chinmay, individual contributor
 * Soohoon Choi, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
@@ -55,7 +56,6 @@ Contributors to previous releases
 * Sanket Chaudhari, individual contributor
 * Rui Chen, individual contributor
 * Naman Chikara, individual contributor
-* R Chinmay, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
 * Sarah Coghlan, [HPE]
