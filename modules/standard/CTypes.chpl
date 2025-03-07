@@ -996,8 +996,8 @@ module CTypes {
     Note that the behavior of this procedure is identical to :proc:`c_ptrTo`
     for scalar types and records. It only differs for arrays, strings, bytes,
     and class variables; see documentation of :proc:`c_ptrTo` for special
-    behavior on those types. It also allows passing in domains or
-    non-local/non-rectangular arrays.
+    behavior on those types. It also allows passing in any type, including those
+    disallowed by :proc:`c_ptrTo`.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
