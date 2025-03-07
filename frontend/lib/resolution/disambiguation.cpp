@@ -328,18 +328,6 @@ findMostSpecificCandidatesQuery(ResolutionContext* rc,
   CHPL_RESOLUTION_QUERY_BEGIN(findMostSpecificCandidatesQuery, rc,
               lst, call, callInScope, callInPoiScope);
 
-  if (call.name() == "this") {
-    if (call.actual(0).type().type() && call.actual(0).type().type()->isArrayType() &&
-        call.actual(0)
-            .type().type()
-            ->toArrayType()
-            ->eltType()
-            .type()
-            ->isStringType()) {
-      gdbShouldBreakHere();
-    }
-  }
-
   // Construct the DisambiguationContext
   bool explain = true;
   DisambiguationContext dctx(rc, &call,
@@ -1264,7 +1252,6 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
 
     if (canPass.passes() && canPass.promotes()) {
       actualType = getPromotionType(context, fa1->actualType()).type();
-      gdbShouldBreakHere();
       this->promotedFormals[fa1->formal()->id()] = fa1->actualType();
     }
 
