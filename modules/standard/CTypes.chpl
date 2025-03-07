@@ -764,9 +764,7 @@ module CTypes {
       the ``bytes``.
 
     To avoid this special behavior and just get the variable address naively
-    regardless of type, use :proc:`c_addrOf` instead. ``c_ptrTo`` has identical
-    behavior to ``c_addrOf`` on types other than those with special behavior
-    listed above.
+    regardless of type, use :proc:`c_addrOf` instead.
 
     Domains and non-local or non-rectangular arrays are not supported, and will
     cause a compiler error.
