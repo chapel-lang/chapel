@@ -6,6 +6,7 @@ The following people have contributed to Chapel releases:
 Contributors to the Chapel 2.4 release
 --------------------------------------
 * Jade Abraham, [HPE]
+* Shreyas Atre, individual contributor
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
