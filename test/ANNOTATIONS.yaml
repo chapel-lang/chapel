@@ -618,6 +618,9 @@ all:
   02/03/25:
     - text: Started using ROCm 6.x
       config: 1-node-mi250x
+  02/27/25:
+    - text: Avoid Overriding Clang Sysroot (#26761)
+      config: chapcs
 
 # End all
 
