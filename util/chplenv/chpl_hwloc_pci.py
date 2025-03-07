@@ -13,7 +13,7 @@ import sys
 import chpl_hwloc, chpl_comm, chpl_locale_model, chpl_gpu
 import overrides
 
-from utils import error, memoize
+from utils import error, memoize, check_valid_var
 
 @memoize
 def get():
@@ -33,6 +33,7 @@ def get():
                 gpu_val = chpl_gpu.get()
                 if gpu_val != 'cpu':
                     pci_val = 'enable'
+    check_valid_var('CHPL_HWLOC_PCI', pci_val, ['enable', 'disable'])
     return pci_val
 
 

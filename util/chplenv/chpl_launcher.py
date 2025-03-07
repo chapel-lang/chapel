@@ -3,7 +3,7 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import which, error, memoize, warning
+from utils import which, error, memoize, warning, check_valid_var
 
 
 def slurm_prefix(base_launcher, platform_val):
@@ -68,6 +68,13 @@ def get():
 
     if launcher_val is None:
         launcher_val = 'none'
+
+    gasnet_launchers = ["mpi", "ibv", "ucx", "ofi"]
+    valid_values = ["none", "amudprun", "smp", "aprun", "slurm-srun"]
+    valid_values.extend(["lsf-gasnetrun_ibv", "mpirun", "mpirun4ofi", "pals", "pbs-aprun", "pbs-gasnetrun_ibv"])
+    valid_values.extend(["gasnetrun_{}".format(l) for l in gasnet_launchers])
+    valid_values.extend(["slurm-gasnetrun_{}".format(l) for l in gasnet_launchers])
+    check_valid_var("CHPL_LAUNCHER", launcher_val, valid_values)
 
     return launcher_val
 
