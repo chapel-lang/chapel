@@ -1965,12 +1965,12 @@ void resolveIfExprType(CondStmt* stmt) {
       retType = thenType;
     } else {
       bool promote = false;
-
-      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote) &&
-          promote == false) {
+      bool paramNarrows = false;
+      if (canDispatch(elseType, elseSym, thenType, NULL, fn, &promote, &paramNarrows) &&
+          promote == false && !paramNarrows) {
         retType = thenType;
-      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote) &&
-                 promote == false) {
+      } else if (canDispatch(thenType, thenSym, elseType, NULL, fn, &promote, &paramNarrows) &&
+                 promote == false && !paramNarrows) {
         retType = elseType;
       }
     }
@@ -2102,19 +2102,24 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
         for (int j = 0; j < retTypes.n; j++) {
           if (retTypes.v[i] != retTypes.v[j]) {
             bool requireScalarPromotion = false;
+            bool paramNarrows = false;
+              if (canDispatch(retTypes.v[j],
+                              retSymbols.v[j],
+                              retTypes.v[i],
+                              NULL,
+                              fn,
+                              &requireScalarPromotion,
+                              &paramNarrows) == false) {
+                best = false;
+              }
 
-            if (canDispatch(retTypes.v[j],
-                            retSymbols.v[j],
-                            retTypes.v[i],
-                            NULL,
-                            fn,
-                            &requireScalarPromotion) == false) {
-              best = false;
-            }
+              if (requireScalarPromotion) {
+                best = false;
+              }
 
-            if (requireScalarPromotion) {
-              best = false;
-            }
+              if (paramNarrows && fn->retTag != RET_PARAM) {
+                best = false;
+              }
           }
         }
 
