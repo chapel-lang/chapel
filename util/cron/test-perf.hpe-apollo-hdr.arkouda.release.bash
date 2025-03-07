@@ -23,6 +23,10 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 source $UTIL_CRON_DIR/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+# on this system, the array_transfer test comes dangerously close to the
+# timeout. So, here we double it for peace of mind.
+export ARKOUDA_CLIENT_TIMEOUT=600
+
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX="0.90"
 
