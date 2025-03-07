@@ -6,9 +6,9 @@ import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
 from utils import which, error, memoize, warning
 
 
-def slurm_prefix(base_launcher, platform_val):
-    """ If salloc is available and we're on a cray-cs/hpe-apollo, prefix with slurm-"""
-    if platform_val in ('cray-cs', 'hpe-apollo') and which('salloc'):
+def slurm_prefix(base_launcher):
+    """ If salloc is available, prefix with slurm-"""
+    if which('salloc'):
         return 'slurm-{}'.format(base_launcher)
     return base_launcher
 
@@ -34,6 +34,7 @@ def get():
             has_slurm = which('srun')
             if has_aprun and has_slurm:
                 launcher_val = 'none'
+                warning("Both 'aprun' and 'srun' are available on this system. Please explicitly set CHPL_LAUNCHER.")
             elif has_aprun:
                 launcher_val = 'aprun'
             elif has_slurm:
@@ -47,21 +48,22 @@ def get():
                 #        has_aprun and has_slurm should look other places
                 #        (maybe the modules?) to decide.
                 #        (thomasvandoren, 2014-08-12)
+                launcher_val = 'none'
                 warning('Cannot detect launcher on this system. Please '
                         'set CHPL_LAUNCHER in the environment.')
         elif comm_val == 'gasnet':
             if substrate_val == 'smp':
                 launcher_val = 'smp'
             elif substrate_val == 'mpi':
-                launcher_val = slurm_prefix('gasnetrun_mpi', platform_val)
+                launcher_val = slurm_prefix('gasnetrun_mpi')
             elif substrate_val == 'ibv':
-                launcher_val = slurm_prefix('gasnetrun_ibv', platform_val)
+                launcher_val = slurm_prefix('gasnetrun_ibv')
             elif substrate_val == 'ucx':
-                launcher_val = slurm_prefix('gasnetrun_ucx', platform_val)
+                launcher_val = slurm_prefix('gasnetrun_ucx')
             elif substrate_val == 'ofi':
-                launcher_val = slurm_prefix('gasnetrun_ofi', platform_val)
+                launcher_val = slurm_prefix('gasnetrun_ofi')
         else:
-            if platform_val in ('cray-cs', 'hpe-apollo') and which('srun'):
+            if which('srun'):
                 launcher_val = 'slurm-srun'
             else:
                 launcher_val = 'none'
