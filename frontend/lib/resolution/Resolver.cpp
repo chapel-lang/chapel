@@ -4750,6 +4750,12 @@ void Resolver::exit(const uast::Array* decl) {
     std::vector<CallInfoActual> actuals;
     for (auto expr : decl->exprs()) {
       auto exprType = byPostorder.byAst(expr).type();
+      // Short circuit if any elements have unknown type, since we won't be
+      // able to resolve the array builder proc.
+      if (exprType.isUnknown()) {
+        r.setType(QualifiedType());
+        return;
+      }
       actuals.emplace_back(exprType, UniqueString());
     }
 
