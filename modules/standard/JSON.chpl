@@ -1194,6 +1194,7 @@ module JSON {
   }
 
   @chpldoc.nodoc
+  @unstable
   proc fromJson(jsonString: string, type loadAs): loadAs throws
       where isDefaultInitializable(loadAs) {
     var fileReader = openStringReader(jsonString,
