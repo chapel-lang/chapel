@@ -31,13 +31,23 @@
 
 // Need this workaround for some compilers until the Chapel
 // compiler moves away from representing all C fn pointers as void*
+static void* chpl_gmp_alloc(size_t size) {
+  return chpl_mem_alloc(size, CHPL_RT_MD_GMP, 0, 0);
+}
+
+static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
+  return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP, 0, 0);
+}
+
+static void chpl_gmp_free(void* ptr, size_t old_size) {
+  return chpl_mem_free(ptr, 0, 0);
+}
+
 static inline
-void chpl_gmp_mp_set_memory_functions(c_fn_ptr alloc,
-                                      c_fn_ptr realloc,
-                                      c_fn_ptr free) {
-  mp_set_memory_functions((void *(*) (size_t)) alloc,
-                          (void *(*) (void *, size_t, size_t)) realloc,
-                          (void (*) (void *, size_t)) free);
+void chpl_gmp_mp_set_memory_functions(void) {
+  mp_set_memory_functions((void *(*) (size_t)) chpl_gmp_alloc,
+                          (void *(*) (void *, size_t, size_t)) chpl_gmp_realloc,
+                          (void (*) (void *, size_t)) chpl_gmp_free);
 }
 
 static inline
