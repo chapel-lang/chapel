@@ -1,10 +1,6 @@
 #ifndef QT_HASH_H
 #define QT_HASH_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -76,6 +72,9 @@ int INTERNAL qt_hash_remove(qt_hash h, qt_key_t const key);
  *	locked already.
  */
 int INTERNAL qt_hash_remove_locked(qt_hash h, qt_key_t const key);
+
+int INTERNAL qt_hash_pop(void **val, qt_hash h, qt_key_t const key);
+int INTERNAL qt_hash_pop_locked(void **val, qt_hash h, qt_key_t const key);
 
 /*!
  * @fn qt_hash_get(qt_hash        h,

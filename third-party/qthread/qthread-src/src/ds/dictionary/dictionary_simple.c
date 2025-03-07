@@ -35,7 +35,7 @@ void *qt_dictionary_put_helper(qt_dictionary *dict,
 
 // Handle the case when variable does not exist;
 // Locks become nops when qthread is no longer initialized
-#ifdef QTHREAD_NO_ASSERTS
+#ifdef NDEBUG
 static int qthread_library_initialized = 1;
 #endif
 
@@ -98,13 +98,13 @@ static int qthread_library_initialized = 1;
 
 #define GET_BUCKET(hash) ((DICT_ABS(hash)) & ((1 << BKT_POW) - 1))
 
-#ifndef QTHREAD_NO_ASSERTS
+#ifndef NDEBUG
 extern int qthread_library_initialized;
 #endif
 
-qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
-                                    qt_dict_hash_f hash,
-                                    qt_dict_cleanup_f cleanup) {
+API_FUNC qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
+                                             qt_dict_hash_f hash,
+                                             qt_dict_cleanup_f cleanup) {
   assert(qthread_library_initialized &&
          "Need to initialize qthreads before using the dictionary");
   qt_dictionary *ret = (qt_dictionary *)MALLOC(sizeof(qt_dictionary));
@@ -120,7 +120,7 @@ qt_dictionary *qt_dictionary_create(qt_dict_key_equals_f eq,
   return ret;
 }
 
-void qt_dictionary_destroy(qt_dictionary *d) {
+API_FUNC void qt_dictionary_destroy(qt_dictionary *d) {
   int i;
 
   for (i = 0; i < NO_BUCKETS; i++) {
@@ -256,15 +256,16 @@ void *qt_dictionary_put_helper(qt_dictionary *dict,
 }
 #endif /* ifdef DICTIONARY_ADD_TO_HEAD */
 
-void *qt_dictionary_put(qt_dictionary *dict, void *key, void *value) {
+API_FUNC void *qt_dictionary_put(qt_dictionary *dict, void *key, void *value) {
   return qt_dictionary_put_helper(dict, key, value, PUT_ALWAYS);
 }
 
-void *qt_dictionary_put_if_absent(qt_dictionary *dict, void *key, void *value) {
+API_FUNC void *
+qt_dictionary_put_if_absent(qt_dictionary *dict, void *key, void *value) {
   return qt_dictionary_put_helper(dict, key, value, PUT_IF_ABSENT);
 }
 
-void *qt_dictionary_get(qt_dictionary *dict, void *key) {
+API_FUNC void *qt_dictionary_get(qt_dictionary *dict, void *key) {
   int hash = dict->op_hash(key);
   int bucket = GET_BUCKET(hash);
 
@@ -283,7 +284,7 @@ void *qt_dictionary_get(qt_dictionary *dict, void *key) {
   return NULL;
 }
 
-void *qt_dictionary_delete(qt_dictionary *dict, void *key) {
+API_FUNC void *qt_dictionary_delete(qt_dictionary *dict, void *key) {
   void *to_ret = NULL;
   list_entry *to_free = NULL;
   int hash = dict->op_hash(key);
@@ -340,7 +341,8 @@ void *qt_dictionary_delete(qt_dictionary *dict, void *key) {
   return to_ret;
 }
 
-qt_dictionary_iterator *qt_dictionary_iterator_create(qt_dictionary *dict) {
+API_FUNC qt_dictionary_iterator *
+qt_dictionary_iterator_create(qt_dictionary *dict) {
   if ((dict == NULL) || (dict->content == NULL)) { return ERROR; }
   qt_dictionary_iterator *it =
     (qt_dictionary_iterator *)MALLOC(sizeof(qt_dictionary_iterator));
@@ -353,12 +355,12 @@ qt_dictionary_iterator *qt_dictionary_iterator_create(qt_dictionary *dict) {
   return it;
 }
 
-void qt_dictionary_iterator_destroy(qt_dictionary_iterator *it) {
+API_FUNC void qt_dictionary_iterator_destroy(qt_dictionary_iterator *it) {
   if (it == NULL) { return; }
   FREE(it, sizeof(qt_dictionary_iterator));
 }
 
-list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
+API_FUNC list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
   if ((it == NULL) || (it->dict == NULL) || (it->dict->content == NULL)) {
     return ERROR;
   }
@@ -400,7 +402,8 @@ list_entry *qt_dictionary_iterator_next(qt_dictionary_iterator *it) {
   return NULL;
 }
 
-list_entry *qt_dictionary_iterator_get(qt_dictionary_iterator const *it) {
+API_FUNC list_entry *
+qt_dictionary_iterator_get(qt_dictionary_iterator const *it) {
   if ((it == NULL) || (it->dict == NULL) || (it->dict->content == NULL)) {
     printf(" Inside dictionary get, found NULL, will return ERROR\n");
     return ERROR;
@@ -409,7 +412,7 @@ list_entry *qt_dictionary_iterator_get(qt_dictionary_iterator const *it) {
   return it->crt;
 }
 
-qt_dictionary_iterator *qt_dictionary_end(qt_dictionary *dict) {
+API_FUNC qt_dictionary_iterator *qt_dictionary_end(qt_dictionary *dict) {
   if ((dict == NULL) || (dict->content == NULL)) { return NULL; }
   qt_dictionary_iterator *it = qt_dictionary_iterator_create(dict);
   it->crt = NULL;
@@ -418,13 +421,14 @@ qt_dictionary_iterator *qt_dictionary_end(qt_dictionary *dict) {
   return it;
 }
 
-int qt_dictionary_iterator_equals(qt_dictionary_iterator *a,
-                                  qt_dictionary_iterator *b) {
+API_FUNC int qt_dictionary_iterator_equals(qt_dictionary_iterator *a,
+                                           qt_dictionary_iterator *b) {
   if ((a == NULL) || (b == NULL)) { return a == b; }
   return (a->crt == b->crt) && (a->dict == b->dict) && (a->bkt == b->bkt);
 }
 
-qt_dictionary_iterator *qt_dictionary_iterator_copy(qt_dictionary_iterator *b) {
+API_FUNC qt_dictionary_iterator *
+qt_dictionary_iterator_copy(qt_dictionary_iterator *b) {
   if (b == NULL) { return NULL; }
   qt_dictionary_iterator *ret = qt_dictionary_iterator_create(b->dict);
   if ((ret == NULL) || (ret == ERROR)) { return NULL; }

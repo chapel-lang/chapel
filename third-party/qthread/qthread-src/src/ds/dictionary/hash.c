@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* Qthreads Headers */
 #include <qthread/hash.h>
 #include <qthread/qthread.h>
@@ -12,8 +8,7 @@
 /* these functions are based on http://burtleburtle.net/bob/hash/evahash.html */
 #define rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
 
-uint64_t API_FUNC qt_hash64(uint64_t key) { /*{{{*/
-
+uint64_t API_FUNC qt_hash64(uint64_t key) {
   const union {
     uint64_t key;
     uint8_t b[sizeof(uint64_t)];
@@ -103,7 +98,7 @@ uint64_t API_FUNC qt_hash64(uint64_t key) { /*{{{*/
   c -= rot(b, 24u);
   return ((uint64_t)c + (((uint64_t)b) << 32));
 #endif /* if (QTHREAD_BITS == 64) */
-} /*}}}*/
+}
 
 #if (QTHREAD_BITS == 32)
 #define mix(a, b, c)                                                           \

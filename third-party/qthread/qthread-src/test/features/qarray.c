@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qarray.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -75,13 +74,13 @@ int main(int argc, char *argv[]) {
     count = 0;
     a = qarray_create_configured(
       ELEMENT_COUNT, sizeof(double), disttypes[dt_index], 0, 0);
-    assert(a);
+    test_check(a);
     iprintf("%s: created basic array of doubles\n", distnames[dt_index]);
     qarray_iter(a, 0, ELEMENT_COUNT, assign1);
     iprintf("%s: iterated; now checking work...\n", distnames[dt_index]);
     if (count != ELEMENT_COUNT) {
       printf("count = %lu, dt_index = %u\n", (unsigned long)count, dt_index);
-      assert(count == ELEMENT_COUNT);
+      test_check(count == ELEMENT_COUNT);
     }
     {
       size_t i;
@@ -94,7 +93,7 @@ int main(int argc, char *argv[]) {
                  (unsigned long)i,
                  elem,
                  distnames[dt_index]);
-          assert(elem == 1.0);
+          test_check(elem == 1.0);
         }
       }
     }
@@ -110,7 +109,7 @@ int main(int argc, char *argv[]) {
     iprintf("%s: iterated; now checking work...\n", distnames[dt_index]);
     if (count != ELEMENT_COUNT) {
       printf("count = %lu, dt_index = %u\n", (unsigned long)count, dt_index);
-      // assert(count == ELEMENT_COUNT);
+      // test_check(count == ELEMENT_COUNT);
     }
     {
       size_t i;
@@ -133,7 +132,7 @@ int main(int argc, char *argv[]) {
           }
         }
       }
-      assert(fail == 0);
+      test_check(fail == 0);
     }
     iprintf("%s: correct result!\n", distnames[dt_index]);
     qarray_destroy(a);
@@ -147,7 +146,7 @@ int main(int argc, char *argv[]) {
     iprintf("%s: iterated; now checking work...\n", distnames[dt_index]);
     if (count != ELEMENT_COUNT) {
       printf("count = %lu, dt_index = %u\n", (unsigned long)count, dt_index);
-      assert(count == ELEMENT_COUNT);
+      test_check(count == ELEMENT_COUNT);
     }
     {
       size_t i;
@@ -164,7 +163,7 @@ int main(int argc, char *argv[]) {
               (unsigned long)i,
               elem[j],
               dt_index);
-            assert(elem[j] == 1);
+            test_check(elem[j] == 1);
           }
         }
       }

@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* The API */
 #include "qthread/qthread.h"
 
@@ -24,7 +20,7 @@ static unsigned freelist_max = 0;
 
 static hazard_freelist_entry_t *free_these_freelists = NULL;
 
-static void hazardptr_internal_teardown(void) { /*{{{*/
+static void hazardptr_internal_teardown(void) {
   while (free_these_freelists != NULL) {
     hazard_freelist_entry_t *tmp = free_these_freelists;
     free_these_freelists = (hazard_freelist_entry_t *)tmp[freelist_max].ptr;
@@ -37,9 +33,9 @@ static void hazardptr_internal_teardown(void) { /*{{{*/
     FREE(hzptr_tmp, (HAZARD_PTRS_PER_SHEP + 1) * sizeof(uintptr_t));
   }
   QTHREAD_CASLOCK_DESTROY(hzptr_list);
-} /*}}}*/
+}
 
-void INTERNAL initialize_hazardptrs(void) { /*{{{*/
+void INTERNAL initialize_hazardptrs(void) {
   freelist_max = qthread_num_shepherds() * qlib->nworkerspershep + 7;
   for (qthread_shepherd_id_t i = 0; i < qthread_num_shepherds(); ++i) {
     for (qthread_worker_id_t j = 0; j < qlib->nworkerspershep; ++j) {
@@ -63,9 +59,9 @@ void INTERNAL initialize_hazardptrs(void) { /*{{{*/
   TLS_INIT(ts_hazard_ptrs);
   QTHREAD_CASLOCK_INIT(hzptr_list, NULL);
   qthread_internal_cleanup(hazardptr_internal_teardown);
-} /*}}}*/
+}
 
-void INTERNAL hazardous_ptr(unsigned int which, void *ptr) { /*{{{*/
+void INTERNAL hazardous_ptr(unsigned int which, void *ptr) {
   uintptr_t *hzptrs = TLS_GET(ts_hazard_ptrs);
 
   if (hzptrs == NULL) {
@@ -90,14 +86,13 @@ void INTERNAL hazardous_ptr(unsigned int which, void *ptr) { /*{{{*/
   assert(hzptrs);
   assert(which < HAZARD_PTRS_PER_SHEP);
   hzptrs[which] = (uintptr_t)ptr;
-} /*}}}*/
+}
 
-static int void_cmp(void const *a, void const *b) { /*{{{*/
+static int void_cmp(void const *a, void const *b) {
   return (*(intptr_t *)a) - (*(intptr_t *)b);
-} /*}}}*/
+}
 
-static int
-binary_search(uintptr_t *list, uintptr_t findme, size_t len) { /*{{{*/
+static int binary_search(uintptr_t *list, uintptr_t findme, size_t len) {
   size_t max = len;
   size_t min = 0;
   size_t curs = max / 2;
@@ -112,9 +107,9 @@ binary_search(uintptr_t *list, uintptr_t findme, size_t len) { /*{{{*/
     curs = (max + min) / 2;
   }
   return (list[curs] == findme);
-} /*}}}*/
+}
 
-static void hazardous_scan(hazard_freelist_t *hfl) { /*{{{*/
+static void hazardous_scan(hazard_freelist_t *hfl) {
   size_t const num_hps = qthread_num_workers() * HAZARD_PTRS_PER_SHEP;
   void **plist = MALLOC(sizeof(void *) * (num_hps + hzptr_list_len));
   hazard_freelist_t tmpfreelist;
@@ -180,10 +175,9 @@ static void hazardous_scan(hazard_freelist_t *hfl) { /*{{{*/
   hfl->count = tmpfreelist.count;
   FREE(tmpfreelist.freelist, sizeof(hazard_freelist_entry_t));
   FREE(plist, sizeof(void *) * (num_hps + hzptr_list_len));
-} /*}}}*/
+}
 
-void INTERNAL hazardous_release_node(void (*freefunc)(void *),
-                                     void *ptr) { /*{{{*/
+void INTERNAL hazardous_release_node(void (*freefunc)(void *), void *ptr) {
   hazard_freelist_t *hfl = &(qthread_internal_getworker()->hazard_free_list);
   uintptr_t *hzptrs = TLS_GET(ts_hazard_ptrs);
 
@@ -197,6 +191,6 @@ void INTERNAL hazardous_release_node(void (*freefunc)(void *),
     memset(hzptrs, 0, sizeof(uintptr_t) * HAZARD_PTRS_PER_SHEP);
   }
   if (hfl->count == freelist_max) { hazardous_scan(hfl); }
-} /*}}}*/
+}
 
 /* vim:set expandtab: */
