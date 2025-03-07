@@ -858,11 +858,11 @@ Array* ParserContext::buildNDArray(YYLTYPE location, ParserNDArrayList* lst) {
   auto loc = convertLocation(location);
 
   BuildArrayRowsContext barc;
-  auto [rows, _] = barc.buildArrayRows(this, lst, loc,
-                        /*start*/0, /*end*/lst->size()-1);
+  auto rows = barc.buildArrayRows(this, lst, loc,
+                                   /*start*/0, /*end*/lst->size()-1);
   barc.realizeErrors(this, lst);
   delete lst;
-  return Array::build(builder, loc, std::move(rows)).release();
+  return Array::build(builder, loc, std::move(rows.first)).release();
 }
 
 
