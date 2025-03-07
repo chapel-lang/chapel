@@ -1180,12 +1180,31 @@ module JSON {
      :arg loadAs: The type to deserialize the JSON string into
 
      :returns: A value of type ``loadAs``.
+
+     .. warning::
+
+       Errors thrown from this function can only be caught if ``loadAs`` is a
+       default-initializable type.
    */
   @unstable
   proc fromJson(jsonString: string, type loadAs): loadAs throws {
     var fileReader = openStringReader(jsonString,
                                       deserializer=new jsonDeserializer());
     return fileReader.read(loadAs);
+  }
+
+  @chpldoc.nodoc
+  @unstable
+  proc fromJson(jsonString: string, type loadAs): loadAs throws
+      where isDefaultInitializable(loadAs) {
+    var fileReader = openStringReader(jsonString,
+                                      deserializer=new jsonDeserializer());
+    // we want `return fileReader.read(loadAs)`. But that ends up using a
+    // non-throwing compiler-generated initializer. That prevents the user to
+    // catch errors that are due to malformed jsonString.
+    var ret: loadAs;
+    fileReader.read(ret);
+    return ret;
   }
 
   /* Given a Chapel value, serialize it into a JSON string using the
