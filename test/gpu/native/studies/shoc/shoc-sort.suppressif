@@ -14,7 +14,7 @@ check_conditions() {
         return 1
     fi
 
-    # Check if CHPL_GPU_SDK_VERSION contains '6'
+    # Check if CHPL_GPU_SDK_VERSION starts with '6'
     chpl_env_output=$("$chpl_home/util/printchplenv" --all)
     if echo "$chpl_env_output" | grep -q 'CHPL_GPU_SDK_VERSION: 6'; then
         return 0
