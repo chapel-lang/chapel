@@ -1,0 +1,2 @@
+bug: certain array-of-array types lead to use-after-free core errors/core dumps
+#26865

@@ -1,0 +1,2 @@
+bug: certain array-of-array types result in memory leaks
+#26865
