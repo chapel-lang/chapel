@@ -1,0 +1,2 @@
+type is: [domain(1,int(64),one)] [domain(2,int(64),one)] real(64)
+type is: [domain(1,int(64),one)] [domain(2,int(64),one)] [domain(1,int(64),one)] real(64)
