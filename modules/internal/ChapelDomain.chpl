@@ -1622,12 +1622,14 @@ module ChapelDomain {
 
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
-      proc help() {
+      proc help(thisDom) {
         // Workaround: added 'this.' qualification as Dyno can't resolve method
         // call in nested method atm. Anna 2025-02-27
-        this._value.add_arr(x);
+        // Additional workaround: Switched to using explictly passed-in value
+        // for 'this'. Anna 2025-03-07.
+        thisDom._value.add_arr(x);
       }
-      help();
+      help(this);
 
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 

@@ -110,6 +110,13 @@ class Array final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
+
+  /**
+    Return whether this is a multi-dimensional array.
+  */
+  bool isMultiDim() const {
+    return this->numExprs() > 0 && this->expr(0)->isArrayRow();
+  }
 };
 
 
