@@ -766,8 +766,8 @@ module CTypes {
     To avoid this special behavior and just get the variable address naively
     regardless of type, use :proc:`c_addrOf` instead.
 
-    Domains and non-local or non-rectangular arrays are not supported, and will
-    cause a compiler error.
+    Domains, non-local arrays, and non-rectangular arrays are not supported,
+    and will cause a compiler error.
 
     .. note::
 
