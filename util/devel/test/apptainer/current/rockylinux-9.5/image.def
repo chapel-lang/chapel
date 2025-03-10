@@ -6,7 +6,7 @@ From: rockylinux/rockylinux:9.5
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installs LLVM / clang ?
+    # installs LLVM / clang 18
     /provision-scripts/dnf-llvm.sh
 
 %runscript

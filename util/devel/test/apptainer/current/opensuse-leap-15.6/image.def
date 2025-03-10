@@ -6,7 +6,7 @@ From: opensuse/leap:15.6
 
 %post
     /provision-scripts/zypper-deps.sh
-    # leap 15.6 defaults to LLVM/clang ?
+    # leap 15.6 defaults to LLVM/clang 17
     /provision-scripts/zypper-llvm.sh
 
 %runscript
