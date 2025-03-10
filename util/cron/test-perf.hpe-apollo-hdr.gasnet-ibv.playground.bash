@@ -27,7 +27,7 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=1
+SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
@@ -37,7 +37,7 @@ fi
 GITHUB_USER=insertinterestingnamehere
 GITHUB_BRANCH=qthread
 SHORT_NAME=qthread122
-START_DATE=03/08/25
+START_DATE=03/10/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
