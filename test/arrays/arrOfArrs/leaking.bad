@@ -7,13 +7,13 @@ type is: [domain(2,int(64),one)] [domain(1,int(64),one)] [domain(1,int(64),one)]
 ================================================= Memory Leaks ==================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
 =================================================================================================================
-leaking.chpl:5                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:6                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:7                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:7                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:8                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:9                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:9                   1        72       72       domain(1,int(64),one)            prediffed  
-leaking.chpl:9                   1        72       72       domain(1,int(64),one)            prediffed  
+leaking.chpl:5                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:6                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:7                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:7                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:8                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
 =================================================================================================================
 
