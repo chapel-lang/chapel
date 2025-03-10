@@ -1,4 +1,4 @@
-
+// make sure that exceptions thrown from initializers are handled properly
 use Python;
 var interp = new Interpreter();
 
