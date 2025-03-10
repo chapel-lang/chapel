@@ -24,7 +24,7 @@ o check links
 version 2.4
 ===========
 
-released March 13, 2025
+released March 20, 2025
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
@@ -40,9 +40,13 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added the ability to cast arrays to array types of the same size / shape  
+  (e.g., `[1.2, 3.4, 5.6]: [1..6 by 2] real(32)` is now supported)
 
 Language Feature Improvements
 -----------------------------
+* added initial support for throwing 'postinit()' calls  
+  (see TODO)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -91,9 +95,15 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
+* updated URLs in the documentation to reflect the new website's organization
+* updated the UDP platform to mention a case where `CHPL_RT_MASTERIP` can help  
+  (see https://chapel-lang.org/docs/2.4/platforms/udp.html#i-get-worker-failed-dnslookup-on-master-host-name-error-messages)
+* other minor changes, fixes, and improvements to documentation
 
 Language Specification Improvements
 -----------------------------------
+* rewrote some examples in the spec to avoid an undesireable busy-wait loop  
+  (see https://chapel-lang.org/docs/2.4/language/spec/memory-consistency-model.html#examples)
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -148,6 +158,8 @@ Launchers
 
 Runtime Library Improvements
 ----------------------------
+* increased the default/max number of threads supported by `CHPL_COMM=gasnet`
+* added a warning when `CHPL_COMM` reduces the # of threads below `maxTaskPar`
 
 Third-Party Software Changes
 ----------------------------
@@ -202,6 +214,7 @@ Developer-oriented changes: GPU support
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added logic to avoid calls to `memalign()` with `size=0`
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
