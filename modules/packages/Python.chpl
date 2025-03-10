@@ -744,6 +744,9 @@ module Python {
       Query to see if an Python exception has occurred. If there is an
       exception, the Python exception will be thrown as a :type:`Exception`.
 
+      This method requires the GIL to be held, calling it without doing so will
+      result in undefined behavior. See :type:`GIL`.
+
       .. note::
 
          This method should be called after any Python API call that may fail.
@@ -1428,7 +1431,7 @@ module Python {
     @chpldoc.nodoc
     var isOwned: bool;
 
-    // Developer note: all initializers should aquire the
+    // Developer note: all initializers should acquire the
     // gil into gilState, then the postinit should release it. subclasses can
     // and should assume the gil is held
     // this is because we can only check for exceptions with the gil held, but
