@@ -764,9 +764,10 @@ module CTypes {
       the ``bytes``.
 
     To avoid this special behavior and just get the variable address naively
-    regardless of type, use :proc:`c_addrOf` instead. ``c_ptrTo`` has identical
-    behavior to ``c_addrOf`` on types other than those with special behavior
-    listed above.
+    regardless of type, use :proc:`c_addrOf` instead.
+
+    Domains, non-local arrays, and non-rectangular arrays are not supported,
+    and will cause a compiler error.
 
     .. note::
 
@@ -774,8 +775,7 @@ module CTypes {
       of the object it points to. In many cases the object will be stack
       allocated and could go out of scope even if this ``c_ptr`` remains.
 
-    :arg x:   The by-reference argument to get a pointer to. Domains are not
-              supported, and will cause a compiler error.
+    :arg x:   The by-reference argument to get a pointer to.
     :returns: A :type:`c_ptr` to the argument passed by reference, with address
               and element type potentially depending on special behavior for the
               the type as described above.
@@ -996,7 +996,8 @@ module CTypes {
     Note that the behavior of this procedure is identical to :proc:`c_ptrTo`
     for scalar types and records. It only differs for arrays, strings, bytes,
     and class variables; see documentation of :proc:`c_ptrTo` for special
-    behavior on those types.
+    behavior on those types. It also allows passing in any type, including those
+    disallowed by :proc:`c_ptrTo`.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
