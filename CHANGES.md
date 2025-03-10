@@ -80,6 +80,11 @@ Changes / Feature Improvements in Standard Libraries
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
+* adjusted 'CopyAggregation' flush methods to optionally free the buffers  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/CopyAggregation.html#CopyAggregation.DstAggregator.flush)
+* added `ref` intents to `.flush()` in 'CopyAggregation' to avoid warnings  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/CopyAggregation.html#CopyAggregation.DstAggregator.flush)
+
 
 New Standard Layout and Distribution Features
 ---------------------------------------------
@@ -106,6 +111,8 @@ Portability / Build Improvements for GPUs
 
 Tool Improvements
 -----------------
+* `chplvis` now relies on a system install of 'fltk' rather than bundling it  
+  (see https://chapel-lang.org/docs/2.4/tools/chplvis/chplvis.html#setup)
 
 Documentation Improvements
 --------------------------
@@ -151,6 +158,7 @@ Syntax Highlighting
 
 Configuration / Build Changes
 -----------------------------
+* added checking that `CHPL_UNWIND` is set to a valid value
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -166,6 +174,7 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved error messages for out-of-bounds accesses to tuple elements
 
 Launchers
 ---------
@@ -177,6 +186,7 @@ Runtime Library Improvements
 
 Third-Party Software Changes
 ----------------------------
+* removed the bundled copy of 'fltk' due to portability/maintenance challenges
 
 Bug Fixes
 ---------
@@ -214,6 +224,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* avoided spurious build warnings with MPICH 4 and GCC 12 when `WARNINGS=1`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
