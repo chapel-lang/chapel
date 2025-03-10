@@ -1,0 +1,36 @@
+==========================
+mimalloc README for Chapel
+==========================
+
+This copy of mimalloc is being released with Chapel for
+convenience and was obtained from:
+
+  https://github.com/microsoft/mimalloc
+
+Any Chapel issues that seem to be related to mimalloc should be
+directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+Chapel currently uses version 2.1.7.
+
+Upgrading mimalloc versions
+===========================
+
+The directory $CHPL_HOME/third-party/mimalloc/mimalloc-src contains the
+un-tarballed mimalloc package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/mimalloc/:
+
+1. download and untar the latest mimalloc version:
+  - `wget https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.7.tar.gz`
+  - `tar xf v2.1.7.tar.gz`
+2. `rm -rf mimalloc-src`
+3. `mv mimalloc-2.1.7 mimalloc-src`
+4. Remove unused directories: `rm -rf mimalloc-src/bin mimalloc-src/docker mimalloc-src/ide mimalloc-src/test mimalloc-src/doc mimalloc-src/docs`
+5. `git add --force mimalloc-src` (--force to ignore our .gitignore)
+6. update the version number/branch name/commit hash mentioned above
+7. make sure these instructions are up to date
+8. test (std config, and at least one that requires a shared-heap)
+9. commit, PR, merge, etc
+
+Note that these instructions are for a simple API compatible updates. If the
+mimalloc API changes more care should be taken to see what changes have been
+made and if we need to change anything on our end.
