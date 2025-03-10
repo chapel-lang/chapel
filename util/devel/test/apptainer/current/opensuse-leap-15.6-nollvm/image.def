@@ -1,12 +1,11 @@
 BootStrap: docker
-From: archlinux:base-devel
+From: opensuse/leap:15.6
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/pacman-deps.sh
-    /provision-scripts/pacman-llvm.sh
+    /provision-scripts/zypper-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

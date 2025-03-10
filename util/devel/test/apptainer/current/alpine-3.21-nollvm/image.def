@@ -1,12 +1,11 @@
 BootStrap: docker
-From: archlinux:base-devel
+From: alpine:3.21
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/pacman-deps.sh
-    /provision-scripts/pacman-llvm.sh
+    /provision-scripts/apk-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
