@@ -59,12 +59,24 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
+* added `timeDelta.total[Milli|Micro]seconds()` to the `Time` module  
+  (see https://chapel-lang.org/docs/2.4/modules/standard/Time.html#Time.timeDelta.totalMilliseconds)
+* added `heap.clear()` to the `Heap` module  
+  (see https://chapel-lang.org/docs/2.4/modules/standard/Heap.html#Heap.heap.clear)
 
 New Package Module Features
 ---------------------------
-
+* added support for Python `dict` and `set` types to the `Python` module  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/Python.html#Python.PyDict  
+   and https://chapel-lang.org/docs/2.4/modules/packages/Python.html#Python.PySet)
+* added a `VictimPolicy` enum to `DistributedBag` and its `remove` method  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/DistributedBag.html#DistributedBag.VictimPolicy  
+   and https://chapel-lang.org/docs/2.4/modules/packages/DistributedBag.html#DistributedBag.DistributedBagImpl.remove)
+ 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
+* improved iterators on `set`s to support zippering with other sets and types  
+  (see https://chapel-lang.org/docs/2.4/modules/standard/Set.html#Set.set.these)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -80,6 +92,8 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the `HDFS` module  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/HDFS.html)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -169,6 +183,7 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug with `distBag.addBulk()` when the input was not 0-based
 
 Bug Fixes for GPU Computing
 ---------------------------
