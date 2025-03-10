@@ -152,14 +152,26 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
 
 
-  * Debian 11 "Bullseye", 12 "Bookworm"::
+  * Debian 10 "Buster" (but note `Newer CMake required to build LLVM`_)::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+      sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
+
+  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+
+  * Debian 12 "Bookworm"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 39, 40, 41::
+  * Fedora 39, 40, 41 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -170,13 +182,6 @@ We have used the following commands to install the above prerequisites:
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
-
-
-  * Generic X 32 Debian 12::
-
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
   * OpenSuse Leap 15.4, 15.5, 15.6::
@@ -192,7 +197,7 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 20.04 "Focal Fossa"::
+  * Ubuntu 20.04 "Focal Fossa" (but note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install software-properties-common
@@ -219,13 +224,6 @@ Amazon Linux 2 uses GCC 7.3.1 but GCC 7.4 or newer is required to build
 LLVM. Chapel can use a system-wide install of LLVM on this platform, so
 installing the LLVM packages as shown above and using `CHPL_LLVM=system`
 is the recommended workaround.
-
-CentOS 7 CHPL_LLVM=system incompatibility
-+++++++++++++++++++++++++++++++++++++++++
-
-CentOS 7 does not include a new enough LLVM release to work with
-``CHPL_LLVM=system``. ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are
-available as alternatives.
 
 Newer CMake required to build LLVM
 ++++++++++++++++++++++++++++++++++
