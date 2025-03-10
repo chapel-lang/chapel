@@ -49,25 +49,23 @@ static aligned_t aligned_reader(void *arg) {
   return 0;
 }
 
-static void syncvar_writer_parallel(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+syncvar_writer_parallel(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
     qthread_syncvar_writeF_const(&(((syncvar_t *)arg)[i]), 1);
   }
-} /*}}} */
+}
 
-static void syncvar_reader_parallel(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+syncvar_reader_parallel(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
     qthread_syncvar_readFF(NULL, &(((syncvar_t *)arg)[i]));
   }
-} /*}}} */
+}
 
 struct arg {
   size_t start, stop;
@@ -86,9 +84,8 @@ static aligned_t syncvar_prodcons_writer(void *arg) {
   return 0;
 }
 
-static void syncvar_prodcons(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+syncvar_prodcons(size_t const startat, size_t const stopat, void *arg) {
   syncvar_t rets[2];
   struct arg a = {startat, stopat, arg};
 
@@ -99,27 +96,25 @@ static void syncvar_prodcons(size_t const startat,
   qthread_yield();
   qthread_syncvar_readFF(NULL, &rets[0]);
   qthread_syncvar_readFF(NULL, &rets[1]);
-} /*}}} */
+}
 
-static void aligned_writer_parallel(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+aligned_writer_parallel(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
     qthread_writeF_const(&(((aligned_t *)arg)[i]), 1);
   }
-} /*}}} */
+}
 
-static void aligned_reader_parallel(size_t const startat,
-                                    size_t const stopat,
-                                    void *arg) { /*{{{ */
+static void
+aligned_reader_parallel(size_t const startat, size_t const stopat, void *arg) {
   size_t i;
 
   for (i = startat; i < stopat; i++) {
     qthread_readFF(NULL, &(((aligned_t *)arg)[i]));
   }
-} /*}}} */
+}
 
 static aligned_t aligned_prodcons_reader(void *arg) {
   struct arg *a = (struct arg *)arg;
@@ -133,9 +128,8 @@ static aligned_t aligned_prodcons_writer(void *arg) {
   return 0;
 }
 
-static void aligned_prodcons(size_t const startat,
-                             size_t const stopat,
-                             void *arg) { /*{{{ */
+static void
+aligned_prodcons(size_t const startat, size_t const stopat, void *arg) {
   syncvar_t rets[2];
   struct arg a = {startat, stopat, arg};
 
@@ -146,9 +140,9 @@ static void aligned_prodcons(size_t const startat,
   qthread_yield();
   qthread_syncvar_readFF(NULL, &rets[0]);
   qthread_syncvar_readFF(NULL, &rets[1]);
-} /*}}} */
+}
 
-static char *human_readable_rate(double rate) { /*{{{*/
+static char *human_readable_rate(double rate) {
   static char readable_string[100] = {0};
   double const GB = 1024 * 1024 * 1024;
   double const MB = 1024 * 1024;
@@ -164,7 +158,7 @@ static char *human_readable_rate(double rate) { /*{{{*/
     memset(readable_string, 0, 100 * sizeof(char));
   }
   return readable_string;
-} /*}}}*/
+}
 
 int main(int argc, char *argv[]) {
   qtimer_t timer = qtimer_create();

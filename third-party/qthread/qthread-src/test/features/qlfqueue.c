@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qlfqueue.h>
 #include <qthread/qthread.h>
 #include <qthread/sinc.h>
@@ -39,7 +38,7 @@ static aligned_t dequeuer(void *arg) {
 
 static aligned_t spawn_dequeuers(void *arg) {
   for (size_t i = 0; i < threadcount; i++) {
-    assert(qthread_fork(dequeuer, arg, NULL) == QTHREAD_SUCCESS);
+    test_check(qthread_fork(dequeuer, arg, NULL) == QTHREAD_SUCCESS);
   }
   return 0;
 }
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
   qlfqueue_t *q;
   size_t i;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
   NUMARG(threadcount, "THREAD_COUNT");
   NUMARG(elementcount, "ELEMENT_COUNT");
   CHECK_VERBOSE();
@@ -88,10 +87,11 @@ int main(int argc, char *argv[]) {
   iprintf("ordering test succeeded\n");
 
   aligned_t ret;
-  assert(qthread_fork_new_team(spawn_dequeuers, q, &ret) == QTHREAD_SUCCESS);
+  test_check(qthread_fork_new_team(spawn_dequeuers, q, &ret) ==
+             QTHREAD_SUCCESS);
   iprintf("dequeuers forked\n");
   for (i = 0; i < threadcount; i++) {
-    assert(qthread_fork(queuer, q, NULL) == QTHREAD_SUCCESS);
+    test_check(qthread_fork(queuer, q, NULL) == QTHREAD_SUCCESS);
   }
   iprintf("queuers forked\n");
   qthread_readFF(NULL, &ret);
