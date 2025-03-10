@@ -190,6 +190,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed an internal error for `extern` return types in multilocale programs
 
 Bug Fixes for Libraries
 -----------------------
@@ -234,6 +235,9 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - added basic support for resolution of nested types
+  - added support for file-related reflection routines (e.g., `getLineNumber`)
 
 Developer-oriented changes: GPU support
 ---------------------------------------
