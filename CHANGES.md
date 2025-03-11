@@ -356,6 +356,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - fixed a bug accessing fields within a module with the same name
   - fixed ambiguities between forwarded methods and non-forwarded routines
   - fixed handling of `if var` declarations and its generated `=` call
+* added support for several language features to the typed Dyno->prod converter
 
 Developer-oriented changes: GPU support
 ---------------------------------------
