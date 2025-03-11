@@ -6,5 +6,11 @@ if [ -n "$CHPL_TEST_VGRND_EXE" ] && [ "$CHPL_TEST_VGRND_EXE" == "on" ]; then
   exit 0
 fi
 
+# skip darwin testing due to https://github.com/chapel-lang/chapel/issues/26886
+if [[ "$($CHPL_HOME/util/printchplenv --only CHPL_TARGET_PLATFORM --value)" == "darwin" ]]; then
+  echo "True"
+  exit 0
+fi
+
 FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 $FILE_DIR/../../skipIfAndInstallPackage.sh $FILE_DIR torch numpy
