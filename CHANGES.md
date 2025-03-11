@@ -227,6 +227,7 @@ Configuration / Build Changes
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed a compilation error about missing `inet_aton` on FreeBSD 13 and 14
 * improved the 'Python' module's handling of the system Python environment
 
 Compiler Improvements
@@ -242,6 +243,8 @@ Error Messages / Semantic Checks
 --------------------------------
 * moved `printchplenv` warnings to the end of the output for clarity
 * improved error messages for out-of-bounds accesses to tuple elements
+* improved and added detailed error messages for use-before-definition errors
+* added specialized error messages for defining a variable in terms of itself
 * improved error messages thrown by the `Sort` module for unsupported types
 
 Launchers
@@ -263,6 +266,7 @@ Bug Fixes
 * fixed an internal error for `extern` return types in multilocale programs
 * fixed an internal error when erroneously writing `super.init` twice
 * fixed an internal error when assigning a type to a value
+* fixed a bug permitting `range` type args to be used before they were defined
 * fixed a bug in which `nothing` tuples were not properly cleaned up
 * fixed arbitrary-length args and dependency paths in the compiler and runtime
 * removed an extraneous error when using `--no-ieee-float` with the C backend
@@ -284,6 +288,7 @@ Bug Fixes for Tools
 * fixed name-based linting for `extern` symbols
 * fixed incorrect linter warnings for unused tuple unpacks
 * fixed the textual locations for various statement types and rules
+* fixed a bug where a bad `RPATH` could be embedded in the `chapel-py` library
 * fixed `mason test` for prefix-based install
 
 Bug Fixes for Build Issues
@@ -315,6 +320,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* added scripts to update the Chapel version numbers in files that store them
 * fixed a developer build issue with GCC 14 with C++ template arguments
 * avoided spurious build warnings with MPICH 4 and GCC 12 when `WARNINGS=1`
 * fixed documentation builds in dirty source trees for `chapel-py`
@@ -331,6 +337,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* added support for bad split-initialization detection and errors
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for associative domain types and literals via modules
   - added support for rectangular/associative array type exprssions via modules
