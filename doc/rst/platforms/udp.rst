@@ -186,5 +186,5 @@ I get ``worker failed DNSLookup on master host name`` error messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When running in a local, oversubscribed setting, this error can often
-be resolved by setting ``CHPL_RT_MASTER_IP`` as described in the
+be resolved by setting ``CHPL_RT_MASTERIP`` as described in the
 previous section.
