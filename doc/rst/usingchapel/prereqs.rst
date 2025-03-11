@@ -28,7 +28,9 @@ for using Chapel:
 
       * GCC 7.4 or newer
 
-      * Clang / Apple Clang 11.0 or newer
+      * LLVM Clang 11.0 or newer
+
+      * Apple Xcode/Clang 11.0 or newer
 
     * C11 support, while not required, will enable faster atomic operations.
 
