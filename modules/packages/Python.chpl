@@ -284,7 +284,7 @@ module Python {
     var sepPy = PyObject_GetAttrString(os, "pathsep");
     interp.checkException();
 
-    var sep = interp.fromPython(string, sepPy);
+    var sep = interp.fromPythonInner(string, sepPy);
     return sep;
   }
 
@@ -698,7 +698,7 @@ module Python {
       var loads = PyObject_GetAttrString(pickle, "loads");
       this.checkException();
       defer Py_DECREF(loads);
-      var pyBytes = toPython(b);
+      var pyBytes = toPythonInner(b);
       defer Py_DECREF(pyBytes);
       var obj = PyObject_CallOneArg(loads, pyBytes);
       this.checkException();
@@ -724,7 +724,7 @@ module Python {
       var MAGIC_NUMBER_py =
         PyObject_GetAttrString(importlib_util, "MAGIC_NUMBER");
       this.checkException();
-      var MAGIC_NUMBER = this.fromPython(bytes, MAGIC_NUMBER_py);
+      var MAGIC_NUMBER = this.fromPythonInner(bytes, MAGIC_NUMBER_py);
       if magic != MAGIC_NUMBER {
         throw new ChapelException("Invalid magic number in '.pyc' file");
       }
@@ -744,6 +744,9 @@ module Python {
       Query to see if an Python exception has occurred. If there is an
       exception, the Python exception will be thrown as a :type:`Exception`.
 
+      This method requires the GIL to be held, calling it without doing so will
+      result in undefined behavior. See :type:`GIL`.
+
       .. note::
 
          This method should be called after any Python API call that may fail.
@@ -752,9 +755,6 @@ module Python {
     */
     inline proc checkException() throws {
       if Python.checkExceptions {
-        var g = PyGILState_Ensure();
-        defer PyGILState_Release(g);
-
         var exc = chpl_PyErr_GetRaisedException();
         if exc then throw PythonException.build(this, exc);
       }
@@ -772,7 +772,7 @@ module Python {
       var stdout = PySys_GetObject("stdout");
       if stdout == nil then throw new ChapelException("stdout not found");
 
-      var flushStr = this.toPython("flush");
+      var flushStr = this.toPythonInner("flush");
       defer Py_DECREF(flushStr);
 
       PyObject_CallMethodNoArgs(stdout, flushStr);
@@ -813,6 +813,7 @@ module Python {
     proc toPythonInner(const val: ?t): PyObjectPtr throws {
       for converter in this.converters {
         if converter.handlesType(t) {
+          // make sure to handle the gil for users
           return converter.toPython(this, t, val);
         }
       }
@@ -903,6 +904,7 @@ module Python {
 
       for converter in this.converters {
         if converter.handlesType(t) {
+          // make sure to handle the gil for users
           return converter.fromPython(this, t, obj);
         }
       }
@@ -975,7 +977,7 @@ module Python {
       this.checkException();
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
-        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(arr[idx]));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPythonInner(arr[idx]));
         this.checkException();
       }
       return pyList;
@@ -989,7 +991,7 @@ module Python {
       var pyList = PyList_New(l.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<l.size {
-        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(l(i)));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPythonInner(l(i)));
         this.checkException();
       }
       return pyList;
@@ -1014,7 +1016,7 @@ module Python {
         const idx = res.domain.orderToIndex(i);
         var elm = PySequence_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
-        res[idx] = fromPython(res.eltType, elm);
+        res[idx] = fromPythonInner(res.eltType, elm);
         this.checkException();
       }
       Py_DECREF(obj);
@@ -1033,7 +1035,7 @@ module Python {
         for i in 0..<PySequence_Size(obj) {
           var item = PySequence_GetItem(obj, i);
           this.checkException();
-          res.pushBack(fromPython(T.eltType, item));
+          res.pushBack(fromPythonInner(T.eltType, item));
         }
         Py_DECREF(obj);
         return res;
@@ -1046,7 +1048,7 @@ module Python {
           if item == nil {
             break;
           }
-          res.pushBack(fromPython(T.eltType, item));
+          res.pushBack(fromPythonInner(T.eltType, item));
         }
         Py_DECREF(obj);
         return res;
@@ -1082,7 +1084,7 @@ module Python {
       var pySet = PySet_New(nil);
       this.checkException();
       for i in s {
-        PySet_Add(pySet, toPython(i));
+        PySet_Add(pySet, toPythonInner(i));
         this.checkException();
       }
       return pySet;
@@ -1130,7 +1132,7 @@ module Python {
       for 0..<PySequence_Size(obj) {
         var elem = PyIter_Next(it);
         this.checkException();
-        res.add(fromPython(T.eltType, elem));
+        res.add(fromPythonInner(T.eltType, elem));
       }
       Py_DECREF(obj);
       return res;
@@ -1147,8 +1149,8 @@ module Python {
       var pyDict = PyDict_New();
       this.checkException();
       for key in arr.domain {
-        var pyKey = toPython(key);
-        var pyValue = toPython(arr[key]);
+        var pyKey = toPythonInner(key);
+        var pyValue = toPythonInner(arr[key]);
         PyDict_SetItem(pyDict, pyKey, pyValue);
         this.checkException();
       }
@@ -1163,8 +1165,8 @@ module Python {
       var pyDict = PyDict_New();
       this.checkException();
       for key in m.keys() {
-        var pyKey = toPython(key);
-        var pyValue = toPython(m[key]);
+        var pyKey = toPythonInner(key);
+        var pyValue = toPythonInner(m[key]);
         PyDict_SetItem(pyDict, pyKey, pyValue);
         Py_DECREF(pyValue);
         this.checkException();
@@ -1196,9 +1198,9 @@ module Python {
         var val = PyDict_GetItem(obj, key);
         this.checkException();
 
-        var keyVal = this.fromPython(keyType, key);
+        var keyVal = this.fromPythonInner(keyType, key);
         dom.add(keyVal);
-        arr[keyVal] = this.fromPython(valType, val);
+        arr[keyVal] = this.fromPythonInner(valType, val);
       }
 
       Py_DECREF(obj);
@@ -1225,9 +1227,9 @@ module Python {
         this.checkException();
 
         Py_INCREF(key);
-        var keyVal = this.fromPython(keyType, key);
+        var keyVal = this.fromPythonInner(keyType, key);
         Py_INCREF(val);
-        m.add(keyVal, this.fromPython(valType, val));
+        m.add(keyVal, this.fromPythonInner(valType, val));
       }
 
       Py_DECREF(obj);
@@ -1293,7 +1295,7 @@ module Python {
                     exc: PyObjectPtr): owned PythonException throws {
       assert(exc != nil);
       var py_str = PyObject_Str(exc);
-      var str = interp.fromPython(string, py_str);
+      var str = interp.fromPythonInner(string, py_str);
       Py_DECREF(exc);
       if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
         return new ImportError(str);
@@ -1414,6 +1416,7 @@ module Python {
   }
 
 
+
   /*
     Represents a Python value, it handles reference counting and is owned by
     default.
@@ -1427,6 +1430,16 @@ module Python {
     var obj: PyObjectPtr;
     @chpldoc.nodoc
     var isOwned: bool;
+
+    // Developer note: all initializers should acquire the
+    // gil into gilState, then the postinit should release it. subclasses can
+    // and should assume the gil is held
+    // this is because we can only check for exceptions with the gil held, but
+    // if we acquire the gil it will clear the exception from the last call
+    // ideally, this extra field is not needed and the exception checking occurs
+    // in the `init` itself, but throwing inits interact poorly with inheritance
+    @chpldoc.nodoc
+    var gilInitState: PyGILState_STATE;
 
     /*
       Takes ownership of an existing Python object, pointed to by ``obj``
@@ -1442,6 +1455,7 @@ module Python {
       this.interpreter = interpreter;
       this.obj = obj;
       this.isOwned = isOwned;
+      this.gilInitState = PyGILState_Ensure();
       init this;
     }
 
@@ -1455,9 +1469,8 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, pickleData: bytes) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
+      this.gilInitState = PyGILState_Ensure();
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = this.interpreter.loadPickle(pickleData);
     }
     /*
@@ -1469,13 +1482,15 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, value: ?) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
+      this.gilInitState = PyGILState_Ensure();
       init this;
-      this.obj = this.interpreter.toPython(value);
+      this.obj = this.interpreter.toPythonInner(value);
     }
 
     @chpldoc.nodoc
     proc postinit() throws {
-      this.check();
+      defer PyGILState_Release(this.gilInitState);
+      this.interpreter.checkException();
     }
 
     @chpldoc.nodoc
@@ -1487,6 +1502,8 @@ module Python {
       }
     }
 
+    // TODO: this may crash if the gil is not held, should we continue to expose
+    // this to users?
     /*
       Check if an exception has occurred in the interpreter.
 
@@ -1506,7 +1523,7 @@ module Python {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
       var pyStr = PyObject_Str(this.obj);
-      this.check();
+      this.interpreter.checkException();
       var res = interpreter.fromPythonInner(string, pyStr);
       return res;
     }
@@ -1600,7 +1617,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var pyRes = PyObject_CallNoArgs(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
 
       var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
@@ -1629,7 +1646,7 @@ module Python {
                       else pyKwargs = nil;
 
       var pyRes = PyObject_Call(pyFunc, pyArg, pyKwargs);
-      this.check();
+      this.interpreter.checkException();
 
       var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
@@ -1732,7 +1749,7 @@ module Python {
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(retType, methodFunc, pyArg, kwargs);
@@ -1750,7 +1767,7 @@ module Python {
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(owned Value, methodFunc, pyArg, kwargs);
@@ -1814,7 +1831,7 @@ module Python {
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(retType, methodFunc, pyArgs, kwargs);
@@ -1903,8 +1920,6 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = PyImport_ImportModule(modName.c_str());
     }
 
@@ -1918,8 +1933,6 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = interpreter.compileModule(moduleContents, modName);
     }
 
@@ -1932,8 +1945,6 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = interpreter.compileModule(moduleBytecode, modName);
     }
   }
@@ -1954,8 +1965,6 @@ module Python {
       super.init(mod.interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = fnName;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = PyObject_GetAttrString(mod.getPyObject(), fnName.c_str());
     }
     /*
@@ -1990,8 +1999,6 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = interpreter.compileLambdaInternal(lambdaFn);
     }
     @chpldoc.nodoc
@@ -2022,8 +2029,6 @@ module Python {
       super.init(mod.interpreter, nil: PyObjectPtr, isOwned=true);
       this.className = className;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = PyObject_GetAttrString(mod.getPyObject(), className.c_str());
     }
 
@@ -2057,7 +2062,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2079,7 +2084,7 @@ module Python {
 
       var item = PySequence_GetItem(this.getPyObject(),
                                     idx.safeCast(Py_ssize_t));
-      this.check();
+      this.interpreter.checkException();
       return interpreter.fromPythonInner(T, item);
     }
     @chpldoc.nodoc
@@ -2099,8 +2104,8 @@ module Python {
 
       PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
-                     interpreter.toPython(item));
-      this.check();
+                     interpreter.toPythonInner(item));
+      this.interpreter.checkException();
     }
   }
 
@@ -2125,7 +2130,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var size = PyDict_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2147,9 +2152,9 @@ module Python {
 
       var item = PyDict_GetItem(this.getPyObject(),
                                 interpreter.toPythonInner(key));
-      this.check();
+      this.interpreter.checkException();
       Py_INCREF(item);
-      return interpreter.fromPython(T, item);
+      return interpreter.fromPythonInner(T, item);
     }
     @chpldoc.nodoc
     proc get(key: ?): owned Value throws do
@@ -2171,7 +2176,7 @@ module Python {
                      interpreter.toPythonInner(key),
                      val);
       Py_DECREF(val);
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2186,8 +2191,8 @@ module Python {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
-      PyDict_DelItem(this.getPyObject(), interpreter.toPython(key));
-      this.check();
+      PyDict_DelItem(this.getPyObject(), interpreter.toPythonInner(key));
+      this.interpreter.checkException();
     }
 
     /*
@@ -2199,7 +2204,7 @@ module Python {
       defer PyGILState_Release(g);
 
       PyDict_Clear(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2211,7 +2216,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var c = PyDict_Copy(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return new PyDict(this.interpreter, c);
     }
 
@@ -2227,7 +2232,7 @@ module Python {
 
       var result = PyDict_Contains(this.getPyObject(),
                                    interpreter.toPythonInner(key));
-      this.check();
+      this.interpreter.checkException();
       return result: bool;
     }
   }
@@ -2253,7 +2258,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2268,7 +2273,7 @@ module Python {
       defer PyGILState_Release(g);
 
       PySet_Add(this.getPyObject(), interpreter.toPythonInner(item));
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2283,7 +2288,7 @@ module Python {
 
       var result = PySet_Contains(this.getPyObject(),
                                   interpreter.toPythonInner(item));
-      this.check();
+      this.interpreter.checkException();
       return result: bool;
     }
 
@@ -2299,7 +2304,7 @@ module Python {
 
       PySet_Discard(this.getPyObject(),
                     interpreter.toPythonInner(item));
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2317,7 +2322,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var popped = PySet_Pop(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return interpreter.fromPythonInner(T, popped);
     }
 
@@ -2330,7 +2335,7 @@ module Python {
       defer PyGILState_Release(g);
 
       PySet_Clear(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
     }
   }
 
@@ -2395,7 +2400,7 @@ module Python {
       var flags: c_int =
         PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
       if PyObject_GetBuffer(this.getPyObject(), c_ptrTo(this.view), flags) == -1 {
-        this.check();
+        this.interpreter.checkException();
         // this.check should have raised an exception, if it didn't, raise one
         throw new BufferError("Failed to get buffer");
       }
@@ -2492,8 +2497,6 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.eltType = arr.eltType;
       init this;
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
       this.obj = ArrayTypes.createArray(arr);
     }
     @chpldoc.nodoc
@@ -2520,7 +2523,7 @@ module Python {
       defer PyGILState_Release(g);
 
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2537,7 +2540,7 @@ module Python {
 
       var pyObj = PySequence_GetItem(this.getPyObject(),
                                      idx.safeCast(Py_ssize_t));
-      this.check();
+      this.interpreter.checkException();
       return interpreter.fromPythonInner(eltType, pyObj);
     }
     /*
@@ -2553,7 +2556,7 @@ module Python {
 
       var pyItem = interpreter.toPythonInner(item);
       PySequence_SetItem(this.getPyObject(), idx.safeCast(Py_ssize_t), pyItem);
-      this.check();
+      this.interpreter.checkException();
     }
   }
 
