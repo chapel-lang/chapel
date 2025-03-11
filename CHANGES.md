@@ -296,6 +296,7 @@ Bug Fixes for Build Issues
 * avoided overriding the default sysroot when using a system version of Clang
 * fixed LLVM path deduction logic when multiple LLVM versions are installed
 * fixed `CHPL_DEVELOPER` not being respected when set to a falsy value
+* squashed `pathchk` error output from `./configure` commands
 
 Bug Fixes for the Runtime
 -------------------------
