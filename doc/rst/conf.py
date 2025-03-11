@@ -183,6 +183,7 @@ exclude_patterns = ['Makefile',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
                     'modules/standard/ChapelIO.rst',
+                    'modules/standard/ChapelSysCTypes.rst',
 
                     # exclude the chapel-py files
                     'tools/chapel-py/chapel-py-api-template.rst',
