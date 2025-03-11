@@ -45,6 +45,8 @@ New Language Features
   (see https://chapel-lang.org/docs/2.4/language/spec/arrays.html#rectangular-array-literals)
 * added the ability to cast arrays to array types of the same size / shape  
   (e.g., `[1.2, 3.4, 5.6]: [1..6 by 2] real(32)` is now supported)
+* added `locale.numColocales` to query the number of co-locales on a node  
+  (see https://chapel-lang.org/docs/2.4/language/spec/locales.html#ChapelLocale.locale.numColocales)
 
 Language Feature Improvements
 -----------------------------
@@ -252,11 +254,13 @@ Launchers
 
 Runtime Library Improvements
 ----------------------------
+* updated the runtime for `CHPL_COMM=ofi` to support libfabric 2.x
 * increased the default/max number of threads supported by `CHPL_COMM=gasnet`
 * added a warning when `CHPL_COMM` reduces the # of threads below `maxTaskPar`
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of GASNet to GASNet-2025.2.0-snapshot
 * applied a performance fix to the bundled version of QThreads
 * removed the bundled copy of 'fltk' due to portability/maintenance challenges
 
@@ -275,6 +279,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed various issues with 'BigInteger' on 32-bit platforms
 * fixed a bug with `distBag.addBulk()` when the input was not 0-based
+* fixed a free of a non-allocated address in the 'CopyAggregation' module
 * fixed the handling of comments inside arrays for the 'TOML' package
 
 Bug Fixes for GPU Computing
@@ -301,6 +306,8 @@ Bug Fixes for Build Issues
 Bug Fixes for the Runtime
 -------------------------
 * fixed a seg fault when using `CHPL_TASKS=fifo` with `CHPL_COMM=gasnet`
+* fixed temporary file naming in PBS-based launchers
+* fixed message buffer management for `CHPL_COMM=ofi`
 
 Developer-oriented changes: Process
 -----------------------------------
