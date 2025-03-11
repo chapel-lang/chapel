@@ -6,8 +6,9 @@ From: ubuntu:plucky
 
 %post
     /provision-scripts/apt-get-deps.sh
+    # default installs llvm 20
     # installs LLVM 19
-    /provision-scripts/apt-get-llvm.sh
+    /provision-scripts/apt-get-llvm-19.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
