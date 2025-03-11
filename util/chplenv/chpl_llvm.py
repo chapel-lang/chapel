@@ -972,10 +972,10 @@ def get_clang_basic_args(clang_command):
     if flag_to_use:
         use_flag(flag_to_use)
     elif (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
-        any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
-        any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
-        # Check that the clang configure file doesn't already supply
-        # info about the sysroot or gcc install so we don't end up overriding it.
+          any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
+        # if the clang configure file supplies sysroot, gcc-install-dir, or
+        #  gcc-toolchain, we shouldn't try to infer anything and override it
         skip_sysroot = True
     else:
         # we should try and infer them, preferring GCC_INSTALL_DIR
