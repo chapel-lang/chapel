@@ -168,11 +168,12 @@ Running ``make DEBUG=1`` will compile the program with debugging enabled and
 CMake
 ^^^^^
 
-Chapel provides a few support files for building Chapel programs with CMake. The
+Although CMake does not yet support Chapel programs natively, the
 Chapel source tree contains a directory,
 `util/cmake <https://github.com/chapel-lang/chapel/tree/main/util/cmake>`_,
 which can be added to a CMake project to support building Chapel programs.
-Take the following steps:
+
+To enable CMake support for your Chapel project, take the following steps:
 
 #. Copy the ``util/cmake`` directory from the Chapel source tree to your
    project. You may want to copy the files to a subdirectory like ``cmake``, or
@@ -190,6 +191,9 @@ might look like this:
    project(myProgram LANGUAGES CHPL)
 
    add_executable(myProgram main.chpl myModule.chpl)
+
+Based on the value of ``CMAKE_BUILD_TYPE`` additional flags will be
+added, for example ``--fast`` for ``CMAKE_BUILD_TYPE=release``.
 
 This can then be used like any other CMake project. For example, the following
 will build a release version of the program:
