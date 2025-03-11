@@ -31,6 +31,7 @@ Highlights (see subsequent sections for further details)
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* updated our Dockerfile to use default dependency versions/the latest base OS
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -100,6 +101,7 @@ Changes / Feature Improvements in Standard Libraries
 * added parallel support for the `map.keys()` and `map.values()` iterators   
   (see https://chapel-lang.org/docs/2.4/modules/standard/Map.html#Map.map.keys  
    and https://chapel-lang.org/docs/2.4/modules/standard/Map.html#Map.map.values)
+* extended `CTypes.c_addrOf[Const]()` to accept domains and non-local arrays
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -262,6 +264,7 @@ Bug Fixes
 * fixed an internal error when erroneously writing `super.init` twice
 * fixed an internal error when assigning a type to a value
 * fixed a bug in which `nothing` tuples were not properly cleaned up
+* fixed arbitrary-length args and dependency paths in the compiler and runtime
 * removed an extraneous error when using `--no-ieee-float` with the C backend
 
 Bug Fixes for Libraries
@@ -323,12 +326,21 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* updated compiler paths from using fixed buffers to arbitrary-length strings
+* removed warnings for 1.32 behavior changes in `chpl_comm_{get,put}()` prims
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - added support for associative domain types and literals via modules
+  - added support for rectangular/associative array type exprssions via modules
+  - added support for `.locale` queries
   - added basic support for resolution of nested types
   - added support for file-related reflection routines (e.g., `getLineNumber`)
+  - added support for several primitives
+  - fixed a bug accessing fields within a module with the same name
+  - fixed ambiguities between forwarded methods and non-forwarded routines
+  - fixed handling of `if var` declarations and its generated `=` call
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -336,6 +348,7 @@ Developer-oriented changes: GPU support
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added logic to avoid calls to `memalign()` with `size=0`
+* updated runtime paths from using fixed buffers to arbitrary-length strings
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
@@ -351,6 +364,7 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* fixed a bug in the copyright update script causing ending year to be repeated
 
 
 version 2.3
