@@ -58,7 +58,6 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* removed support for deprecated type comparison operators like `<=`
 * removed support for the deprecated `lambda` keyword
 * removed the deprecated `chpl_task_yield()` procedure
 * removed support for the deprecated `object` and `c_string` types
@@ -95,8 +94,8 @@ New Package Module Features
    and https://chapel-lang.org/docs/2.4/modules/packages/Python.html#Python.PySet)
 * added an option to turn off 'Python' exception handling for performance  
   (see https://chapel-lang.org/docs/2.4/modules/packages/Python.html#Python.checkExceptions)
-* added a `VictimPolicy` enum to `DistributedBag` and its `remove` method  
-  (see https://chapel-lang.org/docs/2.4/modules/packages/DistributedBag.html#DistributedBag.VictimPolicy  
+* added a `victimPolicy` enum to `DistributedBag` and its `remove` method  
+  (see https://chapel-lang.org/docs/2.4/modules/packages/DistributedBag.html#DistributedBag.victimPolicy  
    and https://chapel-lang.org/docs/2.4/modules/packages/DistributedBag.html#DistributedBag.DistributedBagImpl.remove)
  
 Changes / Feature Improvements in Standard Libraries
@@ -182,7 +181,7 @@ Documentation Improvements
 --------------------------
 * updated URLs in the documentation to reflect the new website's organization
 * added a section to the GPU tech note about halting from GPU kernels  
-  (see TODO)
+  (see https://chapel-lang.org/docs/2.4/technotes/gpu.html#gpu-based-halting)
 * refreshed the list of actively tested GPU configurations  
   (see https://chapel-lang.org/docs/2.4/technotes/gpu.html#tested-configurations)
 * added missing documentation for Slurm launcher flags and environment vars  
@@ -197,6 +196,7 @@ Language Specification Improvements
 * rewrote some examples in the spec to avoid an undesireable busy-wait loop  
   (see https://chapel-lang.org/docs/2.4/language/spec/memory-consistency-model.html#examples)
 * updated sample code in the language spec 'Types' chapter to be more inclusive
+* removed documentation for no-longer-supported type comparisons like `<=`
 
 Documentation Improvements for Libraries
 ----------------------------------------
