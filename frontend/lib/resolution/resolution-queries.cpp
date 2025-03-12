@@ -2091,7 +2091,7 @@ static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
   }
 }
 
-static Resolver createResolverForAst(Context* context,
+static Resolver createResolverForAst(ResolutionContext* rc,
                                      const Function* fn,
                                      const AggregateDecl* ad,
                                      const Enum* ed,
@@ -2099,15 +2099,15 @@ static Resolver createResolverForAst(Context* context,
                                      const PoiScope* poiScope,
                                      ResolutionResultByPostorderID& r) {
   if (fn != nullptr) {
-    return Resolver::createForInstantiatedSignature(context, fn, substitutions,
+    return Resolver::createForInstantiatedSignature(rc, fn, substitutions,
                                                     poiScope, r);
   } else if (ad != nullptr) {
-    return Resolver::createForInstantiatedSignatureFields(context, ad,
+    return Resolver::createForInstantiatedSignatureFields(rc->context(), ad,
                                                           substitutions,
                                                           poiScope, r);
   } else {
     CHPL_ASSERT(ed != nullptr);
-    return Resolver::createForEnumElements(context, ed, r);
+    return Resolver::createForEnumElements(rc->context(), ed, r);
   }
 }
 
@@ -2228,7 +2228,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForAst(context, fn, ad, ed, substitutions,
+  auto visitor = createResolverForAst(rc, fn, ad, ed, substitutions,
                                       poiScope, r);
 
   // TODO: Stop copying these back in.

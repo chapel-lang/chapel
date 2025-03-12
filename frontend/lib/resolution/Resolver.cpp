@@ -282,6 +282,21 @@ Resolver::createForScopeResolvingModuleStmt(
   return ret;
 }
 
+static bool isNestedInMethod(Context* context, const Function* fn) {
+  if (parsing::idIsNestedFunction(context, fn->id())) {
+    auto id = fn->id();
+    for (auto up = id.parentSymbolId(context); up;
+              up = up.parentSymbolId(context)) {
+      if (parsing::idIsFunction(context, up) &&
+          parsing::idIsMethod(context, up)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 Resolver
 Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
                                     ResolutionResultByPostorderID& byId) {
@@ -293,19 +308,6 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
 
   ret.rc = rc;
 
-  bool needThis = fn->isMethod();
-  if (parsing::idIsNestedFunction(context, fn->id())) {
-    auto id = fn->id();
-    for (auto up = id.parentSymbolId(context); up;
-              up = up.parentSymbolId(context)) {
-      if (parsing::idIsFunction(context, up) &&
-          parsing::idIsMethod(context, up)) {
-        needThis = true;
-        break;
-      }
-    }
-  }
-
   if (fn->isMethod()) {
     fn->thisFormal()->traverse(ret);
     auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
@@ -315,7 +317,7 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
       }
       ret.allowReceiverScopes = true;
     }
-  } else if (needThis) {
+  } else if (isNestedInMethod(context, fn)) {
     auto info = ret.closestMethodReceiverInfo(true);
     if (info.has_value()) {
       auto rt = std::get<1>(info.value());
@@ -332,18 +334,22 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
 }
 
 Resolver
-Resolver::createForInstantiatedSignature(Context* context,
+Resolver::createForInstantiatedSignature(ResolutionContext* rc,
                                          const Function* fn,
                                          const SubstitutionsMap& substitutions,
                                          const PoiScope* poiScope,
                                          ResolutionResultByPostorderID& byId) {
+  auto context = rc->context();
   auto ret = Resolver(context, fn, byId, poiScope);
   ret.substitutions = &substitutions;
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+  ret.rc = rc;
 
   if (fn->isMethod()) {
+    ret.allowReceiverScopes = true;
+  } else if (isNestedInMethod(context, fn)) {
     ret.allowReceiverScopes = true;
   }
 
@@ -410,7 +416,6 @@ Resolver::createForFunction(ResolutionContext* rc,
     const TypedFnSignature* pfn = typedFnSignature->parentFn();
     while (pfn) {
       if (pfn->isMethod()) {
-        ret.inCompositeType = pfn->formalType(0).type()->toCompositeType();
         ret.allowReceiverScopes = true;
         break;
       }

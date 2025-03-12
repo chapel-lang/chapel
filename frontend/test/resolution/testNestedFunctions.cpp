@@ -382,30 +382,60 @@ static void test5d(Context* ctx) {
 // Similar to the other 5x cases, but with a secondary method
 static void test5e(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
-  ErrorGuard guard(ctx);
+  {
+    ErrorGuard guard(ctx);
 
-  std::string program =
-    R"""(
-    record R {
-      type T;
-      var x : T;
-    }
-
-    proc R.foobar() {
-      proc helper(arg: T) {
-        return arg;
+    std::string program =
+      R"""(
+      record R {
+        type T;
+        var x : T;
       }
 
-      return helper(x);
-    }
+      proc R.foobar() {
+        proc helper(arg: T) {
+          return arg;
+        }
 
-    var r : R(int);
-    var x = r.foobar();
-    )""";
+        return helper(x);
+      }
 
-  auto qt = resolveQualifiedTypeOfX(ctx, program);
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type() && qt.type()->isIntType());
+      var r : R(int);
+      var x = r.foobar();
+      )""";
+
+    auto qt = resolveQualifiedTypeOfX(ctx, program);
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }
+  {
+    ErrorGuard guard(ctx);
+
+    std::string program =
+      R"""(
+      record R {
+        type T;
+        var x : T;
+      }
+
+      proc R.foobar() {
+        // generic case
+        proc helper(arg: T, other: ?) {
+          return __primitive("+", arg, other);
+        }
+
+        return helper(x, 5);
+      }
+
+      var r : R(int);
+      var x = r.foobar();
+
+      )""";
+
+    auto qt = resolveQualifiedTypeOfX(ctx, program);
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }
 }
 
 // Same as test5 but with a nested method instead of a nested function.
