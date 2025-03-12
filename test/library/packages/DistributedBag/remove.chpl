@@ -1,6 +1,6 @@
 /*
   This test checks the 'distBag.remove()' method, and more specifically the
-  `enum VictimPolicy` allowing to choose the victim selection policy for work stealing.
+  `enum victimPolicy` allowing to choose the victim selection policy for work stealing.
 */
 
 use DistributedBag;
@@ -23,7 +23,7 @@ config const n = 1000;
   // triggers a work stealing operation according to the selected victim policy.
   coforall taskId in 1..<here.maxTaskPar {
     while (bag.getSize() > 0) {
-      var elt = bag.remove(taskId, DistributedBag.VictimPolicy.RAND);
+      var elt = bag.remove(taskId, DistributedBag.victimPolicy.RAND);
     }
   }
 }
@@ -44,7 +44,7 @@ config const n = 1000;
   // triggers a work stealing operation according to the selected victim policy.
   coforall taskId in 1..<here.maxTaskPar {
     while (bag.getSize() > 0) {
-      var elt = bag.remove(taskId, DistributedBag.VictimPolicy.RING);
+      var elt = bag.remove(taskId, DistributedBag.victimPolicy.RING);
     }
   }
 }
