@@ -58,6 +58,11 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed support for deprecated type comparison operators like `<=`
+* removed support for the deprecated `lambda` keyword
+* removed the deprecated `chpl_task_yield()` procedure
+* removed support for the deprecated `object` and `c_string` types
+* removed the deprecated `newSliceRule` config param
 
 Namespace Changes
 -----------------
@@ -139,7 +144,12 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated the `HDFS` module  
   (see https://chapel-lang.org/docs/2.4/modules/packages/HDFS.html)
+* removed deprecated `imag`->`complex` trig routines in the `Math` module
 * removed methods on `map` that had previously been deprecated
+* removed deprecated features from the `Version` module
+* removed deprecated `CType` capabilities, like `c_void_ptr`
+* removed deprecated `CodepointSplittingError` from the 'Errors' module
+* removed deprecated routines from the `MemMove` module
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -169,6 +179,8 @@ Tool Improvements
 Documentation Improvements
 --------------------------
 * updated URLs in the documentation to reflect the new website's organization
+* added a section to the GPU tech note about halting from GPU kernels  
+  (see TODO)
 * refreshed the list of actively tested GPU configurations  
   (see https://chapel-lang.org/docs/2.4/technotes/gpu.html#tested-configurations)
 * added missing documentation for Slurm launcher flags and environment vars  
@@ -181,6 +193,7 @@ Language Specification Improvements
 -----------------------------------
 * rewrote some examples in the spec to avoid an undesireable busy-wait loop  
   (see https://chapel-lang.org/docs/2.4/language/spec/memory-consistency-model.html#examples)
+* updated sample code in the language spec 'Types' chapter to be more inclusive
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -322,6 +335,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * used the new `Value` class to clean up the 'Python' module's implementation
+* generate the `CTypes` module when using minimal modules, enabling C interop
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -346,16 +360,30 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * added support for bad split-initialization detection and errors
+* added detailed errors for failed implicit `super` calls
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - enabled `for param` loops over more range types
   - added support for associative domain types and literals via modules
+  - added initial support for `subdomain` and `sparse subdomain`
   - added support for rectangular/associative array type exprssions via modules
+  - enabled converting iterable expressions into arrays
   - added support for `.locale` queries
+  - added support for `manage` statements and context managers
+  - added support for `let` expressions
+  - enabled iteration over heterogenous tuples
+  - enabled unpacking tuples yielded from `zip` expressions
+  - added support for checking interface constraints.
+  - enabled importing tertiary methods via `use`/`import` limitations  
   - added basic support for resolution of nested types
+  - enabled resolving enums nested in procedures
+  - added support for `compilerError` and `compilerWarning` routines
   - added support for file-related reflection routines (e.g., `getLineNumber`)
   - added support for several primitives
   - fixed a bug accessing fields within a module with the same name
+  - improved disambiguation process between callable objects and functions
   - fixed ambiguities between forwarded methods and non-forwarded routines
   - fixed handling of `if var` declarations and its generated `=` call
+  - implemented numerous bugfixes and stability improvements
 * added support for several language features to the typed Dyno->prod converter
 
 Developer-oriented changes: GPU support
@@ -374,6 +402,7 @@ Developer-oriented changes: Testing System
 * improved logging for `.skipif` and `.suppressif` files in the test output
 * fixed `sub_clean`, which was not properly cleaning up symlinks
 * fixed `prediff-for-slurm` to handle output that is not UTF-8
+* enabled timing Dyno queries across revisions in `testInteractive`
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
