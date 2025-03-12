@@ -53,6 +53,12 @@ SystemOrDie("rm -rf $tmpdir");
 SystemOrDie("mkdir -pv $archive_dir");
 $rootdir = "$tmpdir/chpl_home";
 
+# use gtar if its available
+$tar_executable = "tar";
+if (system("which gtar &> /dev/null") == 0) {
+  $tar_executable = "gtar";
+}
+
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
 # Just use whatever is found in $CHPL_HOME
 
@@ -60,7 +66,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     # copy the current CHPL_HOME into the directory where chapel will be built
     print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...\n";
-    SystemOrDie("cd $chplhome && tar -cf - . | (cd $archive_dir && tar -xf -)");
+    SystemOrDie("cd $chplhome && $tar_executable -cf - . | (cd $archive_dir && $tar_executable -xf -)");
 
     $resultdir = "$chplhome/tar";
 } else {
@@ -99,7 +105,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     SystemOrDie("cd $rootdir && util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$rootdir");
     # use git archive to copy all the files under source control into the archive directory.
     print "[gen_release] Creating build workspace with git archive...\n";
-    SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
+    SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && $tar_executable -xf -)");
     # explicitly copy the BUILD_VERSION file and git-version.cpp files
     print "[gen_release] Copying BUILD_VERSION file.\n";
     SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
@@ -289,7 +295,7 @@ if (! -d $resultdir) {
 }
 
 $tarball_name = "$resultdir/$reldir.tar.gz";
-$cmd = "tar -cz -f $tarball_name @tarfiles";
+$cmd = "$tar_executable -cz -f $tarball_name --no-xattrs @tarfiles";
 chdir "..";
 print "[gen_release] $cmd\n";
 SystemOrDie ($cmd);
