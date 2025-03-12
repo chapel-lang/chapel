@@ -153,6 +153,8 @@ Deprecated / Unstable / Removed Library Features
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* extended the array view elision optimization to arrays of distinct types  
+  (e.g. `LocalArr[x..y] = DistArr[z..t]` is now optimized)
 * removed unnecessary checks in `Math.log2()` when `--no-checks` is used
 
 GPU Computing
@@ -291,9 +293,14 @@ Bug Fixes
 Bug Fixes for Libraries
 -----------------------
 * fixed various issues with 'BigInteger' on 32-bit platforms
+* fixed a bug preventing `map`s to be passed into `const ref` formals
 * fixed a bug with `distBag.addBulk()` when the input was not 0-based
 * fixed a free of a non-allocated address in the 'CopyAggregation' module
+* fixed a bug with `MemDiagnostics.allocations()` on 32-bit systems
 * fixed the handling of comments inside arrays for the 'TOML' package
+* partially fixed a bug with catching errors thrown from `fromJson`
+* fixed a bug causing hangs in some `Socket` module functions
+* fixed a bug to be able to pass `real`s as timeouts in `Socket` subroutines
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -319,6 +326,7 @@ Bug Fixes for Build Issues
 Bug Fixes for the Runtime
 -------------------------
 * fixed a seg fault when using `CHPL_TASKS=fifo` with `CHPL_COMM=gasnet`
+* fixed a bug with the `CHPL_LAUNCHER_USE_SBATCH` implementation
 * fixed temporary file naming in PBS-based launchers
 * fixed message buffer management for `CHPL_COMM=ofi`
 
