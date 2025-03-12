@@ -167,7 +167,7 @@ Portability / Build Improvements for GPUs
 Tool Improvements
 -----------------
 * added support for building Chapel projects with CMake  
-  (see TODO)
+  (see https://chapel-lang.org/docs/main/usingchapel/compiling.html#cmake)
 * added support for creating linter rules with custom settings  
   (see https://chapel-lang.org/docs/2.4/tools/chplcheck/chplcheck.html#rule-specific-settings)
 * added support for text-location-only-based linter rules
@@ -189,6 +189,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.4/usingchapel/launcher.html#using-slurm)
 * updated the UDP platform to mention a case where `CHPL_RT_MASTERIP` can help  
   (see https://chapel-lang.org/docs/2.4/platforms/udp.html#i-get-worker-failed-dnslookup-on-master-host-name-error-messages)
+* fixed a bug in which 'ChapelSysCTypes' had duplicate documentation
 * other minor changes, fixes, and improvements to documentation
 
 Language Specification Improvements
@@ -313,8 +314,9 @@ Bug Fixes for Tools
 * fixed the wrong linter being used when run with the language server
 * fixed name-based linting for `extern` symbols
 * fixed incorrect linter warnings for unused tuple unpacks
-* fixed the textual locations for various statement types and rules
+* fixed the linter's textual locations for various statement types and rules
 * fixed a bug where a bad `RPATH` could be embedded in the `chapel-py` library
+* fixed an issue with extra arguments passed to `c2chapel` on MacOS
 * fixed `mason test` for prefix-based install
 
 Bug Fixes for Build Issues
