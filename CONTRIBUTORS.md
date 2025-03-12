@@ -22,10 +22,10 @@ Contributors to the Chapel 2.4 release
 * [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
+* Audrey Mendez-Pratt, individual contributor, formerly [HPE]
 * Eduardo Morras, individual contributor
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Amanda Potts, individual contributor
-* Audrey Mendez-Pratt, individual contributor, formerly [HPE]
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
