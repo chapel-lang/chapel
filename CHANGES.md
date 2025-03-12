@@ -377,14 +377,14 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - enabled `for param` loops over more range types
   - added support for associative domain types and literals via modules
   - added initial support for `subdomain` and `sparse subdomain`
-  - added support for rectangular/associative array type exprssions via modules
+  - added support for rectangular/associative array type exprs via modules
   - enabled converting iterable expressions into arrays
   - added support for `.locale` queries
   - added support for `manage` statements and context managers
   - added support for `let` expressions
   - enabled iteration over heterogenous tuples
   - enabled unpacking tuples yielded from `zip` expressions
-  - added support for checking interface constraints.
+  - added support for checking interface constraints
   - enabled importing tertiary methods via `use`/`import` limitations  
   - added basic support for resolution of nested types
   - enabled resolving enums nested in procedures
