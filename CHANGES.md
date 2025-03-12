@@ -51,7 +51,7 @@ New Language Features
 Language Feature Improvements
 -----------------------------
 * added initial support for throwing 'postinit()' calls  
-  (see TODO)
+  (see https://chapel-lang.org/docs/2.4/technotes/throwingInit.html#declaring-throwing-initializers)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -108,7 +108,7 @@ Changes / Feature Improvements in Standard Libraries
 * added parallel support for the `map.keys()` and `map.values()` iterators   
   (see https://chapel-lang.org/docs/2.4/modules/standard/Map.html#Map.map.keys  
    and https://chapel-lang.org/docs/2.4/modules/standard/Map.html#Map.map.values)
-* extended `CTypes.c_addrOf[Const]()` to accept domains and non-local arrays
+* extended `CTypes.c_addrOf[Const]()` to accept domains and distributed arrays
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
