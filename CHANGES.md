@@ -293,6 +293,7 @@ Bug Fixes
 Bug Fixes for Libraries
 -----------------------
 * fixed various issues with 'BigInteger' on 32-bit platforms
+* fixed an ABI incompatibility bug between the 'GMP' module and LLVM
 * fixed a bug preventing `map`s to be passed into `const ref` formals
 * fixed a bug with `distBag.addBulk()` when the input was not 0-based
 * fixed a free of a non-allocated address in the 'CopyAggregation' module
