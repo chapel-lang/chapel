@@ -379,6 +379,35 @@ static void test5d(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
+// Similar to the other 5x cases, but with a secondary method
+static void test5e(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : T;
+    }
+
+    proc R.foobar() {
+      proc helper(arg: T) {
+        return arg;
+      }
+
+      return helper(x);
+    }
+
+    var r : R(int);
+    var x = r.foobar();
+    )""";
+
+  auto qt = resolveQualifiedTypeOfX(ctx, program);
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type() && qt.type()->isIntType());
+}
+
 // Same as test5 but with a nested method instead of a nested function.
 static void test6(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
@@ -683,6 +712,7 @@ int main() {
   test5b(ctx);
   test5c(ctx);
   test5d(ctx);
+  test5e(ctx);
   test6(ctx);
   // test7(ctx);
   // test8(ctx);

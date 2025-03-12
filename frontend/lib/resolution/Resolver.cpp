@@ -285,12 +285,26 @@ Resolver::createForScopeResolvingModuleStmt(
 Resolver
 Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
                                     ResolutionResultByPostorderID& byId) {
-  auto ret = Resolver(rc->context(), fn, byId, nullptr);
+  auto context = rc->context();
+  auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
 
   ret.rc = rc;
+
+  bool needThis = fn->isMethod();
+  if (parsing::idIsNestedFunction(context, fn->id())) {
+    auto id = fn->id();
+    for (auto up = id.parentSymbolId(context); up;
+              up = up.parentSymbolId(context)) {
+      if (parsing::idIsFunction(context, up) &&
+          parsing::idIsMethod(context, up)) {
+        needThis = true;
+        break;
+      }
+    }
+  }
 
   if (fn->isMethod()) {
     fn->thisFormal()->traverse(ret);
@@ -301,6 +315,17 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
       }
       ret.allowReceiverScopes = true;
     }
+  } else if (needThis) {
+    auto info = ret.closestMethodReceiverInfo(true);
+    if (info.has_value()) {
+      auto rt = std::get<1>(info.value());
+      if (rt.hasTypePtr()) {
+        if (auto ct = rt.type()->toCompositeType()) {
+          ret.inCompositeType = ct;
+        }
+      }
+    }
+    ret.allowReceiverScopes = true;
   }
 
   return ret;
@@ -377,6 +402,22 @@ Resolver::createForFunction(ResolutionContext* rc,
 
   ret.byPostorder.setupForFunction(fn);
 
+  if (typedFnSignature->isMethod()) {
+    // allow computing the receiver scope from the typedSignature.
+    ret.allowReceiverScopes = true;
+  } else {
+    // Setup for nested function inside method
+    const TypedFnSignature* pfn = typedFnSignature->parentFn();
+    while (pfn) {
+      if (pfn->isMethod()) {
+        ret.inCompositeType = pfn->formalType(0).type()->toCompositeType();
+        ret.allowReceiverScopes = true;
+        break;
+      }
+      pfn = pfn->parentFn();
+    }
+  }
+
   // First, set the formal types using the types in the signature.
   setFormalTypesUsingSignature(ret);
 
@@ -401,11 +442,6 @@ Resolver::createForFunction(ResolutionContext* rc,
     // manner does not emit errors (perhaps we set a bool flag in the
     // Resolver to indicate as such).
     setFormalTypeUsingSignature(ret, ret.typedSignature, i);
-  }
-
-  if (typedFnSignature->isMethod()) {
-    // allow computing the receiver scope from the typedSignature.
-    ret.allowReceiverScopes = true;
   }
 
   return ret;
