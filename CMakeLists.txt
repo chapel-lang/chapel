@@ -46,7 +46,7 @@ set(CHPL_PREV_PATCH_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
-set(CHPL_OFFICIAL_RELEASE false)
+set(CHPL_OFFICIAL_RELEASE true)
 
 ### END config.h version value setting - configured_prefix set below ###
 
