@@ -38,18 +38,21 @@
   ---------------------
 
   Compiling Chapel code that uses this module needs the ``Python.h`` header file
-  and requires linking with the Python library. If ``python3`` is installed,
-  this can be achieved with the following commands:
+  and requires linking with the Python library. The ``embed-python.sh`` script
+  provided with Chapel can be used to generate the necessary compiler flags.
+  Assuming ``python3`` is installed into the system path, the following command
+  can be used to compile Chapel code that uses this module:
 
   .. code-block:: bash
 
-     PYTHON_INCLUDE_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['include'])")
-     PYTHON_LIB_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-     PYTHON_LDVERSION=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LDVERSION'))")
+     chpl $($(chpl --print-chpl-home)/util/config/embed-python.sh) ...Chapel source files...
 
-     chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
-          -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR \
-          -lpython$PYTHON_LDVERSION ...Chapel source files...
+  Alternative Python installations can be used by setting the ``CHPL_PYTHON``
+  environment variable:
+
+  .. code-block:: bash
+
+     chpl $(CHPL_PYTHON=/path/to/python3 $(chpl --print-chpl-home)/util/config/embed-python.sh) ...Chapel source files...
 
   .. warning::
 
