@@ -173,7 +173,7 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.4, 14.1, 14.2::
+  * FreeBSD 13.3, 13.4, 14.0, 14.1, 14.2::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm

@@ -122,9 +122,9 @@ x 12.4 EOL Dec 2023
 x 13.0 EOL Aug 2022
 x 13.1 EOL Jul 2023
 x 13.2 EOL Jul 2024
-x 13.3 EOL Dec 2024
+- 13.3 EOL Dec 2024
   13.4 released Sep 2024
-x 14.0 released Nov 2023
+- 14.0 released Nov 2023
   14.1 released Jun 2024
   14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
 
