@@ -328,6 +328,7 @@ Bug Fixes for the Runtime
 -------------------------
 * fixed a seg fault when using `CHPL_TASKS=fifo` with `CHPL_COMM=gasnet`
 * fixed a bug with the `CHPL_LAUNCHER_USE_SBATCH` implementation
+* fixed a bug where Slurm-based launchers wouldn't preserve quoted string args
 * fixed temporary file naming in PBS-based launchers
 * fixed message buffer management for `CHPL_COMM=ofi`
 
