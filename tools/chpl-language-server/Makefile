@@ -57,6 +57,7 @@ clobber: clean
 
 clean-pycache:
 	find $(CHPL_MAKE_HOME)/tools/chpl-language-server -type d -name __pycache__ -exec rm -rf {} +
+	rm -rf $(CHPL_MAKE_HOME)/tools/chpl-language-server/test/.pytest_cache
 
 clean-link:
 ifneq ($(wildcard $(link)),)
