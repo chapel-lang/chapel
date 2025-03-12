@@ -6,7 +6,7 @@ check_conditions() {
 
     # Skip test in CPU-as-device mode
     if [[ "$chpl_gpu" == "cpu" ]]; then
-        return 1
+        return 0
     fi
 
     # Check if CHPL_GPU is 'amd' and CHPL_TEST_PERF_LABEL is set 
