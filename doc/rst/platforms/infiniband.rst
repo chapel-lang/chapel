@@ -120,9 +120,10 @@ options if possible.
   often "just works" and can reduce overhead compared to ``mpi``.
 
 * ``mpi``: When the previous cases are not options, ``mpi`` serves as
-  a reasonable last resort.  Note that it can incur a performance
-  penalty because MPI will be running concurrently with GASNet.  See
-  the second subsection below for tips on this option.
+  a reasonable last resort.  Note that it may, depending on its
+  configuration, incur a performance penalty because MPI may be
+  running concurrently with GASNet.  See the second subsection below
+  for tips on this option.
 
 
 Using SSH for Job Launch
@@ -170,6 +171,17 @@ configuration output.
 
    export GASNET_IBV_SPAWNER=mpi
 
+As mentioned above, a potential downside of using MPI for launching
+Chapel programs is that the resources that it requires to get the
+program up and running can interfere with those needed by GASNet.  In
+some cases, this can result in performance impacts, while in others,
+it can prevent GASNet from accessing the resources at all.
+
+For tips and best practices about how to configure/use GASNet to avoid
+such conflicts with MPI, please refer to the section "Build-time
+Configuration" in the [GASNet
+README](https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README).
+   
 
 --------------------
 Verifying Job Launch
