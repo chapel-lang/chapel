@@ -64,7 +64,7 @@ def title(name):
     if name == "Oracular":
         name = '24.10 "Oracular Oriole"'
     if name == "Plucky":
-        name = '25.04 "Plucky Platypus"'
+        name = '25.04 "Plucky Puffin"'
     return name
 
 def fixname(subdir):

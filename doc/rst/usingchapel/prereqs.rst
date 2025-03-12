@@ -203,7 +203,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole", 25.04 "Plucky Platypus"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole", 25.04 "Plucky Puffin"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
