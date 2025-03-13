@@ -300,6 +300,19 @@ module Python {
      `Py_END_ALLOW_THREADS`) b. the daemon thread signals that it is done and
      exits
 
+  All public API calls in this module should be thread safe, meaning they
+  handle the GIL correctly. So for example, `new Module(interp, "mymod")`
+  should properly acquire/release the GIL. But, internal functions like
+  `importModuleInternal` do not (and should not) acquire/release the GIL. While
+  matching pairs to `PyGILState_[Ensure|Release]` can be nested, there is no
+  reason to and the less we do that, the less overhead. This convention is
+  especially important for `[to|from]Python`. `[to|from]Python` is a part of
+  the public API, and so must acquire/release the GIL. But these functions are
+  so heavily used to implement other parts of the public API that the
+  equivalent `[to|from]PythonInner` functions are used to avoid the overhead of
+  acquiring/releasing the GIL. Essentially, `[to|from]Python` acquires the GIL,
+  calls `[to|from]PythonInner`, and then releases the GIL.
+
   */
 
 
