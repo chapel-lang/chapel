@@ -26,6 +26,9 @@ def get():
         # use ofi for slingshot
         elif shutil.which('cxi_stat'):
             comm_val = 'ofi'
+        # default to ofi on cray-xd when we can't determine ib/cxi
+        elif platform_val == 'hpe-cray-xd':
+            comm_val = 'ofi'
         else:
             comm_val = 'none'
 
