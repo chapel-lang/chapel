@@ -114,8 +114,8 @@ values are:
 * ``ssh``: Based on our experience, this is the preferred option, when
   possible.  This requires the ability to ``ssh`` to the system's
   compute nodes, which is not supported by all systems, depending on
-  how they are configured.  See the following sub-section for details
-  on this option.
+  how they are configured.  See :ref:`the following
+  sub-section<using-ssh>` for details on this option.
   
 * ``pmi``: When GASNet's configure step detects a PMI-capable job
   scheduler like Slurm, ``pmi`` can be the next best choice because it
@@ -131,8 +131,10 @@ values are:
   a reasonable last resort.  Note that it may, depending on its
   configuration, incur a performance penalty due to competition
   between MPI and GASNet for limited communication resources.  See the
-  second subsection below for best practices when using this option.
+  :ref:`using-mpi` section below for best practices when using this
+  option.
 
+.. _using-ssh:
 
 Using SSH for Job Launch
 ------------------------
@@ -174,6 +176,7 @@ descriptions of ``GASNET_SSH_CMD`` and ``GASNET_SSH_OPTIONS`` in the
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/ssh-spawner/README``).
 
+.. _using-mpi:
 
 Using MPI for Job Launch
 ------------------------
