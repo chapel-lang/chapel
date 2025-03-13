@@ -1,26 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-* check placement of items into categories
-* check ordering of categories relative to one another
-* check for ' vs `
-* fulfill TODOs
-* check man page or util/chpl-completion.bash for new compiler flags
-* check test/release/examples
-* check for docs/2.4/ links
-* check forced linebreaks
-* check initial '*'
-* check for initial 'A-Z'
-* check for 'see:'
-* check for changes put too far down in file
-* add highlights
-* spellcheck
-* remove empty sections
-o check links
-
 version 2.4
 ===========
 
@@ -34,8 +14,8 @@ Highlights (see subsequent sections for further details)
 * added the ability to query the number of co-locales running on a node
 * added support for building Chapel projects with CMake
 * added custom settings, location-based rules, and docs to the linter
-* significantly revamped the Chapel website at https://chapel-lang.org/
 * improved the 'dyno' compiler front-end's ability to resolve types and values
+* significantly revamped the Chapel website at https://chapel-lang.org/
 * made many other improvements in terms of bug fixes, errors, docs, etc.
 
 Updates to Chapel Prerequisites
