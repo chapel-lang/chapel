@@ -242,7 +242,7 @@ module Python {
   ------------------
 
   Python objects are reference counted. When a Python object is created, it has
-  a reference count of 1. When the reference count reaches 0, the object is
+  a reference count of 1. When the reference count reaches 0 the object is
   deallocated. Normally, Python code that is interpreted has this handled by
   the interpreter. Using the C API, requires the programmer to manage the
   reference counts. This module hides this implementation detail from the user.
@@ -253,14 +253,14 @@ module Python {
     2. making sure that while Chapel is still owning the object, the reference
        count is greater than zero.
 
-  The `Value` base class has a field, `isOwned`, which determines if when the
-  Chapel object is deleted if the reference count will be decremented.
-  `toPython` creates new references and `fromPython` steals references
-  (decrements the reference count). Most other functions don't touch the
-  reference count. C API functions generally document if they return/take a new
-  reference ("strong reference"), a borrowed reference (reference count is
-  neither incremented or decremented), or a stolen reference (reference count is
-  decremented). Make sure to check the behavior of new functions.
+  The `Value` base class has a field, `isOwned`, which determines if the
+  reference count of the Python object will be decremented when the Chapel
+  object is deleted. `toPython` creates new references and `fromPython` steals
+  references (decrements the reference count). Most other functions don't touch
+  the reference count. C API functions generally document if they return/take a
+  new reference ("strong reference"), a borrowed reference (reference count is
+  neither incremented or decremented), or a stolen reference (reference count
+  is decremented). Make sure to check the behavior of new functions.
 
   Global Interpreter Lock (GIL)
   -----------------------------
@@ -269,21 +269,23 @@ module Python {
   interpreter state. Some newer builds of Python are "free-threaded" and don't
   have a GIL. Whether or not the GIL is present, this module will handle the
   GIL. The `PyGILState_Ensure` and `PyGILState_Release` functions are used to
-  acquire and release the GIL, in free-threaded builds, these functions are
+  acquire and release the GIL; in free-threaded builds, these functions are
   no-ops.
 
   Python and non-python threads require special handling. The
-  `PyGILState_[Ensure|Release]` functions handle setting up new Python threads,
-  so from Chapel's perspective we must always call these functions before
-  calling any Python code. Failiure to do so will result in undefined behavior,
-  likely a segfault of some kind. You will frequently see the `var g =
-  PyGILState_Ensure(); defer PyGILState_Release(g);` pattern in this module,
-  which handles this.
+  `PyGILState_[Ensure|Release]` functions not only acquire/release the GIL, but
+  also automatically handle setting up new Python threads. From Chapel's
+  perspective, `PyGILState_Ensure` must be called before any Python code and
+  `PyGILState_Release` must be called afterwards. Failure to do so will result
+  in undefined behavior, likely a segfault of some kind. You will frequently
+  see the `var g = PyGILState_Ensure(); defer PyGILState_Release(g);` pattern
+  in this module, which acquires the GIL and then releases it at the end of the
+  current scope (or during stack unwinding due to an exception)
 
-  Interacting with Chapels threading model can also be problematic.
-  `PyGILState_[Ensure|Release]` calls must be matched to eac other on the same
+  Interacting with Chapel's threading model can also be problematic.
+  `PyGILState_[Ensure|Release]` calls must be matched to each other on the same
   thread or deadlock will occur. NOTE: this can happen easily and
-  transparently in Chapel, particularity when `on` blocks are used (they
+  transparently in Chapel, particularly when `on` blocks are used (they
   introduce new comm threads in multi-locale code). Additionally, the
   `Py_Initialize`/``Py_Finalize` family of calls must be made on the same
   thread. This module does additional work to facilitate that.
@@ -309,10 +311,14 @@ module Python {
   especially important for `[to|from]Python`. `[to|from]Python` is a part of
   the public API, and so must acquire/release the GIL. But these functions are
   so heavily used to implement other parts of the public API that the
-  equivalent `[to|from]PythonInner` functions are used to avoid the overhead of
+  internal `[to|from]PythonInner` functions are used to avoid the overhead of
   acquiring/releasing the GIL. Essentially, `[to|from]Python` acquires the GIL,
   calls `[to|from]PythonInner`, and then releases the GIL.
 
+  Important documentation to read up on Python threading and the GIL
+    - https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock
+    - https://docs.python.org/3/c-api/init.html#c.Py_Initialize
+    - https://docs.python.org/3/c-api/init.html#c.Py_FinalizeEx
   */
 
 
