@@ -40,6 +40,8 @@ def get(flag='host'):
     if not platform_val:
         network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
         if network.startswith("slingshot") or network == "ofi":
+            # TODO: This is not really true, as this env is set to ofi on
+            # HPE Cray XD systems as well. but this is a decent enough guess
             platform_val = 'hpe-cray-ex'
 
     if not platform_val:
