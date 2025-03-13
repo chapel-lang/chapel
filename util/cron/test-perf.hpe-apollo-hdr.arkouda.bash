@@ -22,9 +22,6 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 # setup arkouda
 source $UTIL_CRON_DIR/common-arkouda.bash
 
-PYTEST_TEMP_DIR=/hpelustre/chapelu/arkouda-scratch/$CHPL_NIGHTLY_TEST_CONFIG_NAME
-rm -rf $PYTEST_TEMP_DIR; mkdir -p $PYTEST_TEMP_DIR
-export CHPL_TEST_ARKOUDA_PYTEST_OPTIONS="--temp-directory=$PYTEST_TEMP_DIR"
 export ARKOUDA_NUMLOCALES=16
 
 export CHPL_GASNET_SEGMENT=fast
