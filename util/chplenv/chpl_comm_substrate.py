@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import shutil
 
 import chpl_comm, chpl_platform, overrides
 from utils import memoize
@@ -21,6 +22,10 @@ def get():
                 substrate_val = 'ibv'
             elif platform_val == 'pwr6':
                 substrate_val = 'ibv'
+            elif shutil.which('ibstat'):
+                substrate_val = 'ibv'
+            elif shutil.which('cxi_stat'):
+                substrate_val = 'ofi'
             else:
                 substrate_val = 'udp'
         else:
