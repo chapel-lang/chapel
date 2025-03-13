@@ -18,7 +18,7 @@ def get():
                 substrate_val = 'ibv'
             elif shutil.which('cxi_stat'):
                 substrate_val = 'ofi'
-            if platform_val == 'cray-xc':
+            elif platform_val == 'cray-xc':
                 substrate_val = 'aries'
             elif platform_val == 'hpe-cray-ex':
                 substrate_val = 'ofi'
