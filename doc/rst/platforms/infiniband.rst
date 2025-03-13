@@ -105,25 +105,36 @@ Selecting a Spawner
 Under the covers, ``gasnetrun_ibv``-based launchers must figure out
 how to spawn jobs and get them up and running on the compute nodes.
 GASNet's three ways of doing this on InfiniBand systems are ``ssh``,
-``pmi``, and ``mpi``.  When MPI is detected at configure time, it will
-be selected as the default, but we recommend using one of the other
-options if possible.
+``pmi``, and ``mpi``, described just below.  When MPI is detected at
+configure time, it will be selected as the default, but we recommend
+using one of the other options if possible.  This can be done by
+setting the ``GASNET_IBV_SPAWNER`` environment variable, whose legal
+values are:
 
-* ``ssh``: Based on our experience, we recommend launching with the
-  ``ssh`` option, if possible.  This requires the ability to ``ssh``
-  to the system's compute nodes, which is not supported by all
-  systems, depending on how they are configured.  See the following
-  sub-section for details on this option.
+* ``ssh``: Based on our experience, this is the preferred option, when
+  possible.  This requires the ability to ``ssh`` to the system's
+  compute nodes, which is not supported by all systems, depending on
+  how they are configured.  See :ref:`the following
+  sub-section<using-ssh>` for details on this option.
   
 * ``pmi``: When GASNet's configure step detects a PMI-capable job
   scheduler like Slurm, ``pmi`` can be the next best choice because it
-  often "just works" and can reduce overhead compared to ``mpi``.
-
+  often "just works" and can reduce overhead compared to ``mpi``.  For
+  more information about this option, including how to configure job
+  launch via ``PMIRUN_CMD``, see the `GASNet README for the PMI-based
+  spawner
+  <https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README>`_
+  (also available at
+  ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/pmi-spawner/README``).
+  
 * ``mpi``: When the previous cases are not options, ``mpi`` serves as
-  a reasonable last resort.  Note that it can incur a performance
-  penalty because MPI will be running concurrently with GASNet.  See
-  the second subsection below for tips on this option.
+  a reasonable last resort.  Note that it may, depending on its
+  configuration, incur a performance penalty due to competition
+  between MPI and GASNet for limited communication resources.  See the
+  :ref:`using-mpi` section below for best practices when using this
+  option.
 
+.. _using-ssh:
 
 Using SSH for Job Launch
 ------------------------
@@ -157,6 +168,15 @@ If you see the same error message this may indicate ssh connections
 to compute nodes are not allowed, in which case using the MPI
 spawner may be your only option.
 
+For further information about environment variables that can be used
+to control how `ssh` is used to launch your Chapel program, see the
+descriptions of ``GASNET_SSH_CMD`` and ``GASNET_SSH_OPTIONS`` in the
+`GASNet README for the ssh spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/ssh-spawner/README>`_
+(also available at
+``$CHPL_HOME/third-party/gasnet/gasnet-src/other/ssh-spawner/README``).
+
+.. _using-mpi:
 
 Using MPI for Job Launch
 ------------------------
@@ -170,6 +190,30 @@ configuration output.
 
    export GASNET_IBV_SPAWNER=mpi
 
+As mentioned above, a potential downside of using MPI for launching
+Chapel programs is that the resources that it requires to get the
+program up and running can interfere with those needed by GASNet.  In
+some cases, this can result in negative impacts on performance.  In
+others, it can prevent GASNet from accessing the network resources it
+requires at all.  For example, the following error is an example of
+one in which MPI is preventing GASNet from accessing what it needs
+(albeit using the ``ofi`` conduit rather than the ``ibv`` conduit
+preferred for InfiniBand):
+
+.. code-block:: bash
+
+   *** FATAL ERROR (proc 0): in gasnetc_ofi_init() at /third-party/gasnet/gasnet-src/ofi-conduit/gasnet_ofi.c:1336: fi_endpoint for rdma failed: -22(Invalid argument)
+
+
+For tips and best practices about how to configure/use GASNet to avoid
+such conflicts with MPI, please refer to the section "Build-time
+Configuration" in the `GASNet README for the MPI spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README>`_
+(also available at
+``$CHPL_HOME/third-party/gasnet/gasnet-src/other/mpi-spawner/README``).
+Within this README, see also the description of the ``MPIRUN_CMD``
+environment variable as a means of configuring how jobs are started.
+   
 
 --------------------
 Verifying Job Launch
@@ -326,8 +370,9 @@ blocking send and receive progress threads.
 See Also
 --------
 
-For more information on these and other available GASNet options,
-including configuring to launch through MPI, please refer to
-GASNet's official `InfiniBand conduit documentation
-<https://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be found
-in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.
+For more information on these and other available GASNet options when
+targeting InfiniBand, please refer to GASNet's official `InfiniBand
+conduit documentation
+<https://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be
+found in
+``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.
