@@ -2142,8 +2142,14 @@ module Python {
     }
 
     @chpldoc.nodoc
-    proc get(bounds: range(?)): owned Value throws do
+    proc get(bounds: range(?)): owned Value throws {
+      if (bounds.strides != strideKind.one) {
+        // Avoids the error from the other version reporting this function
+        // instead of the user function
+        compilerError("cannot call `get()` on a Python tuple with a range with stride other than 1");
+      }
       return this.get(owned Value, bounds);
+    }
   }
 
   /*
