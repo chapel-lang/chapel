@@ -18,7 +18,7 @@ TODO:
 * check for changes put too far down in file
 * add highlights
 * spellcheck
-o remove empty sections
+* remove empty sections
 o check links
 
 version 2.4
@@ -40,9 +40,8 @@ Highlights (see subsequent sections for further details)
 
 Updates to Chapel Prerequisites
 -------------------------------
-
-Syntactic / Naming Changes
---------------------------
+* raised the minimum version of Clang required to build Chapel to 11.0  
+  (see https://chapel-lang.org/docs/2.4/usingchapel/prereqs.html)
 
 New Language Features
 ---------------------
@@ -59,18 +58,12 @@ Language Feature Improvements
 * added initial support for throwing `postinit()` procedures  
   (see https://chapel-lang.org/docs/2.4/technotes/throwingInit.html#declaring-throwing-initializers)
 
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed support for the deprecated `lambda` keyword
 * removed support for the deprecated `object` and `c_string` types
 * removed the deprecated `chpl_task_yield()` procedure
 * removed the deprecated `newSliceRule` config param
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -135,15 +128,6 @@ Changes / Feature Improvements in Package Modules
 * added `ref` intents to `.flush()` in `CopyAggregation` to avoid warnings  
   (see https://chapel-lang.org/docs/2.4/modules/packages/CopyAggregation.html#CopyAggregation.DstAggregator.flush)
 
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
-
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated the `HDFS` module  
@@ -168,9 +152,6 @@ Tool Improvements
 * allowed a single `chapel-py` build to be used with many Python versions
 * `chplvis` now relies on a system install of `fltk` rather than bundling it  
   (see https://chapel-lang.org/docs/2.4/tools/chplvis/chplvis.html#setup)
-
-Syntax Highlighters
--------------------
 
 Documentation Improvements
 --------------------------
@@ -208,16 +189,10 @@ Documentation Improvements for Tools
 * clarified build requirements for `chapel-py`  
   (see https://chapel-lang.org/docs/2.4/tools/chapel-py/chapel-py.html#installation)
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * updated documentation on binary packages for WSL  
   (see https://chapel-lang.org/docs/2.4/platforms/windows.html) 
-
-Technical Note Improvements
----------------------------
 
 Example Codes
 -------------
@@ -229,15 +204,6 @@ Performance Optimizations / Improvements
 * extended the array view elision optimization to arrays of distinct types  
   (e.g. `LocalArr[x..y] = DistArr[z..t]` is now optimized)
 * removed unnecessary checks in `Math.log2()` when `--no-checks` is used
-
-Improvements to Compile Times
------------------------------
-
-Generated Code Improvements
----------------------------
-
-Memory Improvements
--------------------
 
 Updates to Chapel's Release Formats
 -----------------------------------
@@ -261,18 +227,9 @@ Portability / Platform-specific Improvements
 * fixed a compilation error about missing `inet_aton()` on FreeBSD 13 and 14
 * improved the `Python` module's handling of the system Python environment
 
-Portability / Build Improvements for GPUs
------------------------------------------
-
-Compiler Improvements
----------------------
-
 Compiler Flags
 --------------
 * changed the `--mem` flag to `--target-mem` to match `CHPL_TARGET_MEM`
-
-Generated Executable Flags
---------------------------
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -280,9 +237,6 @@ Error Messages / Semantic Checks
 * improved and added detailed error messages for use-before-definition errors
 * added specialized error messages for defining a variable in terms of itself
 * improved error messages reported by the `Sort` module for unsupported types
-
-Launchers
----------
 
 Runtime Library Improvements
 ----------------------------
@@ -350,23 +304,14 @@ Bug Fixes for the Runtime
 * fixed a bug with temporary filenames in PBS-based launchers
 * fixed a bug in message buffer management for `CHPL_COMM=ofi`
 
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * updated the instructions for building the Chapel CI Docker image
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
 
 Developer-oriented changes: Module changes
 ------------------------------------------
 * used the new `Value` class to clean up the `Python` module's implementation
 * added a `CTypes` module when using minimal modules, enabling C interop
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -376,9 +321,6 @@ Developer-oriented changes: Makefile / Build-time changes
 * fixed documentation builds in dirty source trees for `chapel-py`
 * added support for building a subset of LLVM targets
 * added support for setting `CHPL_PYTHON` to switch Python versions
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -414,16 +356,10 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - implemented numerous bug fixes and stability improvements
 * added support for several language features to the typed dyno->prod converter
 
-Developer-oriented changes: GPU support
----------------------------------------
-
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added logic to avoid calls to `memalign()` with `size=0`
 * updated runtime paths from using fixed buffers to arbitrary-length strings
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -431,9 +367,6 @@ Developer-oriented changes: Testing System
 * fixed `sub_clean`, which was not properly cleaning up symlinks
 * fixed `prediff-for-slurm` to handle output that is not UTF-8
 * enabled timing 'dyno' queries across revisions in `testInteractive`
-
-Developer-oriented changes: Tool Improvements
----------------------------------------------
 
 Developer-oriented changes: Utilities
 -------------------------------------
