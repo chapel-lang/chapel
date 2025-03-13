@@ -367,8 +367,9 @@ blocking send and receive progress threads.
 See Also
 --------
 
-For more information on these and other available GASNet options,
-including configuring to launch through MPI, please refer to
-GASNet's official `InfiniBand conduit documentation
-<https://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be found
-in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.
+For more information on these and other available GASNet options when
+targeting InfiniBand, please refer to GASNet's official `InfiniBand
+conduit documentation
+<https://gasnet.lbl.gov/dist/ibv-conduit/README>`_, which can also be
+found in
+``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``.

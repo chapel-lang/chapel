@@ -196,8 +196,9 @@ may be required to get access to all cores.
 See Also
 --------
 
-For more information on these and other available GASNet options,
-including configuring to launch through MPI, please refer to
+For more information on these and other available options when
+targeting Omni-Path through GASNet via OFI/libfabric, please refer to
 GASNet's official `ofi conduit documentation
-<https://gasnet.lbl.gov/dist/ofi-conduit/README>`_, which can also be found
-in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ofi-conduit/README``.
+<https://gasnet.lbl.gov/dist/ofi-conduit/README>`_, which can also be
+found in
+``$CHPL_HOME/third-party/gasnet/gasnet-src/ofi-conduit/README``.
