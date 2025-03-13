@@ -19,8 +19,7 @@
  */
 
 
-//  TODO: represent python context managers as Chapel context managers
-
+// TODO: represent python context managers as Chapel context managers
 // TODO: implement operators as dunder methods
 
 /* Library for interfacing with Python from Chapel code.
@@ -229,6 +228,81 @@
 */
 @unstable("The Python module's interface is under active development and may change")
 module Python {
+
+  /*
+  =======================
+  Developer Documentation
+  =======================
+
+  This module makes heavy usage of the Python C API. Care should be taken when
+  adding new calls to the C API, especially when it comes to reference counting
+  and the GIL.
+
+  Reference Counting
+  ------------------
+
+  Python objects are reference counted. When a Python object is created, it has
+  a reference count of 1. When the reference count reaches 0, the object is
+  deallocated. Normally, Python code that is interpreted has this handled by
+  the interpreter. Using the C API, requires the programmer to manage the
+  reference counts. This module hides this implementation detail from the user.
+
+  There are two things to keep in mind.
+    1. making sure that when Chapel is done with the object, the reference
+       count is zero.
+    2. making sure that while Chapel is still owning the object, the reference
+       count is greater than zero.
+
+  The `Value` base class has a field, `isOwned`, which determines if when the
+  Chapel object is deleted if the reference count will be decremented.
+  `toPython` creates new references and `fromPython` steals references
+  (decrements the reference count). Most other functions don't touch the
+  reference count. C API functions generally document if they return/take a new
+  reference ("strong reference"), a borrowed reference (reference count is
+  neither incremented or decremented), or a stolen reference (reference count is
+  decremented). Make sure to check the behavior of new functions.
+
+  Global Interpreter Lock (GIL)
+  -----------------------------
+
+  The Global Interpreter Lock (GIL) is a mutex that protects access to the
+  interpreter state. Some newer builds of Python are "free-threaded" and don't
+  have a GIL. Whether or not the GIL is present, this module will handle the
+  GIL. The `PyGILState_Ensure` and `PyGILState_Release` functions are used to
+  acquire and release the GIL, in free-threaded builds, these functions are
+  no-ops.
+
+  Python and non-python threads require special handling. The
+  `PyGILState_[Ensure|Release]` functions handle setting up new Python threads,
+  so from Chapel's perspective we must always call these functions before
+  calling any Python code. Failiure to do so will result in undefined behavior,
+  likely a segfault of some kind. You will frequently see the `var g =
+  PyGILState_Ensure(); defer PyGILState_Release(g);` pattern in this module,
+  which handles this.
+
+  Interacting with Chapels threading model can also be problematic.
+  `PyGILState_[Ensure|Release]` calls must be matched to eac other on the same
+  thread or deadlock will occur. NOTE: this can happen easily and
+  transparently in Chapel, particularity when `on` blocks are used (they
+  introduce new comm threads in multi-locale code). Additionally, the
+  `Py_Initialize`/``Py_Finalize` family of calls must be made on the same
+  thread. This module does additional work to facilitate that.
+
+  As an overview, the interpreter is setup in the following way to properly
+  handle the GIL.
+  1. `new Interpreter()` spawns a new daemon thread which does the following:
+     a. Initializes the Python interpreter b. acquires the gil and enters a
+     state where it can invoke threads (i.e. `Py_BEGIN_ALLOW_THREADS`) c.
+     signals that setup is done and goes to sleep, waiting for a signal to
+     finish
+  2. `Interpreter.deinit()` signals the daemon thread to finish and waits for
+     it to finish a. the daemon thread releases the gil and thread state (i.e
+     `Py_END_ALLOW_THREADS`) b. the daemon thread signals that it is done and
+     exits
+
+  */
+
+
   private use CTypes;
   private import List;
   private import Map;
