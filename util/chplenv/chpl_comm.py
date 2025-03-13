@@ -11,8 +11,14 @@ def get():
     comm_val = overrides.get('CHPL_COMM')
     if not comm_val:
         platform_val = chpl_platform.get('target')
+        # use gasnet for ibv
+        if shutil.which('ibstat'):
+            comm_val = 'gasnet'
+        # use ofi for slingshot
+        elif shutil.which('cxi_stat'):
+            comm_val = 'ofi'
         # Use ugni on cray-xc series
-        if platform_val == 'cray-xc':
+        elif platform_val == 'cray-xc':
             comm_val = 'ugni'
         # Use ofi on hpe-cray-ex
         elif platform_val == 'hpe-cray-ex':
@@ -20,13 +26,7 @@ def get():
         # Use gasnet on cray-cs and hpe-apollo
         elif platform_val in ('cray-cs', 'hpe-apollo'):
             comm_val = 'gasnet'
-        # use gasnet for ibv
-        elif shutil.which('ibstat'):
-            comm_val = 'gasnet'
-        # use ofi for slingshot
-        elif shutil.which('cxi_stat'):
-            comm_val = 'ofi'
-        # default to ofi on cray-xd when we can't determine ib/cxi
+        # default to ofi on cray-xd when we can't determine ib vs cxi
         elif platform_val == 'hpe-cray-xd':
             comm_val = 'ofi'
         else:
