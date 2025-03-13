@@ -2039,8 +2039,113 @@ module Python {
     }
   }
 
+  /*
+    Represents a Python tuple.  This provides a Chapel interface to Python
+    tuples, where the Python interpreter owns the tuple.
+  */
+  class PyTuple: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
 
-  // TODO: create adapters for other common Python types like Dict, Tuple
+    /*
+      Get the size of the tuple. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the tuple.
+    */
+    proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var size = PyTuple_Size(this.getPyObject());
+      this.interpreter.checkException();
+      return size;
+    }
+
+    /*
+      Get an item from the tuple. Equivalent to calling ``obj[idx]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, idx: int): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, idx: int): T throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var item = PyTuple_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, item);
+    }
+
+    @chpldoc.nodoc
+    proc get(idx: int): owned Value throws do
+      return this.get(owned Value, idx);
+
+    /*
+      Get a slice of the tuple indicated by ``bounds``.  Equivalent to
+      calling ``obj[bounds.low:bounds.high+1]`` in Python.
+
+      .. note::
+
+         This method does not support strided ranges or ranges with an alignment
+         other than 0.
+
+      :arg T: the Chapel type of the slice to return.
+      :arg bounds: The full slice of the tuple to return
+      :returns: A slice of the tuple for the given bounds.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, bounds: range(?)): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, bounds: range(?)): T throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `get()` on a Python tuple with a range with stride other than 1");
+      }
+
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj;
+
+      if (bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 bounds.low.safeCast(Py_ssize_t),
+                                 bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 (min(int(64))).safeCast(Py_ssize_t),
+                                 bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 bounds.low.safeCast(Py_ssize_t),
+                                 (max(int(64))).safeCast(Py_ssize_t));
+
+      } else {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 (min(int(64))).safeCast(Py_ssize_t),
+                                 (max(int(64))).safeCast(Py_ssize_t));
+      }
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, pyObj);
+    }
+
+    @chpldoc.nodoc
+    proc get(bounds: range(?)): owned Value throws do
+      return this.get(owned Value, bounds);
+  }
+
   /*
     Represents a Python list. This provides a Chapel interface to Python lists,
     where the Python interpreter owns the list.
@@ -2684,6 +2789,7 @@ module Python {
   Function implements writeSerializable;
   Module implements writeSerializable;
   Class implements writeSerializable;
+  PyTuple implements writeSerializable;
   PyList implements writeSerializable;
   PyDict implements writeSerializable;
   PySet implements writeSerializable;
@@ -2704,6 +2810,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc Class.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyTuple.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -3009,7 +3119,10 @@ module Python {
       Tuples
     */
     extern proc PyTuple_Pack(size: Py_ssize_t, args...): PyObjectPtr;
-
+    extern proc PyTuple_Size(tup: PyObjectPtr): Py_ssize_t;
+    extern proc PyTuple_GetItem(tup: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyTuple_GetSlice(tup: PyObjectPtr, low: Py_ssize_t,
+                                 high: Py_ssize_t): PyObjectPtr;
     /*
       Functions
     */
