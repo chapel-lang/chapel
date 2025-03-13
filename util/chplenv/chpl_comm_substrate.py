@@ -14,6 +14,10 @@ def get():
         platform_val = chpl_platform.get('target')
 
         if comm_val == 'gasnet':
+            if shutil.which('ibstat'):
+                substrate_val = 'ibv'
+            elif shutil.which('cxi_stat'):
+                substrate_val = 'ofi'
             if platform_val == 'cray-xc':
                 substrate_val = 'aries'
             elif platform_val == 'hpe-cray-ex':
@@ -22,10 +26,6 @@ def get():
                 substrate_val = 'ibv'
             elif platform_val == 'pwr6':
                 substrate_val = 'ibv'
-            elif shutil.which('ibstat'):
-                substrate_val = 'ibv'
-            elif shutil.which('cxi_stat'):
-                substrate_val = 'ofi'
             else:
                 substrate_val = 'udp'
         else:
