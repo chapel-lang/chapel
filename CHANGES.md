@@ -8,16 +8,16 @@ TODO:
 * check ordering of categories relative to one another
 * check for ' vs `
 * fulfill TODOs
-o check man page or util/chpl_completion.bash for new compiler flags
-o check test/release/examples
-o check for docs/2.2/ links
-o check forced linebreaks
-o check initial '*'
-o check initial 'A-Z'
-o check 'see:'
-o check for changes put too far down in file
-o add highlights
-o spellcheck
+* check man page or util/chpl-completion.bash for new compiler flags
+* check test/release/examples
+* check for docs/2.4/ links
+* check forced linebreaks
+* check initial '*'
+* check for initial 'A-Z'
+* check for 'see:'
+* check for changes put too far down in file
+* add highlights
+* spellcheck
 o remove empty sections
 o check links
 
@@ -151,17 +151,17 @@ Deprecated / Unstable / Removed Library Features
 * removed deprecated `imag`->`complex` trig routines in the `Math` module
 * removed methods on `map` that had previously been deprecated in `Map`
 * removed deprecated features from the `Version` module
-* removed deprecated `CType` capabilities, like `c_void_ptr`
+* removed deprecated `CTypes` capabilities, like `c_void_ptr`
 * removed deprecated `CodepointSplittingError` from the `Errors` module
 * removed deprecated routines from the `MemMove` module
 
 Tool Improvements
 -----------------
 * added support for building Chapel projects with CMake  
-  (see https://chapel-lang.org/docs/main/usingchapel/compiling.html#cmake)
+  (see https://chapel-lang.org/docs/2.4/usingchapel/compiling.html#cmake)
 * added support for creating linter rules with custom settings  
   (see https://chapel-lang.org/docs/2.4/tools/chplcheck/chplcheck.html#rule-specific-settings)
-* added support for text-location-only-based linter rules
+* added support for text-location-only-based linter rules  
   (see https://chapel-lang.org/docs/2.4/tools/chplcheck/chplcheck.html#location-rules)
 * added a new 'LineLength' linter rule  
   (see https://chapel-lang.org/docs/2.4/tools/chplcheck/chplcheck.html#linelength)
@@ -191,7 +191,7 @@ Documentation Improvements
 
 Language Specification Improvements
 -----------------------------------
-* rewrote some examples in the spec to avoid an undesireable busy-wait loop  
+* rewrote some examples in the spec to avoid an undesirable busy-wait loop  
   (see https://chapel-lang.org/docs/2.4/language/spec/memory-consistency-model.html#examples)
 * updated sample code in the 'Types' chapter to be more inclusive
 * removed documentation for no-longer-supported type comparisons like `<=`
@@ -221,6 +221,8 @@ Technical Note Improvements
 
 Example Codes
 -------------
+* updated the HPCC benchmarks to compute good problem sizes for co-locales  
+  (see `$CHPL_HOME/examples/benchmarks/hpcc/HPCCProblemSize.chpl`)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -256,7 +258,7 @@ GPU Computing
 
 Portability / Platform-specific Improvements
 --------------------------------------------
-* fixed a compilation error about missing `inet_aton` on FreeBSD 13 and 14
+* fixed a compilation error about missing `inet_aton()` on FreeBSD 13 and 14
 * improved the `Python` module's handling of the system Python environment
 
 Portability / Build Improvements for GPUs
@@ -267,6 +269,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* changed the `--mem` flag to `--target-mem` to match `CHPL_TARGET_MEM`
 
 Generated Executable Flags
 --------------------------
@@ -395,7 +398,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for `.locale` queries
   - added support for `manage` statements and context managers
   - added support for `let` expressions
-  - enabled iteration over heterogenous tuples
+  - enabled iteration over heterogeneous tuples
   - enabled unpacking tuples yielded from `zip` expressions
   - added support for checking interface constraints
   - enabled importing tertiary methods via `use`/`import` limitations  
@@ -408,7 +411,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - improved disambiguation process between callable objects and functions
   - fixed ambiguities between forwarded methods and non-forwarded routines
   - fixed handling of `if var` declarations and its generated `=` call
-  - implemented numerous bugfixes and stability improvements
+  - implemented numerous bug fixes and stability improvements
 * added support for several language features to the typed dyno->prod converter
 
 Developer-oriented changes: GPU support
