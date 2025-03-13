@@ -1074,7 +1074,6 @@ def gather_pe_chpl_pkgconfig_libs():
 @memoize
 def get_clang_prgenv_args():
 
-    platform = chpl_platform.get('target')
     comp_args = [ ]
     link_args = [ ]
 

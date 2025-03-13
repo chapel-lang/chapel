@@ -27,14 +27,20 @@ def get():
     #
     platform_val = chpl_platform.get('target')
     launcher_val = chpl_launcher.get()
-    if platform_val in ('cray-xc', 'hpe-cray-ex'):
+    if 'cray-x' in platform_val or platform_val == 'hpe-cray-ex':
         oob_val = 'pmi2'
     elif 'cray-' in platform_val:
         oob_val = 'mpi'
     elif 'mpi' in launcher_val:
         oob_val = 'mpi'
     else:
-        oob_val = 'sockets'
+        import chpl_compiler
+        if third_party_utils.pkgconfig_system_has_package('pmi2'):
+            oob_val = 'pmi2'
+        elif "-lpmi2" in chpl_compiler.get_system_link_args('target'):
+            oob_val = 'pmi2'
+        else:
+            oob_val = 'sockets'
 
     return oob_val
 

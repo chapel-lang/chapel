@@ -16,6 +16,10 @@ def get():
         # Use ofi on hpe-cray-ex
         elif platform_val == 'hpe-cray-ex':
             comm_val = 'ofi'
+        elif platform_val == 'hpe-cray-xd':
+            # could be slingshot (ofi) or ibv (gasnet)
+            # default to ofi for now
+            comm_val = 'ofi'
         # Use gasnet on cray-cs and hpe-apollo
         elif platform_val in ('cray-cs', 'hpe-apollo'):
             comm_val = 'gasnet'

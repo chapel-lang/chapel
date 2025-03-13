@@ -62,16 +62,6 @@ def get_compile_args():
                 error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
             args = x
 
-    if libfabric_val == 'system' or libfabric_val == 'bundled':
-        flags = [ ]
-        ofi_oob_val = chpl_comm_ofi_oob.get()
-        if ofi_oob_val == 'mpi':
-            mpi_dir_val = overrides.get_environ('MPI_DIR')
-            if mpi_dir_val:
-                flags.append('-I' + mpi_dir_val + '/include')
-
-        args[1].extend(flags)
-
     return args
 
 
@@ -110,35 +100,6 @@ def get_link_args():
                     libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
 
         args[1].extend(libs)
-
-    if libfabric_val == 'system' or libfabric_val == 'bundled':
-        libs = [ ]
-        ofi_oob_val = chpl_comm_ofi_oob.get()
-        if ofi_oob_val == 'mpi':
-            mpi_dir_val = overrides.get_environ('MPI_DIR')
-            if mpi_dir_val:
-                mpi_lib_dir = os.path.join(mpi_dir_val, 'lib64')
-                if not os.path.exists(mpi_lib_dir):
-                    mpi_lib_dir = os.path.join(mpi_dir_val, 'lib')
-                    if not os.path.exists(mpi_lib_dir):
-                        mpi_lib_dir = None
-
-                if mpi_lib_dir:
-                    libs.append('-L' + mpi_lib_dir)
-                    libs.append('-Wl,-rpath,' + mpi_lib_dir)
-                    mpi_lib_name = 'mpi'
-                    if glob.glob(mpi_lib_dir + '/libmpich.*'):
-                        mpi_lib_name = 'mpich'
-                    libs.append('-l' + mpi_lib_name)
-
-        # If we're using the PMI2 out-of-band support we have to reference
-        # libpmi2 explicitly, except on Cray XC systems.
-        platform_val = chpl_platform.get('target')
-        if ofi_oob_val == 'pmi2' and 'cray-xc' != platform_val:
-            libs.append('-lpmi2')
-
-        args[1].extend(libs)
-
 
     return args
 

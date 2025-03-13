@@ -28,7 +28,7 @@ def validate_compiler(compiler_val, flag):
 @memoize
 def get_prgenv_compiler():
     platform_val = chpl_platform.get('target')
-    if platform_val.startswith('cray-x') or platform_val == 'hpe-cray-ex':
+    if 'cray-x' in platform_val or platform_val == 'hpe-cray-ex':
         subcompiler = os.environ.get('PE_ENV', 'none')
         if subcompiler != 'none':
             return "cray-prgenv-{0}".format(subcompiler.lower())
