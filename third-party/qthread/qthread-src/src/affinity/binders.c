@@ -87,6 +87,10 @@ static int qt_affinity_compact(int num_workers, hwloc_obj_t obj) {
 void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t *nbworkers,
                                size_t *hw_par) {
+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
+  extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
+  topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
+#endif
   // Note: the lack of a teardown routine will cause topology initialization
   // to be skipped if qthreads is re-initialized
   if (topology == NULL) {

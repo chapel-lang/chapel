@@ -86,6 +86,10 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t *nbworkers,
                                size_t *hw_par) {
   if (qthread_cas(&initialized, 0, 1) == 0) {
+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
+    extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
+    topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
+#endif
     if (topology == NULL) {
       qassert(hwloc_topology_init(&topology), 0);
       qassert(hwloc_topology_load(topology), 0);
