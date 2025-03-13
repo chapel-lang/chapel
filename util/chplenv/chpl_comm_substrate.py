@@ -22,6 +22,9 @@ def get():
                 substrate_val = 'aries'
             elif platform_val == 'hpe-cray-ex':
                 substrate_val = 'ofi'
+            elif platform_val == 'hpe-cray-xd':
+                # default to ofi on XD when we can't determine ib vs cxi
+                substrate_val = 'ofi'
             elif platform_val in ('cray-cs', 'hpe-apollo'):
                 substrate_val = 'ibv'
             elif platform_val == 'pwr6':
