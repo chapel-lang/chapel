@@ -72,8 +72,9 @@ values are:
   scheduler like Slurm, ``pmi`` can be the next best choice because it
   often "just works" and can reduce overhead compared to ``mpi``.  For
   more information about this option, including how to configure job
-  launch via ``PMIRUN_CMD``, see the [GASNet README for the PMI-based
-  spawner](https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README)
+  launch via ``PMIRUN_CMD``, see the `GASNet README for the PMI-based
+  spawner
+  <https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README>`_
   (also available at
   ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/pmi-spawner/README``).
 
@@ -119,8 +120,8 @@ spawner may be your only option.
 For further information about environment variables that can be used
 to control how `ssh` is used to launch your Chapel program, see the
 descriptions of ``GASNET_SSH_CMD`` and ``GASNET_SSH_OPTIONS`` in the
-[GASNet README for the ssh
-spawner](https://bitbucket.org/berkeleylab/gasnet/src/master/other/ssh-spawner/README)
+`GASNet README for the ssh spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/ssh-spawner/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/ssh-spawner/README``).
 
@@ -152,8 +153,8 @@ one in which MPI is preventing GASNet from accessing what it needs:
 
 For tips and best practices about how to configure/use GASNet to avoid
 such conflicts with MPI, please refer to the section "Build-time
-Configuration" in the [GASNet README for the MPI
-spawner](https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README)
+Configuration" in the `GASNet README for the MPI spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/mpi-spawner/README``).
 Within this README, see also the description of the ``MPIRUN_CMD``
