@@ -416,6 +416,7 @@ Resolver::createForFunction(ResolutionContext* rc,
     const TypedFnSignature* pfn = typedFnSignature->parentFn();
     while (pfn) {
       if (pfn->isMethod()) {
+        ret.inCompositeType = pfn->formalType(0).type()->getCompositeType();
         ret.allowReceiverScopes = true;
         break;
       }
