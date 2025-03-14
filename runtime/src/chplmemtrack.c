@@ -220,7 +220,7 @@ static void decreaseMemStat(size_t chunk) {
   totalFreed += chunk;
 }
 
-
+// assumes that the lock is held
 static void
 resizeTable(int direction) {
   memTableEntry** newMemTable = NULL;
@@ -248,6 +248,7 @@ resizeTable(int direction) {
   hashSizeIndex = newHashSizeIndex;
 }
 
+// assumes that the lock is held
 static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
                              c_sublocid_t subloc,
                              chpl_mem_descInt_t description, int32_t lineno,
@@ -279,6 +280,7 @@ static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
 }
 
 
+// assumes that the lock is held
 static memTableEntry* removeMemTableEntry(void* address) {
   unsigned hashValue = hash(address, hashSize);
   memTableEntry* thisBucketEntry = memTable[hashValue];
@@ -428,6 +430,7 @@ static void printMemAllocsByType(_Bool forLeaks,
 
   table = (size_t*)sys_calloc(numEntries, 3*sizeof(size_t));
 
+  memTrack_lock();
   for (i = 0; i < hashSize; i++) {
     for (me = memTable[i]; me != NULL; me = me->nextInBucket) {
       table[3*me->description] += me->number*me->size;
@@ -435,6 +438,7 @@ static void printMemAllocsByType(_Bool forLeaks,
       table[3*me->description+2] = me->description;
     }
   }
+  memTrack_unlock();
 
   qsort(table, numEntries, 3*sizeof(size_t), memTableEntryCmp);
 
@@ -497,8 +501,8 @@ void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
 
 
 static int descCmp(const void* p1, const void* p2) {
-  memTableEntry* m1 = *(memTableEntry**)p1;
-  memTableEntry* m2 = *(memTableEntry**)p2;
+  memTableEntry* m1 = (memTableEntry*)p1;
+  memTableEntry* m2 = (memTableEntry*)p2;
   c_string m1Filename;
   c_string m2Filename;
 
@@ -534,9 +538,9 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
 
   memTableEntry* memEntry;
   c_string memEntryFilename;
-  int n, i;
+  int n, i, j;
   char* loc;
-  memTableEntry** table;
+  memTableEntry* table;
 
   if (!chpl_memTrack) {
     chpl_warning("invalid call to printMemAllocs(); rerun with --memTrack",
@@ -546,6 +550,9 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
 
   n = 0;
   filenameWidth = strlen("Allocated Memory (Bytes)");
+
+  memTrack_lock();
+  // compute the number of table elements to gather & the maximum widths
   for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
@@ -562,6 +569,23 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
       }
     }
   }
+  // allocate the table
+  table = (memTableEntry*)sys_malloc(n*sizeof(memTableEntry));
+  if (!table)
+    chpl_error("out of memory printing memory table", lineno, filename);
+  // save the relevant memTable entries to 'table' to get a snapshot
+  j = 0;
+  for (i = 0; i < hashSize; i++) {
+    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
+      size_t chunk = memEntry->number * memEntry->size;
+      if (chunk < threshold)
+        continue;
+      if (description != -1 && memEntry->description != description)
+        continue;
+      table[j++] = *memEntry;
+    }
+  }
+  memTrack_unlock();
 
   totalWidth = filenameWidth+numberWidth*4+descWidth+20;
   const int headerWidth = strlen(" Memory Leaks ");
@@ -586,28 +610,13 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
     fprintf(memLogFile, "=");
   fprintf(memLogFile, "\n");
 
-  table = (memTableEntry**)sys_malloc(n*sizeof(memTableEntry*));
-  if (!table)
-    chpl_error("out of memory printing memory table", lineno, filename);
-
-  n = 0;
-  for (i = 0; i < hashSize; i++) {
-    for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
-      size_t chunk = memEntry->number * memEntry->size;
-      if (chunk < threshold)
-        continue;
-      if (description != -1 && memEntry->description != description)
-        continue;
-      table[n++] = memEntry;
-    }
-  }
-  qsort(table, n, sizeof(memTableEntry*), descCmp);
+  qsort(table, n, sizeof(memTableEntry), descCmp);
 
   size_t locSize = (filenameWidth+numberWidth+1)*sizeof(char);
   loc = (char*)sys_malloc(locSize);
 
   for (i = 0; i < n; i++) {
-    memEntry = table[i];
+    memEntry = &table[i];
     if (memEntry->filename) {
       memEntryFilename = chpl_lookupFilename(memEntry->filename);
       snprintf(loc, locSize, "%s:%" PRId32, memEntryFilename,
@@ -753,23 +762,25 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 }
 
 
-void chpl_track_realloc_post(void* moreMemAlloc,
-                         void* memAlloc, size_t size,
-                         chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
+void chpl_track_realloc_post(void* newMemAlloc,
+                             intptr_t oldMemAlloc, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, int32_t filename) {
   c_sublocid_t subloc = chpl_task_getRequestedSubloc();
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(moreMemAlloc, 1, size, subloc, description, lineno, filename);
+      addMemTableEntry(newMemAlloc, 1, size, subloc,
+                       description, lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
       fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
-                          ": reallocate %zuB of %s at %p -> %p\n",
+                          ": reallocate %zuB of %s at 0x%016" PRIxPTR
+                          " -> %p\n",
               chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-              lineno, size, chpl_mem_descString(description), memAlloc,
-              moreMemAlloc);
+              lineno, size, chpl_mem_descString(description),
+              oldMemAlloc, newMemAlloc);
     }
   }
 }

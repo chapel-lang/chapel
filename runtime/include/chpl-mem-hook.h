@@ -104,15 +104,15 @@ void chpl_memhook_realloc_pre(void* memAlloc, size_t size,
 
 
 static inline
-void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
+void chpl_memhook_realloc_post(void* newMemAlloc, intptr_t oldMemAlloc,
                                size_t size,
                                chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
-  if (CHPL_MEMHOOKS_ACTIVE || moreMemAlloc == NULL)
-    chpl_memhook_check_post(moreMemAlloc, description, lineno, filename);
+  if (CHPL_MEMHOOKS_ACTIVE || newMemAlloc == NULL)
+    chpl_memhook_check_post(newMemAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
-    chpl_track_realloc_post(moreMemAlloc, memAlloc, size, description,
-                       lineno, filename);
+    chpl_track_realloc_post(newMemAlloc, oldMemAlloc, size, description,
+                            lineno, filename);
 }
 
 #ifdef __cplusplus

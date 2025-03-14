@@ -117,7 +117,8 @@ static inline
 void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename) {
-  void* moreMemAlloc;
+  void* newMemAlloc = NULL;
+  intptr_t oldMemAlloc = (intptr_t) memAlloc;
 
   chpl_memhook_realloc_pre(memAlloc, size, description,
                            lineno, filename);
@@ -126,10 +127,10 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
     chpl_free(memAlloc);
     return NULL;
   }
-  moreMemAlloc = chpl_realloc(memAlloc, size);
-  chpl_memhook_realloc_post(moreMemAlloc, memAlloc, size, description,
-                            lineno, filename);
-  return moreMemAlloc;
+  newMemAlloc = chpl_realloc(memAlloc, size);
+  chpl_memhook_realloc_post(newMemAlloc, oldMemAlloc,
+                            size, description, lineno, filename);
+  return newMemAlloc;
 }
 
 // assumes that alignment/boundary is:
