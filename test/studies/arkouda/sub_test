@@ -22,6 +22,8 @@ if [ -n "${CHPL_TEST_LAUNCHCMD}" ] ; then
   export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_ALLOC_TIMEOUT" | envsubst)
 fi
 
+export ARKOUDA_PYTEST_OPTIONS=${CHPL_TEST_ARKOUDA_PYTEST_OPTIONS:-""}
+
 # Arkouda needs chpl in PATH
 bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
 export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
