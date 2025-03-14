@@ -8,8 +8,8 @@ on:
 
 jobs:
   send_email:
-   # run this workflow step only when the PR is merged
-    if:  github.event.pull_request.merged == true
+   # run this workflow step only when the PR is merged, only on the chapel-lang/chapel repo.
+    if:  github.event.pull_request.merged == true && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-latest
     steps:
       - name: print git events
