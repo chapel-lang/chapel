@@ -10,7 +10,13 @@ t[-3:5] (2, 3, 5, 7)
 t[2:] (5, 7)
 t[:3] (2, 3, 5)
 t[:] (2, 3, 5, 7)
+checking explicit type for slice overload
+t[0:2] (2, 3)
+t[2:5] (5, 7)
+t[0:2] (2, 3)
 checking negative idx
 Caught exception: PythonException: tuple index out of range
 checking out of bounds idx
 Caught exception: PythonException: tuple index out of range
+checking trying to convert slice to an int
+Caught exception: PythonException: 'tuple' object cannot be interpreted as an integer

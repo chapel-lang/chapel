@@ -30,6 +30,15 @@ proc main() {
   writeln("t[:3] ", t.get(..2));
   writeln("t[:] ", t.get(..));
 
+  // get slice with range and type argument
+  writeln("checking explicit type for slice overload");
+  writeln("t[0:2] ", t.get(owned PyTuple, 0..1));
+  writeln("t[2:5] ", t.get(2*int, 2..5));
+  // Note: this doesn't print like myList does, but I think it still can be
+  // treated as a list?  That probably would benefit from further
+  // experimentation
+  writeln("t[0:2] ", t.get(owned PyList, 0..1));
+
   // Error cases
   try {
     // get(idx) when idx is negative
@@ -51,11 +60,13 @@ proc main() {
     writeln("Caught unknown exception: ", e);
   }
 
-  // TODO:
-  // - get with range
-  //   - strides other than 1 (should not work)
-  //   - Type T = PyTuple
-  //   - Type T = Chapel tuple
-  //   - Type T = int (should not work)
-  //   - Type T = PyList or something like that
+  try {
+    // get(int, bounds) should not work
+    writeln("checking trying to convert slice to an int");
+    var x = t.get(int, 1..2);
+  } catch e: PythonException {
+    writeln("Caught exception: ", e);
+  } catch e {
+    writeln("Caught unknown exception: ", e);
+  }
 }
