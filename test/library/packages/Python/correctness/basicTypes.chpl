@@ -30,6 +30,11 @@ proc roundTripFunction(func: borrowed) {
   testType(bool, true);
   testType(bytes, b"hello");
 
+  var tup1: (int, string, bool) = (17, "blah", false);
+  testType(tup1.type, tup1);
+  var tup2: 4*int = (5, 4, 3, 2);
+  testType(tup2.type, tup2);
+
   var arr: [0..<10] int = 0..<10;
   testType(arr.type, arr);
   var l = new List.list(arr);
