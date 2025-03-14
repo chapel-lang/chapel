@@ -1,14 +1,7 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdint.h>
 #include <stdlib.h>
 
 /* System Headers */
-#if (HAVE_MEMALIGN && HAVE_MALLOC_H)
-#include <malloc.h> /* for memalign() */
-#endif
 #include <unistd.h> /* for getpagesize() */
 
 /* Internal Headers */

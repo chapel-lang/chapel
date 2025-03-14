@@ -9,24 +9,25 @@
  */
 
 typedef struct qthread_queue_node_s {
-  struct qthread_queue_node_s *next;
-  qthread_t *thread;
+  struct qthread_queue_node_s *_Atomic next;
+  qthread_t *_Atomic thread;
 } qthread_queue_node_t;
 
 typedef struct qthread_queue_NEMESIS_s {
   /* The First Cacheline */
-  void *head;
-  void *tail;
-  uint8_t pad1[CACHELINE_WIDTH - (2 * sizeof(void *))];
+  void *_Atomic head;
+  uint8_t pad1[CACHELINE_WIDTH - sizeof(void *)];
+  void *_Atomic tail;
+  uint8_t pad2[CACHELINE_WIDTH - sizeof(void *)];
   /* The Second Cacheline */
-  aligned_t length;
+  _Atomic aligned_t length;
   void *shadow_head;
-  uint8_t pad2[CACHELINE_WIDTH - sizeof(void *) - sizeof(aligned_t)];
+  uint8_t pad3[CACHELINE_WIDTH - sizeof(void *) - sizeof(aligned_t)];
 } qthread_queue_NEMESIS_t;
 
 typedef struct qthread_queue_nosync_s {
-  qthread_queue_node_t *head;
-  qthread_queue_node_t *tail;
+  qthread_queue_node_t *_Atomic head;
+  qthread_queue_node_t *_Atomic tail;
 } qthread_queue_nosync_t;
 
 typedef struct qthread_queue_capped_s {

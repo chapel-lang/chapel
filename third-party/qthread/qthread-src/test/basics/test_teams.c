@@ -1,9 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +16,7 @@ static aligned_t hello_new_team(void *arg_) {
   iprintf("`hello_new_team` executing in team %lu (w/ parent %lu)\n",
           (unsigned long)id,
           (unsigned long)parent_id);
-  assert(parent_id == non_team_id);
+  test_check(parent_id == non_team_id);
 
   return id;
 }
@@ -33,7 +28,7 @@ static aligned_t hello_in_team(void *arg_) {
   iprintf("`hello_in_team` executing in team %lu (w/ parent %lu)\n",
           (unsigned long)id,
           (unsigned long)parent_id);
-  assert(id != non_team_id);
+  test_check(id != non_team_id);
 
   return id;
 }
@@ -45,7 +40,7 @@ static aligned_t hello_new_team_in_team(void *arg_) {
   iprintf("`hello_new_team_in_team` executing in team %lu (w/ parent %lu)\n",
           (unsigned long)id,
           (unsigned long)parent_id);
-  assert(parent_id == non_team_id);
+  test_check(parent_id == non_team_id);
 
   aligned_t ret;
   qthread_fork(hello_in_team, NULL, &ret);
@@ -61,7 +56,7 @@ static aligned_t hello_new_team_new_team(void *arg_) {
   iprintf("`hello_new_team_new_team` executing in team %lu (w/ parent %lu)\n",
           (unsigned long)id,
           (unsigned long)parent_id);
-  assert(parent_id == non_team_id);
+  test_check(parent_id == non_team_id);
 
   aligned_t ret;
   qthread_fork_new_team(hello_new_team, NULL, &ret);
@@ -77,7 +72,7 @@ int main(int argc, char *argv[]) {
   aligned_t max = 0;
   aligned_t tmp = 0;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
   NUMARG(count, "COUNT");
@@ -85,8 +80,8 @@ int main(int argc, char *argv[]) {
   iprintf("Main executing in team %lu (w/ parent %lu)\n",
           (unsigned long)qt_team_id(),
           (unsigned long)qt_team_parent_id());
-  assert(qt_team_id() == default_team_id);
-  assert(qt_team_parent_id() == non_team_id);
+  test_check(qt_team_id() == default_team_id);
+  test_check(qt_team_parent_id() == non_team_id);
 
   aligned_t hello_in_team_ret;
   qthread_fork(hello_in_team, NULL, &hello_in_team_ret);

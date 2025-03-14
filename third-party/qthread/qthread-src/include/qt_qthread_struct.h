@@ -9,10 +9,6 @@
 #endif
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "qthread/barrier.h"
 
 #include "qt_blocking_structs.h"
@@ -37,8 +33,6 @@
 #define QTHREAD_TEAM_LEADER (1 << 7)
 #define QTHREAD_TEAM_WATCHER (1 << 8)
 #define QTHREAD_BIG_STRUCT (1 << 9)
-#define QTHREAD_AGGREGABLE (1 << 10)
-#define QTHREAD_AGGREGATED (1 << 11)
 #define QTHREAD_NETWORK (1 << 12)
 #define QTHREAD_RESERVED_FLAG3 (1 << 13)
 #define QTHREAD_RESERVED_FLAG2 (1 << 14)

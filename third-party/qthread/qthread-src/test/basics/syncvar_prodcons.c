@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <math.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
   aligned_t t;
   uint64_t x_value;
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   CHECK_VERBOSE();
 
@@ -60,22 +59,22 @@ int main(int argc, char *argv[]) {
   {
     uint64_t tmp = 0;
     qthread_syncvar_readFF(&tmp, &id);
-    assert(tmp == 1);
+    test_check(tmp == 1);
   }
   iprintf("x's status is: %s (want full (and nowait))\n",
           qthread_syncvar_status(&x) ? "full" : "empty");
-  assert(qthread_syncvar_status(&x) == 1);
+  test_check(qthread_syncvar_status(&x) == 1);
   qthread_syncvar_readFE(NULL, &x);
   iprintf("x's status became: %s (want empty (and nowait))\n",
           qthread_syncvar_status(&x) ? "full" : "empty");
-  assert(qthread_syncvar_status(&x) == 0);
+  test_check(qthread_syncvar_status(&x) == 0);
   qthread_fork(consumer, NULL, &t);
   qthread_fork(producer, NULL, NULL);
   qthread_readFF(NULL, &t);
   iprintf("shouldn't be blocking on x (current status: %s)\n",
           qthread_syncvar_status(&x) ? "full" : "empty");
   qthread_syncvar_readFF(&x_value, &x);
-  assert(qthread_syncvar_status(&x) == 1);
+  test_check(qthread_syncvar_status(&x) == 1);
 
   if (x_value == 55) {
     iprintf("Success! x==55\n");

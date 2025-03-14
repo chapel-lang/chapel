@@ -36,7 +36,7 @@ struct qthread_worker_s {
   qthread_shepherd_t *shepherd;
   struct qthread_s **nostealbuffer;
   struct qthread_s **stealbuffer;
-  qthread_t *current;
+  qthread_t *_Atomic current;
   qthread_worker_id_t unique_id;
   qthread_worker_id_t worker_id;
   qthread_worker_id_t packed_worker_id;
@@ -56,13 +56,10 @@ struct qthread_shepherd_s {
   _Atomic uintptr_t active;
   /* affinity information */
   unsigned int node; /* whereami */
-#ifdef QTHREAD_HAVE_LGRP
-  unsigned int lgrp;
-#endif
   unsigned int *shep_dists;
   qthread_shepherd_id_t *sorted_sheplist;
-  unsigned int stealing; /* True when a worker is in the steal (attempt) process
-                            OR if stealing disabled*/
+  _Atomic unsigned int stealing; /* True when a worker is in the steal (attempt)
+                                    process OR if stealing disabled*/
 #ifdef QTHREAD_OMP_AFFINITY
   unsigned int stealing_mode; /* Specifies when a shepherd may steal */
 #endif
