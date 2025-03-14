@@ -598,6 +598,52 @@ module Python {
     }
 
     /*
+      Get a Python object by name. This will either get a Python global
+      variables, (like `globals()[name]` in Python) or a Python builtin by name.
+
+      This will first query the current globals, and if the object is not found,
+      it will query the builtins.
+
+      :arg t: The Chapel type of the value to return.
+      :arg attr: The name of the attribute/field to access.
+    */
+    pragma "docs only"
+    proc get(type t=owned Value, attr: string): t throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type t, attr: string): t throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var globals = chpl_PyEval_GetFrameGlobals();
+      if globals != nil {
+        var pyObj = PyDict_GetItemString(globals, attr.c_str());
+        this.checkException();
+        if pyObj != nil {
+          Py_INCREF(pyObj);
+          return this.fromPythonInner(t, pyObj);
+        }
+      }
+
+      var builtins = chpl_PyEval_GetFrameBuiltins();
+      if builtins != nil {
+        var pyObj = PyDict_GetItemString(builtins, attr.c_str());
+        this.checkException();
+        if pyObj != nil {
+          Py_INCREF(pyObj);
+          return this.fromPythonInner(t, pyObj);
+        }
+      }
+
+      // if we reach this point, throw an exception
+      throw new ChapelException("Attribute '" + attr + "' not found");
+    }
+    @chpldoc.nodoc
+    proc get(attr: string): owned Value throws do
+      return this.get(owned Value, attr);
+
+    /*
       Run a string of python code.
 
       This function will just run the code, it cannot be passed arguments or
@@ -2859,6 +2905,7 @@ module Python {
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
     extern proc chpl_PyEval_GetFrameGlobals(): PyObjectPtr;
+    extern proc chpl_PyEval_GetFrameBuiltins(): PyObjectPtr;
 
 
     extern var Py_eval_input: c_int;
