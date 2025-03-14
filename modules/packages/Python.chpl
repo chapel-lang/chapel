@@ -851,6 +851,8 @@ module Python {
         return toList(val);
       } else if isArrayType(t) && val.isAssociative() {
         return toDict(val);
+      } else if isTupleType(t) {
+        return toTuple(val);
       } else if isSubtype(t, List.list) {
         return toList(val);
       } else if isSubtype(t, Set.set) {
@@ -946,6 +948,8 @@ module Python {
         } else {
           halt("Unsupported fromPython array type: '" + t:string + "'");
         }
+      } else if isTupleType(t) {
+        return fromTuple(t, obj);
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
       } else if isSubtype(t, Set.set) {
@@ -964,6 +968,42 @@ module Python {
       } else {
         halt("Unsupported fromPython type: '" + t:string + "'");
       }
+    }
+
+    /*
+      Convert a tuple to a python tuple.  Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toTuple(in tup): PyObjectPtr throws
+      where isTupleType(tup.type) {
+
+      var pyTup = PyTuple_New(tup.size.safeCast(Py_ssize_t));
+      this.checkException();
+      var idx = 0;
+      for x in tup {
+        PyTuple_SetItem(pyTup, idx.safeCast(Py_ssize_t), toPythonInner(x));
+        this.checkException();
+        idx = idx + 1;
+      }
+      return pyTup;
+    }
+
+    /*
+      Convert a python tuple to a tuple.  Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromTuple(type T, obj: PyObjectPtr): T throws
+      where isTupleType(T) {
+
+      var res: T;
+      for param i in 0..<res.size {
+        var elm = PyTuple_GetItem(obj, i.safeCast(Py_ssize_t));
+        this.checkException();
+        res(i) = fromPythonInner((res(i)).type, elm);
+        this.checkException();
+      }
+      Py_DECREF(obj);
+      return res;
     }
 
     /*
@@ -3124,11 +3164,14 @@ module Python {
     /*
       Tuples
     */
+    extern proc PyTuple_New(size: Py_ssize_t): PyObjectPtr;
     extern proc PyTuple_Pack(size: Py_ssize_t, args...): PyObjectPtr;
     extern proc PyTuple_Size(tup: PyObjectPtr): Py_ssize_t;
     extern proc PyTuple_GetItem(tup: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
     extern proc PyTuple_GetSlice(tup: PyObjectPtr, low: Py_ssize_t,
                                  high: Py_ssize_t): PyObjectPtr;
+    extern proc PyTuple_SetItem(tup: PyObjectPtr, pos: Py_ssize_t,
+                                item: PyObjectPtr);
     /*
       Functions
     */
