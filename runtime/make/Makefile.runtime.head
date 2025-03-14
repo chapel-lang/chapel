@@ -62,6 +62,10 @@ ifneq ($(MAKE_LAUNCHER),1)
     LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_JEMALLOC
     LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
   endif
+  ifeq ($(CHPL_MAKE_TARGET_MEM),mimalloc)
+    LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_MIMALLOC
+    LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
+  endif
 endif
 
 # Get runtime headers and required -D flags.
