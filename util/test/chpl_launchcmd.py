@@ -199,7 +199,7 @@ class AbstractJob(object):
         logging.debug('Job name prefix is: {0}'.format(prefix))
 
         cmd_basename = os.path.basename(self.test_command[0])
-        logging.debug('Test command basname: {0}'.format(cmd_basename))
+        logging.debug('Test command basename: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.debug('Job name is: {0}'.format(job_name))
@@ -924,7 +924,26 @@ class PbsProJob(AbstractJob):
         if num_locales == -1:
             num_locales = 1
 
+        loc_per_node = int(os.environ.get('CHPL_RT_LOCALES_PER_NODE', '1'))
+
+        logging.debug("Locales per node: {}".format(loc_per_node))
+        if num_locales%loc_per_node != 0:
+            raise RuntimeError('Requested number of locales ({}) is not '
+                               'divisible by CHPL_RT_LOCALES_PER_NODE '
+                               '({}).'.format(num_locales, loc_per_node))
+
+        num_locales = int(num_locales/loc_per_node)
+
         if self.hostlist is not None:
+            if loc_per_node != 1:
+                # Engin: I am not sure if this code path is still needed, nor
+                # can't tell how to handle colocales here. So, for now, I am
+                # just adding a warning. If this path is needed, we can make
+                # adjustments here.
+                logging.warning('Hostlist and the CHPL_RT_LOCALES_PER_NODE '
+                                'environment are set. You may not get correct '
+                                'number of nodes allocated')
+                                
             # This relies on the caller to use the correct select syntax.
             select_stmt = select_pattern.format(self.hostlist)
             select_stmt = select_stmt.replace('<num_locales>', str(num_locales))
