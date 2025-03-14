@@ -33,6 +33,12 @@ For HPE Apollo:
 
 .. code-block:: bash
 
+      export CHPL_HOST_PLATFORM=hpe-apollo
+
+For HPE Cray XD:
+
+.. code-block:: bash
+
       export CHPL_HOST_PLATFORM=hpe-cray-xd
 
 For Cray CS:
