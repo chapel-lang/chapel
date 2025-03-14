@@ -1188,9 +1188,7 @@ module BytesStringCommon {
 
     inline proc helpMe(ref lhs: t, rhs: t) {
       if compiledForSingleLocale() || rhs.locale_id == chpl_nodeID {
-        // Workaround: Switched from 't' to 'lhs.type' here as Dyno doesn't
-        // support capturing variables into nested procs yet. Anna 2025-02-27
-        if lhs.type == string {
+        if t == string {
           reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
                               rhs.numCodepoints);
         }
@@ -1202,8 +1200,7 @@ module BytesStringCommon {
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        // Same workaround as above
-        if lhs.type == string {
+        if t == string {
           reinitWithOwnedBuffer(lhs, remote_buf, len, len+1,
                                 rhs.cachedNumCodepoints);
         }

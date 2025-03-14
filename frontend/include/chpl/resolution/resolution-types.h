@@ -36,6 +36,7 @@
 #include "chpl/util/hash.h"
 #include "chpl/util/memory.h"
 
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -483,6 +484,16 @@ class OuterVariables {
     auto it = mentionIdToTargetId_.find(mention);
     if (it == mentionIdToTargetId_.end()) return nullptr;
     return &*targetIdToType_.find(it->second);
+  }
+
+  /** If available, returns the type associated with an outer variable's ID */
+  const std::optional<QualifiedType> targetType(const ID& target) const {
+    auto it = targetIdToType_.find(target);
+    if (it == targetIdToType_.end()) {
+      return {};
+    } else {
+      return { it->second };
+    }
   }
 
   bool isEmpty() const {

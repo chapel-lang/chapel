@@ -3945,6 +3945,8 @@ bool Resolver::lookupOuterVariable(QualifiedType& out,
   // Use the cached result if it exists.
   if (auto p = outerVariables.targetAndTypeOrNull(mention)) {
     type = p->second;
+  } else if (auto t = outerVariables.targetType(target)) {
+    type = *t;
 
   } else if (isFieldAccess) {
     // If the target ID is a field, we have to walk up parent frames
