@@ -27,7 +27,7 @@ def get():
     #
     platform_val = chpl_platform.get('target')
     launcher_val = chpl_launcher.get()
-    if 'cray-x' in platform_val or platform_val == 'hpe-cray-ex':
+    if 'cray-x' in platform_val or chpl_platform.is_hpe_cray('target'):
         oob_val = 'pmi2'
     elif 'cray-' in platform_val:
         oob_val = 'mpi'

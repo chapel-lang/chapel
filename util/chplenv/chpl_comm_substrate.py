@@ -2,7 +2,7 @@
 import sys
 import shutil
 
-import chpl_comm, chpl_platform, overrides
+import chpl_comm, overrides
 from utils import memoize
 
 
@@ -11,26 +11,31 @@ def get():
     substrate_val = overrides.get('CHPL_COMM_SUBSTRATE')
     if not substrate_val:
         comm_val = chpl_comm.get()
-        platform_val = chpl_platform.get('target')
 
         if comm_val == 'gasnet':
-            if shutil.which('ibstat'):
-                substrate_val = 'ibv'
-            elif shutil.which('cxi_stat'):
-                substrate_val = 'ofi'
-            elif platform_val == 'cray-xc':
+            network = chpl_comm.get_network()
+            if network == 'aries':
                 substrate_val = 'aries'
-            elif platform_val == 'hpe-cray-ex':
-                substrate_val = 'ofi'
-            elif platform_val == 'hpe-cray-xd':
-                # default to ofi on XD when we can't determine ib vs cxi
-                substrate_val = 'ofi'
-            elif platform_val in ('cray-cs', 'hpe-apollo'):
+            elif network == 'ibv':
                 substrate_val = 'ibv'
-            elif platform_val == 'pwr6':
-                substrate_val = 'ibv'
+            elif network == 'cxi':
+                substrate_val = 'ofi'
             else:
-                substrate_val = 'udp'
+                import chpl_platform
+                platform_val = chpl_platform.get('target')
+                if platform_val == 'cray-xc':
+                    substrate_val = 'aries'
+                elif platform_val == 'hpe-cray-ex':
+                    substrate_val = 'ofi'
+                elif platform_val == 'hpe-cray-xd':
+                    # default to ofi on XD when we can't determine ib vs cxi
+                    substrate_val = 'ofi'
+                elif platform_val in ('cray-cs', 'hpe-apollo'):
+                    substrate_val = 'ibv'
+                elif platform_val == 'pwr6':
+                    substrate_val = 'ibv'
+                else:
+                    substrate_val = 'udp'
         else:
             substrate_val = 'none'
     return substrate_val

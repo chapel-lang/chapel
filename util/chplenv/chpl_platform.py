@@ -21,27 +21,17 @@ def get(flag='host'):
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
-        # Check for cray platform. It is a cray platform if there is a
-        # cle-release/CLEinfo config file with a known network value in it.
-        cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release') # CLE >= 6
-        if not os.path.exists(cle_info_file):
-            cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo') # CLE <= 5
-
-        if os.path.exists(cle_info_file):
-            with open(cle_info_file, 'r') as fp:
-                cle_info = fp.read()
-            net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-Z]+)$', re.MULTILINE)
-            net_match = net_pattern.search(cle_info)
-            if net_match is not None and len(net_match.groups()) == 1:
-                net = net_match.group('net')
-                if net.lower() == 'ari':
-                    platform_val = 'cray-xc'
-
-    if not platform_val:
-        network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
-        if network.startswith("slingshot") or network == "ofi":
-            # TODO: This is not really true, as this env is set to ofi on
-            # HPE Cray XD systems as well. but this is a decent enough guess
+        import chpl_comm
+        network = chpl_comm.get_network()
+        if network == 'aries':
+            platform_val = 'cray-xc'
+        elif network == 'ibv':
+            # it could be cray-cs, hpe-apollo, or hpe-cray-xd
+            # do nothing for now
+            pass
+        elif network == 'cxi':
+            # it could also be hpe-cray-xd, but we can't tell
+            # this is good enough, EX is close enough for auto-detection
             platform_val = 'hpe-cray-ex'
 
     if not platform_val:
@@ -83,6 +73,16 @@ def is_wsl():
     name = (platform.uname().release).lower()
     if name.endswith('-microsoft') or name.endswith('-microsoft-standard-wsl2'):
         return True
+
+@memoize
+def is_hpe_cray(flag='host'):
+    platform = get(flag)
+    return platform in ('hpe-cray-ex', 'hpe-cray-xd')
+
+@memoize
+def is_cray(flag='host'):
+    platform = get(flag)
+    return platform.startswith('cray') or is_hpe_cray(flag)
 
 @memoize
 def get_mac_os_version():

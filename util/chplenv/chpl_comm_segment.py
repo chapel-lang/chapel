@@ -15,7 +15,7 @@ def get():
             platform_val = chpl_platform.get('target')
             if substrate_val in ('aries', 'smp', 'ucx'):
                 segment_val = 'fast'
-            elif substrate_val == 'ofi' and platform_val == 'hpe-cray-ex':
+            elif substrate_val == 'ofi' and chpl_platform.is_hpe_cray('target'):
                 segment_val = 'fast'
             elif substrate_val == 'ibv':
                 segment_val = 'large'

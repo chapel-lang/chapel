@@ -13,7 +13,6 @@ def get():
     comm_val = chpl_comm.get()
     if comm_val == 'ofi':
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
-        platform_val = chpl_platform.get('target')
         if not libfabric_val:
             if third_party_utils.pkgconfig_system_has_package('libfabric'):
                 libfabric_val = 'system'
@@ -21,8 +20,8 @@ def get():
                 libfabric_val = 'bundled'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
-        elif platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
-            warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray EX')
+        elif chpl_platform.is_hpe_cray('target') and libfabric_val != 'system':
+            warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray')
     else:
         libfabric_val = 'none'
 
