@@ -538,7 +538,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
 
   memTableEntry* memEntry;
   c_string memEntryFilename;
-  int n, i;
+  int n, i, j;
   char* loc;
   memTableEntry* table;
 
@@ -574,7 +574,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   if (!table)
     chpl_error("out of memory printing memory table", lineno, filename);
   // save the relevant memTable entries to 'table' to get a snapshot
-  n = 0;
+  j = 0;
   for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
@@ -582,7 +582,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
         continue;
       if (description != -1 && memEntry->description != description)
         continue;
-      table[n++] = *memEntry;
+      table[j++] = *memEntry;
     }
   }
   memTrack_unlock();

@@ -118,7 +118,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename) {
   void* newMemAlloc = NULL;
-  int64_t oldMemAlloc = (intptr_t) memAlloc;
+  intptr_t oldMemAlloc = (intptr_t) memAlloc;
 
   chpl_memhook_realloc_pre(memAlloc, size, description,
                            lineno, filename);

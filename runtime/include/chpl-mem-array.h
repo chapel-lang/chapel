@@ -133,7 +133,7 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
                              c_sublocid_t subloc, chpl_bool* callPostAlloc,
                              int32_t lineno, int32_t filename) {
   void* newp = NULL;
-  int64_t oldp = (intptr_t) p;
+  intptr_t oldp = (intptr_t) p;
   const size_t newSize = newNmemb * eltSize;
 #ifdef HAS_GPU_LOCALE
   if (chpl_gpu_running_on_gpu_locale()) {
