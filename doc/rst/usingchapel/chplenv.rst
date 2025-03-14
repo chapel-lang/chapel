@@ -106,6 +106,7 @@ CHPL_HOST_PLATFORM
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
         hpe-apollo   HPE Apollo
+        hpe-cray-xd  HPE Cray XD
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in

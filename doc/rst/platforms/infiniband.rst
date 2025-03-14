@@ -25,7 +25,7 @@ Chapel with InfiniBand support, set:
       export CHPL_COMM=gasnet
       export CHPL_COMM_SUBSTRATE=ibv
 
-Alternatively, when running on an HPE Apollo or Cray CS system
+Alternatively, when running on an HPE Apollo, HPE Cray XD, Cray CS system
 ``CHPL_HOST_PLATFORM`` can be set instead, in which case the comm
 and substrate settings will be inferred.
 
@@ -34,6 +34,12 @@ For HPE Apollo:
 .. code-block:: bash
 
       export CHPL_HOST_PLATFORM=hpe-apollo
+
+For HPE Cray XD:
+
+.. code-block:: bash
+
+      export CHPL_HOST_PLATFORM=hpe-cray-xd
 
 For Cray CS:
 

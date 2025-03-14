@@ -1041,7 +1041,7 @@ def gather_pe_chpl_pkgconfig_libs():
 
     ret = os.environ.get('PE_CHAPEL_PKGCONFIG_LIBS', '')
     if comm != 'none':
-        if platform != 'hpe-cray-ex':
+        if not chpl_platform.is_hpe_cray('target'):
             # Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
             # linker option for static linking with it. While it's not always
             # used with Chapel programs, it is expected to be the common case
@@ -1074,7 +1074,6 @@ def gather_pe_chpl_pkgconfig_libs():
 @memoize
 def get_clang_prgenv_args():
 
-    platform = chpl_platform.get('target')
     comp_args = [ ]
     link_args = [ ]
 
