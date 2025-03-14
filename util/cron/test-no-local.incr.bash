@@ -12,4 +12,6 @@ export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-incremental-warning
 # incremental compilation not currently supported with LLVM
 export CHPL_LLVM=none
 
+export CHPL_LAUNCHER=none
+
 $UTIL_CRON_DIR/nightly -cron -no-local -examples -compopts --incremental

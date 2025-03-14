@@ -9,4 +9,6 @@ source $UTIL_CRON_DIR/common-quickstart.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="networking-packages"
 export CHPL_NIGHTLY_TEST_DIRS="library/packages/Curl library/packages/URL"
 
+export CHPL_LAUNCHER=none
+
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}
