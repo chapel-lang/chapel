@@ -82,7 +82,8 @@ def _is_cxi():
 @memoize
 def get_network():
     """
-    Determines NIC of the current system, must be 'cxi', 'ibv', 'aries', or 'unknown'
+    Guesses the network type of the current system.
+    Returns 'cxi', 'ibv', 'aries', or 'unknown'
     """
     network = None
     if _is_aries():
