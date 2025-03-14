@@ -1529,6 +1529,21 @@ module Python {
     }
 
     /*
+      Returns the debug string representation of the object.
+
+      Equivalent to calling ``repr(obj)`` in Python.
+    */
+    proc repr(): string throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+      var pyStr = PyObject_Repr(this.obj);
+      this.interpreter.checkException();
+      var res = interpreter.fromPythonInner(string, pyStr);
+      return res;
+    }
+
+
+    /*
       Treat this value as a callable and call it with the given arguments.
 
       This handles conversion from Chapel types to Python types and back, by
@@ -2837,6 +2852,7 @@ module Python {
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
     extern proc PyMem_Free(ptr: c_ptr(void));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
+    extern proc PyObject_Repr(obj: PyObjectPtr): PyObjectPtr; // `repr(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
     extern "chpl_PY_VERSION_HEX" const PY_VERSION_HEX: uint(64);
