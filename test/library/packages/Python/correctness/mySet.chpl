@@ -6,14 +6,7 @@ def getSet():
   return {'a', 'b', 'c'}
 """;
 
-proc main() {
-
-  var interp = new Interpreter();
-
-  var pyCodeModule = interp.importModule('__empty__', pyCode);
-  var getSetFunc = pyCodeModule.get('getSet');
-
-  var s = getSetFunc(owned PySet);
+proc testSet(s: borrowed) {
   // writeln("s ", s); // Too inconsistent, it's a set
   writeln("size ", s.size);
   s.add('d');
@@ -37,4 +30,24 @@ proc main() {
 
   s.clear();
   writeln("size after clear ", s.size);
+  writeln("=========");
+}
+
+proc main() {
+  var interp = new Interpreter();
+
+  var pyCodeModule = interp.importModule('__empty__', pyCode);
+  var getSetFunc = pyCodeModule.get('getSet');
+  var s = getSetFunc(owned PySet);
+  testSet(s);
+
+  var set = interp.get('set');
+  var s2 = set(owned PySet, ['a', 'b', 'c']);
+  testSet(s2);
+
+  // TODO: could be replaced nicely with a cast?
+  var s3 = new PySet(interp,
+                     interp.toPython(new Set.set(string, ['a', 'b', 'c'])));
+  testSet(s3);
+
 }
