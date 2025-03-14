@@ -80,9 +80,12 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   return col.only();
 }
 
-static std::unique_ptr<Context> _reusedContext;
 
 chpl::Context* buildStdContext(chpl::CompilerFlags flags) {
+  // Note: If we make this 'global', we run into double-free errors most likely
+  // due to  some linking issue.
+  static std::unique_ptr<Context> _reusedContext;
+
   if (_reusedContext.get() == nullptr) {
     std::string chpl_home;
     if (const char* chpl_home_env = getenv("CHPL_HOME")) {
