@@ -753,23 +753,25 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 }
 
 
-void chpl_track_realloc_post(void* moreMemAlloc,
-                         void* memAlloc, size_t size,
-                         chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
+void chpl_track_realloc_post(void* newMemAlloc,
+                             intptr_t oldMemAlloc, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, int32_t filename) {
   c_sublocid_t subloc = chpl_task_getRequestedSubloc();
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
       memTrack_lock();
-      addMemTableEntry(moreMemAlloc, 1, size, subloc, description, lineno, filename);
+      addMemTableEntry(newMemAlloc, 1, size, subloc,
+                       description, lineno, filename);
       memTrack_unlock();
     }
     if (chpl_verbose_mem) {
       fprintf(memLogFile, "%" PRI_c_nodeid_t ": %s:%" PRId32
-                          ": reallocate %zuB of %s at %p -> %p\n",
+                          ": reallocate %zuB of %s at 0x%016" PRIxPTR
+                          " -> %p\n",
               chpl_nodeID, (filename ? chpl_lookupFilename(filename) : "--"),
-              lineno, size, chpl_mem_descString(description), memAlloc,
-              moreMemAlloc);
+              lineno, size, chpl_mem_descString(description),
+              oldMemAlloc, newMemAlloc);
     }
   }
 }
