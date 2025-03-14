@@ -24,6 +24,12 @@ def validate_compiler(compiler_val, flag):
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
 
+        # if we are on an EX and not using LLVM, we should be using the prgenv compiler
+        if flag == 'target':
+            prg_compiler = get_prgenv_compiler()
+            if prg_compiler != 'none' and compiler_val != prg_compiler:
+                warning('Prefer using a PrgEnv compiler (CHPL_TARGET_COMPILER={0}) for the C backend'.format(prg_compiler))
+
 
 @memoize
 def get_prgenv_compiler():
