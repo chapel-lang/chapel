@@ -1,0 +1,28 @@
+str: hello
+repr: 'hello'
+default: hello
+================
+str: 1
+repr: 1
+default: 1
+================
+str: [1, 2, 3]
+repr: [1, 2, 3]
+default: [1, 2, 3]
+================
+str: 1, 2, 3
+repr: my_class(1, 2, 3)
+default: 1, 2, 3
+================
+str: hello, world
+repr: my_class('hello', 'world')
+default: hello, world
+================
+str: 1, hello, 2, world
+repr: my_class(1, 'hello', 2, 'world')
+default: 1, hello, 2, world
+================
+str: [1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2}
+repr: my_class([1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2})
+default: [1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2}
+================
