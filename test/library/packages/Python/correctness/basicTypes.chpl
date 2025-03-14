@@ -88,6 +88,18 @@ proc roundTripClass(clsType: borrowed) {
   testType(real(64), 3.14, 2.71);
   testType(string, "hello", "world");
 
+  /* Tuples in Python are immutable.  The C interface *can* mutate them, but
+     only if it knows it owns the full instance.  There's probably a way to
+     adjust the implementation so that this is supported, but for now, it
+     doesn't work.
+  var tup1: (int, string, bool) = (17, "blah", false);
+  var tup2: (int, string, bool);
+  testType(tup1.type, tup1, tup2);
+  var tup3: 4*int = (5, 4, 3, 2);
+  var tup4: 4*int;
+  testType(tup3.type, tup3, tup4);
+  */
+
   var arr: [0..<10] int = 0..<10;
   var otherArr = [arr.domain] 2;
   testType(arr.type, arr, otherArr);
