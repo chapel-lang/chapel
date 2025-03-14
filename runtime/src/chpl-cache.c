@@ -1985,12 +1985,12 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
                       chpl_nodeID, (int)chpl_task_getId(),
                       (int) cache->pending_sequence_numbers[index],
                       (int) cache->completed_request_number));
-    }
-
-    // Stop if we have an uncompleted request for a later sequence number
-    if (cache->pending_sequence_numbers[index] > sn) {
-      DEBUG_PRINT(("wait_for stopped at %i\n", index));
-      break;
+    } else {
+      // Stop if we have an uncompleted request for a later sequence number
+      if (cache->pending_sequence_numbers[index] > sn) {
+        DEBUG_PRINT(("wait_for stopped at %i\n", index));
+        break;
+      }
     }
   }
   return waited;
