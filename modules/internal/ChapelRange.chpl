@@ -2717,7 +2717,7 @@ private proc isBCPindex(type t) param do
     type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    proc absSameType(r, type resultType) {
+    proc absSameType() {
       if r.hasNegativeStride() {
         return (-r.stride):resultType;
       } else {
@@ -2731,14 +2731,14 @@ private proc isBCPindex(type t) param do
                          bounds = boundKind.both,
                          strides = r.strides,
                          _low = r._low,
-                         _high = r._low - absSameType(r, resultType),
+                         _high = r._low - absSameType(),
                          _stride = r.stride,
                          alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
                          strides = r.strides,
-                         _low = r._high + absSameType(r, resultType),
+                         _low = r._high + absSameType(),
                          _high = r._high,
                          _stride = r.stride,
                          alignmentValue = r._alignment);
