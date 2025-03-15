@@ -2769,6 +2769,17 @@ class ResolvedFunction {
   /** the set of point-of-instantiations used by the instantiation */
   const PoiInfo& poiInfo() const { return poiInfo_; }
 
+  const ResolvedFunction* getNestedResult(const TypedFnSignature* sig,
+                                          const PoiScope* poiScope) const {
+    auto poiInfo = PoiInfo(poiScope);
+    auto it = sigAndInfoToChildPtr_.find(std::make_pair(sig, poiScope));
+    if (it != sigAndInfoToChildPtr_.end()) {
+      return it->second;
+    } else {
+      return nullptr;
+    }
+  }
+
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&

@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/resolution/call-graph.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -729,6 +730,44 @@ static void test14(Context* ctx) {
   std::ignore = resolveTypeOfX(ctx, program);
 }
 
+static void test15(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : int;
+    }
+
+    proc other(type T) {
+      var ret : T;
+      return ret;
+    }
+
+    proc helper(arg: R(?t), val: int) {
+      return nested(val);
+
+      proc nested(v: int) {
+        return other(t);
+      }
+    }
+
+    proc test() {
+      var r = new R(int, 42);
+      return helper(r, 5);
+    }
+    var x = test();
+    )""";
+
+  std::ignore = resolveTypeOfX(ctx, program);
+
+  auto m = parseModule(ctx, std::move(program));
+  CalledFnsSet called;
+  std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
+}
+
 int main() {
   auto context = buildStdContext();
   Context* ctx = turnOnWarnUnstable(context);
@@ -753,6 +792,7 @@ int main() {
   test12b(ctx);
   test13(ctx);
   test14(ctx);
+  test15(ctx);
 
   return 0;
 }

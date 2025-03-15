@@ -92,6 +92,23 @@ struct CalledFnCollector {
   }
   void exit(const AstNode* ast, RV& rv) {
   }
+
+  const ResolvedFunction* getResolvedFunction(const TypedFnSignature* sig,
+                           const PoiScope* poiScope) {
+    chpl::resolution::ResolutionContext rcval(context);
+    const ResolvedFunction* fn = nullptr;
+    if (resolvedFunction) {
+      if (auto stored = resolvedFunction->getNestedResult(sig, poiScope)) {
+        fn = stored;
+      }
+    }
+
+    if (fn == nullptr) {
+      fn = resolveFunction(&rcval, sig, poiScope);
+    }
+
+    return fn;
+  }
 };
 
 
@@ -129,8 +146,7 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
   for (const auto& candidate : re->mostSpecific()) {
     if (const TypedFnSignature* sig = candidate.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        chpl::resolution::ResolutionContext rcval(context);
-        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
+        auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
     }
@@ -142,8 +158,7 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
     // Ideally, that would work by generating uAST for them.
     if (const TypedFnSignature* sig = action.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        chpl::resolution::ResolutionContext rcval(context);
-        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
+        auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
     }
