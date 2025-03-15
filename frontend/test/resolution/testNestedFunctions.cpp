@@ -768,6 +768,37 @@ static void test15(Context* ctx) {
   std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
 }
 
+static void test16(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    proc helper(args) {
+      proc nested() {
+        var sum = 0;
+        for param dim in 0..args.size-1 {
+          if args(dim).type != int {
+            sum += 1;
+          }
+        }
+        return sum;
+      }
+
+      return nested();
+    }
+
+    var args = (1, 2, 3, 4);
+    var x = helper(args);
+    )""";
+
+  std::ignore = resolveTypeOfX(ctx, program);
+
+  auto m = parseModule(ctx, std::move(program));
+  CalledFnsSet called;
+  std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
+}
+
 int main() {
   auto context = buildStdContext();
   Context* ctx = turnOnWarnUnstable(context);
@@ -793,6 +824,7 @@ int main() {
   test13(ctx);
   test14(ctx);
   test15(ctx);
+  test16(ctx);
 
   return 0;
 }
