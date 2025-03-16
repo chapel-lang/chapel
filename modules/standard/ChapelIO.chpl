@@ -39,14 +39,6 @@ module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
 
-  // TODO -- this should probably be private
-  @chpldoc.nodoc
-  proc _isNilObject(val) {
-    proc helper(o: borrowed RootClass) do return o == nil;
-    proc helper(o) do                  return false;
-    return helper(val);
-  }
-
   use IO;
   import CTypes.{c_int};
 
