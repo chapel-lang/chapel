@@ -170,35 +170,6 @@ module ChapelIO {
       return isSubtype(T, fileReader(?));
     }
 
-    private
-    proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
-      const qioFmt = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      const isJson = qioFmt == QIO_AGGREGATE_FORMAT_JSON;
-      const qioSkipUnknown = QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS;
-      const isSkipUnknown = reader.styleElement(qioSkipUnknown) != 0;
-
-      if !isSkipUnknown || !isJson then return;
-
-      while true {
-        if needsComma {
-
-          // Try reading a comma. If we don't, break out of the loop.
-          try {
-            reader.readLiteral(",", true);
-            needsComma = false;
-          } catch err: BadFormatError {
-            break;
-          }
-        }
-
-        // Skip an unknown JSON field.
-
-
-        try reader._skipField();
-        needsComma = true;
-      }
-    }
-
   @chpldoc.nodoc
   proc locale.serialize(writer, ref serializer) throws {
     // FIXME this doesn't resolve without `this`
