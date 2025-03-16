@@ -6690,13 +6690,6 @@ proc fileReader._readNewlineCommon(param isMatch:bool) throws {
   }
 }
 
-// non-unstable version we can use internally
-@chpldoc.nodoc
-inline proc fileReader._readNewline() : void throws {
-  var ionl = new chpl_ioNewline(true);
-  this.readIt(ionl);
-}
-
 // TODO: How does this differ from readln() ?
 /*
   Advances the offset of the :record:`fileReader` by reading a newline.
