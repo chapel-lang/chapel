@@ -7179,22 +7179,6 @@ proc chpl_stringify(const args ...?k):string {
   }
 }
 
-private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
-
-private proc _args_to_proto(const args ...?k, preArg:string) {
-  // FIX ME: lot of potential leaking going on here with string concat
-  // But this is used for error handling so maybe we don't care.
-  var err_args: string;
-  for param i in 0..k-1 {
-    var name: string;
-    if i < _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:string;
-    err_args += preArg + name + ":" + args(i).type:string;
-    if i != k-1 then err_args += ", ";
-  }
-  return err_args;
-}
-
 @chpldoc.nodoc
 inline proc fileReader._readInner(ref args ...?k):void throws {
   const origLocale = this.getLocaleOfIoRequest();
