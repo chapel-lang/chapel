@@ -50,20 +50,6 @@ module ChapelIO {
   use IO;
   import CTypes.{c_int};
 
-  /*
-   Local copies of IO.{EEOF,ESHORT,EFORMAT} as these are being phased out
-   and are now private in IO
-   */
-  private extern proc chpl_macro_int_EEOF():c_int;
-  private extern proc chpl_macro_int_ESHORT():c_int;
-  private extern proc chpl_macro_int_EFORMAT():c_int;
-  @chpldoc.nodoc
-  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
-  @chpldoc.nodoc
-  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
-  @chpldoc.nodoc
-  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
-
     private
     proc isIoField(x, param i) param {
       if isType(__primitive("field by num", x, i)) ||
