@@ -6527,31 +6527,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return err;
 }
 
-@chpldoc.nodoc
-proc fileReader.readIt(ref x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-
-    if deserializerType != nothing {
-      _deserializeOne(x, origLocale);
-    } else {
-      _readOne(_iokind.dynamic, x, origLocale);
-    }
-  }
-}
-
-@chpldoc.nodoc
-proc fileWriter.writeIt(const x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-    try _writeOne(_iokind.dynamic, x, origLocale);
-  }
-}
-
 private proc literalErrorHelper(x: ?t, action: string,
                                 isLiteral: bool): string {
   // Error message construction is handled here so that messages are
