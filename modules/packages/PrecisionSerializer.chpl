@@ -166,10 +166,6 @@ module PrecisionSerializer {
         writer.writeLiteral("nil");
       } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
         _serializeClassOrPtr(writer, val);
-      } else if isUnionType(t) {
-        // From ChapelIO
-        // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
-        writeThisDefaultImpl(writer, val);
       } else {
         val.serialize(writer=writer, serializer=this);
       }
