@@ -938,30 +938,6 @@ enum iostringformatInternal {
 }
 
 @chpldoc.nodoc
-proc stringStyleWithVariableLengthInternal() {
-  return iostringstyleInternal.lenVb_data: int(64);
-}
-
-// Replacement for stringStyleWithLength, though it shouldn't be relied upon by
-// users as it will likely be replaced in the future
-@chpldoc.nodoc
-proc stringStyleWithLengthInternal(lengthBytes:int) throws {
-  var x = iostringstyleInternal.lenVb_data;
-  select lengthBytes {
-    when 0 do x = iostringstyleInternal.lenVb_data;
-    when 1 do x = iostringstyleInternal.len1b_data;
-    when 2 do x = iostringstyleInternal.len2b_data;
-    when 4 do x = iostringstyleInternal.len4b_data;
-    when 8 do x = iostringstyleInternal.len8b_data;
-    otherwise
-      throw createSystemError(EINVAL,
-                              "Invalid string length prefix " +
-                              lengthBytes:string);
-  }
-  return x;
-}
-
-@chpldoc.nodoc
 extern const QIO_FDFLAG_UNK:c_int;
 @chpldoc.nodoc
 extern const QIO_FDFLAG_READABLE:c_int;
@@ -1559,47 +1535,6 @@ proc defaultIOStyleInternal(): iostyleInternal {
   qio_style_init_default(ret);
   return ret;
 }
-
-/* Get an iostyleInternal indicating binary I/O in native byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.native:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
-@chpldoc.nodoc
-proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.big:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.little:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-// TODO -- add arguments to this function
-/* Get an iostyleInternal indicating text I/O. */
-@chpldoc.nodoc
-proc iostyleInternal.text(/* args coming later */):iostyleInternal {
-  var ret = this;
-  ret.binary = 0;
-  return ret;
-}
-
-
 
 /* fdflag_t specifies how a file can be used. It can be:
   QIO_FDFLAG_UNK,
