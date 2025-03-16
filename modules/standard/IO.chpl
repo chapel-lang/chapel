@@ -12070,22 +12070,6 @@ proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
 }
 
-
-@chpldoc.nodoc
-proc fileReader._skipField() throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      err = qio_channel_skip_json_field(false, _channel_internal);
-    } else {
-      err = ENOTSUP;
-    }
-  }
-  if err then try this._ch_ioerror(err, "in skipField");
-}
-
 /*
 
   Return a new string consisting of values formatted according to a
