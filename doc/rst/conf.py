@@ -188,6 +188,7 @@ exclude_patterns = ['Makefile',
                     # exclude the chapel-py files
                     'tools/chapel-py/chapel-py-api-template.rst',
                     'tools/chapel-py/chapel-py-api.rst',
+                    'tools/chplcheck/generated/rules.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
