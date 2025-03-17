@@ -134,25 +134,6 @@ AC_SUBST([libhwloc_so_name])
 HWLOC_SETUP_CORE([], [], [AC_MSG_ERROR([Cannot build hwloc core])], [1])
 
 ####################################################################
-# Setup the netloc API
-####################################################################
-
-AC_SUBST([libnetloc_so_version])
-
-AC_ARG_ENABLE([netloc],
-              [AS_HELP_STRING([--enable-netloc],
-                              [The Netloc functionality is disabled by default. Using --enable-netloc will cause configure to abort if Netloc cannot be build (e.g., not supported on your platform).])
-              ])
-
-AS_IF([test "$enable_netloc" = "yes" -a "$hwloc_mode" = "standalone"],
-      [NETLOC_SETUP_CORE([], [],
-           [AS_IF([test "$enable_netloc" = "yes"],
-                  [AC_MSG_ERROR([Cannot build netloc core])])
-           ],
-           [1])
-      ])
-
-####################################################################
 # Version information
 ####################################################################
 
@@ -198,7 +179,6 @@ EOF
 
 # Run the AM_CONDITIONALs
 HWLOC_DO_AM_CONDITIONALS
-NETLOC_DO_AM_CONDITIONALS
 
 ####################################################################
 # Final output
@@ -226,12 +206,6 @@ fi
 # Show which optional support we'll be building
 hwloc_xml_status=basic
 AS_IF([test "$hwloc_libxml2_happy" = "yes"], [hwloc_xml_status=full])
-netloc_status=no
-AS_IF([test "$netloc_happy" = "yes"], [
-  netlocscotch_status=without
-  AS_IF([test "$scotch_found_headers" = "yes"], [netlocscotch_status=with])
-  netloc_status="yes ($netlocscotch_status scotch)"
-])
 
 AS_IF([test "$enable_embedded_mode" = "yes"],
       [hwloc_graphical_lstopo_status="no (disabled in embedded mode)"],
@@ -340,7 +314,6 @@ fi
 cat <<EOF
 Graphical output:            $hwloc_graphical_lstopo_status
 XML input / output:          $hwloc_xml_status
-Netloc functionality:        $netloc_status
 EOF
 
 # Plugin support

@@ -98,16 +98,15 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_NETLOCSCOTCH_TRUE@@HWLOC_BUILD_STANDALONE_TRUE@am__append_1 = netloc.h netlocscotch.h
-@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_LINUX_TRUE@am__append_2 = \
+@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_LINUX_TRUE@am__append_1 = \
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_LINUX_TRUE@        hwloc/linux.h \
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_LINUX_TRUE@        hwloc/linux-libnuma.h
 
-@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SOLARIS_TRUE@am__append_3 = \
+@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SOLARIS_TRUE@am__append_2 = \
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SOLARIS_TRUE@       private/solaris-chiptype.h
 
-@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SCHED_SETAFFINITY_TRUE@am__append_4 = hwloc/glibc-sched.h
-@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_WINDOWS_TRUE@am__append_5 = \
+@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SCHED_SETAFFINITY_TRUE@am__append_3 = hwloc/glibc-sched.h
+@HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_WINDOWS_TRUE@am__append_4 = \
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_WINDOWS_TRUE@	hwloc/windows.h
 
 subdir = include
@@ -123,8 +122,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__include_HEADERS_DIST) \
@@ -154,7 +152,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__include_HEADERS_DIST = hwloc.h netloc.h netlocscotch.h
+am__include_HEADERS_DIST = hwloc.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -196,8 +194,7 @@ am__include_hwloc_HEADERS_DIST = hwloc/bitmap.h hwloc/helper.h \
 am__noinst_HEADERS_DIST = private/private.h private/debug.h \
 	private/misc.h private/xml.h private/components.h \
 	private/internal-components.h private/cpuid-x86.h \
-	private/windows.h private/netloc.h netloc/utarray.h \
-	netloc/uthash.h
+	private/windows.h
 HEADERS = $(include_HEADERS) $(include_hwloc_HEADERS) \
 	$(nodist_include_hwloc_autogen_HEADERS) $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
@@ -223,7 +220,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -350,17 +346,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -429,7 +414,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -452,8 +436,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
-@HWLOC_BUILD_STANDALONE_TRUE@include_HEADERS = hwloc.h $(am__append_1)
+@HWLOC_BUILD_STANDALONE_TRUE@include_HEADERS = hwloc.h
 @HWLOC_BUILD_STANDALONE_TRUE@include_hwlocdir = $(includedir)/hwloc
 @HWLOC_BUILD_STANDALONE_TRUE@include_hwloc_HEADERS = hwloc/bitmap.h \
 @HWLOC_BUILD_STANDALONE_TRUE@	hwloc/helper.h hwloc/inlines.h \
@@ -466,8 +449,8 @@ xz = @xz@
 @HWLOC_BUILD_STANDALONE_TRUE@	hwloc/rsmi.h hwloc/levelzero.h \
 @HWLOC_BUILD_STANDALONE_TRUE@	hwloc/plugins.h hwloc/gl.h \
 @HWLOC_BUILD_STANDALONE_TRUE@	hwloc/rename.h hwloc/deprecated.h \
-@HWLOC_BUILD_STANDALONE_TRUE@	$(am__append_2) $(am__append_3) \
-@HWLOC_BUILD_STANDALONE_TRUE@	$(am__append_4) $(am__append_5)
+@HWLOC_BUILD_STANDALONE_TRUE@	$(am__append_1) $(am__append_2) \
+@HWLOC_BUILD_STANDALONE_TRUE@	$(am__append_3) $(am__append_4)
 @HWLOC_BUILD_STANDALONE_TRUE@include_hwloc_autogendir = $(includedir)/hwloc/autogen
 @HWLOC_BUILD_STANDALONE_TRUE@nodist_include_hwloc_autogen_HEADERS = hwloc/autogen/config.h
 @HWLOC_BUILD_STANDALONE_TRUE@noinst_HEADERS = \
@@ -478,10 +461,7 @@ xz = @xz@
 @HWLOC_BUILD_STANDALONE_TRUE@        private/components.h \
 @HWLOC_BUILD_STANDALONE_TRUE@        private/internal-components.h \
 @HWLOC_BUILD_STANDALONE_TRUE@        private/cpuid-x86.h \
-@HWLOC_BUILD_STANDALONE_TRUE@        private/windows.h \
-@HWLOC_BUILD_STANDALONE_TRUE@        private/netloc.h \
-@HWLOC_BUILD_STANDALONE_TRUE@        netloc/utarray.h \
-@HWLOC_BUILD_STANDALONE_TRUE@        netloc/uthash.h
+@HWLOC_BUILD_STANDALONE_TRUE@        private/windows.h
 
 all: all-am
 

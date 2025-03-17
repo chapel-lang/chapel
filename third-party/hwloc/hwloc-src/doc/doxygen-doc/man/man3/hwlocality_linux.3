@@ -1,4 +1,4 @@
-.TH "hwlocality_linux" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_linux" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -34,6 +34,11 @@ Get the current binding of thread \fCtid\fP\&. The CPU-set \fCset\fP (previously
 .PP
 The behavior is exactly the same as the Linux sched_getaffinity system call, but uses a hwloc cpuset\&.
 .PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 This is equivalent to calling \fBhwloc_get_proc_cpubind()\fP with \fBHWLOC_CPUBIND_THREAD\fP as flags\&. 
@@ -44,6 +49,11 @@ This is equivalent to calling \fBhwloc_get_proc_cpubind()\fP with \fBHWLOC_CPUBI
 
 .PP
 Get the last physical CPU where thread \fCtid\fP ran\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the PU which the thread last ran on\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -56,6 +66,11 @@ This is equivalent to calling \fBhwloc_get_proc_last_cpu_location()\fP with \fBH
 .PP
 Convert a linux kernel cpumask file \fCpath\fP into a hwloc bitmap \fCset\fP\&. Might be used when reading CPU set from sysfs attributes such as topology and caches for processors, or local_cpus for devices\&.
 .PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 This function ignores the HWLOC_FSROOT environment variable\&. 
@@ -66,6 +81,11 @@ This function ignores the HWLOC_FSROOT environment variable\&.
 
 .PP
 Bind a thread \fCtid\fP on cpus given in cpuset \fCset\fP\&. The behavior is exactly the same as the Linux sched_setaffinity system call, but uses a hwloc cpuset\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4

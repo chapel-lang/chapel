@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_topology_sets" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_topology_sets" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -45,6 +45,8 @@ the CPU set of allowed processors of the system\&.
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 If the topology flag \fBHWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED\fP was not set, this is identical to \fBhwloc_topology_get_topology_cpuset()\fP, which means all PUs are allowed\&.
 .PP
 If \fBHWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED\fP was set, applying \fBhwloc_bitmap_intersects()\fP on the result of this function and on an object cpuset checks whether there are allowed PUs inside that object\&. Applying \fBhwloc_bitmap_and()\fP returns the list of these allowed PUs\&.
@@ -65,6 +67,8 @@ the node set of allowed memory of the system\&.
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 If the topology flag \fBHWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED\fP was not set, this is identical to \fBhwloc_topology_get_topology_nodeset()\fP, which means all NUMA nodes are allowed\&.
 .PP
 If \fBHWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED\fP was set, applying \fBhwloc_bitmap_intersects()\fP on the result of this function and on an object nodeset checks whether there are allowed NUMA nodes inside that object\&. Applying \fBhwloc_bitmap_and()\fP returns the list of these allowed NUMA nodes\&.
@@ -85,6 +89,8 @@ the complete CPU set of processors of the system\&.
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 The returned cpuset is not newly allocated and should thus not be changed or freed; \fBhwloc_bitmap_dup()\fP must be used to obtain a local copy\&.
 .PP
 This is equivalent to retrieving the root object complete CPU-set\&. 
@@ -103,6 +109,8 @@ the complete node set of memory of the system\&.
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 The returned nodeset is not newly allocated and should thus not be changed or freed; \fBhwloc_bitmap_dup()\fP must be used to obtain a local copy\&.
 .PP
 This is equivalent to retrieving the root object complete nodeset\&. 
@@ -121,6 +129,8 @@ the CPU set of processors of the system for which hwloc provides topology inform
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 The returned cpuset is not newly allocated and should thus not be changed or freed; \fBhwloc_bitmap_dup()\fP must be used to obtain a local copy\&.
 .PP
 This is equivalent to retrieving the root object CPU-set\&. 
@@ -139,6 +149,8 @@ the node set of memory of the system for which hwloc provides topology informati
 .PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 The returned nodeset is not newly allocated and should thus not be changed or freed; \fBhwloc_bitmap_dup()\fP must be used to obtain a local copy\&.
 .PP
 This is equivalent to retrieving the root object nodeset\&. 

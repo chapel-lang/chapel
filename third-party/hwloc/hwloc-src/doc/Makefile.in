@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2021 Inria.  All rights reserved.
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009-2013, 2021 Université Bordeaux
 # Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -107,8 +107,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -282,7 +281,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -409,17 +407,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -488,7 +475,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -511,7 +497,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
 DOCDIR = $(HWLOC_top_builddir)/doc
 DOX_CONFIG = $(HWLOC_top_srcdir)/doc/doxygen.cfg
@@ -533,19 +518,15 @@ DOX_TAG = $(DOX_DIR)/$(PACKAGE).tag
 #
 
 # images already available in repository
-PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png \
+PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png images/heteromem.png \
         images/ppc64-with-smt.png images/ppc64-without-smt.png images/ppc64-full-with-smt.png \
-        images/devel09-pci.png \
-        images/netloc_design.png images/netloc_draw.png
+        images/devel09-pci.png
 
 # images built from repository before inclusion in make dist
 BUILT_IMAGES = images/diagram.png images/diagram.eps
 EXTRA_DIST = \
-        main.doxy \
         hwloc.doxy \
-        netloc.doxy \
         README.sed \
-        doxygen.css \
         doxygen.cfg \
         images/diagram.fig \
         www.open-mpi.org.cfg \
@@ -564,7 +545,6 @@ EXTRA_DIST = \
 #
 @HWLOC_BUILD_DOXYGEN_TRUE@hwloc_include_dir = $(HWLOC_top_srcdir)/include
 @HWLOC_BUILD_DOXYGEN_TRUE@dox_inputs = $(DOX_CONFIG) \
-@HWLOC_BUILD_DOXYGEN_TRUE@       $(srcdir)/main.doxy \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(srcdir)/hwloc.doxy \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc.h \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/helper.h \
@@ -587,9 +567,7 @@ EXTRA_DIST = \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/levelzero.h \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/gl.h \
 @HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/windows.h \
-@HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/openfabrics-verbs.h \
-@HWLOC_BUILD_DOXYGEN_TRUE@       $(srcdir)/netloc.doxy \
-@HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/netloc.h
+@HWLOC_BUILD_DOXYGEN_TRUE@       $(hwloc_include_dir)/hwloc/openfabrics-verbs.h
 
 
 #
@@ -630,6 +608,7 @@ EXTRA_DIST = \
 # When adding a new _DATA line below, remember to add it to the
 # list of dependencies too.
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_MANS = \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_api_error_reporting.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_api_version.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_API_VERSION.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_get_api_version.3
@@ -748,7 +727,8 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_object_info_attrs_DATA = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwlocality_info_attr.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_get_info_by_name.3 \
-@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3 \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_set_subtype.3
 
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_cpubindingdir = $(man3dir)
 @HWLOC_INSTALL_DOXYGEN_TRUE@man3_cpubinding_DATA = \
@@ -774,6 +754,7 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_DEFAULT.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_FIRSTTOUCH.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_INTERLEAVE.3 \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_WEIGHTED_INTERLEAVE.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIGRATE.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIXED.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NEXTTOUCH.3 \
@@ -857,6 +838,7 @@ EXTRA_DIST = \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_allow.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_insert_misc_object.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_alloc_group_object.3 \
+@HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_free_group_object.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_insert_group_object.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_obj_add_other_obj_sets.3 \
 @HWLOC_INSTALL_DOXYGEN_TRUE@        $(DOX_MAN_DIR)/man3/hwloc_topology_refresh.3
@@ -2484,18 +2466,6 @@ uninstall-man: uninstall-man3
 # Remove useless manpages, they have too long filenames anyway because
 # of nested structurre/union declarations.
 #
-
-#
-# Note that we want to use our own doxygen.css file; not the one that
-# doxygen installs in the HTML directory.  So manually copy it over.
-# Be a little clever: only copy the doxygen.css file over if it exists
-# in DOX_HTML_DIR (which is in the build tree).  If the html tree
-# doesn't exist in the build tree, then we're using an html tree in
-# the source tree, and we don't need to copy over the doxygen.css
-# because we didn't build the html tree (e.g., the html tree came
-# pre-bundled in a tarball).
-#
-
 @HWLOC_BUILD_DOXYGEN_TRUE@$(DOX_TAG): $(BUILT_SOURCES) $(dox_inputs) $(PREBUILT_IMAGES)
 @HWLOC_BUILD_DOXYGEN_TRUE@	rm -fr $(DOX_DIR)
 @HWLOC_BUILD_DOXYGEN_TRUE@	$(DOXYGEN) $(DOX_CONFIG)
@@ -2510,10 +2480,6 @@ uninstall-man: uninstall-man3
 @HWLOC_BUILD_DOXYGEN_TRUE@	@mv $(DOX_MAN_DIR)/man3/hwloc* $(DOX_MAN_DIR)/man3/HWLOC* $(DOX_DIR)/man.tmp/
 @HWLOC_BUILD_DOXYGEN_TRUE@	@rm -rf $(DOX_MAN_DIR)/man3
 @HWLOC_BUILD_DOXYGEN_TRUE@	@mv $(DOX_DIR)/man.tmp $(DOX_MAN_DIR)/man3
-@HWLOC_BUILD_DOXYGEN_TRUE@	@echo "Copying custom doxygen.css..."
-@HWLOC_BUILD_DOXYGEN_TRUE@	if test -d $(DOX_HTML_DIR) -a -f $(DOX_HTML_DIR)/doxygen.css; then \
-@HWLOC_BUILD_DOXYGEN_TRUE@	    cp -f $(srcdir)/doxygen.css $(DOX_HTML_DIR); \
-@HWLOC_BUILD_DOXYGEN_TRUE@	fi
 
 #
 # Rules for building the PDF
@@ -2638,24 +2604,27 @@ uninstall-man: uninstall-man3
 @HWLOC_BUILD_DOXYGEN_TRUE@$(DOX_A4PDF): $(DOX_TAG) $(DOX_LETTERPDF)
 
 #
-# Rules for creating the top-level README file.  There does not appear
-# to be an easy way to know if AC_PATH_PROG found something in
-# configure.ac (!), so put a run-time check here to see if we have
-# w3c.
+# Rules for creating the top-level README file.
+# Take the main html doc page, ignore headers and footers, and add our owns.
 #
 # Just like BUILD_DOXYGEN, BUILD_README will automatically be false if
 # we're not building standalone.
 #
 @HWLOC_BUILD_README_TRUE@readme: $(HWLOC_top_srcdir)/README
 @HWLOC_BUILD_README_TRUE@$(HWLOC_top_srcdir)/README: $(DOX_TAG)
+@HWLOC_BUILD_README_TRUE@	echo "This is a truncated and poorly-formatted version of the documentation main page." > $@
+@HWLOC_BUILD_README_TRUE@	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more." >> $@
+@HWLOC_BUILD_README_TRUE@	echo >> $@
+@HWLOC_BUILD_README_TRUE@	echo >> $@
 @HWLOC_BUILD_README_TRUE@	sed -n -f $(srcdir)/README.sed $(DOX_HTML_DIR)/index.html > $(DOX_HTML_README)
 @HWLOC_BUILD_README_TRUE@	LC_ALL=C $(HWLOC_W3_GENERATOR) $(DOX_HTML_README) \
-@HWLOC_BUILD_README_TRUE@	 | $(SED) -n -e 's/^   //' -e '/^Introduction$$/,$$p' \
+@HWLOC_BUILD_README_TRUE@	 | $(SED) -n -e 's/^   //' -e '/^hwloc Overview$$/,$$p' \
 @HWLOC_BUILD_README_TRUE@	 | $(SED) -e '/^--*-$$/,$$ d' \
-@HWLOC_BUILD_README_TRUE@	 > $@
+@HWLOC_BUILD_README_TRUE@	 >> $@
 @HWLOC_BUILD_README_TRUE@	echo >> $@
 @HWLOC_BUILD_README_TRUE@	echo >> $@
-@HWLOC_BUILD_README_TRUE@	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation." >> $@
+@HWLOC_BUILD_README_TRUE@	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation," >> $@
+@HWLOC_BUILD_README_TRUE@	echo "actual links to related pages, images, etc." >> $@
 @HWLOC_BUILD_README_TRUE@	rm -f $(DOX_HTML_README)
 
 # When we don't have what's needed to build the README, nothing to do

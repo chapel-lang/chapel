@@ -1,7 +1,7 @@
 
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -102,6 +102,22 @@ int main(void)
   check_cpuset(set, "0xf...f,0xffffdfff,0xffffffff,0xffffffff,0xffffff80,0x0fffffff,0xffffffff", "0-59,71-172,174-", "0xf...fffffdfffffffffffffffffffffffff800fffffffffffffff");
   hwloc_bitmap_free(set);
   printf("infinite/nonfull cpuset converted back and forth, ok\n");
+
+  /* check an infinite (but non full) cpuset with even number of substrings */
+  set = hwloc_bitmap_alloc_full();
+  hwloc_bitmap_clr_range(set, 0, 127);
+  hwloc_bitmap_set_range(set, 4, 7);
+  check_cpuset(set, "0xf...f,,,,0x000000f0", "4-7,128-", "0xf...f000000000000000000000000000000f0");
+  hwloc_bitmap_free(set);
+  printf("infinite/nonfull cpuset with even number of substrings converted back and forth, ok\n");
+
+  /* check an infinite (but non full) cpuset with odd number of substrings */
+  set = hwloc_bitmap_alloc_full();
+  hwloc_bitmap_clr_range(set, 0, 159);
+  hwloc_bitmap_set_range(set, 4, 7);
+  check_cpuset(set, "0xf...f,,,,,0x000000f0", "4-7,160-", "0xf...f00000000000000000000000000000000000000f0");
+  hwloc_bitmap_free(set);
+  printf("infinite/nonfull cpuset with odd number of substrings converted back and forth, ok\n");
 
   /* check an finite cpuset */
   set = hwloc_bitmap_alloc();

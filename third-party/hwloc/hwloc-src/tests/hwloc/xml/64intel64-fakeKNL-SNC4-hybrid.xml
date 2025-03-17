@@ -20,8 +20,12 @@
       <info name="CPUStepping" value="0"/>
       <object type="L3Cache" cpuset="0x000f000f,0x000f000f" complete_cpuset="0x000f000f,0x000f000f" nodeset="0x00000081" complete_nodeset="0x00000081" gp_index="10" subtype="MemorySideCache" cache_size="2147483648" depth="3" cache_linesize="64" cache_associativity="1" cache_type="0">
         <info name="Inclusive" value="1"/>
-        <object type="NUMANode" os_index="0" cpuset="0x000f000f,0x000f000f" complete_cpuset="0x000f000f,0x000f000f" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="2" local_memory="1073741824"/>
-        <object type="NUMANode" os_index="7" cpuset="0x000f000f,0x000f000f" complete_cpuset="0x000f000f,0x000f000f" nodeset="0x00000080" complete_nodeset="0x00000080" gp_index="9" subtype="MCDRAM" local_memory="2147483648"/>
+        <object type="NUMANode" os_index="0" cpuset="0x000f000f,0x000f000f" complete_cpuset="0x000f000f,0x000f000f" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="2" subtype="DRAM" local_memory="1073741824">
+          <info name="MemoryTier" value="1"/>
+        </object>
+        <object type="NUMANode" os_index="7" cpuset="0x000f000f,0x000f000f" complete_cpuset="0x000f000f,0x000f000f" nodeset="0x00000080" complete_nodeset="0x00000080" gp_index="9" subtype="MCDRAM" local_memory="2147483648">
+          <info name="MemoryTier" value="0"/>
+        </object>
         <object type="L2Cache" cpuset="0x00030003,0x00030003" complete_cpuset="0x00030003,0x00030003" nodeset="0x00000081" complete_nodeset="0x00000081" gp_index="31" cache_size="4194304" depth="2" cache_linesize="64" cache_associativity="0" cache_type="0">
           <object type="L1Cache" cpuset="0x00010001,0x00010001" complete_cpuset="0x00010001,0x00010001" nodeset="0x00000081" complete_nodeset="0x00000081" gp_index="30" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="1">
             <object type="L1iCache" cpuset="0x00010001,0x00010001" complete_cpuset="0x00010001,0x00010001" nodeset="0x00000081" complete_nodeset="0x00000081" gp_index="29" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="2">
@@ -69,8 +73,12 @@
       </object>
       <object type="L3Cache" cpuset="0x00f000f0,0x00f000f0" complete_cpuset="0x00f000f0,0x00f000f0" nodeset="0x00000012" complete_nodeset="0x00000012" gp_index="11" subtype="MemorySideCache" cache_size="2147483648" depth="3" cache_linesize="64" cache_associativity="1" cache_type="0">
         <info name="Inclusive" value="1"/>
-        <object type="NUMANode" os_index="1" cpuset="0x00f000f0,0x00f000f0" complete_cpuset="0x00f000f0,0x00f000f0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="3" local_memory="1073741824"/>
-        <object type="NUMANode" os_index="4" cpuset="0x00f000f0,0x00f000f0" complete_cpuset="0x00f000f0,0x00f000f0" nodeset="0x00000010" complete_nodeset="0x00000010" gp_index="6" subtype="MCDRAM" local_memory="2147483648"/>
+        <object type="NUMANode" os_index="1" cpuset="0x00f000f0,0x00f000f0" complete_cpuset="0x00f000f0,0x00f000f0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="3" subtype="DRAM" local_memory="1073741824">
+          <info name="MemoryTier" value="1"/>
+        </object>
+        <object type="NUMANode" os_index="4" cpuset="0x00f000f0,0x00f000f0" complete_cpuset="0x00f000f0,0x00f000f0" nodeset="0x00000010" complete_nodeset="0x00000010" gp_index="6" subtype="MCDRAM" local_memory="2147483648">
+          <info name="MemoryTier" value="0"/>
+        </object>
         <object type="L2Cache" cpuset="0x00300030,0x00300030" complete_cpuset="0x00300030,0x00300030" nodeset="0x00000012" complete_nodeset="0x00000012" gp_index="49" cache_size="4194304" depth="2" cache_linesize="64" cache_associativity="0" cache_type="0">
           <object type="L1Cache" cpuset="0x00100010,0x00100010" complete_cpuset="0x00100010,0x00100010" nodeset="0x00000012" complete_nodeset="0x00000012" gp_index="48" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="1">
             <object type="L1iCache" cpuset="0x00100010,0x00100010" complete_cpuset="0x00100010,0x00100010" nodeset="0x00000012" complete_nodeset="0x00000012" gp_index="47" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="2">
@@ -118,8 +126,12 @@
       </object>
       <object type="L3Cache" cpuset="0x0f000f00,0x0f000f00" complete_cpuset="0x0f000f00,0x0f000f00" nodeset="0x00000024" complete_nodeset="0x00000024" gp_index="12" subtype="MemorySideCache" cache_size="2147483648" depth="3" cache_linesize="64" cache_associativity="1" cache_type="0">
         <info name="Inclusive" value="1"/>
-        <object type="NUMANode" os_index="2" cpuset="0x0f000f00,0x0f000f00" complete_cpuset="0x0f000f00,0x0f000f00" nodeset="0x00000004" complete_nodeset="0x00000004" gp_index="4" local_memory="1073741824"/>
-        <object type="NUMANode" os_index="5" cpuset="0x0f000f00,0x0f000f00" complete_cpuset="0x0f000f00,0x0f000f00" nodeset="0x00000020" complete_nodeset="0x00000020" gp_index="7" subtype="MCDRAM" local_memory="2147483648"/>
+        <object type="NUMANode" os_index="2" cpuset="0x0f000f00,0x0f000f00" complete_cpuset="0x0f000f00,0x0f000f00" nodeset="0x00000004" complete_nodeset="0x00000004" gp_index="4" subtype="DRAM" local_memory="1073741824">
+          <info name="MemoryTier" value="1"/>
+        </object>
+        <object type="NUMANode" os_index="5" cpuset="0x0f000f00,0x0f000f00" complete_cpuset="0x0f000f00,0x0f000f00" nodeset="0x00000020" complete_nodeset="0x00000020" gp_index="7" subtype="MCDRAM" local_memory="2147483648">
+          <info name="MemoryTier" value="0"/>
+        </object>
         <object type="L2Cache" cpuset="0x03000300,0x03000300" complete_cpuset="0x03000300,0x03000300" nodeset="0x00000024" complete_nodeset="0x00000024" gp_index="67" cache_size="4194304" depth="2" cache_linesize="64" cache_associativity="0" cache_type="0">
           <object type="L1Cache" cpuset="0x01000100,0x01000100" complete_cpuset="0x01000100,0x01000100" nodeset="0x00000024" complete_nodeset="0x00000024" gp_index="66" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="1">
             <object type="L1iCache" cpuset="0x01000100,0x01000100" complete_cpuset="0x01000100,0x01000100" nodeset="0x00000024" complete_nodeset="0x00000024" gp_index="65" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="2">
@@ -167,8 +179,12 @@
       </object>
       <object type="L3Cache" cpuset="0xf000f000,0xf000f000" complete_cpuset="0xf000f000,0xf000f000" nodeset="0x00000048" complete_nodeset="0x00000048" gp_index="13" subtype="MemorySideCache" cache_size="2147483648" depth="3" cache_linesize="64" cache_associativity="1" cache_type="0">
         <info name="Inclusive" value="1"/>
-        <object type="NUMANode" os_index="3" cpuset="0xf000f000,0xf000f000" complete_cpuset="0xf000f000,0xf000f000" nodeset="0x00000008" complete_nodeset="0x00000008" gp_index="5" local_memory="1073741824"/>
-        <object type="NUMANode" os_index="6" cpuset="0xf000f000,0xf000f000" complete_cpuset="0xf000f000,0xf000f000" nodeset="0x00000040" complete_nodeset="0x00000040" gp_index="8" subtype="MCDRAM" local_memory="2147483648"/>
+        <object type="NUMANode" os_index="3" cpuset="0xf000f000,0xf000f000" complete_cpuset="0xf000f000,0xf000f000" nodeset="0x00000008" complete_nodeset="0x00000008" gp_index="5" subtype="DRAM" local_memory="1073741824">
+          <info name="MemoryTier" value="1"/>
+        </object>
+        <object type="NUMANode" os_index="6" cpuset="0xf000f000,0xf000f000" complete_cpuset="0xf000f000,0xf000f000" nodeset="0x00000040" complete_nodeset="0x00000040" gp_index="8" subtype="MCDRAM" local_memory="2147483648">
+          <info name="MemoryTier" value="0"/>
+        </object>
         <object type="L2Cache" cpuset="0x30003000,0x30003000" complete_cpuset="0x30003000,0x30003000" nodeset="0x00000048" complete_nodeset="0x00000048" gp_index="85" cache_size="4194304" depth="2" cache_linesize="64" cache_associativity="0" cache_type="0">
           <object type="L1Cache" cpuset="0x10001000,0x10001000" complete_cpuset="0x10001000,0x10001000" nodeset="0x00000048" complete_nodeset="0x00000048" gp_index="84" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="1">
             <object type="L1iCache" cpuset="0x10001000,0x10001000" complete_cpuset="0x10001000,0x10001000" nodeset="0x00000048" complete_nodeset="0x00000048" gp_index="83" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="0" cache_type="2">

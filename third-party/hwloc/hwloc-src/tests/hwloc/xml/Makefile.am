@@ -1,4 +1,4 @@
-# Copyright © 2009-2021 Inria.  All rights reserved.
+# Copyright © 2009-2023 Inria.  All rights reserved.
 # Copyright © 2009-2010 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -35,6 +35,7 @@ xml_outputs = \
         power8gpudistances.xml \
         fakeheterodistances.xml \
         fakecpukinds.xml \
+        memorysidecaches.xml \
         8em64t-2p2ca2co-nonodesets.v1tov2.xml \
         8ia64-2n2s2c+1n.v1tov2.xml \
         16amd64-4distances.v1tov2.xml \
@@ -45,7 +46,8 @@ xml_outputs = \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v1tov2.xml \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v2tov1.xml \
         64intel64-fakeKNL-SNC4-hybrid.v1tov2.xml \
-        64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml
+        64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml \
+        cxlmem+dax.v2.xml
 
 # Each output `xyz.xml' may have a corresponding `xyz.source' file specifying
 # its source file.
@@ -75,7 +77,9 @@ xml_source = \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v1tov2.source \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v2tov1.source \
         64intel64-fakeKNL-SNC4-hybrid.v1tov2.source \
-        64intel64-fakeKNL-SNC4-hybrid.v2tov1.source
+        64intel64-fakeKNL-SNC4-hybrid.v2tov1.source \
+        cxlmem+dax.v2.source \
+        cxlmem+dax.v3.xml
 
 # Each output `xyz.xml' or `xyz.output' may have a corresponding `xyz.options'
 # file modifying the behavior of lstopo
@@ -96,9 +100,7 @@ xml_options = \
 
 # Each output `xyz.xml' or `xyz.output' may have a corresponding `xyz.env'
 # modifying the environment of lstopo
-xml_envs = \
-        16amd64-4distances.console.env \
-        64intel64-3g2n+2n-irregulargroups+pci.console.env
+xml_envs =
 
 # Only run the tests if we're building standalone, because the tests
 # call hwloc executables.

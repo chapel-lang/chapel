@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_consult" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_consult" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -28,6 +28,8 @@ Find the index of an object in a distances structure\&.
 .PP
 \fBReturns\fP
 .RS 4
+the index of the object in the distances structure if any\&. 
+.PP
 -1 if object \fCobj\fP is not involved in structure \fCdistances\fP\&. 
 .RE
 .PP
@@ -39,6 +41,8 @@ Find the values between two objects in a distance matrices\&. The distance from 
 .PP
 \fBReturns\fP
 .RS 4
+0 on success\&. 
+.PP
 -1 if object \fCobj1\fP or \fCobj2\fP is not involved in structure \fCdistances\fP\&. 
 .RE
 .PP

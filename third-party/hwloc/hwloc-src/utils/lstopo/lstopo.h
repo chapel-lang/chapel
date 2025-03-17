@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2022 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012, 2015 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
@@ -13,6 +13,7 @@
 #include "private/autogen/config.h"
 #include "hwloc.h"
 #include "misc.h"
+#include "hwloc-calc.h"
 
 enum lstopo_drawing_e {
   LSTOPO_DRAWING_PREPARE,
@@ -100,9 +101,9 @@ struct lstopo_output {
   int show_memattrs_only;
   int show_cpukinds_only;
   int show_windows_processor_groups_only;
-  hwloc_obj_type_t show_only;
+  struct hwloc_calc_level show_only;
   int show_cpuset;
-  int show_taskset;
+  enum hwloc_utils_cpuset_format_e cpuset_output_format;
   int transform_distances;
 
   /* draw config */
@@ -111,6 +112,7 @@ struct lstopo_output {
   unsigned int gridsize, fontsize, linespacing, thickness;
   float text_xscale;
   enum lstopo_orient_e force_orient[HWLOC_OBJ_TYPE_MAX]; /* orientation of children within an object of the given type */
+  enum lstopo_orient_e above_force_orient;
   enum lstopo_orient_e right_force_orient;
   enum lstopo_orient_e below_force_orient;
   int show_indexes[HWLOC_OBJ_TYPE_MAX]; /* enabled by global toggle index_type */

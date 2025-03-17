@@ -370,9 +370,6 @@ static float pci_link_speed(hwloc_obj_t obj)
  * Placing children in rectangle
  */
 
-/* preferred width/height compromise */
-#define RATIO (4.f/3.f)
-
 /* returns a score <= 1. close to 1 is better */
 static __hwloc_inline
 float rectangle_score(unsigned width, unsigned height, float ratio)
@@ -552,10 +549,13 @@ place_children_rect(struct lstopo_output *loutput, hwloc_obj_t parent,
   float ratio;
   int i;
 
-  if (parent->type == HWLOC_OBJ_CORE)
-    ratio = 1/RATIO;
+  /* preferred width/height compromise */
+  if (kind == LSTOPO_CHILD_KIND_MEMORY)
+    ratio = 8.f; /* very large for memory above objects since the parent is usually very large */
+  else if (parent->type == HWLOC_OBJ_CORE)
+    ratio = 3.f/4.f; /* rather high Core objects since they often contain 2 PUs that we don't want horizontal */
   else
-    ratio = RATIO;
+    ratio = 4.f/3.f; /* rather largeother objects */
   find_children_rectangle(loutput, parent, kind, separator, &rows, &columns, ratio);
 
   rowwidth = 0;
@@ -625,7 +625,7 @@ place_children(struct lstopo_output *loutput, hwloc_obj_t parent,
 	       unsigned xrel, unsigned yrel /* position of children within parent */)
 {
   struct lstopo_obj_userdata *plud = parent->userdata;
-  enum lstopo_orient_e main_orient, right_orient, below_orient;
+  enum lstopo_orient_e main_orient, right_orient, below_orient, above_orient;
   unsigned border = loutput->gridsize;
   unsigned separator = loutput->gridsize;
   unsigned separator_below_cache = loutput->gridsize;
@@ -673,6 +673,10 @@ place_children(struct lstopo_output *loutput, hwloc_obj_t parent,
   below_orient = loutput->below_force_orient;
   if (below_orient == LSTOPO_ORIENT_NONE)
     below_orient = loutput->force_orient[parent->type];
+  /* place above children in rectangle by default */
+  above_orient = loutput->above_force_orient;
+  if (above_orient == LSTOPO_ORIENT_NONE)
+    above_orient = LSTOPO_ORIENT_RECT;
 
   /* defaults */
   plud->children.box = 0;
@@ -789,7 +793,6 @@ place_children(struct lstopo_output *loutput, hwloc_obj_t parent,
 
   /* compute the size of the above children section (Memory), if any */
   if (plud->above_children.kinds) {
-    enum lstopo_orient_e morient = LSTOPO_ORIENT_HORIZ;
     int need_box;
 
     assert(plud->above_children.kinds == LSTOPO_CHILD_KIND_MEMORY);
@@ -800,7 +803,7 @@ place_children(struct lstopo_output *loutput, hwloc_obj_t parent,
     need_box = !hwloc_obj_type_is_memory(parent->type)
       && (parent->memory_arity + parent->memory_first_child->memory_arity > 1);
 
-    place__children(loutput, parent, plud->above_children.kinds, &morient, need_box ? border : 0, separator, &above_children_width, &above_children_height);
+    place__children(loutput, parent, plud->above_children.kinds, &above_orient, need_box ? border : 0, separator, &above_children_width, &above_children_height);
     if (parent->type == HWLOC_OBJ_MEMCACHE)
       above_children_height -= separator;
 
@@ -1134,7 +1137,8 @@ lstopo_set_object_color(struct lstopo_output *loutput,
   }
 
   case HWLOC_OBJ_MISC:
-    if (loutput->show_process_color && obj->subtype && !strcmp(obj->subtype, "Process"))
+    if (loutput->show_process_color && obj->subtype &&
+        (!strcmp(obj->subtype, "Process") || !strcmp(obj->subtype, "Thread")))
       s->bg = &loutput->palette->process;
     else
       s->bg = &loutput->palette->misc;
@@ -1733,7 +1737,11 @@ output_draw(struct lstopo_output *loutput)
     unsigned maxtextwidth = 0, textwidth;
     unsigned ndl = 0;
     char hostname[122] = "";
-    unsigned long hostname_size = sizeof(hostname);
+#if defined(HWLOC_WIN_SYS) && !defined(__CYGWIN__)
+    DWORD hostname_size = sizeof(hostname);
+#else
+    size_t hostname_size = sizeof(hostname);
+#endif
     unsigned infocount = 0;
 
     /* prepare legend lines and compute the width */

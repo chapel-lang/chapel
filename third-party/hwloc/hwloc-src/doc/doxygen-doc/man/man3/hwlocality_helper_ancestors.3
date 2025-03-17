@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_ancestors" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_ancestors" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -35,6 +35,13 @@ Be sure to see the figure in \fBTerms and Definitions\fP that shows a complete t
 .PP
 Returns the ancestor object of \fCobj\fP at depth \fCdepth\fP\&. 
 .PP
+\fBReturns\fP
+.RS 4
+the ancestor if any\&. 
+.PP
+\fCNULL\fP if no such ancestor exists\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 \fCdepth\fP should not be the depth of PU or NUMA objects since they are ancestors of no objects (except Misc or I/O)\&. This function rather expects an intermediate level depth, such as the depth of Packages, Cores, or Caches\&. 
@@ -46,8 +53,17 @@ Returns the ancestor object of \fCobj\fP at depth \fCdepth\fP\&.
 .PP
 Returns the ancestor object of \fCobj\fP with type \fCtype\fP\&. 
 .PP
+\fBReturns\fP
+.RS 4
+the ancestor if any\&. 
+.PP
+\fCNULL\fP if no such ancestor exists\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
+if multiple matching ancestors exist (e\&.g\&. multiple levels of \fBHWLOC_OBJ_GROUP\fP) the lowest one is returned\&.
+.PP
 \fCtype\fP should not be \fBHWLOC_OBJ_PU\fP or \fBHWLOC_OBJ_NUMANODE\fP since these objects are ancestors of no objects (except Misc or I/O)\&. This function rather expects an intermediate object type, such as \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CORE\fP, etc\&. 
 .RE
 .PP
@@ -56,18 +72,42 @@ Returns the ancestor object of \fCobj\fP with type \fCtype\fP\&.
 
 .PP
 Returns the common parent object to objects \fCobj1\fP and \fCobj2\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the common ancestor\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+This function cannot return \fCNULL\fP\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_child (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP parent, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Return the next child\&. Return the next child among the normal children list, then among the memory children list, then among the I/O children list, then among the Misc children list\&.
 .PP
-If \fCprev\fP is \fCNULL\fP, return the first child\&.
+\fBReturns\fP
+.RS 4
+the first child if \fCprev\fP is \fCNULL\fP\&. 
 .PP
-Return \fCNULL\fP when there is no next child\&. 
+the next child if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP when there is no next child\&. 
+.RE
+.PP
+
 .SS "static int hwloc_obj_is_in_subtree (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj, \fBhwloc_obj_t\fP subtree_root)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Returns true if \fCobj\fP is inside the subtree beginning with ancestor object \fCsubtree_root\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+1 is the object is in the subtree, 0 otherwise\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4

@@ -1,4 +1,4 @@
-.TH "hwlocality_tinker" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_tinker" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -30,6 +30,9 @@ hwlocality_tinker \- Modifying a loaded Topology
 .br
 .ti -1c
 .RI "\fBhwloc_obj_t\fP \fBhwloc_topology_alloc_group_object\fP (\fBhwloc_topology_t\fP topology)"
+.br
+.ti -1c
+.RI "int \fBhwloc_topology_free_group_object\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP group)"
 .br
 .ti -1c
 .RI "\fBhwloc_obj_t\fP \fBhwloc_topology_insert_group_object\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP group)"
@@ -93,13 +96,36 @@ Move I/O objects to ancestors if their parents are removed during restriction\&.
 .PP
 Setup object cpusets/nodesets by OR'ing another object's sets\&. For each defined cpuset or nodeset in \fCsrc\fP, allocate the corresponding set in \fCdst\fP and add \fCsrc\fP to it by OR'ing sets\&.
 .PP
-This function is convenient between \fBhwloc_topology_alloc_group_object()\fP and \fBhwloc_topology_insert_group_object()\fP\&. It builds the sets of the new Group that will be inserted as a new intermediate parent of several objects\&. 
+This function is convenient between \fBhwloc_topology_alloc_group_object()\fP and \fBhwloc_topology_insert_group_object()\fP\&. It builds the sets of the new Group that will be inserted as a new intermediate parent of several objects\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "\fBhwloc_obj_t\fP hwloc_topology_alloc_group_object (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Allocate a Group object to insert later with \fBhwloc_topology_insert_group_object()\fP\&. This function returns a new Group object\&.
 .PP
-The caller should (at least) initialize its sets before inserting the object in the topology\&. See \fBhwloc_topology_insert_group_object()\fP\&. 
+The caller should (at least) initialize its sets before inserting the object in the topology, see \fBhwloc_topology_insert_group_object()\fP\&. Or it may decide not to insert and just free the group object by calling \fBhwloc_topology_free_group_object()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+The allocated object on success\&. 
+.PP
+\fCNULL\fP on error\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+If successfully inserted by \fBhwloc_topology_insert_group_object()\fP, the object will be freed when the entire topology is freed\&. If insertion failed (e\&.g\&. \fCNULL\fP or empty CPU and node-sets), it is freed before returning the error\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_allow (\fBhwloc_topology_t\fP restrict topology, \fBhwloc_const_cpuset_t\fP cpuset, \fBhwloc_const_nodeset_t\fP nodeset, unsigned long flags)"
 
 .PP
@@ -109,9 +135,32 @@ It is notably useful when importing a topology from another process running in a
 .PP
 \fCflags\fP must be set to one flag among \fBhwloc_allow_flags_e\fP\&.
 .PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 Removing objects from a topology should rather be performed with \fBhwloc_topology_restrict()\fP\&. 
+.RE
+.PP
+
+.SS "int hwloc_topology_free_group_object (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP group)"
+
+.PP
+Free a group object allocated with \fBhwloc_topology_alloc_group_object()\fP\&. This function is only useful if the group object was not given to \fBhwloc_topology_insert_group_object()\fP as planned\&.
+.PP
+\fBNote\fP
+.RS 4
+\fCtopology\fP must be the same as the one previously passed to \fBhwloc_topology_alloc_group_object()\fP\&.
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+\fC0\fP on success\&. 
+.PP
+\fC-1\fP on error, for instance if an invalid topology is given\&. 
 .RE
 .PP
 
@@ -120,13 +169,28 @@ Removing objects from a topology should rather be performed with \fBhwloc_topolo
 .PP
 Add more structure to the topology by adding an intermediate Group\&. The caller should first allocate a new Group object with \fBhwloc_topology_alloc_group_object()\fP\&. Then it must setup at least one of its CPU or node sets to specify the final location of the Group in the topology\&. Then the object can be passed to this function for actual insertion in the topology\&.
 .PP
-Either the cpuset or nodeset field (or both, if compatible) must be set to a non-empty bitmap\&. The complete_cpuset or complete_nodeset may be set instead if inserting with respect to the complete topology (including disallowed, offline or unknown objects)\&. If grouping several objects, \fBhwloc_obj_add_other_obj_sets()\fP is an easy way to build the Group sets iteratively\&. These sets cannot be larger than the current topology, or they would get restricted silently\&. The core will setup the other sets after actual insertion\&.
+The main use case for this function is to group a subset of siblings among the list of children below a single parent\&. For instance, if grouping 4 cores out of a 8-core socket, the logical list of cores will be reordered so that the 4 grouped ones are consecutive\&. Then, if needed, a new depth is added between the parent and those children, and the Group is inserted there\&. At the end, the 4 grouped cores are now children of the Group, which replaces them as a child of the original parent\&.
 .PP
-The \fCsubtype\fP object attribute may be defined (to a dynamically allocated string) to display something else than 'Group' as the type name for this object in lstopo\&. Custom name/value info pairs may be added with \fBhwloc_obj_add_info()\fP after insertion\&.
+In practice, the grouped objects are specified through cpusets and/or nodesets, for instance using \fBhwloc_obj_add_other_obj_sets()\fP iteratively\&. Hence it is possible to group objects that are not children of the same parent, for instance some PUs below the 4 cores in example above\&. However this general case may fail if the expected Group conflicts with the existing hierarchy\&. For instance if each core has two PUs, it is not possible to insert a Group containing a single PU of each core\&.
+.PP
+To specify the objects to group, either the cpuset or nodeset field (or both, if compatible) must be set to a non-empty bitmap\&. The complete_cpuset or complete_nodeset may be set instead if inserting with respect to the complete topology (including disallowed, offline or unknown objects)\&. These sets cannot be larger than the current topology, or they would get restricted silently\&. The core will setup the other sets after actual insertion\&.
+.PP
+The \fCsubtype\fP object attribute may be defined with \fBhwloc_obj_set_subtype()\fP to display something else than 'Group' as the type name for this object in lstopo\&. Custom name-value info pairs may be added with \fBhwloc_obj_add_info()\fP after insertion\&.
 .PP
 The group \fCdont_merge\fP attribute may be set to \fC1\fP to prevent the hwloc core from ever merging this object with another hierarchically-identical object\&. This is useful when the Group itself describes an important feature that cannot be exposed anywhere else in the hierarchy\&.
 .PP
 The group \fCkind\fP attribute may be set to a high value such as \fC0xffffffff\fP to tell hwloc that this new Group should always be discarded in favor of any existing Group with the same locality\&.
+.PP
+\fBNote\fP
+.RS 4
+Inserting a group adds some locality information to the topology, hence the existing objects may get reordered (including PUs and NUMA nodes), and their logical indexes may change\&.
+.PP
+If the insertion fails, the input group object is freed\&.
+.PP
+If the group object should be discarded instead of inserted, it may be passed to \fBhwloc_topology_free_group_object()\fP instead\&.
+.PP
+\fCtopology\fP must be the same as the one previously passed to \fBhwloc_topology_alloc_group_object()\fP\&.
+.RE
 .PP
 \fBReturns\fP
 .RS 4
@@ -151,6 +215,8 @@ Add a MISC object as a leaf of the topology\&. A new MISC object will be created
 .PP
 The new leaf object will not have any \fCcpuset\fP\&.
 .PP
+The \fCsubtype\fP object attribute may be defined with \fBhwloc_obj_set_subtype()\fP after successful insertion\&.
+.PP
 \fBReturns\fP
 .RS 4
 the newly-created object
@@ -173,18 +239,31 @@ Refresh internal structures after topology modification\&. Modifying the topolog
 .PP
 This function is not thread-safe either, but it is a good way to end a non-thread-safe phase of topology modification\&. Once this refresh is done, multiple threads may concurrently consult the topology, objects, distances, attributes, etc\&.
 .PP
-See also \fBThread Safety\fP 
+See also \fBThread Safety\fP
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_restrict (\fBhwloc_topology_t\fP restrict topology, \fBhwloc_const_bitmap_t\fP set, unsigned long flags)"
 
 .PP
 Restrict the topology to the given CPU set or nodeset\&. Topology \fCtopology\fP is modified so as to remove all objects that are not included (or partially included) in the CPU set \fCset\fP\&. All objects CPU and node sets are restricted accordingly\&.
 .PP
-If \fBHWLOC_RESTRICT_FLAG_BYNODESET\fP is passed in \fCflags\fP, \fCset\fP is considered a nodeset instead of a CPU set\&.
+By default, \fCset\fP is a CPU set\&. It means that the set of PUs in the topology is restricted\&. Once some PUs got removed, their parents may also get removed recursively if they became child-less\&.
+.PP
+If \fBHWLOC_RESTRICT_FLAG_BYNODESET\fP is passed in \fCflags\fP, \fCset\fP is considered a nodeset instead of a CPU set\&. It means that the set of NUMA nodes in the topology is restricted (instead of PUs)\&. Once some NUMA nodes got removed, their parents may also get removed recursively if they became child-less\&.
 .PP
 \fCflags\fP is a OR'ed set of \fBhwloc_restrict_flags_e\fP\&.
 .PP
 \fBNote\fP
 .RS 4
+Restricting the topology removes some locality information, hence the remaining objects may get reordered (including PUs and NUMA nodes), and their logical indexes may change\&.
+.PP
 This call may not be reverted by restricting back to a larger set\&. Once dropped during restriction, objects may not be brought back, except by loading another topology with \fBhwloc_topology_load()\fP\&.
 .RE
 .PP
@@ -192,9 +271,9 @@ This call may not be reverted by restricting back to a larger set\&. Once droppe
 .RS 4
 0 on success\&.
 .PP
--1 with errno set to EINVAL if the input set is invalid\&. The topology is not modified in this case\&.
+-1 with errno set to \fCEINVAL\fP if the input set is invalid\&. The topology is not modified in this case\&.
 .PP
--1 with errno set to ENOMEM on failure to allocate internal data\&. The topology is reinitialized in this case\&. It should be either destroyed with \fBhwloc_topology_destroy()\fP or configured and loaded again\&. 
+-1 with errno set to \fCENOMEM\fP on failure to allocate internal data\&. The topology is reinitialized in this case\&. It should be either destroyed with \fBhwloc_topology_destroy()\fP or configured and loaded again\&. 
 .RE
 .PP
 

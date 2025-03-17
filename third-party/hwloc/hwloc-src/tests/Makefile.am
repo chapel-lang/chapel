@@ -4,6 +4,3 @@
 # See COPYING in top-level directory.
 
 SUBDIRS = hwloc
-if BUILD_NETLOC
-SUBDIRS += netloc
-endif

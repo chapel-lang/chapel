@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2022 Inria.  All rights reserved.
+ * Copyright © 2009-2023 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -162,8 +162,8 @@ int main(void)
   assert(hwloc_get_memory_parents_depth(topology) == HWLOC_TYPE_DEPTH_MULTIPLE);
 
   err = hwloc_topology_export_synthetic(topology, buffer, sizeof(buffer), 0);
-  assert(err == 114);
-  err = strcmp("Package:2 [NUMANode(memory=1073741824)] [NUMANode(memory=1048576)] Core:2 [NUMANode(indexes=8,7,5,6,4,3,1,2)] PU:4", buffer);
+  assert(err == 132);
+  err = strcmp("Package:2 [NUMANode(memory=1073741824)] [NUMANode(memory=1048576)] Core:2 [NUMANode(memory=1073741824 indexes=8,7,5,6,4,3,1,2)] PU:4", buffer);
   assert(!err);
 
   err = hwloc_topology_export_synthetic(topology, buffer, sizeof(buffer), HWLOC_TOPOLOGY_EXPORT_SYNTHETIC_FLAG_V1);

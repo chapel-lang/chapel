@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2022 Inria.  All rights reserved.
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009, 2011 Université Bordeaux
 # Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
 # See COPYING in top-level directory.
@@ -51,7 +51,7 @@ $ls -v > $tmp/test.console_verbose
 echo "** Verbose with cpusets in $tmp/test.cpuset_verbose ..."
 $ls -c -v > $tmp/test.cpuset_verbose
 echo "** Verbose with taskset sets in $tmp/test.taskset ..."
-$ls --taskset -v > $tmp/test.taskset
+$ls --cpuset-output-format taskset -v > $tmp/test.taskset
 
 echo "** Merged topology in $tmp/test.merge ..."
 $ls --merge > $tmp/test.merge
@@ -129,13 +129,11 @@ echo "**** Import from synthetic so that we can check some exact outputs in $fil
 ) > "$file"
 @DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $srcdir/test-lstopo.output "$file"
 
-if test x@ARCHIVEMOUNT@ != x; then
-  if test x@HWLOC_HAVE_LINUX@ = x1; then
-    echo "**** Archivemount'ing a Linux fsroot archive ..."
-    file="$tmp/test-lstopo.archivemount.fsroot.output"
-    $ls -i $HWLOC_top_srcdir/tests/hwloc/linux/16amd64-8n2c.tar.bz2 -v - | egrep -v "^assuming " > "$file"
-    @DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $HWLOC_top_srcdir/tests/hwloc/linux/16amd64-8n2c.output "$file"
-  fi
+if which archivemount >/dev/null 2>/dev/null && test x@HWLOC_HAVE_LINUX@ = x1; then
+  echo "**** Archivemount'ing a Linux fsroot archive ..."
+  file="$tmp/test-lstopo.archivemount.fsroot.output"
+  $ls -i $HWLOC_top_srcdir/tests/hwloc/linux/16amd64-8n2c.tar.bz2 -v - | egrep -v "^assuming " > "$file"
+  @DIFF@ @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ $HWLOC_top_srcdir/tests/hwloc/linux/16amd64-8n2c.output "$file"
   if test x@HWLOC_HAVE_X86_CPUID@ = x1; then
     echo "**** Archivemount'ing a x86 CPUID archive ..."
     file="$tmp/test-lstopo.archivemount.cpuid.output"

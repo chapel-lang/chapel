@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011-2021 Inria.  All rights reserved.
+ * Copyright © 2011-2023 Inria.  All rights reserved.
  * Copyright © 2011 Université Bordeaux.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -11,8 +11,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
-
-static hwloc_topology_t topology;
 
 static void print_distances(const struct hwloc_distances_s *distances)
 {
@@ -36,7 +34,7 @@ static void print_distances(const struct hwloc_distances_s *distances)
   }
 }
 
-static void check(unsigned nbgroups, unsigned nbnodes, unsigned nbcores, unsigned nbpus)
+static void check(hwloc_topology_t topology, unsigned nbgroups, unsigned nbnodes, unsigned nbcores, unsigned nbpus)
 {
   int depth;
   unsigned nb;
@@ -67,7 +65,7 @@ static void check(unsigned nbgroups, unsigned nbnodes, unsigned nbcores, unsigne
   assert(total_memory == nbnodes * 1024*1024*1024); /* synthetic topology puts 1GB per node */
 }
 
-static void check_distances(unsigned nbnodes, unsigned nbcores)
+static void check_distances(hwloc_topology_t topology, unsigned nbnodes, unsigned nbcores)
 {
   struct hwloc_distances_s *distance;
   unsigned nr;
@@ -108,6 +106,7 @@ int main(void)
   hwloc_obj_t nodes[3], cores[6];
   hwloc_uint64_t node_distances[9], core_distances[36];
   hwloc_distances_add_handle_t handle;
+  hwloc_topology_t topology, topology2;
   hwloc_obj_t obj;
   unsigned i,j;
   int err;
@@ -148,8 +147,8 @@ int main(void)
 
   /* entire topology */
   printf("starting from full topology\n");
-  check(3, 3, 6, 24);
-  check_distances(3, 6);
+  check(topology, 3, 3, 6, 24);
+  check_distances(topology, 3, 6);
 
   /* restrict to nothing, impossible */
   printf("restricting to nothing, must fail\n");
@@ -162,16 +161,16 @@ int main(void)
   assert(err < 0 && errno == EINVAL);
   err = hwloc_topology_refresh(topology);
   assert(!err);
-  check(3, 3, 6, 24);
-  check_distances(3, 6);
+  check(topology, 3, 3, 6, 24);
+  check_distances(topology, 3, 6);
 
   /* restrict to everything, will do nothing */
   printf("restricting to everything, does nothing\n");
   hwloc_bitmap_fill(cpuset);
   err = hwloc_topology_restrict(topology, cpuset, 0);
   assert(!err);
-  check(3, 3, 6, 24);
-  check_distances(3, 6);
+  check(topology, 3, 3, 6, 24);
+  check_distances(topology, 3, 6);
 
   /* remove a single pu (second PU of second core of second node) */
   printf("removing second PU of second core of second node\n");
@@ -179,8 +178,8 @@ int main(void)
   hwloc_bitmap_clr(cpuset, 13);
   err = hwloc_topology_restrict(topology, cpuset, 0);
   assert(!err);
-  check(3, 3, 6, 23);
-  check_distances(3, 6);
+  check(topology, 3, 3, 6, 23);
+  check_distances(topology, 3, 6);
 
   /* remove the entire second core of first node */
   printf("removing entire second core of first node\n");
@@ -188,8 +187,8 @@ int main(void)
   hwloc_bitmap_clr_range(cpuset, 4, 7);
   err = hwloc_topology_restrict(topology, cpuset, 0);
   assert(!err);
-  check(3, 3, 5, 19);
-  check_distances(3, 5);
+  check(topology, 3, 3, 5, 19);
+  check_distances(topology, 3, 5);
 
   /* remove the entire third node */
   printf("removing all PUs under third node, but keep that CPU-less node\n");
@@ -197,8 +196,12 @@ int main(void)
   hwloc_bitmap_clr_range(cpuset, 16, 23);
   err = hwloc_topology_restrict(topology, cpuset, 0);
   assert(!err);
-  check(3, 3, 3, 11);
-  check_distances(3, 3);
+  check(topology, 3, 3, 3, 11);
+  check_distances(topology, 3, 3);
+
+  /* duplicate/checkpoint to the current topology for additional testing */
+  err = hwloc_topology_dup(&topology2, topology);
+  assert(!err);
 
   /* only keep three PUs (first and last of first core, and last of last core of second node) */
   printf("restricting to 3 PUs in 2 cores in 2 nodes, and remove the CPU-less node, and auto-merge groups\n");
@@ -208,8 +211,28 @@ int main(void)
   hwloc_bitmap_set(cpuset, 15);
   err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_REMOVE_CPULESS);
   assert(!err);
-  check(0, 2, 2, 3);
-  check_distances(2, 2);
+  check(topology, 0, 2, 2, 3);
+  check_distances(topology, 2, 2);
+
+  /* only keep three PUs (first and last of first core, and last of last core of second node) */
+  printf("do the same on the duplicated topology, with multiple intermediate restricts\n");
+  hwloc_bitmap_zero(cpuset);
+  hwloc_bitmap_set(cpuset, 0);
+  hwloc_bitmap_set(cpuset, 3);
+  hwloc_bitmap_set(cpuset, 15);
+  err = hwloc_topology_restrict(topology2, cpuset, 0);
+  assert(!err);
+  check(topology2, 3, 3, 2, 3);
+  check_distances(topology2, 3, 2);
+  err = hwloc_topology_restrict(topology2, cpuset, 0);
+  assert(!err);
+  check(topology2, 3, 3, 2, 3);
+  check_distances(topology2, 3, 2);
+  err = hwloc_topology_restrict(topology2, cpuset, HWLOC_RESTRICT_FLAG_REMOVE_CPULESS);
+  assert(!err);
+  check(topology2, 0, 2, 2, 3);
+  check_distances(topology2, 2, 2);
+  hwloc_topology_destroy(topology2);
 
   /* restrict to the third node, impossible */
   printf("restricting to only some already removed node, must fail\n");
@@ -217,8 +240,8 @@ int main(void)
   hwloc_bitmap_set_range(cpuset, 16, 23);
   err = hwloc_topology_restrict(topology, cpuset, 0);
   assert(err == -1 && errno == EINVAL);
-  check(0, 2, 2, 3);
-  check_distances(2, 2);
+  check(topology, 0, 2, 2, 3);
+  check_distances(topology, 2, 2);
 
   hwloc_topology_destroy(topology);
 
@@ -247,13 +270,18 @@ int main(void)
   err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET);
   assert(!err);
   hwloc_topology_check(topology);
-  check(3, 2, 6, 24);
+  check(topology, 3, 2, 6, 24);
+  printf("applying exact same restriction again\n");
+  err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET);
+  assert(!err);
+  hwloc_topology_check(topology);
+  check(topology, 3, 2, 6, 24);
   printf("further restricting bynodeset to a single numa node\n");
   hwloc_bitmap_only(cpuset, 1);
   err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET|HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS);
   assert(!err);
   hwloc_topology_check(topology);
-  check(0, 1, 2, 8);
+  check(topology, 0, 1, 2, 8);
   printf("restricting with invalid flags\n");
   err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS);
   assert(err == -1);
@@ -282,6 +310,19 @@ int main(void)
   hwloc_topology_load(topology);
   hwloc_bitmap_zero(cpuset);
   hwloc_bitmap_set_range(cpuset, 1, 2);
+  err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET|HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS);
+  assert(!err);
+  hwloc_topology_destroy(topology);
+
+  /* again with intermediate restricts */
+  printf("do the same on the duplicated topology, with multiple intermediate restricts\n");
+  hwloc_topology_init(&topology);
+  hwloc_topology_set_synthetic(topology, "pack:2 l3:2 numa:1 pu:1(indexes=0,2,1,3)");
+  hwloc_topology_load(topology);
+  hwloc_bitmap_zero(cpuset);
+  hwloc_bitmap_set_range(cpuset, 1, 2);
+  err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET);
+  assert(!err);
   err = hwloc_topology_restrict(topology, cpuset, HWLOC_RESTRICT_FLAG_BYNODESET|HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS);
   assert(!err);
   hwloc_topology_destroy(topology);

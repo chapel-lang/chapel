@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_cache" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_cache" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -31,7 +31,7 @@ Get the first data (or unified) cache covering a cpuset \fCset\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-\fCNULL\fP if no cache matches\&. 
+a covering cache, or \fCNULL\fP if no cache matches\&. 
 .RE
 .PP
 
@@ -42,13 +42,20 @@ Find the depth of cache objects matching cache level and type\&. Return the dept
 .PP
 This function is identical to calling \fBhwloc_get_type_depth()\fP with the corresponding type such as \fBHWLOC_OBJ_L1ICACHE\fP, except that it may also return a Unified cache when looking for an instruction cache\&.
 .PP
-If no cache level matches, \fBHWLOC_TYPE_DEPTH_UNKNOWN\fP is returned\&.
+\fBReturns\fP
+.RS 4
+the depth of the unique matching unified cache level is returned if \fCcachetype\fP is \fBHWLOC_OBJ_CACHE_UNIFIED\fP\&.
 .PP
-If \fCcachetype\fP is \fBHWLOC_OBJ_CACHE_UNIFIED\fP, the depth of the unique matching unified cache level is returned\&.
+the depth of either a matching cache level or a unified cache level if \fCcachetype\fP is \fBHWLOC_OBJ_CACHE_DATA\fP or \fBHWLOC_OBJ_CACHE_INSTRUCTION\fP\&.
 .PP
-If \fCcachetype\fP is \fBHWLOC_OBJ_CACHE_DATA\fP or \fBHWLOC_OBJ_CACHE_INSTRUCTION\fP, either a matching cache, or a unified cache is returned\&.
+the depth of the matching level if \fCcachetype\fP is \fC-1\fP but only one level matches\&.
 .PP
-If \fCcachetype\fP is \fC-1\fP, it is ignored and multiple levels may match\&. The function returns either the depth of a uniquely matching level or \fBHWLOC_TYPE_DEPTH_MULTIPLE\fP\&. 
+\fBHWLOC_TYPE_DEPTH_MULTIPLE\fP if \fCcachetype\fP is \fC-1\fP but multiple levels match\&.
+.PP
+\fBHWLOC_TYPE_DEPTH_UNKNOWN\fP if no cache level matches\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_shared_cache_covering_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -56,7 +63,9 @@ Get the first data (or unified) cache shared between an object and somebody else
 .PP
 \fBReturns\fP
 .RS 4
-\fCNULL\fP if no cache matches or if an invalid object is given\&. 
+a shared cache\&. 
+.PP
+\fCNULL\fP if no cache matches or if an invalid object is given (e\&.g\&. I/O object)\&. 
 .RE
 .PP
 

@@ -447,6 +447,10 @@
       <info name="SerialNumber" value="48AAE639"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="1" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_A2 "/>
@@ -454,6 +458,10 @@
       <info name="SerialNumber" value="486AE620"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="2" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_A3 "/>
@@ -461,6 +469,10 @@
       <info name="SerialNumber" value="3667956F"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="3" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_A4 "/>
@@ -468,6 +480,10 @@
       <info name="SerialNumber" value="36679587"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="12" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_B1 "/>
@@ -475,6 +491,10 @@
       <info name="SerialNumber" value="484AE61F"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="13" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_B2 "/>
@@ -482,6 +502,10 @@
       <info name="SerialNumber" value="482AE655"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="14" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_B3 "/>
@@ -489,6 +513,10 @@
       <info name="SerialNumber" value="488AE635"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
     <object type="Misc" os_index="15" subtype="MemoryModule">
       <info name="DeviceLocation" value="DIMM_B4 "/>
@@ -496,6 +524,10 @@
       <info name="SerialNumber" value="48AAE621"/>
       <info name="AssetTag" value="01115021"/>
       <info name="PartNumber" value="HMT351R7CFR8C-PB  "/>
+      <info name="FormFactor" value="DIMM"/>
+      <info name="Type" value="DDR3"/>
+      <info name="Size" value="4194304"/>
+      <info name="Rank" value="2"/>
     </object>
   </object>
   <distances2 type="NUMANode" nbobjs="2" kind="5" name="NUMALatency" indexing="os">
