@@ -633,14 +633,12 @@ module Python {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
-      var globals = chpl_PyEval_GetFrameGlobals();
-      if globals != nil {
-        var pyObj = PyDict_GetItemString(globals, attr.c_str());
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      if PyObject_HasAttrString(__main__, attr.c_str()) == 1 {
+        var pyObj = PyObject_GetAttrString(__main__, attr.c_str());
         this.checkException();
-        if pyObj != nil {
-          Py_INCREF(pyObj);
-          return this.fromPythonInner(t, pyObj);
-        }
+        return this.fromPythonInner(t, pyObj);
       }
 
       var builtins = chpl_PyEval_GetFrameBuiltins();
@@ -648,30 +646,72 @@ module Python {
         var pyObj = PyDict_GetItemString(builtins, attr.c_str());
         this.checkException();
         if pyObj != nil {
-          Py_INCREF(pyObj);
+          Py_INCREF(pyObj); // PyDict_GetItemString is borrowed
           return this.fromPythonInner(t, pyObj);
         }
       }
 
-      // if we reach this point, throw an exception
-      throw new ChapelException("Attribute '" + attr + "' not found");
+      throw new ChapelException("Attribute not found: " + attr);
     }
     @chpldoc.nodoc
     proc get(attr: string): owned Value throws do
       return this.get(owned Value, attr);
 
     /*
-      Run a string of python code.
+      Sets a global variable. Equivalent to the following in Python:
 
-      This function will just run the code, it cannot be passed arguments or
-      return values.
+      .. code-block:: python
+
+         global attr
+         attr = value
+
+      :arg attr: The name of the global variable.
+      :arg value: The value of new global variable.
     */
-    proc run(code: string) throws {
+    proc set(attr: string, value: ?) throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      PyRun_SimpleString(code.c_str());
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var pyValue = this.toPythonInner(value);
+      defer Py_DECREF(pyValue); // PyDict_SetItem doesn't steal a reference
+      PyDict_SetItemString(globals, attr.c_str(), pyValue);
       this.checkException();
     }
+
+    /*
+      Execute a snippet of Python code within the context of the current
+      interpreter. This function has access to all global
+      variables in the interpreter, and can be pass additional extra variables
+      using the ``kwargs`` argument.
+    */
+    proc run(code: string, kwargs: ?) throws
+    where kwargs.type == nothing || kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var locals;
+      if kwargs.type != nothing then
+        locals = this.toPythonInner(kwargs);
+      else
+        locals = nil:PyObjectPtr;
+
+      PyRun_String(code.c_str(), Py_file_input, globals, locals);
+      this.checkException();
+    }
+    @chpldoc.nodoc
+    proc run(code: string) throws do
+      this.run(code, none);
+
 
     /*
       Register a custom :type:`TypeConverter` with the interpreter. This allows
@@ -695,21 +735,17 @@ module Python {
     */
     @chpldoc.nodoc
     proc compileLambdaInternal(l: string): PyObjectPtr throws {
-      var globals = chpl_PyEval_GetFrameGlobals();
-      var globalsNeedDecref = false;
-      // create a globals if it doesn't exist
-      if !globals {
-        globals = Py_BuildValue("{}");
-        globalsNeedDecref = true;
-      }
+      // TODO: could/should we expose passing locals to this function, similar
+      // to the run function?
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
       // this is the equivalent of `eval(compile(l, '<string>', 'eval'))`
       // we can also do `Py_CompileString` -> `PyFunction_New`?
       var code = PyRun_String(l.c_str(), Py_eval_input, globals, nil);
       this.checkException();
-
-      if globalsNeedDecref {
-        Py_DECREF(globals);
-      }
       return code;
     }
 
@@ -2928,7 +2964,6 @@ module Python {
     extern proc chpl_PyEval_GetFrameGlobals(): PyObjectPtr;
     extern proc chpl_PyEval_GetFrameBuiltins(): PyObjectPtr;
 
-
     extern var Py_eval_input: c_int;
     extern var Py_file_input: c_int;
     extern proc PyRun_String(code: c_ptrConst(c_char), start: c_int,
@@ -2941,7 +2976,8 @@ module Python {
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
                                                size: Py_ssize_t): PyObjectPtr;
-
+    extern proc PyImport_AddModule(name: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyModule_GetDict(mod: PyObjectPtr): PyObjectPtr;
 
     /*
       Threading
@@ -3072,6 +3108,8 @@ module Python {
     extern proc PyObject_SetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char),
                                        value: PyObjectPtr);
+    extern proc PyObject_HasAttrString(obj: PyObjectPtr,
+                                       name: c_ptrConst(c_char)): c_int;
 
     /*
       Tuples
