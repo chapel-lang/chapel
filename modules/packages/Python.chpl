@@ -732,8 +732,6 @@ module Python {
     */
     @chpldoc.nodoc
     proc compileLambdaInternal(l: string): PyObjectPtr throws {
-      // TODO: could/should we expose passing locals to this function, similar
-      // to the run function?
       var __main__ = PyImport_AddModule("__main__");
       this.checkException();
       var globals = PyModule_GetDict(__main__);
@@ -2073,7 +2071,8 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg fnName: The name of the function.
       :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
-      :arg isOwned: Whether this object owns the Python object. This is true by default.
+      :arg isOwned: Whether this object owns the Python object. This is true by
+                    default.
     */
     proc init(interpreter: borrowed Interpreter,
               in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
