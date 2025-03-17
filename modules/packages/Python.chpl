@@ -684,6 +684,29 @@ module Python {
     }
 
     /*
+      Remove a global variable. Equivalent to the following in Python:
+
+      .. code-block:: python
+
+         global attr
+         del attr
+
+      :arg attr: The name of the global variable to remove.
+    */
+    proc del(attr: string) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      PyDict_DelItemString(globals, attr.c_str());
+      this.checkException();
+    }
+
+    /*
       Execute a snippet of Python code within the context of the current
       interpreter. This function has access to all global
       variables in the interpreter, and can be pass additional extra variables
@@ -3098,6 +3121,8 @@ module Python {
     extern proc PyDict_Clear(dict: PyObjectPtr);
     extern proc PyDict_Copy(dict: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
+    extern proc PyDict_DelItemString(dict: PyObjectPtr,
+                                     key: c_ptrConst(c_char));
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char)): PyObjectPtr;

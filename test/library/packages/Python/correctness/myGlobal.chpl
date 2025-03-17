@@ -25,3 +25,15 @@ interp.set("myGlobal", "hello world");
 // use get to get the global
 var myGlobal3 = interp.get(string, "myGlobal");
 writeln("myGlobal from get: ", myGlobal3);
+
+// delete myGlobal
+interp.del("myGlobal");
+
+try {
+  // try and get the global again
+  var global = interp.get("myGlobal");
+  writeln("global still exists! ", global);
+} catch e {
+  writeln("myGlobal is gone");
+}
+
