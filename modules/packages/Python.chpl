@@ -288,6 +288,23 @@ module Python {
     return sep;
   }
 
+  /*
+    Helper function to convert object pointer to string
+    for developer debugging purposes.
+  */
+  private proc toStringDev(obj: PyObjectPtr) {
+    var pyStr = PyObject_Str(obj);
+    defer Py_DECREF(pyStr);
+    if pyStr == nil {
+      halt("Failed to convert PyObject to string");
+    }
+    var str = PyUnicode_AsUTF8(pyStr);
+    if str == nil {
+      halt("Failed to convert PyObject to string");
+    }
+    return try! string.createCopyingBuffer(str);
+  }
+
   private proc throwChapelException(message: string) throws {
     throw new ChapelException(message);
   }
