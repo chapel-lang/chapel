@@ -317,15 +317,18 @@ def main():
             tarfiles.append(pjoin(reldir, file))
 
         for d in code_dirs:
-            for fullpath in glob.glob(pjoin(d, "*")):
+            for fullpath in glob.glob(pjoin(d, "**"), recursive=True):
                 suffix = os.path.splitext(fullpath)[1]
                 name = os.path.basename(fullpath)
-                if suffix in {".h", ".cpp", ".c", ".ypp", ".lex"} or name in {
-                    "Makefile",
-                    "README",
-                    "BUILD_VERSION",
-                    "CMakeLists.txt",
-                }:
+                if suffix in {".h", ".cpp", ".c", ".ypp", ".lex"} or any(
+                    n in name
+                    for n in {
+                        "Makefile",
+                        "README",
+                        "BUILD_VERSION",
+                        "CMakeLists.txt",
+                    }
+                ):
                     tarfiles.append(pjoin(reldir, fullpath))
 
         for d in complete_dirs:
