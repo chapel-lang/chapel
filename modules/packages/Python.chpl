@@ -975,10 +975,7 @@ module Python {
       } else if isSubtype(t, Map.map) {
         return toDict(val);
       } else if isSubtype(t, Value?) {
-        // use casts instead of ! to get the throwing behavior
-        var borrowedVal = if isNilableClass(val)
-                    then val: borrowed Value
-                    else val;
+        var borrowedVal = val: borrowed Value;
         Py_INCREF(borrowedVal.getPyObject());
         return borrowedVal.getPyObject();
       } else if t == NoneType {
