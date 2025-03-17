@@ -147,6 +147,7 @@ def main():
             p = run(tar_executable, "-cf", "-", ".", stdout=subprocess.PIPE)
             with cd(archive_dir):
                 run(tar_executable, "-xf", "-", input=p.stdout)
+            del p # free all the memory used by the tar file
         resultdir = pjoin(chplhome, "tar")
     else:
         # check out a clean copy of the sources into the directory where chapel will be built
