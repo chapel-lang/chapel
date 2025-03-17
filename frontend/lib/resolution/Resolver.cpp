@@ -1340,6 +1340,26 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         }
       }
     }
+  } else if (auto arr = formalTypeExpr->toBracketLoop()) {
+    if (!actualType.isUnknownOrErroneous() && actualType.type()->isArrayType()) {
+      // notably, we can't have type queries that select only a part of a domain
+      // at this time. See checkDomainTypeQueryUsage in post-parse-checks.cpp.
+      // So we can assume if there is a type query, it's for the whole domain.
+
+      if (arr->iterand()->isTypeQuery()) {
+        // Match production: domain type expressions are CONST_REF.
+        auto& result = byPostorder.byAst(arr->iterand());
+        result.setType(QualifiedType(QualifiedType::CONST_REF, actualType.type()->toArrayType()->domainType().type()));
+      }
+
+      // Resolve type queries in the element type.
+      CHPL_ASSERT(arr->body()->numStmts() <= 1);
+      if (arr->body()->numStmts() == 1) {
+        resolveTypeQueries(arr->body()->stmt(0),
+                           actualType.type()->toArrayType()->eltType(),
+                           isNonStarVarArg, /* isTopLevel */ false);
+      }
+    }
   }
 }
 
