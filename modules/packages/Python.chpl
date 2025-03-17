@@ -689,7 +689,7 @@ module Python {
       variables in the interpreter, and can be pass additional extra variables
       using the ``kwargs`` argument.
     */
-    proc run(code: string, kwargs: ?) throws
+    proc run(code: string, kwargs: ? = none) throws
     where kwargs.type == nothing || kwargs.isAssociative() {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
@@ -708,9 +708,6 @@ module Python {
       PyRun_String(code.c_str(), Py_file_input, globals, locals);
       this.checkException();
     }
-    @chpldoc.nodoc
-    proc run(code: string) throws do
-      this.run(code, none);
 
 
     /*
