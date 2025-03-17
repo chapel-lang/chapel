@@ -920,9 +920,13 @@ module Python {
         return toSet(val);
       } else if isSubtype(t, Map.map) {
         return toDict(val);
-      } else if isSubtype(t, Value) {
-        Py_INCREF(val.getPyObject());
-        return val.getPyObject();
+      } else if isSubtype(t, Value?) {
+        // use casts instead of ! to get the throwing behavior
+        var borrowedVal = if isNilableClass(val)
+                    then val: borrowed Value
+                    else val;
+        Py_INCREF(borrowedVal.getPyObject());
+        return borrowedVal.getPyObject();
       } else if t == NoneType {
         return Py_None;
       } else {
