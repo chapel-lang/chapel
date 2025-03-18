@@ -14,6 +14,7 @@ files = [
 ]
 dirs = [
     "/usr/lib/chapel",
+    "/usr/lib/cmake/chpl",
     "/usr/share/chapel",
 ]
 for f in files:
