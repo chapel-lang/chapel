@@ -66,6 +66,7 @@ module ChapelIO {
       return ret;
     }
 
+    pragma 'fn exempt instantiation limit'
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t) throws where isUnionType(t) {
@@ -91,6 +92,7 @@ module ChapelIO {
     // TODO: would any formats want to print type or param fields?
     // - more useful for param fields, e.g., an enum
     //
+    pragma 'fn exempt instantiation limit'
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t) throws {
