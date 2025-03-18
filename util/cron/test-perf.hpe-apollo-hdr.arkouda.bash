@@ -21,6 +21,7 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 #
 # setup arkouda
 source $UTIL_CRON_DIR/common-arkouda.bash
+
 export ARKOUDA_NUMLOCALES=16
 
 # on this system, the array_transfer test comes dangerously close to the
