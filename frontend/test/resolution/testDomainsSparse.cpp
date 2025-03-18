@@ -35,16 +35,6 @@ static void testRectangularSparse(Context* context,
   setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
-  // TODO: run this code
-  // Currently disabled due to https://github.com/Cray/chapel-private/issues/7196.
-  std::string iteration =
-R"""(
-  for loopI in d {
-    var z = loopI;
-  }
-)""";
-  std::ignore = iteration;
-
   std::string program =
 R"""(
 module M {
@@ -66,6 +56,10 @@ module M {
   param rttS = __primitive("get runtime type field", d, "strides");
 
   var p = d.pid;
+
+  for loopI in d {
+    var z = loopI;
+  }
 
   proc generic(arg: domain) {
     type GT = arg.type;
@@ -98,6 +92,8 @@ module M {
   assert(dTypeExpr);
   auto typeRe = rr.byAst(dTypeExpr);
 
+  QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
+
   auto rankVarTy = findVarType(m, rr, "r");
   assert(rankVarTy == dType->rank());
   ensureParamInt(rankVarTy, rank);
@@ -123,6 +119,8 @@ module M {
   ensureParamBool(findVarType(m, rr, "sk"), true);
 
   assert(findVarType(m, rr, "p").type()->isIntType());
+
+  assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
   {
     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
