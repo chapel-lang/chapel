@@ -3438,22 +3438,31 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       //
       // TODO: This doesn't have anything to do with this candidate. Shouldn't
       // we be handling this somewhere else?
-      auto t = ci.actual(0).type().type();
-      auto containingType = isNameOfField(context, ci.name(), t);
-      if (!containingType) {
-        // help handle the case where we're calling a field accessor on a manger.
-        // while resolving the body of a method on owned to evaluate the applicability,
-        // we need to be able to resolve the field accessor on the manager.
-        if (auto classType = t->toClassType()) {
-          if (auto managerType = classType->managerRecordType(context)) {
-            containingType = isNameOfField(context, ci.name(), managerType);
+      auto qt = ci.actual(0).type();
+
+      // the field might not be present on the current type T, but on the
+      // element type of T for promotion. Keep trying to find the field by
+      // looking at the element type of the current type if we fail.
+      while (!qt.isUnknownOrErroneous()) {
+        auto containingType = isNameOfField(context, ci.name(), qt.type());
+        if (!containingType) {
+          // help handle the case where we're calling a field accessor on a manger.
+          // while resolving the body of a method on owned to evaluate the applicability,
+          // we need to be able to resolve the field accessor on the manager.
+          if (auto classType = qt.type()->toClassType()) {
+            if (auto managerType = classType->managerRecordType(context)) {
+              containingType = isNameOfField(context, ci.name(), managerType);
+            }
           }
         }
-      }
-      if (containingType &&
-          containingType->id() == candidateId.parentSymbolId(context)) {
-        auto ret = fieldAccessor(context, containingType, ci.name());
-        return ApplicabilityResult::success(ret);
+
+        if (containingType &&
+            containingType->id() == candidateId.parentSymbolId(context)) {
+          auto ret = fieldAccessor(context, containingType, ci.name());
+          return ApplicabilityResult::success(ret);
+        }
+
+        qt = getPromotionType(context, qt);
       }
     }
     // not a candidate
