@@ -1,4 +1,4 @@
-use Map, List, Set;
+use List, Set, Map;
 use OS.POSIX, Path, FileSystem;
 use Sort;
 use IO;
@@ -6,9 +6,8 @@ use CTypes;
 
 config const verbosePrint = false;
 config const pythonToUse = "python3";
+config const testName: string = "default";
 
-require "checkPaths.h", "checkPaths.c";
-extern proc getEnvironment(): c_ptr(c_ptr(c_char));
 extern proc setenv(name: c_ptrConst(c_char),
                    envval: c_ptrConst(c_char), overwrite: c_int): c_int;
 
@@ -19,29 +18,11 @@ proc cleanPath(in p) {
   return realPath(p);
 }
 
-proc getCurrentEnv() {
-  var env = new map(string, string);
-  var environ = getEnvironment();
-  while environ.deref() != nil {
-    var keyVal = string.createBorrowingBuffer(environ.deref()).split("=");
-    env[keyVal[0]] = keyVal[1];
-    environ += 1;
-  }
-  return env;
-}
-
-proc getSysPathSpawn(const ref env: map(string, string) =
-                      new map(string, string)) {
-  var myEnv = getCurrentEnv();
-  for k in env.keys() {
-    myEnv[k] = env[k];
-  }
-  var envString = [k in env.keys()] "%s=%s".format(k, myEnv[k]);
-
+proc getSysPathSpawn() {
   use Subprocess;
   var p = spawn(
     [pythonToUse, "-c", "import sys; print(*sys.path, sep=',')"],
-    stdout=pipeStyle.pipe, env=envString);
+    stdout=pipeStyle.pipe);
 
   var output = p.stdout.readAll(string).strip();
   var paths = new list(string);
@@ -58,21 +39,8 @@ proc getSysPathSpawn(const ref env: map(string, string) =
   }
   return paths;
 }
-proc getSysPathInterpreter(const ref env: map(string, string) =
-                            new map(string, string)) {
+proc getSysPathInterpreter() {
   use Python;
-
-  var oldEnv = new map(string, c_ptrConst(c_char));
-  for k in env.keys() {
-    var old = getenv(k.c_str()):c_ptrConst(c_char);
-    oldEnv[k] = old;
-    if env[k] != "" {
-      setenv(k.c_str(), env[k].c_str(), 1);
-    } else {
-      setenv(k.c_str(), 0:c_ptrConst(c_char), 1);
-    }
-  }
-
   var paths = new list(string);
   {
     var interp = new Interpreter();
@@ -82,15 +50,6 @@ proc getSysPathInterpreter(const ref env: map(string, string) =
       if pp != "" && !paths.contains(pp) {
         paths.pushBack(pp);
       }
-    }
-  }
-
-  for k in oldEnv.keys() {
-    var old = oldEnv[k];
-    if old == nil {
-      setenv(k.c_str(), 0:c_ptrConst(c_char), 1);
-    } else {
-      setenv(k.c_str(), old, 1);
     }
   }
 
@@ -150,25 +109,30 @@ proc default() {
 }
 proc parentUserBase() {
   // add the parent directory of this file as the user base
-  var env = new map(string, string);
-  env["PYTHONUSERBASE"] = joinPath(try! here.cwd(), "..");
-  env["PYTHONPATH"] = "";
+  setenv("PYTHONUSERBASE", joinPath(try! here.cwd(), "..").c_str(), 1);
+  setenv("PYTHONPATH", "", 1);
 
-  var pathsSpawn = getSysPathSpawn(env);
-  var pathsInterpreter = getSysPathInterpreter(env);
+  var pathsSpawn = getSysPathSpawn();
+  var pathsInterpreter = getSysPathInterpreter();
   return (pathsSpawn, pathsInterpreter);
 }
 proc parentPythonPath() {
   // add the parent directory of this file
-  var env = new map(string, string);
-  env["PYTHONPATH"] = joinPath(try! here.cwd(), "..");
+  setenv("PYTHONPATH", joinPath(try! here.cwd(), "..").c_str(), 1);
 
-  var pathsSpawn = getSysPathSpawn(env);
-  var pathsInterpreter = getSysPathInterpreter(env);
+  var pathsSpawn = getSysPathSpawn();
+  var pathsInterpreter = getSysPathInterpreter();
   return (pathsSpawn, pathsInterpreter);
 }
 proc main() {
-  testDriver("default", default);
-  testDriver("parentUserBase", parentUserBase);
-  testDriver("parentPythonPath", parentPythonPath);
+  var tests = new map(string, default.type);
+  tests.add("default", default);
+  tests.add("parentUserBase", parentUserBase);
+  tests.add("parentPythonPath", parentPythonPath);
+
+  if tests.contains(testName) {
+    testDriver(testName, tests[testName]);
+  } else {
+    writeln("Unknown test name: ", testName);
+  }
 }

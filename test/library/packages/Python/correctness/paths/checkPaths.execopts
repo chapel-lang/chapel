@@ -6,4 +6,6 @@ else
   chpl_python=$($CHPL_HOME/util/config/find-python.sh)
 fi
 
-echo "--pythonToUse=$chpl_python"
+echo "--pythonToUse=$chpl_python --testName='default'"
+echo "--pythonToUse=$chpl_python --testName='parentUserBase'"
+echo "--pythonToUse=$chpl_python --testName='parentPythonPath'"
