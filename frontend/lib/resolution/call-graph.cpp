@@ -93,6 +93,10 @@ struct CalledFnCollector {
   void exit(const AstNode* ast, RV& rv) {
   }
 
+  // TODO: How can we make this work through ``resolveFunction``, rather than
+  // relying on the cached map in ``ResolvedFunction``? The problem appears to
+  // be that we never use the 'global cache' when storing queries for
+  // nested functions, so the results only live on in ``ResolvedFunction``.
   const ResolvedFunction* getResolvedFunction(const TypedFnSignature* sig,
                            const PoiScope* poiScope) {
     chpl::resolution::ResolutionContext rcval(context);
