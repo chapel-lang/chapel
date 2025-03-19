@@ -384,6 +384,23 @@ module Python {
     return sep;
   }
 
+  /*
+    Helper function to convert object pointer to string
+    for developer debugging purposes.
+  */
+  private proc toStringDev(obj: PyObjectPtr) {
+    var pyStr = PyObject_Str(obj);
+    defer Py_DECREF(pyStr);
+    if pyStr == nil {
+      halt("Failed to convert PyObject to a Python string");
+    }
+    var str = PyUnicode_AsUTF8(pyStr);
+    if str == nil {
+      halt("Failed to convert Python string to a C string");
+    }
+    return try! string.createCopyingBuffer(str);
+  }
+
   private proc throwChapelException(message: string) throws {
     throw new ChapelException(message);
   }
@@ -694,17 +711,123 @@ module Python {
     }
 
     /*
-      Run a string of python code.
+      Get a Python object by name. This will either get a Python global
+      variable, (like `globals()[name]` in Python) or a Python builtin by name.
 
-      This function will just run the code, it cannot be passed arguments or
-      return values.
+      This will first query the current globals, and if the object is not found,
+      it will query the builtins.
+
+      :arg t: The Chapel type of the value to return.
+      :arg attr: The name of the attribute/field to access.
     */
-    proc run(code: string) throws {
+    pragma "docs only"
+    proc get(type t=owned Value, attr: string): t throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type t, attr: string): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      PyRun_SimpleString(code.c_str());
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      if PyObject_HasAttrString(__main__, attr.c_str()) == 1 {
+        var pyObj = PyObject_GetAttrString(__main__, attr.c_str());
+        this.checkException();
+        return this.fromPythonInner(t, pyObj);
+      }
+
+      var builtins = chpl_PyEval_GetFrameBuiltins();
+      if builtins != nil {
+        var pyObj = PyDict_GetItemString(builtins, attr.c_str());
+        this.checkException();
+        if pyObj != nil {
+          Py_INCREF(pyObj); // PyDict_GetItemString is borrowed
+          return this.fromPythonInner(t, pyObj);
+        }
+      }
+
+      throw new ChapelException("Attribute not found: " + attr);
+    }
+    @chpldoc.nodoc
+    proc get(attr: string): owned Value throws do
+      return this.get(owned Value, attr);
+
+    /*
+      Sets a global variable. Equivalent to the following in Python:
+
+      .. code-block:: python
+
+         global attr
+         attr = value
+
+      :arg attr: The name of the global variable.
+      :arg value: The value of new global variable.
+    */
+    proc set(attr: string, value: ?) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var pyValue = this.toPythonInner(value);
+      defer Py_DECREF(pyValue); // PyDict_SetItem doesn't steal a reference
+      PyDict_SetItemString(globals, attr.c_str(), pyValue);
       this.checkException();
     }
+
+    /*
+      Remove a global variable. Equivalent to the following in Python:
+
+      .. code-block:: python
+
+         global attr
+         del attr
+
+      :arg attr: The name of the global variable to remove.
+    */
+    proc del(attr: string) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      PyDict_DelItemString(globals, attr.c_str());
+      this.checkException();
+    }
+
+    /*
+      Execute a snippet of Python code within the context of the current
+      interpreter. This function has access to all global
+      variables in the interpreter, and can be pass additional extra variables
+      using the ``kwargs`` argument.
+    */
+    proc run(code: string, kwargs: ? = none) throws
+    where kwargs.type == nothing || kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var locals;
+      if kwargs.type != nothing then
+        locals = this.toPythonInner(kwargs);
+      else
+        locals = nil:PyObjectPtr;
+
+      PyRun_String(code.c_str(), Py_file_input, globals, locals);
+      this.checkException();
+    }
+
 
     /*
       Register a custom :type:`TypeConverter` with the interpreter. This allows
@@ -728,21 +851,15 @@ module Python {
     */
     @chpldoc.nodoc
     proc compileLambdaInternal(l: string): PyObjectPtr throws {
-      var globals = chpl_PyEval_GetFrameGlobals();
-      var globalsNeedDecref = false;
-      // create a globals if it doesn't exist
-      if !globals {
-        globals = Py_BuildValue("{}");
-        globalsNeedDecref = true;
-      }
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
       // this is the equivalent of `eval(compile(l, '<string>', 'eval'))`
       // we can also do `Py_CompileString` -> `PyFunction_New`?
       var code = PyRun_String(l.c_str(), Py_eval_input, globals, nil);
       this.checkException();
-
-      if globalsNeedDecref {
-        Py_DECREF(globals);
-      }
       return code;
     }
 
@@ -953,9 +1070,10 @@ module Python {
         return toSet(val);
       } else if isSubtype(t, Map.map) {
         return toDict(val);
-      } else if isSubtype(t, Value) {
-        Py_INCREF(val.getPyObject());
-        return val.getPyObject();
+      } else if isSubtype(t, Value?) {
+        var borrowedVal = val: borrowed Value;
+        Py_INCREF(borrowedVal.getPyObject());
+        return borrowedVal.getPyObject();
       } else if t == NoneType {
         return Py_None;
       } else {
@@ -2084,7 +2202,8 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg fnName: The name of the function.
       :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
-      :arg isOwned: Whether this object owns the Python object. This is true by default.
+      :arg isOwned: Whether this object owns the Python object. This is true by
+                    default.
     */
     proc init(interpreter: borrowed Interpreter,
               in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
@@ -2971,7 +3090,7 @@ module Python {
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
     extern proc chpl_PyEval_GetFrameGlobals(): PyObjectPtr;
-
+    extern proc chpl_PyEval_GetFrameBuiltins(): PyObjectPtr;
 
     extern var Py_eval_input: c_int;
     extern var Py_file_input: c_int;
@@ -2985,7 +3104,8 @@ module Python {
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
                                                size: Py_ssize_t): PyObjectPtr;
-
+    extern proc PyImport_AddModule(name: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyModule_GetDict(mod: PyObjectPtr): PyObjectPtr;
 
     /*
       Threading
@@ -3110,12 +3230,16 @@ module Python {
     extern proc PyDict_Clear(dict: PyObjectPtr);
     extern proc PyDict_Copy(dict: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
+    extern proc PyDict_DelItemString(dict: PyObjectPtr,
+                                     key: c_ptrConst(c_char));
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyObject_SetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char),
                                        value: PyObjectPtr);
+    extern proc PyObject_HasAttrString(obj: PyObjectPtr,
+                                       name: c_ptrConst(c_char)): c_int;
 
     /*
       Tuples

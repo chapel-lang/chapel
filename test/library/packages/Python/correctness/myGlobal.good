@@ -1,0 +1,4 @@
+myGlobal from get: 42
+dict: {'a': 1, 2: 'b'}
+myGlobal from get: hello world
+myGlobal is gone

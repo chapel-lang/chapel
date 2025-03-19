@@ -37,6 +37,13 @@ static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
   return PyEval_GetGlobals();
 #endif
 }
+static inline PyObject* chpl_PyEval_GetFrameBuiltins(void) {
+#if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
+  return PyEval_GetFrameBuiltins();
+#else
+  return PyEval_GetBuiltins();
+#endif
+}
 
 static inline PyObject* chpl_PyErr_GetRaisedException(void) {
 #if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
