@@ -717,8 +717,6 @@ static void test14(Context* ctx) {
         var tv_usec: suseconds_t;
       }
 
-      // TODO: fix initialization of nested types
-      pragma "no init"
       var tv : timeval;
       var ret = __primitive("cast", int, tv.tv_sec);
       return ret;
