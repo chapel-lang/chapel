@@ -59,5 +59,5 @@ def backtrace(debugger, command, result, internal_dict):
 
         frame = frame.parent
 
-    for i, (name, file, line, idx) in enumerate(reversed(trace)):
+    for i, (name, file, line, idx) in enumerate(trace):
         print("{:2d}: {} at {}:{} (lldb frame {})".format(i, name, file, line, idx))
