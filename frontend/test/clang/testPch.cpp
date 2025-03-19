@@ -99,7 +99,9 @@ static void testIt(const char* testName,
     std::map<std::string, const char*> env;
     std::string printOutput;
     auto result = chpl::getChplEnv(env, chpl_home.c_str(), &printOutput);
-    clangCCArgs.push_back(result.get()["CHPL_LLVM_CLANG_C"]);
+    auto clangc = result.get()["CHPL_LLVM_CLANG_C"];
+    assert(!clangc.empty() && "CHPL_LLVM_CLANG_C not found");
+    clangCCArgs.push_back(clangc);
     util::setClangFlags(context, clangCCArgs);
 
     auto tpch =
