@@ -2191,6 +2191,22 @@ module Python {
       }
       return this.get(owned Value, bounds);
     }
+
+    /*
+      Check if an item is in the tuple.  Equivalent to calling ``item in obj``
+      in Python.
+
+      :arg item: The item to check for membership in the tuple.
+    */
+    proc contains(item: ?): bool throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var result = PySequence_Contains(this.getPyObject(),
+                                       interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+      return result: bool;
+    }
   }
 
   /*
@@ -3096,6 +3112,8 @@ module Python {
     extern proc PySequence_SetItem(obj: PyObjectPtr,
                                    idx: Py_ssize_t,
                                    value: PyObjectPtr);
+    extern proc PySequence_Contains(obj: PyObjectPtr,
+                                    item: PyObjectPtr): c_int;
 
 
     /*

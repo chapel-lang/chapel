@@ -22,6 +22,10 @@ proc main() {
   writeln("t[2] ", t.get(int, 2));
   writeln("t[3] ", t.get(int, 3));
 
+  // check contains
+  writeln("5 in t: ", t.contains(5));
+  writeln("8 in t: ", t.contains(8));
+
   // get a slice of the tuple
   writeln("t[0:2] ", t.get(0..1));
   writeln("t[1:2] ", t.get(1..1));
