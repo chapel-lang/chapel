@@ -135,59 +135,41 @@ module DefaultAssociative {
     }
 
     proc dsiSerialWrite(f) throws {
-      const binary = f._binary();
-
-      if binary {
-        f.write(dsiNumIndices);
-        for idx in this {
-          f.write(idx);
-        }
-      } else {
-        var first = true;
-        f.writeLiteral("{");
-        for idx in this {
-          if first then
-            first = false;
-          else
-            f.writeLiteral(", ");
-          f.write(idx);
-        }
-        f.writeLiteral("}");
+      var first = true;
+      f.writeLiteral("{");
+      for idx in this {
+        if first then
+          first = false;
+        else
+          f.writeLiteral(", ");
+        f.write(idx);
       }
+      f.writeLiteral("}");
     }
     proc dsiSerialRead(f) throws {
-      const binary = f._binary();
-
       // Clear the domain so it only contains indices read in.
       dsiClear();
 
-      if binary {
-        const numIndices: int = f.read(int);
-        for i in 1..numIndices {
-          dsiAdd(f.read(idxType));
+      f.readLiteral("{");
+
+      var first = true;
+
+      while true {
+
+        // Try reading an end curly. If we get it, then break.
+        try {
+          f.readLiteral("}");
+          break;
+        } catch err: BadFormatError {
+          // We didn't read an end brace, so continue on.
         }
-      } else {
-        f.readLiteral("{");
 
-        var first = true;
+        // Try reading a comma.
+        if !first then f.readLiteral(",", true);
+        first = false;
 
-        while true {
-
-          // Try reading an end curly. If we get it, then break.
-          try {
-            f.readLiteral("}");
-            break;
-          } catch err: BadFormatError {
-            // We didn't read an end brace, so continue on.
-          }
-
-          // Try reading a comma.
-          if !first then f.readLiteral(",", true);
-          first = false;
-
-          // Read an index.
-          dsiAdd(f.read(idxType));
-        }
+        // Read an index.
+        dsiAdd(f.read(idxType));
       }
     }
 

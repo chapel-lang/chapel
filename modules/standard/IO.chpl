@@ -6648,24 +6648,6 @@ proc fileWriter.writeNewline() : void throws {
   }
 }
 
-@chpldoc.nodoc
-proc fileReader._binary():bool {
-  var ret:uint(8);
-  on this._home {
-    ret = qio_channel_binary(_channel_internal);
-  }
-  return ret != 0;
-}
-
-@chpldoc.nodoc
-proc fileWriter._binary():bool {
-  var ret:uint(8);
-  on this._home {
-    ret = qio_channel_binary(_channel_internal);
-  }
-  return ret != 0;
-}
-
 /* return other style elements. */
 @chpldoc.nodoc
 proc fileReader.styleElement(element:int):int {
