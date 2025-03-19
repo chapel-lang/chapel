@@ -145,6 +145,8 @@ def compute_internal_compile_link_args(runtime_subdir):
     if chpl_comm.get() == 'ofi':
         extend2(tgt_compile, chpl_libfabric.get_compile_args())
         extend2(tgt_link, chpl_libfabric.get_link_args())
+        extend2(tgt_compile, chpl_comm_ofi_oob.get_compile_args())
+        extend2(tgt_link, chpl_comm_ofi_oob.get_link_args())
     elif chpl_comm.get() == 'gasnet':
         extend2(tgt_compile, chpl_gasnet.get_compile_args())
         extend2(tgt_link, chpl_gasnet.get_link_args())
