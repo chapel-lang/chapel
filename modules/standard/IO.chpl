@@ -975,7 +975,6 @@ extern record iostyleInternal { // aka qio_style_t
 
   var complex_style:uint(8) = 0;
   var array_style:uint(8) = 0;
-  var aggregate_style:uint(8) = 0;
 }
 
 // This class helps in implementing runtime calls.
@@ -5777,11 +5776,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     return ret;
   } else if isEnumType(t) {
     var err:errorCode = 0;
-    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     for i in t {
       { // try to read e.g. red for colorenum.red
         var str = i:string;
-        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
@@ -5792,7 +5789,6 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 
       { // try to read e.g. colorenum.red for colorenum.red
         var str = t:string + "." + i:string;
-        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
         err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
@@ -5840,9 +5836,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     const local_x = x.localize();
     return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if isEnumType(t) {
-    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
-    if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:c_ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);

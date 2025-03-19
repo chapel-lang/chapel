@@ -65,10 +65,6 @@ typedef uint8_t style_char_t;
 #define QIO_ARRAY_FORMAT_CHPL 1
 #define QIO_ARRAY_FORMAT_JSON 2
 
-#define QIO_AGGREGATE_FORMAT_BRACES 0
-#define QIO_AGGREGATE_FORMAT_CHPL 1
-#define QIO_AGGREGATE_FORMAT_JSON 2
-
 
 #define QIO_STRSTYLE_VLEN (-10)
 #define QIO_STRSTYLE_NULL_TERMINATED (-0x0100)
@@ -200,13 +196,6 @@ typedef struct qio_style_s {
   // QIO_ARRAY_FORMAT_JSON make it look like a JSON array [1,2]
   uint8_t array_style;
 
-  // aggregates (not directly supported by QIO but used in Chapel)
-  // (includes records, classes, unions)
-  // QIO_AGGREGATE_FORMAT_BRACES record/union:(a=1) class:{a=1}
-  // QIO_AGGREGATE_FORMAT_CHPL call chpl constructor: new Something(a=1)
-  // QIO_AGGREGATE_FORMAT_JSON show JSON object: {a:1, b:2}
-  uint8_t aggregate_style;
-
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -264,7 +253,6 @@ void qio_style_init_default(qio_style_t* s)
   s->complex_style = 0;
 
   s->array_style = 0;
-  s->aggregate_style = 0;
 }
 
 static inline

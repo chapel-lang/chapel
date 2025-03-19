@@ -3250,10 +3250,6 @@ module ChapelBase {
   extern const QIO_ARRAY_FORMAT_CHPL:int;
   extern const QIO_ARRAY_FORMAT_JSON:int;
 
-  extern const QIO_AGGREGATE_FORMAT_BRACES:int;
-  extern const QIO_AGGREGATE_FORMAT_CHPL:int;
-  extern const QIO_AGGREGATE_FORMAT_JSON:int;
-
   // Support for module deinit functions.
   class chpl_ModuleDeinit : writeSerializable {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
