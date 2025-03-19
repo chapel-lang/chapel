@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/resolution/call-graph.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -379,6 +380,65 @@ static void test5d(Context* ctx) {
   assert(qt.type() && qt.type()->isIntType());
 }
 
+// Similar to the other 5x cases, but with a secondary method
+static void test5e(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  {
+    ErrorGuard guard(ctx);
+
+    std::string program =
+      R"""(
+      record R {
+        type T;
+        var x : T;
+      }
+
+      proc R.foobar() {
+        proc helper(arg: T) {
+          return arg;
+        }
+
+        return helper(x);
+      }
+
+      var r : R(int);
+      var x = r.foobar();
+      )""";
+
+    auto qt = resolveQualifiedTypeOfX(ctx, program);
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }
+  {
+    ErrorGuard guard(ctx);
+
+    std::string program =
+      R"""(
+      record R {
+        type T;
+        var x : T;
+      }
+
+      proc R.foobar() {
+        // generic case
+        proc helper(arg: T, other: ?) {
+          return __primitive("+", arg, other);
+        }
+
+        return helper(x, 5);
+      }
+
+      var r : R(int);
+      var x = r.foobar();
+
+      )""";
+
+    auto qt = resolveQualifiedTypeOfX(ctx, program);
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type() && qt.type()->isIntType());
+  }
+}
+
 // Same as test5 but with a nested method instead of a nested function.
 static void test6(Context* ctx) {
   ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
@@ -670,6 +730,75 @@ static void test14(Context* ctx) {
   std::ignore = resolveTypeOfX(ctx, program);
 }
 
+static void test15(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : int;
+    }
+
+    proc other(type T) {
+      var ret : T;
+      return ret;
+    }
+
+    proc helper(arg: R(?t), val: int) {
+      return nested(val);
+
+      proc nested(v: int) {
+        return other(t);
+      }
+    }
+
+    proc test() {
+      var r = new R(int, 42);
+      return helper(r, 5);
+    }
+    var x = test();
+    )""";
+
+  std::ignore = resolveTypeOfX(ctx, program);
+
+  auto m = parseModule(ctx, std::move(program));
+  CalledFnsSet called;
+  std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
+}
+
+static void test16(Context* ctx) {
+  ADVANCE_PRESERVING_STANDARD_MODULES_(ctx);
+  ErrorGuard guard(ctx);
+
+  std::string program =
+    R"""(
+    proc helper(args) {
+      proc nested() {
+        var sum = 0;
+        for param dim in 0..args.size-1 {
+          if args(dim).type != int {
+            sum += 1;
+          }
+        }
+        return sum;
+      }
+
+      return nested();
+    }
+
+    var args = (1, 2, 3, 4);
+    var x = helper(args);
+    )""";
+
+  std::ignore = resolveTypeOfX(ctx, program);
+
+  auto m = parseModule(ctx, std::move(program));
+  CalledFnsSet called;
+  std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
+}
+
 int main() {
   auto context = buildStdContext();
   Context* ctx = turnOnWarnUnstable(context);
@@ -683,6 +812,7 @@ int main() {
   test5b(ctx);
   test5c(ctx);
   test5d(ctx);
+  test5e(ctx);
   test6(ctx);
   // test7(ctx);
   // test8(ctx);
@@ -693,6 +823,8 @@ int main() {
   test12b(ctx);
   test13(ctx);
   test14(ctx);
+  test15(ctx);
+  test16(ctx);
 
   return 0;
 }
