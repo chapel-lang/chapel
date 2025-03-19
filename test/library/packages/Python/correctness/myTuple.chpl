@@ -3,6 +3,9 @@ use Python;
 var pyCode = """
 def getTup():
   return (2, 3, 5, 7)
+
+def getTup2():
+  return (11,)
 """;
 
 proc main() {
@@ -21,9 +24,13 @@ proc main() {
 
   // get a slice of the tuple
   writeln("t[0:2] ", t.get(0..1));
+  writeln("t[1:2] ", t.get(1..1));
   writeln("t[2:5] ", t.get(2..5));
   writeln("t[-3:2] ", t.get(-3..1));
   writeln("t[-3:5] ", t.get(-3..5));
+
+  // get a slice with an empty range
+  writeln("t[1:1] ", t.get(1..0));
 
   // slice missing at least one bounds
   writeln("t[2:] ", t.get(2..));
@@ -69,4 +76,9 @@ proc main() {
   } catch e {
     writeln("Caught unknown exception: ", e);
   }
+
+  // Double check 1 element tuple
+  var getTup2Func = pyCodeModule.get('getTup2');
+  var t2 = getTup2Func(owned PyTuple);
+  writeln(t2);
 }
