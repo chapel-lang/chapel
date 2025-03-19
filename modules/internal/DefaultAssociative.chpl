@@ -34,11 +34,6 @@ module DefaultAssociative {
 
   config param defaultAssociativeSupportsAutoLocalAccess = true;
 
-  private proc _usingSerializers(f) param : bool {
-    if f._writing then return f.serializerType != nothing;
-    else return f.deserializerType != nothing;
-  }
-
   private proc _isDefaultDeser(f) param : bool {
     if f._writing then return isDefaultSerializerType(f.serializerType);
     else return f.deserializerType == IO.defaultDeserializer;
@@ -119,14 +114,14 @@ module DefaultAssociative {
                                                  initElts=initElts);
     }
 
-    proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+    proc dsiSerialWrite(f) throws where !_isDefaultDeser(f) {
       var ser = f.serializer.startList(f, dsiNumIndices);
       for idx in this do
         ser.writeElement(idx);
       ser.endList();
     }
 
-    proc dsiSerialRead(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+    proc dsiSerialRead(f) throws where !_isDefaultDeser(f) {
       dsiClear();
       var des = f.deserializer.startList(f);
       while true {
@@ -664,136 +659,13 @@ module DefaultAssociative {
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
-    where _usingSerializers(f) && !_isDefaultDeser(f) {
-      if f._writing {
-        var ser = f.serializer.startMap(f, dom.dsiNumIndices);
-
-        for (key, val) in zip(this.dom, this) {
-          ser.writeKey(key);
-          ser.writeValue(val);
-        }
-
-        ser.endMap();
-      } else {
-        var des = f.deserializer.startMap(f);
-
-        for 0..<dom.dsiNumIndices {
-          const k = des.readKey(idxType);
-
-          if !dom.dsiMember(k) {
-            // TODO: throw error
-          } else {
-            dsiAccess(k) = des.readValue(eltType);
-          }
-        }
-
-        des.endMap();
-      }
+    where !_isDefaultDeser(f) {
+      chpl_serialReadWriteAssociativeHelper(f, this, this.dom);
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _isDefaultDeser(f) {
-      if f._writing {
-        const size = dom.dsiNumIndices:int;
-        var ser = f.serializer.startArray(f, size);
-        ser.startDim(size);
-
-        for (key, val) in zip(this.dom, this) {
-          ser.writeElement(val);
-        }
-
-        ser.endDim();
-        ser.endArray();
-      } else {
-        var des = f.deserializer.startArray(f);
-        des.startDim();
-
-        for (key, val) in zip(this.dom, this) {
-          val = des.readElement(val.type);
-        }
-
-        des.endDim();
-        des.endArray();
-      }
-    }
-
-    proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
-      var binary = f._binary();
-      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
-
-      if !f._writing && ischpl {
-        this.readChapelStyleAssocArray(f);
-        return;
-      }
-
-      printBraces &&= (isjson || ischpl);
-
-      inline proc rwLiteral(lit:string) throws {
-        if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-      }
-
-      if printBraces then rwLiteral("[");
-
-      for (key, val) in zip(this.dom, this) {
-        if first then first = false;
-        else if isspace then rwLiteral(" ");
-        else if isjson || ischpl then rwLiteral(", ");
-
-        if f._writing && ischpl {
-          f.write(key);
-          f.writeLiteral(" => ");
-        }
-
-        if f._writing then f.write(val);
-        else val = f.read(eltType);
-      }
-
-      if printBraces then rwLiteral("]");
-    }
-
-    proc readChapelStyleAssocArray(f) throws {
-      const openBracket   = "[";
-      const closedBracket = "]";
-      var first = true;
-      var readEnd = true;
-
-      f.readLiteral(openBracket);
-
-      while true {
-        if first {
-          first = false;
-
-          // Break if we read an immediate closed bracket.
-          try {
-            f.readLiteral(closedBracket);
-            readEnd = false;
-            break;
-          } catch err: BadFormatError {
-            // We didn't read a closed bracket, so continue on.
-          }
-        } else {
-
-          // Try reading a comma. If we don't, then break.
-          try {
-            f.readLiteral(",");
-          } catch err: BadFormatError {
-            // Break out of the loop if we didn't read a comma.
-            break;
-          }
-        }
-
-        // Read a key.
-        var key: idxType = f.read(idxType);
-        f.readLiteral("=>");
-
-        // Read the value.
-        dsiAccess(key) = f.read(eltType);
-      }
-
-      if readEnd then f.readLiteral(closedBracket);
+      chpl_serialReadWriteAssociativeHelper(f, this, this.dom);
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
@@ -925,7 +797,7 @@ module DefaultAssociative {
   }
 
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
-  where _usingSerializers(f) && !_isDefaultDeser(f) {
+  where !_isDefaultDeser(f) {
       if f._writing {
         var ser = f.serializer.startMap(f, dom.dsiNumIndices);
         for key in dom {
@@ -948,42 +820,28 @@ module DefaultAssociative {
       }
   }
 
-  // TODO: rewrite to use 'startArray' serializer API, rather than relying on
-  // reading and writing literals.
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
-    var binary = f._binary();
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+    if f._writing {
+      const size = dom.dsiNumIndices:int;
+      var ser = f.serializer.startArray(f, size);
+      ser.startDim(size);
 
-    if !f._writing && ischpl {
-      halt("This form of I/O on a default array slice is not yet supported");
-      return;
-    }
-
-    inline proc rwLiteral(lit:string) throws {
-      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
-    }
-
-    if isjson || ischpl then rwLiteral("[");
-
-    var first = true;
-
-    for key in dom {
-      if first then first = false;
-      else if isspace then rwLiteral(" ");
-      else if isjson || ischpl then rwLiteral(", ");
-
-      if f._writing && ischpl {
-        f.write(key);
-        f.writeLiteral(" => ");
+      for key in dom {
+        ser.writeElement(arr.dsiAccess(key));
       }
 
-      if f._writing then f.write(arr.dsiAccess(key));
-      else arr.dsiAccess(key) = f.read(arr.eltType);
-    }
+      ser.endDim();
+      ser.endArray();
+    } else {
+      var des = f.deserializer.startArray(f);
+      des.startDim();
 
-    if isjson || ischpl then rwLiteral("]");
+      for key in dom {
+        arr.dsiAccess(key) = des.readElement(arr.eltType);
+      }
+
+      des.endDim();
+      des.endArray();
+    }
   }
 }
