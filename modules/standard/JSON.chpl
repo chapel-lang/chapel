@@ -57,7 +57,6 @@ module JSON {
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._writeOne(_iokind.dynamic, val, here);
     }
@@ -615,7 +614,6 @@ module JSON {
       st.realfmt = 2;
       st.bytes_prefix = 0;
       st.string_format = iostringformatInternal.json:uint(8);
-      st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._readOne(_iokind.dynamic, val, here);
     }

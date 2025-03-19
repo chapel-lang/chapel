@@ -974,7 +974,6 @@ extern record iostyleInternal { // aka qio_style_t
   var realfmt:uint(8) = 0;
 
   var complex_style:uint(8) = 0;
-  var array_style:uint(8) = 0;
 }
 
 // This class helps in implementing runtime calls.

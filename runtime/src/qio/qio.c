@@ -4611,7 +4611,6 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
 {
   if( element == QIO_STYLE_ELEMENT_STRING ) return ch->style.str_style;
   if( element == QIO_STYLE_ELEMENT_COMPLEX ) return ch->style.complex_style;
-  if( element == QIO_STYLE_ELEMENT_ARRAY ) return ch->style.array_style;
   if( element == QIO_STYLE_ELEMENT_BYTE_ORDER ) return ch->style.byteorder;
 # if __BYTE_ORDER == __LITTLE_ENDIAN
   if( element == QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER ) {

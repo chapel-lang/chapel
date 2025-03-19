@@ -40,7 +40,6 @@ typedef uint8_t style_char_t;
 
 #define QIO_STYLE_ELEMENT_STRING 1
 #define QIO_STYLE_ELEMENT_COMPLEX 2
-#define QIO_STYLE_ELEMENT_ARRAY 3
 #define QIO_STYLE_ELEMENT_AGGREGATE 4
 #define QIO_STYLE_ELEMENT_BYTE_ORDER 6
 #define QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER 7
@@ -60,10 +59,6 @@ typedef uint8_t style_char_t;
 #define QIO_COMPLEX_FORMAT_ABI 0x0
 #define QIO_COMPLEX_FORMAT_PARENS 0x1
 #define QIO_COMPLEX_FORMAT_PART 0xf
-
-#define QIO_ARRAY_FORMAT_SPACE 0
-#define QIO_ARRAY_FORMAT_CHPL 1
-#define QIO_ARRAY_FORMAT_JSON 2
 
 
 #define QIO_STRSTYLE_VLEN (-10)
@@ -190,12 +185,6 @@ typedef struct qio_style_s {
   // QIO_COMPLEX_FORMAT_READ_STRICT -- do not accept the other format when reading
   uint8_t complex_style;
 
-  // arrays (not directly supported by QIO but used in Chapel)
-  // QIO_ARRAY_FORMAT_SPACE space in 1st dimensions, \n in later dims
-  // QIO_ARRAY_FORMAT_CHPL make it look like an anonymous array [1,3,4]
-  // QIO_ARRAY_FORMAT_JSON make it look like a JSON array [1,2]
-  uint8_t array_style;
-
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -251,8 +240,6 @@ void qio_style_init_default(qio_style_t* s)
   s->realfmt = 0;
 
   s->complex_style = 0;
-
-  s->array_style = 0;
 }
 
 static inline
