@@ -296,11 +296,11 @@ module Python {
     var pyStr = PyObject_Str(obj);
     defer Py_DECREF(pyStr);
     if pyStr == nil {
-      halt("Failed to convert PyObject to string");
+      halt("Failed to convert PyObject to a Python string");
     }
     var str = PyUnicode_AsUTF8(pyStr);
     if str == nil {
-      halt("Failed to convert PyObject to string");
+      halt("Failed to convert Python string to a C string");
     }
     return try! string.createCopyingBuffer(str);
   }
@@ -616,7 +616,7 @@ module Python {
 
     /*
       Get a Python object by name. This will either get a Python global
-      variables, (like `globals()[name]` in Python) or a Python builtin by name.
+      variable, (like `globals()[name]` in Python) or a Python builtin by name.
 
       This will first query the current globals, and if the object is not found,
       it will query the builtins.
