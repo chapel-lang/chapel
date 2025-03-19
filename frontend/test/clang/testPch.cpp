@@ -92,6 +92,16 @@ static void testIt(const char* testName,
     }
     assert(externBlock);
 
+    // TODO: For some unknown reason, we need to add the clang C compiler
+    // as an argument on macos. Otherwise, we get errors about ``stdio.h`` not
+    // being found.
+    std::vector<std::string> clangCCArgs;
+    std::map<std::string, const char*> env;
+    std::string printOutput;
+    auto result = chpl::getChplEnv(env, chpl_home.c_str(), &printOutput);
+    clangCCArgs.push_back(result.get()["CHPL_LLVM_CLANG_C"]);
+    util::setClangFlags(context, clangCCArgs);
+
     auto tpch =
       util::createClangPrecompiledHeader(context, externBlock->id()).get();
     if (lastResult != nullptr) {
