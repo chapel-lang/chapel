@@ -45,9 +45,8 @@ proc main() {
   writeln("checking explicit type for slice overload");
   writeln("t[0:2] ", t.get(owned PyTuple, 0..1));
   writeln("t[2:5] ", t.get(2*int, 2..5));
-  // Note: this doesn't print like myList does, but I think it still can be
-  // treated as a list?  That probably would benefit from further
-  // experimentation
+  // Note: calling non-tuple methods on the result of this does not work and it
+  // does not print as a list would.  But you can still make the call
   writeln("t[0:2] ", t.get(owned PyList, 0..1));
 
   // Error cases
