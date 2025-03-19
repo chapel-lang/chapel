@@ -974,16 +974,15 @@ module Python {
       Convert a tuple to a python tuple.  Returns a new reference
     */
     @chpldoc.nodoc
-    proc toTuple(in tup): PyObjectPtr throws
+    proc toTuple(tup): PyObjectPtr throws
       where isTupleType(tup.type) {
 
       var pyTup = PyTuple_New(tup.size.safeCast(Py_ssize_t));
       this.checkException();
-      var idx = 0;
-      for x in tup {
-        PyTuple_SetItem(pyTup, idx.safeCast(Py_ssize_t), toPythonInner(x));
+      for param idx in 0..<tup.size {
+        var pyValue = toPythonInner(tup(idx));
+        PyTuple_SetItem(pyTup, idx.safeCast(Py_ssize_t), pyValue);
         this.checkException();
-        idx = idx + 1;
       }
       return pyTup;
     }
@@ -999,6 +998,7 @@ module Python {
       for param i in 0..<res.size {
         var elm = PyTuple_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
+        Py_INCREF(elm);
         res(i) = fromPythonInner((res(i)).type, elm);
         this.checkException();
       }
@@ -2122,6 +2122,7 @@ module Python {
 
       var item = PyTuple_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
       this.interpreter.checkException();
+      Py_INCREF(item);
       return interpreter.fromPythonInner(T, item);
     }
 
