@@ -976,7 +976,6 @@ extern record iostyleInternal { // aka qio_style_t
   var complex_style:uint(8) = 0;
   var array_style:uint(8) = 0;
   var aggregate_style:uint(8) = 0;
-  var tuple_style:uint(8) = 0;
 }
 
 // This class helps in implementing runtime calls.

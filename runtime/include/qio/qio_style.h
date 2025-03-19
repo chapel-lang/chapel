@@ -42,7 +42,6 @@ typedef uint8_t style_char_t;
 #define QIO_STYLE_ELEMENT_COMPLEX 2
 #define QIO_STYLE_ELEMENT_ARRAY 3
 #define QIO_STYLE_ELEMENT_AGGREGATE 4
-#define QIO_STYLE_ELEMENT_TUPLE 5
 #define QIO_STYLE_ELEMENT_BYTE_ORDER 6
 #define QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER 7
 
@@ -69,10 +68,6 @@ typedef uint8_t style_char_t;
 #define QIO_AGGREGATE_FORMAT_BRACES 0
 #define QIO_AGGREGATE_FORMAT_CHPL 1
 #define QIO_AGGREGATE_FORMAT_JSON 2
-
-#define QIO_TUPLE_FORMAT_CHPL 0
-#define QIO_TUPLE_FORMAT_SPACE 1
-#define QIO_TUPLE_FORMAT_JSON 2
 
 
 #define QIO_STRSTYLE_VLEN (-10)
@@ -212,12 +207,6 @@ typedef struct qio_style_s {
   // QIO_AGGREGATE_FORMAT_JSON show JSON object: {a:1, b:2}
   uint8_t aggregate_style;
 
-  // tuples (not directly supported by QIO but used in Chapel)
-  // QIO_TUPLE_FORMAT_SPACE space separates all values
-  // QIO_TUPLE_FORMAT_CHPL make it look like (a,b,c)
-  // QIO_TUPLE_FORMAT_JSON make it look like a JSON array [1,2]
-  uint8_t tuple_style;
-
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -276,7 +265,6 @@ void qio_style_init_default(qio_style_t* s)
 
   s->array_style = 0;
   s->aggregate_style = 0;
-  s->tuple_style = 0;
 }
 
 static inline

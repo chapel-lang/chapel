@@ -5143,7 +5143,6 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_WORD;
-      style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
       style_out->showpointzero = 1;
 
       if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {

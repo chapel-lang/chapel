@@ -59,7 +59,6 @@ module JSON {
       st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._writeOne(_iokind.dynamic, val, here);
     }
@@ -615,7 +614,6 @@ module JSON {
       st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
-      st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
       dc._readOne(_iokind.dynamic, val, here);
     }
