@@ -204,10 +204,17 @@ void VarScopeVisitor::doExitScope(const uast::AstNode* ast, RV& rv) {
   }
 }
 
-const types::Param* VarScopeVisitor::determineParamValue(const uast::AstNode* ast, RV& rv) {
-  auto& rr = rv.byAst(ast);
+static const types::Param* determineParamValue(const ResolvedExpression& rr) {
   if (rr.type().kind() == QualifiedType::PARAM) return rr.type().param();
   return nullptr;
+}
+
+const types::Param* VarScopeVisitor::determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) {
+  return determineParamValue(extraData.byAst(ast));
+}
+
+const types::Param* VarScopeVisitor::determineIfValue(const uast::AstNode* ast, RV& extraData) {
+  return determineParamValue(extraData.byAst(ast));
 }
 
 void VarScopeVisitor::traverseNode(const uast::AstNode* ast, RV& rv) {

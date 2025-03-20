@@ -657,12 +657,58 @@ Resolver::paramLoopResolver(Resolver& parent,
   return ret;
 }
 
-const types::Param* Resolver::determineParamValue(const uast::AstNode* ast, IgnoredExtraData rv) {
+const types::Param* Resolver::determineWhenCaseValue(const uast::AstNode* ast, IgnoredExtraData extraData) {
+  const Scope* scope = currentScope();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+
+  CHPL_ASSERT(scopeStack.back()->scopeAst->isSelect());
+  auto selectingOn = scopeStack.back()->scopeAst->toSelect()->expr();
+  auto& exprType = byPostorder.byAst(selectingOn).type();
+
+  ast->traverse(*this);
+
+  auto& caseResult = byPostorder.byAst(ast);
+  auto& caseType = caseResult.type();
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(exprType, UniqueString()));
+  actuals.push_back(CallInfoActual(caseType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("=="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
+  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id() } });
+
+  auto type = c.result.exprType();
+  caseResult.setType(type);
+  return type.param();
+}
+
+const types::Param* Resolver::determineIfValue(const uast::AstNode* ast, IgnoredExtraData extraData) {
+  // Condition is traversed before we dive into the flow-sensitive logic, so
+  // just fetch its type from the postorder results.
   return byPostorder.byAst(ast).type().param();
 }
 
 void Resolver::traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) {
-  ast->traverse(*this);
+  // This is invoked from FlowSensitiveVisitor's short-circuiting code.
+  // When handling Select statements, it will try to traverse the entire
+  // "When" clause when applicable. However, above (in 'determineWhenCaseValue')
+  // we overrode the type of the case value. Re-traversing it would clobber
+  // that type.
+  //
+  // In general (i.e., outside of Resolver), we do want to visit the condition,
+  // since we may be doing other computations (e.g., collecting used variables).
+
+  if (auto when = ast->toWhen()) {
+    enterScope(when);
+    when->body()->traverse(*this);
+    exitScope(when);
+  } else {
+    ast->traverse(*this);
+  }
 }
 
 const AstNode* Resolver::nearestCalledExpression() const {
@@ -3421,87 +3467,13 @@ void Resolver::exit(const uast::Conditional* cond) {
 
 bool Resolver::enter(const uast::Select* sel) {
   sel->expr()->traverse(*this);
-
-  auto exprType = byPostorder.byAst(sel->expr()).type();
-
   enterScope(sel);
-
-  const Scope* scope = currentScope();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  bool foundParamTrue = false;
-  int otherwise = -1;
-
-  for (int i = 0; i < sel->numWhenStmts(); i++) {
-    auto when = sel->whenStmt(i);
-    bool allParamFalse = true;
-    bool anyParamTrue = false;
-
-    if (when->isOtherwise()) {
-      CHPL_ASSERT(otherwise == -1);
-      otherwise = i;
-      continue;
-    }
-
-    // Resolve all the when-cases
-    for (auto caseExpr : when->caseExprs()) {
-      caseExpr->traverse(*this);
-
-      if (!scopeResolveOnly) {
-        auto caseResult = byPostorder.byAst(caseExpr);
-        auto caseType = caseResult.type();
-        std::vector<CallInfoActual> actuals;
-        actuals.push_back(CallInfoActual(exprType, UniqueString()));
-        actuals.push_back(CallInfoActual(caseType, UniqueString()));
-        auto ci = CallInfo (/* name */ USTR("=="),
-                            /* calledType */ QualifiedType(),
-                            /* isMethodCall */ false,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ false,
-                            actuals);
-        auto c = resolveGeneratedCall(caseExpr, &ci, &inScopes);
-        c.noteResult(&caseResult, { { AssociatedAction::COMPARE, caseExpr->id() } });
-
-        auto type = c.result.exprType();
-        anyParamTrue = anyParamTrue || type.isParamTrue();
-        allParamFalse = allParamFalse && type.isParamFalse();
-        byPostorder.byAst(caseExpr).setType(type);
-      }
-    }
-
-    if (!scopeResolveOnly && allParamFalse) {
-      // case will never be true, so do not resolve the statement
-      continue;
-    } else if (when->body()->numChildren() > 0) {
-      // Otherwise, resolve the body.
-      when->body()->traverse(*this);
-    }
-
-    // Current behavior is to ignore when-stmts following a param-true
-    // condition.
-    //
-    // TODO: Should we keep resolving when-cases and warn for param-true
-    // cases further down the line?
-    if (anyParamTrue) {
-      foundParamTrue = true;
-      break;
-    }
-  }
-
-  // If one of the when-stmts is statically true, we should not resolve the
-  // 'otherwise' statement, should one exist.
-  if (foundParamTrue == false && otherwise != -1) {
-    auto other = sel->whenStmt(otherwise);
-    if (other->body()->numChildren() > 0) {
-      other->body()->traverse(*this);
-    }
-  }
-
-  exitScope(sel);
-
-  return false;
+  if (!scopeResolveOnly) return flowSensitivelyTraverse(sel, {});
+  return true;
 }
 
 void Resolver::exit(const uast::Select* sel) {
+  exitScope(sel);
 }
 
 bool Resolver::enter(const Literal* literal) {

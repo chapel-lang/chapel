@@ -304,21 +304,11 @@ struct FlowSensitiveVisitor {
     return false;
   }
 
-  virtual const types::Param* determineParamValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+  virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+  virtual const types::Param* determineIfValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
-  bool isParamTrue(const uast::AstNode* ast, ExtraData extraData) {
-    if (auto param = determineParamValue(ast, extraData)) {
-      return param->isNonZero();
-    }
-    return false;
-  }
-
-  bool isParamFalse(const uast::AstNode* ast, ExtraData extraData) {
-    if (auto param = determineParamValue(ast, extraData)) {
-      return param->isZero();
-    }
-    return false;
-  }
+  bool isParamTrue(const types::Param* param) { return param && param->isNonZero(); }
+  bool isParamFalse(const types::Param* param) { return param && param->isZero(); }
 
   virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
 
@@ -332,8 +322,9 @@ struct FlowSensitiveVisitor {
       bool anyCaseParamTrue = false;
       bool allCaseParamFalse = !whenAst->isOtherwise();
       for(auto caseExpr : whenAst->caseExprs()) {
-        anyCaseParamTrue |= isParamTrue(caseExpr, extraData);
-        allCaseParamFalse &= isParamFalse(caseExpr, extraData);
+        auto param = determineWhenCaseValue(caseExpr, extraData);
+        anyCaseParamTrue |= isParamTrue(param);
+        allCaseParamFalse &= isParamFalse(param);
       }
 
       anyWhenNonParam |= !anyCaseParamTrue && !allCaseParamFalse;
@@ -360,13 +351,14 @@ struct FlowSensitiveVisitor {
   }
 
   bool flowSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
-    if (isParamTrue(cond->condition(), extraData)) {
+    auto param = determineIfValue(cond->condition(), extraData);
+    if (isParamTrue(param)) {
       // Don't need to process the false branch.
       traverseNode(cond->thenBlock(), extraData);
       currentThenFrame()->paramTrueCond = true;
       currentThenFrame()->knownPath = true;
       return false;
-    } else if (isParamFalse(cond->condition(), extraData)) {
+    } else if (isParamFalse(param)) {
       if (auto elseBlock = cond->elseBlock()) {
         traverseNode(elseBlock, extraData);
         currentElseFrame()->paramTrueCond = true;

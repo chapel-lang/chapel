@@ -155,7 +155,8 @@ struct Resolver : FlowSensitiveVisitor<DefaultFrame> {
     return PoiInfo(poiScope);
   }
 
-  const types::Param* determineParamValue(const uast::AstNode* ast, IgnoredExtraData rv) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
   void traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) override;
 
   const Scope* currentScope() const {
