@@ -136,6 +136,11 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
 endif
 endif
 
+# prevent CMake from inferring the wrong sysroot/XCode SDK
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
+  CHPL_QTHREAD_CFG_OPTIONS += -DCMAKE_OSX_DEPLOYMENT_TARGET="" -DCMAKE_OSX_SYSROOT=""
+endif
+
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CONDWAIT_QUEUE=ON
 
