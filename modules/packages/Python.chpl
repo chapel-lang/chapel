@@ -995,6 +995,14 @@ module Python {
       where isTupleType(T) {
 
       var res: T;
+      var objSize = PyTuple_Size(obj);
+      this.checkException();
+      if (res.size < objSize) {
+        throw new ChapelException("type specified was smaller than returned value");
+      } else if (res.size > objSize) {
+        throw new ChapelException("type specified was larger than returned value");
+      }
+
       for param i in 0..<res.size {
         var elm = PyTuple_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
@@ -2140,13 +2148,6 @@ module Python {
          other than 0.
 
       :arg T: the Chapel type of the slice to return.
-
-      .. note::
-
-         If the type specified is smaller than the returned tuple, this method
-         will currently not complain.  See
-         https://github.com/chapel-lang/chapel/issues/26951
-
       :arg bounds: The full slice of the tuple to return
       :returns: A slice of the tuple for the given bounds.
     */

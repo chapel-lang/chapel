@@ -84,7 +84,7 @@ proc main() {
     // get specifying a type that is longer than the slice requested
     writeln("checking trying to slice into too large a tuple");
     var x = t.get(3*int, 0..1);
-  } catch e: PythonException {
+  } catch e: ChapelException {
     writeln("Caught exception: ", e);
   } catch e {
     writeln("Caught unknown exception: ", e);
