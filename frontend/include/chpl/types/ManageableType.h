@@ -39,8 +39,11 @@ class ManageableType : public CompositeType {
   ManageableType(typetags::TypeTag tag,
                 ID id, UniqueString name,
                 const CompositeType* instantiatedFrom,
-                SubstitutionsMap subs)
-    : CompositeType(tag, std::move(id), name, instantiatedFrom, std::move(subs)) {}
+                SubstitutionsMap subs,
+                CompositeType::Linkage linkage)
+    : CompositeType(tag, std::move(id), name, instantiatedFrom,
+                    std::move(subs),
+                    linkage) {}
 };
 
 } // end namespace types

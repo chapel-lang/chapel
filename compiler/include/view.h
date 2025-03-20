@@ -25,6 +25,11 @@
 #include "vec.h"
 #include <vector>
 
+// Include 'dyno' headers to add 'nprint' overloads for 'dyno' types.
+#include <chpl/uast/all-uast.h>
+#include <chpl/resolution/resolution-types.h>
+#include <chpl/types/all-types.h>
+
 class GenRet;
 class ResolutionCandidate;
 
@@ -61,6 +66,17 @@ void nprint_view(int id);
 void nprint_view(BaseAST* ast);
 void nprint_view(GenRet& gen); // defined in codegen/codegen.cpp
 void nprint_view_noline(BaseAST* ast);
+
+// Add overloads for 'dyno' stuff, as needed.
+void nprint_view(const chpl::uast::AstNode* x);
+void nprint_view(const chpl::types::Type* x);
+void nprint_view(const chpl::types::QualifiedType& x);
+void nprint_view(const chpl::resolution::CallInfo& x);
+void nprint_view(const chpl::resolution::ResolvedExpression* x);
+void nprint_view(const chpl::resolution::TypedFnSignature* x);
+void nprint_view(const chpl::resolution::UntypedFnSignature* x);
+void nprint_view(const chpl::ID& x);
+void nprint_view(const chpl::UniqueString& x);
 
 void mark_view(BaseAST* ast, int id);
 

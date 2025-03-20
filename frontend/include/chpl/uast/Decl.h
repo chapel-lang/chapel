@@ -182,6 +182,22 @@ class Decl : public AstNode {
 DECLARE_SERDE_ENUM(uast::Decl::Visibility, uint8_t);
 DECLARE_SERDE_ENUM(uast::Decl::Linkage, uint8_t);
 
+template<> struct stringify<uast::Decl::Linkage> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const uast::Decl::Linkage& stringMe) const {
+    switch (stringMe) {
+      case uast::Decl::Linkage::DEFAULT_LINKAGE:
+        break;
+      case uast::Decl::Linkage::EXPORT:
+        streamOut << "export";
+        break;
+      case uast::Decl::Linkage::EXTERN:
+        streamOut << "extern";
+        break;
+    }
+  }
+};
 } // end namespace chpl
 
 namespace std {

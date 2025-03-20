@@ -38,7 +38,8 @@ class AnyClassType final : public ManageableType {
                      /* ID */ ID(),
                      /* name */ USTR("class"),
                      /* instantiatedFrom */ nullptr,
-                     /* subs */ SubstitutionsMap()) {
+                     /* subs */ SubstitutionsMap(),
+                     uast::Decl::DEFAULT_LINKAGE) {
   }
 
   bool contentsMatchInner(const Type* other) const override {

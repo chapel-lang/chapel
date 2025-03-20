@@ -262,6 +262,12 @@ public:
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
 
+  // This AST is a symbol with the flag 'FLAG_RESOLVED_EARLY' or it is
+  // contained in a symbol marked with that flag. It should be handled
+  // differently by compiler passes prior to the end of 'callDestructors',
+  // in particular it should not be mutated by those passes.
+  bool              shouldNotMutateEarly();
+
   bool              isRef();
   bool              isWideRef();
   bool              isRefOrWideRef();

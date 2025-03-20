@@ -1307,6 +1307,13 @@ static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id) {
+  auto ast = id ? parsing::idToAst(context, id) : nullptr;
+  auto decl = ast ? ast->toDecl() : nullptr;
+  auto ret = decl ? decl->linkage() : uast::Decl::DEFAULT_LINKAGE;
+  return ret;
+}
+
 bool idIsModuleScopeVar(Context* context, ID id) {
   return idIsModuleScopeVarQuery(context, id);
 }

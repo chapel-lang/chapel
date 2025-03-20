@@ -29,13 +29,15 @@ const owned<BasicClassType>&
 BasicClassType::getBasicClassType(Context* context, ID id, UniqueString name,
                                   const BasicClassType* parentType,
                                   const BasicClassType* instantiatedFrom,
-                                  SubstitutionsMap subs) {
+                                  SubstitutionsMap subs,
+                                  CompositeType::Linkage linkage) {
   QUERY_BEGIN(getBasicClassType, context, id, name,
-              parentType, instantiatedFrom, subs);
+              parentType, instantiatedFrom, subs,
+              linkage);
 
   auto result = toOwned(new BasicClassType(id, name,
                                            parentType, instantiatedFrom,
-                                           std::move(subs)));
+                                           std::move(subs), linkage));
   return QUERY_END(result);
 }
 
@@ -47,9 +49,11 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
   // getRootClassType should be used to construct RootClass
   // everything else should have a parent type.
   CHPL_ASSERT(parentType != nullptr);
+  auto linkage = parsing::idToDeclLinkage(context, id);
   return getBasicClassType(context, id, name,
                            parentType, instantiatedFrom,
-                           std::move(subs)).get();
+                           std::move(subs),
+                           linkage).get();
 }
 
 const BasicClassType*
@@ -57,10 +61,12 @@ BasicClassType::getRootClassType(Context* context) {
   ID emptyId;
   auto name = UniqueString::get(context, "RootClass");
 
+  auto linkage = uast::Decl::DEFAULT_LINKAGE;
   return getBasicClassType(context, emptyId, name,
                            /* parentType */ nullptr,
                            /* instantiatedFrom */ nullptr,
-                           SubstitutionsMap()).get();
+                           SubstitutionsMap(),
+                           linkage).get();
 }
 
 const BasicClassType*
@@ -69,10 +75,12 @@ BasicClassType::getReduceScanOpType(Context* context) {
       context, "ChapelReduce", "ReduceScanOp");
   auto objectType = getRootClassType(context);
 
+  auto linkage = uast::Decl::DEFAULT_LINKAGE;
   return getBasicClassType(context, id, name,
                            /* parentType */ objectType,
                            /* instantiatedFrom */ nullptr,
-                           SubstitutionsMap()).get();
+                           SubstitutionsMap(),
+                           linkage).get();
 }
 
 bool BasicClassType::isSubtypeOf(Context* context,
