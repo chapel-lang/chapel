@@ -1,0 +1,2 @@
+illegalBlockSize.chpl:X: error: Illegal block size was specified for the GPU kernel: 0
+
