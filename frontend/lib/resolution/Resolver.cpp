@@ -6903,6 +6903,9 @@ void Resolver::exit(const Return* ret) {
   if (initResolver) {
     initResolver->checkEarlyReturn(ret);
   }
+  if (!scopeStack.empty()) {
+    scopeStack.back()->returnsOrThrows = true;
+  }
 }
 
 bool Resolver::enter(const Throw* node) {
@@ -6912,6 +6915,9 @@ bool Resolver::enter(const Throw* node) {
 void Resolver::exit(const Throw* node) {
   if (initResolver) {
     context->error(node, "initializers are not yet allowed to throw errors");
+  }
+  if (!scopeStack.empty()) {
+    scopeStack.back()->returnsOrThrows = true;
   }
 }
 
