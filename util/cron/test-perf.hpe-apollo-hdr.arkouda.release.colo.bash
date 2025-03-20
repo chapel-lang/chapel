@@ -22,6 +22,7 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 #
 # setup arkouda
 source $UTIL_CRON_DIR/common-arkouda.bash
+source $UTIL_CRON_DIR/common-arkouda-hpe-apollo-hdr.bash
 
 export CHPL_RT_LOCALES_PER_NODE=2
 export ARKOUDA_NUMLOCALES=32
