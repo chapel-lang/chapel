@@ -25,6 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
+#include "FlowSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -34,11 +35,12 @@
 namespace chpl {
 namespace resolution {
 
-struct Resolver {
+struct Resolver : FlowSensitiveVisitor<DefaultFrame> {
   // types used below
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
+  using IgnoredExtraData = std::variant<std::monostate>;
 
   /**
     When looking up matches for a particular identifier, we might encounter
@@ -97,7 +99,6 @@ struct Resolver {
   ResolutionContext* rc = &emptyResolutionContext;
   bool didPushFrame = false;
   std::vector<const uast::Decl*> declStack;
-  std::vector<const Scope*> scopeStack;
   std::vector<int> tagTracker;
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
@@ -153,6 +154,15 @@ struct Resolver {
 
     return PoiInfo(poiScope);
   }
+
+  const types::Param* determineParamValue(const uast::AstNode* ast, IgnoredExtraData rv) override;
+  void traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) override;
+
+  const Scope* currentScope() const {
+    CHPL_ASSERT(!scopeStack.empty());
+    return scopeStack.back()->scope;
+  }
+
 
  private:
   Resolver(Context* context,

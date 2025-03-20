@@ -52,6 +52,11 @@ struct BaseFrame {
   BaseFrame(const uast::AstNode* ast) : scopeAst(ast) {}
 };
 
+struct DefaultFrame : public BaseFrame<DefaultFrame> {
+  DefaultFrame() = default;
+  DefaultFrame(const uast::AstNode* ast) : BaseFrame(ast) {}
+};
+
 template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
 struct FlowSensitiveVisitor {
   std::vector<owned<Frame>> scopeStack;
@@ -163,11 +168,13 @@ struct FlowSensitiveVisitor {
     createSubFrames(ast);
   }
 
-  void enterScope(const uast::AstNode* ast, ExtraData extraData) {
+  bool enterScope(const uast::AstNode* ast, ExtraData extraData) {
     if (resolution::createsScope(ast->tag())) {
       scopeStack.emplace_back(new Frame(ast));
       doEnterScope(ast, extraData);
+      return true;
     }
+    return false;
   }
 
   bool saveSubFrame(const uast::AstNode* ast, Frame*& outParentFrame) {
@@ -278,11 +285,13 @@ struct FlowSensitiveVisitor {
     }
   }
 
-  void exitScope(const uast::AstNode* ast, ExtraData extraData) {
+  bool exitScope(const uast::AstNode* ast, ExtraData extraData) {
     if (resolution::createsScope(ast->tag())) {
       doExitScope(ast, extraData);
       scopeStack.pop_back();
+      return true;
     }
+    return false;
   }
 
   virtual const types::Param* determineParamValue(const uast::AstNode* ast, ExtraData extraData) = 0;

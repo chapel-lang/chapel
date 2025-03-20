@@ -33,6 +33,7 @@
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
+#include "resolution/FlowSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -654,6 +655,14 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.rc = parent.rc;
 
   return ret;
+}
+
+const types::Param* Resolver::determineParamValue(const uast::AstNode* ast, IgnoredExtraData rv) {
+  return byPostorder.byAst(ast).type().param();
+}
+
+void Resolver::traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) {
+  ast->traverse(*this);
 }
 
 const AstNode* Resolver::nearestCalledExpression() const {
@@ -1443,7 +1452,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      std::move(actuals));
-  auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
   auto rr = resolveGeneratedCall(nullptr, &ci, &inScopes);
   if (rr.result.mostSpecific().only()) {
     ret = rr.result.exprType();
@@ -1472,7 +1481,7 @@ const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
                       /* isParenless */ false,
                       actuals);
 
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   auto c = resolveGeneratedCall(decl, &ci, &inScopes);
   c.noteResultWithoutError(&byPostorder.byAst(decl),
@@ -1605,7 +1614,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                             actuals);
 
         // TODO: store an associated action?
-        const Scope* scope = scopeStack.back();
+        const Scope* scope = currentScope();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
         auto c = resolution::resolveGeneratedCall(rc, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
@@ -2157,8 +2166,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
   if (modName != dotModName) {
     // get a trace for where the module was renamed so that
     // the error can show line numbers
-    CHPL_ASSERT(scopeStack.size() > 0);
-    const Scope* scope = scopeStack.back();
+    const Scope* scope = currentScope();
     std::vector<ResultVisibilityTrace> trace;
     lookupNameInScopeTracing(context, scope,
                              /* methodLookupHelper */ nullptr,
@@ -2459,8 +2467,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
     return;
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
   // Finally, try to resolve = between the elements
@@ -2687,7 +2694,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
                      /* isParenless */ false,
                      std::move(actuals));
   CHPL_ASSERT(actualAsts.size() == (size_t)ci.numActuals());
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
@@ -2950,7 +2957,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
       return CallResolutionResult::getEmpty();
     }
 
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = rv.resolveGeneratedCall(innerCall, &ci, &inScopes);
     c.noteResult(&noteInto);
@@ -3034,7 +3041,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                    /* isParenless */ false,
                    actuals);
 
-      auto scope = scopeStack.back();
+      auto scope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         return resolveGeneratedCall(call, &ci, &inScopes);
@@ -3135,8 +3142,8 @@ QualifiedType Resolver::typeForId(const ID& id) {
   if (parentResolver != nullptr) {
     const Scope* idScope = scopeForId(context, id);
     bool local = false;
-    for (auto sc : scopeStack) {
-      if (sc == idScope) {
+    for (auto& sc : scopeStack) {
+      if (sc->scope == idScope) {
         local = true;
       }
     }
@@ -3284,8 +3291,8 @@ QualifiedType Resolver::typeForId(const ID& id) {
 }
 
 void Resolver::enterScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    scopeStack.push_back(scopeForId(context, ast->id()));
+  if (FlowSensitiveVisitor::enterScope(ast, {})) {
+    scopeStack.back()->scope = scopeForId(context, ast->id());
   }
   if (auto d = ast->toDecl()) {
     declStack.push_back(d);
@@ -3296,10 +3303,7 @@ void Resolver::enterScope(const AstNode* ast) {
   }
 }
 void Resolver::exitScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    CHPL_ASSERT(!scopeStack.empty());
-    scopeStack.pop_back();
-  }
+  FlowSensitiveVisitor::exitScope(ast, {});
   if (ast->isDecl()) {
     CHPL_ASSERT(!declStack.empty());
     declStack.pop_back();
@@ -3428,7 +3432,7 @@ bool Resolver::enter(const uast::Select* sel) {
 
   enterScope(sel);
 
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   bool foundParamTrue = false;
   int otherwise = -1;
@@ -3589,8 +3593,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
       bool resolvingCalledIdent,
       ParenlessOverloadInfo& outParenlessOverloadInfo) {
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
 
   if (ident->name() == USTR("super")) {
@@ -3879,8 +3882,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
-  CHPL_ASSERT(!scopeStack.empty());
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
 
   // Note: this is only ever used from resolveIdentifier, so no qualifiers
   // are needed; resolve as an unqualified call.
@@ -3997,7 +3999,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
   LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
   auto fHelper = getFieldDeclarationLookupHelper();
   auto helper = getMethodReceiverScopeHelper();
-  auto ids = lookupNameInScope(context, scopeStack.back(),
+  auto ids = lookupNameInScope(context, currentScope(),
                                /* methodLookupHelper */ fHelper,
                                /* receiverScopeHelper */ helper,
                                name, config);
@@ -4011,7 +4013,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
       parenlessInfo.hasNonMethodCandidates()) {
     // See also resolveIdentifier. Ambiguous, but we might be able to disambiguate
     // using 'where' clauses.
-    auto inScope = scopeStack.back();
+    auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
     std::vector<CallInfoActual> actuals;
     auto ci = CallInfo (/* name */ name,
@@ -4182,7 +4184,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
-      auto inScope = scopeStack.back();
+      auto inScope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(ident, &ci, &inScopes);
       MatchingIdsWithName redeclarations;
@@ -4392,8 +4394,7 @@ bool Resolver::enter(const NamedDecl* decl) {
     return false;
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
 
   // Silence redefinition warnings for enum elements because we have
   // a special error (DuplicateEnumElement) for those.
@@ -4485,7 +4486,7 @@ bool Resolver::enter(const uast::Manage* manage) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
-    auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
     auto c = resolveGeneratedCall(manage, &ci, &inScopes);
     c.noteResult(&byPostorder.byAst(manage));
     CHPL_ASSERT(c.result.mostSpecific().only());
@@ -4495,7 +4496,7 @@ bool Resolver::enter(const uast::Manage* manage) {
     // resolving from inside the body of chpl__verifyTypeContext. This
     // should improve re-use of interface search.
     auto inScopesForInterface =
-      CallScopeInfo::forNormalCall(scopeStack.back(), c.result.poiInfo().poiScope());
+      CallScopeInfo::forNormalCall(currentScope(), c.result.poiInfo().poiScope());
     auto contextManagerInterface = InterfaceType::getContextManagerType(context);
     bool ignoredFoundExisting;
     auto witness =
@@ -4711,8 +4712,7 @@ bool Resolver::enter(const TupleDecl* decl) {
   enterScope(decl);
 
   // TODO: Can we just do this every time we 'enterScope'?
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   emitMultipleDefinedSymbolErrors(context, scope);
 
   // Establish the type of the type expr / init expr within
@@ -4775,7 +4775,7 @@ void Resolver::exit(const Range* range) {
   // into an awkward position.
   auto skip = shouldSkipCallResolution(this, range, actualAsts, ci);
   if (!skip) {
-    auto scope = scopeStack.back();
+    auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
     auto c = resolveGeneratedCall(range, &ci, &inScopes);
     c.noteResult(&byPostorder.byAst(range));
@@ -4852,7 +4852,7 @@ void Resolver::exit(const uast::Domain* decl) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        actuals);
-    auto scope = scopeStack.back();
+    auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
     auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
@@ -5170,8 +5170,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     }
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
 
   // try to resolve it as a special call (e.g. Tuple assignment)
   if (resolveSpecialCall(call)) {
@@ -5421,7 +5420,7 @@ void Resolver::exit(const Dot* dot) {
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
-      auto inScope = scopeStack.back();
+      auto inScope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(dot, &ci, &inScopes);
       if (!c.result.mostSpecific().isEmpty()) {
@@ -5467,7 +5466,7 @@ void Resolver::exit(const Dot* dot) {
                        /* isMethodCall */ true,
                        /* hasQuestionArg */ false,
                        /* isParenless */ true, actuals);
-    auto inScope = scopeStack.back();
+    auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
     auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
 
@@ -5584,7 +5583,7 @@ void Resolver::exit(const Dot* dot) {
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(dot, &ci, &inScopes);
   // save the most specific candidates in the resolution result for the id
@@ -6024,7 +6023,7 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
                                                 Function::IteratorKind iterKind,
                                                 const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterandAstCtx);
-  auto inScope = rv.scopeStack.back();
+  auto inScope = rv.currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
   auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
@@ -6450,7 +6449,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
         std::move(actuals));
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
@@ -6496,7 +6495,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
         actuals);
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
@@ -6697,7 +6696,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   auto& scopeStack = resolver.scopeStack;
 
   // Look at the scope before the loop-statement
-  const Scope* scope = scopeStack[scopeStack.size()-2];
+  const Scope* scope = scopeStack[scopeStack.size()-2]->scope;
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_PARENTS |
@@ -7034,7 +7033,7 @@ void Resolver::exit(const Catch* node) {
 // Do not visit children. Un-ambiguous symbols will have warnings emitted
 // for them in scope resolve.
 bool Resolver::enter(const Use* node) {
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
   emitMultipleDefinedSymbolErrors(context, scope);
@@ -7045,7 +7044,7 @@ void Resolver::exit(const Use* node) {}
 
 // Ditto the above.
 bool Resolver::enter(const Import* node) {
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
   emitMultipleDefinedSymbolErrors(context, scope);
