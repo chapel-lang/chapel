@@ -78,6 +78,16 @@ struct FlowSensitiveVisitor {
     return parent;
   }
 
+  Frame* currentParamTrueFrame() {
+    Frame* frame = currentFrame();
+    for (auto& subFrameInfo : frame->subFrames) {
+      auto subFrame = std::get<owned<Frame>>(subFrameInfo).get();
+      if (!subFrame || !subFrame->knownPath) continue;
+      return subFrame;
+    }
+    return nullptr;
+  }
+
   /** Assuming that the current frame refers to a Conditional,
       returns the frame for the 'then' block. */
   Frame* currentThenFrame() {

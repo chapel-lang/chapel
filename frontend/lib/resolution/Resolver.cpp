@@ -3324,6 +3324,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
   // Try short-circuiting. Visit the condition to see if it is a param
   cond->condition()->traverse(*this);
 
+  enterScope(cond);
+
   // Make sure the 'if-var' is a class type, if it exists.
   if (auto var = cond->condition()->toVariable()) {
     auto& reVar = byPostorder.byAst(var);
@@ -3350,27 +3352,18 @@ bool Resolver::enter(const uast::Conditional* cond) {
   if (!scopeResolveOnly) {
     // Only do short-circuiting for regular resolution, not scope-resolution
 
-    if (condType.isParamTrue()) {
-      // condition is param true, might as well only resolve `then` branch
-      cond->thenBlock()->traverse(*this);
+    if (!flowSensitivelyTraverse(cond, {})) {
+      // the condition was param-known and we handled short-circuiting.
+      // If we're an expression-level conditional, figure out the return type.
+
       if (cond->isExpressionLevel()) {
-        auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
-        r.setType(thenType);
+        auto frame = currentParamTrueFrame();
+        CHPL_ASSERT(frame != nullptr);
+
+        auto expr = frame->scopeAst->toBlock()->stmt(0);
+        r.setType(byPostorder.byAst(expr).type());
       }
-      // No need to visit children again, or visit `else` branch.
-      return false;
-    } else if (condType.isParamFalse()) {
-      auto elseBlock = cond->elseBlock();
-      if (elseBlock == nullptr) {
-        // no else branch. leave the type unknown.
-        return false;
-      }
-      elseBlock->traverse(*this);
-      if (cond->isExpressionLevel()) {
-        auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
-        r.setType(elseType);
-      }
-      // No need to visit children again, especially `then` branch.
+
       return false;
     }
   }
@@ -3423,6 +3416,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
   return false;
 }
 void Resolver::exit(const uast::Conditional* cond) {
+  exitScope(cond);
 }
 
 bool Resolver::enter(const uast::Select* sel) {
@@ -6592,6 +6586,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!iterandRe.type().isUnknownOrErroneous()) {
       if (auto tt = iterandRe.type().type()->toTupleType()) {
         if (!tt->isStarTuple()) {
+          enterScope(loop);
           return resolveHeterogenousTupleForLoop(*this, forLoop, tt);
         }
       }
