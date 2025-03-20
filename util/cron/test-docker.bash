@@ -63,15 +63,15 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
-  BUILD_RESULT=$?
-  # Also push as 'latest' tag if this is a release build
-  if [ -n "$release_tag" ]
-  then
+  if [ -z "$release_tag" ] then
+    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
+  else
+    # Also push as 'latest' tag if this is a release build.
     # Use base image name (without tag) to use Docker's default tag 'latest'
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$baseImageName"
+    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName" -t "$baseImageName"
   fi
 
+  BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
         echo "docker build failed for $imageName image"
