@@ -1,0 +1,387 @@
+
+version: 2.1
+
+jobs:
+  arm_gcc:
+    parameters:
+      scheduler:
+        type: string
+      topology:
+        type: string
+    machine:
+      image: ubuntu-2404:edge
+    resource_class: arm.medium
+    environment:
+      CC: gcc-14
+      CXX: g++-14
+    steps:
+      - run: |
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          sudo apt-add-repository -y universe
+          sudo apt-get install -y gcc-14 g++-14
+          sudo apt-get install -y cmake
+          sudo apt-get install -y hwloc libhwloc-dev
+      - run: |
+          mkdir build
+          pushd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          popd
+      - run:
+          command: |
+              pushd build
+              CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 2m make test VERBOSE=1
+              popd
+          no_output_timeout: 180s
+
+  arm_clang:
+    parameters:
+      scheduler:
+        type: string
+      topology:
+        type: string
+    machine:
+      image: ubuntu-2404:edge
+    resource_class: arm.medium
+    environment:
+      CC: clang-19
+      CXX: clang++-19
+    steps:
+      - run: |
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          sudo apt-add-repository -y universe
+          sudo apt-get install -y gcc-14 g++-14
+          sudo apt-get install -y cmake
+          sudo apt-get install -y hwloc libhwloc-dev
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo apt-add-repository -y 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main'
+          sudo apt-get install -y clang-19
+      - run: |
+          mkdir build
+          pushd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          popd
+      - run:
+          command: |
+              pushd build
+              CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 2m make test VERBOSE=1
+              popd
+          no_output_timeout: 180s
+
+  arm_sanitizers:
+    parameters:
+      scheduler:
+        type: string
+      topology:
+        type: string
+      sanitizer:
+        type: string
+    machine:
+      image: ubuntu-2404:edge
+    resource_class: arm.medium
+    environment:
+      CC: clang-19
+      CXX: clang++-19
+      CFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
+      CXXFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
+      LDFLAGS: "-fsanitize=<< parameters.sanitizer >> -fno-sanitize-recover=all"
+      QTHREAD_STACK_SIZE: 524288
+      ASAN_OPTIONS: "check_initialization_order=1"
+    steps:
+      - run: |
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          sudo apt-add-repository -y universe
+          sudo apt-get install -y gcc-14 g++-14
+          sudo apt-get install -y cmake
+          sudo apt-get install -y hwloc libhwloc-dev
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo apt-add-repository -y 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main'
+          sudo apt-get install -y clang-19
+      - run: |
+          mkdir build
+          pushd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          popd
+      - run:
+          command: |
+              pushd build
+              if [[ "<< parameters.sanitizer >>" == "thread" ]]; then cd test/basics; fi
+              CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 4m make test VERBOSE=1
+          no_output_timeout: 180s
+
+  arm_acfl:
+    parameters:
+      scheduler:
+        type: string
+      topology:
+        type: string
+    machine:
+      image: ubuntu-2204:2024.04.4
+    resource_class: arm.medium
+    environment:
+      CC: armclang
+      CXX: armclang++
+    steps:
+      - run: |
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          # Set up apt to get a more recent CMake directly from Kitware.
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ jammy main' | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+          sudo apt-get update -y
+          sudo apt-get install -y cmake
+          sudo apt-get install -y hwloc libhwloc-dev
+          wget -O acfl.tar https://developer.arm.com/-/cdn-downloads/permalink/Arm-Compiler-for-Linux/Version_24.10.1/arm-compiler-for-linux_24.10.1_Ubuntu-22.04_aarch64.tar
+          tar -vxf acfl.tar
+          ls
+          ls arm-compiler-for-linux_24.10.1_Ubuntu-22.04
+          ./arm-compiler-for-linux_24.10.1_Ubuntu-22.04/arm-compiler-for-linux_24.10.1_Ubuntu-22.04.sh -a -f -s acfl
+          rm acfl.tar
+          ls acfl
+          sudo apt install -y ./acfl/gcc-14.2.0_Ubuntu-22.04.deb ./acfl/arm-linux-compiler-24.10.1_Ubuntu-22.04.deb
+          rm -rf acfl
+          export PATH=$PATH:/opt/arm/arm-linux-compiler-24.10.1_Ubuntu-22.04/bin
+          armclang -v
+      - run: |
+          export PATH=$PATH:/opt/arm/arm-linux-compiler-24.10.1_Ubuntu-22.04/bin
+          mkdir build
+          pushd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          popd
+      - run:
+          command: |
+              export PATH=$PATH:/opt/arm/arm-linux-compiler-24.10.1_Ubuntu-22.04/bin
+              pushd build
+              CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 4m make test VERBOSE=1
+              popd
+          no_output_timeout: 180s
+
+  nvc:
+    parameters:
+      worker_type:
+        type: string
+      scheduler:
+        type: string
+      topology:
+        type: string
+    machine:
+      image: ubuntu-2404:edge
+    resource_class: << parameters.worker_type >>
+    environment:
+      CC: nvc
+      CXX: nvc++
+    steps:
+      - run: |
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
+          export MACHINE_TYPE=`uname -m`
+          if [ ${MACHINE_TYPE} == 'x86_64' ]; then echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list; fi
+          if [ ${MACHINE_TYPE} == 'aarch64' ]; then echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/arm64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list; fi
+          sudo apt-get update -y
+          sudo apt-get install -y nvhpc-24-9
+          sudo apt-get install -y cmake
+          sudo apt-get install -y hwloc libhwloc-dev
+      - run: |
+          export MACHINE_TYPE=`uname -m`
+          if [ ${MACHINE_TYPE} == 'x86_64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_x86_64/24.9/compilers/bin"; fi
+          if [ ${MACHINE_TYPE} == 'aarch64' ]; then export PATH="$PATH:/opt/nvidia/hpc_sdk/Linux_aarch64/24.9/compilers/bin"; fi
+          nvc --version
+          mkdir build
+          pushd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          popd
+      - run:
+          command: |
+              pushd build
+              CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 4m make test VERBOSE=1
+              popd
+          no_output_timeout: 180s
+
+  musl:
+    parameters:
+      worker_type:
+        type: string
+      scheduler:
+        type: string
+      topology:
+        type: string
+      compiler:
+        type: string
+    docker:
+      - image: alpine:latest
+    resource_class: << parameters.worker_type >>
+    steps:
+      - run: |
+          apk add --no-cache --no-progress git
+          export REPO_HTTPS=`echo "$CIRCLE_REPOSITORY_URL" | sed "s|git@github.com:|https://github.com/|g"`
+          git clone -b "$CIRCLE_BRANCH" "$REPO_HTTPS" . --depth=1
+      - run: |
+          apk add --no-cache --no-progress bash make musl-dev hwloc-dev cmake gcc g++
+          if [ "<< parameters.compiler >>" == "clang" ]; then apk add clang; fi
+      - run: |
+          if [ "<< parameters.compiler >>" == "clang" ]; then export CC=clang && export CXX=clang++; fi
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=<< parameters.scheduler >> -DQTHREADS_TOPOLOGY=<< parameters.topology >> ..
+          make -j2 VERBOSE=1
+          cd ..
+      - run:
+          command: |
+              cd build
+              CTEST_OUTPUT_ON_FAILURE=1 make test VERBOSE=1
+              cd ..
+          no_output_timeout: 180s
+
+workflows:
+  build_and_test:
+    jobs:
+      - arm_gcc:
+          matrix:
+            parameters:
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+      - arm_clang:
+          matrix:
+            parameters:
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+      - arm_sanitizers:
+          matrix:
+            parameters:
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+              sanitizer: [address, memory, thread, undefined]
+            exclude:
+              - scheduler: nemesis
+                topology: binders
+                sanitizer: memory
+              - scheduler: sherwood
+                topology: binders
+                sanitizer: memory
+              - scheduler: distrib
+                topology: binders
+                sanitizer: memory
+              - scheduler: nemesis
+                topology: hwloc
+                sanitizer: memory
+              - scheduler: sherwood
+                topology: hwloc
+                sanitizer: memory
+              - scheduler: distrib
+                topology: hwloc
+                sanitizer: memory
+              - scheduler: sherwood
+                topology: 'no'
+                sanitizer: thread
+              - scheduler: sherwood
+                topology: hwloc
+                sanitizer: thread
+              - scheduler: sherwood
+                topology: binders
+                sanitizer: thread
+              - scheduler: distrib
+                topology: 'no'
+                sanitizer: thread
+              - scheduler: distrib
+                topology: hwloc
+                sanitizer: thread
+              - scheduler: distrib
+                topology: binders
+                sanitizer: thread
+      - arm_acfl:
+          matrix:
+            parameters:
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+      - nvc:
+          matrix:
+            parameters:
+              worker_type: [medium, arm.medium]
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+      - musl:
+          matrix:
+            parameters:
+              worker_type: [medium, arm.medium]
+              scheduler: [nemesis, sherwood, distrib]
+              topology: ['no', binders, hwloc]
+              compiler: [clang, gcc]
+            exclude:
+              - worker_type: medium
+                scheduler: sherwood
+                topology: binders
+                compiler: gcc
+              - worker_type: medium
+                scheduler: sherwood
+                topology: hwloc
+                compiler: gcc
+              - worker_type: medium
+                scheduler: distrib
+                topology: binders
+                compiler: gcc
+              - worker_type: medium
+                scheduler: distrib
+                topology: hwloc
+                compiler: gcc
+              - worker_type: arm.medium
+                scheduler: sherwood
+                topology: binders
+                compiler: gcc
+              - worker_type: arm.medium
+                scheduler: sherwood
+                topology: hwloc
+                compiler: gcc
+              - worker_type: arm.medium
+                scheduler: distrib
+                topology: binders
+                compiler: gcc
+              - worker_type: arm.medium
+                scheduler: distrib
+                topology: hwloc
+                compiler: gcc
+              - worker_type: medium
+                scheduler: sherwood
+                topology: binders
+                compiler: clang
+              - worker_type: medium
+                scheduler: sherwood
+                topology: hwloc
+                compiler: clang
+              - worker_type: medium
+                scheduler: distrib
+                topology: binders
+                compiler: clang
+              - worker_type: medium
+                scheduler: distrib
+                topology: hwloc
+                compiler: clang
+              - worker_type: arm.medium
+                scheduler: sherwood
+                topology: binders
+                compiler: clang
+              - worker_type: arm.medium
+                scheduler: sherwood
+                topology: hwloc
+                compiler: clang
+              - worker_type: arm.medium
+                scheduler: distrib
+                topology: binders
+                compiler: clang
+              - worker_type: arm.medium
+                scheduler: distrib
+                topology: hwloc
+                compiler: clang
+

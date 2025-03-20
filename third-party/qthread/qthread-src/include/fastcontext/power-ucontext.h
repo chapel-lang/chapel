@@ -1,6 +1,4 @@
-#ifdef HAVE_STDARG_H
 #include <stdarg.h> /* for the qt_makectxt prototype */
-#endif
 
 #include "qt_visibility.h"
 
