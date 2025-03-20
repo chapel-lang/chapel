@@ -1,0 +1,292 @@
+/*
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef CHPL_LIB_RESOLUTION_FLOWSENSITIVEVISITOR_H
+#define CHPL_LIB_RESOLUTION_FLOWSENSITIVEVISITOR_H
+
+#include "chpl/uast/all-uast.h"
+#include "chpl/resolution/scope-queries.h"
+
+namespace chpl {
+namespace resolution {
+
+template <typename Self>
+struct BaseFrame {
+  // the ast node corresponding to this frame
+  const uast::AstNode* scopeAst = nullptr;
+
+  // the scope of this frame
+  const Scope* scope = nullptr;
+
+  // has the block already encountered a return or a throw?
+  bool returnsOrThrows = false;
+
+  // for conditionals/selects, does this block have a param true condition?
+  bool paramTrueCond = false;
+
+  // for conditionals/selects, is this known to be the only path?
+  bool knownPath = false;
+
+  // When processing a conditional or catch blocks,
+  // instead of popping the SplitInitFrame for the then/else/catch blocks,
+  // store them here, for use in flow-sensitive operations.
+  std::vector<std::tuple<const uast::AstNode*, owned<Self>>> subFrames;
+
+  BaseFrame() = default;
+  BaseFrame(const uast::AstNode* ast) : scopeAst(ast) {}
+};
+
+template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
+struct FlowSensitiveVisitor {
+  std::vector<owned<Frame>> scopeStack;
+
+  /** Return the current frame. This should always be safe to call
+      from one of the handle* methods. */
+  Frame* currentFrame() {
+    CHPL_ASSERT(!scopeStack.empty());
+    return scopeStack.back().get();
+  }
+
+  /** Return the parent frame or nullptr if there is none. */
+  Frame* currentParentFrame() {
+    Frame* parent = nullptr;
+    size_t n = scopeStack.size();
+    if (n >= 2) {
+      parent = scopeStack[n-2].get();
+    }
+    return parent;
+  }
+
+  /** Assuming that the current frame refers to a Conditional,
+      returns the frame for the 'then' block. */
+  Frame* currentThenFrame() {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isConditional());
+    CHPL_ASSERT(frame->subFrames.size() == 1 || frame->subFrames.size() == 2);
+    auto& ret = std::get<owned<Frame>>(frame->subFrames[0]);
+    // ret can be nullptr if the if branch was skipped at resolution time
+    // (i.e. if the condition was param false).
+    return ret.get();
+  }
+
+  /** Assuming that the current frame refers to a Conditional,
+      returns the frame for the 'else' block, or 'nullptr' if there was none. */
+  Frame* currentElseFrame() {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isConditional());
+    CHPL_ASSERT(frame->subFrames.size() == 1 || frame->subFrames.size() == 2);
+    if (frame->subFrames.size() == 1) {
+      // there was no 'else' clause
+      return nullptr;
+    } else {
+      return std::get<owned<Frame>>(frame->subFrames[1]).get();
+    }
+  }
+
+  /** Assuming that the current frame refers to a Try,
+      returns the number of frames saved for Catch clauses.  */
+  int currentNumCatchFrames() {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isTry());
+    int ret = frame->subFrames.size();
+    CHPL_ASSERT(frame->scopeAst->toTry()->numHandlers() == ret);
+    return ret;
+  }
+
+  /** Assuming that the current frame refers to a Try,
+      returns the i'th saved Catch frame. */
+  Frame* currentCatchFrame(int i) {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isTry());
+    CHPL_ASSERT(0 <= i && (size_t) i < frame->subFrames.size());
+    auto& ret = std::get<owned<Frame>>(frame->subFrames[i]);
+    CHPL_ASSERT(ret.get());
+    return ret.get();
+  }
+
+  /** Assuming that the current frame refers to a Select,
+      returns the number of frames saved for When clauses.  */
+  int currentNumWhenFrames() {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isSelect());
+    int ret = frame->subFrames.size();
+    //allowance for otherwise placeholder
+    CHPL_ASSERT(frame->scopeAst->toSelect()->numWhenStmts() == ret);
+    return ret;
+  }
+
+  /** Assuming that the current frame refers to a Select,
+      returns the i'th saved When frame.  */
+  Frame* currentWhenFrame(int i) {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isSelect());
+    CHPL_ASSERT(0 <= i && (size_t) i < frame->subFrames.size());
+    auto& ret = std::get<owned<Frame>>(frame->subFrames[i]);
+    return ret.get();
+  }
+
+  void createSubFrames(const uast::AstNode* ast) {
+    auto& newFrame = scopeStack.back();
+    if (auto c = ast->toConditional()) {
+      // note thenBlock / elseBlock
+      newFrame->subFrames.emplace_back(c->thenBlock(), nullptr);
+      newFrame->subFrames.emplace_back(c->elseBlock(), nullptr);
+    } else if (auto t = ast->toTry()) {
+      // note each of the catch handlers (aka catch clauses)
+      for (auto clause : t->handlers()) {
+        newFrame->subFrames.emplace_back(clause, nullptr);
+      }
+    } else if (auto s = ast->toSelect()) {
+      for (auto when : s->whenStmts()) {
+        newFrame->subFrames.emplace_back(when, nullptr);
+      }
+    }
+  }
+
+  virtual void doEnterScope(const uast::AstNode* ast, ExtraData extraData) {
+    createSubFrames(ast);
+  }
+
+  void enterScope(const uast::AstNode* ast, ExtraData extraData) {
+    if (resolution::createsScope(ast->tag())) {
+      scopeStack.emplace_back(new Frame(ast));
+      doEnterScope(ast, extraData);
+    }
+  }
+
+  bool saveSubFrame(const uast::AstNode* ast, Frame*& outParentFrame) {
+    CHPL_ASSERT(!scopeStack.empty());
+    size_t n = scopeStack.size();
+    auto& curFrame = scopeStack[n-1];
+    CHPL_ASSERT(curFrame->scopeAst == ast);
+    if (n < 2) return false;
+
+    // Are we in the situation of just finishing a Block
+    // that is within a Conditional? or a Catch clause?
+    // If so, save the frame in the subBlocks, to
+    // be handled when processing condFrame.
+    outParentFrame = scopeStack[n-2].get();
+    for (auto & subBlock : outParentFrame->subFrames) {
+      if (std::get<const uast::AstNode*>(subBlock) == ast) {
+        std::get<owned<Frame>>(subBlock).swap(curFrame);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void reconcileFrames(Frame* parentFrame, const uast::Conditional* cond) {
+    auto thenFrame = currentThenFrame();
+    auto elseFrame = currentElseFrame();
+    if (thenFrame && elseFrame &&
+        thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
+      parentFrame->returnsOrThrows = true;
+    }
+    if (thenFrame && thenFrame->returnsOrThrows && thenFrame->knownPath) {
+      parentFrame->returnsOrThrows = true;
+    }
+    if (elseFrame && elseFrame->returnsOrThrows && elseFrame->knownPath) {
+      parentFrame->returnsOrThrows = true;
+    }
+  }
+
+  void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
+    auto tryFrame = currentFrame();
+    if (tryFrame->returnsOrThrows) {
+      int nCatchFrames = currentNumCatchFrames();
+      bool allCatchReturnThrow = true;
+      for (int i = 0; i < nCatchFrames; i++) {
+        auto catchFrame = currentCatchFrame(i);
+        if (!catchFrame->returnsOrThrows) {
+          allCatchReturnThrow = false;
+          break;
+        }
+      }
+      if (allCatchReturnThrow) {
+        parentFrame->returnsOrThrows = true;
+      }
+    }
+  }
+
+  void reconcileFrames(Frame* parentFrame, const uast::Select* s) {
+    bool allReturnOrThrow = true;
+    for(int i = 0; i < s->numWhenStmts(); i++) {
+      auto whenFrame = currentWhenFrame(i);
+      if (!whenFrame) continue;
+      allReturnOrThrow &= whenFrame->returnsOrThrows;
+      if (whenFrame->knownPath) {  // this is known to be the taken path
+        parentFrame->returnsOrThrows = whenFrame->returnsOrThrows;
+        break;
+      }
+    }
+
+    if (s->hasOtherwise()) parentFrame->returnsOrThrows |= allReturnOrThrow;
+  }
+
+  void reconcileFrames(Frame* parentFrame, const uast::AstNode* ast) {
+    if (ast->isLoop()) {
+      // don't propagate return/throw out of a loop,
+      // because it could be loop { break; return; } e.g.
+      return;
+    }
+
+    auto frame = currentFrame();
+    if (frame->returnsOrThrows) {
+      parentFrame->returnsOrThrows = true;
+    }
+  }
+
+  virtual void doExitScope(const uast::AstNode* ast, ExtraData extraData) {
+    Frame* parentFrame = nullptr;
+
+    if (saveSubFrame(ast, parentFrame)) {
+      // frame will be processed with parent block
+      CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
+          parentFrame->scopeAst->isTry() ||
+          parentFrame->scopeAst->isSelect());
+      return;
+    }
+
+    if (parentFrame == nullptr) return;
+
+    switch (ast->tag()) {
+      case uast::asttags::AstTag::Conditional:
+        reconcileFrames(parentFrame, ast->toConditional()); break;
+      case uast::asttags::AstTag::Try:
+        reconcileFrames(parentFrame, ast->toTry()); break;
+      case uast::asttags::AstTag::Select:
+        reconcileFrames(parentFrame, ast->toSelect()); break;
+      default:
+        reconcileFrames(parentFrame, ast);
+    }
+  }
+
+  void exitScope(const uast::AstNode* ast, ExtraData extraData) {
+    if (resolution::createsScope(ast->tag())) {
+      doExitScope(ast, extraData);
+      scopeStack.pop_back();
+    }
+  }
+};
+
+}  // namespace resolution
+}  // namespace chpl
+
+#endif
