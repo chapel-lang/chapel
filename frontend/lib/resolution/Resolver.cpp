@@ -4785,6 +4785,42 @@ void Resolver::exit(const Range* range) {
   }
 }
 
+bool Resolver::enter(const uast::Array* decl) {
+  return true;
+}
+void Resolver::exit(const uast::Array* decl) {
+  ResolvedExpression& r = byPostorder.byAst(decl);
+
+  if (!decl->isMultiDim()) {
+    std::vector<CallInfoActual> actuals;
+    for (auto expr : decl->exprs()) {
+      auto exprType = byPostorder.byAst(expr).type();
+      // Short circuit if any elements have unknown type, since we won't be
+      // able to resolve the array builder proc.
+      if (exprType.isUnknown()) {
+        r.setType(QualifiedType());
+        return;
+      }
+      actuals.emplace_back(exprType, UniqueString());
+    }
+
+    static auto arrayBuilderProc =
+        UniqueString::get(context, "chpl__buildArrayExpr");
+    auto ci = CallInfo(/* name */ arrayBuilderProc,
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false, actuals);
+    auto scope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+    c.noteResult(&r);
+  } else {
+    CHPL_UNIMPL("multidimensional array literals");
+  }
+}
+
 bool Resolver::enter(const uast::Domain* decl) {
   return true;
 }
