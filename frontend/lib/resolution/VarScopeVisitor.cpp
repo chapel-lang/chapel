@@ -204,6 +204,16 @@ void VarScopeVisitor::doExitScope(const uast::AstNode* ast, RV& rv) {
   }
 }
 
+const types::Param* VarScopeVisitor::determineParamValue(const uast::AstNode* ast, RV& rv) {
+  auto& rr = rv.byAst(ast);
+  if (rr.type().kind() == QualifiedType::PARAM) return rr.type().param();
+  return nullptr;
+}
+
+void VarScopeVisitor::traverseNode(const uast::AstNode* ast, RV& rv) {
+  ast->traverse(rv);
+}
+
 void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
   auto frame = currentFrame();
   auto thenFrame = currentThenFrame();
@@ -481,24 +491,7 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
 bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   enterAst(cond);
   enterScope(cond, rv);
-
-  auto condRE = rv.byAst(cond->condition());
-  if (condRE.type().isParamTrue()) {
-    // Don't need to process the false branch.
-    cond->thenBlock()->traverse(rv);
-    currentThenFrame()->paramTrueCond = true;
-    currentThenFrame()->knownPath = true;
-    return false;
-  } else if (condRE.type().isParamFalse()) {
-    if (auto elseBlock = cond->elseBlock()) {
-      elseBlock->traverse(rv);
-      currentElseFrame()->paramTrueCond = true;
-      currentElseFrame()->knownPath = true;
-    }
-    return false;
-  }
-  // Not param-known condition; visit both branches as normal.
-  return true;
+  return flowSensitivelyTraverse(cond, rv);
 }
 
 void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
@@ -509,43 +502,7 @@ void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
 bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
   enterAst(sel);
   enterScope(sel, rv);
-
-  // have we encountered a when without param-decided conditions?
-  bool anyWhenNonParam = false; 
-
-  for(int i = 0; i < sel->numWhenStmts(); i++) {
-    auto whenAst = sel->whenStmt(i);
-
-    bool anyCaseParamTrue = false;
-    bool allCaseParamFalse = !whenAst->isOtherwise();
-    for(auto caseExpr : whenAst->caseExprs()) {
-      auto res = rv.byAst(caseExpr);
-      anyCaseParamTrue |= res.type().isParamTrue();
-      allCaseParamFalse &= res.type().isParamFalse();
-    }
-    
-    anyWhenNonParam |= !anyCaseParamTrue && !allCaseParamFalse;
-
-    if (!allCaseParamFalse) {
-      // only traverse whens that are not param false
-      whenAst->traverse(rv);
-      // if there is a param true case and none of the preceding whens might
-      // be taken at runtime, then this is the only path we need to consider
-      currentWhenFrame(i)->knownPath = anyCaseParamTrue && !anyWhenNonParam;
-      currentWhenFrame(i)->paramTrueCond = anyCaseParamTrue;
-    }
-
-    if (whenAst->isOtherwise()) {
-      // if we've reached this point, none of the preceding whens have a param
-      // true condition, so the otherwise is paramTrue if all preceding whens
-      // are param false.
-      currentWhenFrame(i)->knownPath = !anyWhenNonParam;
-    } else if (anyCaseParamTrue) {
-      break;
-    }
-  }
-
-  return false;
+  return flowSensitivelyTraverse(sel, rv);
 }
 
 void VarScopeVisitor::exit(const Select* ast, RV& rv) {

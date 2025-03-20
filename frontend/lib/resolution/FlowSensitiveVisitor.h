@@ -284,6 +284,80 @@ struct FlowSensitiveVisitor {
       scopeStack.pop_back();
     }
   }
+
+  virtual const types::Param* determineParamValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+
+  bool isParamTrue(const uast::AstNode* ast, ExtraData extraData) {
+    if (auto param = determineParamValue(ast, extraData)) {
+      return param->isNonZero();
+    }
+    return false;
+  }
+
+  bool isParamFalse(const uast::AstNode* ast, ExtraData extraData) {
+    if (auto param = determineParamValue(ast, extraData)) {
+      return param->isZero();
+    }
+    return false;
+  }
+
+  virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
+
+  bool flowSensitivelyTraverse(const uast::Select* sel, ExtraData extraData) {
+    // have we encountered a when without param-decided conditions?
+    bool anyWhenNonParam = false;
+
+    for(int i = 0; i < sel->numWhenStmts(); i++) {
+      auto whenAst = sel->whenStmt(i);
+
+      bool anyCaseParamTrue = false;
+      bool allCaseParamFalse = !whenAst->isOtherwise();
+      for(auto caseExpr : whenAst->caseExprs()) {
+        anyCaseParamTrue |= isParamTrue(caseExpr, extraData);
+        allCaseParamFalse &= isParamFalse(caseExpr, extraData);
+      }
+
+      anyWhenNonParam |= !anyCaseParamTrue && !allCaseParamFalse;
+
+      if (!allCaseParamFalse) {
+        // only traverse whens that are not param false
+        traverseNode(whenAst, extraData);
+        // if there is a param true case and none of the preceding whens might
+        // be taken at runtime, then this is the only path we need to consider
+        currentWhenFrame(i)->knownPath = anyCaseParamTrue && !anyWhenNonParam;
+        currentWhenFrame(i)->paramTrueCond = anyCaseParamTrue;
+      }
+
+      if (whenAst->isOtherwise()) {
+        // if we've reached this point, none of the preceding whens have a param
+        // true condition, so the otherwise is paramTrue if all preceding whens
+        // are param false.
+        currentWhenFrame(i)->knownPath = !anyWhenNonParam;
+      } else if (anyCaseParamTrue) {
+        break;
+      }
+    }
+    return false;
+  }
+
+  bool flowSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
+    if (isParamTrue(cond->condition(), extraData)) {
+      // Don't need to process the false branch.
+      traverseNode(cond->thenBlock(), extraData);
+      currentThenFrame()->paramTrueCond = true;
+      currentThenFrame()->knownPath = true;
+      return false;
+    } else if (isParamFalse(cond->condition(), extraData)) {
+      if (auto elseBlock = cond->elseBlock()) {
+        traverseNode(elseBlock, extraData);
+        currentElseFrame()->paramTrueCond = true;
+        currentElseFrame()->knownPath = true;
+      }
+      return false;
+    }
+    // Not param-known condition; visit both branches as normal.
+    return true;
+  }
 };
 
 }  // namespace resolution

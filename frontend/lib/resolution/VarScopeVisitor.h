@@ -166,6 +166,8 @@ class VarScopeVisitor : protected FlowSensitiveVisitor<VarFrame, MutatingResolve
   // ----- overrides for FlowSensitiveVisitor
   void doEnterScope(const uast::AstNode* ast, RV& rv) override;
   void doExitScope(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineParamValue(const uast::AstNode* ast, RV& rv) override;
+  void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
  public:
   void enterAst(const uast::AstNode* ast);
