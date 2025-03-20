@@ -2173,18 +2173,18 @@ module Python {
 
       } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
         pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 (min(int(64))).safeCast(Py_ssize_t),
+                                 (min(Py_ssize_t)).safeCast(Py_ssize_t),
                                  bounds.high.safeCast(Py_ssize_t) + 1);
 
       } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
         pyObj = PyTuple_GetSlice(this.getPyObject(),
                                  bounds.low.safeCast(Py_ssize_t),
-                                 (max(int(64))).safeCast(Py_ssize_t));
+                                 (max(Py_ssize_t)).safeCast(Py_ssize_t));
 
       } else {
         pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 (min(int(64))).safeCast(Py_ssize_t),
-                                 (max(int(64))).safeCast(Py_ssize_t));
+                                 (min(Py_ssize_t)).safeCast(Py_ssize_t),
+                                 (max(Py_ssize_t)).safeCast(Py_ssize_t));
       }
       this.interpreter.checkException();
       return interpreter.fromPythonInner(T, pyObj);
