@@ -80,6 +80,16 @@ proc main() {
     writeln("Caught unknown exception: ", e);
   }
 
+  try {
+    // get specifying a type that is longer than the slice requested
+    writeln("checking trying to slice into too large a tuple");
+    var x = t.get(3*int, 0..1);
+  } catch e: PythonException {
+    writeln("Caught exception: ", e);
+  } catch e {
+    writeln("Caught unknown exception: ", e);
+  }
+
   // Double check 1 element tuple
   var getTup2Func = pyCodeModule.get('getTup2');
   var t2 = getTup2Func(owned PyTuple);

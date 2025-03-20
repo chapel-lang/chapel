@@ -1,0 +1,3 @@
+specifying smaller tuple than was returned
+t[0:2] (no type) (2, 3)
+t[0:2] (small type) (2,)

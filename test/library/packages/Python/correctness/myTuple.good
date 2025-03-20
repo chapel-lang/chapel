@@ -24,4 +24,6 @@ checking out of bounds idx
 Caught exception: PythonException: tuple index out of range
 checking trying to convert slice to an int
 Caught exception: PythonException: 'tuple' object cannot be interpreted as an integer
+checking trying to slice into too large a tuple
+Caught exception: PythonException: tuple index out of range
 (11,)
