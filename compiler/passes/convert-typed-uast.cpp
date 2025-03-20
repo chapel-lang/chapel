@@ -3884,17 +3884,18 @@ void TConverter::ActualConverter::prepareCalledFnConversionState() {
 
   // Prepare the state block for the called function.
   // TODO: Helper function?
-  calledFnState_ = {
-    .symbol                 = parsing::idToAst(context, rf->id()),
-    .fnSymbol               = tc_->findOrConvertFunction(rf),
-    .moduleSymbol           = moduleSymbol,
-    .retVar                 = nullptr,
-    .epilogueLabel          = nullptr,
-    .resolvedFunction       = rf,
-    .actualConverter        = this,
-    .moduleFromLibraryFile  = moduleSymbol->hasFlag(FLAG_PRECOMPILED),
-    .topLevelModTag         = moduleSymbol->modTag
-  };
+  // NOTE: Also, GCC is not happy with an initializer-list, here.
+  auto& s = calledFnState_;
+  s = {};
+  s.symbol                 = parsing::idToAst(context, rf->id());
+  s.fnSymbol               = tc_->findOrConvertFunction(rf);
+  s.moduleSymbol           = moduleSymbol;
+  s.retVar                 = nullptr;
+  s.epilogueLabel          = nullptr;
+  s.resolvedFunction       = rf;
+  s.actualConverter        = this;
+  s.moduleFromLibraryFile  = moduleSymbol->hasFlag(FLAG_PRECOMPILED);
+  s.topLevelModTag         = moduleSymbol->modTag;
 }
 
 void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
