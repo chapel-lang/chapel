@@ -2140,6 +2140,13 @@ module Python {
          other than 0.
 
       :arg T: the Chapel type of the slice to return.
+
+      .. note::
+
+         If the type specified is smaller than the returned tuple, this method
+         will currently not complain.  See
+         https://github.com/chapel-lang/chapel/issues/26951
+
       :arg bounds: The full slice of the tuple to return
       :returns: A slice of the tuple for the given bounds.
     */
