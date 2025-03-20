@@ -67,7 +67,10 @@ update_image() {
     docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
   else
     # Also push as 'latest' tag if this is a release build.
-    # Use base image name (without tag) to use Docker's default tag 'latest'
+    # Use base image name (without tag) to use Docker's default tag 'latest'.
+    # This has to be done in a single invocation of 'build' to ensure we don't
+    # rebuild the image for the 'latest' tag, which would result in it having
+    # a different SHA.
     docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName" -t "$baseImageName"
   fi
 
