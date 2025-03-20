@@ -283,28 +283,29 @@ struct TConverter final : UastConverter {
       return ret;
     }
 
-    std::tuple<AList*, Expr*, bool>& fetchListStackEntry(bool isStmtList) {
+    std::tuple<AList*, Expr*, bool>& fetchListStackEntry(bool fetchStmtList) {
       size_t idx = 0;
-      if (isStmtList) {
+
+      if (fetchStmtList) {
         INT_ASSERT(!stmtListIdxStack.empty());
         idx = stmtListIdxStack.back();
         INT_ASSERT(0 <= idx && idx < aListStack.size());
       }
 
-      auto& ret = isStmtList ? aListStack[idx] : aListStack.back();
+      auto& ret = fetchStmtList ? aListStack[idx] : aListStack.back();
       return ret;
     }
 
     AList* stmtList() {
-      bool isStmtList = true;
-      auto& tup = fetchListStackEntry(isStmtList);
-      INT_ASSERT(std::get<bool>(tup) == isStmtList);
+      bool fetchStmtList = true;
+      auto& tup = fetchListStackEntry(fetchStmtList);
+      INT_ASSERT(std::get<bool>(tup) == fetchStmtList);
       return std::get<AList*>(tup);
     }
 
     AList* lastList() {
-      bool isStmtList = false;
-      auto& tup = fetchListStackEntry(isStmtList);
+      bool fetchStmtList = false;
+      auto& tup = fetchListStackEntry(fetchStmtList);
       return std::get<AList*>(tup);
     }
 
@@ -2639,7 +2640,7 @@ struct ConvertDefaultValueHelper {
     types::QualifiedType qt = { types::QualifiedType::VAR, t };
 
     // For extern records, just zero-initialize a temporary.
-    if (t->linkage(context()) == uast::Decl::EXTERN) {
+    if (t->linkage() == uast::Decl::EXTERN) {
       auto temp = tc_->makeNewTemp(qt);
       tc_->insertStmt(new DefExpr(temp));
       auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
@@ -2879,6 +2880,8 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
       auto def = ret->defPoint->remove();
       insertStmt(def);
 
+      noteConvertedSym(node, ret);
+
       // Exit since we are not actually creating a "variable".
       return ret;
     }
@@ -3007,6 +3010,8 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
 
   // Fix up the AST based on the type, if it should be known
   setVariableType(node, varSym, rv);
+
+  noteConvertedSym(node, varSym);
 
   return varSym;
 }
@@ -3360,6 +3365,17 @@ locateFieldSymbolAndType(TConverter* tc,
   return error;
 }
 
+static bool isMethodContainedInMethod(Context* context, const ID& id) {
+  using namespace parsing;
+  if (id.isEmpty() || !idIsMethod(context, id)) return false;
+  for (auto up = id.parentSymbolId(context); up;
+            up = up.parentSymbolId(context)) {
+    if (idIsMethod(context, up)) return true;
+    if (idIsModule(context, up)) break;
+  }
+  return false;
+}
+
 static Expr* codegenGetFieldImpl(TConverter* tc,
                                  primtags::PrimitiveTag prim,
                                  Expr* inRecv,
@@ -3378,7 +3394,7 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
 
     if (sig && sig->isMethod()) {
       if (auto& id = sig->id()) {
-        if (parsing::idIsNestedMethod(tc->context, id)) {
+        if (isMethodContainedInMethod(tc->context, id)) {
           // TODO: Have to poke around or have the frontend give more context.
           TC_UNIMPL("Disambiguating implicit 'this' for nested methods!");
         }
@@ -4490,9 +4506,6 @@ bool TConverter::enter(const Variable* node, RV& rv) {
 
   auto sym = convertVariable(node, rv, true);
   INT_ASSERT(sym);
-
-  // Add the variable to the ID/symbol map since conversion does not.
-  noteConvertedSym(node, sym);
 
   return false;
 }

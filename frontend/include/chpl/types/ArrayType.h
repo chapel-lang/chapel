@@ -40,7 +40,8 @@ class ArrayType final : public CompositeType {
             const ArrayType* instantiatedFrom,
             SubstitutionsMap subs)
     : CompositeType(typetags::ArrayType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE)
   {
   }
 

@@ -39,9 +39,11 @@ class BasicClassType final : public ManageableType {
   BasicClassType(ID id, UniqueString name,
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
-                 SubstitutionsMap subs)
+                 SubstitutionsMap subs,
+                 CompositeType::Linkage linkage)
     : ManageableType(typetags::BasicClassType, id, name,
-                     instantiatedFrom, std::move(subs)),
+                     instantiatedFrom, std::move(subs),
+                     linkage),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
@@ -63,7 +65,8 @@ class BasicClassType final : public ManageableType {
   getBasicClassType(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
-                    SubstitutionsMap subs);
+                    SubstitutionsMap subs,
+                    CompositeType::Linkage linkage);
 
  public:
 

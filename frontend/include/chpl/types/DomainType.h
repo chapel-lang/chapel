@@ -63,7 +63,8 @@ class DomainType final : public CompositeType {
              SubstitutionsMap subs,
              Kind kind)
     : CompositeType(typetags::DomainType, id, name,
-                    instantiatedFrom, std::move(subs)),
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE),
       kind_(kind)
   {
   }

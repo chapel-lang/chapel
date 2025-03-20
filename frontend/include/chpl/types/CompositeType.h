@@ -88,6 +88,7 @@ class CompositeType : public Type {
   using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
   using SubstitutionPair = std::pair<ID, QualifiedType>;
   using SortedSubstitutions = std::vector<SubstitutionPair>;
+  using Linkage = uast::Decl::Linkage;
 
  protected:
   ID id_;
@@ -100,13 +101,17 @@ class CompositeType : public Type {
   // If so, what types/params should we use?
   SubstitutionsMap subs_;
 
+  Linkage linkage_ = uast::Decl::DEFAULT_LINKAGE;
+
   CompositeType(typetags::TypeTag tag,
                 ID id, UniqueString name,
                 const CompositeType* instantiatedFrom,
-                SubstitutionsMap subs)
+                SubstitutionsMap subs,
+                Linkage linkage)
     : Type(tag), id_(id), name_(name),
       instantiatedFrom_(instantiatedFrom),
-      subs_(std::move(subs)) {
+      subs_(std::move(subs)),
+      linkage_(linkage) {
 
     // check instantiated only from same type of object
     CHPL_ASSERT(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
@@ -126,7 +131,8 @@ class CompositeType : public Type {
     return id_ == other->id_ &&
            name_ == other->name_ &&
            instantiatedFrom_ == other->instantiatedFrom_ &&
-           subs_ == other->subs_;
+           subs_ == other->subs_ &&
+           linkage_ == other->linkage_;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
@@ -162,7 +168,7 @@ class CompositeType : public Type {
   UniqueString name() const { return name_; }
 
   /** Returns the linkage of the underlying uAST for this composite. */
-  uast::Decl::Linkage linkage(Context* context) const;
+  uast::Decl::Linkage linkage() const { return linkage_; }
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

@@ -93,19 +93,6 @@ sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
   return v;
 }
 
-uast::Decl::Linkage CompositeType::linkage(Context* context) const {
-  if (this->hasPragma(context, uast::PRAGMA_EXTERN)) return uast::Decl::EXTERN;
-  if (this->hasPragma(context, uast::PRAGMA_EXPORT)) return uast::Decl::EXPORT;
-  if (auto& id = this->id()) {
-    if (auto ast = parsing::idToAst(context, id)) {
-      auto decl = ast->toDecl();
-      CHPL_ASSERT(decl);
-      return decl->linkage();
-    }
-  }
-  return {};
-}
-
 void CompositeType::stringifySubstitutions(std::ostream& ss,
                                            chpl::StringifyKind stringKind,
                                            const SubstitutionsMap& subs) {

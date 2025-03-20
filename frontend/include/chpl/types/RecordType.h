@@ -35,9 +35,11 @@ class RecordType final : public CompositeType {
  private:
   RecordType(ID id, UniqueString name,
              const RecordType* instantiatedFrom,
-             SubstitutionsMap subs)
+             SubstitutionsMap subs,
+             CompositeType::Linkage linkage)
     : CompositeType(typetags::RecordType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    linkage)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -51,7 +53,8 @@ class RecordType final : public CompositeType {
   static const owned<RecordType>&
   getRecordType(Context* context, ID id, UniqueString name,
                 const RecordType* instantiatedFrom,
-                SubstitutionsMap subs);
+                SubstitutionsMap subs,
+                CompositeType::Linkage linkage);
 
  public:
 

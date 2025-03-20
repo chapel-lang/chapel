@@ -45,7 +45,8 @@ class TupleType final : public CompositeType {
             SubstitutionsMap subs,
             bool isVarArgTuple)
     : CompositeType(typetags::TupleType, id, name,
-                    instantiatedFrom, std::move(subs)),
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE),
       isVarArgTuple_(isVarArgTuple)
   {
     assert(!id.isEmpty());

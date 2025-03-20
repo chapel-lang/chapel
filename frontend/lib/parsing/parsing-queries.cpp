@@ -1307,6 +1307,13 @@ static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id) {
+  auto ast = id ? parsing::idToAst(context, id) : nullptr;
+  auto decl = ast ? ast->toDecl() : nullptr;
+  auto ret = decl ? decl->linkage() : uast::Decl::DEFAULT_LINKAGE;
+  return ret;
+}
+
 bool idIsModuleScopeVar(Context* context, ID id) {
   return idIsModuleScopeVarQuery(context, id);
 }
@@ -1338,15 +1345,6 @@ bool idIsNestedFunction(Context* context, ID id) {
   for (auto up = id.parentSymbolId(context); up;
             up = up.parentSymbolId(context)) {
     if (idIsFunction(context, up) || idIsInterface(context, up)) return true;
-  }
-  return false;
-}
-
-bool idIsNestedMethod(Context* context, ID id) {
-  if (id.isEmpty() || !idIsMethod(context, id)) return false;
-  for (auto up = id.parentSymbolId(context); up;
-            up = up.parentSymbolId(context)) {
-    if (idIsMethod(context, up)) return true;
   }
   return false;
 }

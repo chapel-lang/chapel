@@ -658,21 +658,19 @@ void print_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
-// TODO: Take a reference and decay it to avoid copying when debugging.
 template <typename T>
-void nprint_dyno_type(T t) {
-  if constexpr(std::is_pointer<T>::value) {
-    // Special-casing pointer types.
-    if (t == nullptr) {
-      printf("<NULL>");
-    } else {
-      t->dump();
-    }
+void nprint_dyno_type(const T* t) {
+  if (t == nullptr) {
+    printf("<NULL>");
   } else {
-    // Not a pointer type.
-    t.dump();
+    t->dump();
   }
+  fflush(stdout);
+}
 
+template <typename T>
+void nprint_dyno_type(const T& t) {
+  t.dump();
   fflush(stdout);
 }
 

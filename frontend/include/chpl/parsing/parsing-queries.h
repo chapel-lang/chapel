@@ -512,11 +512,6 @@ bool idIsParenlessFunction(Context* context, ID id);
 bool idIsNestedFunction(Context* context, ID id);
 
 /**
- Returns true if the ID is a nested method.
- */
-bool idIsNestedMethod(Context* context, ID id);
-
-/**
  Returns true if the ID refers to a private declaration.
  */
 bool idIsPrivateDecl(Context* context, ID id);
@@ -582,6 +577,13 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
   or the empty ID when given a toplevel module.
  */
 ID idToParentModule(Context* context, ID id);
+
+/**
+  Given an ID 'id', attempt to lookup the declared linkage of the composite
+  type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
+  found.
+ */
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id);
 
 /**
   Returns 'true' if ID refers to a toplevel module.
