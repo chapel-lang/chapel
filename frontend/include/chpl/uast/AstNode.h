@@ -47,6 +47,12 @@ bool astIs(const AstNode* ast) = delete;
 
 } // end namespace detail
 
+template <typename Visitor>
+struct AstVisitorPrecondition {
+  static bool skipSubtree(const AstNode* ast, Visitor& v) {
+    return false;
+  }
+};
 
 /**
   This is the base class for AST types.
@@ -506,24 +512,28 @@ class AstNode {
       #define AST_LEAF(NAME) \
         case asttags::NAME: \
         { \
-          const NAME* casted = (const NAME*) this; \
-          v.enter(casted); \
-          CHPL_ASSERT(this->numChildren() == 0); \
-          v.exit(casted); \
+          if (!AstVisitorPrecondition<Visitor>::skipSubtree(this, v)) { \
+            const NAME* casted = (const NAME*) this; \
+            v.enter(casted); \
+            CHPL_ASSERT(this->numChildren() == 0); \
+            v.exit(casted); \
+          } \
           break; \
         }
 
       #define AST_NODE(NAME) \
         case asttags::NAME: \
         { \
-          const NAME* casted = (const NAME*) this; \
-          bool goInToIt = v.enter(casted); \
-          if (goInToIt) { \
-            for (const AstNode* child : this->children()) { \
-              child->traverse(v); \
+          if (!AstVisitorPrecondition<Visitor>::skipSubtree(this, v)) { \
+            const NAME* casted = (const NAME*) this; \
+            bool goInToIt = v.enter(casted); \
+            if (goInToIt) { \
+              for (const AstNode* child : this->children()) { \
+                child->traverse(v); \
+              } \
             } \
+            v.exit(casted); \
           } \
-          v.exit(casted); \
           break; \
         }
 

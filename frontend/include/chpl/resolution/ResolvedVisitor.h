@@ -353,6 +353,25 @@ public:
 
 } // end namespace resolution
 
+namespace uast {
+
+template <typename UV>
+struct AstVisitorPrecondition<resolution::ResolvedVisitor<UV>> {
+  static bool skipSubtree(const uast::AstNode* ast,
+                          resolution::ResolvedVisitor<UV>& v) {
+    return AstVisitorPrecondition<UV>::skipSubtree(ast, v.userVisitor());
+  }
+};
+
+template <typename UV>
+struct AstVisitorPrecondition<resolution::MutatingResolvedVisitor<UV>> {
+  static bool skipSubtree(const uast::AstNode* ast,
+                          resolution::MutatingResolvedVisitor<UV>& v) {
+    return AstVisitorPrecondition<UV>::skipSubtree(ast, v.userVisitor());
+  }
+};
+
+} // end namespace uast
 
 } // end namespace chpl
 
