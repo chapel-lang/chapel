@@ -34,6 +34,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
+#include "resolution/FlowSensitiveVisitor.h"
 
 #include <cstdio>
 #include <iterator>
@@ -323,7 +324,7 @@ struct ReturnInferenceFrame {
   ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
 };
 
-struct ReturnTypeInferrer {
+struct ReturnTypeInferrer : FlowSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
@@ -333,9 +334,6 @@ struct ReturnTypeInferrer {
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
   const Type* declaredReturnType;
-
-  // intermediate information
-  std::vector<owned<ReturnInferenceFrame>> returnFrames;
 
   // output
   std::vector<QualifiedType> returnedTypes;
@@ -360,11 +358,11 @@ struct ReturnTypeInferrer {
 
   QualifiedType returnedType();
 
-  ReturnInferenceSubFrame& currentThenFrame();
-  ReturnInferenceSubFrame& currentElseFrame();
-
-  void enterScope(const uast::AstNode* node);
-  void exitScope(const uast::AstNode* node);
+  void doEnterScope(const uast::AstNode* node, RV& rv) override;
+  void doExitScope(const uast::AstNode* node, RV& rv) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
+  void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
   bool markReturnOrThrow();
   bool hasReturnedOrThrown();
@@ -490,150 +488,69 @@ QualifiedType ReturnTypeInferrer::returnedType() {
   }
 }
 
-ReturnInferenceSubFrame& ReturnTypeInferrer::currentThenFrame() {
-  CHPL_ASSERT(returnFrames.size() > 0);
-  auto& topFrame = returnFrames.back();
-  CHPL_ASSERT(topFrame->scopeAst->isConditional());
-  return topFrame->subFrames[0];
-}
-ReturnInferenceSubFrame& ReturnTypeInferrer::currentElseFrame() {
-  CHPL_ASSERT(returnFrames.size() > 0);
-  auto& topFrame = returnFrames.back();
-  CHPL_ASSERT(topFrame->scopeAst->isConditional());
-  return topFrame->subFrames[1];
-}
+void ReturnTypeInferrer::doEnterScope(const uast::AstNode* node, RV& rv) {
+  FlowSensitiveVisitor::doEnterScope(node, rv);
 
-void ReturnTypeInferrer::enterScope(const uast::AstNode* node) {
-  if (!createsScope(node->tag())) return;
-
-  returnFrames.push_back(toOwned(new ReturnInferenceFrame(node)));
-  auto& newFrame = returnFrames.back();
-
-  if (returnFrames.size() > 1) {
+  // TODO: just don't visit the node
+  if (scopeStack.size() > 1 && !node->isCatch()) {
     // If we returned in the parent frame, we already returned here.
-    newFrame->returnsOrThrows |= returnFrames[returnFrames.size() - 2]->returnsOrThrows;
+    currentFrame()->controlFlowInfo = scopeStack[scopeStack.size() - 2]->controlFlowInfo;
   }
+}
 
-  if (auto condNode = node->toConditional()) {
-    newFrame->subFrames.emplace_back(condNode->thenBlock());
-    newFrame->subFrames.emplace_back(condNode->elseBlock());
-  } else if (auto selNode = node->toSelect()) {
-    bool hasOtherwise = false;
-    for (auto when : selNode->whenStmts()) {
-      if (when->isOtherwise()) hasOtherwise = true;
-      newFrame->subFrames.emplace_back(when);
-    }
-    if (!hasOtherwise) {
-      // If an 'otherwise' case is not present, then we treat it as a
-      // non-returning 'branch'.
-      newFrame->subFrames.emplace_back(nullptr);
-    }
-  } else if (auto tryNode = node->toTry()) {
-    newFrame->subFrames.emplace_back(tryNode->body());
-    for (auto clause : tryNode->handlers()) {
-      newFrame->subFrames.emplace_back(clause);
+void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
+  FlowSensitiveVisitor::doExitScope(node, rv);
+
+  // we don't normally propagate information from loops up to the parent frame,
+  // since they may be executed zero times. However, if it's a param loop,
+  // we know its execution count statically, so we can propagate the information.
+  //
+  // TODO: this ought to be common logic. Resolver doesn't do this now because
+  // it's constructing the ResolvedLoop, and VarScopeVisitor doesn't because
+  // its family of passes doesn't yet handle param loops. Eventually, we need
+  // to unify this logic.
+  DefaultFrame* parentFrame = nullptr;
+  if (node->isLoop() && (parentFrame = currentParentFrame())) {
+    if (auto rr = rv.byAstOrNull(node)) {
+      if (auto resolvedLoop = rr->paramLoop()) {
+        parentFrame->controlFlowInfo.sequence(currentFrame()->controlFlowInfo);
+      }
     }
   }
 }
 
-void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
-  if (!createsScope(node->tag())) return;
-
-  CHPL_ASSERT(returnFrames.size() > 0);
-  auto poppingFrame = std::move(returnFrames.back());
-  CHPL_ASSERT(poppingFrame->scopeAst == node);
-  returnFrames.pop_back();
-
-  bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
-  bool parentBreaks = poppingFrame->breaks;
-  bool parentContinues = poppingFrame->continues;
-
-  if (poppingFrame->scopeAst->isLoop()) {
-    if (!(poppingFrame->scopeAst->isFor() &&
-          poppingFrame->scopeAst->toFor()->isParam())) {
-      // Do not propagate info from non-param loops, as we can't statically
-      // know what they'll do at runtime.
-      parentReturnsOrThrows = false;
-      parentBreaks = false;
-      parentContinues = false;
-    }
-  }
-
-  // Integrate sub-frame information.
-  if (poppingFrame->subFrames.size() > 0) {
-    bool allReturnOrThrow = true;
-    bool allBreak = true;
-    bool allContinue = true;
-    bool allSkip = true;
-    for (auto& subFrame : poppingFrame->subFrames) {
-      if (subFrame.skip) {
-        continue;
-      } else {
-        allSkip = false;
-      }
-
-      bool frameNonEmpty = subFrame.frame != nullptr;
-
-      allReturnOrThrow &= frameNonEmpty && subFrame.frame->returnsOrThrows;
-      allBreak &= frameNonEmpty && subFrame.frame->breaks;
-      allContinue &= frameNonEmpty && subFrame.frame->continues;
-    }
-
-    // If all subframes skipped, then there were no returns.
-    parentReturnsOrThrows = !allSkip && allReturnOrThrow;
-    parentBreaks = !allSkip && allBreak;
-    parentContinues = !allSkip && allContinue;
-  }
-
-  if (returnFrames.size() > 0) {
-    // Might we become a sub-frame in another frame?
-    auto& parentFrame = returnFrames.back();
-    bool storedAsSubFrame = false;
-
-    for (auto& subFrame : parentFrame->subFrames) {
-      if (subFrame.astNode == node) {
-        CHPL_ASSERT(
-            !storedAsSubFrame &&
-            "should not be possible to store a frame as multiple sub-frames");
-        subFrame.frame = std::move(poppingFrame);
-        storedAsSubFrame = true;
-      }
-    }
-
-    if (!storedAsSubFrame) {
-      parentFrame->returnsOrThrows |= parentReturnsOrThrows;
-      if (!poppingFrame->scopeAst->isLoop()) {
-        // propagate break/continue only up to the enclosing loop
-        parentFrame->breaks |= parentBreaks;
-        parentFrame->continues |= parentContinues;
-      }
-    }
-  }
+const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
+  return rv.byAst(ast).type().param();
+}
+const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
+  return rv.byAst(ast).type().param();
+}
+void ReturnTypeInferrer::traverseNode(const uast::AstNode* ast, RV& rv) {
+  ast->traverse(rv);
 }
 
 bool ReturnTypeInferrer::markReturnOrThrow() {
-  if (returnFrames.empty()) return false;
-  auto& topFrame = returnFrames.back();
-  bool oldValue = topFrame->returnsOrThrows;
-  topFrame->returnsOrThrows = true;
+  if (scopeStack.empty()) return false;
+  auto topFrame = currentFrame();
+  bool oldValue = topFrame->controlFlowInfo.returnsOrThrows();
+  topFrame->controlFlowInfo.markReturnOrThrow();
   return oldValue;
 }
 
 bool ReturnTypeInferrer::hasReturnedOrThrown() {
-  if (returnFrames.empty()) return false;
-  return returnFrames.back()->returnsOrThrows;
+  if (scopeStack.empty()) return false;
+  return currentFrame()->controlFlowInfo.returnsOrThrows();
 }
 
 bool ReturnTypeInferrer::hasHitBreak() {
-  if (returnFrames.empty()) return false;
-  auto& topFrame = returnFrames.back();
-  return topFrame->breaks;
+  if (scopeStack.empty()) return false;
+  return currentFrame()->controlFlowInfo.breaks();
 }
 
 bool ReturnTypeInferrer::hasHitBreakOrContinue() {
-  if (returnFrames.empty()) return false;
-  auto& topFrame = returnFrames.back();
-  return topFrame->breaks || topFrame->continues;
+  if (scopeStack.empty()) return false;
+  return currentFrame()->controlFlowInfo.breaks() ||
+         currentFrame()->controlFlowInfo.continues();
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
@@ -644,116 +561,49 @@ void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
 
 
 bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
-  enterScope(cond);
-  auto condition = cond->condition();
-  CHPL_ASSERT(condition != nullptr);
-  const ResolvedExpression& r = rv.byAst(condition);
-  if (r.type().isParamTrue()) {
-    auto then = cond->thenBlock();
-    CHPL_ASSERT(then != nullptr);
-    then->traverse(rv);
-    // It doesn't matter if we don't return in the else frame, since it's
-    // compiled out.
-    currentElseFrame().skip = true;
-    return false;
-  } else if (r.type().isParamFalse()) {
-    auto else_ = cond->elseBlock();
-    if (else_) {
-      else_->traverse(rv);
-    }
-    // It doesn't matter if we don't return in the then frame, since it's
-    // compiled out.
-    currentThenFrame().skip = true;
-    return false;
-  }
-  return true;
+  enterScope(cond, rv);
+  return flowSensitivelyTraverse(cond, rv);
 }
 void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
-  exitScope(cond);
+  exitScope(cond, rv);
 }
 
 bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
-  enterScope(sel);
-
-
-  int paramTrueIdx = -1;
-  for (int i = 0; i < sel->numWhenStmts(); i++) {
-    auto when = sel->whenStmt(i);
-
-    bool anyParamTrue = false;
-    bool allParamFalse = !when->isOtherwise(); //do not skip otherwise blocks
-
-    for (auto caseExpr : when->caseExprs()) {
-      auto res = rv.byAst(caseExpr);
-
-      anyParamTrue = anyParamTrue || res.type().isParamTrue();
-      allParamFalse = allParamFalse && res.type().isParamFalse();
-    }
-
-    //if all cases are param false, the path will never be visited.
-    if (allParamFalse) {
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[i].skip = true;
-      continue;
-    }
-
-    when->traverse(rv);
-
-    //if any case is param true, none of the following whens will be visited
-    if (anyParamTrue) {
-      paramTrueIdx = i;
-      break;
-    }
-  }
-
-  // if we found a param true case, mark the frames for the remaining whens
-  if (paramTrueIdx == -1) return false;
-
-  auto& topFrame = returnFrames.back();
-  for (size_t i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
-    topFrame->subFrames[i].skip = true;
-  }
-
-  return false;
+  enterScope(sel, rv);
+  return flowSensitivelyTraverse(sel, rv);
 }
 void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
-  exitScope(sel);
+  exitScope(sel, rv);
 }
 
 bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
-  enterScope(forLoop);
+  enterScope(forLoop, rv);
 
-  if (forLoop->isParam()) {
-    // For param loops, "unroll" by manually traversing each iteration.
-    const ResolvedExpression& rr = rv.byAst(forLoop);
-    const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
-    CHPL_ASSERT(resolvedLoop);
-
-    for (auto loopBody : resolvedLoop->loopBodies()) {
-      RV loopVis(rv.rc(), forLoop, rv.userVisitor(), loopBody);
-      for (const AstNode* child : forLoop->children()) {
-        child->traverse(loopVis);
+  if (auto rr = rv.byAstOrNull(forLoop)) {
+    if (auto resolvedLoop = rr->paramLoop()) {
+      for (auto loopBody : resolvedLoop->loopBodies()) {
+        RV loopVis(rv.rc(), forLoop, rv.userVisitor(), loopBody);
+        for (const AstNode* child : forLoop->children()) {
+          child->traverse(loopVis);
+        }
       }
+      return false;
     }
-
-    return false;
-  } else {
-    return true;
   }
+
+  return true;
 }
 void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
-  exitScope(forLoop);
+  exitScope(forLoop, rv);
 }
 
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  CHPL_ASSERT(!returnFrames.empty());
-  returnFrames.back()->breaks = true;
+  currentFrame()->controlFlowInfo.markBreak();
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  CHPL_ASSERT(!returnFrames.empty());
-  returnFrames.back()->continues = true;
+  currentFrame()->controlFlowInfo.markContinue();
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
@@ -797,11 +647,11 @@ void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const AstNode* ast, RV& rv) {
-  enterScope(ast);
+  enterScope(ast, rv);
   return true;
 }
 void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
-  exitScope(ast);
+  exitScope(ast, rv);
 }
 
 // For a class type construction, returns a BasicClassType

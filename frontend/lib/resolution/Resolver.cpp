@@ -6240,19 +6240,20 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
     ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
     idx.setType(boundInfo->advance(context));
-    forLoop->body()->traverse(cur);
 
+    cur.enterScope(forLoop->body());
+    forLoop->body()->traverse(cur);
     loopControlFlow.sequence(cur.currentFrame()->controlFlowInfo);
+
+    cur.exitScope(forLoop->body());
     cur.exitScope(forLoop);
 
     loopResults.push_back(std::move(cur.byPostorder));
   }
 
   // Propagate the control flow information to the current frame.
-  loopControlFlow.resetContinue();
-  loopControlFlow.resetBreak();
   if (!rv.scopeStack.empty()) {
-    rv.currentFrame()->controlFlowInfo.sequence(loopControlFlow);
+    rv.sequenceWithParentFrame(rv.currentFrame(), loopControlFlow);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);

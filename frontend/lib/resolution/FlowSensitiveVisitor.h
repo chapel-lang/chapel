@@ -277,6 +277,18 @@ struct FlowSensitiveVisitor {
     }
   }
 
+  void sequenceWithParentFrame(Frame* parentFrame, ControlFlowInfo append) {
+    // 'break' and 'continue' are scoped to the loop that they're in.
+    // a loop that has 'continue' in its body does not itself continue
+    // its parent loop.
+    if (parentFrame->scopeAst->isLoop()) {
+      append.resetBreak();
+      append.resetContinue();
+    }
+
+    parentFrame->controlFlowInfo.sequence(append);
+  }
+
   void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
     auto tryFrame = currentFrame();
     if (tryFrame->controlFlowInfo.isDoneExecuting()) {
@@ -286,7 +298,7 @@ struct FlowSensitiveVisitor {
         auto catchFrame = currentCatchFrame(i);
         accumulatedControlFlowInfo &= catchFrame->controlFlowInfo;
       }
-      parentFrame->controlFlowInfo.sequence(accumulatedControlFlowInfo);
+      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
     }
   }
 
@@ -297,13 +309,13 @@ struct FlowSensitiveVisitor {
       if (!whenFrame) continue;
       accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
       if (whenFrame->knownPath) {  // this is known to be the taken path
-        parentFrame->controlFlowInfo.sequence(whenFrame->controlFlowInfo);
+        sequenceWithParentFrame(parentFrame, whenFrame->controlFlowInfo);
         break;
       }
     }
 
     if (s->hasOtherwise()) {
-      parentFrame->controlFlowInfo.sequence(accumulatedControlFlowInfo);
+      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
     }
   }
 
@@ -313,8 +325,7 @@ struct FlowSensitiveVisitor {
       // reason about its dynamic behavior. The exception are 'Param' loops.
       return;
     }
-    auto frame = currentFrame();
-    parentFrame->controlFlowInfo.sequence(frame->controlFlowInfo);
+    sequenceWithParentFrame(parentFrame, currentFrame()->controlFlowInfo);
   }
 
   virtual void doExitScope(const uast::AstNode* ast, ExtraData extraData) {
