@@ -1,4 +1,4 @@
-use List, Set, Map;
+use List, Set;
 use OS.POSIX, Path, FileSystem;
 use Sort;
 use IO;
@@ -78,29 +78,6 @@ proc comparePaths(paths1, paths2) {
   return true;
 }
 
-proc testDriver(name, func) {
-  if verbosePrint {
-    writeln("Running test for ", name);
-  }
-
-  var (pathsSpawn, pathsInterpreter) = func();
-
-  if verbosePrint {
-    writeln("Spawn paths:");
-    for p in sorted(pathsSpawn) {
-      writeln("  ", p);
-    }
-    writeln("Interpreter paths:");
-    for p in sorted(pathsInterpreter) {
-      writeln("  ", p);
-    }
-  }
-
-  if !comparePaths(pathsSpawn, pathsInterpreter) {
-    writeln("Paths do not match for ", name);
-  }
-}
-
 
 proc default() {
   var pathsSpawn = getSysPathSpawn();
@@ -125,14 +102,35 @@ proc parentPythonPath() {
   return (pathsSpawn, pathsInterpreter);
 }
 proc main() {
-  var tests = new map(string, default.type);
-  tests.add("default", default);
-  tests.add("parentUserBase", parentUserBase);
-  tests.add("parentPythonPath", parentPythonPath);
-
-  if tests.contains(testName) {
-    testDriver(testName, tests[testName]);
+  var pathsSpawn, pathsInterpreter: list(string);
+  if testName == "default" {
+    (pathsSpawn, pathsInterpreter) = default();
+  } else if testName == "parentUserBase" {
+    (pathsSpawn, pathsInterpreter) = parentUserBase();
+  } else if testName == "parentPythonPath" {
+    (pathsSpawn, pathsInterpreter) = parentPythonPath();
   } else {
     writeln("Unknown test name: ", testName);
+    return;
   }
+
+  if verbosePrint {
+    writeln("Running test for ", testName);
+  }
+
+  if verbosePrint {
+    writeln("Spawn paths:");
+    for p in sorted(pathsSpawn) {
+      writeln("  ", p);
+    }
+    writeln("Interpreter paths:");
+    for p in sorted(pathsInterpreter) {
+      writeln("  ", p);
+    }
+  }
+
+  if !comparePaths(pathsSpawn, pathsInterpreter) {
+    writeln("Paths do not match for ", testName);
+  }
+
 }
